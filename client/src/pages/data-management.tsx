@@ -1,0 +1,674 @@
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import { AlertTriangle, ArrowUpDown, CheckCircle, Database, HardDrive, RefreshCw, Shield, Trash2, Upload } from "lucide-react";
+
+interface DataManagementResult {
+  success: boolean;
+  message: string;
+  summary: any;
+  details: any[];
+  backupId?: string;
+}
+
+interface IntegrityCheckResult {
+  success: boolean;
+  message: string;
+  summary: {
+    issuesFound: number;
+    timestamp: string;
+  };
+  details: Array<{ issue: string }>;
+}
+
+function DataManagementPage() {
+  const queryClient = useQueryClient();
+  
+  const [cleanupOptions, setCleanupOptions] = useState({
+    dateFrom: "",
+    dateTo: "",
+    includeAssociatedTransactions: true,
+    createBackup: true
+  });
+
+  const [rearrangeGroupId, setRearrangeGroupId] = useState("");
+
+  // Groups query for account rearrangement
+  const { data: groupsData } = useQuery({
+    queryKey: ["/api/groups"],
+    retry: false
+  });
+
+  // Integrity check query
+  const { data: integrityData, isLoading: integrityLoading, refetch: refetchIntegrity } = useQuery({
+    queryKey: ["/api/data-management/integrity-check"],
+    retry: false
+  });
+
+  // Cleanup mutation with comprehensive cache invalidation
+  const cleanupMutation = useMutation({
+    mutationFn: async (options: typeof cleanupOptions) => {
+      const response = await apiRequest("/api/data-management/cleanup-closed-loans", "POST", options);
+      return await response.json();
+    },
+    onSuccess: () => {
+      // Comprehensive cache invalidation for all related queries
+      queryClient.invalidateQueries({ queryKey: ["/api/cash-transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/cash-balance"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/mobile-cashbook"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/journal-entries"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/loans"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/borrowers"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/parties"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/reports"] });
+      
+      // Force immediate refetch to reflect deletions
+      queryClient.refetchQueries({ queryKey: ["/api/cash-transactions"] });
+      queryClient.refetchQueries({ queryKey: ["/api/journal-entries"] });
+      
+      refetchIntegrity();
+    }
+  });
+
+  const backupMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("/api/data-management/create-backup", "POST");
+      return await response.json();
+    },
+    onSuccess: (data: any) => {
+      if (data.success && data.backupData) {
+        const jsonStr = JSON.stringify(data.backupData, null, 2);
+        const blob = new Blob([jsonStr], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        const now = new Date();
+        const dateStr = `${String(now.getDate()).padStart(2,'0')}-${String(now.getMonth()+1).padStart(2,'0')}-${now.getFullYear()}`;
+        const timeStr = `${String(now.getHours()).padStart(2,'0')}-${String(now.getMinutes()).padStart(2,'0')}-${String(now.getSeconds()).padStart(2,'0')}`;
+        a.href = url;
+        a.download = `backup_${data.backupData.tenantId}_${dateStr}_${timeStr}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
+    }
+  });
+
+  // System restore mutation
+  const restoreMutation = useMutation({
+    mutationFn: async (options: { createBackup: boolean } = { createBackup: true }) => {
+      const response = await apiRequest("/api/data-management/restore-system-data", "POST", options);
+      return await response.json();
+    },
+    onSuccess: () => {
+      // Comprehensive cache invalidation after restore
+      queryClient.invalidateQueries({ queryKey: ["/api/cash-transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/cash-balance"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/mobile-cashbook"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/journal-entries"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/loans"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/borrowers"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/parties"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/reports"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
+      
+      // Force immediate refetch
+      queryClient.refetchQueries({ queryKey: ["/api/dashboard/stats"] });
+      refetchIntegrity();
+    }
+  });
+
+  // Restore from backup mutation
+  const restoreFromBackupMutation = useMutation({
+    mutationFn: async (backupData: any) => {
+      const response = await apiRequest("/api/data-management/restore-from-backup", "POST", { backupData });
+      return await response.json();
+    },
+    onSuccess: () => {
+      // Comprehensive cache invalidation after restore
+      queryClient.invalidateQueries({ queryKey: ["/api/cash-transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/cash-balance"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/mobile-cashbook"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/journal-entries"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/loans"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/borrowers"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/parties"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/reports"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
+      
+      // Force immediate refetch
+      queryClient.refetchQueries({ queryKey: ["/api/dashboard/stats"] });
+      refetchIntegrity();
+    }
+  });
+
+  // Account number rearrangement mutation
+  const rearrangeAccountsMutation = useMutation({
+    mutationFn: async (groupId: string) => {
+      const response = await apiRequest("/api/data-management/rearrange-account-numbers", "POST", { groupId });
+      return await response.json();
+    },
+    onSuccess: () => {
+      // Invalidate loans cache to reflect new account numbers
+      queryClient.invalidateQueries({ queryKey: ["/api/loans"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/borrowers"] });
+      queryClient.refetchQueries({ queryKey: ["/api/loans"] });
+    }
+  });
+
+  const handleCleanup = () => {
+    const confirmed = window.confirm(
+      "⚠️ सावधान!\n\nया तारखांमधील सर्व बंद कर्जांचा डेटा कायमचा काढला जाईल.\nहे action undo करता येणार नाही!\n\nतुम्हाला खात्री आहे का?"
+    );
+    if (confirmed) {
+      cleanupMutation.mutate(cleanupOptions);
+    }
+  };
+
+  const handleBackup = () => {
+    backupMutation.mutate();
+  };
+
+  const handleRestore = () => {
+    const confirmed = window.confirm(
+      "⚠️ सावधान!\n\nसर्व loans, borrowers, cash transactions, journal entries, groups, parties, companies - सगळा डेटा permanently delete होईल!\n\nहे action undo करता येणार नाही!\n\nपहिले backup तयार केला जाईल, पण तुम्हाला खात्री आहे का?"
+    );
+    if (confirmed) {
+      restoreMutation.mutate({ createBackup: true });
+    }
+  };
+
+  const handleRearrangeAccountNumbers = () => {
+    if (!rearrangeGroupId) return;
+    const confirmed = window.confirm(
+      "⚠️ सावधान!\n\nया ग्रुपमधील सर्व कर्जांचे खाते क्रमांक तारखेनुसार बदलले जातील.\n\nतुम्हाला खात्री आहे का?"
+    );
+    if (confirmed) {
+      rearrangeAccountsMutation.mutate(rearrangeGroupId);
+    }
+  };
+
+  const handleRestoreFromBackup = () => {
+    const confirmed = window.confirm(
+      "⚠️ सावधान!\n\nbackup file मधील डेटा restore केल्यावर सध्याचा सर्व डेटा replace होईल!\n\nतुम्हाला खात्री आहे का?"
+    );
+    if (!confirmed) return;
+
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          try {
+            const backupData = JSON.parse(e.target?.result as string);
+            restoreFromBackupMutation.mutate(backupData);
+          } catch (error) {
+            console.error('Invalid backup file:', error);
+          }
+        };
+        reader.readAsText(file);
+      }
+    };
+    input.click();
+  };
+
+  return (
+    <div className="container mx-auto p-4 max-w-6xl">
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">डेटा व्यवस्थापन</h1>
+        <p className="text-gray-600 dark:text-gray-300">
+          संपूर्ण सिस्टम डेटा cleanup, backup आणि accounting reconciliation
+        </p>
+      </div>
+
+      {/* System Status Card */}
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Shield className="h-5 w-5" />
+            सिस्टम स्थिती तपासा
+          </CardTitle>
+          <CardDescription>
+            डेटा integrity verification आणि system health check
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between">
+            <Button 
+              onClick={() => refetchIntegrity()} 
+              variant="outline" 
+              disabled={integrityLoading}
+              className="flex items-center gap-2"
+            >
+              <RefreshCw className={`h-4 w-4 ${integrityLoading ? "animate-spin" : ""}`} />
+              स्थिती तपासा
+            </Button>
+            
+            {integrityData ? (
+              <div className="flex items-center gap-2">
+                {(integrityData as any)?.success ? (
+                  <Badge variant="default" className="bg-green-100 text-green-800">
+                    <CheckCircle className="h-3 w-3 mr-1" />
+                    सर्व ठीक आहे
+                  </Badge>
+                ) : (
+                  <Badge variant="destructive">
+                    <AlertTriangle className="h-3 w-3 mr-1" />
+                    {(integrityData as any)?.summary?.issuesFound || 0} समस्या आढळल्या
+                  </Badge>
+                )}
+              </div>
+            ) : null}
+          </div>
+          
+          {integrityData && !(integrityData as any)?.success ? (
+            <Alert className="mt-4">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertTitle>डेटा समस्या आढळल्या</AlertTitle>
+              <AlertDescription>
+                <div className="mt-2 space-y-1">
+                  {((integrityData as any)?.details || []).map((detail: any, index: number) => (
+                    <div key={index} className="text-sm">• {detail.issue}</div>
+                  ))}
+                </div>
+              </AlertDescription>
+            </Alert>
+          ) : null}
+        </CardContent>
+      </Card>
+
+      <Tabs defaultValue="cleanup" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="cleanup">डेटा क्लीनअप</TabsTrigger>
+          <TabsTrigger value="backup">बॅकअप व्यवस्थापन</TabsTrigger>
+        </TabsList>
+
+        {/* Data Cleanup Tab */}
+        <TabsContent value="cleanup">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Trash2 className="h-5 w-5" />
+                बंद झालेल्या कर्जांचा डेटा क्लीनअप
+              </CardTitle>
+              <CardDescription>
+                तारीख रेंज नुसार बंद झालेल्या कर्जांचा संपूर्ण डेटा क्लीन करा - कर्जदार, व्यवहार, कॅशबुक एंट्री सर्व काही
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Date Range Selection for Closed Loans */}
+              <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg border border-red-200">
+                <h4 className="font-semibold text-red-700 mb-3">📅 कर्ज बंद होण्याची तारीख रेंज</h4>
+                <p className="text-sm text-red-600 mb-4">
+                  या तारखांदरम्यान बंद झालेल्या सर्व कर्जांचा संपूर्ण डेटा क्लीन होईल - कर्जदार, व्यवहार, कॅशबुक एंट्री, पेमेंट हिस्ट्री सर्व काही
+                </p>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="dateFrom">कर्ज बंद होण्याची सुरुवातीची तारीख</Label>
+                    <Input
+                      id="dateFrom"
+                      type="date"
+                      value={cleanupOptions.dateFrom}
+                      onChange={(e) => setCleanupOptions({...cleanupOptions, dateFrom: e.target.value})}
+                      className="bg-white dark:bg-gray-800"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="dateTo">कर्ज बंद होण्याची शेवटची तारीख</Label>
+                    <Input
+                      id="dateTo"
+                      type="date"
+                      value={cleanupOptions.dateTo}
+                      onChange={(e) => setCleanupOptions({...cleanupOptions, dateTo: e.target.value})}
+                      className="bg-white dark:bg-gray-800"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* What will be cleaned explanation */}
+              <div className="bg-orange-50 dark:bg-orange-900/20 p-4 rounded-lg border border-orange-200">
+                <h4 className="font-semibold text-orange-700 mb-3">🗑️ काय क्लीन होणार?</h4>
+                <ul className="list-disc list-inside space-y-1 text-sm text-orange-600">
+                  <li>या तारखांमध्ये बंद झालेल्या सर्व कर्जांचा संपूर्ण डेटा</li>
+                  <li>त्या कर्जदारांच्या सर्व cash transactions आणि journal entries</li>
+                  <li>कॅशबुक, रोकड वही मधील त्यांच्या सर्व एंट्री</li>
+                  <li>लोन क्लोजर, इंटरेस्ट, पेमेंट हिस्ट्री सर्व काही</li>
+                  <li>फक्त सक्रिय कर्जदार राहतील, बाकी सगळे पूर्ण क्लीन होतील</li>
+                </ul>
+                <div className="mt-3 p-2 bg-orange-100 rounded text-xs text-orange-700">
+                  <strong>लक्षात ठेवा:</strong> कॅश बॅलन्स त्यानुसार ऍडजेस्ट होईल
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Options */}
+              <div className="space-y-4">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="includeTransactions"
+                    checked={cleanupOptions.includeAssociatedTransactions}
+                    onCheckedChange={(checked) => 
+                      setCleanupOptions({...cleanupOptions, includeAssociatedTransactions: checked as boolean})
+                    }
+                  />
+                  <Label htmlFor="includeTransactions" className="text-sm">
+                    सर्व संबंधित cash transactions, journal entries आणि कॅशबुक एंट्री काढा
+                  </Label>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="createBackup"
+                    checked={cleanupOptions.createBackup}
+                    onCheckedChange={(checked) => 
+                      setCleanupOptions({...cleanupOptions, createBackup: checked as boolean})
+                    }
+                  />
+                  <Label htmlFor="createBackup" className="text-sm">
+                    cleanup करण्यापूर्वी backup तयार करा
+                  </Label>
+                </div>
+              </div>
+
+              {/* Account Number Rearrangement Section */}
+              <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-200 mt-6">
+                <h4 className="font-semibold text-blue-700 mb-3">🔢 खाते क्रमांक पुनर्व्यवस्थापन</h4>
+                <p className="text-sm text-blue-600 mb-4">
+                  <strong>फक्त manual account number चेंज होईल</strong> - ग्रुप निवडून कर्ज वितरण तारखेनुसार 1, 2, 3, 4... असे रिअरेंज करा.<br/>
+                  <span className="text-xs text-blue-500">नोट: System ID आणि Loan Number कधीच चेंज होणार नाही, फक्त हाताने टाकलेला account number चेंज होईल</span>
+                </p>
+                <div className="flex items-center gap-4">
+                  <div className="flex-1">
+                    <Label htmlFor="rearrangeGroup">ग्रुप निवडा</Label>
+                    <select 
+                      id="rearrangeGroup"
+                      value={rearrangeGroupId}
+                      onChange={(e) => setRearrangeGroupId(e.target.value)}
+                      className="w-full mt-1 p-2 border rounded-md bg-white dark:bg-gray-800"
+                    >
+                      <option value="">ग्रुप निवडा...</option>
+                      {Array.isArray(groupsData) && groupsData.map((group: any) => (
+                        <option key={group.id} value={group.id}>
+                          {group.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <Button 
+                    onClick={handleRearrangeAccountNumbers}
+                    disabled={!rearrangeGroupId || rearrangeAccountsMutation.isPending}
+                    className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700"
+                  >
+                    {rearrangeAccountsMutation.isPending ? (
+                      <RefreshCw className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <ArrowUpDown className="h-4 w-4" />
+                    )}
+                    {rearrangeAccountsMutation.isPending ? "रिअरेंज करत आहे..." : "खाते क्रमांक रिअरेंज करा"}
+                  </Button>
+                </div>
+              </div>
+
+              {/* Action Button */}
+              <div className="flex items-center justify-between pt-4">
+                <div className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 p-3 rounded">
+                  ⚠️ <strong>सावधान:</strong> हे क्रिया अपरिवर्तनीय आहे! या तारखांमधील सर्व बंद कर्जांचा डेटा कायमचा काढला जाईल.
+                </div>
+                <Button 
+                  onClick={handleCleanup} 
+                  variant="destructive"
+                  disabled={cleanupMutation.isPending}
+                  className="flex items-center gap-2"
+                >
+                  {cleanupMutation.isPending ? (
+                    <RefreshCw className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Trash2 className="h-4 w-4" />
+                  )}
+                  डेटा क्लीनअप सुरू करा
+                </Button>
+              </div>
+
+              {/* Cleanup Results */}
+              {cleanupMutation.data && (
+                <Alert className="mt-4">
+                  <CheckCircle className="h-4 w-4" />
+                  <AlertTitle>क्लीनअप पूर्ण झाले</AlertTitle>
+                  <AlertDescription>
+                    <div className="mt-2">
+                      <p>{(cleanupMutation.data as DataManagementResult).message}</p>
+                      <p className="text-sm mt-1">
+                        प्रक्रिया केलेले records: {(cleanupMutation.data as DataManagementResult).summary?.recordsProcessed || 0}
+                      </p>
+                    </div>
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              {cleanupMutation.error && (
+                <Alert variant="destructive" className="mt-4">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertTitle>क्लीनअप अपयशी</AlertTitle>
+                  <AlertDescription>
+                    {cleanupMutation.error.message}
+                  </AlertDescription>
+                </Alert>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Backup Management Tab */}
+        <TabsContent value="backup">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+            {/* Backup Section */}
+            <Card className="border-blue-200 dark:border-blue-800">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-blue-700 dark:text-blue-400">
+                  <Database className="h-5 w-5" />
+                  डेटा बॅकअप
+                </CardTitle>
+                <CardDescription className="text-blue-600 dark:text-blue-400">
+                  संपूर्ण सिस्टम डेटाचा complete backup तयार करा
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-200">
+                  <h4 className="font-semibold text-blue-700 mb-3">✅ हे backup मध्ये समाविष्ट असेल:</h4>
+                  <ul className="list-disc list-inside space-y-1 text-sm text-blue-600">
+                    <li>सर्व loans आणि borrower data</li>
+                    <li>सर्व cash transactions आणि journal entries</li>
+                    <li>Groups, parties आणि company information</li>
+                    <li>User permissions आणि activity logs</li>
+                    <li><strong>🚨 लोन फोटो metadata (loanPhotos table)</strong></li>
+                    <li>Complete database state with relationships</li>
+                  </ul>
+                  <div className="mt-3 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs text-yellow-700">
+                    <strong>📸 Photo Files:</strong> Database metadata backup होईल, पण physical photo files अजूनही manual backup आवश्यक आहे
+                  </div>
+                </div>
+                
+                <Button 
+                  onClick={handleBackup}
+                  disabled={backupMutation.isPending}
+                  className="w-full flex items-center gap-2"
+                  variant="default"
+                  size="lg"
+                >
+                  {backupMutation.isPending ? (
+                    <RefreshCw className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Database className="h-4 w-4" />
+                  )}
+                  {backupMutation.isPending ? "बॅकअप तयार करत आहे..." : "संपूर्ण बॅकअप तयार करा"}
+                </Button>
+
+                {/* Backup Results */}
+                {backupMutation.data && (backupMutation.data as any).success && (
+                  <Alert className="border-blue-200">
+                    <CheckCircle className="h-4 w-4 text-blue-600" />
+                    <AlertTitle className="text-blue-700">बॅकअप यशस्वी ✅</AlertTitle>
+                    <AlertDescription className="text-blue-600">
+                      <p>{(backupMutation.data as any).message}</p>
+                      {(() => {
+                        const ts = (backupMutation.data as any).summary?.timestamp;
+                        if (!ts) return null;
+                        const d = new Date(ts);
+                        const formatted = `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}:${String(d.getSeconds()).padStart(2,'0')}`;
+                        return (
+                          <p className="text-sm mt-1 font-semibold">
+                            बॅकअप तारीख व वेळ: {formatted}
+                          </p>
+                        );
+                      })()}
+                      <p className="text-xs mt-1">
+                        Backup ID: {(backupMutation.data as any).backupId}
+                      </p>
+                    </AlertDescription>
+                  </Alert>
+                )}
+
+                {backupMutation.error && (
+                  <Alert variant="destructive">
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertTitle>बॅकअप अपयशी</AlertTitle>
+                    <AlertDescription>
+                      {backupMutation.error.message}
+                    </AlertDescription>
+                  </Alert>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Data Restore Section */}
+            <Card className="border-orange-200 dark:border-orange-800">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-orange-700 dark:text-orange-400">
+                  <RefreshCw className="h-5 w-5" />
+                  डेटा रिस्टोर
+                </CardTitle>
+                <CardDescription className="text-orange-600 dark:text-orange-400">
+                  backup फाइल किंवा system reset द्वारे डेटा पुनर्स्थापित करा
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* System Reset Option */}
+                <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg border border-red-200">
+                  <h4 className="font-semibold text-red-700 mb-3">🔄 संपूर्ण डेटा क्लीन (सिस्टम रिसेट)</h4>
+                  <p className="text-sm text-red-600 mb-3">
+                    सर्व loans, borrowers, cash transactions, journal entries, groups, parties, companies, photo records - सगळा डेटा permanently delete होईल!
+                  </p>
+                  <Button 
+                    onClick={handleRestore}
+                    disabled={restoreMutation.isPending}
+                    className="w-full flex items-center gap-2"
+                    variant="destructive"
+                    size="lg"
+                  >
+                    {restoreMutation.isPending ? (
+                      <RefreshCw className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Trash2 className="h-4 w-4" />
+                    )}
+                    {restoreMutation.isPending ? "सिस्टम रिसेट करत आहे..." : "संपूर्ण डेटा क्लीन करा"}
+                  </Button>
+                </div>
+
+                {/* Backup File Restore Option */}
+                <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg border border-green-200">
+                  <h4 className="font-semibold text-green-700 mb-3">📁 बॅकअप फाइल रिस्टोर</h4>
+                  <p className="text-sm text-green-600 mb-3">
+                    पूर्वी तयार केलेल्या backup JSON फाइल वरून डेटा restore करा
+                  </p>
+                  <Button 
+                    onClick={handleRestoreFromBackup}
+                    disabled={restoreFromBackupMutation.isPending}
+                    className="w-full flex items-center gap-2"
+                    variant="outline"
+                    size="lg"
+                  >
+                    {restoreFromBackupMutation.isPending ? (
+                      <RefreshCw className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Upload className="h-4 w-4" />
+                    )}
+                    {restoreFromBackupMutation.isPending ? "बॅकअप रिस्टोर करत आहे..." : "बॅकअप फाइल निवडा"}
+                  </Button>
+                </div>
+
+                {/* System Restore Results */}
+                {restoreMutation.data && (
+                  <Alert className="border-green-200">
+                    <CheckCircle className="h-4 w-4 text-green-600" />
+                    <AlertTitle className="text-green-700">सिस्टम रिसेट यशस्वी ✅</AlertTitle>
+                    <AlertDescription className="text-green-600">
+                      <p>{(restoreMutation.data as any).message}</p>
+                      <p className="text-sm mt-1 font-semibold">
+                        Records affected: {(restoreMutation.data as any).summary?.recordsRestored || 0}
+                      </p>
+                    </AlertDescription>
+                  </Alert>
+                )}
+
+                {restoreMutation.error && (
+                  <Alert variant="destructive">
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertTitle>सिस्टम रिसेट अपयशी</AlertTitle>
+                    <AlertDescription>
+                      {restoreMutation.error.message}
+                    </AlertDescription>
+                  </Alert>
+                )}
+
+                {/* Backup Restore Results */}
+                {restoreFromBackupMutation.data && (
+                  <Alert className="border-blue-200">
+                    <CheckCircle className="h-4 w-4 text-blue-600" />
+                    <AlertTitle className="text-blue-700">बॅकअप रिस्टोर यशस्वी ✅</AlertTitle>
+                    <AlertDescription className="text-blue-600">
+                      <p>{(restoreFromBackupMutation.data as any).message}</p>
+                      <p className="text-sm mt-1 font-semibold">
+                        Records restored: {(restoreFromBackupMutation.data as any).summary?.recordsRestored || 0}
+                      </p>
+                    </AlertDescription>
+                  </Alert>
+                )}
+
+                {restoreFromBackupMutation.error && (
+                  <Alert variant="destructive">
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertTitle>बॅकअप रिस्टोर अपयशी</AlertTitle>
+                    <AlertDescription>
+                      {restoreFromBackupMutation.error.message}
+                    </AlertDescription>
+                  </Alert>
+                )}
+
+                <div className="text-sm text-orange-600 p-3 bg-orange-50 rounded-lg">
+                  ⚠️ <strong>सावधान:</strong> Restore operation सर्व current data replace करेल. पहिले backup घ्या!
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}
+
+export default DataManagementPage;

@@ -1,0 +1,845 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Mobile Touch Optimization */
+.touch-manipulation {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
+}
+
+/* Sidebar Custom Scrollbar Styles */
+.sidebar-scroll {
+  scrollbar-width: auto; /* For Firefox - default width */
+  scrollbar-color: #cbd5e1 #f1f5f9; /* thumb and track colors */
+}
+
+.sidebar-scroll::-webkit-scrollbar {
+  width: 16px; /* Even wider for easier grabbing */
+}
+
+.sidebar-scroll::-webkit-scrollbar-track {
+  background: #f1f5f9; /* Light gray background */
+  border-radius: 6px;
+  margin: 4px;
+}
+
+.sidebar-scroll::-webkit-scrollbar-thumb {
+  background: linear-gradient(to bottom, #cbd5e1, #94a3b8); /* Gradient thumb */
+  border-radius: 8px;
+  border: 3px solid #f1f5f9; /* More padding effect */
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.sidebar-scroll::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8; /* Darker on hover */
+}
+
+.sidebar-scroll::-webkit-scrollbar-thumb:active {
+  background: linear-gradient(to bottom, #64748b, #475569); /* Darker gradient when clicked */
+}
+
+/* Smooth scrolling enhancement */
+.sidebar-scroll {
+  scroll-behavior: smooth;
+}
+
+/* Touch device optimization */
+@media (hover: none) and (pointer: coarse) {
+  .sidebar-scroll::-webkit-scrollbar {
+    width: 20px; /* Even wider for touch devices */
+  }
+  
+  .sidebar-scroll::-webkit-scrollbar-thumb {
+    border: 4px solid #f1f5f9; /* More space for touch */
+  }
+}
+
+/* Date Input Consistent Formatting Styles */
+.date-input-custom {
+  position: relative;
+}
+
+/* Force DD/MM/YYYY format display across all browsers */
+input[type="date"].date-input-dd-mm-yyyy {
+  /* Set consistent appearance and colors across all devices */
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  color: hsl(var(--foreground)) !important;
+  background: hsl(var(--background)) !important;
+}
+
+/* Webkit browsers (Chrome, Safari, Edge) */
+input[type="date"].date-input-dd-mm-yyyy::-webkit-datetime-edit {
+  display: flex;
+  align-items: center;
+  color: inherit !important;
+  background: transparent !important;
+}
+
+input[type="date"].date-input-dd-mm-yyyy::-webkit-datetime-edit-fields-wrapper {
+  display: flex;
+  align-items: center;
+  color: inherit !important;
+  background: transparent !important;
+}
+
+/* Fix mobile webkit text and field styling */
+input[type="date"].date-input-dd-mm-yyyy::-webkit-datetime-edit-text {
+  color: inherit !important;
+  background: transparent !important;
+  padding: 0 2px;
+}
+
+input[type="date"].date-input-dd-mm-yyyy::-webkit-datetime-edit-month-field,
+input[type="date"].date-input-dd-mm-yyyy::-webkit-datetime-edit-day-field,
+input[type="date"].date-input-dd-mm-yyyy::-webkit-datetime-edit-year-field {
+  color: inherit !important;
+  background: transparent !important;
+  font-weight: inherit;
+}
+
+/* Force DD/MM/YYYY order in webkit browsers */
+input[type="date"].date-input-dd-mm-yyyy::-webkit-datetime-edit-day-field {
+  order: 1;
+}
+
+input[type="date"].date-input-dd-mm-yyyy::-webkit-datetime-edit-text {
+  order: 2;
+}
+
+input[type="date"].date-input-dd-mm-yyyy::-webkit-datetime-edit-month-field {
+  order: 3;
+}
+
+input[type="date"].date-input-dd-mm-yyyy::-webkit-datetime-edit-year-field {
+  order: 5;
+}
+
+/* Calendar picker icon styling */
+input[type="date"].date-input-dd-mm-yyyy::-webkit-calendar-picker-indicator {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='currentColor'%3e%3cpath fill-rule='evenodd' d='M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z' clip-rule='evenodd'/%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 16px 16px;
+  cursor: pointer;
+  opacity: 0.7;
+  padding: 4px;
+  margin-left: 4px;
+}
+
+input[type="date"].date-input-dd-mm-yyyy::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+
+/* Firefox specific styles */
+input[type="date"].date-input-dd-mm-yyyy::-moz-focus-inner {
+  border: 0;
+  padding: 0;
+}
+
+/* Mobile Safari specific fixes */
+@supports (-webkit-touch-callout: none) {
+  input[type="date"].date-input-dd-mm-yyyy {
+    min-height: 40px;
+  }
+}
+
+/* Universal date input fixes for all devices */
+input[type="date"].date-input-dd-mm-yyyy {
+  color: hsl(var(--foreground)) !important;
+  background: hsl(var(--background)) !important;
+  border: 1px solid hsl(var(--border)) !important;
+}
+
+/* All webkit datetime elements - universal fix */
+input[type="date"].date-input-dd-mm-yyyy::-webkit-datetime-edit,
+input[type="date"].date-input-dd-mm-yyyy::-webkit-datetime-edit-fields-wrapper,
+input[type="date"].date-input-dd-mm-yyyy::-webkit-datetime-edit-text,
+input[type="date"].date-input-dd-mm-yyyy::-webkit-datetime-edit-month-field,
+input[type="date"].date-input-dd-mm-yyyy::-webkit-datetime-edit-day-field,
+input[type="date"].date-input-dd-mm-yyyy::-webkit-datetime-edit-year-field {
+  color: hsl(var(--foreground)) !important;
+  background: transparent !important;
+  opacity: 1 !important;
+}
+
+/* Ensure visibility after date selection */
+input[type="date"].date-input-dd-mm-yyyy:valid,
+input[type="date"].date-input-dd-mm-yyyy:not(:placeholder-shown) {
+  color: hsl(var(--foreground)) !important;
+  background: hsl(var(--background)) !important;
+}
+
+/* Mobile responsive date input */
+@media (max-width: 640px) {
+  input[type="date"].date-input-dd-mm-yyyy {
+    font-size: 16px; /* Prevents zoom on iOS */
+    min-height: 44px; /* iOS tap target size */
+    /* Force dark text on mobile */
+    -webkit-text-fill-color: #000 !important;
+    color: #000 !important;
+  }
+  
+  input[type="date"].date-input-dd-mm-yyyy::-webkit-datetime-edit,
+  input[type="date"].date-input-dd-mm-yyyy::-webkit-datetime-edit-fields-wrapper,
+  input[type="date"].date-input-dd-mm-yyyy::-webkit-datetime-edit-text,
+  input[type="date"].date-input-dd-mm-yyyy::-webkit-datetime-edit-month-field,
+  input[type="date"].date-input-dd-mm-yyyy::-webkit-datetime-edit-day-field,
+  input[type="date"].date-input-dd-mm-yyyy::-webkit-datetime-edit-year-field {
+    -webkit-text-fill-color: #000 !important;
+    color: #000 !important;
+    background: transparent !important;
+    opacity: 1 !important;
+  }
+  
+  input[type="date"].date-input-dd-mm-yyyy::-webkit-calendar-picker-indicator {
+    background-size: 18px 18px;
+    padding: 6px;
+  }
+}
+
+/* Mobile Cashbook Date Picker Specific Styles */
+.mobile-cashbook input[type="date"] {
+  background: rgba(255, 255, 255, 0.15) !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  color: white !important;
+  -webkit-text-fill-color: white !important;
+  border-radius: 6px;
+  padding: 8px 12px;
+  width: 100%;
+  text-align: center;
+  font-size: 0.875rem;
+  backdrop-filter: blur(10px);
+}
+
+.mobile-cashbook input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+  cursor: pointer;
+}
+
+.mobile-cashbook input[type="date"]::-webkit-inner-spin-button,
+.mobile-cashbook input[type="date"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.mobile-cashbook input[type="date"]:focus {
+  outline: 2px solid rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.25) !important;
+}
+
+.mobile-cashbook input[type="date"]::-webkit-datetime-edit,
+.mobile-cashbook input[type="date"]::-webkit-datetime-edit-fields-wrapper,
+.mobile-cashbook input[type="date"]::-webkit-datetime-edit-text,
+.mobile-cashbook input[type="date"]::-webkit-datetime-edit-month-field,
+.mobile-cashbook input[type="date"]::-webkit-datetime-edit-day-field,
+.mobile-cashbook input[type="date"]::-webkit-datetime-edit-year-field {
+  -webkit-text-fill-color: white !important;
+  color: white !important;
+  background: transparent !important;
+  opacity: 1 !important;
+}
+
+/* Screen Layout: Hide print-only content */
+.print-only {
+  display: none !important;
+}
+
+/* Print Styles for Reports */
+@media print {
+  * { 
+    -webkit-print-color-adjust: exact !important; 
+    print-color-adjust: exact !important; 
+  }
+  
+  /* Hide camera indicators in print */
+  .no-print {
+    display: none !important;
+  }
+  
+  /* Fix date range clipping in print header - Force block layout */
+  .report-info {
+    display: block !important;
+    width: 100% !important;
+  }
+  
+  .report-info > div {
+    display: block !important;
+    width: 100% !important;
+    text-align: center !important;
+    margin: 1mm 0 !important;
+  }
+  
+  .print-date-range {
+    white-space: normal !important;
+    word-break: break-word !important;
+    overflow: visible !important;
+    font-size: 10pt !important;
+    line-height: 1.2 !important;
+    text-align: center !important;
+    margin: 1mm 0 !important;
+    width: 100% !important;
+    display: block !important;
+  }
+  
+  body { 
+    margin: 0 !important; 
+    padding: 0 !important; 
+    background: white !important;
+  }
+  
+  .print-content { 
+    margin: 0 !important; 
+    padding: 5mm !important; 
+    page-break-inside: avoid; 
+  }
+  
+  .print-table { 
+    width: 100% !important; 
+    border-collapse: collapse !important; 
+    font-size: 8pt !important; 
+    table-layout: fixed !important;
+  }
+  
+  .print-table th, 
+  .print-table td { 
+    border: 1px solid #000 !important; 
+    padding: 2px !important; 
+    font-size: 8pt !important;
+    color: black !important;
+    background: white !important;
+  }
+  
+  .print-header { 
+    margin-bottom: 5mm !important; 
+    text-align: center !important; 
+  }
+  
+  .name-phone-col { width: 300px !important; }
+  .amount-col { width: 8% !important; }
+  .date-col { width: 8% !important; }
+  .item-col { width: 12% !important; }
+  .weight-col { width: 6% !important; }
+  
+  @page { 
+    margin-top: 5mm;
+    margin-bottom: 8mm;
+    margin-left: 8mm;
+    margin-right: 8mm; 
+    size: A4 landscape; 
+  }
+  
+  /* Borrower List Report Print Optimization - Fixed CSS structure */
+  .borrower-report-table {
+    width: 100% !important;
+    table-layout: fixed !important;
+    border-collapse: collapse !important;
+  }
+  
+  .borrower-report-table th:nth-child(1), /* Serial No */
+  .borrower-report-table td:nth-child(1) {
+    width: 45px !important; /* Increased from 30px */
+    text-align: left !important;
+  }
+  
+  .borrower-report-table th:nth-child(2), /* Date */
+  .borrower-report-table td:nth-child(2) {
+    width: 75px !important;
+  }
+  
+  .borrower-report-table th:nth-child(3), /* Amount */
+  .borrower-report-table td:nth-child(3) {
+    width: 80px !important;
+  }
+  
+  .borrower-report-table th:nth-child(4), /* Name */
+  .borrower-report-table td:nth-child(4) {
+    width: 200px !important;
+  }
+  
+  .borrower-report-table th:nth-child(5), /* Code */
+  .borrower-report-table td:nth-child(5) {
+    width: 85px !important;
+    text-align: left !important;
+  }
+  
+  .borrower-report-table th:nth-child(6), /* Description */
+  .borrower-report-table td:nth-child(6) {
+    width: auto !important;
+    min-width: 80px !important;
+  }
+  
+  .borrower-report-table th:nth-child(7), /* Weight */
+  .borrower-report-table td:nth-child(7) {
+    width: 70px !important;
+  }
+
+  /* Print-specific enforcement for borrower report table */
+  @media print {
+    .borrower-report-table,
+    .borrower-report-table.closing-wise-table,
+    .borrower-report-table.maturity-wise-table {
+      table-layout: fixed !important;
+      width: 100% !important;
+    }
+    
+    .borrower-report-table th:nth-child(1),
+    .borrower-report-table td:nth-child(1) {
+      width: 45px !important;
+      min-width: 45px !important;
+      max-width: 45px !important;
+      text-align: left !important;
+    }
+    
+    .borrower-report-table th:nth-child(2),
+    .borrower-report-table td:nth-child(2) {
+      width: 75px !important;
+      min-width: 75px !important;
+      max-width: 75px !important;
+      text-align: center !important;
+    }
+  }
+  
+  /* Enhanced print visibility */
+  .print\:hidden { 
+    display: none !important; 
+  }
+  
+  .print\:block { 
+    display: block !important; 
+  }
+  
+  .hidden { 
+    display: none !important; 
+  }
+  
+  /* Print only content */
+  .print-only {
+    display: block !important;
+  }
+  
+  /* Enhanced table print styles */
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    color: black !important;
+    background: white !important;
+    page-break-inside: avoid !important;
+    font-size: 7pt !important;
+    visibility: visible !important;
+  }
+  
+  th, td {
+    border: 1px solid black !important;
+    padding: 3px !important;
+    color: black !important;
+    background: white !important;
+    font-size: 7pt !important;
+    line-height: 1.1 !important;
+    page-break-inside: avoid !important;
+    visibility: visible !important;
+  }
+  
+  th {
+    font-weight: bold !important;
+    background: white !important;
+  }
+  
+  /* Force all content to be visible */
+  * {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
+
+/* Custom date input styling */
+input[type="date"] {
+  position: relative;
+}
+
+/* Enhanced calendar icon for date picker */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+}
+
+:root {
+  /* Modern Banking Theme - Professional Blue & Gold */
+  --background: hsl(220, 30%, 97%);
+  --foreground: hsl(215, 25%, 15%);
+  --muted: hsl(220, 14%, 96%);
+  --muted-foreground: hsl(215, 16%, 47%);
+  --popover: hsl(0, 0%, 100%);
+  --popover-foreground: hsl(215, 25%, 15%);
+  --card: hsl(0, 0%, 100%);
+  --card-foreground: hsl(215, 25%, 15%);
+  --border: hsl(220, 13%, 91%);
+  --input: hsl(220, 13%, 91%);
+  --primary: hsl(213, 94%, 55%); /* Professional Blue */
+  --primary-foreground: hsl(0, 0%, 100%);
+  --secondary: hsl(47, 96%, 88%); /* Light Gold */
+  --secondary-foreground: hsl(215, 25%, 15%);
+  --accent: hsl(45, 93%, 47%); /* Rich Gold */
+  --accent-foreground: hsl(0, 0%, 100%);
+  --destructive: hsl(0, 84%, 60%);
+  --destructive-foreground: hsl(0, 0%, 100%);
+  --ring: hsl(213, 94%, 55%);
+  --radius: 0.75rem;
+  
+  /* Enhanced gradients for modern look */
+  --gradient-primary: linear-gradient(135deg, hsl(213, 94%, 55%) 0%, hsl(213, 94%, 45%) 100%);
+  --gradient-secondary: linear-gradient(135deg, hsl(47, 96%, 88%) 0%, hsl(45, 93%, 47%) 100%);
+  --gradient-card: linear-gradient(145deg, hsl(0, 0%, 100%) 0%, hsl(220, 30%, 98%) 100%);
+  --shadow-card: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-elevated: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+.dark {
+  /* Dark mode with elegant color scheme */
+  --background: hsl(215, 28%, 7%);
+  --foreground: hsl(220, 20%, 95%);
+  --muted: hsl(215, 27%, 12%);
+  --muted-foreground: hsl(220, 15%, 65%);
+  --popover: hsl(215, 28%, 9%);
+  --popover-foreground: hsl(220, 20%, 95%);
+  --card: hsl(215, 28%, 9%);
+  --card-foreground: hsl(220, 20%, 95%);
+  --border: hsl(215, 27%, 15%);
+  --input: hsl(215, 27%, 15%);
+  --primary: hsl(213, 94%, 65%);
+  --primary-foreground: hsl(215, 28%, 7%);
+  --secondary: hsl(45, 93%, 25%);
+  --secondary-foreground: hsl(220, 20%, 95%);
+  --accent: hsl(45, 93%, 55%);
+  --accent-foreground: hsl(215, 28%, 7%);
+  --destructive: hsl(0, 84%, 65%);
+  --destructive-foreground: hsl(0, 0%, 100%);
+  --ring: hsl(213, 94%, 65%);
+  --radius: 0.75rem;
+  
+  --gradient-primary: linear-gradient(135deg, hsl(213, 94%, 65%) 0%, hsl(213, 94%, 55%) 100%);
+  --gradient-secondary: linear-gradient(135deg, hsl(45, 93%, 25%) 0%, hsl(45, 93%, 55%) 100%);
+  --gradient-card: linear-gradient(145deg, hsl(215, 28%, 9%) 0%, hsl(215, 28%, 11%) 100%);
+  --shadow-card: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+  --shadow-elevated: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased bg-background text-foreground;
+    font-family: 'Noto Sans Devanagari', 'Inter', sans-serif;
+    font-size: 15px;
+    line-height: 1.6;
+  }
+}
+
+@layer components {
+  .font-marathi {
+    font-family: 'Noto Sans Devanagari', sans-serif;
+  }
+  
+  .font-inter {
+    font-family: 'Inter', sans-serif;
+  }
+  
+  .font-noto {
+    font-family: 'Noto Sans Devanagari', sans-serif;
+  }
+
+  /* Modern Banking Theme Components */
+  .card-professional {
+    @apply bg-gradient-to-br from-white to-gray-50 border border-gray-200 rounded-xl shadow-sm;
+    background: var(--gradient-card);
+    box-shadow: var(--shadow-card);
+    transition: all 0.2s ease-in-out;
+  }
+
+  .card-professional:hover {
+    box-shadow: var(--shadow-elevated);
+    transform: translateY(-1px);
+  }
+
+  .btn-primary-gradient {
+    @apply bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-medium rounded-lg px-6 py-3 transition-all duration-200;
+    background: var(--gradient-primary);
+  }
+
+  .btn-secondary-gradient {
+    @apply bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-gray-900 font-medium rounded-lg px-6 py-3 transition-all duration-200;
+    background: var(--gradient-secondary);
+  }
+
+  .sidebar-modern {
+    @apply bg-gradient-to-b from-white to-gray-50 border-r border-gray-200;
+    background: linear-gradient(180deg, hsl(0, 0%, 100%) 0%, hsl(220, 30%, 98%) 100%);
+    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.05);
+  }
+
+  .input-modern {
+    @apply bg-white border-gray-200 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  }
+
+  .input-modern:focus {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+
+  .header-gradient {
+    @apply bg-gradient-to-r from-blue-500 via-blue-600 to-blue-700 text-white;
+    background: linear-gradient(90deg, hsl(213, 94%, 55%) 0%, hsl(213, 94%, 50%) 50%, hsl(213, 94%, 45%) 100%);
+  }
+
+  .stats-card {
+    @apply bg-gradient-to-br from-white to-blue-50 border border-blue-100 rounded-xl p-6;
+    background: linear-gradient(135deg, hsl(0, 0%, 100%) 0%, hsl(213, 100%, 97%) 100%);
+    box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.1);
+  }
+
+  .table-modern {
+    @apply bg-white rounded-lg border border-gray-200 overflow-hidden;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  }
+
+  .table-modern th {
+    @apply bg-gradient-to-r from-gray-50 to-gray-100 font-semibold text-gray-900 px-6 py-4 border-b border-gray-200;
+  }
+
+  .table-modern td {
+    @apply px-6 py-4 border-b border-gray-100 bg-white;
+  }
+
+  .table-modern tr:hover td {
+    @apply bg-blue-50;
+  }
+  
+  /* Enhanced Responsive Utilities */
+  .responsive-container {
+    @apply w-full mx-auto px-3 sm:px-4 lg:px-6 xl:px-8 py-4 lg:py-6;
+  }
+  
+  .responsive-grid {
+    @apply grid gap-3 lg:gap-6;
+  }
+  
+  .responsive-card {
+    @apply card-professional hover:shadow-md transition-shadow duration-200;
+  }
+  
+  .responsive-form {
+    @apply space-y-4 lg:space-y-6;
+  }
+  
+  .responsive-input {
+    @apply w-full px-3 py-2.5 lg:px-4 lg:py-3 text-sm lg:text-base;
+  }
+  
+  .responsive-button {
+    @apply px-4 py-2.5 lg:px-6 lg:py-3 text-sm lg:text-base font-medium;
+  }
+  
+  .responsive-text-lg {
+    @apply text-base lg:text-lg;
+  }
+  
+  .responsive-text-xl {
+    @apply text-lg lg:text-xl;
+  }
+  
+  .responsive-text-2xl {
+    @apply text-xl lg:text-2xl;
+  }
+  
+  .btn-professional {
+    @apply font-medium rounded-md px-4 py-2.5 transition-all duration-200 border;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  }
+  
+  .card-professional {
+    @apply bg-card border border-border rounded-lg;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+  }
+  
+  .heading-professional {
+    @apply font-semibold text-foreground tracking-tight;
+  }
+  
+  .stats-card {
+    @apply bg-card border border-border rounded-lg p-6;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+  }
+  
+  .btn-success {
+    @apply bg-green-600 hover:bg-green-700 text-white border-green-600;
+  }
+  
+  .btn-danger {
+    @apply bg-red-600 hover:bg-red-700 text-white border-red-600;
+  }
+  
+  .btn-primary {
+    @apply bg-primary text-primary-foreground border-primary;
+  }
+  
+  .btn-primary:hover {
+    background-color: hsl(220, 50%, 50%);
+  }
+  
+  .nav-item {
+    @apply flex items-center px-2 py-2 text-sm font-medium rounded-md text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors;
+  }
+  
+  .nav-item.active {
+    @apply bg-blue-50 text-blue-700 border-r-2 border-blue-500;
+  }
+  
+  .nav-item i {
+    @apply mr-3 h-5 w-5;
+  }
+  
+  .mobile-nav-item {
+    @apply flex flex-col items-center px-2 py-1 text-xs font-medium text-gray-600 transition-colors;
+  }
+  
+  .mobile-nav-item.active {
+    @apply text-blue-600;
+  }
+  
+  .mobile-nav-item i {
+    @apply mb-1 text-lg;
+  }
+}
+
+/* Custom animations for Advanced Calculator */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: .8;
+  }
+}
+
+.animate-spin-slow {
+  animation: spin 3s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Professional Ledger Styles */
+.statement-card {
+  @apply bg-white border border-gray-200;
+}
+
+.ledger-card {
+  @apply bg-white border border-gray-300 shadow-lg;
+}
+
+.ledger-header {
+  @apply text-center border-b-2 border-gray-400 pb-4 mb-6;
+}
+
+.ledger-table,
+.statement-table {
+  @apply w-full border-collapse;
+  border: 2px solid #000;
+}
+
+.ledger-table th,
+.statement-table th {
+  @apply bg-gray-100 font-bold text-center py-3 px-2 text-sm;
+  border: 1px solid #000;
+}
+
+.ledger-table td,
+.statement-table td {
+  @apply py-2 px-2 text-sm;
+  border: 1px solid #000;
+  vertical-align: middle;
+}
+
+.ledger-summary-row {
+  @apply bg-gray-50 font-bold;
+  border-top: 2px solid #000 !important;
+}
+
+.ledger-opening-row {
+  @apply bg-blue-50 font-semibold;
+}
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  
+  .statement-card,
+  .statement-card *,
+  .ledger-card,
+  .ledger-card * {
+    visibility: visible;
+  }
+  
+  .statement-card,
+  .ledger-card {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100% !important;
+    @apply shadow-none border-0;
+    page-break-inside: avoid;
+  }
+  
+  .statement-table th,
+  .statement-table td,
+  .ledger-table th,
+  .ledger-table td {
+    @apply border border-black text-xs;
+    padding: 4px !important;
+    font-size: 11px !important;
+  }
+  
+  .statement-table,
+  .ledger-table {
+    border-collapse: collapse !important;
+    width: 100% !important;
+    border: 2px solid #000 !important;
+  }
+  
+  .ledger-header h2 {
+    font-size: 16px !important;
+    margin-bottom: 8px !important;
+  }
+  
+  .ledger-header h3 {
+    font-size: 14px !important;
+    margin-bottom: 6px !important;
+  }
+  
+  .print\\:hidden {
+    display: none !important;
+  }
+}

@@ -1,0 +1,157 @@
+import { useLocation, Link } from "wouter";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useState } from "react";
+import { Sidebar } from "./sidebar";
+import { AuthService } from "@/lib/auth";
+import { useSafeNavigation } from "@/hooks/use-safe-navigation";
+import { 
+  Home, 
+  CreditCard, 
+  UserCheck, 
+  BarChart3, 
+  Menu,
+  User,
+  ArrowLeft,
+  LogOut,
+  Settings
+} from "lucide-react";
+
+const bottomNavItems = [
+  {
+    name: "मुख्य",
+    href: "/",
+    icon: Home,
+  },
+  {
+    name: "कर्ज",
+    href: "/loans",
+    icon: CreditCard,
+  },
+  {
+    name: "कर्ज बंद",
+    href: "/closure",
+    icon: UserCheck,
+  },
+  {
+    name: "कॅशबुक",
+    href: "/mobile-cashbook",
+    icon: BarChart3,
+  },
+];
+
+interface MobileNavProps {
+  hideBottomNav?: boolean;
+}
+
+export function MobileNav({ hideBottomNav = false }: MobileNavProps = {}) {
+  const [location] = useLocation();
+  const [isOpen, setIsOpen] = useState(false);
+  const { safeNavigate } = useSafeNavigation();
+
+  const handleLogout = async () => {
+    try {
+      await AuthService.logout();
+      window.location.reload();
+    } catch (error) {
+      localStorage.clear();
+      sessionStorage.clear();
+      safeNavigate('/login');
+    }
+  };
+
+  return (
+    <>
+      {/* Mobile Header - Enhanced */}
+      <div className="lg:hidden">
+        <div className="flex items-center justify-between bg-white px-3 py-2.5 border-b border-gray-200 shadow-sm">
+          <Sheet open={isOpen} onOpenChange={setIsOpen}>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-9 w-9">
+                <Menu className="h-5 w-5" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="p-0 w-72 sm:w-80">
+              <Sidebar />
+            </SheetContent>
+          </Sheet>
+          
+          <h1 className="text-base font-semibold truncate">कर्ज व्यवस्थापन</h1>
+          
+          <div className="flex items-center gap-1">
+            <Button 
+              variant="ghost" 
+              size="icon"
+              onClick={() => window.history.back()}
+              className="h-9 w-9"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-9 w-9">
+                  <User className="h-5 w-5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem 
+                  className="cursor-pointer"
+                  onSelect={() => safeNavigate('/profile')}
+                >
+                  <Settings className="mr-2 h-4 w-4" />
+                  प्रोफाइल
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem 
+                  className="cursor-pointer text-red-600 focus:text-red-600"
+                  onSelect={handleLogout}
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  बाहेर पडा
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile Bottom Navigation */}
+      {/* Mobile Bottom Navigation - Enhanced */}
+      {!hideBottomNav && (
+        <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-1 py-1.5 z-50 shadow-lg">
+        <div className="flex justify-around max-w-md mx-auto">
+          {bottomNavItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = location === item.href || 
+              (item.href === "/mobile-cashbook" && location.startsWith("/mobile-cashbook"));
+            
+            return (
+              <Link key={item.name} href={item.href}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className={cn(
+                    "flex flex-col items-center gap-1 h-auto py-2 px-2 min-w-0 flex-1",
+                    isActive ? "text-blue-600 bg-blue-50" : "text-gray-600"
+                  )}
+                >
+                  <Icon className={cn("h-4 w-4", isActive && "text-blue-600")} />
+                  <span className="text-xs truncate">{item.name}</span>
+                </Button>
+              </Link>
+            );
+          })}
+        </div>
+      </nav>
+      )}
+    </>
+  );
+}
