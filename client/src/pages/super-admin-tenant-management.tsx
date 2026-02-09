@@ -230,7 +230,8 @@ export default function SuperAdminTenantManagement() {
   // Delete admin user mutation
   const deleteAdminMutation = useMutation({
     mutationFn: async (adminId: string) => {
-      await apiRequest(`/api/super-admin/delete-admin/${adminId}`, "DELETE");
+      const response = await apiRequest(`/api/super-admin/delete-admin/${adminId}`, "DELETE");
+      return await response.json();
     },
     onSuccess: (data: any) => {
       const tenantDeleted = data?.tenantDeleted;
