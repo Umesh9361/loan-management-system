@@ -10,7 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { AuthService, type LoginCredentials } from "@/lib/auth";
 import { queryClient } from "@/lib/queryClient";
-import { Building, User, Lock, HelpCircle } from "lucide-react";
+import { Building, User, Lock, HelpCircle, Eye, EyeOff } from "lucide-react";
 import { useLocation } from "wouter";
 import { ForgotPassword } from "@/components/forgot-password";
 
@@ -26,6 +26,7 @@ type LoginFormData = z.infer<typeof loginSchema>;
 export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const { toast } = useToast();
   const [, navigate] = useLocation();
   
@@ -149,12 +150,19 @@ export default function Login() {
                 <div className="relative">
                   <Input
                     id="password"
-                    type="password"
+                    type={showPassword ? "text" : "password"}
                     {...form.register("password")}
-                    className="pl-10"
+                    className="pl-10 pr-10"
                     placeholder=""
                   />
                   <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-3 h-4 w-4 text-gray-400 hover:text-gray-600"
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
                 </div>
                 {form.formState.errors.password && (
                   <p className="text-red-600 text-sm mt-1">{form.formState.errors.password.message}</p>
