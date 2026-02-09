@@ -89,6 +89,9 @@ export default function SuperAdminTenantManagement() {
   const [currentPassword, setCurrentPassword] = useState<string>("");
   const [newOwnPassword, setNewOwnPassword] = useState<string>("");
   const [confirmOwnPassword, setConfirmOwnPassword] = useState<string>("");
+  const [showOwnCurrentPassword, setShowOwnCurrentPassword] = useState(false);
+  const [showOwnNewPassword, setShowOwnNewPassword] = useState(false);
+  const [showOwnConfirmPassword, setShowOwnConfirmPassword] = useState(false);
   const [togglingTenant, setTogglingTenant] = useState<string | null>(null);
 
   // Fetch all tenants
@@ -498,15 +501,37 @@ export default function SuperAdminTenantManagement() {
                             >
                               Reset
                             </Button>
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              onClick={() => handleDeleteAdmin(admin.id)}
-                              disabled={deletingAdmin === admin.id}
-                              className="bg-red-600 hover:bg-red-700 flex-1 min-w-[80px] text-xs"
-                            >
-                              {deletingAdmin === admin.id ? "..." : "Delete"}
-                            </Button>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button
+                                  size="sm"
+                                  variant="destructive"
+                                  disabled={deletingAdmin === admin.id}
+                                  className="bg-red-600 hover:bg-red-700 flex-1 min-w-[80px] text-xs"
+                                >
+                                  {deletingAdmin === admin.id ? "..." : "Delete"}
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle className="font-noto">
+                                    Admin डिलीट करायचा आहे?
+                                  </AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    <strong>{admin.fullName || admin.username}</strong> ({admin.companyName}) हा admin कायमचा डिलीट होईल. ही क्रिया रद्द करता येणार नाही!
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>रद्द करा</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() => handleDeleteAdmin(admin.id)}
+                                    className="bg-red-600 hover:bg-red-700"
+                                  >
+                                    होय, डिलीट करा
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
                           </div>
                         </div>
                         {admin.isTemporaryDisabled && (
@@ -689,7 +714,7 @@ export default function SuperAdminTenantManagement() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {tenants.map((tenant) => (
+                      {tenants.filter(t => t.tenantId !== 'SUPER_ADMIN').map((tenant) => (
                         <TableRow key={tenant.tenantId}>
                           <TableCell>
                             <div>
@@ -941,37 +966,64 @@ export default function SuperAdminTenantManagement() {
                       <Label htmlFor="currentPassword" className="font-noto">
                         सध्याचा पासवर्ड
                       </Label>
-                      <Input
-                        id="currentPassword"
-                        type="password"
-                        value={currentPassword}
-                        onChange={(e) => setCurrentPassword(e.target.value)}
-                        placeholder="सध्याचा पासवर्ड टाका"
-                      />
+                      <div className="relative">
+                        <Input
+                          id="currentPassword"
+                          type={showOwnCurrentPassword ? "text" : "password"}
+                          value={currentPassword}
+                          onChange={(e) => setCurrentPassword(e.target.value)}
+                          placeholder="सध्याचा पासवर्ड टाका"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowOwnCurrentPassword(!showOwnCurrentPassword)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                        >
+                          {showOwnCurrentPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </button>
+                      </div>
                     </div>
                     <div>
                       <Label htmlFor="newOwnPassword" className="font-noto">
                         नवीन पासवर्ड
                       </Label>
-                      <Input
-                        id="newOwnPassword"
-                        type="password"
-                        value={newOwnPassword}
-                        onChange={(e) => setNewOwnPassword(e.target.value)}
-                        placeholder="नवीन पासवर्ड टाका (कमीत कमी 6 अक्षर)"
-                      />
+                      <div className="relative">
+                        <Input
+                          id="newOwnPassword"
+                          type={showOwnNewPassword ? "text" : "password"}
+                          value={newOwnPassword}
+                          onChange={(e) => setNewOwnPassword(e.target.value)}
+                          placeholder="नवीन पासवर्ड टाका (कमीत कमी 6 अक्षर)"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowOwnNewPassword(!showOwnNewPassword)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                        >
+                          {showOwnNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </button>
+                      </div>
                     </div>
                     <div>
                       <Label htmlFor="confirmPassword" className="font-noto">
                         पासवर्ड पुष्टी करा
                       </Label>
-                      <Input
-                        id="confirmPassword"
-                        type="password"
-                        value={confirmOwnPassword}
-                        onChange={(e) => setConfirmOwnPassword(e.target.value)}
-                        placeholder="नवीन पासवर्ड पुन्हा टाका"
-                      />
+                      <div className="relative">
+                        <Input
+                          id="confirmPassword"
+                          type={showOwnConfirmPassword ? "text" : "password"}
+                          value={confirmOwnPassword}
+                          onChange={(e) => setConfirmOwnPassword(e.target.value)}
+                          placeholder="नवीन पासवर्ड पुन्हा टाका"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowOwnConfirmPassword(!showOwnConfirmPassword)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                        >
+                          {showOwnConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </button>
+                      </div>
                     </div>
                     <div className="flex gap-3 pt-2">
                       <Button

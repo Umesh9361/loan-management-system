@@ -110,8 +110,11 @@ export default function SuperAdminDashboard() {
     queryKey: ["/api/super-admin/storage-analytics"],
   });
 
+  const filteredTenantStats = tenantStats.filter(s => s.tenantId !== 'SUPER_ADMIN');
+  const filteredStorageAnalytics = storageAnalytics.filter((s: any) => s.tenantId !== 'SUPER_ADMIN');
+
   // Calculate tenant activity metrics
-  const tenantActivity: TenantActivity[] = tenantStats.map(stat => {
+  const tenantActivity: TenantActivity[] = filteredTenantStats.map(stat => {
     const lastActivity = new Date(stat.lastActivity);
     const now = new Date();
     const daysSinceLastActivity = Math.floor((now.getTime() - lastActivity.getTime()) / (1000 * 60 * 60 * 24));
@@ -178,9 +181,9 @@ export default function SuperAdminDashboard() {
   }
 
   // Calculate summary metrics
-  const totalTenants = tenantStats.length;
-  const totalUsers = tenantStats.reduce((sum, stat) => sum + parseInt(stat.userCount), 0);
-  const activeUsers = tenantStats.reduce((sum, stat) => sum + parseInt(stat.activeUsers), 0);
+  const totalTenants = filteredTenantStats.length;
+  const totalUsers = filteredTenantStats.reduce((sum, stat) => sum + parseInt(stat.userCount), 0);
+  const activeUsers = filteredTenantStats.reduce((sum, stat) => sum + parseInt(stat.activeUsers), 0);
   const inactiveTenants = tenantActivity.filter(t => t.isInactive).length;
 
   return (
@@ -392,8 +395,8 @@ export default function SuperAdminDashboard() {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {storageAnalytics.length > 0 ? (
-                      storageAnalytics.map((tenant: any) => (
+                    {filteredStorageAnalytics.length > 0 ? (
+                      filteredStorageAnalytics.map((tenant: any) => (
                         <div key={tenant.tenantId} className="border rounded-lg p-4 bg-gray-50">
                           <div className="flex items-center justify-between mb-3">
                             <div>
@@ -531,7 +534,7 @@ export default function SuperAdminDashboard() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {tenantStats.map((stat) => {
+                      {filteredTenantStats.map((stat) => {
                         const activity = tenantActivity.find(a => a.tenantId === stat.tenantId);
                         const isInactive = activity?.isInactive || false;
                         
@@ -567,7 +570,7 @@ export default function SuperAdminDashboard() {
                           </TableRow>
                         );
                       })}
-                      {tenantStats.length === 0 && (
+                      {filteredTenantStats.length === 0 && (
                         <TableRow>
                           <TableCell colSpan={6} className="text-center py-8">
                             <Shield className="h-12 w-12 text-gray-400 mx-auto mb-4" />
