@@ -1,0 +1,383 @@
+/**
+ * COMPREHENSIVE REAL-TIME SYNCHRONIZATION ENGINE
+ * Ensures ALL loan operations automatically sync with ALL cashbook forms
+ * सर्व कर्ज व्यवहार ऑटोमॅटिक रोकडबुक सिंक्रोनाइझेशन
+ */
+
+import { db } from "./db";
+import { loans, cashTransactions } from "@shared/schema";
+import { eq, and, sql } from "drizzle-orm";
+import { storage } from "./storage";
+
+export interface LoanSyncOperation {
+  type: 'CREATE' | 'UPDATE' | 'DELETE' | 'CLOSE' | 'REOPEN';
+  loanId: string;
+  tenantId: string;
+  oldData?: any;
+  newData?: any;
+  metadata?: {
+    performedBy: string;
+    timestamp: Date;
+    reason?: string;
+  };
+}
+
+export interface SyncResult {
+  success: boolean;
+  operationsPerformed: string[];
+  cashTransactionsAffected: number;
+  errors: string[];
+  timeTaken: number;
+}
+
+export class RealTimeSyncEngine {
+  private static instance: RealTimeSyncEngine;
+  
+  static getInstance(): RealTimeSyncEngine {
+    if (!RealTimeSyncEngine.instance) {
+      RealTimeSyncEngine.instance = new RealTimeSyncEngine();
+    }
+    return RealTimeSyncEngine.instance;
+  }
+
+  /**
+   * Main sync orchestrator - handles ALL loan operations
+   */
+  async syncLoanOperation(operation: LoanSyncOperation): Promise<SyncResult> {
+    const startTime = Date.now();
+    const result: SyncResult = {
+      success: true,
+      operationsPerformed: [],
+      cashTransactionsAffected: 0,
+      errors: [],
+      timeTaken: 0
+    };
+
+    try {
+      switch (operation.type) {
+        case 'CREATE':
+          await this.handleLoanCreation(operation, result);
+          break;
+        case 'UPDATE':
+          await this.handleLoanUpdate(operation, result);
+          break;
+        case 'DELETE':
+          await this.handleLoanDeletion(operation, result);
+          break;
+        case 'CLOSE':
+          await this.handleLoanClosure(operation, result);
+          break;
+        case 'REOPEN':
+          await this.handleLoanReopen(operation, result);
+          break;
+        default:
+          throw new Error(`Unknown sync operation type: ${operation.type}`);
+      }
+
+      result.timeTaken = Date.now() - startTime;
+      
+    } catch (error) {
+      result.success = false;
+      result.errors.push(error instanceof Error ? error.message : String(error));
+      result.timeTaken = Date.now() - startTime;
+    }
+
+    return result;
+  }
+
+  /**
+   * Handle loan creation - create corresponding disbursement cash transaction
+   */
+  private async handleLoanCreation(operation: LoanSyncOperation, result: SyncResult): Promise<void> {
+    const { loanId, tenantId, newData } = operation;
+    
+    if (!newData || Number(newData.principalAmount) <= 0) {
+      // console.log('🚫 SYNC: No disbursement needed for zero amount loan');
+      return;
+    }
+
+    // Check if disbursement cash transaction already exists
+    const existingDisbursement = await this.findDisbursementTransaction(tenantId, newData.accountNumber, newData.principalAmount, newData.loanDate);
+    
+    if (existingDisbursement) {
+      // console.log('🚫 SYNC: Disbursement transaction already exists, skipping creation');
+      result.operationsPerformed.push('SKIP_EXISTING_DISBURSEMENT');
+      return;
+    }
+
+    // Create disbursement cash transaction
+    const groupName = await this.getGroupName(tenantId, newData.groupId);
+    const standardNarration = this.createDisbursementNarration(
+      newData.accountNumber,
+      newData.borrowerName,
+      Number(newData.principalAmount),
+      groupName
+    );
+
+    await storage.createCashTransaction({
+      tenantId,
+      transactionDate: newData.loanDate,
+      transactionType: 'cash_out',
+      amount: Number(newData.principalAmount),
+      category: 'loan_disbursement',
+      narration: standardNarration,
+      isSystemGenerated: true
+    });
+
+    result.operationsPerformed.push('CREATE_DISBURSEMENT_TRANSACTION');
+    result.cashTransactionsAffected += 1;
+    // console.log(`💰 SYNC: Created disbursement transaction for ₹${newData.principalAmount}`);
+  }
+
+  /**
+   * Handle loan updates - sync amount/date changes with existing cash transactions
+   */
+  private async handleLoanUpdate(operation: LoanSyncOperation, result: SyncResult): Promise<void> {
+    const { tenantId, oldData, newData } = operation;
+    
+    if (!oldData || !newData) {
+      // console.log('🚫 SYNC: Missing old or new data for update operation');
+      return;
+    }
+
+    // Check for disbursement transaction updates
+    const amountChanged = Number(oldData.principalAmount) !== Number(newData.principalAmount);
+    const dateChanged = oldData.loanDate !== newData.loanDate;
+    const statusChanged = oldData.status !== newData.status;
+
+    if (amountChanged || dateChanged) {
+      await this.updateDisbursementTransaction(operation, result);
+    }
+
+    if (statusChanged) {
+      await this.handleStatusChange(operation, result);
+    }
+  }
+
+  /**
+   * Update disbursement transaction when loan amount or date changes
+   */
+  private async updateDisbursementTransaction(operation: LoanSyncOperation, result: SyncResult): Promise<void> {
+    const { tenantId, oldData, newData } = operation;
+    
+    const disbursementTransaction = await this.findDisbursementTransaction(
+      tenantId, 
+      oldData.accountNumber, 
+      oldData.principalAmount, 
+      oldData.loanDate
+    );
+
+    if (!disbursementTransaction) {
+      // console.log('⚠️ SYNC: No disbursement transaction found to update');
+      result.operationsPerformed.push('NO_DISBURSEMENT_TO_UPDATE');
+      return;
+    }
+
+    // Prepare update data
+    const updateData: any = {};
+    
+    if (Number(oldData.principalAmount) !== Number(newData.principalAmount)) {
+      updateData.amount = Number(newData.principalAmount);
+      result.operationsPerformed.push(`UPDATE_AMOUNT_${oldData.principalAmount}_TO_${newData.principalAmount}`);
+    }
+    
+    if (oldData.loanDate !== newData.loanDate) {
+      updateData.transactionDate = newData.loanDate;
+      result.operationsPerformed.push(`UPDATE_DATE_${oldData.loanDate}_TO_${newData.loanDate}`);
+    }
+
+    // Update narration with new details using proper UPDATE narration (not disbursement)
+    const groupName = await this.getGroupName(tenantId, newData.groupId);
+    const { NarrationEngine } = require('./narration-engine');
+    updateData.narration = NarrationEngine.createLoanAmountUpdateNarration(
+      newData.accountNumber,
+      newData.borrowerName,
+      Number(newData.principalAmount),
+      groupName
+    );
+
+    await storage.updateCashTransaction(disbursementTransaction.id, tenantId, updateData);
+    result.cashTransactionsAffected += 1;
+    
+    // console.log(`🔄 SYNC: Updated disbursement transaction with new data`);
+  }
+
+  /**
+   * Handle loan deletion - remove all related cash transactions
+   */
+  private async handleLoanDeletion(operation: LoanSyncOperation, result: SyncResult): Promise<void> {
+    const { tenantId, oldData } = operation;
+    
+    if (!oldData) {
+      // console.log('🚫 SYNC: No old data provided for deletion');
+      return;
+    }
+
+    // Find and delete all related cash transactions
+    const relatedTransactions = await this.findAllRelatedTransactions(tenantId, oldData.accountNumber, oldData.borrowerName);
+    
+    for (const transaction of relatedTransactions) {
+      await storage.deleteCashTransaction(transaction.id, tenantId);
+      result.cashTransactionsAffected += 1;
+      result.operationsPerformed.push(`DELETE_TRANSACTION_${transaction.category}`);
+    }
+
+    // console.log(`🗑️ SYNC: Deleted ${relatedTransactions.length} related cash transactions`);
+  }
+
+  /**
+   * Handle loan closure - create closure cash transaction
+   */
+  private async handleLoanClosure(operation: LoanSyncOperation, result: SyncResult): Promise<void> {
+    const { tenantId, newData } = operation;
+    
+    if (!newData) {
+      // console.log('🚫 SYNC: No closure data provided');
+      return;
+    }
+
+    // Check if closure transaction already exists
+    const existingClosure = await this.findClosureTransaction(tenantId, newData.accountNumber, newData.totalAmount, newData.closureDate);
+    
+    if (existingClosure) {
+      // console.log('🚫 SYNC: Closure transaction already exists');
+      result.operationsPerformed.push('SKIP_EXISTING_CLOSURE');
+      return;
+    }
+
+    // Create closure cash transaction
+    const groupName = await this.getGroupName(tenantId, newData.groupId);
+    const standardNarration = this.createClosureNarration(
+      newData.accountNumber,
+      newData.borrowerName,
+      Number(newData.totalAmount),
+      groupName
+    );
+
+    await storage.createCashTransaction({
+      tenantId,
+      transactionDate: newData.closureDate,
+      transactionType: 'cash_in',
+      amount: Number(newData.totalAmount),
+      category: 'loan_repayment',
+      narration: standardNarration,
+      isSystemGenerated: true
+    });
+
+    result.operationsPerformed.push('CREATE_CLOSURE_TRANSACTION');
+    result.cashTransactionsAffected += 1;
+    // console.log(`💰 SYNC: Created closure transaction for ₹${newData.totalAmount}`);
+  }
+
+  /**
+   * Handle loan reopen - remove closure transactions
+   */
+  private async handleLoanReopen(operation: LoanSyncOperation, result: SyncResult): Promise<void> {
+    const { tenantId, oldData } = operation;
+    
+    if (!oldData) {
+      // console.log('🚫 SYNC: No data provided for reopen');
+      return;
+    }
+
+    // Find and delete closure transactions
+    const closureTransactions = await this.findClosureTransactions(tenantId, oldData.accountNumber, oldData.borrowerName);
+    
+    for (const transaction of closureTransactions) {
+      await storage.deleteCashTransaction(transaction.id, tenantId);
+      result.cashTransactionsAffected += 1;
+      result.operationsPerformed.push('DELETE_CLOSURE_TRANSACTION');
+    }
+
+    // console.log(`🔄 SYNC: Removed ${closureTransactions.length} closure transactions for reopen`);
+  }
+
+  /**
+   * Handle status change between active/closed
+   */
+  private async handleStatusChange(operation: LoanSyncOperation, result: SyncResult): Promise<void> {
+    const { oldData, newData } = operation;
+    
+    if (oldData.status === 'active' && newData.status === 'closed') {
+      // Handle automatic closure
+      await this.handleLoanClosure(operation, result);
+    } else if (oldData.status === 'closed' && newData.status === 'active') {
+      // Handle automatic reopen
+      await this.handleLoanReopen(operation, result);
+    }
+  }
+
+  // Helper methods for finding transactions
+  private async findDisbursementTransaction(tenantId: string, accountNumber: string, amount: number, date: string): Promise<any> {
+    const transactions = await storage.getCashTransactions(tenantId);
+    return transactions.find((ct: any) => 
+      ct.narration?.includes('कर्ज वितरण') &&
+      ct.narration?.includes(accountNumber) &&
+      ct.category === 'loan_disbursement' &&
+      Math.abs(Number(ct.amount) - Number(amount)) < 0.01
+    );
+  }
+
+  private async findClosureTransaction(tenantId: string, accountNumber: string, amount: number, date: string): Promise<any> {
+    const transactions = await storage.getCashTransactions(tenantId);
+    return transactions.find((ct: any) => 
+      ct.narration?.includes('कर्ज बंद') &&
+      ct.narration?.includes(accountNumber) &&
+      ct.category === 'loan_repayment' &&
+      Math.abs(Number(ct.amount) - Number(amount)) < 0.01
+    );
+  }
+
+  private async findAllRelatedTransactions(tenantId: string, accountNumber: string, borrowerName: string): Promise<any[]> {
+    const transactions = await storage.getCashTransactions(tenantId);
+    return transactions.filter((ct: any) => 
+      ct.narration && (
+        ct.narration.includes(accountNumber) || 
+        ct.narration.includes(borrowerName)
+      )
+    );
+  }
+
+  private async findClosureTransactions(tenantId: string, accountNumber: string, borrowerName: string): Promise<any[]> {
+    const transactions = await storage.getCashTransactions(tenantId);
+    return transactions.filter((ct: any) => 
+      ct.narration?.includes('कर्ज बंद') &&
+      (ct.narration.includes(accountNumber) || ct.narration.includes(borrowerName))
+    );
+  }
+
+  // Helper methods for data processing
+  private async getGroupName(tenantId: string, groupId?: string): Promise<string> {
+    if (!groupId) return '';
+    const groups = await storage.getGroups(tenantId);
+    const group = groups.find(g => g.id === groupId);
+    return group?.name || '';
+  }
+
+  private createDisbursementNarration(accountNumber: string, borrowerName: string, amount: number, groupName?: string): string {
+    // CRITICAL FIX: Use standardized NarrationEngine to preserve full borrower names
+    const { NarrationEngine } = require('./narration-engine');
+    return NarrationEngine.createLoanDisbursementNarration(accountNumber, borrowerName, amount, groupName);
+  }
+
+  private createClosureNarration(accountNumber: string, borrowerName: string, amount: number, groupName?: string): string {
+    // CRITICAL FIX: Use standardized NarrationEngine to preserve full borrower names
+    const { NarrationEngine } = require('./narration-engine');
+    return NarrationEngine.createLoanClosureNarration(accountNumber, borrowerName, amount, 0, groupName);
+  }
+}
+
+/**
+ * Factory function to get the singleton instance
+ */
+export function getRealTimeSyncEngine(): RealTimeSyncEngine {
+  return RealTimeSyncEngine.getInstance();
+}
+
+/**
+ * Convenience function for triggering sync operations
+ */
+export async function triggerLoanSync(operation: LoanSyncOperation): Promise<SyncResult> {
+  const engine = getRealTimeSyncEngine();
+  return await engine.syncLoanOperation(operation);
+}
