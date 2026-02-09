@@ -18,6 +18,23 @@ import dataManagementRoutes from "./routes/data-management";
 import userManagementRoutes from "./routes/user-management";
 import { ACCOUNT_TYPES } from "@shared/constants";
 import { createAutomaticPrevention } from "./automatic-duplicate-prevention";
+
+async function invalidateOtherSessions(userId: string, currentSessionId: string): Promise<number> {
+  try {
+    const result = await pool.query(
+      `DELETE FROM sessions WHERE sid != $1 AND sess->>'userId' = $2`,
+      [currentSessionId || '', userId]
+    );
+    const deletedCount = result.rowCount || 0;
+    if (deletedCount > 0) {
+      console.log(`🔒 Invalidated ${deletedCount} other session(s) for user ${userId}`);
+    }
+    return deletedCount;
+  } catch (error) {
+    console.error("Failed to invalidate other sessions:", error);
+    return 0;
+  }
+}
 import { getNameTranslations, normalizeMarathiVowels } from "./name-translations";
 import { automaticDuplicatePrevention } from "./middleware/automatic-duplicate-prevention";
 import { apiCache, cacheBuster, invalidateTenantCache, getCacheStats } from "./middleware/cache";
@@ -47,6 +64,7 @@ declare module "express-session" {
     userId?: string;
     tenantId?: string;
     role?: string;
+    loginDate?: string;
   }
 }
 
@@ -91,11 +109,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Authentication middleware  
   const requireAuth = (req: any, res: any, next: any) => {
-    // Session validation for authentication
-    
-    // Enhanced session validation with recovery
     if (!req.session?.userId || !req.session?.tenantId) {
-      // Authentication failed - missing session data
       return res.status(401).json({ 
         message: "Not authenticated",
         debug: process.env.NODE_ENV === 'development' ? {
@@ -105,6 +119,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         } : undefined
       });
     }
+
+    const nowIST = new Date(Date.now() + 5.5 * 60 * 60 * 1000);
+    const todayIST = nowIST.toISOString().split('T')[0];
+    const loginDate = req.session.loginDate;
+
+    if (!loginDate || loginDate < todayIST) {
+      req.session.destroy((err: any) => {
+        if (err) console.error("Session destroy error:", err);
+      });
+      return res.status(401).json({ message: "Session expired. Please login again." });
+    }
+
     next();
   };
 
@@ -119,6 +145,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     
     if (!req.session?.userId || !req.session?.tenantId) {
       return res.status(401).json({ message: "Not authenticated" });
+    }
+
+    const nowIST = new Date(Date.now() + 5.5 * 60 * 60 * 1000);
+    const todayIST = nowIST.toISOString().split('T')[0];
+    const loginDate = req.session.loginDate;
+
+    if (!loginDate || loginDate < todayIST) {
+      req.session.destroy((err: any) => {
+        if (err) console.error("Session destroy error:", err);
+      });
+      return res.status(401).json({ message: "Session expired. Please login again." });
     }
     
     res.json({ 
@@ -254,6 +291,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       req.session.userId = user.id;
       req.session.tenantId = user.tenantId;
       req.session.role = user.role;
+      const nowIST = new Date(Date.now() + 5.5 * 60 * 60 * 1000);
+      req.session.loginDate = nowIST.toISOString().split('T')[0];
 
       // Update login info and log activity
       try {
@@ -310,6 +349,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.session.userId!;
       await storage.resetUserPassword(userId, req.session.tenantId!, newPassword, "self");
 
+      await invalidateOtherSessions(userId, req.sessionID);
+
       res.json({ message: "Password updated successfully" });
     } catch (error) {
       console.error("Password change error:", error);
@@ -363,10 +404,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Current password is incorrect" });
       }
       
-      // Hash new password and update
       const hashedNewPassword = await bcrypt.hash(newPassword, 10);
       await storage.updateUser(req.session.userId!, { password: hashedNewPassword });
       
+      await invalidateOtherSessions(req.session.userId!, req.sessionID);
+
       res.json({ message: "Password changed successfully" });
     } catch (error) {
       res.status(500).json({ message: "Failed to change password" });
@@ -375,11 +417,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/auth/me", async (req, res) => {
     try {
-      // Check user authentication status
-      
       if (!req.session.userId) {
-        // No userId found in session
         return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const nowIST = new Date(Date.now() + 5.5 * 60 * 60 * 1000);
+      const todayIST = nowIST.toISOString().split('T')[0];
+      if (!req.session.loginDate || req.session.loginDate < todayIST) {
+        req.session.destroy((err: any) => { if (err) console.error("Session destroy error:", err); });
+        return res.status(401).json({ message: "Session expired. Please login again." });
       }
       
       const user = await storage.getUser(req.session.userId);
@@ -409,6 +455,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       if (!req.session.userId) {
         return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const nowIST = new Date(Date.now() + 5.5 * 60 * 60 * 1000);
+      const todayIST = nowIST.toISOString().split('T')[0];
+      if (!req.session.loginDate || req.session.loginDate < todayIST) {
+        req.session.destroy((err: any) => { if (err) console.error("Session destroy error:", err); });
+        return res.status(401).json({ message: "Session expired. Please login again." });
       }
       
       const permissions = await storage.getUserPermissions(req.session.userId, req.session.tenantId!);
@@ -2485,7 +2538,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log(`🔒 SUPER ADMIN PASSWORD CHANGED: ${superAdmin.username} (${req.session.userId})`);
 
-      // Log activity
+      await invalidateOtherSessions(req.session.userId!, req.sessionID);
+
       await storage.logUserActivity({
         userId: req.session.userId!,
         tenantId: req.session.tenantId!,
@@ -2525,6 +2579,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const hashedPassword = await bcrypt.hash(newPassword, 10);
       await storage.updateUser(adminId, { password: hashedPassword });
+
+      await invalidateOtherSessions(adminId, "");
 
       res.json({ 
         message: `Password reset successfully for admin: ${adminUser.username}`,
@@ -3033,6 +3089,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!success) {
         return res.status(404).json({ message: "User not found" });
       }
+
+      await invalidateOtherSessions(userId, "");
       
       res.json({ 
         message: "Password reset successfully",
@@ -3365,7 +3423,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "User not found" });
       }
 
-      // Don't return the password hash
+      await invalidateOtherSessions(userId, "");
+
       const { password, ...userWithoutPassword } = updatedUser;
       res.json({ message: "Password reset successfully", user: userWithoutPassword });
     } catch (error) {
