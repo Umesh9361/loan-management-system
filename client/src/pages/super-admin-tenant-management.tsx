@@ -232,12 +232,17 @@ export default function SuperAdminTenantManagement() {
     mutationFn: async (adminId: string) => {
       await apiRequest(`/api/super-admin/delete-admin/${adminId}`, "DELETE");
     },
-    onSuccess: () => {
+    onSuccess: (data: any) => {
+      const tenantDeleted = data?.tenantDeleted;
       toast({
-        title: "Admin Deleted Successfully", 
-        description: "Admin user has been permanently deleted.",
+        title: tenantDeleted ? "टेनंट पूर्णपणे डिलीट झाले" : "Admin Deleted Successfully", 
+        description: tenantDeleted 
+          ? `शेवटचा admin डिलीट केल्यामुळे संपूर्ण टेनंट आणि सर्व डेटा डिलीट झाला`
+          : "Admin user has been permanently deleted.",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/super-admin/admin-users"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/super-admin/tenants"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/super-admin/tenant-stats"] });
       setDeletingAdmin(null);
     },
     onError: (error: any) => {

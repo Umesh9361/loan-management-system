@@ -2616,14 +2616,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Admin user not found" });
       }
 
+      // SUPER_ADMIN protection - never allow deleting SUPER_ADMIN tenant admin
+      if (adminUser.tenantId === 'SUPER_ADMIN') {
+        return res.status(403).json({ message: "Cannot delete SUPER_ADMIN system user" });
+      }
+
       // Check if this is the only admin for the tenant
       const tenantAdmins = await storage.getUsersByTenant(adminUser.tenantId);
       const adminCount = tenantAdmins.filter((u: any) => u.role === 'admin' && u.isActive).length;
       
       if (adminCount <= 1) {
-        return res.status(400).json({ 
-          message: "Cannot delete the only admin for this tenant. Add another admin first." 
-        });
+        // Last admin - delete entire tenant and all its data
+        console.log(`🗑️ Deleting last admin of tenant ${adminUser.tenantId} - cleaning up entire tenant`);
+        const tenantDeleteResult = await storage.deleteTenantCompletely(adminUser.tenantId);
+        
+        if (tenantDeleteResult.success) {
+          return res.json({ 
+            message: `शेवटचा admin डिलीट केला - संपूर्ण टेनंट ${adminUser.tenantId} आणि सर्व डेटा डिलीट झाला`,
+            deletedAdmin: {
+              username: adminUser.username,
+              tenantId: adminUser.tenantId,
+              id: adminId
+            },
+            tenantDeleted: true,
+            deletedRecords: tenantDeleteResult.deletedRecords
+          });
+        } else {
+          return res.status(500).json({ 
+            message: "टेनंट डिलीट करण्यात अपयश",
+            errors: tenantDeleteResult.errors 
+          });
+        }
       }
 
       await storage.deleteUser(adminId);
@@ -2805,10 +2828,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Create admin user for new tenant with Guardian-validated role
-      const hashedPassword = await bcrypt.hash(adminPassword, 10);
+      // NOTE: Do NOT pre-hash password here - storage.createUser() already handles hashing
       const newAdmin = await storage.createUser({
         username: adminUsername,
-        password: hashedPassword,
+        password: adminPassword,
         tenantId: tenantId,
         role: validation.correctedRole || 'admin', // Use Guardian-validated role
         fullName: `${companyName} Administrator`,
