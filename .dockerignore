@@ -1,0 +1,13 @@
+node_modules
+dist
+.git
+.cache
+.local
+.config
+.upm
+uploads
+attached_assets
+*.zip
+*.tar.gz
+.replit
+replit.nix
