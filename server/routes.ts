@@ -2762,6 +2762,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(500).json({ message: "Failed to update password" });
       }
       
+      await invalidateOtherSessions(adminUser.id.toString(), "");
+      
       res.json({ 
         message: "Tenant admin password reset successfully",
         tenantId: tenantId,
