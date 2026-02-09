@@ -62,7 +62,7 @@ export default function EditCashTransactionDialog({
 
   const updateMutation = useMutation({
     mutationFn: (data: any) => {
-      return apiRequest("PUT", `/api/cash-transactions/${transaction.id}`, data);
+      return apiRequest(`/api/cash-transactions/${transaction.id}`, "PUT", data);
     },
     onSuccess: () => {
       // Invalidate all cash-related queries for real-time updates

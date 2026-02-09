@@ -29,7 +29,7 @@ export default function TenantManagement() {
   });
 
   const deleteTenantMutation = useMutation({
-    mutationFn: (tenantId: string) => apiRequest("DELETE", `/api/super-admin/tenant/${tenantId}`),
+    mutationFn: (tenantId: string) => apiRequest(`/api/super-admin/tenant/${tenantId}`, "DELETE"),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/super-admin/tenant-stats"] });
       queryClient.invalidateQueries({ queryKey: ["/api/super-admin/users"] });

@@ -1,0 +1,88 @@
+tarting Container
+npm warn config production Use `--omit=dev` instead.
+> rest-express@1.0.0 start
+> NODE_ENV=production node dist/index.js
+DATABASE_URL environment variable is not set
+Also checked DATABASE_PUBLIC_URL - not set
+Available DB-related env vars: []
+file:///app/dist/index.js:669
+      throw new Error(
+            ^
+Error: DATABASE_URL must be set. Did you forget to provision a database?
+    at server/db.ts (file:///app/dist/index.js:669:13)
+    at __init (file:///app/dist/index.js:6:56)
+    at file:///app/dist/index.js:1763:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:343:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:665:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5)
+Node.js v22.22.0
+npm warn config production Use `--omit=dev` instead.
+> rest-express@1.0.0 start
+> NODE_ENV=production node dist/index.js
+DATABASE_URL environment variable is not set
+Also checked DATABASE_PUBLIC_URL - not set
+Available DB-related env vars: []
+file:///app/dist/index.js:669
+      throw new Error(
+            ^
+Error: DATABASE_URL must be set. Did you forget to provision a database?
+    at server/db.ts (file:///app/dist/index.js:669:13)
+    at __init (file:///app/dist/index.js:6:56)
+    at file:///app/dist/index.js:1763:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:343:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:665:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5)
+Node.js v22.22.0
+npm warn config production Use `--omit=dev` instead.
+> rest-express@1.0.0 start
+> NODE_ENV=production node dist/index.js
+DATABASE_URL environment variable is not set
+Also checked DATABASE_PUBLIC_URL - not set
+Available DB-related env vars: []
+file:///app/dist/index.js:669
+      throw new Error(
+            ^
+Error: DATABASE_URL must be set. Did you forget to provision a database?
+    at server/db.ts (file:///app/dist/index.js:669:13)
+    at __init (file:///app/dist/index.js:6:56)
+    at file:///app/dist/index.js:1763:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:343:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:665:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5)
+Node.js v22.22.0
+npm warn config production Use `--omit=dev` instead.
+> rest-express@1.0.0 start
+> NODE_ENV=production node dist/index.js
+DATABASE_URL environment variable is not set
+Also checked DATABASE_PUBLIC_URL - not set
+Available DB-related env vars: []
+file:///app/dist/index.js:669
+Node.js v22.22.0
+      throw new Error(
+            ^
+    at file:///app/dist/index.js:1763:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:343:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:665:26)
+Error: DATABASE_URL must be set. Did you forget to provision a database?
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5)
+    at server/db.ts (file:///app/dist/index.js:669:13)
+    at __init (file:///app/dist/index.js:6:56)
+npm warn config production Use `--omit=dev` instead.
+> rest-express@1.0.0 start
+> NODE_ENV=production node dist/index.js
+Node.js v22.22.0
+Error: DATABASE_URL must be set. Did you forget to provision a database?
+    at ModuleJob.run (node:internal/modules/esm/module_job:343:25)
+Available DB-related env vars: []
+    at server/db.ts (file:///app/dist/index.js:669:13)
+file:///app/dist/index.js:669
+    at __init (file:///app/dist/index.js:6:56)
+      throw new Error(
+            ^
+    at file:///app/dist/index.js:1763:1
+DATABASE_URL environment variable is not set
+Also checked DATABASE_PUBLIC_URL - not set
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:665:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5)
+npm warn config production Use `--omit=dev` instead.
+> rest-express@1.0.0 start

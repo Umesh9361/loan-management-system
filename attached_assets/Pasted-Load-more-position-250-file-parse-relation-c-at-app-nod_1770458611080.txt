@@ -1,0 +1,111 @@
+Load more
+  position: '250',
+  file: 'parse_relation.c',
+    at /app/node_modules/pg-pool/index.js:45:11
+  internalPosition: undefined,
+  line: '1449',
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+  internalQuery: undefined,
+  routine: 'parserOpenTable'
+  where: undefined,
+    at async file:///app/node_modules/drizzle-orm/node-postgres/session.js:83:22
+  schema: undefined,
+  table: undefined,
+    at async connectionTest (file:///app/dist/index.js:10696:18)
+  column: undefined,
+    at async initializeDatabase (file:///app/dist/index.js:10705:7)
+    at async file:///app/dist/index.js:11043:5 {
+  length: 105,
+  severity: 'ERROR',
+  message: 'relation "users" does not exist',
+  stack: 'error: relation "users" does not exist\n' +
+    '    at /app/node_modules/pg-pool/index.js:45:11\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n' +
+    '    at async file:///app/node_modules/drizzle-orm/node-postgres/session.js:83:22\n' +
+    '    at async connectionTest (file:///app/dist/index.js:10696:18)'
+}
+All database initialization attempts failed. Application may not function properly.
+Critical error during application startup: Error: Database initialization failed after 5 attempts: relation "users" does not exist
+    at initializeDatabase (file:///app/dist/index.js:10828:15)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async file:///app/dist/index.js:11043:5
+Application failed to start. Exiting...
+npm warn config production Use `--omit=dev` instead.
+> rest-express@1.0.0 start
+> NODE_ENV=production node dist/index.js
+Database driver: pg (standard) | DB_DRIVER=pg | Host: postgres.railway.internal
+Standard PostgreSQL pool initialized successfully
+Starting application initialization...
+Database initialization attempt 1/5...
+Database pool connection established
+Retrying in 2000ms...
+Database initialization attempt 1 failed: error: relation "users" does not exist
+    at /app/node_modules/pg-pool/index.js:45:11
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async file:///app/node_modules/drizzle-orm/node-postgres/session.js:83:22
+    at async connectionTest (file:///app/dist/index.js:10696:18)
+    at async initializeDatabase (file:///app/dist/index.js:10705:7)
+    at async file:///app/dist/index.js:11043:5 {
+  length: 105,
+  severity: 'ERROR',
+  code: '42P01',
+  detail: undefined,
+  hint: undefined,
+  position: '250',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '1449',
+  routine: 'parserOpenTable'
+}
+Error details: {
+  name: 'error',
+  message: 'relation "users" does not exist',
+  stack: 'error: relation "users" does not exist\n' +
+    '    at /app/node_modules/pg-pool/index.js:45:11\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n' +
+    '    at async file:///app/node_modules/drizzle-orm/node-postgres/session.js:83:22\n' +
+    '    at async connectionTest (file:///app/dist/index.js:10696:18)'
+}
+Database initialization attempt 2/5...
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+Database initialization attempt 2 failed: error: relation "users" does not exist
+  file: 'parse_relation.c',
+    at /app/node_modules/pg-pool/index.js:45:11
+  line: '1449',
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+  routine: 'parserOpenTable'
+    at async file:///app/node_modules/drizzle-orm/node-postgres/session.js:83:22
+}
+    at async connectionTest (file:///app/dist/index.js:10696:18)
+Error details: {
+    at async initializeDatabase (file:///app/dist/index.js:10705:7)
+  name: 'error',
+    at async file:///app/dist/index.js:11043:5 {
+  length: 105,
+  severity: 'ERROR',
+  code: '42P01',
+  detail: undefined,
+  hint: undefined,
+  position: '250',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  message: 'relation "users" does not exist',
+  stack: 'error: relation "users" does not exist\n' +
+    '    at /app/node_modules/pg-pool/index.js:45:11\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)\n' +
+    '    at async file:///app/node_modules/drizzle-orm/node-postgres/session.js:83:22\n' +
+    '    at async connectionTest (file:///app/dist/index.js:10696:18)'
+}
+Retrying in 2000ms...
