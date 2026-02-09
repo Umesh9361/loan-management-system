@@ -1,4 +1,6 @@
-FROM node:20-slim
+FROM node:20-bookworm
+
+RUN apt-get update && apt-get install -y python3 make g++ && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
@@ -8,7 +10,26 @@ RUN npm install
 
 COPY . .
 
-RUN npm run build
+RUN echo 'import { defineConfig } from "vite"; \
+import react from "@vitejs/plugin-react"; \
+import path from "path"; \
+export default defineConfig({ \
+  plugins: [react()], \
+  resolve: { \
+    alias: { \
+      "@": path.resolve(import.meta.dirname, "client", "src"), \
+      "@shared": path.resolve(import.meta.dirname, "shared"), \
+      "@assets": path.resolve(import.meta.dirname, "attached_assets") \
+    } \
+  }, \
+  root: path.resolve(import.meta.dirname, "client"), \
+  build: { \
+    outDir: path.resolve(import.meta.dirname, "dist/public"), \
+    emptyOutDir: true \
+  } \
+});' > vite.config.prod.ts
+
+RUN npx vite build --config vite.config.prod.ts && npx esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist
 
 EXPOSE 5000
 
