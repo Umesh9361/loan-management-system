@@ -2,6 +2,16 @@
 @tailwind components;
 @tailwind utilities;
 
+@keyframes bell-ring {
+  0%, 100% { transform: rotate(0deg); }
+  10% { transform: rotate(8deg); }
+  20% { transform: rotate(-8deg); }
+  30% { transform: rotate(6deg); }
+  40% { transform: rotate(-4deg); }
+  50% { transform: rotate(2deg); }
+  60%, 100% { transform: rotate(0deg); }
+}
+
 /* Mobile Touch Optimization */
 .touch-manipulation {
   touch-action: manipulation;

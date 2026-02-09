@@ -42,6 +42,31 @@ function DataManagementPage() {
 
   const [rearrangeGroupId, setRearrangeGroupId] = useState("");
 
+  const [cashbookCleanupOptions, setCashbookCleanupOptions] = useState({
+    dateFrom: "",
+    dateTo: "",
+    cleanCashTransactions: true,
+    cleanJournalEntries: true,
+    createBackup: true
+  });
+
+  const [cashbookPreview, setCashbookPreview] = useState<{
+    success: boolean;
+    deletableCount: number;
+    protectedCount: number;
+    deletableJournalCount: number;
+    protectedJournalCount: number;
+    details: { category: string; count: number }[];
+    balanceImpact?: {
+      totalCashInDeleted: number;
+      totalCashOutDeleted: number;
+      netImpact: number;
+      adjustmentType: 'cash_in' | 'cash_out' | 'none';
+      adjustmentAmount: number;
+      partyWiseImpact: { partyName: string; partyId: string; cashIn: number; cashOut: number; net: number }[];
+    };
+  } | null>(null);
+
   // Groups query for account rearrangement
   const { data: groupsData } = useQuery({
     queryKey: ["/api/groups"],
@@ -165,6 +190,33 @@ function DataManagementPage() {
     }
   });
 
+  const cashbookPreviewMutation = useMutation({
+    mutationFn: async (options: { dateFrom: string; dateTo: string }) => {
+      const response = await apiRequest("/api/data-management/preview-cashbook-cleanup", "POST", options);
+      return await response.json();
+    },
+    onSuccess: (data: any) => {
+      setCashbookPreview(data);
+    }
+  });
+
+  const cashbookCleanupMutation = useMutation({
+    mutationFn: async (options: typeof cashbookCleanupOptions) => {
+      const response = await apiRequest("/api/data-management/cleanup-cashbook-entries", "POST", options);
+      return await response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/cash-transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/cash-balance"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/mobile-cashbook"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/journal-entries"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/reports"] });
+      queryClient.refetchQueries({ queryKey: ["/api/cash-transactions"] });
+      queryClient.refetchQueries({ queryKey: ["/api/journal-entries"] });
+      refetchIntegrity();
+    }
+  });
+
   const handleCleanup = () => {
     const confirmed = window.confirm(
       "⚠️ सावधान!\n\nया तारखांमधील सर्व बंद कर्जांचा डेटा कायमचा काढला जाईल.\nहे action undo करता येणार नाही!\n\nतुम्हाला खात्री आहे का?"
@@ -222,6 +274,33 @@ function DataManagementPage() {
       }
     };
     input.click();
+  };
+
+  const handleCashbookPreview = () => {
+    if (!cashbookCleanupOptions.dateFrom || !cashbookCleanupOptions.dateTo) return;
+    cashbookPreviewMutation.mutate({
+      dateFrom: cashbookCleanupOptions.dateFrom,
+      dateTo: cashbookCleanupOptions.dateTo
+    });
+  };
+
+  const handleCashbookCleanup = () => {
+    if (!cashbookCleanupOptions.dateFrom || !cashbookCleanupOptions.dateTo) return;
+    const confirmed = window.confirm(
+      "⚠️ सावधान!\n\nया तारखांमधील सामान्य कॅशबुक एन्ट्री कायमच्या हटवल्या जातील.\nकर्जाच्या सर्व एन्ट्री सुरक्षित राहतील.\n\nहे action undo करता येणार नाही!\n\nतुम्हाला खात्री आहे का?"
+    );
+    if (confirmed) {
+      cashbookCleanupMutation.mutate(cashbookCleanupOptions);
+    }
+  };
+
+  const categoryLabels: Record<string, string> = {
+    'expense': 'खर्च',
+    'income': 'जमा',
+    'capital': 'भांडवल',
+    'transfer': 'हस्तांतरण',
+    'opening_balance': 'प्रारंभिक शिल्लक',
+    'other': 'इतर'
   };
 
   return (
@@ -290,8 +369,9 @@ function DataManagementPage() {
       </Card>
 
       <Tabs defaultValue="cleanup" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="cleanup">डेटा क्लीनअप</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="cleanup">कर्ज क्लीनअप</TabsTrigger>
+          <TabsTrigger value="cashbook">कॅशबुक क्लीनअप</TabsTrigger>
           <TabsTrigger value="backup">बॅकअप व्यवस्थापन</TabsTrigger>
         </TabsList>
 
@@ -465,6 +545,325 @@ function DataManagementPage() {
                   <AlertTitle>क्लीनअप अपयशी</AlertTitle>
                   <AlertDescription>
                     {cleanupMutation.error.message}
+                  </AlertDescription>
+                </Alert>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Cashbook Cleanup Tab */}
+        <TabsContent value="cashbook">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Trash2 className="h-5 w-5" />
+                कॅशबुक एन्ट्री क्लीनअप
+              </CardTitle>
+              <CardDescription>
+                तारीख रेंज नुसार जुन्या सामान्य कॅशबुक एन्ट्री क्लीन करा - कर्जाच्या सर्व एन्ट्री सुरक्षित राहतील
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg border border-green-200">
+                <h4 className="font-semibold text-green-700 mb-3">🛡️ कर्ज सुरक्षा (3-Layer Protection)</h4>
+                <p className="text-sm text-green-600 mb-2">खालील एन्ट्री <strong>कधीच delete होणार नाहीत</strong>:</p>
+                <ul className="list-disc list-inside space-y-1 text-sm text-green-600">
+                  <li>कर्ज वितरण (loan disbursement) एन्ट्री</li>
+                  <li>कर्ज बंद / वसूली (loan repayment) एन्ट्री</li>
+                  <li>व्याज जमा, मुद्दल संबंधित एन्ट्री</li>
+                  <li>System-generated सर्व एन्ट्री</li>
+                  <li>कर्जाशी संबंधित journal entries</li>
+                </ul>
+              </div>
+
+              <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg border border-red-200">
+                <h4 className="font-semibold text-red-700 mb-3">📅 तारीख रेंज निवडा</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="cbDateFrom">सुरुवातीची तारीख</Label>
+                    <Input
+                      id="cbDateFrom"
+                      type="date"
+                      value={cashbookCleanupOptions.dateFrom}
+                      onChange={(e) => {
+                        setCashbookCleanupOptions({...cashbookCleanupOptions, dateFrom: e.target.value});
+                        setCashbookPreview(null);
+                      }}
+                      className="bg-white dark:bg-gray-800"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="cbDateTo">शेवटची तारीख</Label>
+                    <Input
+                      id="cbDateTo"
+                      type="date"
+                      value={cashbookCleanupOptions.dateTo}
+                      onChange={(e) => {
+                        setCashbookCleanupOptions({...cashbookCleanupOptions, dateTo: e.target.value});
+                        setCashbookPreview(null);
+                      }}
+                      className="bg-white dark:bg-gray-800"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <Separator />
+
+              <div className="space-y-4">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="cleanCashTx"
+                    checked={cashbookCleanupOptions.cleanCashTransactions}
+                    onCheckedChange={(checked) =>
+                      setCashbookCleanupOptions({...cashbookCleanupOptions, cleanCashTransactions: checked as boolean})
+                    }
+                  />
+                  <Label htmlFor="cleanCashTx" className="text-sm">
+                    सामान्य कॅश एन्ट्री (जमा/खर्च/भांडवल) हटवा
+                  </Label>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="cleanJournalTx"
+                    checked={cashbookCleanupOptions.cleanJournalEntries}
+                    onCheckedChange={(checked) =>
+                      setCashbookCleanupOptions({...cashbookCleanupOptions, cleanJournalEntries: checked as boolean})
+                    }
+                  />
+                  <Label htmlFor="cleanJournalTx" className="text-sm">
+                    सामान्य journal entries (कर्जाच्या सोडून) हटवा
+                  </Label>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="cbBackup"
+                    checked={cashbookCleanupOptions.createBackup}
+                    onCheckedChange={(checked) =>
+                      setCashbookCleanupOptions({...cashbookCleanupOptions, createBackup: checked as boolean})
+                    }
+                  />
+                  <Label htmlFor="cbBackup" className="text-sm">
+                    cleanup करण्यापूर्वी backup तयार करा
+                  </Label>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-4">
+                <Button
+                  onClick={handleCashbookPreview}
+                  variant="outline"
+                  disabled={!cashbookCleanupOptions.dateFrom || !cashbookCleanupOptions.dateTo || cashbookPreviewMutation.isPending}
+                  className="flex items-center gap-2"
+                >
+                  {cashbookPreviewMutation.isPending ? (
+                    <RefreshCw className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Database className="h-4 w-4" />
+                  )}
+                  {cashbookPreviewMutation.isPending ? "तपासत आहे..." : "प्रिव्ह्यू पहा"}
+                </Button>
+              </div>
+
+              {cashbookPreview && cashbookPreview.success && (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg border border-red-200 text-center">
+                      <div className="text-3xl font-bold text-red-600">{cashbookPreview.deletableCount}</div>
+                      <div className="text-sm text-red-500 mt-1">सामान्य कॅश एन्ट्री हटवल्या जातील</div>
+                    </div>
+                    <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg border border-green-200 text-center">
+                      <div className="text-3xl font-bold text-green-600">{cashbookPreview.protectedCount}</div>
+                      <div className="text-sm text-green-500 mt-1">कर्ज एन्ट्री सुरक्षित राहतील</div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-orange-50 dark:bg-orange-900/20 p-4 rounded-lg border border-orange-200 text-center">
+                      <div className="text-2xl font-bold text-orange-600">{cashbookPreview.deletableJournalCount}</div>
+                      <div className="text-sm text-orange-500 mt-1">सामान्य journal entries हटवल्या जातील</div>
+                    </div>
+                    <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-200 text-center">
+                      <div className="text-2xl font-bold text-blue-600">{cashbookPreview.protectedJournalCount}</div>
+                      <div className="text-sm text-blue-500 mt-1">कर्ज journal entries सुरक्षित</div>
+                    </div>
+                  </div>
+
+                  {cashbookPreview.details.length > 0 && (
+                    <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg border">
+                      <h4 className="font-semibold text-gray-700 dark:text-gray-300 mb-2">हटवल्या जाणाऱ्या एन्ट्रीचे प्रकार:</h4>
+                      <div className="space-y-1">
+                        {cashbookPreview.details.map((detail, index) => (
+                          <div key={index} className="flex justify-between text-sm">
+                            <span className="text-gray-600 dark:text-gray-400">{categoryLabels[detail.category] || detail.category}</span>
+                            <span className="font-semibold">{detail.count}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {cashbookPreview.balanceImpact && cashbookPreview.deletableCount > 0 && (
+                    <div className="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-lg border border-yellow-300 space-y-3">
+                      <h4 className="font-bold text-yellow-800 dark:text-yellow-300 text-lg">
+                        बॅलन्स प्रभाव विश्लेषण (Balance Impact)
+                      </h4>
+                      <div className="grid grid-cols-3 gap-3">
+                        <div className="bg-white dark:bg-gray-800 p-3 rounded border text-center">
+                          <div className="text-lg font-bold text-green-600">
+                            {cashbookPreview.balanceImpact.totalCashInDeleted.toLocaleString('hi-IN')}
+                          </div>
+                          <div className="text-xs text-gray-500">जमा (Cash In) हटणार</div>
+                        </div>
+                        <div className="bg-white dark:bg-gray-800 p-3 rounded border text-center">
+                          <div className="text-lg font-bold text-red-600">
+                            {cashbookPreview.balanceImpact.totalCashOutDeleted.toLocaleString('hi-IN')}
+                          </div>
+                          <div className="text-xs text-gray-500">नावे (Cash Out) हटणार</div>
+                        </div>
+                        <div className="bg-white dark:bg-gray-800 p-3 rounded border text-center">
+                          <div className={`text-lg font-bold ${cashbookPreview.balanceImpact.netImpact >= 0 ? 'text-green-700' : 'text-red-700'}`}>
+                            {cashbookPreview.balanceImpact.netImpact >= 0 ? '+' : ''}{cashbookPreview.balanceImpact.netImpact.toLocaleString('hi-IN')}
+                          </div>
+                          <div className="text-xs text-gray-500">निव्वळ फरक (Net)</div>
+                        </div>
+                      </div>
+
+                      {cashbookPreview.balanceImpact.adjustmentType !== 'none' && (
+                        <div className="bg-blue-50 dark:bg-blue-900/30 p-3 rounded border border-blue-200">
+                          <h5 className="font-semibold text-blue-800 dark:text-blue-300 mb-1">
+                            क्लीनअप नंतर बॅलन्स ठीक करण्यासाठी:
+                          </h5>
+                          <p className="text-sm text-blue-700 dark:text-blue-400">
+                            एक <strong>{cashbookPreview.balanceImpact.adjustmentType === 'cash_in' ? 'जमा (Cash In)' : 'नावे (Cash Out)'}</strong> एन्ट्री
+                            {' '}<strong>₹{cashbookPreview.balanceImpact.adjustmentAmount.toLocaleString('hi-IN')}</strong> रकमेची
+                            {' '}क्लीनअप तारखेच्या सुरुवातीला टाका.
+                          </p>
+                          <p className="text-xs text-blue-600 dark:text-blue-500 mt-1">
+                            उदा. narration: "जुन्या entries adjustment" म्हणून टाका.
+                          </p>
+                        </div>
+                      )}
+
+                      {cashbookPreview.balanceImpact.partyWiseImpact.length > 0 && (
+                        <details className="mt-2">
+                          <summary className="cursor-pointer text-sm font-semibold text-yellow-700 dark:text-yellow-400">
+                            पार्टी-निहाय प्रभाव पहा ({cashbookPreview.balanceImpact.partyWiseImpact.length} parties)
+                          </summary>
+                          <div className="mt-2 max-h-48 overflow-y-auto">
+                            <table className="w-full text-xs border-collapse">
+                              <thead>
+                                <tr className="bg-gray-100 dark:bg-gray-700">
+                                  <th className="text-left p-1.5 border">पार्टी नाव</th>
+                                  <th className="text-right p-1.5 border">जमा</th>
+                                  <th className="text-right p-1.5 border">नावे</th>
+                                  <th className="text-right p-1.5 border">फरक</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {cashbookPreview.balanceImpact.partyWiseImpact.map((party, i) => (
+                                  <tr key={i} className="border-b">
+                                    <td className="p-1.5 border">{party.partyName}</td>
+                                    <td className="text-right p-1.5 border text-green-600">{party.cashIn.toLocaleString('hi-IN')}</td>
+                                    <td className="text-right p-1.5 border text-red-600">{party.cashOut.toLocaleString('hi-IN')}</td>
+                                    <td className={`text-right p-1.5 border font-semibold ${party.net >= 0 ? 'text-green-700' : 'text-red-700'}`}>
+                                      {party.net >= 0 ? '+' : ''}{party.net.toLocaleString('hi-IN')}
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                          <p className="text-xs text-yellow-600 mt-1">
+                            प्रत्येक party साठी स्वतंत्र adjusting DR/CR entry लागेल.
+                          </p>
+                        </details>
+                      )}
+                    </div>
+                  )}
+
+                  {(cashbookPreview.deletableCount > 0 || cashbookPreview.deletableJournalCount > 0) && (
+                    <div className="flex items-center justify-between pt-4">
+                      <div className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 p-3 rounded">
+                        ⚠️ <strong>सावधान:</strong> कर्जाच्या एन्ट्री safe आहेत, पण सामान्य एन्ट्री कायमच्या हटवल्या जातील.
+                      </div>
+                      <Button
+                        onClick={handleCashbookCleanup}
+                        variant="destructive"
+                        disabled={cashbookCleanupMutation.isPending}
+                        className="flex items-center gap-2"
+                      >
+                        {cashbookCleanupMutation.isPending ? (
+                          <RefreshCw className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Trash2 className="h-4 w-4" />
+                        )}
+                        {cashbookCleanupMutation.isPending ? "क्लीनअप करत आहे..." : "कॅशबुक क्लीनअप सुरू करा"}
+                      </Button>
+                    </div>
+                  )}
+
+                  {cashbookPreview.deletableCount === 0 && cashbookPreview.deletableJournalCount === 0 && (
+                    <Alert className="border-green-200">
+                      <CheckCircle className="h-4 w-4 text-green-600" />
+                      <AlertTitle className="text-green-700">या तारखांमध्ये हटवण्यासारख्या सामान्य एन्ट्री नाहीत</AlertTitle>
+                      <AlertDescription className="text-green-600">
+                        सर्व एन्ट्री कर्जाशी संबंधित आहेत आणि सुरक्षित आहेत.
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                </div>
+              )}
+
+              {cashbookCleanupMutation.data && (cashbookCleanupMutation.data as any).success && (
+                <div className="space-y-3">
+                  <Alert className="border-green-200">
+                    <CheckCircle className="h-4 w-4 text-green-600" />
+                    <AlertTitle className="text-green-700">कॅशबुक क्लीनअप यशस्वी</AlertTitle>
+                    <AlertDescription className="text-green-600">
+                      <p>{(cashbookCleanupMutation.data as any).message}</p>
+                      <p className="text-sm mt-1">
+                        हटवलेले records: {(cashbookCleanupMutation.data as any).summary?.recordsDeleted || 0}
+                      </p>
+                      {(cashbookCleanupMutation.data as any).details?.map((detail: any, index: number) => (
+                        <p key={index} className="text-xs mt-1">{detail.message}</p>
+                      ))}
+                    </AlertDescription>
+                  </Alert>
+
+                  {cashbookPreview?.balanceImpact && cashbookPreview.balanceImpact.adjustmentType !== 'none' && (
+                    <Alert className="border-blue-300 bg-blue-50 dark:bg-blue-900/20">
+                      <AlertTriangle className="h-4 w-4 text-blue-600" />
+                      <AlertTitle className="text-blue-700">बॅलन्स ठीक करण्यासाठी पुढील पाऊल:</AlertTitle>
+                      <AlertDescription className="text-blue-600 space-y-2">
+                        <p className="font-semibold">
+                          एक <strong>{cashbookPreview.balanceImpact.adjustmentType === 'cash_in' ? 'जमा (Cash In)' : 'नावे (Cash Out)'}</strong> एन्ट्री
+                          {' '}₹<strong>{cashbookPreview.balanceImpact.adjustmentAmount.toLocaleString('hi-IN')}</strong> रकमेची
+                          {' '}कॅश व्यवहार मध्ये टाका.
+                        </p>
+                        <p className="text-xs">
+                          Narration: "जुन्या entries adjustment ({cashbookCleanupOptions.dateFrom} ते {cashbookCleanupOptions.dateTo})"
+                        </p>
+                        {cashbookPreview.balanceImpact.partyWiseImpact.length > 0 && (
+                          <p className="text-xs">
+                            पार्टी-निहाय बॅलन्स ठीक करण्यासाठी प्रत्येक party साठी स्वतंत्र adjusting entry टाकावी लागेल.
+                          </p>
+                        )}
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                </div>
+              )}
+
+              {cashbookCleanupMutation.error && (
+                <Alert variant="destructive">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertTitle>कॅशबुक क्लीनअप अयशस्वी</AlertTitle>
+                  <AlertDescription>
+                    {cashbookCleanupMutation.error.message}
                   </AlertDescription>
                 </Alert>
               )}

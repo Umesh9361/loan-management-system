@@ -537,6 +537,21 @@ export default function BorrowerListReports() {
     };
   }, []);
 
+  const normalizeMarathiVowels = (text: string): string => {
+    return text
+      .replace(/ी/g, 'ि')
+      .replace(/ू/g, 'ु')
+      .replace(/ै/g, 'े')
+      .replace(/ौ/g, 'ो')
+      .replace(/ॅ/g, 'े')
+      .replace(/ॉ/g, 'ो')
+      .replace(/आ/g, 'अ')
+      .replace(/ई/g, 'इ')
+      .replace(/ऊ/g, 'उ')
+      .replace(/ऐ/g, 'ए')
+      .replace(/औ/g, 'ओ');
+  };
+
   // OPTIMIZED FUZZY SEARCH - Cached and efficient pattern matching
   const fuzzyMatchBorrower = useMemo(() => {
     const scoreCache = new Map<string, number>();
@@ -544,60 +559,76 @@ export default function BorrowerListReports() {
     return (text: string, query: string): number => {
       if (!query) return 0;
       
-      const cacheKey = `${text}:${query}`;
+      const trimmedQuery = query.trim();
+      if (!trimmedQuery) return 0;
+      
+      const cacheKey = `${text}:${trimmedQuery}`;
       if (scoreCache.has(cacheKey)) return scoreCache.get(cacheKey)!;
     
     // Get all language variations of the query
-    const searchQueries = createDualLanguageQuery(query.toLowerCase());
+    const searchQueries = createDualLanguageQuery(trimmedQuery.toLowerCase());
     let maxScore = 0;
     
-    // Process search queries for enhanced matching
-    if (searchQueries.length > 1) {
-      // Multiple language variants available for search
-    }
+    // Add vowel-normalized variations for Marathi velanti matching
+    const normalizedVariations: string[] = [];
+    searchQueries.forEach(q => {
+      const normalized = normalizeMarathiVowels(q);
+      if (normalized !== q && !searchQueries.includes(normalized)) {
+        normalizedVariations.push(normalized);
+      }
+    });
+    searchQueries.push(...normalizedVariations);
     
     // Test each query variation and take the highest score
     searchQueries.forEach(queryVariation => {
       const textLower = text.toLowerCase();
+      const textNormalized = normalizeMarathiVowels(textLower);
       const queryLower = queryVariation;
       
       let score = 0;
       
+      const queryNormalized = normalizeMarathiVowels(queryLower);
+      
       // === EXACT MATCHES (100 points) ===
-      if (textLower === queryLower) {
+      if (textLower === queryLower || textNormalized === queryNormalized) {
         score = 100;
       }
       
       // === STARTS WITH MATCHES (90 points) ===
-      else if (textLower.startsWith(queryLower)) {
+      else if (textLower.startsWith(queryLower) || textNormalized.startsWith(queryNormalized)) {
         score = 90;
       }
       
       // === CONTAINS MATCHES (80 points) ===
-      else if (textLower.includes(queryLower)) {
+      else if (textLower.includes(queryLower) || textNormalized.includes(queryNormalized)) {
         score = 80;
       }
       
       // === WORD BOUNDARY MATCHES (75-65 points) ===
       else {
         const words = textLower.split(/\s+/);
+        const wordsNorm = textNormalized.split(/\s+/);
         const queryWords = queryLower.split(/\s+/);
         
-        // Check each word in text against query
-        for (const word of words) {
-          if (word.startsWith(queryLower)) {
+        // Check each word in text against query (original + normalized)
+        for (let wi = 0; wi < words.length; wi++) {
+          const word = words[wi];
+          const wordNorm = wordsNorm[wi] || normalizeMarathiVowels(word);
+          
+          if (word.startsWith(queryLower) || wordNorm.startsWith(queryNormalized)) {
             score = Math.max(score, 75);
-          } else if (word.includes(queryLower)) {
+          } else if (word.includes(queryLower) || wordNorm.includes(queryNormalized)) {
             score = Math.max(score, 65);
           }
           
           // Check each query word against text words
           for (const queryWord of queryWords) {
-            if (word === queryWord) {
+            const qwNorm = normalizeMarathiVowels(queryWord);
+            if (word === queryWord || wordNorm === qwNorm) {
               score = Math.max(score, 70);
-            } else if (word.startsWith(queryWord)) {
+            } else if (word.startsWith(queryWord) || wordNorm.startsWith(qwNorm)) {
               score = Math.max(score, 68);
-            } else if (word.includes(queryWord)) {
+            } else if (word.includes(queryWord) || wordNorm.includes(qwNorm)) {
               score = Math.max(score, 62);
             }
           }
@@ -3729,15 +3760,6 @@ export default function BorrowerListReports() {
                                 )}
                               </div>
                               <div className="flex gap-3 text-base text-gray-600">
-                                {borrower.mobile && (
-                                  <span className="flex items-center">📱 {borrower.mobile}</span>
-                                )}
-                                {borrower.address && (
-                                  <span className="flex items-center truncate">📍 {borrower.address}</span>
-                                )}
-                                {borrower.groupName && (
-                                  <span className="flex items-center truncate">👥 {borrower.groupName}</span>
-                                )}
                                 <span className="flex items-center text-blue-600 font-semibold">
                                   💰 {borrower.loanCount} कर्ज{borrower.loanCount > 1 ? 'े' : ''}
                                 </span>

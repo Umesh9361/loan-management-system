@@ -943,25 +943,25 @@ export default function AccountLedger() {
                           <SelectValue placeholder="खाते प्रकार निवडा" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="cash">
+                          <SelectItem value="cash" textValue="रोकड खाते">
                             <div className="flex items-center gap-2">
                               <Wallet className="h-4 w-4" />
                               रोकड खाते
                             </div>
                           </SelectItem>
-                          <SelectItem value="party">
+                          <SelectItem value="party" textValue="व्यक्ती खाते">
                             <div className="flex items-center gap-2">
                               <User className="h-4 w-4" />
                               व्यक्ती खाते
                             </div>
                           </SelectItem>
-                          <SelectItem value="loan">
+                          <SelectItem value="loan" textValue="सर्व कर्ज खाते">
                             <div className="flex items-center gap-2">
                               <CreditCard className="h-4 w-4" />
                               सर्व कर्ज खाते (एकत्रित)
                             </div>
                           </SelectItem>
-                          <SelectItem value="individual_loan">
+                          <SelectItem value="individual_loan" textValue="वैयक्तिक कर्ज लेजर">
                             <div className="flex items-center gap-2">
                               <FileText className="h-4 w-4" />
                               वैयक्तिक कर्ज लेजर (नमुना क्र. ८)
@@ -981,7 +981,7 @@ export default function AccountLedger() {
                           </SelectTrigger>
                           <SelectContent>
                             {Array.isArray(parties) && parties.map((party: any) => (
-                              <SelectItem key={party?.id || 'unknown'} value={party?.id || ''}>
+                              <SelectItem key={party?.id || 'unknown'} value={party?.id || ''} textValue={party?.name || 'अज्ञात व्यक्ती'}>
                                 <div className="flex flex-col">
                                   <span>{party?.name || 'अज्ञात व्यक्ती'}</span>
                                   {party?.mobile && (
@@ -1036,6 +1036,7 @@ export default function AccountLedger() {
                                   <SelectItem 
                                     key={`loan-${safeId}-${index}`} 
                                     value={safeId}
+                                    textValue={safeName}
                                   >
                                     <div className="flex flex-col">
                                       <span className="font-medium">{safeName}</span>

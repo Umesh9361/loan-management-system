@@ -4,7 +4,7 @@ import {
   companies, users, userPermissions, userActivityLogs, journalEntries, journalEntryLines,
   loanPhotos, tenantStorageSettings, type Loan, type LoanClosure, type CashTransaction 
 } from "@shared/schema";
-import { eq, and, sql, desc, asc, ne, or } from "drizzle-orm";
+import { eq, and, sql, desc, asc, ne, or, inArray } from "drizzle-orm";
 import { storage } from "./storage";
 import { NarrationEngine } from "./narration-engine";
 import { PhotoService } from "./photo-service";
@@ -976,6 +976,279 @@ export class DataManagementService {
         message: `System restore failed: ${(error as Error).message}`,
         affectedRecords: 0,
         details: [{ error: (error as Error).message }]
+      };
+    }
+  }
+
+  private readonly LOAN_PROTECTED_CATEGORIES = ['loan_disbursement', 'loan_repayment', 'loan_closure', 'opening_balance'];
+  
+  private readonly LOAN_NARRATION_KEYWORDS = [
+    'कर्ज वितरण', 'कर्ज बंद', 'कर्ज वसूली', 'कर्ज रक्कम अपडेट',
+    'खाते क्र.', 'मुद्दल', 'व्याज', 'प्रारंभिक शिल्लक',
+    'loan disbursement', 'loan closure', 'loan repayment', 'opening balance'
+  ];
+
+  private buildLoanProtectionCondition(): any {
+    const categoryProtection = sql`${cashTransactions.category} NOT IN ('loan_disbursement', 'loan_repayment', 'loan_closure', 'opening_balance')`;
+    const systemGeneratedProtection = sql`${cashTransactions.isSystemGenerated} = false`;
+    const narrationConditions = this.LOAN_NARRATION_KEYWORDS.map(keyword =>
+      sql`COALESCE(${cashTransactions.narration}, '') NOT ILIKE ${`%${keyword}%`}`
+    );
+    return sql`(${categoryProtection} AND ${systemGeneratedProtection} AND ${sql.join(narrationConditions, sql` AND `)})`;
+  }
+
+  async previewCashBookCleanup(tenantId: string, options: { dateFrom: string; dateTo: string }): Promise<{
+    success: boolean;
+    deletableCount: number;
+    protectedCount: number;
+    deletableJournalCount: number;
+    protectedJournalCount: number;
+    details: { category: string; count: number }[];
+    balanceImpact: {
+      totalCashInDeleted: number;
+      totalCashOutDeleted: number;
+      netImpact: number;
+      adjustmentType: 'cash_in' | 'cash_out' | 'none';
+      adjustmentAmount: number;
+      partyWiseImpact: { partyName: string; partyId: string; cashIn: number; cashOut: number; net: number }[];
+    };
+  }> {
+    try {
+      const dateConditions = sql`${cashTransactions.tenantId} = ${tenantId} AND ${cashTransactions.transactionDate} >= ${options.dateFrom} AND ${cashTransactions.transactionDate} <= ${options.dateTo}`;
+
+      const allInRange = await db.select({ id: cashTransactions.id })
+        .from(cashTransactions)
+        .where(sql`${dateConditions}`);
+
+      const protectedEntries = await db.select({ id: cashTransactions.id })
+        .from(cashTransactions)
+        .where(sql`${dateConditions} AND NOT ${this.buildLoanProtectionCondition()}`);
+
+      const deletableEntries = allInRange.length - protectedEntries.length;
+
+      const categoryBreakdown = await db.select({
+        category: cashTransactions.category,
+        count: sql<number>`count(*)::int`
+      })
+        .from(cashTransactions)
+        .where(sql`${dateConditions} AND ${this.buildLoanProtectionCondition()}`)
+        .groupBy(cashTransactions.category);
+
+      const deletableTxDetails = await db.select({
+        id: cashTransactions.id,
+        transactionType: cashTransactions.transactionType,
+        amount: cashTransactions.amount,
+        partyId: cashTransactions.partyId,
+        narration: cashTransactions.narration,
+      })
+        .from(cashTransactions)
+        .where(sql`${dateConditions} AND ${this.buildLoanProtectionCondition()}`);
+
+      let totalCashInDeleted = 0;
+      let totalCashOutDeleted = 0;
+      const partyMap = new Map<string, { partyId: string; cashIn: number; cashOut: number }>();
+
+      for (const tx of deletableTxDetails) {
+        const amount = Number(tx.amount) || 0;
+        if (tx.transactionType === 'cash_in') {
+          totalCashInDeleted += amount;
+        } else {
+          totalCashOutDeleted += amount;
+        }
+        if (tx.partyId) {
+          const existing = partyMap.get(tx.partyId) || { partyId: tx.partyId, cashIn: 0, cashOut: 0 };
+          if (tx.transactionType === 'cash_in') {
+            existing.cashIn += amount;
+          } else {
+            existing.cashOut += amount;
+          }
+          partyMap.set(tx.partyId, existing);
+        }
+      }
+
+      const partyIds = Array.from(partyMap.keys());
+      let partyNames = new Map<string, string>();
+      if (partyIds.length > 0) {
+        const partyRecords = await db.select({ id: parties.id, name: parties.name })
+          .from(parties)
+          .where(and(eq(parties.tenantId, tenantId), inArray(parties.id, partyIds)));
+        partyRecords.forEach((p: any) => partyNames.set(p.id, p.name));
+      }
+
+      const partyWiseImpact = Array.from(partyMap.entries()).map(([pid, data]) => ({
+        partyName: partyNames.get(pid) || `Party #${pid}`,
+        partyId: pid,
+        cashIn: data.cashIn,
+        cashOut: data.cashOut,
+        net: data.cashIn - data.cashOut
+      })).sort((a, b) => Math.abs(b.net) - Math.abs(a.net));
+
+      const netImpact = totalCashInDeleted - totalCashOutDeleted;
+      let adjustmentType: 'cash_in' | 'cash_out' | 'none' = 'none';
+      let adjustmentAmount = 0;
+      if (netImpact > 0) {
+        adjustmentType = 'cash_in';
+        adjustmentAmount = netImpact;
+      } else if (netImpact < 0) {
+        adjustmentType = 'cash_out';
+        adjustmentAmount = Math.abs(netImpact);
+      }
+
+      const journalDateConditions = sql`${journalEntries.tenantId} = ${tenantId} AND ${journalEntries.transactionDate} >= ${options.dateFrom} AND ${journalEntries.transactionDate} <= ${options.dateTo}`;
+
+      const allJournals = await db.select({ id: journalEntries.id })
+        .from(journalEntries)
+        .where(sql`${journalDateConditions}`);
+
+      const loanJournalKeywords = ['कर्ज वितरण', 'कर्ज बंद', 'कर्ज वसूली', 'खाते क्र.', 'मुद्दल', 'व्याज', 'प्रारंभिक शिल्लक', 'loan disbursement', 'loan closure', 'opening balance'];
+      const journalDescConditions = loanJournalKeywords.map(keyword =>
+        sql`(COALESCE(${journalEntries.description}, '') ILIKE ${`%${keyword}%`} OR COALESCE(${journalEntries.narration}, '') ILIKE ${`%${keyword}%`})`
+      );
+      const protectedJournals = await db.select({ id: journalEntries.id })
+        .from(journalEntries)
+        .where(sql`${journalDateConditions} AND (${journalEntries.sourceType} IN ('loan_disbursement', 'loan_closure', 'loan_repayment', 'opening_balance') OR ${sql.join(journalDescConditions, sql` OR `)})`);
+
+      return {
+        success: true,
+        deletableCount: deletableEntries,
+        protectedCount: protectedEntries.length,
+        deletableJournalCount: allJournals.length - protectedJournals.length,
+        protectedJournalCount: protectedJournals.length,
+        details: categoryBreakdown,
+        balanceImpact: {
+          totalCashInDeleted,
+          totalCashOutDeleted,
+          netImpact,
+          adjustmentType,
+          adjustmentAmount,
+          partyWiseImpact
+        }
+      };
+    } catch (error) {
+      console.error("Preview cashbook cleanup error:", error);
+      return {
+        success: false,
+        deletableCount: 0,
+        protectedCount: 0,
+        deletableJournalCount: 0,
+        protectedJournalCount: 0,
+        details: [],
+        balanceImpact: {
+          totalCashInDeleted: 0,
+          totalCashOutDeleted: 0,
+          netImpact: 0,
+          adjustmentType: 'none',
+          adjustmentAmount: 0,
+          partyWiseImpact: []
+        }
+      };
+    }
+  }
+
+  async cleanupCashBookEntries(tenantId: string, options: {
+    dateFrom: string;
+    dateTo: string;
+    cleanCashTransactions: boolean;
+    cleanJournalEntries: boolean;
+    createBackup: boolean;
+  }): Promise<DataManagementResult> {
+    try {
+      const results: any[] = [];
+      let totalAffected = 0;
+
+      if (options.createBackup) {
+        const backupResult = await this.createComprehensiveBackup(tenantId);
+        if (!backupResult.success) {
+          return {
+            success: false,
+            message: "Backup तयार करण्यात अयशस्वी",
+            affectedRecords: 0,
+            details: [backupResult]
+          };
+        }
+        results.push({ step: 'backup', message: 'Backup यशस्वी' });
+      }
+
+      await db.transaction(async (tx: any) => {
+        if (options.cleanCashTransactions) {
+          const dateConditions = sql`${cashTransactions.tenantId} = ${tenantId} AND ${cashTransactions.transactionDate} >= ${options.dateFrom} AND ${cashTransactions.transactionDate} <= ${options.dateTo}`;
+
+          const deletableCashTx = await tx.select({ id: cashTransactions.id })
+            .from(cashTransactions)
+            .where(sql`${dateConditions} AND ${this.buildLoanProtectionCondition()}`);
+
+          if (deletableCashTx.length > 0) {
+            const deletableIds = deletableCashTx.map((r: any) => r.id);
+            
+            for (const id of deletableIds) {
+              await tx.delete(cashTransactions)
+                .where(and(
+                  eq(cashTransactions.id, id),
+                  eq(cashTransactions.tenantId, tenantId)
+                ));
+            }
+
+            totalAffected += deletableCashTx.length;
+            results.push({
+              step: 'cash_transactions',
+              deleted: deletableCashTx.length,
+              message: `${deletableCashTx.length} सामान्य कॅश एन्ट्री हटवल्या`
+            });
+          }
+        }
+
+        if (options.cleanJournalEntries) {
+          const journalDateConditions = sql`${journalEntries.tenantId} = ${tenantId} AND ${journalEntries.transactionDate} >= ${options.dateFrom} AND ${journalEntries.transactionDate} <= ${options.dateTo}`;
+
+          const loanJournalKeywords = ['कर्ज वितरण', 'कर्ज बंद', 'कर्ज वसूली', 'खाते क्र.', 'मुद्दल', 'व्याज', 'प्रारंभिक शिल्लक', 'loan disbursement', 'loan closure', 'opening balance'];
+          const journalDescConditions = loanJournalKeywords.map(keyword =>
+            sql`(COALESCE(${journalEntries.description}, '') ILIKE ${`%${keyword}%`} OR COALESCE(${journalEntries.narration}, '') ILIKE ${`%${keyword}%`})`
+          );
+
+          const deletableJournals = await tx.select({ id: journalEntries.id })
+            .from(journalEntries)
+            .where(sql`${journalDateConditions} AND ${journalEntries.sourceType} NOT IN ('loan_disbursement', 'loan_closure', 'loan_repayment', 'opening_balance') AND NOT (${sql.join(journalDescConditions, sql` OR `)})`);
+
+          if (deletableJournals.length > 0) {
+            const journalIds = deletableJournals.map((r: any) => r.id);
+            
+            for (const jId of journalIds) {
+              await tx.delete(journalEntryLines)
+                .where(and(
+                  eq(journalEntryLines.journalEntryId, jId),
+                  eq(journalEntryLines.tenantId, tenantId)
+                ));
+              await tx.delete(journalEntries)
+                .where(and(
+                  eq(journalEntries.id, jId),
+                  eq(journalEntries.tenantId, tenantId)
+                ));
+            }
+
+            totalAffected += deletableJournals.length;
+            results.push({
+              step: 'journal_entries',
+              deleted: deletableJournals.length,
+              message: `${deletableJournals.length} सामान्य जर्नल एन्ट्री हटवल्या`
+            });
+          }
+        }
+      });
+
+      return {
+        success: true,
+        message: `कॅशबुक क्लीनअप यशस्वी - ${totalAffected} एन्ट्री हटवल्या (कर्जाच्या सर्व एन्ट्री सुरक्षित)`,
+        affectedRecords: totalAffected,
+        details: results
+      };
+
+    } catch (error) {
+      console.error("Cashbook cleanup error:", error);
+      return {
+        success: false,
+        message: "कॅशबुक क्लीनअप अयशस्वी: " + (error as Error).message,
+        affectedRecords: 0,
+        details: []
       };
     }
   }

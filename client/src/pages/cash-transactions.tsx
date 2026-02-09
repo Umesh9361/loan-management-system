@@ -301,16 +301,13 @@ export default function CashTransactions() {
                       />
                     </div>
                     <div>
-                      <Label>स्मार्ट सर्च (5000+ Names)</Label>
+                      <Label>सर्च</Label>
                       <Input
                         placeholder="व्यक्तीचे नाव, रक्कम किंवा तपशील टाका..."
                         value={filters.search}
-                        onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
+                        onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value.trimStart() }))}
                         className="font-inter"
                       />
-                      <div className="text-xs text-gray-500 mt-1">
-                        उदा: "सूर्यकांत", "सुधीर", "5000", "नेकलेस" - 5000+ नावांचे cross-language search (महिना भर शोधेल)
-                      </div>
                     </div>
                     <div>
                       <Label>प्रकार</Label>

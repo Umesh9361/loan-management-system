@@ -1,0 +1,80 @@
+
+      valid_from: 'Feb  4 14:01:41 2026 GMT',
+      valid_to: 'May  5 14:01:40 2026 GMT',
+      fingerprint: '5D:AF:08:3D:F0:75:1B:85:13:E3:B1:B6:BE:E9:98:22:2B:65:1B:66',
+      fingerprint256: '4E:A7:93:A3:B0:85:EC:BB:DC:94:09:31:66:DE:AA:94:CD:76:8F:02:9B:EC:C7:AF:21:52:78:EE:8B:3F:6A:CC',
+      fingerprint512: '45:00:ED:97:6A:7B:13:E1:2E:6F:3A:59:27:9B:9E:81:57:6A:CF:AE:AB:78:82:7E:E9:7D:01:EC:77:57:22:7E:B2:E3:70:DA:35:C5:48:57:80:07:66:60:66:4E:E2:A2:4F:83:C3:DE:DF:00:51:73:E9:DD:92:FF:A3:D2:2E:95',
+      ext_key_usage: [Array],
+      serialNumber: '06AE594B597BA690EB1750E43D75C2DEE8ED',
+      raw: <Buffer 30 82 05 fd 30 82 04 e5 a0 03 02 01 02 02 12 06 ae 59 4b 59 7b a6 90 eb 17 50 e4 3d 75 c2 de e8 ed 30 0d 06 09 2a 86 48 86 f7 0d 01 01 0b 05 00 30 33 ... 1487 more bytes>,
+      issuerCertificate: [Object]
+    }
+  },
+  [Symbol(kMessage)]: "Hostname/IP does not match certificate's altnames: Host: yamabiko.proxy.rlwy.net. is not in the cert's altnames: DNS:*.up.railway.app"
+}
+Retrying in 2000ms...
+Database initialization attempt 4/5...
+    _req: null,
+    _paused: false,
+Database initialization attempt 4 failed: ErrorEvent {
+    _protocol: '',
+  [Symbol(kTarget)]: WebSocket {
+    _binaryType: 'arraybuffer',
+    _isServer: false,
+    _readyState: 3,
+    _events: [Object: null prototype] {
+    _redirects: 0,
+    _receiver: null,
+    _closeCode: 1006,
+      error: [Function],
+    _autoPong: true,
+    _closeFrameReceived: false,
+    _sender: null,
+      message: [Function],
+    _socket: null,
+    _url: 'wss://yamabiko.proxy.rlwy.net/v2',
+    _closeFrameSent: false,
+      close: [Function],
+    _bufferedAmount: 0,
+    _closeMessage: <Buffer >,
+      open: [Function]
+    _closeTimer: null,
+    },
+    _errorEmitted: true,
+    _eventsCount: 4,
+    _extensions: {},
+    _maxListeners: undefined,
+      modulus: 'F24FFC9E78C05DDE2594A4AB7E33329E90DD53A05E9DBBBB3BA22DFB13726313997451360F77B8DA5836721C19F8F33FE8F4752D5E58441E6C54E0C60760E990E114F64CDFC44E4A8B1FD9F0D0C43A9E13E5503735C911BEC29A58FD6ADFF54E9291492C905DC7338F59D561C7FD0398CAEF74977FE09899784844174D7CD97E041151D89AC27B208C5D2F6DC77FF8CDDE4024BE146F16FBEB8F5CEF9AFD3F735E1F65BF24045AD5629613B31097AC5B393868CF04B2C82EA7F072FEED0AA9EA250B3D69D7CC9BF0B594FF14A7CC55CB9A00B7610A7790D845B803814488E6643C79EF18477E4BAF62C31C6BE7D2FAE17DBE354046C9244F22FF24FAB331369ED4F4B79BA081B084883AE9DE5C17AF7AFEE8E3C165AB56F358E95D912B83252F0880DD04623D1C6780F241476114D03BA9238BB66BF2BD38DC50ACBF721593FA64760E6129B044E3631BB21E2CA0C1F92125D8F34383E0B0B589E367D0FCC34E6493B571D08BC11613073763A556A1E91F63F88E90A16B540F04A86A36288A5943209F529123383E119F85749D5153F6DD8B2EFBB0B9504E65F3575741039A7DBE56BBC8C505D5AC823A02A2F42598A2992A179AF9C1C5C4FFA6C02F74A6BF2F3DDFA447AF9D44D1994FCF66058BFC3B9C6A4E07F26C5503B16168E42EE9D2D4DC6C2F93BFAA456D5420CC4011626C3C364A7A6C93F55AD401BA00DC241B850D',
+    [Symbol(shapeMode)]: false,
+    [Symbol(kCapture)]: false
+  },
+  [Symbol(kType)]: 'error',
+  [Symbol(kError)]: Error [ERR_TLS_CERT_ALTNAME_INVALID]: Hostname/IP does not match certificate's altnames: Host: yamabiko.proxy.rlwy.net. is not in the cert's altnames: DNS:*.up.railway.app
+      at Object.checkServerIdentity (node:tls:456:12)
+      at TLSSocket.onConnectSecure (node:_tls_wrap:1707:27)
+      at TLSSocket.emit (node:events:519:28)
+      at TLSSocket._finishInit (node:_tls_wrap:1095:8)
+      at ssl.onhandshakedone (node:_tls_wrap:881:12) {
+    code: 'ERR_TLS_CERT_ALTNAME_INVALID',
+    reason: "Host: yamabiko.proxy.rlwy.net. is not in the cert's altnames: DNS:*.up.railway.app",
+    host: 'yamabiko.proxy.rlwy.net',
+    cert: {
+      subject: [Object: null prototype],
+      issuer: [Object: null prototype],
+      subjectaltname: 'DNS:*.up.railway.app',
+      infoAccess: [Object: null prototype],
+      ca: false,
+      bits: 4096,
+      raw: <Buffer 30 82 05 fd 30 82 04 e5 a0 03 02 01 02 02 12 06 ae 59 4b 59 7b a6 90 eb 17 50 e4 3d 75 c2 de e8 ed 30 0d 06 09 2a 86 48 86 f7 0d 01 01 0b 05 00 30 33 ... 1487 more bytes>,
+      exponent: '0x10001',
+      pubkey: <Buffer 30 82 02 22 30 0d 06 09 2a 86 48 86 f7 0d 01 01 01 05 00 03 82 02 0f 00 30 82 02 0a 02 82 02 01 00 f2 4f fc 9e 78 c0 5d de 25 94 a4 ab 7e 33 32 9e 90 ... 500 more bytes>,
+      issuerCertificate: [Object]
+    }
+  },
+      valid_from: 'Feb  4 14:01:41 2026 GMT',
+  [Symbol(kMessage)]: "Hostname/IP does not match certificate's altnames: Host: yamabiko.proxy.rlwy.net. is not in the cert's altnames: DNS:*.up.railway.app"
+      valid_to: 'May  5 14:01:40 2026 GMT',
+}
+      fingerprint: '5D:AF:08:3D:F0:75:1B:85:13:E3:B1:B6:BE:E9:98:22:2B:65:1B:66',
+      fingerprint256: '4E:A7:93:A3:B0:85:EC:BB:DC:94:09:31:66:DE:AA:94:CD:76:8F:02:9B:EC:C7:AF:21:52:78:EE:8B:3F:6A:CC',
+Retrying in 2000ms...

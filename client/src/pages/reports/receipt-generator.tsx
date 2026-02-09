@@ -106,50 +106,78 @@ export default function ReceiptGeneratorPage() {
     return queries;
   };
 
-  // Enhanced borrower name matching with dual language support
+  const normalizeMarathiVowels = (text: string): string => {
+    return text
+      .replace(/ी/g, 'ि')
+      .replace(/ू/g, 'ु')
+      .replace(/ै/g, 'े')
+      .replace(/ौ/g, 'ो')
+      .replace(/ॅ/g, 'े')
+      .replace(/ॉ/g, 'ो')
+      .replace(/आ/g, 'अ')
+      .replace(/ई/g, 'इ')
+      .replace(/ऊ/g, 'उ')
+      .replace(/ऐ/g, 'ए')
+      .replace(/औ/g, 'ओ');
+  };
+
+  // Enhanced borrower name matching with dual language support + vowel normalization
   const matchesBorrowerName = (borrowerName: string, searchTerm: string): boolean => {
     if (!borrowerName || !searchTerm) return false;
     
-    const searchQueries = createDualLanguageQuery(searchTerm.toLowerCase());
+    const trimmedSearch = searchTerm.trim().toLowerCase();
+    if (!trimmedSearch) return false;
+    
+    const searchQueries = createDualLanguageQuery(trimmedSearch);
     const nameLower = borrowerName.toLowerCase();
+    const nameNormalized = normalizeMarathiVowels(nameLower);
     
     return searchQueries.some(query => {
-      // Direct text inclusion
+      const queryNormalized = normalizeMarathiVowels(query);
+      
       if (nameLower.includes(query)) return true;
+      if (nameNormalized.includes(queryNormalized)) return true;
       
-      // Word boundary matches
       const nameWords = nameLower.split(/\s+/);
+      const nameWordsNorm = nameNormalized.split(/\s+/);
       const queryWords = query.split(/\s+/);
+      const queryWordsNorm = queryNormalized.split(/\s+/);
       
-      // Check if all query words are found in name
       if (queryWords.length > 1) {
-        return queryWords.every(qWord => 
-          nameWords.some(nWord => 
-            nWord.includes(qWord) || 
-            nWord.startsWith(qWord) ||
-            qWord.includes(nWord)
-          )
-        );
+        return queryWords.every((qWord, i) => {
+          const qWordNorm = queryWordsNorm[i] || normalizeMarathiVowels(qWord);
+          return nameWords.some((nWord, j) => {
+            const nWordNorm = nameWordsNorm[j] || normalizeMarathiVowels(nWord);
+            return nWord.includes(qWord) || 
+              nWord.startsWith(qWord) ||
+              qWord.includes(nWord) ||
+              nWordNorm.includes(qWordNorm) ||
+              nWordNorm.startsWith(qWordNorm);
+          });
+        });
       } else {
-        // Single word - enhanced partial matching
-        return nameWords.some(nWord => 
-          nWord.includes(query) || 
-          nWord.startsWith(query) ||
-          query.includes(nWord) ||
-          // Similar name matching (राम/राज, श्याम/श्री etc)
-          (query.length >= 2 && nWord.length >= 2 && 
-           query.substring(0, 2) === nWord.substring(0, 2))
-        );
+        return nameWords.some((nWord, j) => {
+          const nWordNorm = nameWordsNorm[j] || normalizeMarathiVowels(nWord);
+          return nWord.includes(query) || 
+            nWord.startsWith(query) ||
+            query.includes(nWord) ||
+            nWordNorm.includes(queryNormalized) ||
+            nWordNorm.startsWith(queryNormalized) ||
+            queryNormalized.includes(nWordNorm) ||
+            (query.length >= 2 && nWord.length >= 2 && 
+             query.substring(0, 2) === nWord.substring(0, 2));
+        });
       }
     });
   };
 
-  // Filter loans based on enhanced dual language search
+  // Filter loans based on enhanced dual language search with trim support
   const filteredLoans = (loans as any[]).filter((loan: any) => {
     if (!searchQuery.trim()) return true;
     
-    return matchesBorrowerName(loan.borrowerName || "", searchQuery) ||
-           loan.accountNumber?.toLowerCase().includes(searchQuery.toLowerCase());
+    const trimmedQuery = searchQuery.trim();
+    return matchesBorrowerName(loan.borrowerName || "", trimmedQuery) ||
+           loan.accountNumber?.toLowerCase().includes(trimmedQuery.toLowerCase());
   });
 
   // Get selected loan details

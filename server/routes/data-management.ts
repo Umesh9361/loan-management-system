@@ -329,4 +329,84 @@ router.post("/restore-from-backup", async (req: any, res) => {
   }
 });
 
+/**
+ * POST /api/data-management/preview-cashbook-cleanup
+ * कॅशबुक एन्ट्री क्लीनअप preview - किती entries delete होतील आणि किती safe राहतील
+ */
+router.post("/preview-cashbook-cleanup", async (req: any, res) => {
+  try {
+    const tenantId = req.session.tenantId;
+    const { dateFrom, dateTo } = req.body;
+
+    if (!dateFrom || !dateTo) {
+      return res.status(400).json({
+        success: false,
+        message: "तारीख रेंज (from आणि to) आवश्यक आहे"
+      });
+    }
+
+    const result = await dataManagementService.previewCashBookCleanup(tenantId, { dateFrom, dateTo });
+    res.json(result);
+  } catch (error) {
+    console.error("Preview cashbook cleanup error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Preview अयशस्वी: " + (error as Error).message
+    });
+  }
+});
+
+/**
+ * POST /api/data-management/cleanup-cashbook-entries
+ * कॅशबुक एन्ट्री क्लीनअप - कर्जाच्या एन्ट्री सोडून सामान्य एन्ट्री हटवा
+ */
+router.post("/cleanup-cashbook-entries", async (req: any, res) => {
+  try {
+    const tenantId = req.session.tenantId;
+    const { dateFrom, dateTo, cleanCashTransactions = true, cleanJournalEntries = true, createBackup = true } = req.body;
+
+    if (!dateFrom || !dateTo) {
+      return res.status(400).json({
+        success: false,
+        message: "तारीख रेंज (from आणि to) आवश्यक आहे"
+      });
+    }
+
+    console.log(`🧹 CASHBOOK CLEANUP: Starting for tenant ${tenantId} from ${dateFrom} to ${dateTo}`);
+
+    const result = await dataManagementService.cleanupCashBookEntries(tenantId, {
+      dateFrom,
+      dateTo,
+      cleanCashTransactions,
+      cleanJournalEntries,
+      createBackup
+    });
+
+    if (result.success) {
+      console.log(`✅ CASHBOOK CLEANUP: ${result.affectedRecords} entries cleaned`);
+      res.json({
+        success: true,
+        message: result.message,
+        summary: {
+          recordsDeleted: result.affectedRecords,
+          timestamp: new Date().toISOString()
+        },
+        details: result.details
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        message: result.message,
+        details: result.details
+      });
+    }
+  } catch (error) {
+    console.error("Cashbook cleanup error:", error);
+    res.status(500).json({
+      success: false,
+      message: "कॅशबुक क्लीनअप अयशस्वी: " + (error as Error).message
+    });
+  }
+});
+
 export default router;

@@ -7,6 +7,7 @@ import { Separator } from "@/components/ui/separator";
 import { useQuery } from "@tanstack/react-query";
 import { AuthService } from "@/lib/auth";
 import { useEffect, useRef } from "react";
+import { NotificationBell } from "@/components/maturity-reminder";
 import { 
   Building, 
   Users, 
@@ -28,7 +29,8 @@ import {
   Database,
   Calendar,
   Cloud,
-  ClipboardList
+  ClipboardList,
+  AlertTriangle
 } from "lucide-react";
 
 const navigation = [
@@ -149,7 +151,12 @@ const reports = [
     icon: Users,
     description: "डेट वाईज, क्लोजिंग वाईज, नेम वाईज, मुदत संपलेले रिपोर्ट"
   },
-
+  {
+    name: "नोटीस",
+    href: "/reports/notice-generator",
+    icon: AlertTriangle,
+    description: "कायदेशीर नोटीस - कलम १७६"
+  },
   {
     name: "लॉस रिपोर्ट",
     href: "/reports/overdue",
@@ -263,8 +270,7 @@ export function Sidebar({ className }: SidebarProps) {
   return (
     <div className={cn("flex flex-col sidebar-modern h-full", className)}>
       <div className="header-gradient p-4 border-b">
-        <div className="flex items-center justify-center w-full min-w-0">
-          {/* Simple System Logo Only */}
+        <div className="flex items-center justify-between w-full min-w-0">
           <div className="flex items-center space-x-3">
             <div className="h-10 w-10 lg:h-12 lg:w-12 bg-white bg-opacity-20 rounded-xl flex items-center justify-center flex-shrink-0 backdrop-blur-sm">
               <Building className="h-5 w-5 lg:h-6 lg:w-6 text-white" />
@@ -275,6 +281,7 @@ export function Sidebar({ className }: SidebarProps) {
               </h1>
             </div>
           </div>
+          <NotificationBell variant="sidebar" />
         </div>
       </div>
 

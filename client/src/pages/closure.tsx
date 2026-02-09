@@ -150,6 +150,21 @@ export default function Closure() {
     return group ? group.name : "अज्ञात ग्रुप";
   };
 
+  const normalizeMarathiVowels = (text: string): string => {
+    return text
+      .replace(/ी/g, 'ि')
+      .replace(/ू/g, 'ु')
+      .replace(/ै/g, 'े')
+      .replace(/ौ/g, 'ो')
+      .replace(/ॅ/g, 'े')
+      .replace(/ॉ/g, 'ो')
+      .replace(/आ/g, 'अ')
+      .replace(/ई/g, 'इ')
+      .replace(/ऊ/g, 'उ')
+      .replace(/ऐ/g, 'ए')
+      .replace(/औ/g, 'ओ');
+  };
+
   // Enhanced Dual Language Search - Same as Loan Form
   const createDualLanguageQuery = (originalQuery: string) => {
     const englishToMarathi: Record<string, string> = {
@@ -195,35 +210,51 @@ export default function Closure() {
   const matchesBorrowerName = (borrowerName: string, searchTerm: string): boolean => {
     if (!borrowerName || !searchTerm) return false;
     
-    const searchQueries = createDualLanguageQuery(searchTerm.toLowerCase());
+    const trimmedTerm = searchTerm.trim().toLowerCase();
+    const searchQueries = createDualLanguageQuery(trimmedTerm);
+    
+    const normalizedVariant = normalizeMarathiVowels(trimmedTerm);
+    if (normalizedVariant !== trimmedTerm && !searchQueries.includes(normalizedVariant)) {
+      searchQueries.push(normalizedVariant);
+    }
+    
     const nameLower = borrowerName.toLowerCase();
+    const nameNormalized = normalizeMarathiVowels(nameLower);
     
     return searchQueries.some(query => {
-      // Direct text inclusion
-      if (nameLower.includes(query)) return true;
+      const queryNormalized = normalizeMarathiVowels(query);
       
-      // Word boundary matches
+      if (nameLower.includes(query)) return true;
+      if (nameNormalized.includes(queryNormalized)) return true;
+      
       const nameWords = nameLower.split(/\s+/);
+      const nameWordsNorm = nameNormalized.split(/\s+/);
       const queryWords = query.split(/\s+/);
       
-      // Check if all query words are found in name
       if (queryWords.length > 1) {
-        return queryWords.every(qWord => 
-          nameWords.some(nWord => 
+        return queryWords.every(qWord => {
+          const qNorm = normalizeMarathiVowels(qWord);
+          return nameWords.some(nWord => 
             nWord.includes(qWord) || 
             nWord.startsWith(qWord) ||
             qWord.includes(nWord)
-          )
-        );
+          ) || nameWordsNorm.some(nWord =>
+            nWord.includes(qNorm) ||
+            nWord.startsWith(qNorm) ||
+            qNorm.includes(nWord)
+          );
+        });
       } else {
-        // Single word - enhanced partial matching
         return nameWords.some(nWord => 
           nWord.includes(query) || 
           nWord.startsWith(query) ||
           query.includes(nWord) ||
-          // Similar name matching (राम/राज, श्याम/श्री etc)
           (query.length >= 2 && nWord.length >= 2 && 
            query.substring(0, 2) === nWord.substring(0, 2))
+        ) || nameWordsNorm.some(nWord =>
+          nWord.includes(queryNormalized) ||
+          nWord.startsWith(queryNormalized) ||
+          queryNormalized.includes(nWord)
         );
       }
     });

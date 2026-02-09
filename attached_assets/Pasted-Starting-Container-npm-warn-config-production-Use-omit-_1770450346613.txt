@@ -1,0 +1,88 @@
+Starting Container
+npm warn config production Use `--omit=dev` instead.
+> rest-express@1.0.0 start
+> NODE_ENV=production node dist/index.js
+The `fetchConnectionCache` option is deprecated (now always `true`)
+DATABASE_URL environment variable is not set
+Available environment variables: []
+file:///app/dist/index.js:673
+      throw new Error(
+            ^
+Error: DATABASE_URL must be set. Did you forget to provision a database?
+    at server/db.ts (file:///app/dist/index.js:673:13)
+    at __init (file:///app/dist/index.js:6:56)
+    at file:///app/dist/index.js:1739:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:343:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:665:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5)
+Node.js v22.22.0
+npm warn config production Use `--omit=dev` instead.
+> rest-express@1.0.0 start
+> NODE_ENV=production node dist/index.js
+The `fetchConnectionCache` option is deprecated (now always `true`)
+DATABASE_URL environment variable is not set
+Available environment variables: []
+file:///app/dist/index.js:673
+      throw new Error(
+            ^
+Error: DATABASE_URL must be set. Did you forget to provision a database?
+    at server/db.ts (file:///app/dist/index.js:673:13)
+    at __init (file:///app/dist/index.js:6:56)
+    at file:///app/dist/index.js:1739:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:343:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:665:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5)
+Node.js v22.22.0
+npm warn config production Use `--omit=dev` instead.
+> rest-express@1.0.0 start
+> NODE_ENV=production node dist/index.js
+The `fetchConnectionCache` option is deprecated (now always `true`)
+DATABASE_URL environment variable is not set
+Available environment variables: []
+file:///app/dist/index.js:673
+      throw new Error(
+            ^
+Error: DATABASE_URL must be set. Did you forget to provision a database?
+    at server/db.ts (file:///app/dist/index.js:673:13)
+    at __init (file:///app/dist/index.js:6:56)
+    at file:///app/dist/index.js:1739:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:343:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:665:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5)
+Node.js v22.22.0
+npm warn config production Use `--omit=dev` instead.
+> rest-express@1.0.0 start
+> NODE_ENV=production node dist/index.js
+The `fetchConnectionCache` option is deprecated (now always `true`)
+DATABASE_URL environment variable is not set
+Available environment variables: []
+Node.js v22.22.0
+    at file:///app/dist/index.js:1739:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:343:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:665:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5)
+file:///app/dist/index.js:673
+      throw new Error(
+            ^
+Error: DATABASE_URL must be set. Did you forget to provision a database?
+    at server/db.ts (file:///app/dist/index.js:673:13)
+    at __init (file:///app/dist/index.js:6:56)
+npm warn config production Use `--omit=dev` instead.
+> rest-express@1.0.0 start
+> NODE_ENV=production node dist/index.js
+The `fetchConnectionCache` option is deprecated (now always `true`)
+DATABASE_URL environment variable is not set
+Available environment variables: []
+file:///app/dist/index.js:673
+      throw new Error(
+            ^
+Error: DATABASE_URL must be set. Did you forget to provision a database?
+    at server/db.ts (file:///app/dist/index.js:673:13)
+    at __init (file:///app/dist/index.js:6:56)
+    at file:///app/dist/index.js:1739:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:343:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:665:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5)
+Node.js v22.22.0
+npm warn config production Use `--omit=dev` instead.
+> rest-express@1.0.0 start

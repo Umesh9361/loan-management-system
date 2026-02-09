@@ -21,6 +21,7 @@ import { db } from "./db";
 import { eq, and, or, desc, asc, gte, lte, sum, count, sql, like, not, inArray } from "drizzle-orm";
 import bcrypt from "bcrypt";
 import { performanceCache, memoizedCalculations, cacheWarming } from "./performance-cache";
+import { getNameTranslations, normalizeMarathiVowels } from "./name-translations";
 
 export interface IStorage {
   // User operations
@@ -1047,7 +1048,7 @@ export class DatabaseStorage implements IStorage {
     const conditions = [eq(parties.tenantId, tenantId)];
     
     if (search) {
-      conditions.push(sql`${parties.name} ILIKE ${`%${search}%`} OR ${parties.mobile} ILIKE ${`%${search}%`}`);
+      conditions.push(sql`(${parties.name} ILIKE ${`%${search}%`} OR ${parties.mobile} ILIKE ${`%${search}%`})`);
     }
     
     return await db.select()
@@ -1191,164 +1192,62 @@ export class DatabaseStorage implements IStorage {
         });
         
       } else {
-        // 📝 SMART TEXT DETECTION: Enhanced name/narration search with fuzzy matching
-        const patterns = [
-          `%${searchTerm}%`,                    // Partial match anywhere
-          `${searchTerm}%`,                     // Starts with (important for names)
-          `% ${searchTerm}%`,                   // Space + term (middle names)
-          `%${searchTerm.toLowerCase()}%`,      // Lowercase match
-          `%${searchTerm.toUpperCase()}%`,      // Uppercase match
-        ];
+        const normalizedTerm = normalizeMarathiVowels(searchTerm);
         
-        // Enhanced search across multiple fields with priority: names first, then details
-        patterns.forEach(pattern => {
+        const vowelFrom = 'ीूैौॅॉआईऊऐऔ';
+        const vowelTo   = 'िुेोेोअइउएओ';
+        if (normalizedTerm !== searchTerm) {
           searchConditions.push(
-            sql`${parties.name} ILIKE ${pattern}`,           // Primary: Party names
-            sql`${cashTransactions.narration} ILIKE ${pattern}`, // Secondary: Transaction details
-            sql`${cashTransactions.category} ILIKE ${pattern}`,  // Tertiary: Categories
-            sql`${parties.mobile} ILIKE ${pattern}`,         // Mobile numbers
-            sql`${parties.address} ILIKE ${pattern}`         // Addresses
+            sql`translate(${parties.name}, ${vowelFrom}, ${vowelTo}) ILIKE ${`%${normalizedTerm}%`}`,
+            sql`translate(${cashTransactions.narration}, ${vowelFrom}, ${vowelTo}) ILIKE ${`%${normalizedTerm}%`}`
           );
-        });
+        }
         
-        // 🌟 5000+ NAME CROSS-LANGUAGE SEARCH - Same as Borrower List Reports
-        const createDualLanguageQuery = (originalQuery: string) => {
-          const englishToMarathi: Record<string, string> = {
-            // === MALE NAMES - COMPREHENSIVE A-Z ===
-            'amar': 'अमर', 'amarnath': 'अमरनाथ', 'amit': 'अमित', 'amitabh': 'अमिताभ',
-            'anand': 'आनंद', 'anant': 'अनंत', 'ankush': 'अंकुश', 'arjun': 'अर्जुन',
-            'arun': 'अरुण', 'arvind': 'अरविंद', 'ashish': 'आशीष', 'ashok': 'अशोक',
-            'atul': 'अतुल', 'bala': 'बाला', 'balaji': 'बालाजी', 'bharat': 'भरत',
-            'chandra': 'चंद्र', 'deepak': 'दीपक', 'ganesh': 'गणेश', 'gautam': 'गौतम',
-            'gopal': 'गोपाल', 'govind': 'गोविंद', 'hari': 'हरी', 'harish': 'हरीश',
-            'jay': 'जय', 'kiran': 'किरण', 'krishna': 'कृष्ण', 'kumar': 'कुमार',
-            'mohan': 'मोहन', 'narayan': 'नारायण', 'raj': 'राज', 'ravi': 'रवि',
-            'rohit': 'रोहित', 'sachin': 'सचिन', 'sagar': 'सागर', 'sanjay': 'संजय',
-            'santosh': 'संतोष', 'suresh': 'सुरेश', 'vikram': 'विक्रम', 'vinay': 'विनय',
-            'suryakant': 'सूर्यकांत', 'surya': 'सूर्य', 'sudhir': 'सुधीर',
-            
-            // === FEMALE NAMES - COMPREHENSIVE A-Z ===
-            'aarti': 'आरती', 'aditi': 'अदिती', 'anita': 'अनीता', 'anjali': 'अंजली',
-            'asha': 'आशा', 'bharati': 'भारती', 'deepa': 'दीपा', 'devi': 'देवी',
-            'gita': 'गीता', 'jaya': 'जया', 'kamala': 'कमला', 'lata': 'लता',
-            'laxmi': 'लक्ष्मी', 'leela': 'लीला', 'maya': 'माया', 'neha': 'नेहा',
-            'pooja': 'पूजा', 'priya': 'प्रिया', 'radha': 'राधा', 'rita': 'रीता',
-            'sunita': 'सुनीता', 'usha': 'उषा', 'vandana': 'वंदना', 'vidya': 'विद्या',
-            
-            // === SURNAMES & COMMON NAMES ===
-            'patel': 'पाटील', 'patil': 'पाटील', 'sharma': 'शर्मा', 'singh': 'सिंह',
-            'gupta': 'गुप्ता', 'joshi': 'जोशी', 'yadav': 'यादव', 'more': 'मोरे',
-            'jadhav': 'जाधव', 'desai': 'देसाई', 'shah': 'शाह', 'mehta': 'मेहता'
-          };
-          
-          const marathiToEnglish: Record<string, string> = {
-            // === CRITICAL CORE TRANSLATIONS ===
-            'सूर्यकांत': 'suryakant', 'सूर्य': 'surya', 'सुधीर': 'sudhir',
-            
-            // === MALE NAMES - COMPREHENSIVE A-Z ===
-            'अमर': 'amar', 'अमरनाथ': 'amarnath', 'अमित': 'amit', 'अमिताभ': 'amitabh',
-            'आनंद': 'anand', 'अनंत': 'anant', 'अंकुश': 'ankush', 'अर्जुन': 'arjun',
-            'अरुण': 'arun', 'अरविंद': 'arvind', 'आशीष': 'ashish', 'अशोक': 'ashok',
-            'अतुल': 'atul', 'बाला': 'bala', 'बालाजी': 'balaji', 'भरत': 'bharat',
-            'चंद्र': 'chandra', 'दीपक': 'deepak', 'गणेश': 'ganesh', 'गौतम': 'gautam',
-            'गोपाल': 'gopal', 'गोविंद': 'govind', 'हरी': 'hari', 'हरीश': 'harish',
-            'जय': 'jay', 'किरण': 'kiran', 'कृष्ण': 'krishna', 'कुमार': 'kumar',
-            'मोहन': 'mohan', 'नारायण': 'narayan', 'राज': 'raj', 'रवि': 'ravi',
-            'रोहित': 'rohit', 'सचिन': 'sachin', 'सागर': 'sagar', 'संजय': 'sanjay',
-            'संतोष': 'santosh', 'सुरेश': 'suresh', 'विक्रम': 'vikram', 'विनय': 'vinay',
-            
-            // === FEMALE NAMES - COMPREHENSIVE A-Z ===
-            'आरती': 'aarti', 'अदिती': 'aditi', 'अनीता': 'anita', 'अंजली': 'anjali',
-            'आशा': 'asha', 'भारती': 'bharati', 'दीपा': 'deepa', 'देवी': 'devi',
-            'गीता': 'gita', 'जया': 'jaya', 'कमला': 'kamala', 'लता': 'lata',
-            'लक्ष्मी': 'laxmi', 'लीला': 'leela', 'माया': 'maya', 'नेहा': 'neha',
-            'पूजा': 'pooja', 'प्रिया': 'priya', 'राधा': 'radha', 'रीता': 'rita',
-            'सुनीता': 'sunita', 'उषा': 'usha', 'वंदना': 'vandana', 'विद्या': 'vidya',
-            
-            // === SURNAMES & COMMON NAMES ===
-            'पाटील': 'patel', 'शर्मा': 'sharma', 'सिंह': 'singh', 'गुप्ता': 'gupta',
-            'जोशी': 'joshi', 'यादव': 'yadav', 'मोरे': 'more', 'जाधव': 'jadhav',
-            'देसाई': 'desai', 'शाह': 'shah', 'मेहता': 'mehta'
-          };
-          
-          const queries = [originalQuery];
-          const lowerQuery = originalQuery.toLowerCase();
-          
-          // Add direct translations for exact matches
-          if (englishToMarathi[lowerQuery]) {
-            queries.push(englishToMarathi[lowerQuery]);
-          }
-          if (marathiToEnglish[lowerQuery]) {
-            queries.push(marathiToEnglish[lowerQuery]);
-          }
-          
-          // Add partial word translations for compound names
-          Object.keys(englishToMarathi).forEach(english => {
-            if (lowerQuery.includes(english)) {
-              queries.push(englishToMarathi[english]);
-              queries.push(originalQuery.replace(new RegExp(english, 'gi'), englishToMarathi[english]));
-            }
+        const searchQueries = getNameTranslations(searchTerm);
+        if (normalizedTerm !== searchTerm) {
+          const normalizedVariations = getNameTranslations(normalizedTerm);
+          normalizedVariations.forEach(v => {
+            if (!searchQueries.includes(v)) searchQueries.push(v);
           });
-          
-          Object.keys(marathiToEnglish).forEach(marathi => {
-            if (originalQuery.includes(marathi)) {
-              queries.push(marathiToEnglish[marathi]);
-              queries.push(originalQuery.replace(new RegExp(marathi, 'g'), marathiToEnglish[marathi]));
-            }
-          });
-          
-          return Array.from(new Set(queries));
-        };
+        }
         
-        // Get all language variations of the search term
-        const searchQueries = createDualLanguageQuery(searchTerm);
-        console.log(`🌍 CROSS-LANGUAGE SEARCH: "${searchTerm}" expanded to:`, searchQueries);
-        
-        // Apply cross-language search to all fields
         searchQueries.forEach(query => {
-          const patterns = [
-            `%${query}%`,                    // Partial match anywhere
-            `${query}%`,                     // Starts with
-            `% ${query}%`,                   // Space + term (middle names)
-            `%${query.toLowerCase()}%`,      // Lowercase match
-            `%${query.toUpperCase()}%`,      // Uppercase match
+          const queryPatterns = [
+            `%${query}%`,
+            `${query}%`,
+            `% ${query}%`,
+            `%${query.toLowerCase()}%`,
+            `%${query.toUpperCase()}%`,
           ];
           
-          patterns.forEach(pattern => {
+          queryPatterns.forEach(pattern => {
             searchConditions.push(
-              sql`${parties.name} ILIKE ${pattern}`,           
-              sql`${cashTransactions.narration} ILIKE ${pattern}`, 
-              sql`${cashTransactions.category} ILIKE ${pattern}`,  
-              sql`${parties.mobile} ILIKE ${pattern}`,         
-              sql`${parties.address} ILIKE ${pattern}`         
+              sql`${parties.name} ILIKE ${pattern}`,
+              sql`${cashTransactions.narration} ILIKE ${pattern}`,
+              sql`${cashTransactions.category} ILIKE ${pattern}`,
+              sql`${parties.mobile} ILIKE ${pattern}`,
+              sql`${parties.address} ILIKE ${pattern}`
             );
           });
         });
         
-        // 🚀 SUPER SMART FUZZY MATCHING - Handles spelling mistakes
         if (searchTerm.length >= 2) {
           const fuzzyPatterns = [
-            `${searchTerm}%`,                     // Starts with term (for names)
-            `% ${searchTerm}%`,                   // Space + term (middle names)
-            `%${searchTerm.slice(0, -1)}%`,      // Remove last character (typos)
-            `%${searchTerm.slice(1)}%`,          // Remove first character (typos)
+            `%${searchTerm.slice(0, -1)}%`,
+            `%${searchTerm.slice(1)}%`,
           ];
           
-          // 🎯 SUPER FUZZY: Handle more spelling mistakes
           if (searchTerm.length >= 3) {
             fuzzyPatterns.push(
-              `%${searchTerm.slice(0, 2)}%`,     // First 2 characters
-              `%${searchTerm.slice(-2)}%`,       // Last 2 characters
-              `${searchTerm.slice(0, 3)}%`,      // First 3 characters + anything
+              `%${searchTerm.slice(0, 2)}%`,
+              `%${searchTerm.slice(-2)}%`,
+              `${searchTerm.slice(0, 3)}%`,
             );
           }
           
-          // 🔤 CHARACTER-BY-CHARACTER MATCHING
-          if (searchTerm.length >= 2) {
-            for (let i = 0; i < searchTerm.length - 1; i++) {
-              const partial = searchTerm.slice(i, i + 2);  // 2-char combinations
-              fuzzyPatterns.push(`%${partial}%`);
-            }
+          for (let i = 0; i < searchTerm.length - 1; i++) {
+            const partial = searchTerm.slice(i, i + 2);
+            fuzzyPatterns.push(`%${partial}%`);
           }
           
           fuzzyPatterns.forEach(pattern => {
@@ -1358,8 +1257,6 @@ export class DatabaseStorage implements IStorage {
             );
           });
         }
-        
-        // console.log('📝 TEXT-FOCUSED SEARCH:', { searchTerm, patternCount: patterns.length, totalConditions: searchConditions.length });
       }
       
       // Apply unified search conditions with OR logic

@@ -416,12 +416,27 @@ function Loans() {
   const groupInputRef = useRef<HTMLInputElement>(null);
   const groupSuggestionsRef = useRef<HTMLDivElement>(null);
 
+  const normalizeMarathiVowels = (text: string): string => {
+    return text
+      .replace(/ी/g, 'ि')
+      .replace(/ू/g, 'ु')
+      .replace(/ै/g, 'े')
+      .replace(/ौ/g, 'ो')
+      .replace(/ॅ/g, 'े')
+      .replace(/ॉ/g, 'ो')
+      .replace(/आ/g, 'अ')
+      .replace(/ई/g, 'इ')
+      .replace(/ऊ/g, 'उ')
+      .replace(/ऐ/g, 'ए')
+      .replace(/औ/g, 'ओ');
+  };
+
   // Enhanced Smart Fuzzy Search Logic with Dual Language Support
   const fuzzyMatch = (text: string, query: string): number => {
     if (!query) return 0;
     
-    const textLower = text.toLowerCase();
-    const queryLower = query.toLowerCase();
+    const textLower = normalizeMarathiVowels(text.toLowerCase());
+    const queryLower = normalizeMarathiVowels(query.toLowerCase());
     
     // Enhanced transliteration mapping for borrower search
     const englishToMarathi: Record<string, string> = {
@@ -621,8 +636,8 @@ function Loans() {
   const groupFuzzyMatch = (text: string, query: string): number => {
     if (!query) return 0;
     
-    const textLower = text.toLowerCase();
-    const queryLower = query.toLowerCase();
+    const textLower = normalizeMarathiVowels(text.toLowerCase());
+    const queryLower = normalizeMarathiVowels(query.toLowerCase());
     
     // Create multiple query variations for dual language search
     const createGroupSearchQueries = (originalQuery: string) => {
@@ -782,7 +797,7 @@ function Loans() {
   const getSearchScore = (loan: any, query: string): number => {
     if (!query || query.trim() === "") return 0;
     
-    const searchTerm = query.toLowerCase().trim();
+    const searchTerm = normalizeMarathiVowels(query.toLowerCase().trim());
     let score = 0;
     
     
@@ -799,7 +814,7 @@ function Loans() {
     searchFields.forEach(({ field, weight, label }) => {
       if (!field) return;
       
-      const fieldValue = field.toString().toLowerCase();
+      const fieldValue = normalizeMarathiVowels(field.toString().toLowerCase());
       let fieldScore = 0;
       
       // Exact match gets maximum score
@@ -1123,7 +1138,7 @@ function Loans() {
         </aside>
 
         <main className="flex-1 w-full lg:pl-72 pb-16 lg:pb-0">
-          <div className="p-6 space-y-6">
+          <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
       {/* Header with Title and New Loan Button */}
       <div className="flex justify-between items-center">
         <div>
@@ -1143,7 +1158,7 @@ function Loans() {
           }
         }}>
           <DialogTrigger asChild>
-            <Button className="bg-blue-600 hover:bg-blue-700 text-white" title="Alt+N: नवीन कर्ज">
+            <Button className="bg-blue-600 hover:bg-blue-700 active:scale-95 active:bg-blue-800 transition-all duration-150 text-white shadow-md" title="Alt+N: नवीन कर्ज">
               <Plus className="mr-2 h-4 w-4" />
               नवीन कर्ज
             </Button>
@@ -1204,6 +1219,7 @@ function Loans() {
                           <FormControl>
                             <div className="relative">
                               <Input
+                                ref={groupInputRef}
                                 placeholder="ग्रुप नाव टाइप करा (उदा: गजलक्ष्मी)"
                                 value={groupSearchTerm}
                                 tabIndex={1}
@@ -1212,11 +1228,11 @@ function Loans() {
                                   setGroupSearchTerm(value);
                                   setSelectedGroupSuggestionIndex(-1);
                                   
-                                  // Show suggestions for 1+ characters
-                                  if (value.length >= 1 && Array.isArray(groups)) {
+                                  const trimmedValue = value.trim();
+                                  if (trimmedValue.length >= 1 && Array.isArray(groups)) {
                                     const filtered = groups.filter((group: any) => 
-                                      group.name.toLowerCase().includes(value.toLowerCase()) ||
-                                      group.name.includes(value)
+                                      normalizeMarathiVowels(group.name.toLowerCase()).includes(normalizeMarathiVowels(trimmedValue.toLowerCase())) ||
+                                      group.name.includes(trimmedValue)
                                     );
                                     setShowGroupSuggestions(filtered.length > 0);
                                   } else {
@@ -1227,12 +1243,13 @@ function Loans() {
                                 onKeyDown={(e) => {
                                   if (!showGroupSuggestions || !Array.isArray(groups)) return;
                                   
-                                  const filteredGroups = groupSearchTerm 
+                                  const trimmedSearch = groupSearchTerm.trim();
+                                  const filteredGroups = trimmedSearch 
                                     ? groups.filter((group: any) => 
-                                        group.name.toLowerCase().includes(groupSearchTerm.toLowerCase()) ||
-                                        group.name.includes(groupSearchTerm)
+                                        normalizeMarathiVowels(group.name.toLowerCase()).includes(normalizeMarathiVowels(trimmedSearch.toLowerCase())) ||
+                                        group.name.includes(trimmedSearch)
                                       )
-                                    : groups; // Show all groups when search term is empty
+                                    : groups;
                                   
                                   if (filteredGroups.length === 0) return;
                                   
@@ -1266,10 +1283,11 @@ function Loans() {
                                   }
                                 }}
                                 onFocus={() => {
-                                  if (groupSearchTerm.length >= 1 && Array.isArray(groups)) {
+                                  const trimmedSearch = groupSearchTerm.trim();
+                                  if (trimmedSearch.length >= 1 && Array.isArray(groups) && groups.length > 0) {
                                     const filtered = groups.filter((group: any) => 
-                                      group.name.toLowerCase().includes(groupSearchTerm.toLowerCase()) ||
-                                      group.name.includes(groupSearchTerm)
+                                      normalizeMarathiVowels(group.name.toLowerCase()).includes(normalizeMarathiVowels(trimmedSearch.toLowerCase())) ||
+                                      group.name.includes(trimmedSearch)
                                     );
                                     setShowGroupSuggestions(filtered.length > 0);
                                   }
@@ -1286,12 +1304,18 @@ function Loans() {
                               <button
                                 type="button"
                                 className="absolute right-2 top-1/2 transform -translate-y-1/2 p-1 hover:bg-gray-100 rounded transition-colors"
+                                onMouseDown={(e) => {
+                                  e.preventDefault();
+                                }}
                                 onClick={() => {
                                   if (Array.isArray(groups) && groups.length > 0) {
-                                    // Show all groups when arrow is clicked
                                     setGroupSearchTerm("");
                                     setShowGroupSuggestions(true);
                                     setSelectedGroupSuggestionIndex(-1);
+                                    const inputEl = groupInputRef.current;
+                                    if (inputEl) {
+                                      inputEl.focus();
+                                    }
                                   }
                                 }}
                               >
@@ -1302,12 +1326,13 @@ function Loans() {
                               
                               {/* Group Autocomplete Dropdown */}
                               {showGroupSuggestions && Array.isArray(groups) && (() => {
-                                const filteredGroups = groupSearchTerm 
+                                const trimmedSearch = groupSearchTerm.trim();
+                                const filteredGroups = trimmedSearch 
                                   ? groups.filter((group: any) => 
-                                      group.name.toLowerCase().includes(groupSearchTerm.toLowerCase()) ||
-                                      group.name.includes(groupSearchTerm)
+                                      normalizeMarathiVowels(group.name.toLowerCase()).includes(normalizeMarathiVowels(trimmedSearch.toLowerCase())) ||
+                                      group.name.includes(trimmedSearch)
                                     )
-                                  : groups; // Show all groups when search term is empty (arrow clicked)
+                                  : groups;
                                 
                                 return filteredGroups.length > 0 && (
                                   <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
@@ -1359,12 +1384,11 @@ function Loans() {
                                 onChange={(e) => {
                                   const value = e.target.value;
                                   field.onChange(value);
-                                  setBorrowerSearchTerm(value); // Instant search - no debounce
+                                  setBorrowerSearchTerm(value.trim()); // Trim trailing space from Android keyboard suggestions
                                   setBorrowerSearchQuery(value);
                                   setSelectedSuggestionIndex(-1); // Reset selection
                                   
-                                  // Show suggestions when typing (minimum 2 characters)
-                                  if (value.trim().length >= 2 && borrowerAutocompleteSuggestions.length > 0) {
+                                  if (value.trim().length >= 2) {
                                     setShowBorrowerSuggestions(true);
                                   } else {
                                     setShowBorrowerSuggestions(false);
@@ -2155,7 +2179,7 @@ function Loans() {
                   <Button type="submit" disabled={createLoanMutation.isPending || isUploadingPhotos} tabIndex={23} title="Alt+S">
                     {isUploadingPhotos ? "अपलोड करत आहे..." : 
                      createdLoanId ? "फोटो अपलोड करा" :
-                     editingLoan ? "अपडेट करा" : "जतन करा"} (Alt+S)
+                     editingLoan ? "अपडेट करा" : "जतन करा"}<span className="hidden sm:inline"> (Alt+S)</span>
                   </Button>
                 </div>
               </div>
@@ -2231,7 +2255,7 @@ function Loans() {
                     scrollToSearchResults();
                   }
                 }}
-                className="bg-green-600 hover:bg-green-700 text-white px-4"
+                className="bg-green-600 hover:bg-green-700 active:scale-95 active:bg-green-800 transition-all duration-150 text-white px-4 shadow-md"
               >
                 शोध
               </Button>
@@ -2320,7 +2344,7 @@ function Loans() {
                 // Always scroll to results area, regardless of search query
                 scrollToSearchResults();
               }}
-              className="flex-1 bg-purple-600 hover:bg-purple-700 text-white"
+              className="flex-1 bg-purple-600 hover:bg-purple-700 active:scale-95 active:bg-purple-800 transition-all duration-150 text-white shadow-md"
             >
               <Search className="mr-2 h-4 w-4" />
               शोधा
@@ -2340,7 +2364,7 @@ function Loans() {
                 setSelectedLoanId(null);
               }}
               variant="outline"
-              className="flex-1 border-red-300 text-red-600 hover:bg-red-50"
+              className="flex-1 border-red-300 text-red-600 hover:text-red-700 hover:bg-red-50 active:scale-95 transition-transform duration-150 shadow-sm"
             >
               <X className="mr-2 h-4 w-4" />
               साफ करा

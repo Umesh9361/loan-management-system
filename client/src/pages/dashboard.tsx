@@ -5,6 +5,7 @@ import { Sidebar } from "@/components/ui/sidebar";
 import { MobileNav } from "@/components/ui/mobile-nav";
 import { LoanCalculations } from "@/lib/calculations";
 import { DateUtils } from "@/lib/date-utils";
+import { MaturityReminderPopup } from "@/components/maturity-reminder";
 import { 
   CreditCard, 
   HandCoins, 
@@ -402,6 +403,7 @@ export default function Dashboard() {
           </div>
         </main>
       </div>
+      <MaturityReminderPopup />
     </div>
   );
 }

@@ -13,6 +13,7 @@ import { useState } from "react";
 import { Sidebar } from "./sidebar";
 import { AuthService } from "@/lib/auth";
 import { useSafeNavigation } from "@/hooks/use-safe-navigation";
+import { NotificationBell } from "@/components/maturity-reminder";
 import { 
   Home, 
   CreditCard, 
@@ -87,6 +88,7 @@ export function MobileNav({ hideBottomNav = false }: MobileNavProps = {}) {
           <h1 className="text-base font-semibold truncate">कर्ज व्यवस्थापन</h1>
           
           <div className="flex items-center gap-1">
+            <NotificationBell />
             <Button 
               variant="ghost" 
               size="icon"

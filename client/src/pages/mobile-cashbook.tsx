@@ -65,13 +65,14 @@ function MobileCashbook() {
     startDate: "",
     endDate: ""
   });
+  const [searchDisplayText, setSearchDisplayText] = useState("");
   const [searchFilters, setSearchFilters] = useState({
-    search: "", // Unified search field for Facebook-style search
-    amount: "", // Keep for backward compatibility
+    search: "",
+    amount: "",
     dateFrom: "",
     dateTo: "",
-    transactionType: "", // For DR/CR filter
-    monthsBack: "" // New field for months back search
+    transactionType: "",
+    monthsBack: ""
   });
 
   // Convert DD/MM/YY to YYYY-MM-DD format
@@ -196,6 +197,21 @@ function MobileCashbook() {
   const [isLoading, setIsLoading] = React.useState(true);
   const [searchDebounceTimer, setSearchDebounceTimer] = React.useState<NodeJS.Timeout | null>(null);
   
+  const normalizeMarathiVowels = (text: string): string => {
+    return text
+      .replace(/ी/g, 'ि')
+      .replace(/ू/g, 'ु')
+      .replace(/ै/g, 'े')
+      .replace(/ौ/g, 'ो')
+      .replace(/ॅ/g, 'े')
+      .replace(/ॉ/g, 'ो')
+      .replace(/आ/g, 'अ')
+      .replace(/ई/g, 'इ')
+      .replace(/ऊ/g, 'उ')
+      .replace(/ऐ/g, 'ए')
+      .replace(/औ/g, 'ओ');
+  };
+
   // Enhanced Cross-Language Search Support - Same as All Other Forms
   const createDualLanguageQuery = (originalQuery: string) => {
     const englishToMarathi: Record<string, string> = {
@@ -237,24 +253,20 @@ function MobileCashbook() {
     return queries;
   };
   
-  // Enhanced search function that sends multiple query variations to backend
   const performCrossLanguageSearch = (searchTerm: string) => {
-    if (!searchTerm.trim()) {
+    const trimmed = searchTerm.trim();
+    if (!trimmed) {
       return searchTerm;
     }
     
-    // Get all language variations
-    const searchQueries = createDualLanguageQuery(searchTerm);
+    const searchQueries = createDualLanguageQuery(trimmed);
     
-    // Use the search term that's most likely to find results
-    // For now, we'll combine them as a multi-term search
+    const normalizedVariant = normalizeMarathiVowels(trimmed);
+    if (normalizedVariant !== trimmed && !searchQueries.includes(normalizedVariant)) {
+      searchQueries.push(normalizedVariant);
+    }
+    
     const combinedSearch = searchQueries.join(' ');
-    
-    console.log('🔍 MOBILE CASHBOOK CROSS-LANGUAGE SEARCH:', { 
-      originalTerm: searchTerm,
-      searchQueries,
-      combinedSearch 
-    });
     
     return combinedSearch;
   };
@@ -777,6 +789,7 @@ function MobileCashbook() {
     });
     
     // CRITICAL: Clear search filters to show entries for new date
+    setSearchDisplayText("");
     setSearchFilters({
       search: "",
       amount: "",
@@ -1186,6 +1199,7 @@ function MobileCashbook() {
                   setViewPeriod(period as any);
                   
                   // CRITICAL: Clear search filters when changing period
+                  setSearchDisplayText("");
                   setSearchFilters({
                     search: "",
                     amount: "",
@@ -1337,6 +1351,7 @@ OK ✓
                     });
                     
                     // CRITICAL: Clear search filters to show entries for new date
+                    setSearchDisplayText("");
                     setSearchFilters({
                       search: "",
                       amount: "",
@@ -1396,11 +1411,11 @@ OK ✓
               <div className="space-y-2">
                 <Input
                   placeholder="Search by name, amount, or description..."
-                  value={searchFilters.search}
+                  value={searchDisplayText}
                   onChange={(e) => {
                     const newValue = e.target.value;
+                    setSearchDisplayText(newValue);
                     
-                    // Apply cross-language search enhancement
                     const enhancedSearchTerm = performCrossLanguageSearch(newValue);
                     
                     setSearchFilters(prev => ({ ...prev, search: enhancedSearchTerm, amount: "" }));
@@ -1505,7 +1520,7 @@ OK ✓
                 variant="outline"
                 size="sm"
                 className="w-full h-10 text-gray-600 border-gray-300 hover:bg-gray-50 transition-colors"
-                onClick={() => setSearchFilters({ search: "", amount: "", dateFrom: "", dateTo: "", transactionType: "", monthsBack: "" })}
+                onClick={() => { setSearchDisplayText(""); setSearchFilters({ search: "", amount: "", dateFrom: "", dateTo: "", transactionType: "", monthsBack: "" }); }}
               >
                 Clear All Filters
               </Button>
