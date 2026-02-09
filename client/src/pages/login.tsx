@@ -159,9 +159,9 @@ export default function Login() {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600 p-0 bg-transparent border-none cursor-pointer"
+                    className="absolute right-3 top-3 text-gray-400 hover:text-gray-600 p-0 bg-transparent border-none cursor-pointer"
                   >
-                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
                 {form.formState.errors.password && (
