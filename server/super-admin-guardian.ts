@@ -37,7 +37,7 @@ export class SuperAdminGuardian {
       .where(eq(users.role, "super_admin"));
     
     // 2. Fix super_admin users in wrong tenants
-    const wrongTenantSuperAdmins = allSuperAdmins.filter(user => user.tenantId !== "SUPER_ADMIN");
+    const wrongTenantSuperAdmins = allSuperAdmins.filter((user: typeof allSuperAdmins[number]) => user.tenantId !== "SUPER_ADMIN");
     
     for (const user of wrongTenantSuperAdmins) {
       await db.update(users)
@@ -65,7 +65,7 @@ export class SuperAdminGuardian {
       console.log(`✅ GUARDIAN: Prevented misconfiguration - changed ${user.username} to admin role`);
     }
     
-    const finalSuperAdminCount = allSuperAdmins.filter(u => u.tenantId === "SUPER_ADMIN").length + wrongTenantSuperAdmins.length;
+    const finalSuperAdminCount = allSuperAdmins.filter((u: typeof allSuperAdmins[number]) => u.tenantId === "SUPER_ADMIN").length + wrongTenantSuperAdmins.length;
     
     console.log(`🛡️  GUARDIAN: Validation complete - ${finalSuperAdminCount} Super Admin(s) secured`);
     

@@ -150,7 +150,7 @@ export async function initializeDatabase() {
         .where(eq(users.role, "super_admin"));
         
       const superAdminCount = roleValidation.length;
-      const wrongTenantSuperAdmin = roleValidation.filter(user => user.tenantId !== "SUPER_ADMIN");
+      const wrongTenantSuperAdmin = roleValidation.filter((user: typeof roleValidation[number]) => user.tenantId !== "SUPER_ADMIN");
       
       if (wrongTenantSuperAdmin.length > 0) {
         console.warn("⚠️  CRITICAL WARNING: Found super_admin users in wrong tenants:", wrongTenantSuperAdmin);
