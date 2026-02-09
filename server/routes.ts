@@ -270,9 +270,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/auth/login", async (req, res) => {
     try {
       const startTime = Date.now();
-      const { tenantId, username, password } = loginSchema.parse(req.body);
-      
-      // DEBUG: Check for hidden characters
+      const parsed = loginSchema.parse(req.body);
+      const tenantId = parsed.tenantId.toUpperCase().trim();
+      const username = parsed.username.trim();
+      const password = parsed.password;
       
       const user = await storage.getUserByCredentials(tenantId, username);
       
@@ -2897,28 +2898,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Tenant ID and username are required" });
       }
       
-      // Verify user exists
-      const user = await storage.getUserByCredentials(tenantId, username);
+      const user = await storage.getUserByCredentials(tenantId.toUpperCase().trim(), username.trim());
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
       
-      // Create password reset request entry (we'll store in a simple way for now)
       const resetRequest = {
-        tenantId,
-        username,
+        id: `${tenantId}_${username}_${Date.now()}`,
+        tenantId: tenantId.toUpperCase().trim(),
+        username: username.trim(),
+        adminUsername: username.trim(),
         userRole: user.role,
         reason: reason || "Password forgotten",
         requestedAt: new Date(),
         status: "pending"
       };
       
-      // In a real system, this would be stored in a database table
-      // For now, we'll just return success and super admin can handle via direct API
+      if (!(globalThis as any).passwordResetRequests) {
+        (globalThis as any).passwordResetRequests = [];
+      }
+      (globalThis as any).passwordResetRequests.push(resetRequest);
+      
+      console.log(`📋 Password reset request stored: ${username}@${tenantId} - Total requests: ${(globalThis as any).passwordResetRequests.length}`);
       
       res.json({ 
         message: "Password reset request submitted successfully",
-        requestId: `${tenantId}_${username}_${Date.now()}`,
+        requestId: resetRequest.id,
         info: "Your request has been sent to system administrator"
       });
     } catch (error) {

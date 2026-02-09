@@ -72,38 +72,8 @@ export async function initializeDatabase() {
         console.log("✅ Super Admin already exists in SUPER_ADMIN tenant.");
       }
       
-      // 2. Check if Normal Admin exists for TEST tenant (Business Administrator)
-      const [existingNormalAdmin] = await db.select()
-        .from(users)
-        .where(and(
-          eq(users.tenantId, "TEST"),
-          eq(users.username, "admin"),
-          eq(users.role, "admin")
-        ));
-      
-      if (!existingNormalAdmin) {
-        console.log("Creating Normal Admin for TEST tenant...");
-        
-        try {
-          const hashedPassword = await bcrypt.hash("admin123", 10);
-          await db.insert(users).values({
-            username: "admin",
-            password: hashedPassword,
-            tenantId: "TEST",
-            role: "admin", // Normal admin, not super_admin
-            isActive: true,
-            fullName: "Business Administrator",
-            email: "admin@test.com"
-          });
-          
-          console.log("✅ Normal Admin created successfully in TEST tenant!");
-        } catch (userCreationError) {
-          console.error("Failed to create Normal Admin:", userCreationError);
-          throw userCreationError;
-        }
-      } else {
-        console.log("✅ Normal Admin already exists in TEST tenant.");
-      }
+      // 2. TEST tenant is no longer auto-created - tenants are managed by Super Admin only
+      console.log("✅ Tenant management: Only Super Admin can create/delete tenants");
       
       // 3. Ensure required companies exist
       const { companies } = await import("@shared/schema");
@@ -126,23 +96,7 @@ export async function initializeDatabase() {
         console.log("✅ SUPER_ADMIN company created successfully!");
       }
       
-      // Check if TEST company exists
-      const [testCompany] = await db.select()
-        .from(companies)
-        .where(eq(companies.tenantId, "TEST"));
-        
-      if (!testCompany) {
-        console.log("Creating TEST company...");
-        await db.insert(companies).values({
-          tenantId: "TEST",
-          name: "टेस्ट कंपनी",
-          contactNumber: "9876543210",
-          email: "test@example.com",
-          address: "पुणे",
-          licenseNumber: "LIC123"
-        });
-        console.log("✅ TEST company created successfully!");
-      }
+      // TEST company is no longer auto-created - managed by Super Admin
       
       // 4. CRITICAL VALIDATION: Ensure no role confusion exists
       const roleValidation = await db.select()
@@ -164,24 +118,7 @@ export async function initializeDatabase() {
         }
       }
       
-      // 5. PREVENTION: Ensure no regular admins have super_admin role in business tenants
-      const businessAdmins = await db.select()
-        .from(users)
-        .where(and(
-          eq(users.role, "super_admin"),
-          eq(users.tenantId, "TEST")
-        ));
-        
-      if (businessAdmins.length > 0) {
-        console.warn("⚠️  PREVENTION: Found super_admin role in business tenant, fixing...");
-        
-        for (const admin of businessAdmins) {
-          await db.update(users)
-            .set({ role: "admin" })
-            .where(eq(users.id, admin.id));
-          console.log(`✅ Prevention: Changed ${admin.username} from super_admin to admin in ${admin.tenantId}`);
-        }
-      }
+      // 5. PREVENTION: Already handled by wrongTenantSuperAdmin fix above
       
       console.log(`✅ System validation complete: ${superAdminCount} Super Admin(s) found`);
       console.log("✅ Multi-tenant admin structure verified and secured");

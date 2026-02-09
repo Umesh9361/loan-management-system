@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
-import { KeyRound, Clock, CheckCircle, XCircle, Search, ArrowLeft, Eye, UserCheck } from "lucide-react";
+import { KeyRound, Clock, CheckCircle, XCircle, Search, ArrowLeft, Eye, EyeOff, UserCheck } from "lucide-react";
 import { Link } from "wouter";
 import { format } from "date-fns";
 
@@ -38,6 +38,9 @@ interface UserDetail {
 export function SuperAdminPasswordRequests() {
   const [selectedUser, setSelectedUser] = useState<UserDetail | null>(null);
   const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const { toast } = useToast();
 
@@ -68,6 +71,9 @@ export function SuperAdminPasswordRequests() {
       queryClient.invalidateQueries({ queryKey: ["/api/super-admin/all-users"] });
       setSelectedUser(null);
       setNewPassword("");
+      setConfirmPassword("");
+      setShowPassword(false);
+      setShowConfirmPassword(false);
       toast({
         title: "पासवर्ड रीसेट केले",
         description: "यूजरचा पासवर्ड यशस्वीपणे अपडेट केला आहे",
@@ -272,19 +278,51 @@ export function SuperAdminPasswordRequests() {
                               
                               <div>
                                 <Label htmlFor="newPassword">नवा पासवर्ड</Label>
-                                <Input
-                                  id="newPassword"
-                                  type="password"
-                                  value={newPassword}
-                                  onChange={(e) => setNewPassword(e.target.value)}
-                                  placeholder="किमान 6 अक्षरांचा पासवर्ड"
-                                />
+                                <div className="relative">
+                                  <Input
+                                    id="newPassword"
+                                    type={showPassword ? "text" : "password"}
+                                    value={newPassword}
+                                    onChange={(e) => setNewPassword(e.target.value)}
+                                    placeholder="किमान 6 अक्षरांचा पासवर्ड"
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                                  >
+                                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                  </button>
+                                </div>
+                              </div>
+                              
+                              <div>
+                                <Label htmlFor="confirmPassword">Confirm Password</Label>
+                                <div className="relative">
+                                  <Input
+                                    id="confirmPassword"
+                                    type={showConfirmPassword ? "text" : "password"}
+                                    value={confirmPassword}
+                                    onChange={(e) => setConfirmPassword(e.target.value)}
+                                    placeholder="पुन्हा पासवर्ड प्रविष्ट करा"
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                                  >
+                                    {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                  </button>
+                                </div>
+                                {confirmPassword && newPassword !== confirmPassword && (
+                                  <p className="text-red-500 text-sm mt-1">Password जुळत नाही!</p>
+                                )}
                               </div>
                               
                               <div className="flex space-x-3">
                                 <Button
                                   onClick={handleResetPassword}
-                                  disabled={!newPassword || newPassword.length < 6 || resetPasswordMutation.isPending}
+                                  disabled={!newPassword || newPassword.length < 6 || newPassword !== confirmPassword || resetPasswordMutation.isPending}
                                   className="flex-1"
                                 >
                                   {resetPasswordMutation.isPending ? "रीसेट करत आहे..." : "पासवर्ड रीसेट करा"}
@@ -294,6 +332,9 @@ export function SuperAdminPasswordRequests() {
                                   onClick={() => {
                                     setSelectedUser(null);
                                     setNewPassword("");
+                                    setConfirmPassword("");
+                                    setShowPassword(false);
+                                    setShowConfirmPassword(false);
                                   }}
                                 >
                                   रद्द करा

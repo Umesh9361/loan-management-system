@@ -44,6 +44,8 @@ import {
   Clock,
   Lock,
   Power,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { Sidebar } from "@/components/ui/sidebar";
 import { MobileNav } from "@/components/ui/mobile-nav";
@@ -74,13 +76,19 @@ export default function SuperAdminTenantManagement() {
   const [disableHours, setDisableHours] = useState<string>("24");
   const [resetPasswordAdmin, setResetPasswordAdmin] = useState<any>(null);
   const [newPassword, setNewPassword] = useState<string>("");
+  const [resetConfirmPassword, setResetConfirmPassword] = useState("");
+  const [showResetPassword, setShowResetPassword] = useState(false);
+  const [showResetConfirmPassword, setShowResetConfirmPassword] = useState(false);
   const [deletingAdmin, setDeletingAdmin] = useState<string | null>(null);
   const [approveRequestAdmin, setApproveRequestAdmin] = useState<any>(null);
   const [requestPassword, setRequestPassword] = useState<string>("");
+  const [confirmRequestPassword, setConfirmRequestPassword] = useState("");
+  const [showRequestPassword, setShowRequestPassword] = useState(false);
+  const [showConfirmRequestPassword, setShowConfirmRequestPassword] = useState(false);
   const [changingOwnPassword, setChangingOwnPassword] = useState<boolean>(false);
   const [currentPassword, setCurrentPassword] = useState<string>("");
   const [newOwnPassword, setNewOwnPassword] = useState<string>("");
-  const [confirmPassword, setConfirmPassword] = useState<string>("");
+  const [confirmOwnPassword, setConfirmOwnPassword] = useState<string>("");
   const [togglingTenant, setTogglingTenant] = useState<string | null>(null);
 
   // Fetch all tenants
@@ -203,6 +211,9 @@ export default function SuperAdminTenantManagement() {
       });
       setResetPasswordAdmin(null);
       setNewPassword("");
+      setResetConfirmPassword("");
+      setShowResetPassword(false);
+      setShowResetConfirmPassword(false);
     },
     onError: (error: any) => {
       toast({
@@ -249,7 +260,7 @@ export default function SuperAdminTenantManagement() {
       setChangingOwnPassword(false);
       setCurrentPassword("");
       setNewOwnPassword("");
-      setConfirmPassword("");
+      setConfirmOwnPassword("");
     },
     onError: (error: any) => {
       toast({
@@ -261,7 +272,7 @@ export default function SuperAdminTenantManagement() {
   });
 
   const handleChangeOwnPassword = () => {
-    if (newOwnPassword !== confirmPassword) {
+    if (newOwnPassword !== confirmOwnPassword) {
       toast({
         title: "Error",
         description: "New password and confirm password do not match.",
@@ -533,37 +544,68 @@ export default function SuperAdminTenantManagement() {
                       </p>
                     </div>
                     <div>
-                      <Label htmlFor="new-password">New Password</Label>
-                      <Input
-                        id="new-password"
-                        type="password"
-                        value={newPassword}
-                        onChange={(e) => setNewPassword(e.target.value)}
-                        placeholder="Enter new password (min 6 characters)"
-                      />
+                      <Label htmlFor="new-password">नवीन Password</Label>
+                      <div className="relative">
+                        <Input
+                          id="new-password"
+                          type={showResetPassword ? "text" : "password"}
+                          value={newPassword}
+                          onChange={(e) => setNewPassword(e.target.value)}
+                          placeholder="किमान 6 अक्षरांचा password"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowResetPassword(!showResetPassword)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                        >
+                          {showResetPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </button>
+                      </div>
+                    </div>
+                    <div>
+                      <Label htmlFor="confirm-password">Confirm Password</Label>
+                      <div className="relative">
+                        <Input
+                          id="confirm-password"
+                          type={showResetConfirmPassword ? "text" : "password"}
+                          value={resetConfirmPassword}
+                          onChange={(e) => setResetConfirmPassword(e.target.value)}
+                          placeholder="पुन्हा password प्रविष्ट करा"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowResetConfirmPassword(!showResetConfirmPassword)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                        >
+                          {showResetConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </button>
+                      </div>
+                      {resetConfirmPassword && newPassword !== resetConfirmPassword && (
+                        <p className="text-red-500 text-sm mt-1">Password जुळत नाही!</p>
+                      )}
                     </div>
                     <div className="flex justify-end space-x-2">
-                      <Button variant="outline" onClick={() => setResetPasswordAdmin(null)}>
-                        Cancel
+                      <Button variant="outline" onClick={() => {
+                        setResetPasswordAdmin(null);
+                        setNewPassword("");
+                        setResetConfirmPassword("");
+                        setShowResetPassword(false);
+                        setShowResetConfirmPassword(false);
+                      }}>
+                        रद्द करा
                       </Button>
                       <Button
                         onClick={() => {
-                          if (newPassword.length >= 6) {
+                          if (newPassword.length >= 6 && newPassword === resetConfirmPassword) {
                             resetAdminPasswordMutation.mutate({ 
                               adminId: resetPasswordAdmin.id, 
                               newPassword 
                             });
-                          } else {
-                            toast({
-                              title: "Error",
-                              description: "Password must be at least 6 characters long",
-                              variant: "destructive"
-                            });
                           }
                         }}
-                        disabled={resetAdminPasswordMutation.isPending || newPassword.length < 6}
+                        disabled={resetAdminPasswordMutation.isPending || newPassword.length < 6 || newPassword !== resetConfirmPassword}
                       >
-                        {resetAdminPasswordMutation.isPending ? "Resetting..." : "Reset Password"}
+                        {resetAdminPasswordMutation.isPending ? "रीसेट करत आहे..." : "Password Reset करा"}
                       </Button>
                     </div>
                   </div>
@@ -817,38 +859,69 @@ export default function SuperAdminTenantManagement() {
                       </p>
                     </div>
                     <div>
-                      <Label htmlFor="request-password">Set New Password</Label>
-                      <Input
-                        id="request-password"
-                        type="password"
-                        value={requestPassword}
-                        onChange={(e) => setRequestPassword(e.target.value)}
-                        placeholder="Enter new password (min 6 characters)"
-                      />
+                      <Label htmlFor="request-password">नवीन Password</Label>
+                      <div className="relative">
+                        <Input
+                          id="request-password"
+                          type={showRequestPassword ? "text" : "password"}
+                          value={requestPassword}
+                          onChange={(e) => setRequestPassword(e.target.value)}
+                          placeholder="किमान 6 अक्षरांचा password"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowRequestPassword(!showRequestPassword)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                        >
+                          {showRequestPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </button>
+                      </div>
+                    </div>
+                    <div>
+                      <Label htmlFor="confirm-request-password">Confirm Password</Label>
+                      <div className="relative">
+                        <Input
+                          id="confirm-request-password"
+                          type={showConfirmRequestPassword ? "text" : "password"}
+                          value={confirmRequestPassword}
+                          onChange={(e) => setConfirmRequestPassword(e.target.value)}
+                          placeholder="पुन्हा password प्रविष्ट करा"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowConfirmRequestPassword(!showConfirmRequestPassword)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                        >
+                          {showConfirmRequestPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </button>
+                      </div>
+                      {confirmRequestPassword && requestPassword !== confirmRequestPassword && (
+                        <p className="text-red-500 text-sm mt-1">Password जुळत नाही!</p>
+                      )}
                     </div>
                     <div className="flex justify-end space-x-2">
-                      <Button variant="outline" onClick={() => setApproveRequestAdmin(null)}>
-                        Cancel
+                      <Button variant="outline" onClick={() => {
+                        setApproveRequestAdmin(null);
+                        setRequestPassword("");
+                        setConfirmRequestPassword("");
+                        setShowRequestPassword(false);
+                        setShowConfirmRequestPassword(false);
+                      }}>
+                        रद्द करा
                       </Button>
                       <Button
                         onClick={() => {
-                          if (requestPassword.length >= 6) {
+                          if (requestPassword.length >= 6 && requestPassword === confirmRequestPassword) {
                             approvePasswordResetMutation.mutate({ 
                               requestId: approveRequestAdmin.id, 
                               newPassword: requestPassword 
                             });
-                          } else {
-                            toast({
-                              title: "Error",
-                              description: "Password must be at least 6 characters long",
-                              variant: "destructive"
-                            });
                           }
                         }}
-                        disabled={approvePasswordResetMutation.isPending || requestPassword.length < 6}
+                        disabled={approvePasswordResetMutation.isPending || requestPassword.length < 6 || requestPassword !== confirmRequestPassword}
                         className="bg-orange-600 hover:bg-orange-700"
                       >
-                        {approvePasswordResetMutation.isPending ? "Approving..." : "Approve & Set Password"}
+                        {approvePasswordResetMutation.isPending ? "मंजूर करत आहे..." : "मंजूर करा आणि Password सेट करा"}
                       </Button>
                     </div>
                   </div>
@@ -895,8 +968,8 @@ export default function SuperAdminTenantManagement() {
                       <Input
                         id="confirmPassword"
                         type="password"
-                        value={confirmPassword}
-                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        value={confirmOwnPassword}
+                        onChange={(e) => setConfirmOwnPassword(e.target.value)}
                         placeholder="नवीन पासवर्ड पुन्हा टाका"
                       />
                     </div>
@@ -910,7 +983,7 @@ export default function SuperAdminTenantManagement() {
                       </Button>
                       <Button
                         onClick={handleChangeOwnPassword}
-                        disabled={changeOwnPasswordMutation.isPending || !currentPassword || !newOwnPassword || !confirmPassword}
+                        disabled={changeOwnPasswordMutation.isPending || !currentPassword || !newOwnPassword || !confirmOwnPassword}
                         className="flex-1 bg-blue-600 hover:bg-blue-700"
                       >
                         {changeOwnPasswordMutation.isPending ? "बदलत आहे..." : "पासवर्ड बदला"}

@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Sidebar } from "@/components/ui/sidebar";
 import { MobileNav } from "@/components/ui/mobile-nav";
-import { Trash2, Users, FileText, CreditCard, Briefcase, TrendingUp, Calendar, ArrowLeft, Key } from "lucide-react";
+import { Trash2, Users, FileText, CreditCard, Briefcase, TrendingUp, Calendar, ArrowLeft, Key, Eye, EyeOff } from "lucide-react";
 import { Link } from "wouter";
 
 interface TenantStats {
@@ -31,6 +31,9 @@ export default function SuperAdminTenants() {
   const [selectedTenant, setSelectedTenant] = useState<string | null>(null);
   const [resetPasswordTenant, setResetPasswordTenant] = useState<string | null>(null);
   const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const { data: tenantStats, isLoading } = useQuery<TenantStats[]>({
     queryKey: ["/api/super-admin/tenant-stats"],
@@ -66,6 +69,9 @@ export default function SuperAdminTenants() {
       });
       setResetPasswordTenant(null);
       setNewPassword("");
+      setConfirmPassword("");
+      setShowPassword(false);
+      setShowConfirmPassword(false);
     },
     onError: (error: any) => {
       toast({
@@ -256,24 +262,58 @@ export default function SuperAdminTenants() {
                                           </div>
                                           <div>
                                             <Label htmlFor="new-password">नवीन Password</Label>
-                                            <Input
-                                              id="new-password"
-                                              type="password"
-                                              value={newPassword}
-                                              onChange={(e) => setNewPassword(e.target.value)}
-                                              placeholder="नवीन password प्रविष्ट करा"
-                                            />
+                                            <div className="relative">
+                                              <Input
+                                                id="new-password"
+                                                type={showPassword ? "text" : "password"}
+                                                value={newPassword}
+                                                onChange={(e) => setNewPassword(e.target.value)}
+                                                placeholder="नवीन password प्रविष्ट करा"
+                                              />
+                                              <button
+                                                type="button"
+                                                onClick={() => setShowPassword(!showPassword)}
+                                                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                                              >
+                                                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                              </button>
+                                            </div>
+                                          </div>
+                                          <div>
+                                            <Label htmlFor="confirm-password">Confirm Password</Label>
+                                            <div className="relative">
+                                              <Input
+                                                id="confirm-password"
+                                                type={showConfirmPassword ? "text" : "password"}
+                                                value={confirmPassword}
+                                                onChange={(e) => setConfirmPassword(e.target.value)}
+                                                placeholder="पुन्हा password प्रविष्ट करा"
+                                              />
+                                              <button
+                                                type="button"
+                                                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                                              >
+                                                {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                              </button>
+                                            </div>
+                                            {confirmPassword && newPassword !== confirmPassword && (
+                                              <p className="text-red-500 text-sm mt-1">Password जुळत नाही!</p>
+                                            )}
                                           </div>
                                           <div className="flex gap-2 justify-end">
                                             <Button variant="outline" onClick={() => {
                                               setResetPasswordTenant(null);
                                               setNewPassword("");
+                                              setConfirmPassword("");
+                                              setShowPassword(false);
+                                              setShowConfirmPassword(false);
                                             }}>
                                               रद्द करा
                                             </Button>
                                             <Button 
                                               onClick={handleResetPassword}
-                                              disabled={!newPassword.trim() || resetPasswordMutation.isPending}
+                                              disabled={!newPassword.trim() || newPassword !== confirmPassword || resetPasswordMutation.isPending}
                                             >
                                               Password Reset करा
                                             </Button>

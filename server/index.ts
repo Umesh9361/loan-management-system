@@ -114,7 +114,7 @@ app.use((req, res, next) => {
     console.log("Database initialized successfully");
     
     // Run login health check after database initialization
-    await LoginHealthMonitor.startupHealthCheck();
+    await LoginHealthMonitor.autoRepairCredentials();
     
     const server = await registerRoutes(app);
     console.log("Routes registered successfully");

@@ -1,7 +1,7 @@
 // Login Health Monitoring & Prevention System
 // भविष्यात login problems टाळण्यासाठी comprehensive monitoring
-// IMPORTANT: This system only checks if admin users EXIST
-// It NEVER resets or overwrites user-changed passwords
+// IMPORTANT: This system only checks if SUPER_ADMIN exists
+// It NEVER auto-creates business tenants - those are managed by Super Admin only
 
 import bcrypt from "bcrypt";
 import { db } from "./db";
@@ -12,7 +12,6 @@ export class LoginHealthMonitor {
   
   static async verifyAdminHealth(): Promise<{
     superAdmin: { exists: boolean };
-    testAdmin: { exists: boolean };
     issues: string[];
   }> {
     const issues: string[] = [];
@@ -30,21 +29,8 @@ export class LoginHealthMonitor {
         issues.push("SUPER_ADMIN user missing");
       }
       
-      const [testAdmin] = await db.select()
-        .from(users)
-        .where(and(
-          eq(users.tenantId, "TEST"),
-          eq(users.username, "admin"),
-          eq(users.role, "admin")
-        ));
-        
-      if (!testAdmin) {
-        issues.push("TEST admin user missing");
-      }
-      
       return {
         superAdmin: { exists: !!superAdmin },
-        testAdmin: { exists: !!testAdmin },
         issues
       };
       
@@ -53,7 +39,6 @@ export class LoginHealthMonitor {
       issues.push("Database connection failed");
       return {
         superAdmin: { exists: false },
-        testAdmin: { exists: false },
         issues
       };
     }
@@ -64,7 +49,7 @@ export class LoginHealthMonitor {
       const health = await this.verifyAdminHealth();
       
       if (health.issues.length === 0) {
-        console.log("✅ All admin accounts exist - no repair needed");
+        console.log("✅ Super Admin account exists - no repair needed");
         return true;
       }
       
@@ -85,21 +70,6 @@ export class LoginHealthMonitor {
         console.log("✅ SUPER_ADMIN account created with default password");
       }
       
-      if (!health.testAdmin.exists) {
-        console.log("🔧 Creating missing TEST admin account...");
-        const hashedPassword = await bcrypt.hash("admin123", 10);
-        await db.insert(users).values({
-          username: "admin",
-          password: hashedPassword,
-          tenantId: "TEST",
-          role: "admin",
-          isActive: true,
-          fullName: "Business Administrator",
-          email: "admin@test.com"
-        });
-        console.log("✅ TEST admin account created with default password");
-      }
-      
       return true;
       
     } catch (error) {
@@ -108,22 +78,23 @@ export class LoginHealthMonitor {
     }
   }
   
-  static async startupHealthCheck(): Promise<void> {
-    console.log("🏥 STARTUP: Running login health check...");
-    
+  static async getHealthReport(): Promise<string> {
     const health = await this.verifyAdminHealth();
     
+    let report = "=== Login Health Report ===\n";
+    report += `Super Admin: ${health.superAdmin.exists ? '✅ Active' : '❌ Missing'}\n`;
+    
     if (health.issues.length > 0) {
-      console.log("⚠️  MISSING ACCOUNTS DETECTED:", health.issues);
-      
-      const repairSuccess = await this.autoRepairCredentials();
-      if (repairSuccess) {
-        console.log("✅ HEALTH: Missing accounts created successfully");
-      } else {
-        console.error("❌ HEALTH: Account creation failed - manual intervention required");
-      }
+      report += `\nIssues Found:\n`;
+      health.issues.forEach(issue => {
+        report += `  ⚠️  ${issue}\n`;
+      });
     } else {
-      console.log("✅ HEALTH: All admin accounts verified - passwords preserved");
+      report += "\n✅ All systems healthy\n";
     }
+    
+    return report;
   }
 }
+
+export default LoginHealthMonitor;
