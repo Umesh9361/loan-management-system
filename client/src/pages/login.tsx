@@ -66,11 +66,6 @@ export default function Login() {
         });
       }
       
-      toast({
-        title: "प्रवेश यशस्वी",
-        description: "आपण यशस्वीपणे लॉगिन झाला आहात",
-      });
-      
       // Navigate to home page after successful login and cache setup
       navigate("/");
     } catch (error) {
