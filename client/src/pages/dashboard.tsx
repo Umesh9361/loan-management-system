@@ -74,9 +74,6 @@ export default function Dashboard() {
     },
     onSuccess: (data) => {
       queryClient.setQueryData(["/api/company"], data);
-      setTimeout(() => {
-        queryClient.invalidateQueries({ queryKey: ["/api/company"] });
-      }, 2000);
       toast({ title: "सेटिंग बदलली", description: "बॉटम नेव्हिगेशन सेटिंग अपडेट झाली" });
     },
     onError: () => {
