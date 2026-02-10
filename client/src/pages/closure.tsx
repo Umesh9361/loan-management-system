@@ -5,6 +5,7 @@ import { z } from "zod";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -70,6 +71,7 @@ export default function Closure() {
   
   const [summaryEntries, setSummaryEntries] = useState<SummaryEntry[]>([]);
   const [summaryCounter, setSummaryCounter] = useState(1);
+  const [activeTab, setActiveTab] = useState<string>("closure");
   const [showSummaryReceipt, setShowSummaryReceipt] = useState(false);
   const [summaryReceiptHTML, setSummaryReceiptHTML] = useState<string | null>(null);
   // Photo management moved to loan creation form
@@ -687,6 +689,7 @@ export default function Closure() {
       title: "हिशोबात जोडले",
       description: `${entry.borrowerName} - ₹${entry.principalAmount.toLocaleString('en-IN')}`,
     });
+    setActiveTab("summary");
   }, [selectedLoan, calculationResult, form, summaryCounter, parseFinalInterest, toast]);
 
   const handleDeleteSummaryEntry = useCallback((entryId: number) => {
@@ -860,101 +863,30 @@ export default function Closure() {
               <p className="text-gray-600 font-noto">एक ही field में अंतिम रक्कम एंटर करा</p>
             </div>
 
-            {summaryEntries.length > 0 && (
-              <Card className="mb-6 border border-gray-300 shadow-md">
-                <CardHeader className="py-3 px-4 bg-amber-50 border-b">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-base font-semibold text-amber-800 flex items-center gap-2">
-                      <FileText className="h-4 w-4" />
-                      एकत्रित हिशोब ({summaryEntries.length})
-                    </CardTitle>
-                    <div className="flex gap-2">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={handleGenerateSummaryReceipt}
-                        className="text-xs bg-green-50 border-green-300 text-green-700 hover:bg-green-100"
-                      >
-                        <Printer className="h-3 w-3 mr-1" />
-                        पावती तयार करा
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={handleClearAllSummary}
-                        className="text-xs bg-red-50 border-red-300 text-red-700 hover:bg-red-100"
-                      >
-                        <Trash2 className="h-3 w-3 mr-1" />
-                        सर्व काढा
-                      </Button>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="p-0">
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm border-collapse">
-                      <thead>
-                        <tr className="bg-gray-100 text-xs">
-                          <th className="border border-gray-300 px-1 py-1 text-center w-8">अ.नं.</th>
-                          <th className="border border-gray-300 px-2 py-1 text-left">तपशील</th>
-                          <th className="border border-gray-300 px-1 py-1 text-center w-16">कोड नं</th>
-                          <th className="border border-gray-300 px-1 py-1 text-center w-20">दिनांक</th>
-                          <th className="border border-gray-300 px-1 py-1 text-center w-10"></th>
-                          <th className="border border-gray-300 px-1 py-1 text-center w-10"></th>
-                          <th className="border border-gray-300 px-2 py-1 text-right w-24">बाजारमूल्य</th>
-                          <th className="border border-gray-300 px-2 py-1 text-right w-20">चार्जेस</th>
-                          <th className="border border-gray-300 px-1 py-1 w-8"></th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {summaryEntries.map((entry, index) => (
-                          <tr key={entry.id} className="hover:bg-gray-50">
-                            <td className="border border-gray-300 px-1 py-1 text-center text-xs">{index + 1}</td>
-                            <td className="border border-gray-300 px-2 py-1 text-xs">{entry.collateralDetails || '-'}</td>
-                            <td className="border border-gray-300 px-1 py-1 text-center text-xs">{entry.accountNumber}</td>
-                            <td className="border border-gray-300 px-1 py-1 text-center text-xs">{DateUtils.isoToIndianDate(entry.loanDate)}</td>
-                            <td className="border border-gray-300 px-1 py-1 text-center text-xs">{entry.months}</td>
-                            <td className="border border-gray-300 px-1 py-1 text-center text-xs">{entry.interestRate}%</td>
-                            <td className="border border-gray-300 px-2 py-1 text-right text-base font-semibold">{Number(Math.round(entry.principalAmount)).toLocaleString('en-IN')}</td>
-                            <td className="border border-gray-300 px-2 py-1 text-right text-base font-semibold">{Number(Math.round(entry.chargesAmount)).toLocaleString('en-IN')}</td>
-                            <td className="border border-gray-300 px-1 py-1 text-center">
-                              <button
-                                type="button"
-                                onClick={() => handleDeleteSummaryEntry(entry.id)}
-                                className="text-red-500 hover:text-red-700 p-0.5"
-                                title="काढा"
-                              >
-                                <Trash2 className="h-3.5 w-3.5" />
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
-                        <tr className="bg-gray-100 font-bold">
-                          <td colSpan={6} className="border border-gray-300 px-2 py-1.5 text-right text-sm">एकूण</td>
-                          <td className="border border-gray-300 px-2 py-1.5 text-right text-base font-bold">
-                            {Number(Math.round(summaryEntries.reduce((sum, e) => sum + e.principalAmount, 0))).toLocaleString('en-IN')}
-                          </td>
-                          <td className="border border-gray-300 px-2 py-1.5 text-right text-base font-bold">
-                            {Number(Math.round(summaryEntries.reduce((sum, e) => sum + e.chargesAmount, 0))).toLocaleString('en-IN')}
-                          </td>
-                          <td className="border border-gray-300"></td>
-                        </tr>
-                        <tr className="bg-amber-50 font-bold">
-                          <td colSpan={7} className="border border-gray-300 px-2 py-2 text-right text-sm font-bold">Grand Total</td>
-                          <td className="border border-gray-300 px-2 py-2 text-right text-lg font-bold text-green-700">
-                            {Number(Math.round(summaryEntries.reduce((sum, e) => sum + e.principalAmount + e.chargesAmount, 0))).toLocaleString('en-IN')}
-                          </td>
-                          <td className="border border-gray-300"></td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <TabsList className="grid w-full grid-cols-2 mb-4 h-12 bg-white shadow-sm border">
+                <TabsTrigger 
+                  value="closure" 
+                  className="text-sm font-semibold data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md rounded-md transition-all"
+                >
+                  <Calculator className="h-4 w-4 mr-2" />
+                  कर्ज बंद करा
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="summary" 
+                  className="text-sm font-semibold data-[state=active]:bg-amber-600 data-[state=active]:text-white data-[state=active]:shadow-md rounded-md transition-all relative"
+                >
+                  <FileText className="h-4 w-4 mr-2" />
+                  हिशोबात
+                  {summaryEntries.length > 0 && (
+                    <Badge className="ml-2 bg-red-500 text-white text-xs px-1.5 py-0 min-w-[20px] h-5 flex items-center justify-center rounded-full">
+                      {summaryEntries.length}
+                    </Badge>
+                  )}
+                </TabsTrigger>
+              </TabsList>
 
+              <TabsContent value="closure" className="mt-0">
             <Card className="shadow-2xl bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 border-2 border-blue-200">
               <CardHeader className="bg-gradient-to-r from-blue-100 to-purple-100 rounded-t-lg border-b-2 border-blue-200">
                 <div className="flex items-center justify-center mb-4">
@@ -1591,6 +1523,133 @@ export default function Closure() {
                 </Form>
               </CardContent>
             </Card>
+              </TabsContent>
+
+              <TabsContent value="summary" className="mt-0">
+                {summaryEntries.length > 0 ? (
+                  <Card className="border border-amber-200 shadow-lg bg-white">
+                    <CardHeader className="py-3 px-4 bg-amber-50 border-b">
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="text-base font-semibold text-amber-800 flex items-center gap-2">
+                          <FileText className="h-4 w-4" />
+                          एकत्रित हिशोब ({summaryEntries.length})
+                        </CardTitle>
+                        <div className="flex gap-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setActiveTab("closure")}
+                            className="text-xs"
+                          >
+                            <Calculator className="h-3 w-3 mr-1" />
+                            कर्ज बंद करा
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={handleGenerateSummaryReceipt}
+                            className="text-xs bg-green-50 border-green-300 text-green-700 hover:bg-green-100"
+                          >
+                            <Printer className="h-3 w-3 mr-1" />
+                            पावती तयार करा
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={handleClearAllSummary}
+                            className="text-xs bg-red-50 border-red-300 text-red-700 hover:bg-red-100"
+                          >
+                            <Trash2 className="h-3 w-3 mr-1" />
+                            सर्व काढा
+                          </Button>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="p-0">
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-sm border-collapse">
+                          <thead>
+                            <tr className="bg-gray-100 text-xs">
+                              <th className="border border-gray-300 px-1 py-1 text-center w-8">अ.नं.</th>
+                              <th className="border border-gray-300 px-2 py-1 text-left">तपशील</th>
+                              <th className="border border-gray-300 px-1 py-1 text-center w-16">कोड नं</th>
+                              <th className="border border-gray-300 px-1 py-1 text-center w-20">दिनांक</th>
+                              <th className="border border-gray-300 px-1 py-1 text-center w-10"></th>
+                              <th className="border border-gray-300 px-1 py-1 text-center w-10"></th>
+                              <th className="border border-gray-300 px-2 py-1 text-right w-24">बाजारमूल्य</th>
+                              <th className="border border-gray-300 px-2 py-1 text-right w-20">चार्जेस</th>
+                              <th className="border border-gray-300 px-1 py-1 w-8"></th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {summaryEntries.map((entry, index) => (
+                              <tr key={entry.id} className="hover:bg-gray-50">
+                                <td className="border border-gray-300 px-1 py-1 text-center text-xs">{index + 1}</td>
+                                <td className="border border-gray-300 px-2 py-1 text-xs">{entry.collateralDetails || '-'}</td>
+                                <td className="border border-gray-300 px-1 py-1 text-center text-xs">{entry.accountNumber}</td>
+                                <td className="border border-gray-300 px-1 py-1 text-center text-xs">{DateUtils.isoToIndianDate(entry.loanDate)}</td>
+                                <td className="border border-gray-300 px-1 py-1 text-center text-xs">{entry.months}</td>
+                                <td className="border border-gray-300 px-1 py-1 text-center text-xs">{entry.interestRate}%</td>
+                                <td className="border border-gray-300 px-2 py-1 text-right text-base font-semibold">{Number(Math.round(entry.principalAmount)).toLocaleString('en-IN')}</td>
+                                <td className="border border-gray-300 px-2 py-1 text-right text-base font-semibold">{Number(Math.round(entry.chargesAmount)).toLocaleString('en-IN')}</td>
+                                <td className="border border-gray-300 px-1 py-1 text-center">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeleteSummaryEntry(entry.id)}
+                                    className="text-red-500 hover:text-red-700 p-0.5"
+                                    title="काढा"
+                                  >
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  </button>
+                                </td>
+                              </tr>
+                            ))}
+                            <tr className="bg-gray-100 font-bold">
+                              <td colSpan={6} className="border border-gray-300 px-2 py-1.5 text-right text-sm">एकूण</td>
+                              <td className="border border-gray-300 px-2 py-1.5 text-right text-base font-bold">
+                                {Number(Math.round(summaryEntries.reduce((sum, e) => sum + e.principalAmount, 0))).toLocaleString('en-IN')}
+                              </td>
+                              <td className="border border-gray-300 px-2 py-1.5 text-right text-base font-bold">
+                                {Number(Math.round(summaryEntries.reduce((sum, e) => sum + e.chargesAmount, 0))).toLocaleString('en-IN')}
+                              </td>
+                              <td className="border border-gray-300"></td>
+                            </tr>
+                            <tr className="bg-amber-50 font-bold">
+                              <td colSpan={7} className="border border-gray-300 px-2 py-2 text-right text-sm font-bold">Grand Total</td>
+                              <td className="border border-gray-300 px-2 py-2 text-right text-lg font-bold text-green-700">
+                                {Number(Math.round(summaryEntries.reduce((sum, e) => sum + e.principalAmount + e.chargesAmount, 0))).toLocaleString('en-IN')}
+                              </td>
+                              <td className="border border-gray-300"></td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <Card className="border border-gray-200 shadow-sm">
+                    <CardContent className="text-center py-16">
+                      <FileText className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+                      <h3 className="text-lg font-semibold text-gray-500 mb-2">हिशोबात कोणतेही कर्ज नाही</h3>
+                      <p className="text-sm text-gray-400 mb-4">
+                        कर्ज बंद करा टॅब मधून "हिशोबात जोडा" बटण दाबून कर्ज जोडा
+                      </p>
+                      <Button 
+                        variant="outline" 
+                        onClick={() => setActiveTab("closure")}
+                        className="text-blue-600 border-blue-300"
+                      >
+                        <Calculator className="h-4 w-4 mr-2" />
+                        कर्ज बंद करा टॅब वर जा
+                      </Button>
+                    </CardContent>
+                  </Card>
+                )}
+              </TabsContent>
+            </Tabs>
           </div>
         </main>
       </div>
