@@ -10,6 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Sidebar } from "./sidebar";
 import { AuthService } from "@/lib/auth";
 import { useSafeNavigation } from "@/hooks/use-safe-navigation";
@@ -57,6 +58,12 @@ export function MobileNav({ hideBottomNav = false }: MobileNavProps = {}) {
   const [location] = useLocation();
   const [isOpen, setIsOpen] = useState(false);
   const { safeNavigate } = useSafeNavigation();
+
+  const { data: companyData } = useQuery<any>({
+    queryKey: ["/api/company"],
+    staleTime: 60 * 1000,
+  });
+  const bottomNavEnabled = companyData?.bottomNavEnabled !== false;
 
   const handleLogout = async () => {
     try {
@@ -125,9 +132,8 @@ export function MobileNav({ hideBottomNav = false }: MobileNavProps = {}) {
         </div>
       </div>
 
-      {/* Mobile Bottom Navigation */}
-      {/* Mobile Bottom Navigation - Enhanced */}
-      {!hideBottomNav && (
+      {/* Mobile Bottom Navigation - controlled by admin toggle */}
+      {!hideBottomNav && bottomNavEnabled && (
         <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-1 py-1.5 z-50 shadow-lg">
         <div className="flex justify-around max-w-md mx-auto">
           {bottomNavItems.map((item) => {
