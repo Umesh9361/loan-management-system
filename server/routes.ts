@@ -593,6 +593,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.put("/api/company/summary-columns-toggle", requireAuth, async (req, res) => {
+    try {
+      if (req.session.role !== 'admin' && req.session.role !== 'super_admin') {
+        return res.status(403).json({ message: "फक्त अ‍ॅडमिन हे बदलू शकतो" });
+      }
+      const { enabled } = req.body;
+      if (typeof enabled !== 'boolean') {
+        return res.status(400).json({ message: "Invalid value" });
+      }
+      const tenantId = req.session.tenantId!;
+      const company = await storage.updateCompany(tenantId, { showSummaryRateMonths: enabled });
+      if (!company) {
+        return res.status(404).json({ message: "कंपनी सापडली नाही" });
+      }
+      invalidateCache('company', tenantId);
+      return res.json(company);
+    } catch (error) {
+      console.error("Summary columns toggle error:", error);
+      res.status(500).json({ message: "सेटिंग बदलताना त्रुटी झाली", error: error instanceof Error ? error.message : "Unknown" });
+    }
+  });
+
   app.put("/api/company", requireAuth, cacheBuster(['company:']), async (req, res) => {
     try {
       const companyData = insertCompanySchema.partial().parse(req.body);
