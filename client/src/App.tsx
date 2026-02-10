@@ -9,8 +9,6 @@ import { I18nProvider } from "@/providers/I18nProvider";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { useMidnightLogout } from "@/hooks/use-midnight-logout";
 import { useSafeNavigation } from "@/hooks/use-safe-navigation";
-import { BottomNavigation } from "@/components/bottom-navigation";
-
 // Import date locale setup
 import "@/lib/date-locale";
 import NotFound from "@/pages/not-found";
@@ -86,15 +84,6 @@ function AppContent() {
     refetchOnWindowFocus: false,
   });
 
-  const { data: companyData } = useQuery<any>({
-    queryKey: ["/api/company"],
-    enabled: !!rawUser,
-    staleTime: 30 * 1000,
-    refetchOnWindowFocus: true,
-  });
-
-  const bottomNavEnabled = companyData?.bottomNavEnabled !== false;
-
   if (!authReady || isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -119,7 +108,7 @@ function AppContent() {
   // Super Admin Routes - COMPLETE ACCESS to ALL features including Super Admin management
   if (actualUser.role === 'super_admin') {
     return (
-      <div className={bottomNavEnabled ? "pb-16" : ""}>
+      <div className="pb-16">
         <Switch>
           <Route path="/" component={Dashboard} />
         
@@ -174,7 +163,6 @@ function AppContent() {
           
           <Route component={RedirectToDashboard} />
         </Switch>
-        {bottomNavEnabled && <BottomNavigation userRole="super_admin" />}
       </div>
     );
   }
@@ -194,7 +182,7 @@ function AppContent() {
     const perms = (userPermissions as any) || {};
     
     return (
-      <div className={bottomNavEnabled ? "pb-16" : ""}>
+      <div className="pb-16">
         <Switch>
           {/* Always available routes */}
           <Route path="/" component={Dashboard} />
@@ -237,7 +225,6 @@ function AppContent() {
           
           <Route component={NoPermissionPage} />
         </Switch>
-        {bottomNavEnabled && <BottomNavigation userRole="user" />}
       </div>
     );
   }
@@ -245,7 +232,7 @@ function AppContent() {
   // Admin Routes - Full access to all features for TENANT ADMINS only (excluding Super Admin management)
   if (actualUser.role === 'admin') {
     return (
-      <div className={bottomNavEnabled ? "pb-16" : ""}>
+      <div className="pb-16">
         <Switch>
           <Route path="/" component={Dashboard} />
         <Route path="/company" component={Company} />
@@ -280,7 +267,6 @@ function AppContent() {
           <Route path="/profile" component={Profile} />
           <Route component={RedirectToDashboard} />
         </Switch>
-        {bottomNavEnabled && <BottomNavigation userRole="admin" />}
       </div>
     );
   }
