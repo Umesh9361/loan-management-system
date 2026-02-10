@@ -72,8 +72,22 @@ export default function Dashboard() {
       const res = await apiRequest("/api/company/bottom-nav-toggle", "PUT", { enabled });
       return res.json();
     },
+    onMutate: async (enabled: boolean) => {
+      await queryClient.cancelQueries({ queryKey: ["/api/company"] });
+      const previous = queryClient.getQueryData(["/api/company"]);
+      queryClient.setQueryData(["/api/company"], (old: any) => ({
+        ...old,
+        bottomNavEnabled: enabled,
+      }));
+      return { previous };
+    },
     onSuccess: (data) => {
       queryClient.setQueryData(["/api/company"], data);
+    },
+    onError: (_err, _enabled, context: any) => {
+      if (context?.previous) {
+        queryClient.setQueryData(["/api/company"], context.previous);
+      }
     },
   });
 
