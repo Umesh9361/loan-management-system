@@ -107,6 +107,30 @@ export default function Closure() {
   });
   const showRateMonths = (company as any)?.showSummaryRateMonths !== false;
 
+  const summaryColumnsToggle = useMutation({
+    mutationFn: async (enabled: boolean) => {
+      const res = await apiRequest("/api/company/summary-columns-toggle", "PUT", { enabled });
+      return res.json();
+    },
+    onMutate: async (enabled: boolean) => {
+      await queryClient.cancelQueries({ queryKey: ["/api/company"] });
+      const previous = queryClient.getQueryData(["/api/company"]);
+      queryClient.setQueryData(["/api/company"], (old: any) => ({
+        ...old,
+        showSummaryRateMonths: enabled,
+      }));
+      return { previous };
+    },
+    onSuccess: (data) => {
+      queryClient.setQueryData(["/api/company"], data);
+    },
+    onError: (_err: any, _enabled: any, context: any) => {
+      if (context?.previous) {
+        queryClient.setQueryData(["/api/company"], context.previous);
+      }
+    },
+  });
+
   const form = useForm<ClosureFormData>({
     resolver: zodResolver(closureSchema),
     defaultValues: {
@@ -1530,7 +1554,21 @@ export default function Closure() {
                           <FileText className="h-4 w-4" />
                           एकत्रित हिशोब ({summaryEntries.length})
                         </CardTitle>
-                        <div className="flex flex-wrap gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <div className="flex items-center gap-1.5 mr-2">
+                            <span className="text-xs text-gray-600">महिने/दर%</span>
+                            <label className="relative inline-flex items-center cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={showRateMonths}
+                                onChange={(e) => summaryColumnsToggle.mutate(e.target.checked)}
+                                className="sr-only peer"
+                                disabled={summaryColumnsToggle.isPending || !company}
+                                autoComplete="off"
+                              />
+                              <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-amber-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-600"></div>
+                            </label>
+                          </div>
                           <Button
                             type="button"
                             variant="outline"
