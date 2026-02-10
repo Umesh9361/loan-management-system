@@ -747,6 +747,7 @@ export default function ReceiptGeneratorPage() {
                         onChange={(e) => setReceiptType(e.target.value as any)}
                         className="h-4 w-4"
                         data-testid="radio-combined"
+                        autoComplete="off"
                       />
                       <Label htmlFor="combined" className="text-sm font-medium cursor-pointer">
                         संयुक्त पावती (डिफॉल्ट) - दोन्ही पावत्या
@@ -763,6 +764,7 @@ export default function ReceiptGeneratorPage() {
                         onChange={(e) => setReceiptType(e.target.value as any)}
                         className="h-4 w-4"
                         data-testid="radio-disbursement"
+                        autoComplete="off"
                       />
                       <Label htmlFor="disbursement" className="text-sm font-medium cursor-pointer">
                         फक्त कर्ज दिलेली - नमुना नं. १०
@@ -780,6 +782,7 @@ export default function ReceiptGeneratorPage() {
                         className="h-4 w-4"
                         data-testid="radio-closure"
                         disabled={!canGenerateClosureReceipt}
+                        autoComplete="off"
                       />
                       <Label 
                         htmlFor="closure" 
@@ -804,6 +807,7 @@ export default function ReceiptGeneratorPage() {
                         onChange={(e) => setReceiptType(e.target.value as any)}
                         className="h-4 w-4" 
                         data-testid="radio-blank"
+                        autoComplete="off"
                       />
                       <Label htmlFor="blank" className="text-sm font-medium cursor-pointer">
                         मोकळी पावती - हातानेे लिहिण्यासाठी

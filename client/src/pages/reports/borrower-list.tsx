@@ -3808,6 +3808,7 @@ export default function BorrowerListReports() {
                       checked={dateFilterEnabled}
                       onChange={(e) => setDateFilterEnabled(e.target.checked)}
                       className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                      autoComplete="off"
                     />
                     <Label htmlFor="date-filter-toggle" className="text-sm font-medium text-gray-700">
                       📅 तारीख फिल्टर वापरा (वैकल्पिक)
@@ -3863,6 +3864,7 @@ export default function BorrowerListReports() {
                         checked={includeSpecificPeriod}
                         onChange={(e) => setIncludeSpecificPeriod(e.target.checked)}
                         className="rounded border-gray-300"
+                        autoComplete="off"
                       />
                       <Label htmlFor="include-specific" className="font-normal">
                         निश्चित मुदतीसाठी (फक्त स्पेशल मुदत)
@@ -3875,6 +3877,7 @@ export default function BorrowerListReports() {
                         checked={includeFutureMaturity}
                         onChange={(e) => setIncludeFutureMaturity(e.target.checked)}
                         className="rounded border-gray-300"
+                        autoComplete="off"
                       />
                       <Label htmlFor="include-future" className="font-normal">
                         भविष्यातील मेच्योरिटी फिल्टर (आगामी कालावधी)

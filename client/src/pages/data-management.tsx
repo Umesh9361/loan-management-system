@@ -479,6 +479,7 @@ function DataManagementPage() {
                       value={rearrangeGroupId}
                       onChange={(e) => setRearrangeGroupId(e.target.value)}
                       className="w-full mt-1 p-2 border rounded-md bg-white dark:bg-gray-800"
+                      autoComplete="off"
                     >
                       <option value="">ग्रुप निवडा...</option>
                       {Array.isArray(groupsData) && groupsData.map((group: any) => (

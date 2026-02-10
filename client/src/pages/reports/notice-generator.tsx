@@ -818,6 +818,7 @@ export default function NoticeGeneratorPage() {
                           checked={noticeType === 'filled'}
                           onChange={(e) => setNoticeType(e.target.value as any)}
                           className="h-4 w-4"
+                          autoComplete="off"
                         />
                         <Label htmlFor="filled" className="text-sm font-medium cursor-pointer">
                           भरलेली नोटीस (डिफॉल्ट)
@@ -832,6 +833,7 @@ export default function NoticeGeneratorPage() {
                           checked={noticeType === 'blank'}
                           onChange={(e) => setNoticeType(e.target.value as any)}
                           className="h-4 w-4"
+                          autoComplete="off"
                         />
                         <Label htmlFor="blank" className="text-sm font-medium cursor-pointer">
                           मोकळी नोटीस - हाताने लिहिण्यासाठी

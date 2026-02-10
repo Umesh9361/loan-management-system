@@ -2443,6 +2443,7 @@ function Loans() {
                               setCurrentPage(1);
                             }}
                             className="px-2 py-1 border border-gray-300 rounded text-sm"
+                            autoComplete="off"
                           >
                             <option value={50}>50</option>
                             <option value={100}>100</option>

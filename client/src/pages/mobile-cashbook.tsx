@@ -1449,6 +1449,7 @@ OK ✓
                   value={searchFilters.transactionType}
                   onChange={(e) => setSearchFilters(prev => ({ ...prev, transactionType: e.target.value }))}
                   className="w-full px-3 py-2.5 text-sm bg-gray-50 border-gray-300 rounded-lg focus:bg-white focus:border-blue-400 focus:ring-1 focus:ring-blue-200 transition-colors"
+                  autoComplete="off"
                 >
                   <option value="">All Transactions</option>
                   <option value="cash_in">Cash In (DR)</option>
@@ -1465,6 +1466,7 @@ OK ✓
                   </div>
                   <input
                     type="number"
+                    autoComplete="off"
                     value={searchFilters.monthsBack}
                     onChange={(e) => {
                       const months = e.target.value;

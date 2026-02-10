@@ -721,7 +721,8 @@ export default function OverdueReport() {
                       type="radio" 
                       checked={filters.projectionMode === 'current'} 
                       onChange={() => setFilters(prev => ({ ...prev, projectionMode: 'current' }))}
-                      className="text-blue-500" 
+                      className="text-blue-500"
+                      autoComplete="off"
                     />
                     <span className="font-semibold text-blue-800">🔍 सध्याचे नुकसान विश्लेषण</span>
                   </div>
@@ -737,7 +738,8 @@ export default function OverdueReport() {
                       type="radio" 
                       checked={filters.projectionMode === 'future'} 
                       onChange={() => setFilters(prev => ({ ...prev, projectionMode: 'future' }))}
-                      className="text-purple-500" 
+                      className="text-purple-500"
+                      autoComplete="off"
                     />
                     <span className="font-semibold text-purple-800">🔮 भविष्यातील नुकसान अंदाज</span>
                   </div>

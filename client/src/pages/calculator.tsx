@@ -366,6 +366,7 @@ export default function InterestCalculator() {
                           value={rateType} 
                           onChange={(e) => setRateType(e.target.value)}
                           className="px-3 py-2 border border-gray-300 rounded-md bg-white text-sm min-w-20"
+                          autoComplete="off"
                         >
                           <option value="yearly">वार्षिक</option>
                           <option value="monthly">मासिक</option>
@@ -407,6 +408,7 @@ export default function InterestCalculator() {
                           checked={isAdvanced}
                           onChange={(e) => setIsAdvanced(e.target.checked)}
                           className="sr-only peer"
+                          autoComplete="off"
                         />
                         <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                       </label>
@@ -423,6 +425,7 @@ export default function InterestCalculator() {
                           value={compoundFrequency} 
                           onChange={(e) => setCompoundFrequency(e.target.value)}
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          autoComplete="off"
                         >
                           <option value="yearly">वार्षिक (Yearly)</option>
                           <option value="half_yearly">सहा महिने (Half Yearly)</option>
@@ -446,6 +449,7 @@ export default function InterestCalculator() {
                             onChange={(e) => setCalculationMode(e.target.value)}
                             id="month-calc"
                             className="text-blue-600"
+                            autoComplete="off"
                           />
                           <Label htmlFor="month-calc" className="cursor-pointer">
                             <div className="font-medium">पूर्ण महिना</div>
@@ -460,6 +464,7 @@ export default function InterestCalculator() {
                             onChange={(e) => setCalculationMode(e.target.value)}
                             id="half-month-calc"
                             className="text-green-600"
+                            autoComplete="off"
                           />
                           <Label htmlFor="half-month-calc" className="cursor-pointer">
                             <div className="font-medium">अर्धा महिना</div>
@@ -474,6 +479,7 @@ export default function InterestCalculator() {
                             onChange={(e) => setCalculationMode(e.target.value)}
                             id="week-calc"
                             className="text-purple-600"
+                            autoComplete="off"
                           />
                           <Label htmlFor="week-calc" className="cursor-pointer">
                             <div className="font-medium">आठवडा</div>
@@ -488,6 +494,7 @@ export default function InterestCalculator() {
                             onChange={(e) => setCalculationMode(e.target.value)}
                             id="day-calc"
                             className="text-orange-600"
+                            autoComplete="off"
                           />
                           <Label htmlFor="day-calc" className="cursor-pointer">
                             <div className="font-medium">दिवस</div>

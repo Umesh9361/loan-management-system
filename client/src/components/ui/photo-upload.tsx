@@ -560,6 +560,7 @@ export function PhotoUpload({
             onChange={handleGallerySelect}
             className="hidden"
             data-testid="input-gallery-file"
+            autoComplete="off"
           />
           
           <input
@@ -570,6 +571,7 @@ export function PhotoUpload({
             onChange={handleCameraSelect}
             className="hidden"
             data-testid="input-camera-file"
+            autoComplete="off"
           />
         </div>
 
