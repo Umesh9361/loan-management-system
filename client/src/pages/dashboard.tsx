@@ -74,6 +74,7 @@ export default function Dashboard() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/company"] });
+      queryClient.refetchQueries({ queryKey: ["/api/company"] });
       toast({ title: "सेटिंग बदलली", description: "बॉटम नेव्हिगेशन सेटिंग अपडेट झाली" });
     },
     onError: () => {
