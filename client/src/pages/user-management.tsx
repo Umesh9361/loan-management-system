@@ -633,7 +633,11 @@ function CreateUserForm({
     }
   });
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
+    const userValid = await userForm.trigger();
+    if (!userValid) {
+      return;
+    }
     const userData = userForm.getValues();
     const permissions = permissionsForm.getValues();
     onSubmit({ userData, permissions });
@@ -765,9 +769,30 @@ function PermissionsForm({
   onSubmit: (permissions: Partial<PermissionsData>) => void;
   isLoading: boolean;
 }) {
+  const schemaDefaults: PermissionsData = {
+    canViewDashboard: true,
+    canAccessInterestCalculator: true,
+    canAccessCompanyRegistration: false,
+    canAccessGroupManagement: false,
+    canAccessLoanRegistration: false,
+    canAccessLoanClosure: false,
+    canAccessCashTransactions: false,
+    canAccessPartyManagement: false,
+    canAccessMobileCashbook: false,
+    canManageBorrowers: false,
+    canDeleteBorrowers: false,
+    canViewReceiptGenerator: false,
+    canViewCashBookReport: false,
+    canViewCapitalReport: false,
+    canViewLedgerReport: false,
+    canViewBorrowerListReport: false,
+    canViewOverdueReport: false,
+    canViewAccountSummaryReport: false,
+    canViewOtherReports: false,
+  };
   const form = useForm<PermissionsData>({
     resolver: zodResolver(permissionsSchema),
-    defaultValues: user.permissions || {}
+    defaultValues: { ...schemaDefaults, ...(user.permissions || {}) }
   });
 
   return (
@@ -917,7 +942,8 @@ function PermissionsList({ form, userRole = "user" }: { form: any; userRole?: st
             type="button"
             variant="outline"
             onClick={() => {
-              // Enable all main permissions except reports and dangerous ones
+              form.setValue("canViewDashboard", true);
+              form.setValue("canAccessInterestCalculator", true);
               form.setValue("canAccessCompanyRegistration", true);
               form.setValue("canAccessGroupManagement", true);
               form.setValue("canAccessLoanRegistration", true);
@@ -926,9 +952,6 @@ function PermissionsList({ form, userRole = "user" }: { form: any; userRole?: st
               form.setValue("canAccessCashTransactions", true);
               form.setValue("canAccessPartyManagement", true);
               form.setValue("canAccessMobileCashbook", true);
-              // Keep canDeleteBorrowers false (dangerous)
-              // Keep all report permissions false (manual selection)
-              console.log('✅ Edit Permissions: All main features enabled');
             }}
             className="bg-green-600 text-white hover:bg-green-700"
           >
