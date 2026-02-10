@@ -63,7 +63,14 @@ export function MobileNav({ hideBottomNav = false }: MobileNavProps = {}) {
     queryKey: ["/api/company"],
     staleTime: 60 * 1000,
   });
-  const bottomNavEnabled = companyData === undefined ? false : companyData?.bottomNavEnabled !== false;
+
+  let bottomNavEnabled: boolean;
+  if (companyData !== undefined) {
+    bottomNavEnabled = companyData?.bottomNavEnabled !== false;
+    try { localStorage.setItem('bottomNavEnabled', JSON.stringify(bottomNavEnabled)); } catch(e) {}
+  } else {
+    try { const v = localStorage.getItem('bottomNavEnabled'); bottomNavEnabled = v !== null ? JSON.parse(v) : false; } catch(e) { bottomNavEnabled = false; }
+  }
 
   const handleLogout = async () => {
     try {
