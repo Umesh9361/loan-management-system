@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useCallback } from "react";
 import { Switch, Route, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider, useQuery } from "@tanstack/react-query";
@@ -67,11 +67,45 @@ function RedirectToDashboard() {
   return null;
 }
 
+const INACTIVITY_KEY = 'last_active_timestamp';
+const INACTIVITY_TIMEOUT = 30 * 60 * 1000;
+
+function useInactivityRedirect() {
+  const [location, setLocation] = useLocation();
+
+  useEffect(() => {
+    if (location === '/' || location === '/login') return;
+
+    const lastActive = localStorage.getItem(INACTIVITY_KEY);
+    if (lastActive) {
+      const gap = Date.now() - Number(lastActive);
+      if (gap > INACTIVITY_TIMEOUT) {
+        setLocation('/');
+      }
+    }
+  }, []);
+
+  const updateActivity = useCallback(() => {
+    localStorage.setItem(INACTIVITY_KEY, String(Date.now()));
+  }, []);
+
+  useEffect(() => {
+    updateActivity();
+
+    const events = ['click', 'keydown', 'scroll', 'touchstart'];
+    const handler = () => updateActivity();
+
+    events.forEach(e => window.addEventListener(e, handler, { passive: true }));
+    return () => events.forEach(e => window.removeEventListener(e, handler));
+  }, [updateActivity]);
+}
+
 function AppContent() {
   const { safeNavigate } = useSafeNavigation();
   const { user: rawUser, authReady, isLoading } = useCurrentUser();
 
   useMidnightLogout(!!rawUser);
+  useInactivityRedirect();
 
   const userRole = normalizeRole(rawUser?.role);
 
