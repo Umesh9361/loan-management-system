@@ -797,7 +797,7 @@ function PermissionsForm({
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={form.handleSubmit((data) => onSubmit({ ...data, canViewDashboard: true, canAccessInterestCalculator: true }))} className="space-y-6">
         <PermissionsList form={form} userRole={user.role} />
         
         <div className="flex justify-end space-x-2 pt-4 border-t">
@@ -989,7 +989,7 @@ function PermissionsList({ form, userRole = "user" }: { form: any; userRole?: st
                     </div>
                     <FormControl>
                       <Switch
-                        checked={field.value}
+                        checked={required ? true : field.value}
                         onCheckedChange={field.onChange}
                         disabled={required || (adminOnly && userRole === "user") || (superAdminOnly && userRole !== "super_admin")}
                       />
