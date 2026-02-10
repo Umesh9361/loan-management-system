@@ -578,7 +578,7 @@ export default function Closure() {
     entries.forEach((entry, index) => {
       tableRows += `<tr>
         <td style="border:1px solid #333;padding:2px 4px;text-align:center;font-size:${baseFontSize};">${index + 1}</td>
-        <td style="border:1px solid #333;padding:2px 4px;font-size:${baseFontSize};max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${entry.collateralDetails || '-'}</td>
+        <td style="border:1px solid #333;padding:2px 4px;font-size:${baseFontSize};"><div style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${entry.collateralDetails || '-'}</div></td>
         <td style="border:1px solid #333;padding:2px 4px;text-align:center;font-size:${baseFontSize};">${entry.accountNumber}</td>
         <td style="border:1px solid #333;padding:2px 4px;text-align:center;font-size:${baseFontSize};">${DateUtils.isoToIndianDate(entry.loanDate)}</td>
         <td style="border:1px solid #333;padding:2px 4px;text-align:center;font-size:${baseFontSize};">${entry.months}</td>
@@ -674,7 +674,6 @@ export default function Closure() {
     setSummaryEntries(prev => [...prev, entry]);
     setSummaryCounter(prev => prev + 1);
 
-    const currentClosureDate = form.getValues("closureDate");
     setSelectedLoan(null);
     setSearchQuery("");
     setCalculationResult(null);
@@ -810,6 +809,7 @@ export default function Closure() {
                 if (printWindow && summaryReceiptHTML) {
                   printWindow.document.write(summaryReceiptHTML);
                   printWindow.document.close();
+                  setTimeout(() => { printWindow.focus(); printWindow.print(); }, 300);
                 }
               }}
               className="flex-1 inline-flex items-center justify-center rounded-md text-sm font-medium h-10 px-3 bg-blue-600 hover:bg-blue-700 text-white"
@@ -1529,12 +1529,12 @@ export default function Closure() {
                 {summaryEntries.length > 0 ? (
                   <Card className="border border-amber-200 shadow-lg bg-white">
                     <CardHeader className="py-3 px-4 bg-amber-50 border-b">
-                      <div className="flex items-center justify-between">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                         <CardTitle className="text-base font-semibold text-amber-800 flex items-center gap-2">
                           <FileText className="h-4 w-4" />
                           एकत्रित हिशोब ({summaryEntries.length})
                         </CardTitle>
-                        <div className="flex gap-2">
+                        <div className="flex flex-wrap gap-2">
                           <Button
                             type="button"
                             variant="outline"
@@ -1588,7 +1588,7 @@ export default function Closure() {
                             {summaryEntries.map((entry, index) => (
                               <tr key={entry.id} className="hover:bg-gray-50">
                                 <td className="border border-gray-300 px-1 py-1 text-center text-xs">{index + 1}</td>
-                                <td className="border border-gray-300 px-2 py-1 text-xs max-w-[120px] truncate" title={entry.collateralDetails || '-'}>{entry.collateralDetails || '-'}</td>
+                                <td className="border border-gray-300 px-2 py-1 text-xs"><div className="max-w-[120px] truncate" title={entry.collateralDetails || '-'}>{entry.collateralDetails || '-'}</div></td>
                                 <td className="border border-gray-300 px-1 py-1 text-center text-xs">{entry.accountNumber}</td>
                                 <td className="border border-gray-300 px-1 py-1 text-center text-xs">{DateUtils.isoToIndianDate(entry.loanDate)}</td>
                                 <td className="border border-gray-300 px-1 py-1 text-center text-xs">{entry.months}</td>
