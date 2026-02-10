@@ -89,8 +89,8 @@ function AppContent() {
   const { data: companyData } = useQuery<any>({
     queryKey: ["/api/company"],
     enabled: !!rawUser,
-    staleTime: 5 * 60 * 1000,
-    refetchOnWindowFocus: false,
+    staleTime: 30 * 1000,
+    refetchOnWindowFocus: true,
   });
 
   const bottomNavEnabled = companyData?.bottomNavEnabled !== false;
