@@ -59,11 +59,11 @@ export function MobileNav({ hideBottomNav = false }: MobileNavProps = {}) {
   const [isOpen, setIsOpen] = useState(false);
   const { safeNavigate } = useSafeNavigation();
 
-  const { data: companyData, isLoading: companyLoading } = useQuery<any>({
+  const { data: companyData } = useQuery<any>({
     queryKey: ["/api/company"],
     staleTime: 60 * 1000,
   });
-  const bottomNavEnabled = companyLoading ? false : companyData?.bottomNavEnabled !== false;
+  const bottomNavEnabled = companyData === undefined ? false : companyData?.bottomNavEnabled !== false;
 
   const handleLogout = async () => {
     try {
