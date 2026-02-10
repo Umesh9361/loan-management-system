@@ -195,7 +195,7 @@ export default function Dashboard() {
                     </Button>
                   </Link>
                   {isAdmin && (
-                    <div className="flex items-center justify-between pt-3 border-t border-gray-200">
+                    <div className="flex items-center justify-between pt-3 border-t border-gray-200 md:hidden">
                       <div className="flex items-center gap-2">
                         <Navigation className="h-4 w-4 text-gray-500" />
                         <span className="text-sm text-gray-700">मोबाईल शॉर्टकट बार</span>
