@@ -25,7 +25,7 @@ const userSchema = z.object({
   username: z.string().min(1, "Username आवश्यक आहे"),
   password: z.string().min(1, "Password आवश्यक आहे"),
   fullName: z.string().min(1, "Full name आवश्यक आहे"),
-  email: z.string().email("Invalid email address"),
+  email: z.string().email("Invalid email address").optional().or(z.literal("")),
   role: z.enum(["user", "admin"], { required_error: "Role is required" })
 });
 
@@ -708,9 +708,9 @@ function CreateUserForm({
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Email</FormLabel>
+                    <FormLabel>Email (ऐच्छिक)</FormLabel>
                     <FormControl>
-                      <Input type="email" placeholder="Enter email" {...field} />
+                      <Input type="email" placeholder="Enter email (optional)" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

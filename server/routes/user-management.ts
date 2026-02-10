@@ -163,6 +163,27 @@ router.put("/users/:userId/status", requireAuth, adminOnlyMiddleware, async (req
     const { userId } = req.params;
     const { isActive, isTemporaryDisabled } = req.body;
 
+    // Prevent self-deactivation
+    if (userId === req.user.id) {
+      return res.status(400).json({ message: "स्वतःचा status बदलता येत नाही" });
+    }
+
+    // TENANT ISOLATION + ROLE CHECK
+    const targetUser = await storage.getUserById(userId);
+    if (!targetUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    if (targetUser.tenantId !== req.user.tenantId) {
+      return res.status(403).json({ message: "दुसऱ्या टेनंटचा user बदलता येत नाही" });
+    }
+    // Admin cannot deactivate another admin (only super_admin can)
+    if (targetUser.role === 'admin' && req.user.role !== 'super_admin') {
+      return res.status(403).json({ message: "Admin user चा status बदलण्यासाठी Super Admin अधिकार आवश्यक आहे" });
+    }
+    if (targetUser.role === 'super_admin') {
+      return res.status(403).json({ message: "Super Admin user चा status बदलता येत नाही" });
+    }
+
     // Update user status
     const updatedUser = await storage.updateUserStatus(userId, req.user.tenantId, isActive, isTemporaryDisabled);
     
@@ -233,7 +254,27 @@ router.delete("/users/:userId", requireAuth, adminOnlyMiddleware, async (req: an
 
     // Prevent admin from deleting themselves
     if (userId === req.user.id) {
-      return res.status(400).json({ message: "Cannot delete your own account" });
+      return res.status(400).json({ message: "स्वतःचे अकाउंट डिलीट करता येत नाही" });
+    }
+
+    // TENANT ISOLATION: Verify user belongs to same tenant before deleting
+    const targetUser = await storage.getUserById(userId);
+    if (!targetUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    if (targetUser.tenantId !== req.user.tenantId) {
+      return res.status(403).json({ message: "दुसऱ्या टेनंटचा user डिलीट करता येत नाही" });
+    }
+
+    // ROLE PROTECTION: Admin cannot delete another admin
+    if (targetUser.role === 'admin' && req.user.role !== 'super_admin') {
+      return res.status(403).json({ message: "Admin user ला डिलीट करण्यासाठी Super Admin अधिकार आवश्यक आहे" });
+    }
+
+    // SUPER_ADMIN PROTECTION: Never allow deleting super_admin users
+    if (targetUser.role === 'super_admin') {
+      return res.status(403).json({ message: "Super Admin user डिलीट करता येत नाही" });
     }
 
     // Delete user
@@ -248,10 +289,10 @@ router.delete("/users/:userId", requireAuth, adminOnlyMiddleware, async (req: an
       userId: req.user.id,
       tenantId: req.user.tenantId,
       activityType: 'delete_user',
-      description: `Deleted user: ${userId}`,
+      description: `Deleted user: ${targetUser.username} (${targetUser.fullName})`,
       ipAddress: req.ip,
       userAgent: req.get('User-Agent'),
-      metadata: JSON.stringify({ deletedUserId: userId })
+      metadata: JSON.stringify({ deletedUserId: userId, deletedUsername: targetUser.username })
     });
 
     res.json({ message: "User deleted successfully" });

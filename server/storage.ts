@@ -2820,8 +2820,7 @@ export class DatabaseStorage implements IStorage {
       .set(updateData)
       .where(and(
         eq(users.id, userId), 
-        eq(users.tenantId, tenantId),
-        or(eq(users.role, 'user'), eq(users.role, 'clerk')) // Only allow updating non-admin users
+        eq(users.tenantId, tenantId)
       ))
       .returning();
       
