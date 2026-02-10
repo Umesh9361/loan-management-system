@@ -587,8 +587,8 @@ export default function Closure() {
         <th style="border:1px solid #555;padding:2px 4px;font-size:8px;text-align:left;">तपशील</th>
         <th style="border:1px solid #555;padding:2px 3px;font-size:8px;width:46px;text-align:center;">कोड नं</th>
         <th style="border:1px solid #555;padding:2px 3px;font-size:8px;width:52px;text-align:center;">दिनांक</th>
-        ${showCols ? `<th style="border:1px solid #555;padding:2px 2px;font-size:7px;width:30px;text-align:center;">महिने</th>
-        <th style="border:1px solid #555;padding:2px 2px;font-size:7px;width:30px;text-align:center;">दर%</th>` : ''}
+        ${showCols ? `<th style="border:1px solid #555;padding:2px 2px;font-size:7px;width:30px;text-align:center;"></th>
+        <th style="border:1px solid #555;padding:2px 2px;font-size:7px;width:30px;text-align:center;"></th>` : ''}
         <th style="border:1px solid #555;padding:2px 4px;font-size:8px;width:72px;text-align:right;">बाजारमूल्य</th>
         <th style="border:1px solid #555;padding:2px 4px;font-size:8px;width:62px;text-align:right;">चार्जेस</th>
       </tr>
@@ -1603,7 +1603,20 @@ export default function Closure() {
                       </div>
                     </CardHeader>
                     <CardContent className="p-0">
-                      <div className="text-center font-bold text-sm py-2 underline">Estimate</div>
+                      {summaryEntries.length > 0 && (
+                        <div className="flex justify-between items-start px-3 pt-2 pb-1">
+                          <div>
+                            <div className="font-bold text-sm">{summaryEntries[0].borrowerName}</div>
+                            {summaryEntries[0].borrowerAddress && (
+                              <div className="text-xs text-gray-500">{summaryEntries[0].borrowerAddress}</div>
+                            )}
+                          </div>
+                          <div className="text-xs text-gray-500 text-right">
+                            तारीख: {DateUtils.isoToIndianDate(summaryEntries[0].closureDate)}
+                          </div>
+                        </div>
+                      )}
+                      <div className="text-center font-bold text-sm py-1 underline">Estimate</div>
                       <div className="overflow-x-auto">
                         <table className="w-full text-sm border-collapse">
                           <thead>
