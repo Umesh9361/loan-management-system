@@ -559,13 +559,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (typeof enabled !== 'boolean') {
         return res.status(400).json({ message: "Invalid value" });
       }
-      const company = await storage.updateCompany(req.session.tenantId!, { bottomNavEnabled: enabled } as any);
-      if (!company) {
-        return res.status(404).json({ message: "कंपनी सापडली नाही" });
+      try {
+        const company = await storage.updateCompany(req.session.tenantId!, { bottomNavEnabled: enabled });
+        if (!company) {
+          return res.status(404).json({ message: "कंपनी सापडली नाही" });
+        }
+        res.json({ bottomNavEnabled: company.bottomNavEnabled });
+      } catch (dbError: any) {
+        if (dbError?.message?.includes('bottom_nav_enabled') || dbError?.message?.includes('column')) {
+          try {
+            const { db } = await import('./db');
+            const { sql } = await import('drizzle-orm');
+            await db.execute(sql`ALTER TABLE companies ADD COLUMN IF NOT EXISTS bottom_nav_enabled BOOLEAN NOT NULL DEFAULT true`);
+            const company = await storage.updateCompany(req.session.tenantId!, { bottomNavEnabled: enabled });
+            if (!company) {
+              return res.status(404).json({ message: "कंपनी सापडली नाही" });
+            }
+            res.json({ bottomNavEnabled: company.bottomNavEnabled });
+          } catch (alterError) {
+            console.error("Failed to add bottom_nav_enabled column:", alterError);
+            throw dbError;
+          }
+        } else {
+          throw dbError;
+        }
       }
-      res.json({ bottomNavEnabled: company.bottomNavEnabled });
     } catch (error) {
-      res.status(500).json({ message: "त्रुटी झाली", error: error instanceof Error ? error.message : "Unknown" });
+      console.error("Bottom nav toggle error:", error);
+      res.status(500).json({ message: "सेटिंग बदलताना त्रुटी झाली", error: error instanceof Error ? error.message : "Unknown" });
     }
   });
 
