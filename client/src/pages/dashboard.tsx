@@ -21,7 +21,6 @@ import {
   Lock,
   Edit,
   Trash2,
-  FileText,
   X,
   MoreVertical,
   Receipt,
@@ -94,29 +93,6 @@ export default function Dashboard() {
     },
   });
 
-  const summaryColumnsToggle = useMutation({
-    mutationFn: async (enabled: boolean) => {
-      const res = await apiRequest("/api/company/summary-columns-toggle", "PUT", { enabled });
-      return res.json();
-    },
-    onMutate: async (enabled: boolean) => {
-      await queryClient.cancelQueries({ queryKey: ["/api/company"] });
-      const previous = queryClient.getQueryData(["/api/company"]);
-      queryClient.setQueryData(["/api/company"], (old: any) => ({
-        ...old,
-        showSummaryRateMonths: enabled,
-      }));
-      return { previous };
-    },
-    onSuccess: (data) => {
-      queryClient.setQueryData(["/api/company"], data);
-    },
-    onError: (_err, _enabled, context: any) => {
-      if (context?.previous) {
-        queryClient.setQueryData(["/api/company"], context.previous);
-      }
-    },
-  });
 
   // Get today's date
   const today = new Date().toISOString().split('T')[0];
@@ -247,23 +223,6 @@ export default function Dashboard() {
                           autoComplete="off"
                         />
                         <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                      </label>
-                    </div>
-                    <div className="flex items-center justify-between pt-3 border-t border-gray-200">
-                      <div className="flex items-center gap-2">
-                        <FileText className="h-4 w-4 text-gray-500" />
-                        <span className="text-sm text-gray-700">पावती मध्ये महिने व व्याजदर</span>
-                      </div>
-                      <label className="relative inline-flex items-center cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={(company as any)?.showSummaryRateMonths !== false}
-                          onChange={(e) => summaryColumnsToggle.mutate(e.target.checked)}
-                          className="sr-only peer"
-                          disabled={summaryColumnsToggle.isPending || !company}
-                          autoComplete="off"
-                        />
-                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-amber-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-600"></div>
                       </label>
                     </div>
                     </>
