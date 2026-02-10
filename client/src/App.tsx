@@ -6,6 +6,7 @@ import { ReportsNavFix, reportsFixStyles } from "@/components/reports-nav-fix";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { I18nProvider } from "@/providers/I18nProvider";
 import { useCurrentUser } from "@/hooks/use-current-user";
+import { useMidnightLogout } from "@/hooks/use-midnight-logout";
 import { useSafeNavigation } from "@/hooks/use-safe-navigation";
 import { BottomNavigation } from "@/components/bottom-navigation";
 
@@ -64,6 +65,8 @@ function normalizeRole(role: string | undefined): string {
 function AppContent() {
   const { safeNavigate } = useSafeNavigation();
   const { user: rawUser, isLoading } = useCurrentUser();
+
+  useMidnightLogout(!!rawUser);
 
   const userRole = normalizeRole(rawUser?.role);
 
