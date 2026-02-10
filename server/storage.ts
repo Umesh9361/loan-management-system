@@ -281,6 +281,7 @@ export class DatabaseStorage implements IStorage {
       .set({ ...company, updatedAt: new Date() })
       .where(eq(companies.tenantId, tenantId))
       .returning();
+    performanceCache.invalidatePattern(`company:${tenantId}`);
     return updatedCompany || undefined;
   }
 
