@@ -69,19 +69,16 @@ export function apiCache(options: CacheOptions = {}) {
 export function invalidateCache(pattern: string, tenantId?: string) {
   const keys = cache.keys();
   
-  // Build multiple patterns to match different cache key formats
-  const patterns: string[] = [];
-  if (tenantId) {
-    patterns.push(`${tenantId}:${pattern}`);
-    patterns.push(`GET:${tenantId}:/api/${pattern}`);
-    patterns.push(`POST:${tenantId}:/api/${pattern}`);
-  } else {
-    patterns.push(pattern);
-  }
-  
   let invalidatedCount = 0;
   keys.forEach(key => {
-    const shouldDelete = patterns.some(p => key.includes(p.replace(':', '')));
+    let shouldDelete = false;
+    if (tenantId && pattern) {
+      shouldDelete = key.includes(tenantId) && key.includes(pattern);
+    } else if (tenantId) {
+      shouldDelete = key.includes(tenantId);
+    } else if (pattern) {
+      shouldDelete = key.includes(pattern);
+    }
     if (shouldDelete) {
       cache.del(key);
       invalidatedCount++;
