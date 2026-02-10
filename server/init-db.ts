@@ -1,6 +1,6 @@
 import { db } from "./db";
 import { users } from "@shared/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 import bcrypt from "bcrypt";
 import SuperAdminGuardian from "./super-admin-guardian";
 
@@ -124,7 +124,15 @@ export async function initializeDatabase() {
       console.log("✅ Multi-tenant admin structure verified and secured");
       console.log("✅ Future-proof prevention system activated");
       
-      // 6. FINAL GUARDIAN VALIDATION: Double-check everything is correct
+      // 6. AUTO-MIGRATION: Ensure new columns exist in database
+      try {
+        await db.execute(sql`ALTER TABLE companies ADD COLUMN IF NOT EXISTS bottom_nav_enabled BOOLEAN NOT NULL DEFAULT true`);
+        console.log("✅ Schema migration: bottom_nav_enabled column verified");
+      } catch (migrationError) {
+        console.warn("⚠️  Schema migration warning (non-fatal):", migrationError instanceof Error ? migrationError.message : migrationError);
+      }
+
+      // 7. FINAL GUARDIAN VALIDATION: Double-check everything is correct
       await SuperAdminGuardian.validateAndFixRoleAssignments();
       console.log("🛡️  SUPER ADMIN GUARDIAN: Final validation completed");
       
