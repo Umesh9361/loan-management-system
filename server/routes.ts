@@ -550,7 +550,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/company/bottom-nav-toggle", requireAuth, cacheBuster(['company:']), async (req, res) => {
+  app.put("/api/company/bottom-nav-toggle", requireAuth, async (req, res) => {
     try {
       if (req.session.role !== 'admin' && req.session.role !== 'super_admin') {
         return res.status(403).json({ message: "फक्त अ‍ॅडमिन हे बदलू शकतो" });
@@ -564,7 +564,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (!company) {
           return res.status(404).json({ message: "कंपनी सापडली नाही" });
         }
-        res.json({ bottomNavEnabled: company.bottomNavEnabled });
+        invalidateTenantCache(req.session.tenantId!);
+        res.json(company);
       } catch (dbError: any) {
         if (dbError?.message?.includes('bottom_nav_enabled') || dbError?.message?.includes('column')) {
           try {
@@ -575,7 +576,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             if (!company) {
               return res.status(404).json({ message: "कंपनी सापडली नाही" });
             }
-            res.json({ bottomNavEnabled: company.bottomNavEnabled });
+            invalidateTenantCache(req.session.tenantId!);
+            res.json(company);
           } catch (alterError) {
             console.error("Failed to add bottom_nav_enabled column:", alterError);
             throw dbError;
