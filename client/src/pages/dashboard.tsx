@@ -69,7 +69,7 @@ export default function Dashboard() {
 
   const bottomNavToggle = useMutation({
     mutationFn: async (enabled: boolean) => {
-      const res = await apiRequest("PUT", "/api/company/bottom-nav-toggle", { enabled });
+      const res = await apiRequest("/api/company/bottom-nav-toggle", "PUT", { enabled });
       return res.json();
     },
     onSuccess: () => {
