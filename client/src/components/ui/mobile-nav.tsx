@@ -94,7 +94,7 @@ export function MobileNav({ hideBottomNav = false }: MobileNavProps = {}) {
                 <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="p-0 w-72 sm:w-80" hideClose>
+            <SheetContent side="left" className="p-0 w-60 sm:w-72" hideClose>
               <Sidebar />
             </SheetContent>
           </Sheet>
