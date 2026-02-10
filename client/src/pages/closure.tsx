@@ -578,7 +578,7 @@ export default function Closure() {
     entries.forEach((entry, index) => {
       tableRows += `<tr>
         <td style="border:1px solid #333;padding:2px 4px;text-align:center;font-size:${baseFontSize};">${index + 1}</td>
-        <td style="border:1px solid #333;padding:2px 4px;font-size:${baseFontSize};">${entry.collateralDetails || '-'}</td>
+        <td style="border:1px solid #333;padding:2px 4px;font-size:${baseFontSize};max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${entry.collateralDetails || '-'}</td>
         <td style="border:1px solid #333;padding:2px 4px;text-align:center;font-size:${baseFontSize};">${entry.accountNumber}</td>
         <td style="border:1px solid #333;padding:2px 4px;text-align:center;font-size:${baseFontSize};">${DateUtils.isoToIndianDate(entry.loanDate)}</td>
         <td style="border:1px solid #333;padding:2px 4px;text-align:center;font-size:${baseFontSize};">${entry.months}</td>
@@ -1499,7 +1499,7 @@ export default function Closure() {
                         className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 transform hover:scale-105 transition-all duration-300"
                       >
                         <FileText className="h-4 w-4 mr-2" />
-                        हिशोबात जोडा
+                        Add
                       </Button>
                       <Button
                         type="submit"
@@ -1588,7 +1588,7 @@ export default function Closure() {
                             {summaryEntries.map((entry, index) => (
                               <tr key={entry.id} className="hover:bg-gray-50">
                                 <td className="border border-gray-300 px-1 py-1 text-center text-xs">{index + 1}</td>
-                                <td className="border border-gray-300 px-2 py-1 text-xs">{entry.collateralDetails || '-'}</td>
+                                <td className="border border-gray-300 px-2 py-1 text-xs max-w-[120px] truncate" title={entry.collateralDetails || '-'}>{entry.collateralDetails || '-'}</td>
                                 <td className="border border-gray-300 px-1 py-1 text-center text-xs">{entry.accountNumber}</td>
                                 <td className="border border-gray-300 px-1 py-1 text-center text-xs">{DateUtils.isoToIndianDate(entry.loanDate)}</td>
                                 <td className="border border-gray-300 px-1 py-1 text-center text-xs">{entry.months}</td>
@@ -1635,7 +1635,7 @@ export default function Closure() {
                       <FileText className="h-16 w-16 text-gray-300 mx-auto mb-4" />
                       <h3 className="text-lg font-semibold text-gray-500 mb-2">हिशोबात कोणतेही कर्ज नाही</h3>
                       <p className="text-sm text-gray-400 mb-4">
-                        कर्ज बंद करा टॅब मधून "हिशोबात जोडा" बटण दाबून कर्ज जोडा
+                        कर्ज बंद करा टॅब मधून "Add" बटण दाबून कर्ज जोडा
                       </p>
                       <Button 
                         variant="outline" 
