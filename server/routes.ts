@@ -37,7 +37,7 @@ async function invalidateOtherSessions(userId: string, currentSessionId: string)
 }
 import { getNameTranslations, normalizeMarathiVowels } from "./name-translations";
 import { automaticDuplicatePrevention } from "./middleware/automatic-duplicate-prevention";
-import { apiCache, cacheBuster, invalidateTenantCache, getCacheStats, cache } from "./middleware/cache";
+import { apiCache, cacheBuster, invalidateTenantCache, invalidateCache, getCacheStats, cache } from "./middleware/cache";
 import { triggerLoanSync } from "./real-time-sync-engine";
 import { NarrationEngine } from "./narration-engine";
 
@@ -565,12 +565,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (!company) {
           return res.status(404).json({ message: "कंपनी सापडली नाही" });
         }
-        const cacheKeys = cache.keys();
-        cacheKeys.forEach(key => {
-          if (key.includes(tenantId) && key.includes('company')) {
-            cache.del(key);
-          }
-        });
+        invalidateCache('company', tenantId);
         return res.json(company);
       } catch (dbError: any) {
         if (dbError?.message?.includes('bottom_nav_enabled') || dbError?.message?.includes('column')) {
@@ -582,12 +577,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             if (!company) {
               return res.status(404).json({ message: "कंपनी सापडली नाही" });
             }
-            const cacheKeys = cache.keys();
-            cacheKeys.forEach(key => {
-              if (key.includes(tenantId) && key.includes('company')) {
-                cache.del(key);
-              }
-            });
+            invalidateCache('company', tenantId);
             return res.json(company);
           } catch (alterError) {
             console.error("Failed to add bottom_nav_enabled column:", alterError);
