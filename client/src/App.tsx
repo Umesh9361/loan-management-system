@@ -1,12 +1,11 @@
 import { Switch, Route } from "wouter";
 import { queryClient } from "./lib/queryClient";
-import { QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider, useQuery } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { ReportsNavFix, reportsFixStyles } from "@/components/reports-nav-fix";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { I18nProvider } from "@/providers/I18nProvider";
-import { useQuery } from "@tanstack/react-query";
-import { AuthService } from "./lib/auth";
+import { useCurrentUser } from "@/hooks/use-current-user";
 import { useSafeNavigation } from "@/hooks/use-safe-navigation";
 import { BottomNavigation } from "@/components/bottom-navigation";
 
@@ -56,28 +55,25 @@ import ActivityLogPage from "@/pages/activity-log";
 import UserManagement from "@/pages/user-management";
 import PartyManagement from "@/pages/party-management";
 
+function normalizeRole(role: string | undefined): string {
+  if (!role) return '';
+  const r = role.trim().toLowerCase();
+  return r === 'clerk' ? 'user' : r;
+}
+
 function AppContent() {
   const { safeNavigate } = useSafeNavigation();
-  const { data: user, isLoading } = useQuery({
-    queryKey: ["/api/auth/me"],
-    queryFn: async () => {
-      const userData = await AuthService.getCurrentUser();
-      return userData;
-    },
-    retry: false, // Don't retry 401 errors
-    staleTime: 30000,
-    refetchOnWindowFocus: false,
-    refetchOnReconnect: false, // Prevent unnecessary refetches
-  });
+  const { user: rawUser, isLoading } = useCurrentUser();
 
-  // Fetch user permissions for dynamic routing with aggressive caching
+  const userRole = normalizeRole(rawUser?.role);
+
   const { data: userPermissions } = useQuery({
     queryKey: ["/api/user-permissions"],
-    enabled: !!user && user.role === 'user', // Only fetch for regular users
+    enabled: !!rawUser && userRole === 'user',
     retry: false,
-    staleTime: 5 * 60 * 1000, // 5 minutes - permissions don't change often
-    gcTime: 10 * 60 * 1000, // 10 minutes in cache
-    refetchOnWindowFocus: false, // Don't refetch on focus for better performance
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: false,
   });
 
   if (isLoading) {
@@ -91,22 +87,11 @@ function AppContent() {
     );
   }
 
-  // Show login screen if not authenticated
-  if (!user) {
+  if (!rawUser) {
     return <Login />;
   }
 
-  // FIX: Handle nested user structure + normalize role for consistency  
-  const actualUser = (user as any)?.user || user; // Handle both {user: {...}} and direct {...} formats
-  
-  // Normalize role to prevent auth fallback from 'clerk' or whitespace issues
-  if (actualUser && actualUser.role) {
-    const normalizedRole = actualUser.role.trim().toLowerCase();
-    // Map legacy 'clerk' to 'user' for compatibility
-    if (normalizedRole === 'clerk') {
-      actualUser.role = 'user';
-    }
-  }
+  const actualUser = { ...rawUser, role: userRole };
   
   // Super Admin Routes - COMPLETE ACCESS to ALL features including Super Admin management
   if (actualUser.role === 'super_admin') {

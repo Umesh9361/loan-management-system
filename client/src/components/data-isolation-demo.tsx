@@ -1,15 +1,11 @@
 import React from "react";
-import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { AuthService } from "@/lib/auth";
+import { useCurrentUser } from "@/hooks/use-current-user";
 import { Shield, Database, Lock } from "lucide-react";
 
 export function DataIsolationDemo() {
-  const { data: user } = useQuery({
-    queryKey: ["/api/auth/me"],
-    queryFn: () => AuthService.getCurrentUser(),
-  });
+  const { user } = useCurrentUser();
 
   return (
     <Card className="border-green-200 bg-green-50">

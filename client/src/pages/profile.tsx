@@ -13,7 +13,7 @@ import { Sidebar } from "@/components/ui/sidebar";
 import { MobileNav } from "@/components/ui/mobile-nav";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { AuthService } from "@/lib/auth";
+import { useCurrentUser } from "@/hooks/use-current-user";
 import { DataIsolationDemo } from "@/components/data-isolation-demo";
 import { User, Shield, Key, Building } from "lucide-react";
 
@@ -33,10 +33,7 @@ export default function Profile() {
   const { safeNavigate } = useSafeNavigation();
   const [isChangingPassword, setIsChangingPassword] = useState(false);
 
-  const { data: user, isLoading } = useQuery({
-    queryKey: ["/api/auth/me"],
-    queryFn: () => AuthService.getCurrentUser(),
-  });
+  const { user, isLoading } = useCurrentUser();
 
   // ACCESS CONTROL: Only admin and super admin users can access profile page
   if (!isLoading && user && user.role === 'user') {

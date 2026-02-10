@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useCurrentUser } from "@/hooks/use-current-user";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Sidebar } from "@/components/ui/sidebar";
@@ -58,10 +59,7 @@ export default function Dashboard() {
   });
 
   // Get current logged-in user details
-  const { data: currentUser } = useQuery({
-    queryKey: ["/api/auth/me"],
-    staleTime: 30000
-  });
+  const { user: currentUser } = useCurrentUser();
 
   // Get today's date
   const today = new Date().toISOString().split('T')[0];

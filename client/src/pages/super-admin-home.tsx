@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useCurrentUser } from "@/hooks/use-current-user";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Sidebar } from "@/components/ui/sidebar";
@@ -29,9 +30,7 @@ import { Link } from "wouter";
 import { Badge } from "@/components/ui/badge";
 
 export default function SuperAdminHome() {
-  const { data: user } = useQuery({
-    queryKey: ["/api/auth/me"],
-  });
+  const { user } = useCurrentUser();
 
   const { data: company } = useQuery({
     queryKey: ["/api/company"],

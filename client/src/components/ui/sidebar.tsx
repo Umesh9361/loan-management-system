@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { useQuery } from "@tanstack/react-query";
+import { useCurrentUser } from "@/hooks/use-current-user";
 import { AuthService } from "@/lib/auth";
 import { useEffect, useRef } from "react";
 import { NotificationBell } from "@/components/maturity-reminder";
@@ -193,10 +194,7 @@ export function Sidebar({ className }: SidebarProps) {
   const { safeNavigate } = useSafeNavigation();
   const scrollRef = useRef<HTMLDivElement>(null);
   
-  const { data: currentUser } = useQuery({
-    queryKey: ["/api/auth/me"],
-    queryFn: () => AuthService.getCurrentUser(),
-  });
+  const { user: currentUser } = useCurrentUser();
 
   const { data: company } = useQuery({
     queryKey: ["/api/company"],

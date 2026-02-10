@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { apiRequest } from "@/lib/queryClient";
-import { AuthService } from "@/lib/auth";
+import { useCurrentUser } from "@/hooks/use-current-user";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -87,19 +87,8 @@ export default function UserManagement() {
   const queryClient = useQueryClient();
   const { safeNavigate } = useSafeNavigation();
 
-  // Fetch current user info using AuthService (same as App.tsx)
-  const { data: currentUser, isLoading: userLoading, error: userError } = useQuery({
-    queryKey: ["/api/auth/me"],
-    queryFn: async () => {
-      console.log('🔍 User Management: Fetching current user...');
-      const userData = await AuthService.getCurrentUser();
-      console.log('✅ User Management: User data received:', userData);
-      return userData;
-    },
-    retry: 2,
-    staleTime: 30000,
-    refetchOnWindowFocus: false,
-  });
+  // Fetch current user info using useCurrentUser hook
+  const { user: currentUser, isLoading: userLoading, isError: userError } = useCurrentUser();
 
   // Handle loading state (same as App.tsx)
   if (userLoading) {

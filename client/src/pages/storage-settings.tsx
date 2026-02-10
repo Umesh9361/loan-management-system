@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
+import { useCurrentUser } from "@/hooks/use-current-user";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,9 +31,7 @@ export default function StorageSettings() {
   const [showApiKey, setShowApiKey] = useState(false);
   const [showApiSecret, setShowApiSecret] = useState(false);
 
-  const { data: user, isLoading: loadingUser } = useQuery<any>({
-    queryKey: ["/api/auth/me"],
-  });
+  const { user, isLoading: loadingUser } = useCurrentUser();
 
   const isSuperAdmin = user?.role === 'super_admin';
   const userLoaded = !!user && !loadingUser;
