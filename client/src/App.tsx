@@ -70,34 +70,60 @@ function RedirectToDashboard() {
 const INACTIVITY_KEY = 'last_active_timestamp';
 const INACTIVITY_TIMEOUT = 30 * 60 * 1000;
 
-function useInactivityRedirect() {
+function useInactivityRedirect(isLoggedIn: boolean) {
   const [location, setLocation] = useLocation();
 
   useEffect(() => {
+    if (!isLoggedIn) return;
     if (location === '/' || location === '/login') return;
 
     const lastActive = localStorage.getItem(INACTIVITY_KEY);
-    if (lastActive) {
-      const gap = Date.now() - Number(lastActive);
-      if (gap > INACTIVITY_TIMEOUT) {
-        setLocation('/');
-      }
+    if (!lastActive) {
+      localStorage.setItem(INACTIVITY_KEY, String(Date.now()));
+      return;
     }
-  }, []);
+    const gap = Date.now() - Number(lastActive);
+    if (gap > INACTIVITY_TIMEOUT) {
+      localStorage.setItem(INACTIVITY_KEY, String(Date.now()));
+      setLocation('/');
+    }
+  }, [isLoggedIn, location]);
 
   const updateActivity = useCallback(() => {
+    if (!isLoggedIn) return;
     localStorage.setItem(INACTIVITY_KEY, String(Date.now()));
-  }, []);
+  }, [isLoggedIn]);
 
   useEffect(() => {
+    if (!isLoggedIn) return;
     updateActivity();
 
     const events = ['click', 'keydown', 'scroll', 'touchstart'];
     const handler = () => updateActivity();
+    const visHandler = () => {
+      if (document.visibilityState === 'visible') {
+        const lastActive = localStorage.getItem(INACTIVITY_KEY);
+        if (lastActive) {
+          const gap = Date.now() - Number(lastActive);
+          if (gap > INACTIVITY_TIMEOUT && location !== '/' && location !== '/login') {
+            localStorage.setItem(INACTIVITY_KEY, String(Date.now()));
+            setLocation('/');
+            return;
+          }
+        }
+        updateActivity();
+      }
+    };
 
-    events.forEach(e => window.addEventListener(e, handler, { passive: true }));
-    return () => events.forEach(e => window.removeEventListener(e, handler));
-  }, [updateActivity]);
+    events.forEach(e => window.addEventListener(e, handler));
+    document.addEventListener('visibilitychange', visHandler);
+    window.addEventListener('focus', visHandler);
+    return () => {
+      events.forEach(e => window.removeEventListener(e, handler));
+      document.removeEventListener('visibilitychange', visHandler);
+      window.removeEventListener('focus', visHandler);
+    };
+  }, [updateActivity, isLoggedIn, location]);
 }
 
 function AppContent() {
@@ -105,7 +131,7 @@ function AppContent() {
   const { user: rawUser, authReady, isLoading } = useCurrentUser();
 
   useMidnightLogout(!!rawUser);
-  useInactivityRedirect();
+  useInactivityRedirect(!!rawUser);
 
   const userRole = normalizeRole(rawUser?.role);
 
