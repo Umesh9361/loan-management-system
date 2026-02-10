@@ -79,14 +79,17 @@ export default function Dashboard() {
         ...old,
         bottomNavEnabled: enabled,
       }));
+      try { localStorage.setItem('bottomNavEnabled', JSON.stringify(enabled)); } catch(e) {}
       return { previous };
     },
     onSuccess: (data) => {
       queryClient.setQueryData(["/api/company"], data);
+      try { localStorage.setItem('bottomNavEnabled', JSON.stringify(data?.bottomNavEnabled ?? true)); } catch(e) {}
     },
     onError: (_err, _enabled, context: any) => {
       if (context?.previous) {
         queryClient.setQueryData(["/api/company"], context.previous);
+        try { localStorage.setItem('bottomNavEnabled', JSON.stringify((context.previous as any)?.bottomNavEnabled ?? true)); } catch(e) {}
       }
     },
   });
@@ -212,7 +215,7 @@ export default function Dashboard() {
                       <label className="relative inline-flex items-center cursor-pointer">
                         <input
                           type="checkbox"
-                          checked={company ? (company as any)?.bottomNavEnabled !== false : false}
+                          checked={company ? (company as any)?.bottomNavEnabled !== false : (() => { try { const v = localStorage.getItem('bottomNavEnabled'); return v !== null ? JSON.parse(v) : false; } catch(e) { return false; } })()}
                           onChange={(e) => bottomNavToggle.mutate(e.target.checked)}
                           className="sr-only peer"
                           disabled={bottomNavToggle.isPending || !company}
