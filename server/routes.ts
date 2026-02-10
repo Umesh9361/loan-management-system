@@ -37,7 +37,7 @@ async function invalidateOtherSessions(userId: string, currentSessionId: string)
 }
 import { getNameTranslations, normalizeMarathiVowels } from "./name-translations";
 import { automaticDuplicatePrevention } from "./middleware/automatic-duplicate-prevention";
-import { apiCache, cacheBuster, invalidateTenantCache, getCacheStats } from "./middleware/cache";
+import { apiCache, cacheBuster, invalidateTenantCache, getCacheStats, cache } from "./middleware/cache";
 import { triggerLoanSync } from "./real-time-sync-engine";
 import { NarrationEngine } from "./narration-engine";
 
@@ -559,25 +559,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (typeof enabled !== 'boolean') {
         return res.status(400).json({ message: "Invalid value" });
       }
+      const tenantId = req.session.tenantId!;
       try {
-        const company = await storage.updateCompany(req.session.tenantId!, { bottomNavEnabled: enabled });
+        const company = await storage.updateCompany(tenantId, { bottomNavEnabled: enabled });
         if (!company) {
           return res.status(404).json({ message: "कंपनी सापडली नाही" });
         }
-        invalidateTenantCache(req.session.tenantId!);
-        res.json(company);
+        const cacheKeys = cache.keys();
+        cacheKeys.forEach(key => {
+          if (key.includes(tenantId) && key.includes('company')) {
+            cache.del(key);
+          }
+        });
+        return res.json(company);
       } catch (dbError: any) {
         if (dbError?.message?.includes('bottom_nav_enabled') || dbError?.message?.includes('column')) {
           try {
             const { db } = await import('./db');
             const { sql } = await import('drizzle-orm');
             await db.execute(sql`ALTER TABLE companies ADD COLUMN IF NOT EXISTS bottom_nav_enabled BOOLEAN NOT NULL DEFAULT true`);
-            const company = await storage.updateCompany(req.session.tenantId!, { bottomNavEnabled: enabled });
+            const company = await storage.updateCompany(tenantId, { bottomNavEnabled: enabled });
             if (!company) {
               return res.status(404).json({ message: "कंपनी सापडली नाही" });
             }
-            invalidateTenantCache(req.session.tenantId!);
-            res.json(company);
+            const cacheKeys = cache.keys();
+            cacheKeys.forEach(key => {
+              if (key.includes(tenantId) && key.includes('company')) {
+                cache.del(key);
+              }
+            });
+            return res.json(company);
           } catch (alterError) {
             console.error("Failed to add bottom_nav_enabled column:", alterError);
             throw dbError;
