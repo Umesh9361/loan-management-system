@@ -74,10 +74,6 @@ export default function Dashboard() {
     },
     onSuccess: (data) => {
       queryClient.setQueryData(["/api/company"], data);
-      toast({ title: "सेटिंग बदलली", description: "बॉटम नेव्हिगेशन सेटिंग अपडेट झाली" });
-    },
-    onError: () => {
-      toast({ title: "त्रुटी", description: "सेटिंग बदलताना त्रुटी झाली", variant: "destructive" });
     },
   });
 
