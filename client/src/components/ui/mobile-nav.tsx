@@ -14,7 +14,6 @@ import { useQuery } from "@tanstack/react-query";
 import { Sidebar } from "./sidebar";
 import { AuthService } from "@/lib/auth";
 import { useSafeNavigation } from "@/hooks/use-safe-navigation";
-import { NotificationBell } from "@/components/maturity-reminder";
 import { 
   Home, 
   CreditCard, 
@@ -94,7 +93,7 @@ export function MobileNav({ hideBottomNav = false }: MobileNavProps = {}) {
                 <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="p-0 w-72 sm:w-80">
+            <SheetContent side="left" className="p-0 w-72 sm:w-80" hideClose>
               <Sidebar />
             </SheetContent>
           </Sheet>
@@ -102,7 +101,6 @@ export function MobileNav({ hideBottomNav = false }: MobileNavProps = {}) {
           <h1 className="text-base font-semibold truncate">कर्ज व्यवस्थापन</h1>
           
           <div className="flex items-center gap-1">
-            <NotificationBell />
             <Button 
               variant="ghost" 
               size="icon"
