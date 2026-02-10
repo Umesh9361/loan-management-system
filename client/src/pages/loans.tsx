@@ -1194,6 +1194,7 @@ function Loans() {
               <form 
                 onSubmit={form.handleSubmit(onSubmit)} 
                 className="space-y-4 sm:space-y-6"
+                autoComplete="off"
                 onKeyDown={(e) => {
                   // Alt+S: Save Form
                   if (e.altKey && e.key === 's') {

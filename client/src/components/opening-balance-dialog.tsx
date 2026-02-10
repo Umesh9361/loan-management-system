@@ -105,7 +105,7 @@ export function OpeningBalanceDialog({ open, onOpenChange }: OpeningBalanceDialo
         </div>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4" autoComplete="off">
             <FormField
               control={form.control}
               name="amount"

@@ -143,7 +143,7 @@ export default function CashInDialog({ open, onOpenChange }: CashInDialogProps) 
           Cash in transaction entry form
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 pb-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 pb-4" autoComplete="off">
           {/* DEBUG: Show form validation errors */}
           {Object.keys(errors).length > 0 && (
             <div className="p-2 bg-red-100 border border-red-300 rounded">

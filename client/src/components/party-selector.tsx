@@ -233,7 +233,7 @@ export default function PartySelector({ value, onValueChange, placeholder = "व
               Add new party form for cash transactions
             </div>
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pb-6">
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pb-6" autoComplete="off">
                 <FormField
                   control={form.control}
                   name="name"

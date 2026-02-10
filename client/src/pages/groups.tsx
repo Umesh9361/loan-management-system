@@ -236,7 +236,7 @@ export default function Groups() {
                       Group creation and editing form
                     </div>
                     
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4" autoComplete="off">
                       <div>
                         <Label htmlFor="name">ग्रुपचे नाव *</Label>
                         <DualLanguageInput

@@ -172,7 +172,7 @@ export default function Company() {
                     <Button onClick={() => setIsEditing(true)}>कंपनी नोंदणी करा</Button>
                   </div>
                 ) : isEditing ? (
-                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6" autoComplete="off">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div>
                         <Label htmlFor="name">कंपनीचे नाव *</Label>

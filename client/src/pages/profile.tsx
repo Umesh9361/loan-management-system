@@ -268,7 +268,7 @@ export default function Profile() {
                       </Button>
                     </div>
                   ) : (
-                    <form onSubmit={passwordForm.handleSubmit(handlePasswordChange)} className="space-y-4 max-w-md mx-auto">
+                    <form onSubmit={passwordForm.handleSubmit(handlePasswordChange)} className="space-y-4 max-w-md mx-auto" autoComplete="off">
                       <div>
                         <Label>सध्याचा पासवर्ड</Label>
                         <Input 

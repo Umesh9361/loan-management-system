@@ -219,7 +219,7 @@ export default function SuperAdminDashboard() {
                   <DialogHeader>
                     <DialogTitle className="font-noto">नवीन टेनंट तयार करा</DialogTitle>
                   </DialogHeader>
-                  <form onSubmit={createTenantForm.handleSubmit(handleCreateTenant)} className="space-y-4">
+                  <form onSubmit={createTenantForm.handleSubmit(handleCreateTenant)} className="space-y-4" autoComplete="off">
                     <div>
                       <Label>टेनंट आयडी</Label>
                       <Input 

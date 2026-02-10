@@ -92,7 +92,7 @@ export function ForgotPassword({ onBack }: ForgotPasswordProps) {
         </p>
       </CardHeader>
       <CardContent>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4" autoComplete="off">
           <div>
             <Label htmlFor="tenantId">Company ID / Tenant ID</Label>
             <div className="relative">

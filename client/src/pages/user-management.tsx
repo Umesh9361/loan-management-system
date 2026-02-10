@@ -797,7 +797,7 @@ function PermissionsForm({
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit((data) => onSubmit({ ...data, canViewDashboard: true, canAccessInterestCalculator: true }))} className="space-y-6">
+      <form onSubmit={form.handleSubmit((data) => onSubmit({ ...data, canViewDashboard: true, canAccessInterestCalculator: true }))} className="space-y-6" autoComplete="off">
         <PermissionsList form={form} userRole={user.role} />
         
         <div className="flex justify-end space-x-2 pt-4 border-t">
@@ -835,7 +835,7 @@ function PasswordForm({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4" autoComplete="off">
       <div>
         <label className="text-sm font-medium">New Password</label>
         <Input

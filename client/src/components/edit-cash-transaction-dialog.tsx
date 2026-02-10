@@ -119,7 +119,7 @@ export default function EditCashTransactionDialog({
           Edit cash transaction form
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" autoComplete="off">
           <div>
             <Label htmlFor="transactionDate">दिनांक *</Label>
             <Input

@@ -640,7 +640,7 @@ export default function Closure() {
               
               <CardContent className="p-6 bg-white rounded-b-lg">
                 <Form {...form}>
-                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6" autoComplete="off">
                     
                     {/* Enhanced Loan Search - Only show if not from URL */}
                     {!hideSearch && (

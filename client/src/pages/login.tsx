@@ -100,7 +100,7 @@ export default function Login() {
         
         <Card>
           <CardContent className="p-8">
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6" autoComplete="off">
               <div>
                 <Label htmlFor="tenantId" className="block text-sm font-medium text-gray-700 mb-2">
                   कंपनी ओळखकर्ता (Tenant ID)
