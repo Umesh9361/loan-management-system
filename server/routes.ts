@@ -550,6 +550,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.put("/api/company/bottom-nav-toggle", requireAuth, cacheBuster(['company:']), async (req, res) => {
+    try {
+      if (req.session.role !== 'admin' && req.session.role !== 'super_admin') {
+        return res.status(403).json({ message: "फक्त अ‍ॅडमिन हे बदलू शकतो" });
+      }
+      const { enabled } = req.body;
+      if (typeof enabled !== 'boolean') {
+        return res.status(400).json({ message: "Invalid value" });
+      }
+      const company = await storage.updateCompany(req.session.tenantId!, { bottomNavEnabled: enabled } as any);
+      if (!company) {
+        return res.status(404).json({ message: "कंपनी सापडली नाही" });
+      }
+      res.json({ bottomNavEnabled: company.bottomNavEnabled });
+    } catch (error) {
+      res.status(500).json({ message: "त्रुटी झाली", error: error instanceof Error ? error.message : "Unknown" });
+    }
+  });
+
   app.put("/api/company", requireAuth, cacheBuster(['company:']), async (req, res) => {
     try {
       const companyData = insertCompanySchema.partial().parse(req.body);

@@ -1,5 +1,7 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useCurrentUser } from "@/hooks/use-current-user";
+import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Sidebar } from "@/components/ui/sidebar";
@@ -26,7 +28,8 @@ import {
   AlertTriangle,
   Building,
   Award,
-  User
+  User,
+  Navigation
 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Link } from "wouter";
@@ -38,6 +41,8 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsive
 // Recent Loans Component removed as per user request
 
 export default function Dashboard() {
+  const { toast } = useToast();
+
   const { data: stats = {}, isLoading: statsLoading } = useQuery({
     queryKey: ["/api/dashboard/stats"], 
     staleTime: 0,
@@ -60,6 +65,21 @@ export default function Dashboard() {
 
   // Get current logged-in user details
   const { user: currentUser } = useCurrentUser();
+  const isAdmin = currentUser?.role === 'admin' || currentUser?.role === 'super_admin';
+
+  const bottomNavToggle = useMutation({
+    mutationFn: async (enabled: boolean) => {
+      const res = await apiRequest("PUT", "/api/company/bottom-nav-toggle", { enabled });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/company"] });
+      toast({ title: "सेटिंग बदलली", description: "बॉटम नेव्हिगेशन सेटिंग अपडेट झाली" });
+    },
+    onError: () => {
+      toast({ title: "त्रुटी", description: "सेटिंग बदलताना त्रुटी झाली", variant: "destructive" });
+    },
+  });
 
   // Get today's date
   const today = new Date().toISOString().split('T')[0];
@@ -173,6 +193,25 @@ export default function Dashboard() {
                       कर्ज बंद
                     </Button>
                   </Link>
+                  {isAdmin && (
+                    <div className="flex items-center justify-between pt-3 border-t border-gray-200">
+                      <div className="flex items-center gap-2">
+                        <Navigation className="h-4 w-4 text-gray-500" />
+                        <span className="text-sm text-gray-700">मोबाईल शॉर्टकट बार</span>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={(company as any)?.bottomNavEnabled !== false}
+                          onChange={(e) => bottomNavToggle.mutate(e.target.checked)}
+                          className="sr-only peer"
+                          disabled={bottomNavToggle.isPending}
+                          autoComplete="off"
+                        />
+                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                      </label>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

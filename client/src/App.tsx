@@ -86,6 +86,15 @@ function AppContent() {
     refetchOnWindowFocus: false,
   });
 
+  const { data: companyData } = useQuery<any>({
+    queryKey: ["/api/company"],
+    enabled: !!rawUser,
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
+
+  const bottomNavEnabled = companyData?.bottomNavEnabled !== false;
+
   if (!authReady || isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -110,7 +119,7 @@ function AppContent() {
   // Super Admin Routes - COMPLETE ACCESS to ALL features including Super Admin management
   if (actualUser.role === 'super_admin') {
     return (
-      <div className="pb-16"> {/* Add padding for bottom nav */}
+      <div className={bottomNavEnabled ? "pb-16" : ""}>
         <Switch>
           <Route path="/" component={Dashboard} />
         
@@ -165,7 +174,7 @@ function AppContent() {
           
           <Route component={RedirectToDashboard} />
         </Switch>
-        <BottomNavigation userRole="super_admin" />
+        {bottomNavEnabled && <BottomNavigation userRole="super_admin" />}
       </div>
     );
   }
@@ -185,7 +194,7 @@ function AppContent() {
     const perms = (userPermissions as any) || {};
     
     return (
-      <div className="pb-16"> {/* Add padding for bottom nav */}
+      <div className={bottomNavEnabled ? "pb-16" : ""}>
         <Switch>
           {/* Always available routes */}
           <Route path="/" component={Dashboard} />
@@ -228,7 +237,7 @@ function AppContent() {
           
           <Route component={NoPermissionPage} />
         </Switch>
-        <BottomNavigation userRole="user" />
+        {bottomNavEnabled && <BottomNavigation userRole="user" />}
       </div>
     );
   }
@@ -236,7 +245,7 @@ function AppContent() {
   // Admin Routes - Full access to all features for TENANT ADMINS only (excluding Super Admin management)
   if (actualUser.role === 'admin') {
     return (
-      <div className="pb-16"> {/* Add padding for bottom nav */}
+      <div className={bottomNavEnabled ? "pb-16" : ""}>
         <Switch>
           <Route path="/" component={Dashboard} />
         <Route path="/company" component={Company} />
@@ -271,7 +280,7 @@ function AppContent() {
           <Route path="/profile" component={Profile} />
           <Route component={RedirectToDashboard} />
         </Switch>
-        <BottomNavigation userRole="admin" />
+        {bottomNavEnabled && <BottomNavigation userRole="admin" />}
       </div>
     );
   }

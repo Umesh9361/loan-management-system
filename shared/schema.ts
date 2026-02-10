@@ -95,6 +95,7 @@ export const companies = pgTable("companies", {
   contactNumber: varchar("contact_number", { length: 15 }),
   email: varchar("email", { length: 100 }),
   isActive: boolean("is_active").notNull().default(true),
+  bottomNavEnabled: boolean("bottom_nav_enabled").notNull().default(true),
   createdAt: timestamp("created_at").notNull().default(sql`now()`),
   updatedAt: timestamp("updated_at").notNull().default(sql`now()`),
 });
