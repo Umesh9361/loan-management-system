@@ -23,9 +23,10 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { LoanCalculationsAdvanced } from "@/lib/loan-calculations";
 import { LoanCalculations } from "@/lib/calculations";
 import { DateUtils } from "@/lib/date-utils";
-import { Calculator, FileText, AlertTriangle, CheckCircle, Download, Search, X, Clock, Edit, Calendar, Lightbulb, Sparkles, TrendingUp, Info, Check, AlertCircle, Home } from "lucide-react";
+import { Calculator, FileText, AlertTriangle, CheckCircle, Download, Search, X, Clock, Edit, Calendar, Lightbulb, Sparkles, TrendingUp, Info, Check, AlertCircle, Home, Trash2, Printer } from "lucide-react";
 import { PhotoViewer } from "@/components/ui/photo-viewer";
 import { Link } from "wouter";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 // Simplified Schema - एक ही field for final interest amount
 const closureSchema = z.object({
@@ -43,14 +44,34 @@ const closureSchema = z.object({
 
 type ClosureFormData = z.infer<typeof closureSchema>;
 
+interface SummaryEntry {
+  id: number;
+  borrowerName: string;
+  borrowerAddress: string;
+  collateralDetails: string;
+  accountNumber: string;
+  loanDate: string;
+  months: string;
+  interestRate: string;
+  principalAmount: number;
+  chargesAmount: number;
+  closureDate: string;
+}
+
 export default function Closure() {
   const { toast } = useToast();
   const [location] = useLocation();
+  const isMobile = useIsMobile();
   const [selectedLoan, setSelectedLoan] = useState<any>(null);
   const [calculationResult, setCalculationResult] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [showLoanList, setShowLoanList] = useState(false);
   const [selectedSearchGroup, setSelectedSearchGroup] = useState<string>("all");
+  
+  const [summaryEntries, setSummaryEntries] = useState<SummaryEntry[]>([]);
+  const [summaryCounter, setSummaryCounter] = useState(1);
+  const [showSummaryReceipt, setShowSummaryReceipt] = useState(false);
+  const [summaryReceiptHTML, setSummaryReceiptHTML] = useState<string | null>(null);
   // Photo management moved to loan creation form
   
   // Check if loanId passed in URL
@@ -541,6 +562,158 @@ export default function Closure() {
     return directValue;
   }, []);
 
+  const generateMultiLoanReceiptHTML = useCallback((entries: SummaryEntry[]): string => {
+    if (entries.length === 0) return '';
+    const baseFontSize = entries.length <= 4 ? '11px' : '9px';
+    const moneyFontSize = entries.length <= 4 ? '13px' : '11px';
+    const totalPrincipal = entries.reduce((sum, e) => sum + e.principalAmount, 0);
+    const totalCharges = entries.reduce((sum, e) => sum + e.chargesAmount, 0);
+    const grandTotal = totalPrincipal + totalCharges;
+    const firstEntry = entries[0];
+    const closureDateFormatted = DateUtils.isoToIndianDate(firstEntry.closureDate);
+
+    let tableRows = '';
+    entries.forEach((entry, index) => {
+      tableRows += `<tr>
+        <td style="border:1px solid #333;padding:2px 4px;text-align:center;font-size:${baseFontSize};">${index + 1}</td>
+        <td style="border:1px solid #333;padding:2px 4px;font-size:${baseFontSize};">${entry.collateralDetails || '-'}</td>
+        <td style="border:1px solid #333;padding:2px 4px;text-align:center;font-size:${baseFontSize};">${entry.accountNumber}</td>
+        <td style="border:1px solid #333;padding:2px 4px;text-align:center;font-size:${baseFontSize};">${DateUtils.isoToIndianDate(entry.loanDate)}</td>
+        <td style="border:1px solid #333;padding:2px 4px;text-align:center;font-size:${baseFontSize};">${entry.months}</td>
+        <td style="border:1px solid #333;padding:2px 4px;text-align:center;font-size:${baseFontSize};">${entry.interestRate}%</td>
+        <td style="border:1px solid #333;padding:2px 6px;text-align:right;font-size:${moneyFontSize};font-weight:600;">${Number(Math.round(entry.principalAmount)).toLocaleString('en-IN')}</td>
+        <td style="border:1px solid #333;padding:2px 6px;text-align:right;font-size:${moneyFontSize};font-weight:600;">${Number(Math.round(entry.chargesAmount)).toLocaleString('en-IN')}</td>
+      </tr>`;
+    });
+
+    return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
+      @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;600;700&display=swap');
+      * { margin:0; padding:0; box-sizing:border-box; }
+      body { font-family:'Noto Sans Devanagari',sans-serif; }
+      @page { size:A5; margin:3mm; }
+      @media print { body { margin:0; } }
+    </style></head><body>
+    <div class="receipt-container" style="width:148mm;margin:0 auto;padding:4mm;font-size:${baseFontSize};">
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+        <div>
+          <div style="font-weight:700;font-size:13px;">${firstEntry.borrowerName}</div>
+          <div style="font-size:${baseFontSize};">${firstEntry.borrowerAddress || ''}</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:${baseFontSize};">तारीख: ${closureDateFormatted}</div>
+        </div>
+      </div>
+      <table style="width:100%;border-collapse:collapse;margin-top:4px;">
+        <thead>
+          <tr style="background:#f0f0f0;">
+            <th style="border:1px solid #333;padding:2px 4px;font-size:${baseFontSize};width:30px;">अ.नं.</th>
+            <th style="border:1px solid #333;padding:2px 4px;font-size:${baseFontSize};">तपशील</th>
+            <th style="border:1px solid #333;padding:2px 4px;font-size:${baseFontSize};width:60px;">कोड नं</th>
+            <th style="border:1px solid #333;padding:2px 4px;font-size:${baseFontSize};width:70px;">दिनांक</th>
+            <th style="border:1px solid #333;padding:2px 4px;font-size:${baseFontSize};width:35px;"></th>
+            <th style="border:1px solid #333;padding:2px 4px;font-size:${baseFontSize};width:35px;"></th>
+            <th style="border:1px solid #333;padding:2px 4px;font-size:${baseFontSize};width:90px;">बाजारमूल्य</th>
+            <th style="border:1px solid #333;padding:2px 4px;font-size:${baseFontSize};width:70px;">चार्जेस</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${tableRows}
+          <tr style="background:#f8f8f8;font-weight:700;">
+            <td colspan="6" style="border:1px solid #333;padding:3px 6px;text-align:right;font-size:${baseFontSize};">एकूण</td>
+            <td style="border:1px solid #333;padding:3px 6px;text-align:right;font-size:${moneyFontSize};font-weight:700;">${Number(Math.round(totalPrincipal)).toLocaleString('en-IN')}</td>
+            <td style="border:1px solid #333;padding:3px 6px;text-align:right;font-size:${moneyFontSize};font-weight:700;">${Number(Math.round(totalCharges)).toLocaleString('en-IN')}</td>
+          </tr>
+          <tr style="background:#e8e8e8;font-weight:700;">
+            <td colspan="7" style="border:1px solid #333;padding:4px 6px;text-align:right;font-size:13px;font-weight:700;">Grand Total</td>
+            <td style="border:1px solid #333;padding:4px 6px;text-align:right;font-size:15px;font-weight:700;">${Number(Math.round(grandTotal)).toLocaleString('en-IN')}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    </body></html>`;
+  }, []);
+
+  const handleAddToSummary = useCallback(() => {
+    if (!selectedLoan || !calculationResult) return;
+    const finalInterestValue = form.getValues("finalInterestAmount");
+    if (!finalInterestValue) return;
+
+    const finalCharges = parseFinalInterest(finalInterestValue, calculationResult.interestAmount);
+
+    let monthsDisplay = '';
+    if (calculationResult.durationInMonths !== undefined) {
+      monthsDisplay = String(calculationResult.durationInMonths);
+    } else {
+      const y = calculationResult.years || 0;
+      const m = calculationResult.months || 0;
+      const d = calculationResult.days || 0;
+      const totalMonths = y * 12 + m + (d > 15 ? 0.5 : 0);
+      monthsDisplay = totalMonths % 1 === 0 ? String(totalMonths) : totalMonths.toFixed(1);
+    }
+
+    const effectiveRate = form.getValues("useCustomRate") && form.getValues("customInterestRate")
+      ? form.getValues("customInterestRate")!
+      : String(selectedLoan.interestRate);
+
+    const entry: SummaryEntry = {
+      id: summaryCounter,
+      borrowerName: selectedLoan.borrowerName || '',
+      borrowerAddress: selectedLoan.borrowerAddress || selectedLoan.address || '',
+      collateralDetails: selectedLoan.collateralDetails || '',
+      accountNumber: selectedLoan.accountNumber || '',
+      loanDate: selectedLoan.loanDate || '',
+      months: monthsDisplay,
+      interestRate: effectiveRate,
+      principalAmount: Number(selectedLoan.principalAmount) || 0,
+      chargesAmount: Math.round(finalCharges),
+      closureDate: form.getValues("closureDate"),
+    };
+
+    setSummaryEntries(prev => [...prev, entry]);
+    setSummaryCounter(prev => prev + 1);
+
+    const currentClosureDate = form.getValues("closureDate");
+    setSelectedLoan(null);
+    setSearchQuery("");
+    setCalculationResult(null);
+    setShowLoanList(false);
+    form.setValue("loanId", "");
+    form.setValue("finalInterestAmount", "");
+    form.setValue("returnOfArticles", "");
+    form.setValue("useCustomRate", false);
+    form.setValue("customInterestRate", "");
+
+    toast({
+      title: "हिशोबात जोडले",
+      description: `${entry.borrowerName} - ₹${entry.principalAmount.toLocaleString('en-IN')}`,
+    });
+  }, [selectedLoan, calculationResult, form, summaryCounter, parseFinalInterest, toast]);
+
+  const handleDeleteSummaryEntry = useCallback((entryId: number) => {
+    setSummaryEntries(prev => prev.filter(e => e.id !== entryId));
+  }, []);
+
+  const handleClearAllSummary = useCallback(() => {
+    setSummaryEntries([]);
+    setSummaryCounter(1);
+  }, []);
+
+  const handleGenerateSummaryReceipt = useCallback(() => {
+    if (summaryEntries.length === 0) return;
+    const html = generateMultiLoanReceiptHTML(summaryEntries);
+    if (isMobile) {
+      setSummaryReceiptHTML(html);
+      setShowSummaryReceipt(true);
+    } else {
+      const printWindow = window.open('', '_blank');
+      if (printWindow) {
+        printWindow.document.write(html);
+        printWindow.document.close();
+        setTimeout(() => { printWindow.focus(); printWindow.print(); }, 300);
+      }
+    }
+  }, [summaryEntries, isMobile, generateMultiLoanReceiptHTML]);
+
   const onSubmit = useCallback(async (data: ClosureFormData) => {
     if (!selectedLoan || !calculationResult) {
       toast({
@@ -590,6 +763,68 @@ export default function Closure() {
     closureMutation.mutate(closureData);
   }, [selectedLoan, calculationResult, form, cleanupMutation, closureMutation, toast]);
 
+  if (showSummaryReceipt && summaryReceiptHTML) {
+    return (
+      <div className="min-h-screen bg-white">
+        <div className="sticky top-0 z-50 bg-green-50 border-b px-3 py-3 print:hidden">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2 text-green-700 font-semibold">
+              <FileText className="h-5 w-5" />
+              एकत्रित पावती
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                setShowSummaryReceipt(false);
+                setSummaryReceiptHTML(null);
+              }}
+            >
+              <X className="mr-1 h-4 w-4" />
+              बंद करा
+            </Button>
+          </div>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                const printWindow = window.open('', '_blank');
+                if (printWindow && summaryReceiptHTML) {
+                  printWindow.document.write(summaryReceiptHTML);
+                  printWindow.document.close();
+                  setTimeout(() => { printWindow.focus(); printWindow.print(); }, 300);
+                }
+              }}
+              className="flex-1 inline-flex items-center justify-center rounded-md text-sm font-medium h-10 px-3 bg-green-600 hover:bg-green-700 text-white"
+            >
+              <Printer className="mr-2 h-4 w-4" />
+              प्रिंट करा
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                const printWindow = window.open('', '_blank');
+                if (printWindow && summaryReceiptHTML) {
+                  printWindow.document.write(summaryReceiptHTML);
+                  printWindow.document.close();
+                }
+              }}
+              className="flex-1 inline-flex items-center justify-center rounded-md text-sm font-medium h-10 px-3 bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              <FileText className="mr-2 h-4 w-4" />
+              PDF
+            </button>
+          </div>
+        </div>
+        <div
+          className="p-2 bg-white overflow-x-auto"
+          style={{ maxWidth: '100%', fontSize: '11px', lineHeight: '1.4' }}
+          dangerouslySetInnerHTML={{ __html: summaryReceiptHTML }}
+        />
+      </div>
+    );
+  }
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -624,6 +859,101 @@ export default function Closure() {
               <h1 className="text-2xl font-semibold text-gray-900 font-noto">कर्ज बंद करा - सरल पद्धत</h1>
               <p className="text-gray-600 font-noto">एक ही field में अंतिम रक्कम एंटर करा</p>
             </div>
+
+            {summaryEntries.length > 0 && (
+              <Card className="mb-6 border border-gray-300 shadow-md">
+                <CardHeader className="py-3 px-4 bg-amber-50 border-b">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-base font-semibold text-amber-800 flex items-center gap-2">
+                      <FileText className="h-4 w-4" />
+                      एकत्रित हिशोब ({summaryEntries.length})
+                    </CardTitle>
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={handleGenerateSummaryReceipt}
+                        className="text-xs bg-green-50 border-green-300 text-green-700 hover:bg-green-100"
+                      >
+                        <Printer className="h-3 w-3 mr-1" />
+                        पावती तयार करा
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={handleClearAllSummary}
+                        className="text-xs bg-red-50 border-red-300 text-red-700 hover:bg-red-100"
+                      >
+                        <Trash2 className="h-3 w-3 mr-1" />
+                        सर्व काढा
+                      </Button>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm border-collapse">
+                      <thead>
+                        <tr className="bg-gray-100 text-xs">
+                          <th className="border border-gray-300 px-1 py-1 text-center w-8">अ.नं.</th>
+                          <th className="border border-gray-300 px-2 py-1 text-left">तपशील</th>
+                          <th className="border border-gray-300 px-1 py-1 text-center w-16">कोड नं</th>
+                          <th className="border border-gray-300 px-1 py-1 text-center w-20">दिनांक</th>
+                          <th className="border border-gray-300 px-1 py-1 text-center w-10"></th>
+                          <th className="border border-gray-300 px-1 py-1 text-center w-10"></th>
+                          <th className="border border-gray-300 px-2 py-1 text-right w-24">बाजारमूल्य</th>
+                          <th className="border border-gray-300 px-2 py-1 text-right w-20">चार्जेस</th>
+                          <th className="border border-gray-300 px-1 py-1 w-8"></th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {summaryEntries.map((entry, index) => (
+                          <tr key={entry.id} className="hover:bg-gray-50">
+                            <td className="border border-gray-300 px-1 py-1 text-center text-xs">{index + 1}</td>
+                            <td className="border border-gray-300 px-2 py-1 text-xs">{entry.collateralDetails || '-'}</td>
+                            <td className="border border-gray-300 px-1 py-1 text-center text-xs">{entry.accountNumber}</td>
+                            <td className="border border-gray-300 px-1 py-1 text-center text-xs">{DateUtils.isoToIndianDate(entry.loanDate)}</td>
+                            <td className="border border-gray-300 px-1 py-1 text-center text-xs">{entry.months}</td>
+                            <td className="border border-gray-300 px-1 py-1 text-center text-xs">{entry.interestRate}%</td>
+                            <td className="border border-gray-300 px-2 py-1 text-right text-base font-semibold">{Number(Math.round(entry.principalAmount)).toLocaleString('en-IN')}</td>
+                            <td className="border border-gray-300 px-2 py-1 text-right text-base font-semibold">{Number(Math.round(entry.chargesAmount)).toLocaleString('en-IN')}</td>
+                            <td className="border border-gray-300 px-1 py-1 text-center">
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteSummaryEntry(entry.id)}
+                                className="text-red-500 hover:text-red-700 p-0.5"
+                                title="काढा"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                        <tr className="bg-gray-100 font-bold">
+                          <td colSpan={6} className="border border-gray-300 px-2 py-1.5 text-right text-sm">एकूण</td>
+                          <td className="border border-gray-300 px-2 py-1.5 text-right text-base font-bold">
+                            {Number(Math.round(summaryEntries.reduce((sum, e) => sum + e.principalAmount, 0))).toLocaleString('en-IN')}
+                          </td>
+                          <td className="border border-gray-300 px-2 py-1.5 text-right text-base font-bold">
+                            {Number(Math.round(summaryEntries.reduce((sum, e) => sum + e.chargesAmount, 0))).toLocaleString('en-IN')}
+                          </td>
+                          <td className="border border-gray-300"></td>
+                        </tr>
+                        <tr className="bg-amber-50 font-bold">
+                          <td colSpan={7} className="border border-gray-300 px-2 py-2 text-right text-sm font-bold">Grand Total</td>
+                          <td className="border border-gray-300 px-2 py-2 text-right text-lg font-bold text-green-700">
+                            {Number(Math.round(summaryEntries.reduce((sum, e) => sum + e.principalAmount + e.chargesAmount, 0))).toLocaleString('en-IN')}
+                          </td>
+                          <td className="border border-gray-300"></td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             <Card className="shadow-2xl bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 border-2 border-blue-200">
               <CardHeader className="bg-gradient-to-r from-blue-100 to-purple-100 rounded-t-lg border-b-2 border-blue-200">
@@ -1230,6 +1560,15 @@ export default function Closure() {
 
                     {/* Action Buttons */}
                     <div className="flex flex-col sm:flex-row gap-4 justify-end">
+                      <Button
+                        type="button"
+                        onClick={handleAddToSummary}
+                        disabled={!selectedLoan || !calculationResult || !form.watch("finalInterestAmount")}
+                        className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 transform hover:scale-105 transition-all duration-300"
+                      >
+                        <FileText className="h-4 w-4 mr-2" />
+                        हिशोबात जोडा
+                      </Button>
                       <Button
                         type="submit"
                         disabled={closureMutation.isPending || cleanupMutation.isPending || !selectedLoan || !form.watch("finalInterestAmount")}
