@@ -44,11 +44,11 @@ export function useCurrentUser() {
     },
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
-    refetchOnWindowFocus: false,
+    refetchOnWindowFocus: true,
     retry: 1,
     refetchInterval: false,
     placeholderData: keepPreviousData,
-    refetchOnReconnect: false,
+    refetchOnReconnect: true,
   });
 
   return {
