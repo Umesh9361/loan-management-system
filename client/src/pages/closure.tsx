@@ -93,6 +93,11 @@ export default function Closure() {
     queryKey: ["/api/groups"],
   });
 
+  const { data: company } = useQuery({
+    queryKey: ["/api/company"],
+  });
+  const showRateMonths = (company as any)?.showSummaryRateMonths !== false;
+
   const form = useForm<ClosureFormData>({
     resolver: zodResolver(closureSchema),
     defaultValues: {
@@ -564,7 +569,7 @@ export default function Closure() {
     return directValue;
   }, []);
 
-  const generateMultiLoanReceiptHTML = useCallback((entries: SummaryEntry[]): string => {
+  const generateMultiLoanReceiptHTML = useCallback((entries: SummaryEntry[], showCols: boolean): string => {
     if (entries.length === 0) return '';
     const baseFontSize = entries.length <= 4 ? '11px' : '9px';
     const moneyFontSize = entries.length <= 4 ? '13px' : '11px';
@@ -573,6 +578,9 @@ export default function Closure() {
     const grandTotal = totalPrincipal + totalCharges;
     const firstEntry = entries[0];
     const closureDateFormatted = DateUtils.isoToIndianDate(firstEntry.closureDate);
+    const totalCols = showCols ? 8 : 6;
+    const totalColSpan = showCols ? 6 : 4;
+    const grandTotalColSpan = showCols ? 7 : 5;
 
     let tableRows = '';
     entries.forEach((entry, index) => {
@@ -581,8 +589,8 @@ export default function Closure() {
         <td style="border:1px solid #333;padding:2px 4px;font-size:${baseFontSize};"><div style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${entry.collateralDetails || '-'}</div></td>
         <td style="border:1px solid #333;padding:2px 4px;text-align:center;font-size:${baseFontSize};">${entry.accountNumber}</td>
         <td style="border:1px solid #333;padding:2px 4px;text-align:center;font-size:${baseFontSize};">${DateUtils.isoToIndianDate(entry.loanDate)}</td>
-        <td style="border:1px solid #333;padding:2px 4px;text-align:center;font-size:${baseFontSize};">${entry.months}</td>
-        <td style="border:1px solid #333;padding:2px 4px;text-align:center;font-size:${baseFontSize};">${entry.interestRate}%</td>
+        ${showCols ? `<td style="border:1px solid #333;padding:2px 4px;text-align:center;font-size:${baseFontSize};">${entry.months}</td>
+        <td style="border:1px solid #333;padding:2px 4px;text-align:center;font-size:${baseFontSize};">${entry.interestRate}%</td>` : ''}
         <td style="border:1px solid #333;padding:2px 6px;text-align:right;font-size:${moneyFontSize};font-weight:600;">${Number(Math.round(entry.principalAmount)).toLocaleString('en-IN')}</td>
         <td style="border:1px solid #333;padding:2px 6px;text-align:right;font-size:${moneyFontSize};font-weight:600;">${Number(Math.round(entry.chargesAmount)).toLocaleString('en-IN')}</td>
       </tr>`;
@@ -612,8 +620,8 @@ export default function Closure() {
             <th style="border:1px solid #333;padding:2px 4px;font-size:${baseFontSize};">तपशील</th>
             <th style="border:1px solid #333;padding:2px 4px;font-size:${baseFontSize};width:60px;">कोड नं</th>
             <th style="border:1px solid #333;padding:2px 4px;font-size:${baseFontSize};width:70px;">दिनांक</th>
-            <th style="border:1px solid #333;padding:2px 4px;font-size:${baseFontSize};width:35px;"></th>
-            <th style="border:1px solid #333;padding:2px 4px;font-size:${baseFontSize};width:35px;"></th>
+            ${showCols ? `<th style="border:1px solid #333;padding:2px 4px;font-size:${baseFontSize};width:35px;"></th>
+            <th style="border:1px solid #333;padding:2px 4px;font-size:${baseFontSize};width:35px;"></th>` : ''}
             <th style="border:1px solid #333;padding:2px 4px;font-size:${baseFontSize};width:90px;">बाजारमूल्य</th>
             <th style="border:1px solid #333;padding:2px 4px;font-size:${baseFontSize};width:70px;">चार्जेस</th>
           </tr>
@@ -621,12 +629,12 @@ export default function Closure() {
         <tbody>
           ${tableRows}
           <tr style="background:#f8f8f8;font-weight:700;">
-            <td colspan="6" style="border:1px solid #333;padding:3px 6px;text-align:right;font-size:${baseFontSize};">एकूण</td>
+            <td colspan="${totalColSpan}" style="border:1px solid #333;padding:3px 6px;text-align:right;font-size:${baseFontSize};">एकूण</td>
             <td style="border:1px solid #333;padding:3px 6px;text-align:right;font-size:${moneyFontSize};font-weight:700;">${Number(Math.round(totalPrincipal)).toLocaleString('en-IN')}</td>
             <td style="border:1px solid #333;padding:3px 6px;text-align:right;font-size:${moneyFontSize};font-weight:700;">${Number(Math.round(totalCharges)).toLocaleString('en-IN')}</td>
           </tr>
           <tr style="background:#e8e8e8;font-weight:700;">
-            <td colspan="7" style="border:1px solid #333;padding:4px 6px;text-align:right;font-size:13px;font-weight:700;">Grand Total</td>
+            <td colspan="${grandTotalColSpan}" style="border:1px solid #333;padding:4px 6px;text-align:right;font-size:13px;font-weight:700;">Grand Total</td>
             <td style="border:1px solid #333;padding:4px 6px;text-align:right;font-size:15px;font-weight:700;">${Number(Math.round(grandTotal)).toLocaleString('en-IN')}</td>
           </tr>
         </tbody>
@@ -702,7 +710,7 @@ export default function Closure() {
 
   const handleGenerateSummaryReceipt = useCallback(() => {
     if (summaryEntries.length === 0) return;
-    const html = generateMultiLoanReceiptHTML(summaryEntries);
+    const html = generateMultiLoanReceiptHTML(summaryEntries, showRateMonths);
     if (isMobile) {
       setSummaryReceiptHTML(html);
       setShowSummaryReceipt(true);
@@ -714,7 +722,7 @@ export default function Closure() {
         setTimeout(() => { printWindow.focus(); printWindow.print(); }, 300);
       }
     }
-  }, [summaryEntries, isMobile, generateMultiLoanReceiptHTML]);
+  }, [summaryEntries, isMobile, generateMultiLoanReceiptHTML, showRateMonths]);
 
   const onSubmit = useCallback(async (data: ClosureFormData) => {
     if (!selectedLoan || !calculationResult) {
@@ -1577,8 +1585,8 @@ export default function Closure() {
                               <th className="border border-gray-300 px-2 py-1 text-left">तपशील</th>
                               <th className="border border-gray-300 px-1 py-1 text-center w-16">कोड नं</th>
                               <th className="border border-gray-300 px-1 py-1 text-center w-20">दिनांक</th>
-                              <th className="border border-gray-300 px-1 py-1 text-center w-10"></th>
-                              <th className="border border-gray-300 px-1 py-1 text-center w-10"></th>
+                              {showRateMonths && <th className="border border-gray-300 px-1 py-1 text-center w-10"></th>}
+                              {showRateMonths && <th className="border border-gray-300 px-1 py-1 text-center w-10"></th>}
                               <th className="border border-gray-300 px-2 py-1 text-right w-24">बाजारमूल्य</th>
                               <th className="border border-gray-300 px-2 py-1 text-right w-20">चार्जेस</th>
                               <th className="border border-gray-300 px-1 py-1 w-8"></th>
@@ -1591,8 +1599,8 @@ export default function Closure() {
                                 <td className="border border-gray-300 px-2 py-1 text-xs"><div className="max-w-[120px] truncate" title={entry.collateralDetails || '-'}>{entry.collateralDetails || '-'}</div></td>
                                 <td className="border border-gray-300 px-1 py-1 text-center text-xs">{entry.accountNumber}</td>
                                 <td className="border border-gray-300 px-1 py-1 text-center text-xs">{DateUtils.isoToIndianDate(entry.loanDate)}</td>
-                                <td className="border border-gray-300 px-1 py-1 text-center text-xs">{entry.months}</td>
-                                <td className="border border-gray-300 px-1 py-1 text-center text-xs">{entry.interestRate}%</td>
+                                {showRateMonths && <td className="border border-gray-300 px-1 py-1 text-center text-xs">{entry.months}</td>}
+                                {showRateMonths && <td className="border border-gray-300 px-1 py-1 text-center text-xs">{entry.interestRate}%</td>}
                                 <td className="border border-gray-300 px-2 py-1 text-right text-base font-semibold">{Number(Math.round(entry.principalAmount)).toLocaleString('en-IN')}</td>
                                 <td className="border border-gray-300 px-2 py-1 text-right text-base font-semibold">{Number(Math.round(entry.chargesAmount)).toLocaleString('en-IN')}</td>
                                 <td className="border border-gray-300 px-1 py-1 text-center">
@@ -1608,7 +1616,7 @@ export default function Closure() {
                               </tr>
                             ))}
                             <tr className="bg-gray-100 font-bold">
-                              <td colSpan={6} className="border border-gray-300 px-2 py-1.5 text-right text-sm">एकूण</td>
+                              <td colSpan={showRateMonths ? 6 : 4} className="border border-gray-300 px-2 py-1.5 text-right text-sm">एकूण</td>
                               <td className="border border-gray-300 px-2 py-1.5 text-right text-base font-bold">
                                 {Number(Math.round(summaryEntries.reduce((sum, e) => sum + e.principalAmount, 0))).toLocaleString('en-IN')}
                               </td>
@@ -1618,7 +1626,7 @@ export default function Closure() {
                               <td className="border border-gray-300"></td>
                             </tr>
                             <tr className="bg-amber-50 font-bold">
-                              <td colSpan={7} className="border border-gray-300 px-2 py-2 text-right text-sm font-bold">Grand Total</td>
+                              <td colSpan={showRateMonths ? 7 : 5} className="border border-gray-300 px-2 py-2 text-right text-sm font-bold">Grand Total</td>
                               <td className="border border-gray-300 px-2 py-2 text-right text-lg font-bold text-green-700">
                                 {Number(Math.round(summaryEntries.reduce((sum, e) => sum + e.principalAmount + e.chargesAmount, 0))).toLocaleString('en-IN')}
                               </td>
