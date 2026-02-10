@@ -1,4 +1,5 @@
-import { Switch, Route } from "wouter";
+import { useEffect } from "react";
+import { Switch, Route, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider, useQuery } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -62,24 +63,30 @@ function normalizeRole(role: string | undefined): string {
   return r === 'clerk' ? 'user' : r;
 }
 
+function RedirectToDashboard() {
+  const [, setLocation] = useLocation();
+  useEffect(() => { setLocation('/'); }, []);
+  return null;
+}
+
 function AppContent() {
   const { safeNavigate } = useSafeNavigation();
-  const { user: rawUser, isLoading } = useCurrentUser();
+  const { user: rawUser, authReady, isLoading } = useCurrentUser();
 
   useMidnightLogout(!!rawUser);
 
   const userRole = normalizeRole(rawUser?.role);
 
-  const { data: userPermissions } = useQuery({
+  const { data: userPermissions, isLoading: permissionsLoading } = useQuery({
     queryKey: ["/api/user-permissions"],
     enabled: !!rawUser && userRole === 'user',
-    retry: false,
+    retry: 1,
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
     refetchOnWindowFocus: false,
   });
 
-  if (isLoading) {
+  if (!authReady || isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -95,6 +102,10 @@ function AppContent() {
   }
 
   const actualUser = { ...rawUser, role: userRole };
+
+  if (!actualUser.role || !['super_admin', 'admin', 'user'].includes(actualUser.role)) {
+    return <Login />;
+  }
   
   // Super Admin Routes - COMPLETE ACCESS to ALL features including Super Admin management
   if (actualUser.role === 'super_admin') {
@@ -152,7 +163,7 @@ function AppContent() {
           <Route path="/receipt/annual-statement" component={AnnualStatementPage} />
           <Route path="/profile" component={Profile} />
           
-          <Route component={NotFound} />
+          <Route component={RedirectToDashboard} />
         </Switch>
         <BottomNavigation userRole="super_admin" />
       </div>
@@ -161,6 +172,16 @@ function AppContent() {
 
   // User Role Routes - DYNAMIC ACCESS based on Admin-granted permissions
   if (actualUser.role === 'user') {
+    if (permissionsLoading) {
+      return (
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+            <p className="mt-2 text-sm text-gray-600">परवानग्या तपासत आहे...</p>
+          </div>
+        </div>
+      );
+    }
     const perms = (userPermissions as any) || {};
     
     return (
@@ -248,23 +269,14 @@ function AppContent() {
           <Route path="/receipt/closure/:loanId" component={ClosureReceiptPage} />
           <Route path="/receipt/annual-statement" component={AnnualStatementPage} />
           <Route path="/profile" component={Profile} />
-          <Route component={NotFound} />
+          <Route component={RedirectToDashboard} />
         </Switch>
         <BottomNavigation userRole="admin" />
       </div>
     );
   }
 
-  // Enhanced debugging for auth fallback
-  console.debug("🔍 AUTH FALLBACK:", { 
-    role: actualUser?.role, 
-    roleType: typeof actualUser?.role,
-    actualUser: actualUser,
-    path: window.location.pathname 
-  });
-  
-  // Use consistent Marathi NoPermissionPage instead of English fallback
-  return <NoPermissionPage />;
+  return <Login />;
 }
 
 function App() {
