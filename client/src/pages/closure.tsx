@@ -59,6 +59,15 @@ interface SummaryEntry {
   closureDate: string;
 }
 
+const toShortDate = (isoDate: string): string => {
+  const d = DateUtils.isoToIndianDate(isoDate);
+  const parts = d.split('/');
+  if (parts.length === 3 && parts[2].length === 4) {
+    return `${parts[0]}/${parts[1]}/${parts[2].slice(2)}`;
+  }
+  return d;
+};
+
 export default function Closure() {
   const { toast } = useToast();
   const [location] = useLocation();
@@ -455,35 +464,14 @@ export default function Closure() {
       } else {
         // For compound interest, use advanced calculations
         
-        // Debug closure form calculation parameters
-        const debugParams = {
-          principal: selectedLoan.principalAmount,
-          effectiveRate,
-          originalRate: selectedLoan.interestRate,
-          rateType: selectedLoan.interestRateType,
-          loanDate: selectedLoan.loanDate,
-          closureDate: form.watch("closureDate"),
-          compoundingFrequency: form.watch("compoundingFrequency"),
-          calculationMode: form.watch("advancedCalculationMode")
-        };
-        console.log("🔧 CLOSURE FORM - Advanced Calculation Parameters:", debugParams);
-        
-        console.log("🔧 CLOSURE FORM - Before Advanced Call:", {
-          principalAmount: selectedLoan.principalAmount,
-          passedRate: effectiveRate,
-          originalRate: selectedLoan.interestRate,
-          rateType: selectedLoan.interestRateType
-        });
-        
         const advancedResult = LoanCalculationsAdvanced.calculateAdvancedCompoundInterest(
           Number(selectedLoan.principalAmount),
           effectiveRate,
           new Date(selectedLoan.loanDate),
           closureDate,
-          form.watch("compoundingFrequency"),
-          form.watch("advancedCalculationMode")
+          formValues.compoundingFrequency,
+          formValues.advancedCalculationMode
         );
-        
         
         // Get calendar-based time period for display
         const timePeriod = LoanCalculationsAdvanced.calculateTimePeriod(
@@ -501,15 +489,6 @@ export default function Closure() {
       }
 
       setCalculationResult(result);
-      
-      // 🔍 DEBUG: Log calculation result to diagnose totalPayable issue
-      console.log("🔍 CALCULATION RESULT SET:", {
-        interestAmount: result.interestAmount,
-        totalPayable: result.totalPayable,
-        principal: selectedLoan.principalAmount,
-        expectedTotal: Number(selectedLoan.principalAmount) + Number(result.interestAmount),
-        resultObject: result
-      });
       
       // Auto-fill the final interest amount with calculated value
       const interestAmount = typeof result === 'number' ? result : result.interestAmount;
@@ -529,117 +508,130 @@ export default function Closure() {
   const parseFinalInterest = useCallback((adjustmentValue: string, calculatedInterest: number): number => {
     const trimmedValue = adjustmentValue.trim();
     
-    // Handle empty or whitespace-only input
     if (!trimmedValue) {
-      console.log("🔍 PARSE: Empty input, returning calculated:", calculatedInterest);
       return calculatedInterest;
     }
     
-    // If starts with "+", add to calculated interest
     if (trimmedValue.startsWith('+')) {
       const addAmount = parseFloat(trimmedValue.substring(1));
-      if (isNaN(addAmount)) {
-        console.log("🔍 PARSE: Invalid + input, returning calculated:", calculatedInterest);
-        return calculatedInterest; // Fallback to calculated interest for invalid input
-      }
-      const result = calculatedInterest + addAmount;
-      console.log(`🔍 PARSE: + mode: ${calculatedInterest} + ${addAmount} = ${result}`);
-      return result;
+      if (isNaN(addAmount)) return calculatedInterest;
+      return calculatedInterest + addAmount;
     }
     
-    // If starts with "-", subtract from calculated interest
     if (trimmedValue.startsWith('-')) {
       const subtractAmount = parseFloat(trimmedValue.substring(1));
-      if (isNaN(subtractAmount)) {
-        console.log("🔍 PARSE: Invalid - input, returning calculated:", calculatedInterest);
-        return calculatedInterest; // Fallback to calculated interest for invalid input
-      }
-      const result = calculatedInterest - subtractAmount;
-      console.log(`🔍 PARSE: - mode: ${calculatedInterest} - ${subtractAmount} = ${result}`);
-      return result;
+      if (isNaN(subtractAmount)) return calculatedInterest;
+      return calculatedInterest - subtractAmount;
     }
     
-    // Otherwise, use the value directly (replacement behavior)
     const directValue = parseFloat(trimmedValue);
-    if (isNaN(directValue)) {
-      console.log("🔍 PARSE: Invalid direct input, returning calculated:", calculatedInterest);
-      return calculatedInterest; // Fallback to calculated interest for invalid input
-    }
-    console.log(`🔍 PARSE: Direct replacement mode: ${directValue} (ignoring calculated ${calculatedInterest})`);
+    if (isNaN(directValue)) return calculatedInterest;
     return directValue;
   }, []);
 
   const generateMultiLoanReceiptHTML = useCallback((entries: SummaryEntry[], showCols: boolean): string => {
     if (entries.length === 0) return '';
-    const baseFontSize = entries.length <= 4 ? '11px' : '9px';
-    const moneyFontSize = entries.length <= 4 ? '13px' : '11px';
+    const baseFontSize = '9px';
+    const moneyFontSize = '12px';
     const totalPrincipal = entries.reduce((sum, e) => sum + e.principalAmount, 0);
     const totalCharges = entries.reduce((sum, e) => sum + e.chargesAmount, 0);
     const grandTotal = totalPrincipal + totalCharges;
     const firstEntry = entries[0];
     const closureDateFormatted = DateUtils.isoToIndianDate(firstEntry.closureDate);
-    const totalCols = showCols ? 8 : 6;
     const totalColSpan = showCols ? 6 : 4;
     const grandTotalColSpan = showCols ? 7 : 5;
 
-    let tableRows = '';
-    entries.forEach((entry, index) => {
-      tableRows += `<tr>
-        <td style="border:1px solid #333;padding:2px 4px;text-align:center;font-size:${baseFontSize};">${index + 1}</td>
-        <td style="border:1px solid #333;padding:2px 4px;font-size:${baseFontSize};"><div style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${entry.collateralDetails || '-'}</div></td>
-        <td style="border:1px solid #333;padding:2px 4px;text-align:center;font-size:${baseFontSize};">${entry.accountNumber}</td>
-        <td style="border:1px solid #333;padding:2px 4px;text-align:center;font-size:${baseFontSize};">${DateUtils.isoToIndianDate(entry.loanDate)}</td>
-        ${showCols ? `<td style="border:1px solid #333;padding:2px 4px;text-align:center;font-size:${baseFontSize};">${entry.months}</td>
-        <td style="border:1px solid #333;padding:2px 4px;text-align:center;font-size:${baseFontSize};">${entry.interestRate}%</td>` : ''}
-        <td style="border:1px solid #333;padding:2px 6px;text-align:right;font-size:${moneyFontSize};font-weight:600;">${Number(Math.round(entry.principalAmount)).toLocaleString('en-IN')}</td>
-        <td style="border:1px solid #333;padding:2px 6px;text-align:right;font-size:${moneyFontSize};font-weight:600;">${Number(Math.round(entry.chargesAmount)).toLocaleString('en-IN')}</td>
-      </tr>`;
-    });
+    const ROWS_PER_PAGE = 6;
+    const totalPages = Math.ceil(entries.length / ROWS_PER_PAGE);
 
-    return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
-      @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;600;700&display=swap');
-      * { margin:0; padding:0; box-sizing:border-box; }
-      body { font-family:'Noto Sans Devanagari',sans-serif; }
-      @page { size:A5; margin:3mm; }
-      @media print { body { margin:0; } }
-    </style></head><body>
-    <div class="receipt-container" style="width:148mm;margin:0 auto;padding:4mm;font-size:${baseFontSize};">
-      <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+    const makeHeader = (pageNum: number) => `
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:3px;">
         <div>
-          <div style="font-weight:700;font-size:13px;">${firstEntry.borrowerName}</div>
-          <div style="font-size:${baseFontSize};">${firstEntry.borrowerAddress || ''}</div>
+          <div style="font-weight:700;font-size:12px;">${firstEntry.borrowerName}</div>
+          <div style="font-size:${baseFontSize};color:#444;">${firstEntry.borrowerAddress || ''}</div>
         </div>
         <div style="text-align:right;">
           <div style="font-size:${baseFontSize};">तारीख: ${closureDateFormatted}</div>
+          ${totalPages > 1 ? `<div style="font-size:7px;color:#888;">पान ${pageNum}/${totalPages}</div>` : ''}
         </div>
       </div>
-      <table style="width:100%;border-collapse:collapse;margin-top:4px;">
-        <thead>
-          <tr style="background:#f0f0f0;">
-            <th style="border:1px solid #333;padding:2px 4px;font-size:${baseFontSize};width:30px;">अ.नं.</th>
-            <th style="border:1px solid #333;padding:2px 4px;font-size:${baseFontSize};">तपशील</th>
-            <th style="border:1px solid #333;padding:2px 4px;font-size:${baseFontSize};width:60px;">कोड नं</th>
-            <th style="border:1px solid #333;padding:2px 4px;font-size:${baseFontSize};width:70px;">दिनांक</th>
-            ${showCols ? `<th style="border:1px solid #333;padding:2px 4px;font-size:${baseFontSize};width:35px;"></th>
-            <th style="border:1px solid #333;padding:2px 4px;font-size:${baseFontSize};width:35px;"></th>` : ''}
-            <th style="border:1px solid #333;padding:2px 4px;font-size:${baseFontSize};width:90px;">बाजारमूल्य</th>
-            <th style="border:1px solid #333;padding:2px 4px;font-size:${baseFontSize};width:70px;">चार्जेस</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${tableRows}
-          <tr style="background:#f8f8f8;font-weight:700;">
-            <td colspan="${totalColSpan}" style="border:1px solid #333;padding:3px 6px;text-align:right;font-size:${baseFontSize};">एकूण</td>
-            <td style="border:1px solid #333;padding:3px 6px;text-align:right;font-size:${moneyFontSize};font-weight:700;">${Number(Math.round(totalPrincipal)).toLocaleString('en-IN')}</td>
-            <td style="border:1px solid #333;padding:3px 6px;text-align:right;font-size:${moneyFontSize};font-weight:700;">${Number(Math.round(totalCharges)).toLocaleString('en-IN')}</td>
-          </tr>
-          <tr style="background:#e8e8e8;font-weight:700;">
-            <td colspan="${grandTotalColSpan}" style="border:1px solid #333;padding:4px 6px;text-align:right;font-size:13px;font-weight:700;">Grand Total</td>
-            <td style="border:1px solid #333;padding:4px 6px;text-align:right;font-size:15px;font-weight:700;">${Number(Math.round(grandTotal)).toLocaleString('en-IN')}</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+      <div style="text-align:center;font-weight:700;font-size:11px;margin-bottom:2px;text-decoration:underline;">Estimate</div>`;
+
+    const makeTableHead = () => `<thead>
+      <tr style="background:#f0f0f0;">
+        <th style="border:1px solid #555;padding:2px 3px;font-size:8px;width:24px;text-align:center;">अ.नं.</th>
+        <th style="border:1px solid #555;padding:2px 4px;font-size:8px;text-align:left;">तपशील</th>
+        <th style="border:1px solid #555;padding:2px 3px;font-size:8px;width:46px;text-align:center;">कोड नं</th>
+        <th style="border:1px solid #555;padding:2px 3px;font-size:8px;width:52px;text-align:center;">दिनांक</th>
+        ${showCols ? `<th style="border:1px solid #555;padding:2px 2px;font-size:7px;width:30px;text-align:center;">महिने</th>
+        <th style="border:1px solid #555;padding:2px 2px;font-size:7px;width:30px;text-align:center;">दर%</th>` : ''}
+        <th style="border:1px solid #555;padding:2px 4px;font-size:8px;width:72px;text-align:right;">बाजारमूल्य</th>
+        <th style="border:1px solid #555;padding:2px 4px;font-size:8px;width:62px;text-align:right;">चार्जेस</th>
+      </tr>
+    </thead>`;
+
+    const makeRow = (entry: SummaryEntry, index: number) => `<tr>
+      <td style="border:1px solid #555;padding:2px 3px;text-align:center;font-size:${baseFontSize};">${index + 1}</td>
+      <td style="border:1px solid #555;padding:2px 4px;font-size:${baseFontSize};"><div style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${entry.collateralDetails || '-'}</div></td>
+      <td style="border:1px solid #555;padding:2px 3px;text-align:center;font-size:${baseFontSize};">${entry.accountNumber}</td>
+      <td style="border:1px solid #555;padding:2px 3px;text-align:center;font-size:${baseFontSize};">${toShortDate(entry.loanDate)}</td>
+      ${showCols ? `<td style="border:1px solid #555;padding:2px 2px;text-align:center;font-size:8px;">${entry.months}</td>
+      <td style="border:1px solid #555;padding:2px 2px;text-align:center;font-size:8px;">${entry.interestRate}%</td>` : ''}
+      <td style="border:1px solid #555;padding:2px 4px;text-align:right;font-size:${moneyFontSize};font-weight:600;">${Number(Math.round(entry.principalAmount)).toLocaleString('en-IN')}</td>
+      <td style="border:1px solid #555;padding:2px 4px;text-align:right;font-size:${moneyFontSize};font-weight:600;">${Number(Math.round(entry.chargesAmount)).toLocaleString('en-IN')}</td>
+    </tr>`;
+
+    let pagesHTML = '';
+    for (let p = 0; p < totalPages; p++) {
+      const pageEntries = entries.slice(p * ROWS_PER_PAGE, (p + 1) * ROWS_PER_PAGE);
+      const isLastPage = p === totalPages - 1;
+
+      let rows = '';
+      pageEntries.forEach((entry, i) => {
+        rows += makeRow(entry, p * ROWS_PER_PAGE + i);
+      });
+
+      const totalsHTML = isLastPage ? `
+        <tr style="background:#f0f0f0;font-weight:700;">
+          <td colspan="${totalColSpan}" style="border:1px solid #555;padding:2px 4px;text-align:right;font-size:10px;font-weight:700;">एकूण</td>
+          <td style="border:1px solid #555;padding:2px 4px;text-align:right;font-size:13px;font-weight:800;">${Number(Math.round(totalPrincipal)).toLocaleString('en-IN')}</td>
+          <td style="border:1px solid #555;padding:2px 4px;text-align:right;font-size:13px;font-weight:800;">${Number(Math.round(totalCharges)).toLocaleString('en-IN')}</td>
+        </tr>
+        <tr style="background:#e0e0e0;font-weight:700;">
+          <td colspan="${grandTotalColSpan}" style="border:1px solid #555;padding:3px 4px;text-align:right;font-size:12px;font-weight:800;">Grand Total</td>
+          <td style="border:1px solid #555;padding:3px 4px;text-align:right;font-size:15px;font-weight:900;">${Number(Math.round(grandTotal)).toLocaleString('en-IN')}</td>
+        </tr>` : '';
+
+      const continuedNote = !isLastPage ? `<div style="text-align:right;font-size:7px;color:#888;margin-top:1px;">पुढे चालू...</div>` : '';
+
+      pagesHTML += `
+      <div class="page" style="width:100%;padding:2mm 3mm;font-size:${baseFontSize};${p > 0 ? 'page-break-before:always;' : ''}">
+        ${makeHeader(p + 1)}
+        <table style="width:100%;border-collapse:collapse;margin-top:2px;">
+          ${makeTableHead()}
+          <tbody>
+            ${rows}
+            ${totalsHTML}
+          </tbody>
+        </table>
+        ${continuedNote}
+      </div>`;
+    }
+
+    return `<!DOCTYPE html><html><head><meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+      * { margin:0; padding:0; box-sizing:border-box; }
+      body { font-family:'Noto Sans Devanagari',sans-serif; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+      @page { size:210mm 74mm; margin:1mm; }
+      @media print { body { margin:0; } tr { page-break-inside:avoid; } }
+      table { border-collapse:collapse; width:100%; }
+      td, th { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+    </style></head><body>
+    ${pagesHTML}
     </body></html>`;
   }, []);
 
@@ -719,7 +711,13 @@ export default function Closure() {
       if (printWindow) {
         printWindow.document.write(html);
         printWindow.document.close();
-        setTimeout(() => { printWindow.focus(); printWindow.print(); }, 300);
+        if (printWindow.document.fonts && printWindow.document.fonts.ready) {
+          printWindow.document.fonts.ready.then(() => {
+            setTimeout(() => { printWindow.focus(); printWindow.print(); }, 200);
+          });
+        } else {
+          setTimeout(() => { printWindow.focus(); printWindow.print(); }, 800);
+        }
       }
     }
   }, [summaryEntries, isMobile, generateMultiLoanReceiptHTML, showRateMonths]);
@@ -802,28 +800,19 @@ export default function Closure() {
                 if (printWindow && summaryReceiptHTML) {
                   printWindow.document.write(summaryReceiptHTML);
                   printWindow.document.close();
-                  setTimeout(() => { printWindow.focus(); printWindow.print(); }, 300);
+                  if (printWindow.document.fonts && printWindow.document.fonts.ready) {
+                    printWindow.document.fonts.ready.then(() => {
+                      setTimeout(() => { printWindow.focus(); printWindow.print(); }, 200);
+                    });
+                  } else {
+                    setTimeout(() => { printWindow.focus(); printWindow.print(); }, 800);
+                  }
                 }
               }}
               className="flex-1 inline-flex items-center justify-center rounded-md text-sm font-medium h-10 px-3 bg-green-600 hover:bg-green-700 text-white"
             >
               <Printer className="mr-2 h-4 w-4" />
               प्रिंट करा
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                const printWindow = window.open('', '_blank');
-                if (printWindow && summaryReceiptHTML) {
-                  printWindow.document.write(summaryReceiptHTML);
-                  printWindow.document.close();
-                  setTimeout(() => { printWindow.focus(); printWindow.print(); }, 300);
-                }
-              }}
-              className="flex-1 inline-flex items-center justify-center rounded-md text-sm font-medium h-10 px-3 bg-blue-600 hover:bg-blue-700 text-white"
-            >
-              <FileText className="mr-2 h-4 w-4" />
-              PDF
             </button>
           </div>
         </div>
@@ -868,7 +857,7 @@ export default function Closure() {
                 </Link>
               </div>
               <h1 className="text-2xl font-semibold text-gray-900 font-noto">कर्ज बंद करा - सरल पद्धत</h1>
-              <p className="text-gray-600 font-noto">एक ही field में अंतिम रक्कम एंटर करा</p>
+              <p className="text-gray-600 font-noto">एकाच field मध्ये अंतिम रक्कम एंटर करा</p>
             </div>
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -954,6 +943,7 @@ export default function Closure() {
                                   }
                                 }}
                                 className="pl-10"
+                                autoComplete="off"
                               />
                               {showLoanList && searchQuery && (
                                 <Button
@@ -1344,9 +1334,7 @@ export default function Closure() {
                                     placeholder="व्याज रक्कम (0 = फक्त मुद्दल)"
                                     value={field.value}
                                     onChange={(e) => {
-                                      const rawValue = e.target.value;
-                                      console.log("📝 RAW INPUT:", rawValue);
-                                      field.onChange(rawValue);
+                                      field.onChange(e.target.value);
                                     }}
                                     onBlur={field.onBlur}
                                     name={field.name}
@@ -1577,6 +1565,7 @@ export default function Closure() {
                       </div>
                     </CardHeader>
                     <CardContent className="p-0">
+                      <div className="text-center font-bold text-sm py-2 underline">Estimate</div>
                       <div className="overflow-x-auto">
                         <table className="w-full text-sm border-collapse">
                           <thead>
@@ -1598,7 +1587,7 @@ export default function Closure() {
                                 <td className="border border-gray-300 px-1 py-1 text-center text-xs">{index + 1}</td>
                                 <td className="border border-gray-300 px-2 py-1 text-xs"><div className="max-w-[120px] truncate" title={entry.collateralDetails || '-'}>{entry.collateralDetails || '-'}</div></td>
                                 <td className="border border-gray-300 px-1 py-1 text-center text-xs">{entry.accountNumber}</td>
-                                <td className="border border-gray-300 px-1 py-1 text-center text-xs">{DateUtils.isoToIndianDate(entry.loanDate)}</td>
+                                <td className="border border-gray-300 px-1 py-1 text-center text-xs">{toShortDate(entry.loanDate)}</td>
                                 {showRateMonths && <td className="border border-gray-300 px-1 py-1 text-center text-xs">{entry.months}</td>}
                                 {showRateMonths && <td className="border border-gray-300 px-1 py-1 text-center text-xs">{entry.interestRate}%</td>}
                                 <td className="border border-gray-300 px-2 py-1 text-right text-base font-semibold">{Number(Math.round(entry.principalAmount)).toLocaleString('en-IN')}</td>
@@ -1615,19 +1604,19 @@ export default function Closure() {
                                 </td>
                               </tr>
                             ))}
-                            <tr className="bg-gray-100 font-bold">
-                              <td colSpan={showRateMonths ? 6 : 4} className="border border-gray-300 px-2 py-1.5 text-right text-sm">एकूण</td>
-                              <td className="border border-gray-300 px-2 py-1.5 text-right text-base font-bold">
+                            <tr className="bg-gray-100 font-extrabold">
+                              <td colSpan={showRateMonths ? 6 : 4} className="border border-gray-300 px-2 py-2 text-right text-base font-extrabold">एकूण</td>
+                              <td className="border border-gray-300 px-2 py-2 text-right text-lg font-extrabold">
                                 {Number(Math.round(summaryEntries.reduce((sum, e) => sum + e.principalAmount, 0))).toLocaleString('en-IN')}
                               </td>
-                              <td className="border border-gray-300 px-2 py-1.5 text-right text-base font-bold">
+                              <td className="border border-gray-300 px-2 py-2 text-right text-lg font-extrabold">
                                 {Number(Math.round(summaryEntries.reduce((sum, e) => sum + e.chargesAmount, 0))).toLocaleString('en-IN')}
                               </td>
                               <td className="border border-gray-300"></td>
                             </tr>
-                            <tr className="bg-amber-50 font-bold">
-                              <td colSpan={showRateMonths ? 7 : 5} className="border border-gray-300 px-2 py-2 text-right text-sm font-bold">Grand Total</td>
-                              <td className="border border-gray-300 px-2 py-2 text-right text-lg font-bold text-green-700">
+                            <tr className="bg-amber-50 font-black">
+                              <td colSpan={showRateMonths ? 7 : 5} className="border border-gray-300 px-2 py-2.5 text-right text-lg font-black">Grand Total</td>
+                              <td className="border border-gray-300 px-2 py-2.5 text-right text-xl font-black text-green-700">
                                 {Number(Math.round(summaryEntries.reduce((sum, e) => sum + e.principalAmount + e.chargesAmount, 0))).toLocaleString('en-IN')}
                               </td>
                               <td className="border border-gray-300"></td>
