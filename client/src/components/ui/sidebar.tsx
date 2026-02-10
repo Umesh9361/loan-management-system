@@ -432,7 +432,7 @@ export function Sidebar({ className }: SidebarProps) {
         
         {/* Quick Navigation */}
         <div className="sticky bottom-0 bg-white border-t mt-4 pt-3 pb-3">
-          <div className="flex justify-center items-center px-2 gap-3">
+          <div className="hidden lg:flex justify-center items-center px-2 gap-3">
             <Button
               variant="outline"
               size="sm"
