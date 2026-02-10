@@ -72,9 +72,9 @@ export default function Dashboard() {
       const res = await apiRequest("/api/company/bottom-nav-toggle", "PUT", { enabled });
       return res.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      queryClient.setQueryData(["/api/company"], data);
       queryClient.invalidateQueries({ queryKey: ["/api/company"] });
-      queryClient.refetchQueries({ queryKey: ["/api/company"] });
       toast({ title: "सेटिंग बदलली", description: "बॉटम नेव्हिगेशन सेटिंग अपडेट झाली" });
     },
     onError: () => {
