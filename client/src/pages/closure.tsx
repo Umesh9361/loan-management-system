@@ -1080,18 +1080,8 @@ export default function Closure() {
 
               <TabsContent value="closure" className="mt-0">
             <Card className="shadow-2xl bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 border-2 border-blue-200">
-              <CardHeader className="bg-gradient-to-r from-blue-100 to-purple-100 rounded-t-lg border-b-2 border-blue-200">
-                <div className="flex items-center justify-center mb-4">
-                  <div className="p-3 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full shadow-lg">
-                    <Calculator className="h-8 w-8 text-white" />
-                  </div>
-                </div>
-                <CardTitle className="text-2xl heading-professional flex items-center justify-center font-noto text-blue-900">
-                  कर्ज बंद करा
-                </CardTitle>
-              </CardHeader>
               
-              <CardContent className="p-6 bg-white rounded-b-lg">
+              <CardContent className="p-6 bg-white rounded-lg">
                 <Form {...form}>
                   <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6" autoComplete="off">
                     
