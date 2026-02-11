@@ -74,6 +74,8 @@ export function MobileNav({ hideBottomNav = false }: MobileNavProps = {}) {
 
   const handleLogout = async () => {
     try {
+      sessionStorage.removeItem('closure_summary_entries');
+      sessionStorage.removeItem('closure_summary_counter');
       await AuthService.logout();
       window.location.reload();
     } catch (error) {
