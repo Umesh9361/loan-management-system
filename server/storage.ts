@@ -1350,30 +1350,7 @@ export class DatabaseStorage implements IStorage {
     netDifference: number;
   }> {
     try {
-      console.log('🏦 MOBILE BALANCE CALC for date:', forDate);
-      
-      // Get all transactions up to (but not including) the target date to calculate opening balance
-      const transactionsBeforeDate = await db.select()
-        .from(cashTransactions)
-        .where(
-          and(
-            eq(cashTransactions.tenantId, tenantId),
-            sql`DATE(${cashTransactions.transactionDate}) < ${forDate}`
-          )
-        )
-        .orderBy(asc(cashTransactions.transactionDate));
-
-      // Calculate opening balance (cumulative balance from all previous transactions)
-      let openingBalance = 0; // Starting balance for new system
-      
-      transactionsBeforeDate.forEach(transaction => {
-        const amount = Number(transaction.amount) || 0;
-        if (transaction.transactionType === 'cash_in') {
-          openingBalance += amount;
-        } else {
-          openingBalance -= amount;
-        }
-      });
+      const openingBalance = await this.getCashBalanceBeforeDate(tenantId, forDate);
 
       // Get transactions for the specific date
       const dayTransactions = await db.select()
@@ -1402,17 +1379,6 @@ export class DatabaseStorage implements IStorage {
       const netDifference = dayCashIn - dayCashOut;
       const closingBalance = openingBalance + netDifference;
       
-      console.log('🏦 BALANCE CALCULATION:', {
-        forDate,
-        transactionsBeforeCount: transactionsBeforeDate.length,
-        openingBalance,
-        dayCashIn,
-        dayCashOut,
-        netDifference,
-        closingBalance,
-        dayTransactionCount: dayTransactions.length
-      });
-
       return {
         date: forDate,
         openingBalance,

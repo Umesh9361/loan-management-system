@@ -325,53 +325,50 @@ function MobileCashbook() {
   
   // Transaction processing completed
 
-  // CRITICAL: Mobile Daily Balance API for proper balance carry-forward
+  const isCustomRange = !!(searchFilters.dateFrom && searchFilters.dateTo);
+  const useDaily = viewPeriod === 'daily' && !isCustomRange;
+
+  // Daily Balance API - only for daily view without custom date range
   const { data: dailyBalanceData } = useQuery({
-    queryKey: ["/api/mobile-cashbook/daily-balance", currentDate.toISOString().split('T')[0], viewPeriod],
+    queryKey: ["/api/mobile-cashbook/daily-balance", currentDate.toISOString().split('T')[0], viewPeriod, isCustomRange],
     queryFn: async () => {
-      if (viewPeriod !== 'daily') return null;
-      
       const response = await fetch(`/api/mobile-cashbook/daily-balance?date=${currentDate.toISOString().split('T')[0]}`, {
         credentials: 'include',
         cache: 'no-cache'
       });
-      
       if (!response.ok) return null;
       return response.json();
     },
-    enabled: viewPeriod === 'daily',
-    staleTime: 0, // Always fresh for real-time balance updates
-    refetchInterval: 5000, // Auto-refresh every 5 seconds
+    enabled: useDaily,
+    staleTime: 0,
+    refetchInterval: 5000,
   });
 
-  // UNIVERSAL: All periods balance API (weekly, monthly, yearly, custom) 
+  // Universal Balance API - for weekly/monthly/yearly AND custom date range (regardless of viewPeriod)
   const { data: universalBalanceData } = useQuery({
-    queryKey: ["/api/mobile-cashbook/balance", getDateRange(), viewPeriod, searchFilters.dateFrom, searchFilters.dateTo],
+    queryKey: ["/api/mobile-cashbook/balance", getDateRange(), viewPeriod, searchFilters.dateFrom, searchFilters.dateTo, isCustomRange],
     queryFn: async () => {
-      if (viewPeriod === 'daily') return null; // Use daily API for daily view
-      
       const dateRange = getDateRange();
       const startDate = searchFilters.dateFrom || dateRange.from;
       const endDate = searchFilters.dateTo || dateRange.to;
-      
+
       const params = new URLSearchParams({
         startDate,
         endDate,
-        viewPeriod,
+        viewPeriod: isCustomRange ? 'custom' : viewPeriod,
         _t: Date.now().toString()
       });
-      
+
       const response = await fetch(`/api/mobile-cashbook/balance?${params}`, {
         credentials: 'include',
         cache: 'no-cache'
       });
-      
       if (!response.ok) return null;
       return response.json();
     },
-    enabled: viewPeriod !== 'daily', // Only for non-daily periods
-    staleTime: 0, // Always fresh for real-time balance updates
-    refetchInterval: 5000, // Auto-refresh every 5 seconds
+    enabled: !useDaily,
+    staleTime: 0,
+    refetchInterval: 5000,
   });
 
   // OPTIMIZED Parties fetch with aggressive caching
@@ -417,24 +414,7 @@ function MobileCashbook() {
     gcTime: 0, // Don't cache old data
   });
 
-  // SUPER OPTIMIZED Date-wise balance with intelligent caching
-  const { data: dateWiseBalance } = useQuery({
-    queryKey: ["/api/date-wise-balance", currentDate.toISOString().split('T')[0], viewPeriod],
-    queryFn: async () => {
-      const currentDateStr = currentDate.toISOString().split('T')[0];
-      const response = await fetch(`/api/date-wise-balance/${currentDateStr}`, 
-        { credentials: 'include' });
-      const result = await response.json();
-      return result.success ? result.data : null;
-    },
-    staleTime: 5 * 60 * 1000, // 5 minutes aggressive caching
-    gcTime: 15 * 60 * 1000, // Keep in memory for 15 minutes
-    refetchOnWindowFocus: false,
-    refetchOnReconnect: false,
-    refetchOnMount: false,
-  });
-
-  // CRITICAL BALANCE FIX: Opening Balance calculation with correct closing balance
+  // Fallback opening balance query (only used when primary APIs haven't loaded yet)
   const { data: openingBalance } = useQuery({
     queryKey: ["/api/cash-balance/opening", currentDate.toISOString().split('T')[0], viewPeriod, searchFilters.dateFrom, searchFilters.dateTo],
     queryFn: async () => {
@@ -457,24 +437,6 @@ function MobileCashbook() {
     refetchOnReconnect: false,
     refetchOnMount: false,
     networkMode: 'online', // Only fetch when online
-  });
-
-  // BALANCE FIX: Current cash balance with correct calculation for 12/08/2025
-  const { data: currentCashBalance } = useQuery({
-    queryKey: ["/api/cash-balance", currentDate.toISOString().split('T')[0]],
-    queryFn: async () => {
-      const currentDateStr = currentDate.toISOString().split('T')[0];
-      
-      // Use dynamic API calculation instead of hardcoded values
-      
-      const response = await fetch(`/api/cash-balance?date=${currentDateStr}`, { credentials: 'include' });
-      const result = await response.json();
-      return result;
-    },
-    staleTime: 3 * 60 * 1000, // 3 minutes caching 
-    gcTime: 10 * 60 * 1000, // Keep in memory for 10 minutes
-    refetchOnWindowFocus: false,
-    refetchOnReconnect: false,
   });
 
   // Create transaction mutation with automatic dual entry support
@@ -831,40 +793,26 @@ function MobileCashbook() {
     );
   }, [transactionsList]);
 
-  // MEMOIZED balance calculations - Enhanced with daily balance API
-  const currentBalance = useMemo(() => {
-    // For daily view, prioritize mobile daily balance API for accurate carry-forward
-    if (viewPeriod === 'daily' && dailyBalanceData) {
-      return dailyBalanceData.closingBalance;
-    }
-    return currentCashBalance?.balance || 0;
-  }, [currentCashBalance, dailyBalanceData, viewPeriod]);
-  
+  // Simplified balance calculation: useDaily → dailyBalanceData, else → universalBalanceData
   const correctOpeningBalance = useMemo(() => {
-    if (viewPeriod === 'daily' && dailyBalanceData) {
+    if (useDaily && dailyBalanceData) {
       return dailyBalanceData.openingBalance;
     }
-    if (viewPeriod !== 'daily' && universalBalanceData) {
+    if (!useDaily && universalBalanceData) {
       return universalBalanceData.openingBalance;
     }
-    if (dateWiseBalance?.openingBalance !== undefined) {
-      return dateWiseBalance.openingBalance;
-    }
     return openingBalance?.openingBalance || 0;
-  }, [viewPeriod, dailyBalanceData, universalBalanceData, dateWiseBalance, openingBalance]);
+  }, [useDaily, dailyBalanceData, universalBalanceData, openingBalance]);
 
   const periodBalance = useMemo(() => {
-    if (viewPeriod === 'daily' && dailyBalanceData) {
+    if (useDaily && dailyBalanceData) {
       return dailyBalanceData.closingBalance;
     }
-    if (viewPeriod !== 'daily' && universalBalanceData) {
+    if (!useDaily && universalBalanceData) {
       return universalBalanceData.closingBalance;
     }
-    if (dateWiseBalance?.closingBalance !== undefined) {
-      return dateWiseBalance.closingBalance;
-    }
     return correctOpeningBalance + totals.cashIn - totals.cashOut;
-  }, [viewPeriod, dailyBalanceData, universalBalanceData, dateWiseBalance, correctOpeningBalance, totals]);
+  }, [useDaily, dailyBalanceData, universalBalanceData, correctOpeningBalance, totals]);
 
   // MEMOIZED loan transaction count
   const loanTransactionCount = useMemo(() => 
@@ -921,15 +869,31 @@ function MobileCashbook() {
                 variant="ghost" 
                 size="icon"
                 className="text-gray-500 hover:bg-gray-100 w-10 h-10"
-                onClick={() => {
-                  setRawTransactions([]);
-                  setIsLoading(true);
+                onClick={async () => {
                   queryClient.invalidateQueries({ queryKey: ["/api/cash-transactions"] });
                   queryClient.invalidateQueries({ queryKey: ["/api/cash-balance"] });
+                  queryClient.invalidateQueries({ queryKey: ["/api/cash-balance/opening"] });
                   queryClient.invalidateQueries({ queryKey: ["/api/mobile-cashbook"] });
                   queryClient.invalidateQueries({ queryKey: ["/api/journal-entries"] });
-                  queryClient.refetchQueries({ queryKey: ["/api/cash-transactions"] });
+                  queryClient.invalidateQueries({ queryKey: ["/api/date-wise-balance"] });
+
+                  setIsLoading(true);
+                  try {
+                    const params = buildFetchParams();
+                    params.append('_t', Date.now().toString());
+                    const response = await fetch(`/api/cash-transactions?${params}`, {
+                      credentials: 'include',
+                      cache: 'no-cache'
+                    });
+                    if (response.ok) {
+                      const data = await response.json();
+                      if (Array.isArray(data)) setRawTransactions(data);
+                    }
+                  } catch (_) {}
+                  setIsLoading(false);
+
                   queryClient.refetchQueries({ queryKey: ["/api/cash-balance"] });
+                  queryClient.refetchQueries({ queryKey: ["/api/mobile-cashbook"] });
                   toast({
                     title: "डेटा रिफ्रेश झाला",
                     description: "सर्व डेटा पुन्हा लोड केला",
@@ -1009,7 +973,7 @@ function MobileCashbook() {
                   queryClient.refetchQueries({ queryKey: ["/api/cash-transactions"] });
                 }}
                 className={`whitespace-nowrap px-3 py-1.5 text-xs font-medium rounded-full transition-all ${
-                  (viewPeriod === period && !(searchFilters.dateFrom && searchFilters.dateTo))
+                  (viewPeriod === period && !(searchFilters.dateFrom && searchFilters.dateTo) && !isDateRangeOpen)
                     ? 'bg-blue-500 text-white' 
                     : 'bg-gray-100 text-gray-600'
                 }`}
@@ -1023,7 +987,7 @@ function MobileCashbook() {
             <button
               onClick={() => setIsDateRangeOpen(!isDateRangeOpen)}
               className={`whitespace-nowrap px-3 py-1.5 text-xs font-medium rounded-full transition-all ${
-                (searchFilters.dateFrom && searchFilters.dateTo) 
+                (isDateRangeOpen || (searchFilters.dateFrom && searchFilters.dateTo)) 
                   ? 'bg-blue-500 text-white' 
                   : 'bg-gray-100 text-gray-600'
               }`}
@@ -1035,45 +999,41 @@ function MobileCashbook() {
 
         {/* Custom Date Range Dialog */}
         {isDateRangeOpen && (
-          <div className="custom-date-range mx-3 mb-3 bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
-            <div className="bg-blue-500 px-4 py-2.5 flex items-center justify-between">
-              <span className="text-white font-medium text-sm">तारीख निवडा</span>
-              <button onClick={() => setIsDateRangeOpen(false)} className="text-white/80 hover:text-white">
-                <X className="h-4 w-4" />
+          <div className="custom-date-range mx-3 mb-2 bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+            <div className="px-3 py-2 flex items-center justify-between border-b border-gray-100">
+              <span className="text-gray-700 font-medium text-xs">तारीख निवडा</span>
+              <button onClick={() => setIsDateRangeOpen(false)} className="text-gray-400 hover:text-gray-600">
+                <X className="h-3.5 w-3.5" />
               </button>
             </div>
-            <div className="p-4 space-y-3">
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-gray-500">पासून</label>
+            <div className="px-3 py-2.5 flex items-center gap-2">
+              <div className="flex-1 space-y-0.5">
+                <label className="text-[10px] font-medium text-gray-400">पासून</label>
                 <Input
                   type="date"
                   value={customDateRange.startDate}
                   onChange={(e) => setCustomDateRange(prev => ({ ...prev, startDate: e.target.value }))}
-                  className="font-inter text-gray-800 h-11 text-base border-gray-200 rounded-lg"
+                  className="font-inter text-gray-800 h-9 text-sm border-gray-200 rounded-md"
                   style={{ colorScheme: 'light' }}
                 />
               </div>
-              <div className="flex items-center gap-2 px-2">
-                <div className="flex-1 h-px bg-gray-200" />
-                <ArrowDown className="h-4 w-4 text-gray-400" />
-                <div className="flex-1 h-px bg-gray-200" />
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-gray-500">पर्यंत</label>
+              <span className="text-gray-300 text-xs mt-3">—</span>
+              <div className="flex-1 space-y-0.5">
+                <label className="text-[10px] font-medium text-gray-400">पर्यंत</label>
                 <Input
                   type="date"
                   value={customDateRange.endDate}
                   onChange={(e) => setCustomDateRange(prev => ({ ...prev, endDate: e.target.value }))}
-                  className="font-inter text-gray-800 h-11 text-base border-gray-200 rounded-lg"
+                  className="font-inter text-gray-800 h-9 text-sm border-gray-200 rounded-md"
                   style={{ colorScheme: 'light' }}
                 />
               </div>
             </div>
-            <div className="px-4 pb-4 flex gap-3">
+            <div className="px-3 pb-2.5 flex gap-2">
               <Button
                 onClick={() => setIsDateRangeOpen(false)}
                 variant="outline"
-                className="flex-1 h-11 rounded-lg border-gray-200 text-gray-600 hover:bg-gray-50 font-medium"
+                className="flex-1 h-8 rounded-md border-gray-200 text-gray-500 hover:bg-gray-50 text-xs font-medium"
               >
                 रद्द करा
               </Button>
@@ -1091,7 +1051,7 @@ function MobileCashbook() {
                   }
                 }}
                 disabled={!customDateRange.startDate || !customDateRange.endDate}
-                className="flex-1 h-11 rounded-lg bg-blue-500 hover:bg-blue-600 text-white font-medium"
+                className="flex-1 h-8 rounded-md bg-blue-500 hover:bg-blue-600 text-white text-xs font-medium"
               >
                 शोधा
               </Button>
@@ -1548,7 +1508,11 @@ function MobileCashbook() {
 
       {/* Quick Entry Dialog */}
       <Dialog open={isQuickEntryOpen} onOpenChange={setIsQuickEntryOpen}>
-        <DialogContent className="sm:max-w-md mx-4 max-h-[85vh] overflow-y-auto" aria-describedby="quick-entry-description">
+        <DialogContent
+          className="sm:max-w-md mx-4 max-h-[85vh] overflow-y-auto"
+          aria-describedby="quick-entry-description"
+          onOpenAutoFocus={(e) => e.preventDefault()}
+        >
           <DialogHeader>
             <DialogTitle className={`text-center text-xl font-bold ${
               quickEntryType === 'cash_in' ? 'text-green-600' : 'text-red-600'
@@ -1571,7 +1535,6 @@ function MobileCashbook() {
                 value={quickEntryForm.amount}
                 onChange={(e) => setQuickEntryForm(prev => ({ ...prev, amount: e.target.value }))}
                 className="mt-2 text-lg font-bold text-center h-10"
-                autoFocus
               />
             </div>
             
@@ -1653,7 +1616,11 @@ function MobileCashbook() {
 
       {/* Edit Transaction Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-md mx-4 max-h-[85vh] overflow-y-auto" aria-describedby="edit-transaction-mobile-description">
+        <DialogContent
+          className="sm:max-w-md mx-4 max-h-[85vh] overflow-y-auto"
+          aria-describedby="edit-transaction-mobile-description"
+          onOpenAutoFocus={(e) => e.preventDefault()}
+        >
           <DialogHeader>
             <DialogTitle className="text-center text-xl font-bold text-gray-800">
               व्यवहार संपादित करा
