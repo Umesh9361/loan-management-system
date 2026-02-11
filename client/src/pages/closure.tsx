@@ -37,7 +37,7 @@ const closureSchema = z.object({
   interestType: z.enum(["simple", "compound", "advanced_compound"]).default("simple"),
   compoundingFrequency: z.enum(["yearly", "half_yearly", "quarterly", "monthly"]).default("yearly"),
   advancedCalculationMode: z.enum(["month", "half_month", "week", "day"]).default("half_month"),
-  finalInterestAmount: z.string().min(1, "अंतिम व्याज रक्कम आवश्यक"),
+  finalInterestAmount: z.string().min(1, "व्याज रक्कम आवश्यक"),
   returnOfArticles: z.string().optional(),
   isClosed: z.boolean().default(true),
   useCustomRate: z.boolean().default(false),
@@ -1087,9 +1087,8 @@ export default function Closure() {
                   </div>
                 </div>
                 <CardTitle className="text-2xl heading-professional flex items-center justify-center font-noto text-blue-900">
-                  सरल कर्ज बंद - एक ही रक्कम
+                  कर्ज बंद करा
                 </CardTitle>
-                <p className="text-sm text-blue-700 text-center mt-2">गणना करा → समायोजन करा → बंद करा</p>
               </CardHeader>
               
               <CardContent className="p-6 bg-white rounded-b-lg">
@@ -1099,12 +1098,12 @@ export default function Closure() {
                     {/* Enhanced Loan Search - Only show if not from URL */}
                     {!hideSearch && (
                       <div className="space-y-4">
-                        <Label className="font-noto text-lg">कर्ज शोधा आणि निवडा *</Label>
+                        <Label className="font-noto text-lg">कर्ज निवडा</Label>
                         
                         {/* Group Selection First */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div>
-                            <Label className="text-sm font-medium">पहिले ग्रुप निवडा</Label>
+                            <Label className="text-sm font-medium">ग्रुप</Label>
                             <Select value={selectedSearchGroup} onValueChange={setSelectedSearchGroup}>
                               <SelectTrigger>
                                 <SelectValue placeholder="ग्रुप निवडा..." />
@@ -1203,7 +1202,7 @@ export default function Closure() {
                         <CardHeader className="pb-3">
                           <CardTitle className="text-green-800 flex items-center gap-2">
                             <CheckCircle className="h-5 w-5" />
-                            निवडलेला कर्ज
+                            निवडलेले कर्ज
                           </CardTitle>
                         </CardHeader>
                         <CardContent>
@@ -1284,8 +1283,8 @@ export default function Closure() {
                                 <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-blue-50">
                                   <RadioGroupItem value="simple" id="simple" />
                                   <Label htmlFor="simple" className="cursor-pointer font-noto">
-                                    <div className="font-medium">साधा व्याज</div>
-                                    <div className="text-xs text-gray-600">365 दिवसांचे मानक</div>
+                                    <div className="font-medium">साधे व्याज</div>
+                                    <div className="text-xs text-gray-600">दिवसांप्रमाणे</div>
                                   </Label>
                                 </div>
                                 <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-orange-50">
@@ -1480,7 +1479,7 @@ export default function Closure() {
                             </div>
                             <div className="bg-orange-50 rounded-lg p-3 border border-orange-200">
                               <div className="flex justify-between items-center">
-                                <span className="text-sm text-gray-600">गणना केलेला व्याज</span>
+                                <span className="text-sm text-gray-600">गणना केलेले व्याज</span>
                                 <span className="text-lg font-semibold text-orange-600">
                                   ₹{Math.round(calculationResult.interestAmount || 0).toLocaleString('en-IN')}
                                 </span>
@@ -1507,11 +1506,8 @@ export default function Closure() {
                       <CardHeader className="pb-3">
                         <CardTitle className="text-purple-800 flex items-center gap-2">
                           <Edit className="h-5 w-5" />
-                          अंतिम व्याज रक्कम (सरल पद्धत)
+                          व्याज रक्कम ठरवा
                         </CardTitle>
-                        <p className="text-sm text-purple-600 mt-2">
-                          गणना केलेला व्याज यथे दिसेल → आवश्यकतेनुसार plus/minus करा → 0 टाकल्यास फक्त मुद्दल
-                        </p>
                       </CardHeader>
                       <CardContent>
                         <FormField
@@ -1520,13 +1516,13 @@ export default function Closure() {
                           render={({ field }) => (
                             <FormItem>
                               <FormLabel className="font-noto text-lg text-purple-800">
-                                अंतिम व्याज रक्कम ₹
+                                व्याज ₹
                               </FormLabel>
                               <FormControl>
                                 <div className="space-y-2">
                                   <Input 
                                     type="text" 
-                                    placeholder="व्याज रक्कम (0 = फक्त मुद्दल)"
+                                    placeholder="व्याज रक्कम टाका"
                                     value={field.value}
                                     onChange={(e) => {
                                       field.onChange(e.target.value);
@@ -1607,7 +1603,7 @@ export default function Closure() {
                                   <div className="mt-2 p-2 bg-white rounded border">
                                     <div className="text-sm">
                                       <div className="flex justify-between">
-                                        <span>गणना केलेला व्याज:</span>
+                                        <span>गणना केलेले व्याज:</span>
                                         <span>₹{Math.round(calculationResult.interestAmount)}</span>
                                       </div>
                                       <div className="flex justify-between font-medium">
@@ -1645,7 +1641,7 @@ export default function Closure() {
                       name="returnOfArticles"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="font-noto">ग्राहकास द्यावयाचे दागिने</FormLabel>
+                          <FormLabel className="font-noto">परत द्यायचे दागिने</FormLabel>
                           <FormControl>
                             <Textarea 
                               placeholder="परत केलेल्या वस्तूंची माहिती..."
@@ -1670,10 +1666,7 @@ export default function Closure() {
                             />
                           </FormControl>
                           <div className="space-y-1 leading-none">
-                            <FormLabel className="font-noto">व्यवहार बंद केला का?</FormLabel>
-                            <div className="text-sm text-gray-600">
-                              हे कर्ज पूर्णपणे बंद करण्याची पुष्टी करा
-                            </div>
+                            <FormLabel className="font-noto">कर्ज बंद करा</FormLabel>
                           </div>
                         </FormItem>
                       )}
