@@ -709,13 +709,13 @@ export default function Closure() {
 
     let monthsDisplay = '';
     if (calculationResult.durationInMonths !== undefined) {
-      monthsDisplay = String(calculationResult.durationInMonths);
+      monthsDisplay = formatRate(calculationResult.durationInMonths);
     } else {
       const y = calculationResult.years || 0;
       const m = calculationResult.months || 0;
       const d = calculationResult.days || 0;
       const totalMonths = y * 12 + m + (d > 15 ? 0.5 : 0);
-      monthsDisplay = totalMonths % 1 === 0 ? String(totalMonths) : totalMonths.toFixed(1);
+      monthsDisplay = formatRate(totalMonths);
     }
 
     const effectiveRate = form.getValues("useCustomRate") && form.getValues("customInterestRate")
