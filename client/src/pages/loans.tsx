@@ -84,8 +84,8 @@ function Loans() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [dateFilter, setDateFilter] = useState({
     groupId: "all",
-    dateFrom: DateUtils.formatForInput(new Date()), // Default to today's date in YYYY-MM-DD format
-    dateTo: DateUtils.formatForInput(new Date()),   // Default to today's date in YYYY-MM-DD format
+    dateFrom: "",
+    dateTo: "",
   });
   // Removed isSearchActive - simplified search logic
   const [selectedRowIndex, setSelectedRowIndex] = useState<number>(-1);
@@ -2354,8 +2354,8 @@ function Loans() {
                 setStatusFilter("all");
                 setDateFilter({
                   groupId: "all",
-                  dateFrom: DateUtils.formatForInput(new Date()),  // Set to today's date in YYYY-MM-DD format
-                  dateTo: DateUtils.formatForInput(new Date())     // Set to today's date in YYYY-MM-DD format
+                  dateFrom: "",
+                  dateTo: "",
                 });
                 // Reset completed - no need for search state
                 setSelectedRowIndex(-1);
@@ -2513,12 +2513,12 @@ function Loans() {
                       }}
                       data-testid={`row-loan-${loan.id}`}
                     >
-                      <TableCell className="font-medium font-inter">
+                      <TableCell className="font-bold text-base font-inter">
                         {loan.accountNumber || "—"}
                       </TableCell>
                       <TableCell className="font-noto">{loan.borrowerName}</TableCell>
                       <TableCell className="font-inter">{loan.borrowerMobile || "—"}</TableCell>
-                      <TableCell className="font-noto max-w-32 truncate" title={loan.collateralDetails}>
+                      <TableCell className="font-noto max-w-48 whitespace-normal break-words" title={loan.collateralDetails}>
                         {loan.collateralDetails || "—"}
                       </TableCell>
                       <TableCell className="font-inter text-sm">
@@ -2660,7 +2660,7 @@ function Loans() {
                     <div className="flex justify-between items-start mb-3">
                       <div>
                         <h3 className="font-noto font-semibold text-lg text-gray-900">{loan.borrowerName}</h3>
-                        <p className="text-sm text-gray-600 font-inter">
+                        <p className="text-sm font-bold text-gray-700 font-inter">
                           खाते: {loan.accountNumber || "—"}
                         </p>
                       </div>
@@ -2702,7 +2702,7 @@ function Loans() {
                       </div>
                       <div>
                         <p className="text-gray-600">वस्तु</p>
-                        <p className="font-medium font-noto truncate" title={loan.collateralDetails}>
+                        <p className="font-medium font-noto whitespace-normal break-words" title={loan.collateralDetails}>
                           {loan.collateralDetails || "—"}
                         </p>
                       </div>
@@ -2918,7 +2918,7 @@ function Loans() {
                     <p className="text-base font-medium font-noto">{selectedLoanDetails.groupName || "—"}</p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-600">व्यावसायिक प्रकार</label>
+                    <label className="text-sm font-medium text-gray-600">व्यवसाय</label>
                     <p className="text-base font-medium font-noto">{selectedLoanDetails.businessType || "—"}</p>
                   </div>
                   <div>
@@ -2949,11 +2949,11 @@ function Loans() {
                     <p className="text-base font-medium font-noto">{selectedLoanDetails.interestRateType === "monthly" ? "मासिक" : "वार्षिक"}</p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-600">परिपक्वता तारीख</label>
+                    <label className="text-sm font-medium text-gray-600">मुदत तारीख</label>
                     <p className="text-base font-medium">{selectedLoanDetails.maturityDate ? DateUtils.isoToIndianDate(selectedLoanDetails.maturityDate) : "—"}</p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-600">परिपक्वता आहे का?</label>
+                    <label className="text-sm font-medium text-gray-600">मुदत आहे का?</label>
                     <p className="text-base font-medium">{selectedLoanDetails.hasMaturity ? "होय" : "नाही"}</p>
                   </div>
                 </div>
@@ -2987,7 +2987,7 @@ function Loans() {
                 </h3>
                 <div className="space-y-3">
                   <div>
-                    <label className="text-sm font-medium text-gray-600">कागदपत्रांचा तपशील</label>
+                    <label className="text-sm font-medium text-gray-600">कागदपत्रे</label>
                     <p className="text-base font-medium font-noto">{selectedLoanDetails.documentDetails || "—"}</p>
                   </div>
                   <div>
@@ -3018,11 +3018,11 @@ function Loans() {
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="text-sm font-medium text-gray-600">बंद केलेली तारीख</label>
+                      <label className="text-sm font-medium text-gray-600">बंद तारीख</label>
                       <p className="text-base font-medium">{DateUtils.isoToIndianDate(selectedLoanDetails.closureDate)}</p>
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-gray-600">बंद केलेली रक्कम</label>
+                      <label className="text-sm font-medium text-gray-600">बंद रक्कम</label>
                       <p className="text-base font-medium">₹ {selectedLoanDetails.closureAmount ? LoanCalculations.formatAmount(Number(selectedLoanDetails.closureAmount)) : "—"}</p>
                     </div>
                   </div>
