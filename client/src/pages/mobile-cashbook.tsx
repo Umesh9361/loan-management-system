@@ -1092,7 +1092,7 @@ function MobileCashbook() {
 
           {/* Custom Date Range Dialog */}
           {isDateRangeOpen && (
-            <div className="bg-blue-500 p-4 rounded-lg mb-4">
+            <div className="custom-date-range bg-blue-500 p-4 rounded-lg mb-4">
               <div className="text-white text-center font-bold mb-3">
                 📅 या तारखेपासून या तारखेपर्यंत
               </div>
@@ -1106,7 +1106,8 @@ function MobileCashbook() {
                     value={customDateRange.startDate}
                     onChange={(e) => setCustomDateRange(prev => ({ ...prev, startDate: e.target.value }))}
                     placeholder="तारीख निवडा"
-                    className="font-inter"
+                    className="font-inter text-gray-900"
+                    style={{ colorScheme: 'light' }}
                   />
                   <div className="text-xs text-blue-500 mt-1 font-medium">
                     {customDateRange.startDate && DateUtils.isoToIndianDate(customDateRange.startDate)}
@@ -1121,7 +1122,8 @@ function MobileCashbook() {
                     value={customDateRange.endDate}
                     onChange={(e) => setCustomDateRange(prev => ({ ...prev, endDate: e.target.value }))}
                     placeholder="तारीख निवडा"
-                    className="font-inter"
+                    className="font-inter text-gray-900"
+                    style={{ colorScheme: 'light' }}
                   />
                   <div className="text-xs text-blue-500 mt-1 font-medium">
                     {customDateRange.endDate && DateUtils.isoToIndianDate(customDateRange.endDate)}
