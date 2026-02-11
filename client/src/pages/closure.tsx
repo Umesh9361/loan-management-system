@@ -801,11 +801,12 @@ export default function Closure() {
     wrapper.style.maxWidth = a5LandscapeWidthPx + 'px';
     wrapper.style.background = 'white';
     wrapper.style.zIndex = '-9999';
+    wrapper.style.overflow = 'hidden';
 
     const styleEl = document.createElement('style');
     styleEl.textContent = `
       * { margin: 0; padding: 0; box-sizing: border-box; }
-      body { font-family: 'Noto Sans Devanagari', sans-serif; }
+      body, div, table, td, th { font-family: 'Noto Sans Devanagari', sans-serif !important; }
       .receipt-page {
         width: ${a5LandscapeWidthPx}px !important;
         min-width: ${a5LandscapeWidthPx}px !important;
@@ -848,7 +849,11 @@ export default function Closure() {
       }
 
       const wrapper = createOffscreenReceiptContainer(summaryReceiptHTML);
-      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      if (document.fonts && document.fonts.ready) {
+        await document.fonts.ready;
+      }
+      await new Promise(resolve => setTimeout(resolve, 500));
 
       const { default: html2canvas } = await import('html2canvas');
 
@@ -872,6 +877,8 @@ export default function Closure() {
             logging: false,
             backgroundColor: '#ffffff',
             imageTimeout: 0,
+            windowWidth: 794,
+            windowHeight: 280,
           });
           const imgData = canvas.toDataURL('image/png');
           if (i > 0) doc.addPage();
@@ -884,6 +891,8 @@ export default function Closure() {
           logging: false,
           backgroundColor: '#ffffff',
           imageTimeout: 0,
+          windowWidth: 794,
+          windowHeight: 280,
         });
         const imgData = canvas.toDataURL('image/png');
         doc.addImage(imgData, 'PNG', 0, 0, a5W, a5H);
