@@ -60,6 +60,12 @@ interface SummaryEntry {
   closureDate: string;
 }
 
+const formatRate = (rate: string | number): string => {
+  const num = Number(rate);
+  if (isNaN(num)) return String(rate);
+  return parseFloat(num.toFixed(4)).toString();
+};
+
 const toShortDate = (isoDate: string): string => {
   const d = DateUtils.isoToIndianDate(isoDate);
   const parts = d.split('/');
@@ -635,7 +641,7 @@ export default function Closure() {
       <td style="border:1px solid #555;padding:2px 3px;text-align:center;font-size:${fontSize};font-weight:700;">${entry.accountNumber}</td>
       <td style="border:1px solid #555;padding:2px 3px;text-align:center;font-size:${fontSize};">${toShortDate(entry.loanDate)}</td>
       ${showCols ? `<td style="border:1px solid #555;padding:2px 2px;text-align:center;font-size:${fontSize};">${entry.months}</td>
-      <td style="border:1px solid #555;padding:2px 2px;text-align:center;font-size:${fontSize};">${entry.interestRate}%</td>` : ''}
+      <td style="border:1px solid #555;padding:2px 2px;text-align:center;font-size:${fontSize};">${formatRate(entry.interestRate)}%</td>` : ''}
       <td style="border:1px solid #555;padding:2px 4px;text-align:right;font-size:${fontSize};font-weight:700;">${Number(Math.round(entry.principalAmount)).toLocaleString('en-IN')}</td>
       <td style="border:1px solid #555;padding:2px 4px;text-align:right;font-size:${fontSize};font-weight:700;">${Number(Math.round(entry.chargesAmount)).toLocaleString('en-IN')}</td>
     </tr>`;
@@ -1163,7 +1169,7 @@ export default function Closure() {
                                         खाते क्रमांक: {loan.accountNumber} | ग्रुप: {getGroupName(loan.groupId)}
                                       </div>
                                       <div className="text-sm text-green-600">
-                                        मुद्दल: ₹{Math.round(loan.principalAmount).toLocaleString('en-IN')} | दर: {loan.interestRate}% {loan.interestRateType === 'monthly' ? 'मासिक' : 'वार्षिक'}
+                                        मुद्दल: ₹{Math.round(loan.principalAmount).toLocaleString('en-IN')} | दर: {formatRate(loan.interestRate)}% {loan.interestRateType === 'monthly' ? 'मासिक' : 'वार्षिक'}
                                       </div>
                                       {loan.collateralDetails && (
                                         <div className="text-sm text-purple-600">
@@ -1207,7 +1213,7 @@ export default function Closure() {
                               <span className="font-medium">मुद्दल रक्कम:</span> ₹{Math.round(selectedLoan.principalAmount).toLocaleString('en-IN')}
                             </div>
                             <div>
-                              <span className="font-medium">व्याजदर:</span> {selectedLoan.interestRate}% {selectedLoan.interestRateType === 'monthly' ? 'मासिक' : 'वार्षिक'}
+                              <span className="font-medium">व्याजदर:</span> {formatRate(selectedLoan.interestRate)}% {selectedLoan.interestRateType === 'monthly' ? 'मासिक' : 'वार्षिक'}
                             </div>
                             <div>
                               <span className="font-medium">वाटप दिनांक:</span> {DateUtils.formatDate(selectedLoan.loanDate)}
@@ -1313,7 +1319,7 @@ export default function Closure() {
                                   कस्टम व्याजदर वापरा
                                 </FormLabel>
                                 <FormDescription className="text-xs text-orange-600">
-                                  {selectedLoan && `मूळ दर: ${selectedLoan.interestRate}% ${selectedLoan.interestRateType === 'monthly' ? 'मासिक' : 'वार्षिक'}`}
+                                  {selectedLoan && `मूळ दर: ${formatRate(selectedLoan.interestRate)}% ${selectedLoan.interestRateType === 'monthly' ? 'मासिक' : 'वार्षिक'}`}
                                 </FormDescription>
                               </div>
                             </FormItem>
@@ -1797,7 +1803,7 @@ export default function Closure() {
                                 <td className="border border-gray-300 px-1 py-1 text-center text-xs font-bold">{entry.accountNumber}</td>
                                 <td className="border border-gray-300 px-1 py-1 text-center text-xs">{toShortDate(entry.loanDate)}</td>
                                 {showRateMonths && <td className="border border-gray-300 px-1 py-1 text-center text-xs">{entry.months}</td>}
-                                {showRateMonths && <td className="border border-gray-300 px-1 py-1 text-center text-xs">{entry.interestRate}%</td>}
+                                {showRateMonths && <td className="border border-gray-300 px-1 py-1 text-center text-xs">{formatRate(entry.interestRate)}%</td>}
                                 <td className="border border-gray-300 px-2 py-1 text-right text-xs font-bold">{Number(Math.round(entry.principalAmount)).toLocaleString('en-IN')}</td>
                                 <td className="border border-gray-300 px-2 py-1 text-right text-xs font-bold">{Number(Math.round(entry.chargesAmount)).toLocaleString('en-IN')}</td>
                                 <td className="border border-gray-300 px-1 py-1 text-center">
