@@ -581,22 +581,32 @@ export default function Closure() {
       </div>
       <div style="text-align:center;font-weight:700;font-size:${fontSize};margin-bottom:3px;text-decoration:underline;">Estimate</div>`;
 
-    const makeTableHead = () => `<thead>
+    const makeTableHead = () => `
+      <colgroup>
+        <col style="width:28px;">
+        <col style="width:auto;">
+        <col style="width:50px;">
+        <col style="width:56px;">
+        ${showCols ? `<col style="width:32px;"><col style="width:32px;">` : ''}
+        <col style="width:75px;">
+        <col style="width:65px;">
+      </colgroup>
+      <thead>
       <tr style="background:#f0f0f0;">
-        <th style="border:1px solid #555;padding:2px 3px;font-size:${fontSize};width:24px;text-align:center;">अ.नं.</th>
+        <th style="border:1px solid #555;padding:2px 3px;font-size:${fontSize};text-align:center;">अ.नं.</th>
         <th style="border:1px solid #555;padding:2px 4px;font-size:${fontSize};text-align:left;">तपशील</th>
-        <th style="border:1px solid #555;padding:2px 3px;font-size:${fontSize};width:46px;text-align:center;font-weight:700;">कोड नं</th>
-        <th style="border:1px solid #555;padding:2px 3px;font-size:${fontSize};width:52px;text-align:center;">दिनांक</th>
-        ${showCols ? `<th style="border:1px solid #555;padding:2px 2px;font-size:${fontSize};width:30px;text-align:center;"></th>
-        <th style="border:1px solid #555;padding:2px 2px;font-size:${fontSize};width:30px;text-align:center;"></th>` : ''}
-        <th style="border:1px solid #555;padding:2px 4px;font-size:${fontSize};width:72px;text-align:right;">बाजारमूल्य</th>
-        <th style="border:1px solid #555;padding:2px 4px;font-size:${fontSize};width:62px;text-align:right;">चार्जेस</th>
+        <th style="border:1px solid #555;padding:2px 3px;font-size:${fontSize};text-align:center;font-weight:700;">कोड नं</th>
+        <th style="border:1px solid #555;padding:2px 3px;font-size:${fontSize};text-align:center;">दिनांक</th>
+        ${showCols ? `<th style="border:1px solid #555;padding:2px 2px;font-size:${fontSize};text-align:center;"></th>
+        <th style="border:1px solid #555;padding:2px 2px;font-size:${fontSize};text-align:center;"></th>` : ''}
+        <th style="border:1px solid #555;padding:2px 4px;font-size:${fontSize};text-align:right;">बाजारमूल्य</th>
+        <th style="border:1px solid #555;padding:2px 4px;font-size:${fontSize};text-align:right;">चार्जेस</th>
       </tr>
     </thead>`;
 
     const makeRow = (entry: SummaryEntry, index: number) => `<tr>
       <td style="border:1px solid #555;padding:2px 3px;text-align:center;font-size:${fontSize};">${index + 1}</td>
-      <td style="border:1px solid #555;padding:2px 4px;font-size:${fontSize};"><div style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${entry.collateralDetails || '-'}</div></td>
+      <td style="border:1px solid #555;padding:2px 4px;font-size:${fontSize};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${entry.collateralDetails || '-'}</td>
       <td style="border:1px solid #555;padding:2px 3px;text-align:center;font-size:${fontSize};font-weight:700;">${entry.accountNumber}</td>
       <td style="border:1px solid #555;padding:2px 3px;text-align:center;font-size:${fontSize};">${toShortDate(entry.loanDate)}</td>
       ${showCols ? `<td style="border:1px solid #555;padding:2px 2px;text-align:center;font-size:${fontSize};">${entry.months}</td>
@@ -631,7 +641,7 @@ export default function Closure() {
       pagesHTML += `
       <div class="receipt-page" style="width:100%;padding:3mm 4mm;font-size:${fontSize};${p > 0 ? 'page-break-before:always;' : ''}">
         ${makeHeader(p + 1)}
-        <table style="width:100%;border-collapse:collapse;margin-top:2px;">
+        <table style="width:100%;border-collapse:collapse;table-layout:fixed;margin-top:2px;">
           ${makeTableHead()}
           <tbody>
             ${rows}
@@ -652,8 +662,8 @@ export default function Closure() {
       body { font-family:'Noto Sans Devanagari',sans-serif; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
       @page { size:210mm 148mm landscape; margin:1mm; }
       @media print { body { margin:0; } tr { page-break-inside:avoid; } }
-      table { border-collapse:collapse; width:100%; }
-      td, th { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+      table { border-collapse:collapse; width:100%; table-layout:fixed; }
+      td, th { -webkit-print-color-adjust:exact; print-color-adjust:exact; overflow:hidden; text-overflow:ellipsis; word-wrap:break-word; }
     </style></head><body>
     ${pagesHTML}
     </body></html>`;
@@ -746,6 +756,57 @@ export default function Closure() {
     }
   }, [summaryEntries, isMobile, generateMultiLoanReceiptHTML, showRateMonths]);
 
+  const createOffscreenReceiptContainer = useCallback((html: string): HTMLDivElement => {
+    const a5LandscapeWidthPx = 794;
+    const a5LandscapeHeightPx = 560;
+
+    const wrapper = document.createElement('div');
+    wrapper.style.position = 'absolute';
+    wrapper.style.left = '-9999px';
+    wrapper.style.top = '0';
+    wrapper.style.width = a5LandscapeWidthPx + 'px';
+    wrapper.style.minWidth = a5LandscapeWidthPx + 'px';
+    wrapper.style.maxWidth = a5LandscapeWidthPx + 'px';
+    wrapper.style.background = 'white';
+    wrapper.style.zIndex = '-9999';
+
+    const styleEl = document.createElement('style');
+    styleEl.textContent = `
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      body { font-family: 'Noto Sans Devanagari', sans-serif; }
+      .receipt-page {
+        width: ${a5LandscapeWidthPx}px !important;
+        min-width: ${a5LandscapeWidthPx}px !important;
+        max-width: ${a5LandscapeWidthPx}px !important;
+        height: ${a5LandscapeHeightPx}px !important;
+        overflow: hidden !important;
+        box-shadow: none !important;
+        margin: 0 !important;
+        font-size: 10px !important;
+        line-height: 1.5 !important;
+        box-sizing: border-box !important;
+      }
+      table {
+        border-collapse: collapse !important;
+        width: 100% !important;
+        table-layout: fixed !important;
+      }
+      td, th {
+        word-wrap: break-word !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+      }
+    `;
+    wrapper.appendChild(styleEl);
+
+    const contentDiv = document.createElement('div');
+    contentDiv.innerHTML = html;
+    wrapper.appendChild(contentDiv);
+
+    document.body.appendChild(wrapper);
+    return wrapper;
+  }, []);
+
   const downloadReceiptAsPDF = useCallback(async () => {
     try {
       if (!summaryReceiptHTML || summaryEntries.length === 0) {
@@ -753,37 +814,17 @@ export default function Closure() {
         return;
       }
 
-      const a5LandscapeWidthPx = 794;
-      const a5LandscapeHeightPx = 560;
-
-      const ROWS_PER_PAGE = 6;
-      const totalPages = Math.ceil(summaryEntries.length / ROWS_PER_PAGE);
-
-      const wrapper = document.createElement('div');
-      wrapper.style.position = 'absolute';
-      wrapper.style.left = '-9999px';
-      wrapper.style.top = '0';
-      wrapper.style.width = a5LandscapeWidthPx + 'px';
-      wrapper.style.minWidth = a5LandscapeWidthPx + 'px';
-      wrapper.style.maxWidth = a5LandscapeWidthPx + 'px';
-      wrapper.style.background = 'white';
-      wrapper.style.zIndex = '-9999';
-
-      const contentDiv = document.createElement('div');
-      contentDiv.innerHTML = summaryReceiptHTML;
-      wrapper.appendChild(contentDiv);
-      document.body.appendChild(wrapper);
-
+      const wrapper = createOffscreenReceiptContainer(summaryReceiptHTML);
       await new Promise(resolve => setTimeout(resolve, 300));
 
       const { default: html2canvas } = await import('html2canvas');
 
-      const pages = wrapper.querySelectorAll('.receipt-page');
+      const pages = wrapper.querySelectorAll('.receipt-page') as NodeListOf<HTMLElement>;
       const doc = new jsPDF({
         orientation: 'landscape',
         unit: 'mm',
         format: 'a5',
-        compress: true,
+        compress: false,
       });
 
       const a5W = 210;
@@ -791,13 +832,13 @@ export default function Closure() {
 
       if (pages.length > 0) {
         for (let i = 0; i < pages.length; i++) {
-          const page = pages[i] as HTMLElement;
+          const page = pages[i];
           const canvas = await html2canvas(page, {
-            scale: 3,
+            scale: 4,
             useCORS: true,
             logging: false,
             backgroundColor: '#ffffff',
-            width: a5LandscapeWidthPx,
+            imageTimeout: 0,
           });
           const imgData = canvas.toDataURL('image/png');
           if (i > 0) doc.addPage();
@@ -805,11 +846,11 @@ export default function Closure() {
         }
       } else {
         const canvas = await html2canvas(wrapper, {
-          scale: 3,
+          scale: 4,
           useCORS: true,
           logging: false,
           backgroundColor: '#ffffff',
-          width: a5LandscapeWidthPx,
+          imageTimeout: 0,
         });
         const imgData = canvas.toDataURL('image/png');
         doc.addImage(imgData, 'PNG', 0, 0, a5W, a5H);
@@ -825,7 +866,7 @@ export default function Closure() {
       console.error("PDF generation error:", error);
       toast({ title: "त्रुटी", description: "PDF तयार करण्यात समस्या आली", variant: "destructive" });
     }
-  }, [summaryReceiptHTML, summaryEntries, toast]);
+  }, [summaryReceiptHTML, summaryEntries, toast, createOffscreenReceiptContainer]);
 
   const onSubmit = useCallback(async (data: ClosureFormData) => {
     if (!selectedLoan || !calculationResult) {
