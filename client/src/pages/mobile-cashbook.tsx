@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Minus, ChevronLeft, ChevronRight, Search, Edit, Edit2, Trash2, Home, Minimize2, Maximize, User, RefreshCw } from "lucide-react";
+import { Plus, Minus, ChevronLeft, ChevronRight, Search, Edit, Edit2, Trash2, Home, Minimize2, Maximize, User, RefreshCw, X, ArrowDown } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -1093,64 +1093,65 @@ function MobileCashbook() {
 
           {/* Custom Date Range Dialog */}
           {isDateRangeOpen && (
-            <div className="custom-date-range bg-blue-500 p-4 rounded-lg mb-4">
-              <div className="text-white text-center font-bold mb-3">
-                📅 या तारखेपासून या तारखेपर्यंत
+            <div className="custom-date-range mx-2 mb-4 bg-white rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.12)] border border-gray-100 overflow-hidden animate-in slide-in-from-top-2 duration-200">
+              <div className="bg-gradient-to-r from-blue-600 to-blue-500 px-4 py-3 flex items-center justify-between">
+                <span className="text-white font-semibold text-sm">तारीख निवडा</span>
+                <button onClick={() => setIsDateRangeOpen(false)} className="text-white/80 hover:text-white transition-colors">
+                  <X className="h-4 w-4" />
+                </button>
               </div>
-              <div className="space-y-3 mb-4">
-                <div className="bg-white rounded-lg p-3 border-2 border-blue-200 flex items-center gap-3">
-                  <div className="text-sm text-blue-600 font-semibold whitespace-nowrap">
-                    पासून
-                  </div>
+              <div className="p-4 space-y-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">पासून</label>
                   <Input
                     type="date"
                     value={customDateRange.startDate}
                     onChange={(e) => setCustomDateRange(prev => ({ ...prev, startDate: e.target.value }))}
-                    className="font-inter text-gray-900 flex-1"
+                    className="font-inter text-gray-900 h-11 text-base border-gray-200 rounded-xl focus:border-blue-500 focus:ring-blue-500/20"
                     style={{ colorScheme: 'light' }}
                   />
                 </div>
-                <div className="bg-white rounded-lg p-3 border-2 border-blue-200 flex items-center gap-3">
-                  <div className="text-sm text-blue-600 font-semibold whitespace-nowrap">
-                    पर्यंत
-                  </div>
+                <div className="flex items-center gap-2 px-2">
+                  <div className="flex-1 h-px bg-gray-200" />
+                  <ArrowDown className="h-4 w-4 text-gray-400" />
+                  <div className="flex-1 h-px bg-gray-200" />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">पर्यंत</label>
                   <Input
                     type="date"
                     value={customDateRange.endDate}
                     onChange={(e) => setCustomDateRange(prev => ({ ...prev, endDate: e.target.value }))}
-                    className="font-inter text-gray-900 flex-1"
+                    className="font-inter text-gray-900 h-11 text-base border-gray-200 rounded-xl focus:border-blue-500 focus:ring-blue-500/20"
                     style={{ colorScheme: 'light' }}
                   />
                 </div>
               </div>
-              <div className="flex gap-2">
+              <div className="px-4 pb-4 flex gap-3">
                 <Button
                   onClick={() => setIsDateRangeOpen(false)}
                   variant="outline"
-                  className="flex-1 bg-white text-blue-600 border-white hover:bg-gray-100"
+                  className="flex-1 h-11 rounded-xl border-gray-200 text-gray-600 hover:bg-gray-50 font-medium"
                 >
-रद्द
+                  रद्द करा
                 </Button>
                 <Button
                   onClick={() => {
                     if (customDateRange.startDate && customDateRange.endDate) {
-                      // CRITICAL FIX: Don't change viewPeriod to avoid freeze
                       setSearchFilters(prev => ({
                         ...prev,
                         dateFrom: customDateRange.startDate,
                         dateTo: customDateRange.endDate
                       }));
                       setIsDateRangeOpen(false);
-                      
-                      // Clear cache for custom date range
                       queryClient.invalidateQueries({ queryKey: ["/api/cash-transactions"] });
                       queryClient.invalidateQueries({ queryKey: ["/api/cash-balance"] });
                     }
                   }}
                   disabled={!customDateRange.startDate || !customDateRange.endDate}
-                  className="flex-1 bg-white text-blue-600 hover:bg-gray-100 font-bold"
+                  className="flex-1 h-11 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-sm"
                 >
-OK ✓
+                  शोधा
                 </Button>
               </div>
             </div>
