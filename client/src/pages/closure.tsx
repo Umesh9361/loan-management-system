@@ -79,22 +79,48 @@ export default function Closure() {
   const [showLoanList, setShowLoanList] = useState(false);
   const [selectedSearchGroup, setSelectedSearchGroup] = useState<string>("all");
   
-  const [summaryEntries, setSummaryEntries] = useState<SummaryEntry[]>([]);
-  const summaryEntriesRef = useRef<SummaryEntry[]>([]);
-  const [summaryCounter, setSummaryCounter] = useState(1);
-  const [activeTab, setActiveTab] = useState<string>("closure");
+  const SUMMARY_STORAGE_KEY = 'closure_summary_entries';
+  const SUMMARY_COUNTER_KEY = 'closure_summary_counter';
+
+  const [summaryEntries, setSummaryEntries] = useState<SummaryEntry[]>(() => {
+    try {
+      const saved = sessionStorage.getItem(SUMMARY_STORAGE_KEY);
+      return saved ? JSON.parse(saved) : [];
+    } catch { return []; }
+  });
+  const summaryEntriesRef = useRef<SummaryEntry[]>(summaryEntries);
+  const [summaryCounter, setSummaryCounter] = useState(() => {
+    try {
+      const saved = sessionStorage.getItem(SUMMARY_COUNTER_KEY);
+      return saved ? Number(saved) : 1;
+    } catch { return 1; }
+  });
+  const [activeTab, setActiveTab] = useState<string>(() => {
+    try {
+      const saved = sessionStorage.getItem(SUMMARY_STORAGE_KEY);
+      const entries = saved ? JSON.parse(saved) : [];
+      return entries.length > 0 ? "summary" : "closure";
+    } catch { return "closure"; }
+  });
   const [showSummaryReceipt, setShowSummaryReceipt] = useState(false);
   const [summaryReceiptHTML, setSummaryReceiptHTML] = useState<string | null>(null);
-  // Photo management moved to loan creation form
   
-  // Check if loanId passed in URL
   const urlParams = new URLSearchParams(window.location.search);
   const loanIdFromUrl = urlParams.get('loanId');
   const hideSearch = !!loanIdFromUrl;
 
   useEffect(() => {
     summaryEntriesRef.current = summaryEntries;
+    try {
+      sessionStorage.setItem(SUMMARY_STORAGE_KEY, JSON.stringify(summaryEntries));
+    } catch {}
   }, [summaryEntries]);
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(SUMMARY_COUNTER_KEY, String(summaryCounter));
+    } catch {}
+  }, [summaryCounter]);
 
   const { data: activeLoans, isLoading } = useQuery({
     queryKey: ["/api/loans"],
