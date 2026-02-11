@@ -660,7 +660,7 @@ export default function Closure() {
     <style>
       * { margin:0; padding:0; box-sizing:border-box; }
       body { font-family:'Noto Sans Devanagari',sans-serif; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
-      @page { size:210mm 148mm landscape; margin:1mm; }
+      @page { size:210mm 74mm landscape; margin:1mm; }
       @media print { body { margin:0; } tr { page-break-inside:avoid; } }
       table { border-collapse:collapse; width:100%; table-layout:fixed; }
       td, th { -webkit-print-color-adjust:exact; print-color-adjust:exact; overflow:hidden; text-overflow:ellipsis; word-wrap:break-word; }
@@ -758,7 +758,7 @@ export default function Closure() {
 
   const createOffscreenReceiptContainer = useCallback((html: string): HTMLDivElement => {
     const a5LandscapeWidthPx = 794;
-    const a5LandscapeHeightPx = 560;
+    const a5LandscapeHeightPx = 280;
 
     const wrapper = document.createElement('div');
     wrapper.style.position = 'absolute';
@@ -823,12 +823,12 @@ export default function Closure() {
       const doc = new jsPDF({
         orientation: 'landscape',
         unit: 'mm',
-        format: 'a5',
+        format: [210, 74],
         compress: false,
       });
 
       const a5W = 210;
-      const a5H = 148;
+      const a5H = 74;
 
       if (pages.length > 0) {
         for (let i = 0; i < pages.length; i++) {
