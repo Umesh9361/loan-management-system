@@ -1097,30 +1097,28 @@ function MobileCashbook() {
               <div className="text-white text-center font-bold mb-3">
                 📅 या तारखेपासून या तारखेपर्यंत
               </div>
-              <div className="grid grid-cols-2 gap-3 mb-4">
-                <div className="bg-white rounded-lg p-3 border-2 border-blue-200">
-                  <div className="text-sm text-blue-600 font-semibold mb-2">
-                    सुरुवाती तारीख
+              <div className="space-y-3 mb-4">
+                <div className="bg-white rounded-lg p-3 border-2 border-blue-200 flex items-center gap-3">
+                  <div className="text-sm text-blue-600 font-semibold whitespace-nowrap">
+                    पासून
                   </div>
                   <Input
                     type="date"
                     value={customDateRange.startDate}
                     onChange={(e) => setCustomDateRange(prev => ({ ...prev, startDate: e.target.value }))}
-                    placeholder="तारीख निवडा"
-                    className="font-inter text-gray-900"
+                    className="font-inter text-gray-900 flex-1"
                     style={{ colorScheme: 'light' }}
                   />
                 </div>
-                <div className="bg-white rounded-lg p-3 border-2 border-blue-200">
-                  <div className="text-sm text-blue-600 font-semibold mb-2">
-                    शेवटची तारीख
+                <div className="bg-white rounded-lg p-3 border-2 border-blue-200 flex items-center gap-3">
+                  <div className="text-sm text-blue-600 font-semibold whitespace-nowrap">
+                    पर्यंत
                   </div>
                   <Input
                     type="date"
                     value={customDateRange.endDate}
                     onChange={(e) => setCustomDateRange(prev => ({ ...prev, endDate: e.target.value }))}
-                    placeholder="तारीख निवडा"
-                    className="font-inter text-gray-900"
+                    className="font-inter text-gray-900 flex-1"
                     style={{ colorScheme: 'light' }}
                   />
                 </div>
