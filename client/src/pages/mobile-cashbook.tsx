@@ -61,9 +61,10 @@ function MobileCashbook() {
   // Balance accuracy check for UI display
   const isBalanceAccurate = true; // Default to true for UI display
   const [isDateRangeOpen, setIsDateRangeOpen] = useState(false);
+  const todayStr = new Date().toISOString().split('T')[0];
   const [customDateRange, setCustomDateRange] = useState({
-    startDate: "",
-    endDate: ""
+    startDate: todayStr,
+    endDate: todayStr
   });
   const [searchDisplayText, setSearchDisplayText] = useState("");
   const [searchFilters, setSearchFilters] = useState({
