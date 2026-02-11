@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -80,6 +80,7 @@ export default function Closure() {
   const [selectedSearchGroup, setSelectedSearchGroup] = useState<string>("all");
   
   const [summaryEntries, setSummaryEntries] = useState<SummaryEntry[]>([]);
+  const summaryEntriesRef = useRef<SummaryEntry[]>([]);
   const [summaryCounter, setSummaryCounter] = useState(1);
   const [activeTab, setActiveTab] = useState<string>("closure");
   const [showSummaryReceipt, setShowSummaryReceipt] = useState(false);
@@ -90,6 +91,10 @@ export default function Closure() {
   const urlParams = new URLSearchParams(window.location.search);
   const loanIdFromUrl = urlParams.get('loanId');
   const hideSearch = !!loanIdFromUrl;
+
+  useEffect(() => {
+    summaryEntriesRef.current = summaryEntries;
+  }, [summaryEntries]);
 
   const { data: activeLoans, isLoading } = useQuery({
     queryKey: ["/api/loans"],
@@ -560,8 +565,8 @@ export default function Closure() {
     const totalPrincipal = entries.reduce((sum, e) => sum + e.principalAmount, 0);
     const totalCharges = entries.reduce((sum, e) => sum + e.chargesAmount, 0);
     const grandTotal = totalPrincipal + totalCharges;
-    const firstEntry = entries[0];
-    const closureDateFormatted = DateUtils.isoToIndianDate(firstEntry.closureDate);
+    const lastEntry = entries[entries.length - 1];
+    const closureDateFormatted = DateUtils.isoToIndianDate(lastEntry.closureDate);
     const totalColSpan = showCols ? 6 : 4;
     const grandTotalColSpan = showCols ? 7 : 5;
 
@@ -571,8 +576,8 @@ export default function Closure() {
     const makeHeader = (pageNum: number) => `
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px;">
         <div>
-          <div style="font-weight:700;font-size:${fontSize};">${firstEntry.borrowerName}</div>
-          <div style="font-size:${fontSize};color:#444;">${firstEntry.borrowerAddress || ''}</div>
+          <div style="font-weight:700;font-size:${fontSize};">${lastEntry.borrowerName}</div>
+          <div style="font-size:${fontSize};color:#444;">${lastEntry.borrowerAddress || ''}</div>
         </div>
         <div style="text-align:right;">
           <div style="font-size:${fontSize};">तारीख: ${closureDateFormatted}</div>
@@ -735,8 +740,9 @@ export default function Closure() {
   }, []);
 
   const handleGenerateSummaryReceipt = useCallback(() => {
-    if (summaryEntries.length === 0) return;
-    const html = generateMultiLoanReceiptHTML(summaryEntries, showRateMonths);
+    const currentEntries = summaryEntriesRef.current;
+    if (currentEntries.length === 0) return;
+    const html = generateMultiLoanReceiptHTML(currentEntries, showRateMonths);
     if (isMobile) {
       setSummaryReceiptHTML(html);
       setShowSummaryReceipt(true);
@@ -754,7 +760,7 @@ export default function Closure() {
         }
       }
     }
-  }, [summaryEntries, isMobile, generateMultiLoanReceiptHTML, showRateMonths]);
+  }, [isMobile, generateMultiLoanReceiptHTML, showRateMonths]);
 
   const createOffscreenReceiptContainer = useCallback((html: string): HTMLDivElement => {
     const a5LandscapeWidthPx = 794;
@@ -809,7 +815,8 @@ export default function Closure() {
 
   const downloadReceiptAsPDF = useCallback(async () => {
     try {
-      if (!summaryReceiptHTML || summaryEntries.length === 0) {
+      const currentEntries = summaryEntriesRef.current;
+      if (!summaryReceiptHTML || currentEntries.length === 0) {
         toast({ title: "त्रुटी", description: "पावती सापडली नाही", variant: "destructive" });
         return;
       }
@@ -858,7 +865,7 @@ export default function Closure() {
 
       document.body.removeChild(wrapper);
 
-      const borrowerName = summaryEntries[0]?.borrowerName || 'पावती';
+      const borrowerName = currentEntries[currentEntries.length - 1]?.borrowerName || 'पावती';
       doc.save(`पावती_${borrowerName}.pdf`);
 
       toast({ title: "यशस्वी", description: "PDF डाउनलोड झाले" });
@@ -866,7 +873,7 @@ export default function Closure() {
       console.error("PDF generation error:", error);
       toast({ title: "त्रुटी", description: "PDF तयार करण्यात समस्या आली", variant: "destructive" });
     }
-  }, [summaryReceiptHTML, summaryEntries, toast, createOffscreenReceiptContainer]);
+  }, [summaryReceiptHTML, toast, createOffscreenReceiptContainer]);
 
   const onSubmit = useCallback(async (data: ClosureFormData) => {
     if (!selectedLoan || !calculationResult) {
@@ -1736,13 +1743,13 @@ export default function Closure() {
                       {summaryEntries.length > 0 && (
                         <div className="flex justify-between items-start px-3 pt-2 pb-1">
                           <div>
-                            <div className="font-bold text-sm">{summaryEntries[0].borrowerName}</div>
-                            {summaryEntries[0].borrowerAddress && (
-                              <div className="text-xs text-gray-500">{summaryEntries[0].borrowerAddress}</div>
+                            <div className="font-bold text-sm">{summaryEntries[summaryEntries.length - 1].borrowerName}</div>
+                            {summaryEntries[summaryEntries.length - 1].borrowerAddress && (
+                              <div className="text-xs text-gray-500">{summaryEntries[summaryEntries.length - 1].borrowerAddress}</div>
                             )}
                           </div>
                           <div className="text-xs text-gray-500 text-right">
-                            तारीख: {DateUtils.isoToIndianDate(summaryEntries[0].closureDate)}
+                            तारीख: {DateUtils.isoToIndianDate(summaryEntries[summaryEntries.length - 1].closureDate)}
                           </div>
                         </div>
                       )}
