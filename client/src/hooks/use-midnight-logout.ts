@@ -16,6 +16,8 @@ export function useMidnightLogout(isLoggedIn: boolean) {
     if (checkIntervalRef.current) { clearInterval(checkIntervalRef.current); checkIntervalRef.current = null; }
 
     try {
+      sessionStorage.removeItem('closure_summary_entries');
+      sessionStorage.removeItem('closure_summary_counter');
       await AuthService.logout();
     } catch (e) {
       console.error("Midnight logout error:", e);
