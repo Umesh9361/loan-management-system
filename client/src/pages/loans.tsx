@@ -2220,10 +2220,7 @@ function Loans() {
 
       {/* Search and Filter Section */}
       <Card className="bg-blue-50 border-blue-200">
-        <CardHeader>
-          <CardTitle className="text-blue-800">ड्युअल सर्च सिस्टम</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-4 pt-4">
           {/* Smart Text Search */}
           <div>
             <Label htmlFor="smart-search" className="text-blue-700 font-medium">
@@ -2234,7 +2231,7 @@ function Loans() {
                 <Input
                   ref={searchInputRef}
                   id="smart-search"
-                  placeholder="Smart Text Search (Alt+F फोकस)"
+                  placeholder="शोधा..."
                   value={searchQuery}
                   onChange={(e) => {
                     setSearchQuery(e.target.value);
@@ -2381,7 +2378,7 @@ function Loans() {
           <CardHeader>
             <CardTitle>
               {searchQuery ? 
-                `स्मार्ट सर्च निकाल: "${searchQuery}" (${Array.isArray(filteredLoans) ? filteredLoans.length : 0} कर्जे आढळली)` :
+                `शोध निकाल: "${searchQuery}" (${Array.isArray(filteredLoans) ? filteredLoans.length : 0} कर्जे आढळली)` :
                 `सर्व कर्जाची यादी (${Array.isArray(filteredLoans) ? filteredLoans.length : 0} एकूण कर्जे)`
               }
             </CardTitle>
