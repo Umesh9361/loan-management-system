@@ -1018,7 +1018,17 @@ function MobileCashbook() {
     
     return calculatedBalance;
   }, [dateWiseBalance, openingBalance, totals, viewPeriod, currentDate, searchFilters.dateFrom, searchFilters.dateTo, dailyBalanceData, universalBalanceData]);
-  
+
+  const correctOpeningBalance = useMemo(() => {
+    if (viewPeriod === 'daily' && dailyBalanceData) {
+      return dailyBalanceData.openingBalance;
+    }
+    if (universalBalanceData) {
+      return universalBalanceData.openingBalance;
+    }
+    return dateWiseBalance?.openingBalance || openingBalance?.openingBalance || 0;
+  }, [viewPeriod, dailyBalanceData, universalBalanceData, dateWiseBalance, openingBalance]);
+
   // MEMOIZED loan transaction count
   const loanTransactionCount = useMemo(() => 
     transactionsList.filter(t => t.category === 'loan_disbursement' || t.category === 'loan_closure' || t.category === 'loan_repayment').length,
@@ -1372,14 +1382,8 @@ OK ✓
               </div>
               <div className="text-sm opacity-90">
                 {searchFilters.dateFrom && searchFilters.dateTo ? 
-                  `कस्टम रेंज: ओपनिंग ₹${(openingBalance?.openingBalance || 0).toLocaleString('en-IN')}` :
-                  `आरंभिक शिल्लक: ₹${(
-                    viewPeriod === 'daily' && dailyBalanceData 
-                      ? dailyBalanceData.openingBalance 
-                      : universalBalanceData 
-                        ? universalBalanceData.openingBalance 
-                        : (dateWiseBalance?.openingBalance || openingBalance?.openingBalance || 0)
-                  ).toLocaleString('en-IN')}`
+                  `कस्टम रेंज: ओपनिंग ₹${correctOpeningBalance.toLocaleString('en-IN')}` :
+                  `आरंभिक शिल्लक: ₹${correctOpeningBalance.toLocaleString('en-IN')}`
                 }
               </div>
             </div>
@@ -1576,34 +1580,20 @@ OK ✓
               <div></div>
               <div></div>
               <div className="font-bold text-blue-800 text-center">
-                ₹{(
-                  viewPeriod === 'daily' && dailyBalanceData 
-                    ? dailyBalanceData.openingBalance 
-                    : universalBalanceData 
-                      ? universalBalanceData.openingBalance 
-                      : (dateWiseBalance?.openingBalance || openingBalance?.openingBalance || 0)
-                ).toLocaleString('en-IN')}
+                ₹{correctOpeningBalance.toLocaleString('en-IN')}
               </div>
             </div>
 
             {/* Transaction Rows */}
-            {isLoading ? (
+            {isLoading && transactionsList.length === 0 ? (
               <div className="p-8 text-center">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
                 <p className="mt-2 text-gray-600">लोड होत आहे...</p>
               </div>
-            ) : transactionsList.length === 0 ? (
-              <div className="p-8 text-center text-gray-500">आजचे कोणतेही व्यवहार नाहीत</div>
+            ) : !isLoading && transactionsList.length === 0 ? (
+              <div className="p-8 text-center text-gray-500">या कालावधीत कोणतेही व्यवहार नाहीत</div>
             ) : (
               transactionsList.map((transaction: any, index: number) => {
-                const correctOpeningBalance = (
-                  viewPeriod === 'daily' && dailyBalanceData 
-                    ? dailyBalanceData.openingBalance 
-                    : universalBalanceData 
-                      ? universalBalanceData.openingBalance 
-                      : (dateWiseBalance?.openingBalance || openingBalance?.openingBalance || 0)
-                );
-
                 const runningBalance = correctOpeningBalance + 
                   transactionsList.slice(0, index + 1).reduce((sum, t) => {
                     return sum + (t.transactionType === 'cash_in' ? Number(t.amount) : -Number(t.amount));
@@ -1834,13 +1824,7 @@ OK ✓
               <div className="border-t border-gray-600 pt-3">
                 <div className="flex justify-between text-sm">
                   <span className="opacity-90">🏦 आरंभिक शिल्लक:</span>
-                  <span className="font-medium">₹{(
-                    viewPeriod === 'daily' && dailyBalanceData 
-                      ? dailyBalanceData.openingBalance 
-                      : universalBalanceData 
-                        ? universalBalanceData.openingBalance 
-                        : (dateWiseBalance?.openingBalance || openingBalance?.openingBalance || 0)
-                  ).toLocaleString('en-IN')}</span>
+                  <span className="font-medium">₹{correctOpeningBalance.toLocaleString('en-IN')}</span>
                 </div>
                 <div className="flex justify-between text-sm mt-1">
                   <span className="opacity-90">🔄 निव्वळ फरक:</span>

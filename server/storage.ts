@@ -1454,27 +1454,8 @@ export class DatabaseStorage implements IStorage {
     method: string;
   }> {
     try {
-      console.log('🏦 UNIVERSAL BALANCE CALC:', { startDate, endDate, viewPeriod });
-      
-      // Get opening balance: All transactions before the start date
-      const transactionsBeforeStartDate = await db.select()
-        .from(cashTransactions)
-        .where(
-          and(
-            eq(cashTransactions.tenantId, tenantId),
-            sql`DATE(${cashTransactions.transactionDate}) < ${startDate}`
-          )
-        );
-
-      let openingBalance = 0;
-      transactionsBeforeStartDate.forEach(transaction => {
-        const amount = Number(transaction.amount) || 0;
-        if (transaction.transactionType === 'cash_in') {
-          openingBalance += amount;
-        } else {
-          openingBalance -= amount;
-        }
-      });
+      // Get opening balance using centralized function for consistency across all views
+      const openingBalance = await this.getCashBalanceBeforeDate(tenantId, startDate);
 
       // Get all transactions within the period (startDate to endDate inclusive)
       const periodTransactions = await db.select()
@@ -1504,19 +1485,6 @@ export class DatabaseStorage implements IStorage {
       const netDifference = periodCashIn - periodCashOut;
       const closingBalance = openingBalance + netDifference;
       
-      console.log('🏦 UNIVERSAL BALANCE CALCULATION:', {
-        startDate,
-        endDate,
-        viewPeriod,
-        transactionsBeforeCount: transactionsBeforeStartDate.length,
-        openingBalance,
-        periodCashIn,
-        periodCashOut,
-        netDifference,
-        closingBalance,
-        periodTransactionCount: periodTransactions.length
-      });
-
       return {
         startDate,
         endDate,
@@ -1903,10 +1871,8 @@ export class DatabaseStorage implements IStorage {
           }
         });
         
-        // CRITICAL FIX: If no cash accounts exist, initialize with 0 opening balance
         if (cashAccounts.length === 0) {
           baseOpeningBalance = 0;
-          console.log('💰 SETUP: No cash accounts found, initialized opening balance to 0');
         }
 
         // Cache the result
@@ -1929,24 +1895,20 @@ export class DatabaseStorage implements IStorage {
       // Case 2: If beforeDate is before opening balance date  
       // Return the opening balance as no transactions could have occurred yet
       if (openingBalanceDate && openingBalanceDate !== null && beforeDate < openingBalanceDate) {
-        console.log(`💰 FAST: Before opening date - returning opening balance: ${baseOpeningBalance}`);
-        // Since account wasn't opened yet, return the opening balance that was set when account was created
-        // This represents the initial capital/balance the account started with
         return baseOpeningBalance;
       }
 
       // Case 3: If beforeDate is after opening balance date
       // Start with base opening balance + all transactions from opening date to before date
       if (openingBalanceDate && openingBalanceDate !== null && beforeDate > openingBalanceDate) {
-        console.log(`💰 REDESIGNED: After opening date - starting with base + transactions`);
         
         const transactionsFromOpeningToBeforeDate = await db.select()
           .from(cashTransactions)
           .where(
             and(
               eq(cashTransactions.tenantId, tenantId),
-              sql`${cashTransactions.transactionDate} >= ${openingBalanceDate}`,
-              sql`${cashTransactions.transactionDate} < ${beforeDate}`
+              sql`DATE(${cashTransactions.transactionDate}) >= ${openingBalanceDate}`,
+              sql`DATE(${cashTransactions.transactionDate}) < ${beforeDate}`
             )
           );
 
@@ -1963,35 +1925,22 @@ export class DatabaseStorage implements IStorage {
         });
 
         const result = baseOpeningBalance + totalCashIn - totalCashOut;
-        
-        console.log(`💰 REDESIGNED: After opening date result:`, {
-          baseOpeningBalance,
-          totalCashIn,
-          totalCashOut,
-          result,
-          transactionCount: transactionsFromOpeningToBeforeDate.length
-        });
-        
         return result;
       }
 
-      // Case 4: No opening balance date - start fresh with 0 balance
-      console.log(`💰 REDESIGNED: No opening date - starting fresh from 0`);
-      
-      // CRITICAL FIX: When no cash accounts exist, return 0 opening balance
-      if (baseOpeningBalance === 0) {
-        console.log(`💰 SETUP COMPLETE: Fresh start - 0 opening balance for new system`);
-        return 0;
-      }
-      
+      // Case 4: No opening balance date - calculate from transactions before date
       const allTransactionsBeforeDate = await db.select()
         .from(cashTransactions)
         .where(
           and(
             eq(cashTransactions.tenantId, tenantId),
-            sql`${cashTransactions.transactionDate} < ${beforeDate}`
+            sql`DATE(${cashTransactions.transactionDate}) < ${beforeDate}`
           )
         );
+
+      if (allTransactionsBeforeDate.length === 0) {
+        return baseOpeningBalance;
+      }
 
       let totalCashIn = 0;
       let totalCashOut = 0;
@@ -2006,7 +1955,6 @@ export class DatabaseStorage implements IStorage {
       });
 
       const finalResult = baseOpeningBalance + totalCashIn - totalCashOut;
-      console.log(`💰 REDESIGNED: Final result: ${finalResult}`);
       return finalResult;
       
     } catch (error) {

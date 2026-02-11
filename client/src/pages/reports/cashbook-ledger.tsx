@@ -30,13 +30,18 @@ export default function CashbookLedger() {
     },
   });
 
-  // Fetch cash balance
   const { data: balanceData } = useQuery({
-    queryKey: ["/api/cash-balance"],
+    queryKey: ['/api/cash-balance', { date: dateFrom }],
+    queryFn: async () => {
+      const response = await fetch(`/api/cash-balance?date=${dateFrom}`, { credentials: 'include' });
+      if (!response.ok) throw new Error('Failed to fetch balance');
+      return response.json();
+    },
+    enabled: !!dateFrom,
   });
 
   const transactionsList = Array.isArray(transactions) ? transactions : [];
-  const openingBalance = (balanceData as any)?.balance || 0;
+  const openingBalance = (balanceData as any)?.openingBalance || 0;
 
   // Process transactions for cashbook format
   const processedEntries = transactionsList.map((t: any) => {
@@ -62,10 +67,9 @@ export default function CashbookLedger() {
     }
   });
 
-  // Calculate totals
-  const totalCredit = processedEntries.reduce((sum, e) => sum + e.creditAmount, 0) + openingBalance;
+  const totalCredit = processedEntries.reduce((sum, e) => sum + e.creditAmount, 0);
   const totalDebit = processedEntries.reduce((sum, e) => sum + e.debitAmount, 0);
-  const closingBalance = totalCredit - totalDebit;
+  const closingBalance = openingBalance + totalCredit - totalDebit;
 
   // Print functionality
   const handlePrint = () => {

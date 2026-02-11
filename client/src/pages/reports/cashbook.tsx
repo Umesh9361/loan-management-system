@@ -66,9 +66,14 @@ function CashBookReport() {
     }
   });
 
-  // Fetch cash balance for opening balance
   const { data: cashBalance } = useQuery({
-    queryKey: [`/api/cash-balance?date=${dateFilters.dateFrom}`]
+    queryKey: ['/api/cash-balance', { date: dateFilters.dateFrom }],
+    queryFn: async () => {
+      const response = await fetch(`/api/cash-balance?date=${dateFilters.dateFrom}`, { credentials: 'include' });
+      if (!response.ok) throw new Error('Failed to fetch balance');
+      return response.json();
+    },
+    enabled: !!dateFilters.dateFrom,
   });
 
   const handleFilter = () => {
