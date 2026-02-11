@@ -84,8 +84,8 @@ function Loans() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [dateFilter, setDateFilter] = useState({
     groupId: "all",
-    dateFrom: "",
-    dateTo: "",
+    dateFrom: DateUtils.formatForInput(new Date()),
+    dateTo: DateUtils.formatForInput(new Date()),
   });
   // Removed isSearchActive - simplified search logic
   const [selectedRowIndex, setSelectedRowIndex] = useState<number>(-1);
@@ -2354,8 +2354,8 @@ function Loans() {
                 setStatusFilter("all");
                 setDateFilter({
                   groupId: "all",
-                  dateFrom: "",
-                  dateTo: "",
+                  dateFrom: DateUtils.formatForInput(new Date()),
+                  dateTo: DateUtils.formatForInput(new Date()),
                 });
                 // Reset completed - no need for search state
                 setSelectedRowIndex(-1);
