@@ -120,74 +120,49 @@ function MobileCashbook() {
   // Dual entry toggle for mobile quick entry
   // Removed dual entry state - using direct party selection instead
 
-  // Calculate date range based on period
   const getDateRange = () => {
-    const start = new Date(currentDate);
-    const end = new Date(currentDate);
-    
+    const dateStr = currentDate.toISOString().split('T')[0];
+    const [y, m, d] = dateStr.split('-').map(Number);
+
     switch (viewPeriod) {
       case 'daily':
-        // Same day
-        break;
-      case 'weekly':
-        start.setDate(currentDate.getDate() - currentDate.getDay()); // Start of week
-        end.setDate(start.getDate() + 6); // End of week
-        break;
-      case 'monthly':
-        start.setDate(1); // Start of month
-        end.setMonth(currentDate.getMonth() + 1, 0); // End of month
-        break;
+        return { from: dateStr, to: dateStr };
+      case 'weekly': {
+        const ref = new Date(Date.UTC(y, m - 1, d));
+        const dow = ref.getUTCDay();
+        const startD = new Date(Date.UTC(y, m - 1, d - dow));
+        const endD = new Date(Date.UTC(y, m - 1, d - dow + 6));
+        return {
+          from: startD.toISOString().split('T')[0],
+          to: endD.toISOString().split('T')[0]
+        };
+      }
+      case 'monthly': {
+        const lastDay = new Date(Date.UTC(y, m, 0)).getUTCDate();
+        return {
+          from: `${y}-${String(m).padStart(2, '0')}-01`,
+          to: `${y}-${String(m).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`
+        };
+      }
       case 'yearly':
-        start.setMonth(0, 1); // Start of year
-        end.setMonth(11, 31); // End of year
-        break;
+        return {
+          from: `${y}-01-01`,
+          to: `${y}-12-31`
+        };
+      default:
+        return { from: dateStr, to: dateStr };
     }
-    
-    return {
-      from: start.toISOString().split('T')[0],
-      to: end.toISOString().split('T')[0]
-    };
   };
 
   // Get opening balance date based on period
   const getOpeningBalanceDate = () => {
     // CRITICAL: For custom date range, return one day before the start date
-    if (searchFilters.dateFrom && searchFilters.dateTo) {
-      const [year, month, day] = searchFilters.dateFrom.split('-').map(Number);
-      
-      let openingYear = year, openingMonth = month, openingDay = day - 1;
-      
-      if (openingDay < 1) {
-        openingMonth = month - 1;
-        if (openingMonth < 1) {
-          openingYear = year - 1;
-          openingMonth = 12;
-        }
-        const lastDay = new Date(openingYear, openingMonth, 0).getDate();
-        openingDay = lastDay;
-      }
-      
-      return `${openingYear}-${String(openingMonth).padStart(2, '0')}-${String(openingDay).padStart(2, '0')}`;
-    }
-    
-    // For period-based views, get the day before the period start
-    const dateRange = getDateRange();
-    const [year, month, day] = dateRange.from.split('-').map(Number);
-    
-    let openingYear = year, openingMonth = month, openingDay = day - 1;
-    
-    // Handle month/year boundaries
-    if (openingDay < 1) {
-      openingMonth = month - 1;
-      if (openingMonth < 1) {
-        openingYear = year - 1;
-        openingMonth = 12;
-      }
-      const lastDay = new Date(openingYear, openingMonth, 0).getDate();
-      openingDay = lastDay;
-    }
-    
-    return `${openingYear}-${String(openingMonth).padStart(2, '0')}-${String(openingDay).padStart(2, '0')}`;
+    const startDateStr = (searchFilters.dateFrom && searchFilters.dateTo)
+      ? searchFilters.dateFrom
+      : getDateRange().from;
+    const [y, m, d] = startDateStr.split('-').map(Number);
+    const prevDay = new Date(Date.UTC(y, m - 1, d - 1));
+    return prevDay.toISOString().split('T')[0];
   };
 
   const dateRange = getDateRange();
@@ -271,116 +246,81 @@ function MobileCashbook() {
     return combinedSearch;
   };
   
-  // Direct fetch without React Query interference
+  const buildFetchParams = React.useCallback(() => {
+    const params = new URLSearchParams();
+    const dateRange = getDateRange();
+    const fromDate = searchFilters.dateFrom || dateRange.from;
+    const toDate = searchFilters.dateTo || dateRange.to;
+    params.append('dateFrom', fromDate);
+    params.append('dateTo', toDate);
+    params.append('includeAll', 'true');
+    if (searchFilters.search) params.append('search', searchFilters.search);
+    if (searchFilters.amount) params.append('amount', searchFilters.amount);
+    if (searchFilters.transactionType) params.append('transactionType', searchFilters.transactionType);
+    return params;
+  }, [viewPeriod, currentDate, searchFilters]);
+
   React.useEffect(() => {
+    const controller = new AbortController();
+    let latestRequestId = 0;
+
     const fetchTransactions = async () => {
+      const requestId = ++latestRequestId;
       try {
         setIsLoading(true);
-        const params = new URLSearchParams();
-        
-        // FIXED: Use proper date range for each view period
-        const dateRange = getDateRange();
-        const fromDate = searchFilters.dateFrom || dateRange.from;
-        const toDate = searchFilters.dateTo || dateRange.to;
-        
-        console.log('📅 MAIN FETCH DATE FILTERING:', {
-          viewPeriod,
-          currentDate: currentDate.toISOString().split('T')[0],
-          fromDate,
-          toDate,
-          isCustomSearch: !!(searchFilters.dateFrom || searchFilters.dateTo)
-        });
-        
-        params.append('dateFrom', fromDate);
-        params.append('dateTo', toDate);
-        params.append('includeAll', 'true'); // Show all transactions
+        const params = buildFetchParams();
         params.append('_t', Date.now().toString());
-        
-        if (searchFilters.search) params.append('search', searchFilters.search);
-        if (searchFilters.amount) params.append('amount', searchFilters.amount);
-        if (searchFilters.transactionType) params.append('transactionType', searchFilters.transactionType);
-        
-        const response = await fetch(`/api/cash-transactions?${params}`, { 
+
+        const response = await fetch(`/api/cash-transactions?${params}`, {
           credentials: 'include',
           cache: 'no-cache',
-          headers: {
-            'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0',
-            'Pragma': 'no-cache',
-            'Expires': '0'
-          }
+          signal: controller.signal
         });
-        
+
         if (!response.ok) {
-          if (response.status === 401) {
-            // Authentication failed - handled by auth service
-            return;
-          }
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+          if (response.status === 401) return;
+          throw new Error(`HTTP ${response.status}`);
         }
-        
+
         const data = await response.json();
-        console.log('🔍 DIRECT FETCH SUCCESS:', {
-          status: response.status,
-          dataLength: Array.isArray(data) ? data.length : 'not array',
-          firstEntry: data[0]?.narration?.substring(0, 50),
-          duplicateCheck: data.filter((t: any) => t.amount == 40454).length,
-          duplicateEntries: data.filter((t: any) => t.amount == 40454).map((t: any) => t.narration.substring(0, 30))
-        });
-        
-        if (Array.isArray(data)) {
+        if (!controller.signal.aborted && requestId === latestRequestId && Array.isArray(data)) {
           setRawTransactions(data);
-          console.log('✅ STATE UPDATED:', { transactionCount: data.length });
-        } else {
-          setRawTransactions([]);
         }
-        
-      } catch (error) {
-        console.error('Direct fetch error:', error);
-        setRawTransactions([]);
+      } catch (error: any) {
+        if (error?.name !== 'AbortError') {
+          console.error('Fetch error:', error);
+          if (!controller.signal.aborted && requestId === latestRequestId) setRawTransactions([]);
+        }
       } finally {
-        setIsLoading(false);
+        if (!controller.signal.aborted && requestId === latestRequestId) setIsLoading(false);
       }
     };
-    
+
     fetchTransactions();
-  }, [currentDate, viewPeriod, searchFilters.dateFrom, searchFilters.dateTo, searchFilters.search, searchFilters.amount, searchFilters.transactionType]);
-  
-  // Force refresh every 5 seconds using same date filter logic
-  React.useEffect(() => {
-    const interval = setInterval(() => {
-      const params = new URLSearchParams();
-      const dateRange = getDateRange();
-      const fromDate = searchFilters.dateFrom || dateRange.from;
-      const toDate = searchFilters.dateTo || dateRange.to;
-      
-      params.append('dateFrom', fromDate);
-      params.append('dateTo', toDate);
-      params.append('includeAll', 'true');
-      params.append('_refresh', Date.now().toString());
-      
-      console.log('🔄 AUTO REFRESH QUERY:', {
-        fromDate,
-        toDate,
-        viewPeriod,
-        currentDate: currentDate.toISOString().split('T')[0]
-      });
-      
-      fetch(`/api/cash-transactions?${params}`, { 
-        credentials: 'include',
-        cache: 'no-cache'
-      })
-      .then(res => res.json())
-      .then(data => {
-        if (Array.isArray(data)) {
+
+    const interval = setInterval(async () => {
+      if (controller.signal.aborted) return;
+      const requestId = ++latestRequestId;
+      try {
+        const params = buildFetchParams();
+        params.append('_refresh', Date.now().toString());
+        const res = await fetch(`/api/cash-transactions?${params}`, {
+          credentials: 'include',
+          cache: 'no-cache',
+          signal: controller.signal
+        });
+        const data = await res.json();
+        if (!controller.signal.aborted && requestId === latestRequestId && Array.isArray(data)) {
           setRawTransactions(data);
-          // Auto refresh completed successfully
         }
-      })
-      .catch(console.error);
+      } catch (_) {}
     }, 5000);
-    
-    return () => clearInterval(interval);
-  }, [viewPeriod, currentDate, searchFilters.dateFrom, searchFilters.dateTo]);
+
+    return () => {
+      controller.abort();
+      clearInterval(interval);
+    };
+  }, [buildFetchParams]);
 
   // DIRECT PROCESSING: Simple transaction processing
   const transactions = Array.isArray(rawTransactions) ? rawTransactions : [];
@@ -630,18 +570,8 @@ function MobileCashbook() {
   // Enhanced delete mutation with dual entry support
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      console.log('🚀 STARTING DELETE REQUEST:', {
-        transactionId: id,
-        url: "/api/cash-transactions/" + id
-      });
-      
       try {
         const result = await apiRequest("/api/cash-transactions/" + id, "DELETE");
-        console.log('✅ DELETE REQUEST SUCCESS:', {
-          transactionId: id,
-          status: result.status,
-          statusText: result.statusText
-        });
         return result;
       } catch (error) {
         console.error('❌ DELETE REQUEST FAILED:', {
@@ -749,44 +679,27 @@ function MobileCashbook() {
   // Navigate dates with accurate balance calculation and fixed timezone handling
   const navigateDate = (direction: 'prev' | 'next') => {
     // CRITICAL FIX: Use ISO string method to create proper navigation
-    const currentDateStr = currentDate.toISOString().split('T')[0]; // Get YYYY-MM-DD
+    const currentDateStr = currentDate.toISOString().split('T')[0];
     const [year, month, day] = currentDateStr.split('-').map(Number);
     
-    let newYear = year, newMonth = month, newDay = day;
-    
+    let newDate: Date;
     switch (viewPeriod) {
       case 'daily':
-        // Adjust day for navigation
-        newDay = day + (direction === 'next' ? 1 : -1);
+        newDate = new Date(Date.UTC(year, month - 1, day + (direction === 'next' ? 1 : -1)));
         break;
       case 'weekly':
-        newDay = day + (direction === 'next' ? 7 : -7);
+        newDate = new Date(Date.UTC(year, month - 1, day + (direction === 'next' ? 7 : -7)));
         break;
       case 'monthly':
-        newMonth = month + (direction === 'next' ? 1 : -1);
+        newDate = new Date(Date.UTC(year, month - 1 + (direction === 'next' ? 1 : -1), day));
         break;
       case 'yearly':
-        newYear = year + (direction === 'next' ? 1 : -1);
+        newDate = new Date(Date.UTC(year + (direction === 'next' ? 1 : -1), month - 1, day));
         break;
+      default:
+        newDate = new Date(Date.UTC(year, month - 1, day));
     }
-    
-    // CRITICAL: Create new date using ISO string method to prevent timezone corruption
-    const newDateStr = `${newYear}-${String(newMonth).padStart(2, '0')}-${String(newDay).padStart(2, '0')}`;
-    const newDate = new Date(newDateStr + 'T00:00:00.000Z');
     setCurrentDate(newDate);
-    
-    console.log('🗓️ Date navigated:', {
-      direction,
-      oldDate: currentDate.toISOString().split('T')[0],
-      newDate: newDate.toISOString().split('T')[0],
-      displayDate: `${String(newDate.getUTCDate()).padStart(2, '0')}/${String(newDate.getUTCMonth() + 1).padStart(2, '0')}/${String(newDate.getUTCFullYear()).slice(-2)}`,
-      actualDateCheck: {
-        year: newDate.getUTCFullYear(),
-        month: newDate.getUTCMonth() + 1,
-        day: newDate.getUTCDate(),
-        isoString: newDate.toISOString().split('T')[0]
-      }
-    });
     
     // CRITICAL: Clear search filters to show entries for new date
     setSearchDisplayText("");
@@ -879,13 +792,7 @@ function MobileCashbook() {
   const transactionsList = useMemo(() => {
     if (!Array.isArray(transactions)) return [];
     
-    console.log('✅ UNIFIED SYSTEM: Processing clean transactions:', {
-      totalCount: transactions.length,
-      source: 'unified_cash_transactions_only',
-      rajPatelCount: transactions.filter(t => t.narration?.includes('राज पाटील')).length
-    });
-    
-    // Enhanced processing for each transaction without extra console logging
+    // Enhanced processing for each transaction
     return transactions.map(transaction => {
       return {
         ...transaction,
@@ -935,99 +842,31 @@ function MobileCashbook() {
     return currentCashBalance?.balance || 0;
   }, [currentCashBalance, dailyBalanceData, viewPeriod]);
   
-  // CRITICAL FIX: Use correct balance calculation logic without hardcoded dates
-  const periodBalance = useMemo(() => {
-    const currentDateStr = currentDate.toISOString().split('T')[0];
-    const dateRange = getDateRange();
-    
-    console.log('💰 MOBILE CASHBOOK: Balance calculation debug:', {
-      viewPeriod,
-      currentDate: currentDateStr,
-      dateRange,
-      openingBalance: openingBalance?.openingBalance,
-      totals
-    });
-    
-    // Remove hardcoded date logic for custom ranges - use dynamic calculation
-    
-    // For yearly view, use actual opening balance from API instead of hardcoded value
-    if (viewPeriod === 'yearly') {
-      const actualOpeningBalance = openingBalance?.openingBalance || 0;
-      const yearlyBalance = actualOpeningBalance + totals.cashIn - totals.cashOut;
-      console.log('💰 YEARLY BALANCE CALCULATION:', {
-        accountBase: actualOpeningBalance,
-        cashIn: totals.cashIn,
-        cashOut: totals.cashOut,
-        yearlyBalance,
-        method: 'yearly-base-dynamic'
-      });
-      return yearlyBalance;
-    }
-    
-    // For all periods, use dynamic opening balance calculation
-    
-    // CRITICAL: For daily view, use new Mobile Daily Balance API for proper carry-forward
-    if (viewPeriod === 'daily' && dailyBalanceData) {
-      console.log('🏦 MOBILE DAILY BALANCE API:', {
-        date: dailyBalanceData.date,
-        openingBalance: dailyBalanceData.openingBalance,
-        closingBalance: dailyBalanceData.closingBalance,
-        netDifference: dailyBalanceData.netDifference,
-        dayTransactions: dailyBalanceData.dayTransactions,
-        method: 'mobile-api-carry-forward'
-      });
-      return dailyBalanceData.closingBalance;
-    }
-
-    // UNIVERSAL: For all other periods (weekly, monthly, yearly, custom), use universal balance API
-    if (viewPeriod !== 'daily' && universalBalanceData) {
-      console.log('🏦 UNIVERSAL BALANCE API:', {
-        startDate: universalBalanceData.startDate,
-        endDate: universalBalanceData.endDate,
-        viewPeriod: universalBalanceData.viewPeriod,
-        openingBalance: universalBalanceData.openingBalance,
-        closingBalance: universalBalanceData.closingBalance,
-        netDifference: universalBalanceData.netDifference,
-        periodTransactions: universalBalanceData.periodTransactions,
-        method: 'universal-period-balance'
-      });
-      return universalBalanceData.closingBalance;
-    }
-
-    // Method 1: Use dateWiseBalance if available (most accurate)
-    if (dateWiseBalance?.closingBalance !== undefined) {
-      console.log('💰 MOBILE CASHBOOK: Using dateWiseBalance for closing:', {
-        dateWiseClosing: dateWiseBalance.closingBalance,
-        dateWiseOpening: dateWiseBalance.openingBalance,
-        method: 'dateWise'
-      });
-      return dateWiseBalance.closingBalance;
-    }
-    
-    // Method 2: Manual calculation - Opening Balance + Cash In - Cash Out
-    const actualOpeningBalance = openingBalance?.openingBalance || 0;
-    const calculatedBalance = actualOpeningBalance + totals.cashIn - totals.cashOut;
-    
-    console.log('💰 MOBILE CASHBOOK: Manual calculation:', {
-      openingBalance: actualOpeningBalance,
-      cashIn: totals.cashIn,
-      cashOut: totals.cashOut,
-      calculated: calculatedBalance,
-      method: 'manual'
-    });
-    
-    return calculatedBalance;
-  }, [dateWiseBalance, openingBalance, totals, viewPeriod, currentDate, searchFilters.dateFrom, searchFilters.dateTo, dailyBalanceData, universalBalanceData]);
-
   const correctOpeningBalance = useMemo(() => {
     if (viewPeriod === 'daily' && dailyBalanceData) {
       return dailyBalanceData.openingBalance;
     }
-    if (universalBalanceData) {
+    if (viewPeriod !== 'daily' && universalBalanceData) {
       return universalBalanceData.openingBalance;
     }
-    return dateWiseBalance?.openingBalance || openingBalance?.openingBalance || 0;
+    if (dateWiseBalance?.openingBalance !== undefined) {
+      return dateWiseBalance.openingBalance;
+    }
+    return openingBalance?.openingBalance || 0;
   }, [viewPeriod, dailyBalanceData, universalBalanceData, dateWiseBalance, openingBalance]);
+
+  const periodBalance = useMemo(() => {
+    if (viewPeriod === 'daily' && dailyBalanceData) {
+      return dailyBalanceData.closingBalance;
+    }
+    if (viewPeriod !== 'daily' && universalBalanceData) {
+      return universalBalanceData.closingBalance;
+    }
+    if (dateWiseBalance?.closingBalance !== undefined) {
+      return dateWiseBalance.closingBalance;
+    }
+    return correctOpeningBalance + totals.cashIn - totals.cashOut;
+  }, [viewPeriod, dailyBalanceData, universalBalanceData, dateWiseBalance, correctOpeningBalance, totals]);
 
   // MEMOIZED loan transaction count
   const loanTransactionCount = useMemo(() => 
@@ -1039,32 +878,27 @@ function MobileCashbook() {
   const formatDisplayDate = () => {
     // Helper function to manually format date without timezone issues
     const manualFormatDate = (date: Date) => {
-      const day = String(date.getDate()).padStart(2, '0');
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const year = String(date.getFullYear());
-      return `${day}/${month}/${year}`;
+      const isoStr = date.toISOString().split('T')[0];
+      const [yr, mo, dy] = isoStr.split('-');
+      return `${dy}/${mo}/${yr}`;
     };
     
-    // If custom date range is active, show that
     if (searchFilters.dateFrom && searchFilters.dateTo) {
-      const startDate = new Date(searchFilters.dateFrom);
-      const endDate = new Date(searchFilters.dateTo);
-      return `${manualFormatDate(startDate)} - ${manualFormatDate(endDate)}`;
+      return `${manualFormatDate(new Date(searchFilters.dateFrom + 'T00:00:00Z'))} - ${manualFormatDate(new Date(searchFilters.dateTo + 'T00:00:00Z'))}`;
     }
     
+    const range = getDateRange();
     switch (viewPeriod) {
       case 'daily':
         return manualFormatDate(currentDate);
       case 'weekly':
-        const weekStart = new Date(currentDate);
-        weekStart.setDate(currentDate.getDate() - currentDate.getDay());
-        const weekEnd = new Date(weekStart);
-        weekEnd.setDate(weekStart.getDate() + 6);
-        return `${manualFormatDate(weekStart)} - ${manualFormatDate(weekEnd)}`;
-      case 'monthly':
-        return `${String(currentDate.getMonth() + 1).padStart(2, '0')}/${currentDate.getFullYear().toString().slice(-2)}`;
+        return `${manualFormatDate(new Date(range.from + 'T00:00:00Z'))} - ${manualFormatDate(new Date(range.to + 'T00:00:00Z'))}`;
+      case 'monthly': {
+        const [yr, mo] = currentDate.toISOString().split('T')[0].split('-');
+        return `${mo}/${yr.slice(-2)}`;
+      }
       case 'yearly':
-        return `${currentDate.getFullYear()}`;
+        return `${currentDate.toISOString().split('T')[0].split('-')[0]}`;
     }
   };
 
@@ -1353,13 +1187,6 @@ OK ✓
                     const newDate = new Date(selectedDateString + 'T00:00:00.000Z');
                     setCurrentDate(newDate);
                     
-                    console.log('🗓️ Date selected:', {
-                      inputValue: selectedDateString,
-                      actualNewDate: newDate.toISOString().split('T')[0],
-                      displayCheck: `${String(newDate.getUTCDate()).padStart(2, '0')}/${String(newDate.getUTCMonth() + 1).padStart(2, '0')}/${String(newDate.getUTCFullYear()).slice(-2)}`,
-                      dateComponents: { year: newDate.getUTCFullYear(), month: newDate.getUTCMonth() + 1, day: newDate.getUTCDate() }
-                    });
-                    
                     // CRITICAL: Clear search filters to show entries for new date
                     setSearchDisplayText("");
                     setSearchFilters({
@@ -1429,13 +1256,7 @@ OK ✓
                     }
                     
                     const timer = setTimeout(() => {
-                      console.log('🔍 MOBILE CASHBOOK ENHANCED SEARCH:', { 
-                        originalTerm: newValue,
-                        enhancedTerm: enhancedSearchTerm,
-                        timestamp: new Date().toISOString() 
-                      });
                     }, 300);
-                    
                     setSearchDebounceTimer(timer);
                   }}
                   className="h-11 px-4 text-base bg-gray-50 border-gray-300 rounded-lg focus:bg-white focus:border-blue-400 focus:ring-1 focus:ring-blue-200 transition-colors"
