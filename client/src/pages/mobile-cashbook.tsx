@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Minus, ChevronLeft, ChevronRight, Search, Edit, Edit2, Trash2, Home, Minimize2, Maximize, User, RefreshCw, X, ArrowDown } from "lucide-react";
+import { ChevronLeft, ChevronRight, Search, Edit, Edit2, Trash2, Home, User, RefreshCw, X, ArrowDown } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -52,14 +52,11 @@ function MobileCashbook() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
   
-  // Full-screen mode
-  const [isFullScreen, setIsFullScreen] = useState(false);
   
   // Search functionality
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   
   // Balance accuracy check for UI display
-  const isBalanceAccurate = true; // Default to true for UI display
   const [isDateRangeOpen, setIsDateRangeOpen] = useState(false);
   const todayStr = new Date().toISOString().split('T')[0];
   const [customDateRange, setCustomDateRange] = useState({
@@ -528,7 +525,7 @@ function MobileCashbook() {
       });
     },
     onError: (error: any) => {
-      console.error('💥 MOBILE QUICK ENTRY ERROR:', error);
+      console.error('MOBILE QUICK ENTRY ERROR:', error);
       toast({
         title: "त्रुटी!",
         description: error?.message === "Not authenticated" ? "कृपया पुन्हा लॉगिन करा" : `व्यवहार नोंदवता आला नाही: ${error?.message || 'Unknown error'}`,
@@ -562,8 +559,8 @@ function MobileCashbook() {
       setIsEditDialogOpen(false);
       setEditingTransaction(null);
       toast({
-        title: "Professional Accounting Update",
-        description: "व्यवहार अपडेट केला - सर्व opening/closing balance real-time sync झाले",
+        title: "यशस्वी अपडेट",
+        description: "व्यवहार अपडेट केला",
       });
     },
   });
@@ -575,7 +572,7 @@ function MobileCashbook() {
         const result = await apiRequest("/api/cash-transactions/" + id, "DELETE");
         return result;
       } catch (error) {
-        console.error('❌ DELETE REQUEST FAILED:', {
+        console.error('DELETE REQUEST FAILED:', {
           transactionId: id,
           error,
           errorMessage: error instanceof Error ? error.message : 'Unknown error'
@@ -611,8 +608,8 @@ function MobileCashbook() {
       
       // Show appropriate success message
       const description = isDualEntry 
-        ? "🔄 दोन्ही नोंदी डिलीट झाल्या - रोकड व व्यक्ती दोन्ही अकाउंट मधून"
-        : "व्यवहार delete केला - सर्व balance real-time adjust झाले";
+        ? "दोन्ही नोंदी डिलीट झाल्या - रोकड व व्यक्ती दोन्ही अकाउंट मधून"
+        : "व्यवहार डिलीट केला";
       
       toast({
         title: "यशस्वी डिलीट!",
@@ -620,7 +617,7 @@ function MobileCashbook() {
       });
     },
     onError: (error: any) => {
-      console.error('💥 MOBILE CASHBOOK DELETE ERROR:', {
+      console.error('MOBILE CASHBOOK DELETE ERROR:', {
         error,
         errorMessage: error?.message,
         errorStatus: error?.status,
@@ -753,8 +750,8 @@ function MobileCashbook() {
     // Check if this is a loan-related transaction (disabled for editing)
     if (transaction.category === 'loan_disbursement' || transaction.category === 'loan_closure') {
       toast({
-        title: "🔒 कर्ज व्यवहार संरक्षित",
-        description: "कर्ज संबंधित entries फक्त त्यांच्या संबंधित फॉर्ममधून संपादित करू शकता. हे real-time integrated आहे.",
+        title: "कर्ज व्यवहार संरक्षित",
+        description: "कर्ज संबंधित entries फक्त त्यांच्या संबंधित फॉर्ममधून संपादित करू शकता.",
         variant: "default",
       });
       return;
@@ -763,7 +760,7 @@ function MobileCashbook() {
     // Check if this is a system-generated transaction that should remain read-only
     if (transaction.isSystemGenerated || transaction.readonly) {
       toast({
-        title: "🔒 सिस्टम Generated Entry",
+        title: "सिस्टम नोंद संरक्षित",
         description: "ही entry system generated आहे आणि modify करता येत नाही. फक्त manual entries modify करू शकता.",
         variant: "default",
       });
@@ -778,8 +775,8 @@ function MobileCashbook() {
   const handleDeleteTransaction = (transaction: any) => {
     if (transaction.category === 'loan_disbursement' || transaction.category === 'loan_closure') {
       toast({
-        title: "🔒 कर्ज व्यवहार संरक्षित", 
-        description: "कर्ज संबंधित entries फक्त loan form मधून delete करू शकता. कर्ज delete केल्यास इथे auto-delete होईल.",
+        title: "कर्ज व्यवहार संरक्षित", 
+        description: "कर्ज संबंधित entries फक्त loan form मधून delete करू शकता.",
         variant: "default",
       });
       return;
@@ -904,46 +901,27 @@ function MobileCashbook() {
   };
 
   return (
-    <div className={`mobile-cashbook ${isFullScreen ? 'fixed inset-0 z-50 bg-white' : 'min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50'}`}>
-      {!isFullScreen && <MobileNav />}
-      {isFullScreen && <MobileNav hideBottomNav={true} />}
+    <div className="mobile-cashbook min-h-screen bg-gray-50">
+      <MobileNav />
       
-      <div className={`${isFullScreen ? "h-full overflow-y-auto pb-6" : "pb-24"} max-w-md mx-auto lg:max-w-lg`}>
+      <div className="pb-40 max-w-md mx-auto lg:max-w-lg">
         {/* Header */}
-        <div className="bg-blue-600 text-white p-4">
-
-          <div className="flex items-center justify-between mb-4">
-            {!isFullScreen ? (
-              <Link href="/">
-                <Button variant="ghost" size="sm" className="text-white hover:bg-blue-700">
-                  <Home className="h-4 w-4 mr-2" />
-मुखपृष्ठ
-                </Button>
-              </Link>
-            ) : (
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="text-white hover:bg-blue-700"
-                onClick={() => setIsFullScreen(false)}
-                title="मुखपृष्ठावर जा"
-              >
-                <Minimize2 className="h-4 w-4 mr-2" />
-बाहेर पडा
+        <div className="bg-white border-b border-gray-200 px-4 py-3">
+          <div className="flex items-center justify-between">
+            <Link href="/">
+              <Button variant="ghost" size="icon" className="text-gray-500 hover:bg-gray-100 w-10 h-10">
+                <Home className="h-5 w-5" />
               </Button>
-            )}
+            </Link>
             
-            <h1 className="text-xl font-bold text-center flex-1">
-              Cash Book
-            </h1>
+            <h1 className="text-lg font-semibold text-gray-800">रोखवही</h1>
             
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
               <Button 
                 variant="ghost" 
-                size="sm" 
-                className="text-white hover:bg-blue-700"
+                size="icon"
+                className="text-gray-500 hover:bg-gray-100 w-10 h-10"
                 onClick={() => {
-                  // Manual cache refresh button for when data is deleted from management section
                   setRawTransactions([]);
                   setIsLoading(true);
                   queryClient.invalidateQueries({ queryKey: ["/api/cash-transactions"] });
@@ -953,108 +931,76 @@ function MobileCashbook() {
                   queryClient.refetchQueries({ queryKey: ["/api/cash-transactions"] });
                   queryClient.refetchQueries({ queryKey: ["/api/cash-balance"] });
                   toast({
-                    title: "🔄 Cache Cleared!",
-                    description: "Data refreshed - deleted entries removed from dual entry journal",
+                    title: "डेटा रिफ्रेश झाला",
+                    description: "सर्व डेटा पुन्हा लोड केला",
                   });
                 }}
-                title="डेटा रिफ्रेश करा - cache clear करा"
               >
-                <RefreshCw className="h-4 w-4" />
-              </Button>
-              
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="text-white hover:bg-blue-700"
-                onClick={() => setIsFullScreen(!isFullScreen)}
-                title={isFullScreen ? "Exit Full Screen" : "Full Screen Mode"}
-              >
-                <Maximize className="h-4 w-4" />
+                <RefreshCw className="h-5 w-5" />
               </Button>
               
               <Button
                 variant="ghost"
-                size="sm"
+                size="icon"
                 onClick={() => {
                   const newSearchOpen = !isSearchOpen;
                   setIsSearchOpen(newSearchOpen);
-                  
-                  // When search is closed, return to daily view
                   if (!newSearchOpen) {
                     setViewPeriod('daily');
                   } else {
-                    // When search is opened, scroll to make it visible
                     setTimeout(() => {
                       const searchPanel = document.querySelector('[data-search-panel]');
                       if (searchPanel) {
-                        searchPanel.scrollIntoView({ 
-                          behavior: 'smooth', 
-                          block: 'start',
-                          inline: 'nearest'
-                        });
+                        searchPanel.scrollIntoView({ behavior: 'smooth', block: 'start', inline: 'nearest' });
                       }
                     }, 100);
                   }
                 }}
-                className="text-white hover:bg-blue-700"
+                className="text-gray-500 hover:bg-gray-100 w-10 h-10"
               >
-                <Search className="h-4 w-4" />
+                <Search className="h-5 w-5" />
               </Button>
             </div>
           </div>
+        </div>
 
-          {/* View Mode Toggle */}
-          <div className="flex gap-2 mb-3 justify-center">
-            <Button
-              variant={viewMode === 'cashbook' ? "secondary" : "ghost"}
-              size="sm"
+        {/* View Mode Toggle */}
+        <div className="px-4 pt-3 pb-2">
+          <div className="flex bg-gray-100 rounded-full p-1">
+            <button
               onClick={() => setViewMode('cashbook')}
-              className={`whitespace-nowrap ${
+              className={`flex-1 py-2 text-sm font-medium rounded-full transition-all ${
                 viewMode === 'cashbook' 
-                  ? "bg-white text-blue-600" 
-                  : "text-white hover:bg-blue-700"
+                  ? 'bg-blue-500 text-white shadow-sm' 
+                  : 'text-gray-600'
               }`}
             >
-              📕 रोखवही
-            </Button>
-            <Button
-              variant={viewMode === 'journal' ? "secondary" : "ghost"}
-              size="sm"
+              रोखवही
+            </button>
+            <button
               onClick={() => setViewMode('journal')}
-              className={`whitespace-nowrap ${
+              className={`flex-1 py-2 text-sm font-medium rounded-full transition-all ${
                 viewMode === 'journal' 
-                  ? "bg-white text-blue-600" 
-                  : "text-white hover:bg-blue-700"
+                  ? 'bg-blue-500 text-white shadow-sm' 
+                  : 'text-gray-600'
               }`}
             >
-              📊 द्विनोंदणी जर्नल
-            </Button>
+              द्विनोंदणी
+            </button>
           </div>
+        </div>
 
-          {/* Period Selection */}
-          <div className="flex gap-2 mb-4 overflow-x-auto">
+        {/* Period Tabs */}
+        <div className="px-4 pb-2">
+          <div className="flex gap-1.5 overflow-x-auto">
             {['daily', 'weekly', 'monthly', 'yearly'].map((period) => (
-              <Button
+              <button
                 key={period}
-                variant={viewPeriod === period ? "secondary" : "ghost"}
-                size="sm"
                 onClick={() => {
-                  // CRITICAL FIX: Close custom date range when selecting other periods
                   setIsDateRangeOpen(false);
                   setViewPeriod(period as any);
-                  
-                  // CRITICAL: Clear search filters when changing period
                   setSearchDisplayText("");
-                  setSearchFilters({
-                    search: "",
-                    amount: "",
-                    dateFrom: "",
-                    dateTo: "",
-                    transactionType: "",
-                    monthsBack: ""
-                  });
-                  
-                  // Invalidate cache when period changes to recalculate opening balance
+                  setSearchFilters({ search: "", amount: "", dateFrom: "", dateTo: "", transactionType: "", monthsBack: "" });
                   const currentDateStr = currentDate.toISOString().split('T')[0];
                   queryClient.invalidateQueries({ queryKey: ["/api/cash-balance/opening", currentDateStr, period] });
                   queryClient.invalidateQueries({ queryKey: ["/api/cash-transactions"] });
@@ -1062,228 +1008,193 @@ function MobileCashbook() {
                   queryClient.refetchQueries({ queryKey: ["/api/cash-balance"] });
                   queryClient.refetchQueries({ queryKey: ["/api/cash-transactions"] });
                 }}
-                className={`whitespace-nowrap ${
+                className={`whitespace-nowrap px-3 py-1.5 text-xs font-medium rounded-full transition-all ${
                   (viewPeriod === period && !(searchFilters.dateFrom && searchFilters.dateTo))
-                    ? "bg-white text-blue-600" 
-                    : "text-white hover:bg-blue-700"
+                    ? 'bg-blue-500 text-white' 
+                    : 'bg-gray-100 text-gray-600'
                 }`}
               >
                 {period === 'daily' && 'दैनिक'}
                 {period === 'weekly' && 'साप्ताहिक'}
                 {period === 'monthly' && 'मासिक'}
                 {period === 'yearly' && 'वार्षिक'}
-              </Button>
+              </button>
             ))}
-            <Button
-              variant={(searchFilters.dateFrom && searchFilters.dateTo) ? "secondary" : "ghost"}
-              size="sm"
-              onClick={() => {
-                // CRITICAL FIX: Prevent freeze by avoiding conflicting states
-                setIsDateRangeOpen(!isDateRangeOpen);
-              }}
-              className={`whitespace-nowrap ${
+            <button
+              onClick={() => setIsDateRangeOpen(!isDateRangeOpen)}
+              className={`whitespace-nowrap px-3 py-1.5 text-xs font-medium rounded-full transition-all ${
                 (searchFilters.dateFrom && searchFilters.dateTo) 
-                  ? "bg-white text-blue-600" 
-                  : "text-white hover:bg-blue-700"
+                  ? 'bg-blue-500 text-white' 
+                  : 'bg-gray-100 text-gray-600'
               }`}
             >
-📅 कस्टम
-            </Button>
+              कस्टम
+            </button>
           </div>
+        </div>
 
-          {/* Custom Date Range Dialog */}
-          {isDateRangeOpen && (
-            <div className="custom-date-range mx-2 mb-4 bg-white rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.12)] border border-gray-100 overflow-hidden animate-in slide-in-from-top-2 duration-200">
-              <div className="bg-gradient-to-r from-blue-600 to-blue-500 px-4 py-3 flex items-center justify-between">
-                <span className="text-white font-semibold text-sm">तारीख निवडा</span>
-                <button onClick={() => setIsDateRangeOpen(false)} className="text-white/80 hover:text-white transition-colors">
-                  <X className="h-4 w-4" />
-                </button>
+        {/* Custom Date Range Dialog */}
+        {isDateRangeOpen && (
+          <div className="custom-date-range mx-3 mb-3 bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+            <div className="bg-blue-500 px-4 py-2.5 flex items-center justify-between">
+              <span className="text-white font-medium text-sm">तारीख निवडा</span>
+              <button onClick={() => setIsDateRangeOpen(false)} className="text-white/80 hover:text-white">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="p-4 space-y-3">
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-gray-500">पासून</label>
+                <Input
+                  type="date"
+                  value={customDateRange.startDate}
+                  onChange={(e) => setCustomDateRange(prev => ({ ...prev, startDate: e.target.value }))}
+                  className="font-inter text-gray-800 h-11 text-base border-gray-200 rounded-lg"
+                  style={{ colorScheme: 'light' }}
+                />
               </div>
-              <div className="p-4 space-y-4">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">पासून</label>
-                  <Input
-                    type="date"
-                    value={customDateRange.startDate}
-                    onChange={(e) => setCustomDateRange(prev => ({ ...prev, startDate: e.target.value }))}
-                    className="font-inter text-gray-900 h-11 text-base border-gray-200 rounded-xl focus:border-blue-500 focus:ring-blue-500/20"
-                    style={{ colorScheme: 'light' }}
-                  />
-                </div>
-                <div className="flex items-center gap-2 px-2">
-                  <div className="flex-1 h-px bg-gray-200" />
-                  <ArrowDown className="h-4 w-4 text-gray-400" />
-                  <div className="flex-1 h-px bg-gray-200" />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">पर्यंत</label>
-                  <Input
-                    type="date"
-                    value={customDateRange.endDate}
-                    onChange={(e) => setCustomDateRange(prev => ({ ...prev, endDate: e.target.value }))}
-                    className="font-inter text-gray-900 h-11 text-base border-gray-200 rounded-xl focus:border-blue-500 focus:ring-blue-500/20"
-                    style={{ colorScheme: 'light' }}
-                  />
-                </div>
+              <div className="flex items-center gap-2 px-2">
+                <div className="flex-1 h-px bg-gray-200" />
+                <ArrowDown className="h-4 w-4 text-gray-400" />
+                <div className="flex-1 h-px bg-gray-200" />
               </div>
-              <div className="px-4 pb-4 flex gap-3">
-                <Button
-                  onClick={() => setIsDateRangeOpen(false)}
-                  variant="outline"
-                  className="flex-1 h-11 rounded-xl border-gray-200 text-gray-600 hover:bg-gray-50 font-medium"
-                >
-                  रद्द करा
-                </Button>
-                <Button
-                  onClick={() => {
-                    if (customDateRange.startDate && customDateRange.endDate) {
-                      setSearchFilters(prev => ({
-                        ...prev,
-                        dateFrom: customDateRange.startDate,
-                        dateTo: customDateRange.endDate
-                      }));
-                      setIsDateRangeOpen(false);
-                      queryClient.invalidateQueries({ queryKey: ["/api/cash-transactions"] });
-                      queryClient.invalidateQueries({ queryKey: ["/api/cash-balance"] });
-                    }
-                  }}
-                  disabled={!customDateRange.startDate || !customDateRange.endDate}
-                  className="flex-1 h-11 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-sm"
-                >
-                  शोधा
-                </Button>
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-gray-500">पर्यंत</label>
+                <Input
+                  type="date"
+                  value={customDateRange.endDate}
+                  onChange={(e) => setCustomDateRange(prev => ({ ...prev, endDate: e.target.value }))}
+                  className="font-inter text-gray-800 h-11 text-base border-gray-200 rounded-lg"
+                  style={{ colorScheme: 'light' }}
+                />
               </div>
             </div>
-          )}
+            <div className="px-4 pb-4 flex gap-3">
+              <Button
+                onClick={() => setIsDateRangeOpen(false)}
+                variant="outline"
+                className="flex-1 h-11 rounded-lg border-gray-200 text-gray-600 hover:bg-gray-50 font-medium"
+              >
+                रद्द करा
+              </Button>
+              <Button
+                onClick={() => {
+                  if (customDateRange.startDate && customDateRange.endDate) {
+                    setSearchFilters(prev => ({
+                      ...prev,
+                      dateFrom: customDateRange.startDate,
+                      dateTo: customDateRange.endDate
+                    }));
+                    setIsDateRangeOpen(false);
+                    queryClient.invalidateQueries({ queryKey: ["/api/cash-transactions"] });
+                    queryClient.invalidateQueries({ queryKey: ["/api/cash-balance"] });
+                  }
+                }}
+                disabled={!customDateRange.startDate || !customDateRange.endDate}
+                className="flex-1 h-11 rounded-lg bg-blue-500 hover:bg-blue-600 text-white font-medium"
+              >
+                शोधा
+              </Button>
+            </div>
+          </div>
+        )}
 
-          {/* Date Navigation */}
+        {/* Date Navigation */}
+        <div className="bg-white rounded-lg border border-gray-200 p-3 mx-3 mb-3">
           <div className="flex items-center justify-between">
-            <Button
-              variant="ghost"
-              size="sm"
+            <button
               onClick={() => navigateDate('prev')}
-              className="text-white hover:bg-blue-700"
+              className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 hover:bg-gray-200 active:bg-gray-300"
             >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
+              <ChevronLeft className="h-5 w-5" />
+            </button>
             
-            <div className="text-center flex-1 px-2">
-              <div className="font-bold mb-2">{formatDisplayDate()}</div>
+            <div className="text-center flex-1 px-3">
+              <div className="text-base font-semibold text-gray-800 mb-1">{formatDisplayDate()}</div>
               <div className="mb-2">
                 <Input
                   type="date"
                   value={currentDate.toISOString().split('T')[0]}
                   onChange={(e) => {
-                    // CRITICAL FIX: Date picker should match selected date exactly
-                    const selectedDateString = e.target.value; // YYYY-MM-DD format
+                    const selectedDateString = e.target.value;
                     if (!selectedDateString) return;
-                    
-                    // Create date directly from ISO string to avoid timezone issues
                     const newDate = new Date(selectedDateString + 'T00:00:00.000Z');
                     setCurrentDate(newDate);
-                    
-                    // CRITICAL: Clear search filters to show entries for new date
                     setSearchDisplayText("");
-                    setSearchFilters({
-                      search: "",
-                      amount: "",
-                      dateFrom: "",
-                      dateTo: "",
-                      transactionType: "",
-                      monthsBack: ""
-                    });
-                    
-                    // Force refresh with new date
+                    setSearchFilters({ search: "", amount: "", dateFrom: "", dateTo: "", transactionType: "", monthsBack: "" });
                     const newDateStr = newDate.toISOString().split('T')[0];
                     queryClient.invalidateQueries({ queryKey: ["/api/cash-transactions"] });
                     queryClient.invalidateQueries({ queryKey: ["/api/date-wise-balance", newDateStr, viewPeriod] });
                   }}
-                  className="text-center text-sm bg-white/20 border-white/30 text-white placeholder-white/70 font-inter"
-                  style={{ colorScheme: 'dark' }}
+                  className="text-center text-sm bg-gray-50 border border-gray-200 rounded-lg text-gray-800 font-inter"
+                  style={{ colorScheme: 'light' }}
                 />
               </div>
-              <div className="text-sm opacity-90">
-                {searchFilters.dateFrom && searchFilters.dateTo ? 
-                  `कस्टम रेंज: ओपनिंग ₹${correctOpeningBalance.toLocaleString('en-IN')}` :
-                  `आरंभिक शिल्लक: ₹${correctOpeningBalance.toLocaleString('en-IN')}`
-                }
+              <div className="text-sm text-blue-600 font-medium">
+                आरंभिक शिल्लक: ₹{correctOpeningBalance.toLocaleString('en-IN')}
               </div>
             </div>
             
-            <Button
-              variant="ghost"
-              size="sm"
+            <button
               onClick={() => navigateDate('next')}
-              className="text-white hover:bg-blue-700"
+              className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 hover:bg-gray-200 active:bg-gray-300"
             >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
+              <ChevronRight className="h-5 w-5" />
+            </button>
           </div>
         </div>
 
-        {/* Professional Search Panel */}
+        {/* Search Panel */}
         {isSearchOpen && (
-          <div className="bg-white border-b border-gray-200" data-search-panel>
+          <div className="bg-white border border-gray-200 rounded-lg mx-3 mb-3" data-search-panel>
             <div className="p-4 space-y-4">
-              {/* Search Header */}
               <div className="flex items-center gap-3 pb-2 border-b border-gray-100">
                 <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
                   <Search className="w-4 h-4 text-gray-600" />
                 </div>
-                <h3 className="text-lg font-medium text-gray-800">Search Transactions</h3>
+                <h3 className="text-base font-medium text-gray-800">व्यवहार शोधा</h3>
               </div>
               
-              {/* Main Search Input */}
               <div className="space-y-2">
                 <Input
-                  placeholder="Search by name, amount, or description..."
+                  placeholder="नाव, रक्कम किंवा तपशील शोधा..."
                   value={searchDisplayText}
                   onChange={(e) => {
                     const newValue = e.target.value;
                     setSearchDisplayText(newValue);
-                    
                     const enhancedSearchTerm = performCrossLanguageSearch(newValue);
-                    
                     setSearchFilters(prev => ({ ...prev, search: enhancedSearchTerm, amount: "" }));
-                    
-                    if (searchDebounceTimer) {
-                      clearTimeout(searchDebounceTimer);
-                    }
-                    
-                    const timer = setTimeout(() => {
-                    }, 300);
+                    if (searchDebounceTimer) clearTimeout(searchDebounceTimer);
+                    const timer = setTimeout(() => {}, 300);
                     setSearchDebounceTimer(timer);
                   }}
-                  className="h-11 px-4 text-base bg-gray-50 border-gray-300 rounded-lg focus:bg-white focus:border-blue-400 focus:ring-1 focus:ring-blue-200 transition-colors"
+                  className="h-11 px-4 text-base bg-gray-50 border-gray-200 rounded-lg focus:bg-white focus:border-blue-400 focus:ring-1 focus:ring-blue-200"
                   data-testid="input-unified-search"
                 />
                 <p className="text-xs text-gray-500">
-                  Examples: "उमेश", "umesh", "50000", "नेकलेस" - Works in English & Marathi!
+                  उदा: उमेश, 50000, नेकलेस
                 </p>
               </div>
               
-              {/* Transaction Type Filter */}
               <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">Transaction Type</label>
+                <label className="text-sm font-medium text-gray-700">व्यवहार प्रकार</label>
                 <select
                   value={searchFilters.transactionType}
                   onChange={(e) => setSearchFilters(prev => ({ ...prev, transactionType: e.target.value }))}
-                  className="w-full px-3 py-2.5 text-sm bg-gray-50 border-gray-300 rounded-lg focus:bg-white focus:border-blue-400 focus:ring-1 focus:ring-blue-200 transition-colors"
+                  className="w-full px-3 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:border-blue-400 focus:ring-1 focus:ring-blue-200"
                   autoComplete="off"
                 >
-                  <option value="">All Transactions</option>
-                  <option value="cash_in">Cash In (DR)</option>
-                  <option value="cash_out">Cash Out (CR)</option>
+                  <option value="">सर्व व्यवहार</option>
+                  <option value="cash_in">पैसे आले (जमा)</option>
+                  <option value="cash_out">पैसे दिले (नावे)</option>
                 </select>
               </div>
               
-              {/* Date Range Filter */}
               <div className="space-y-3">
-                <label className="text-sm font-medium text-gray-700">Date Range</label>
-                <div className="bg-gray-50 border border-gray-300 rounded-lg p-3">
+                <label className="text-sm font-medium text-gray-700">तारीख श्रेणी</label>
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
                   <div className="flex items-center gap-2 mb-2">
-                    <span className="text-sm text-gray-600">Months back:</span>
+                    <span className="text-sm text-gray-600">किती महिने मागे:</span>
                   </div>
                   <input
                     type="number"
@@ -1292,45 +1203,34 @@ function MobileCashbook() {
                     onChange={(e) => {
                       const months = e.target.value;
                       setSearchFilters(prev => ({ ...prev, monthsBack: months }));
-                      
                       if (months && !isNaN(parseInt(months))) {
                         const today = new Date();
                         const monthsAgo = new Date(today);
                         monthsAgo.setMonth(today.getMonth() - parseInt(months));
-                        
                         const fromDate = monthsAgo.toISOString().split('T')[0];
                         const toDate = today.toISOString().split('T')[0];
-                        
-                        setSearchFilters(prev => ({ 
-                          ...prev, 
-                          dateFrom: fromDate,
-                          dateTo: toDate
-                        }));
+                        setSearchFilters(prev => ({ ...prev, dateFrom: fromDate, dateTo: toDate }));
                       } else {
-                        setSearchFilters(prev => ({ 
-                          ...prev, 
-                          dateFrom: '',
-                          dateTo: ''
-                        }));
+                        setSearchFilters(prev => ({ ...prev, dateFrom: '', dateTo: '' }));
                       }
                     }}
                     placeholder="3, 6, 12, 24"
-                    className="w-full h-10 px-3 text-center text-base bg-white border border-gray-200 rounded-md focus:border-blue-400 focus:ring-1 focus:ring-blue-200 transition-colors"
+                    className="w-full h-10 px-3 text-center text-base bg-white border border-gray-200 rounded-md focus:border-blue-400 focus:ring-1 focus:ring-blue-200"
                     data-testid="input-months-back"
                   />
                   <p className="text-xs text-gray-500 mt-2 text-center">
-                    Enter number of months to search back
+                    महिने संख्या टाका
                   </p>
                   {searchFilters.monthsBack && !isNaN(parseInt(searchFilters.monthsBack)) && (
                     <div className="mt-2 p-2 bg-blue-50 rounded-md border border-blue-100">
                       <p className="text-xs text-blue-700 text-center font-medium">
-                        Range: {(() => {
+                        श्रेणी: {(() => {
                           const today = new Date();
                           const monthsAgo = new Date(today);
                           monthsAgo.setMonth(today.getMonth() - parseInt(searchFilters.monthsBack));
                           const fromDisplay = `${monthsAgo.getDate().toString().padStart(2, '0')}/${(monthsAgo.getMonth() + 1).toString().padStart(2, '0')}/${monthsAgo.getFullYear().toString().slice(-2)}`;
                           const toDisplay = `${today.getDate().toString().padStart(2, '0')}/${(today.getMonth() + 1).toString().padStart(2, '0')}/${today.getFullYear().toString().slice(-2)}`;
-                          return `${fromDisplay} to ${toDisplay}`;
+                          return `${fromDisplay} ते ${toDisplay}`;
                         })()}
                       </p>
                     </div>
@@ -1338,226 +1238,197 @@ function MobileCashbook() {
                 </div>
               </div>
               
-              {/* Clear Filters Button */}
               <Button
                 variant="outline"
                 size="sm"
-                className="w-full h-10 text-gray-600 border-gray-300 hover:bg-gray-50 transition-colors"
+                className="w-full h-10 text-gray-600 border-gray-200 hover:bg-gray-50"
                 onClick={() => { setSearchDisplayText(""); setSearchFilters({ search: "", amount: "", dateFrom: "", dateTo: "", transactionType: "", monthsBack: "" }); }}
               >
-                Clear All Filters
+                सर्व फिल्टर साफ करा
               </Button>
             </div>
           </div>
         )}
 
         {/* Main Content Area */}
-        <div className="p-2">
+        <div className="px-3">
           {viewMode === 'cashbook' ? (
-            // Cashbook View
-            <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+            <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
               {/* Table Header */}
-              <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-3 grid grid-cols-4 gap-1 text-xs font-bold sticky top-0 z-10">
-                <div className="text-center">📅 दिनांक<br/><span className="text-xs opacity-75">(DD/MM/YY)</span></div>
-                <div className="text-center text-green-200">⬆️ आले</div>
-                <div className="text-center text-red-200">⬇️ दिले</div>
-                <div className="text-center text-yellow-200">💰 शिल्लक</div>
+              <div className="bg-gray-100 text-gray-700 p-3 grid gap-1 text-xs font-semibold sticky top-0 z-10" style={{ gridTemplateColumns: '2.5fr 1fr 1fr 1fr' }}>
+                <div>तारीख</div>
+                <div className="text-center text-green-600">जमा</div>
+                <div className="text-center text-red-600">नावे</div>
+                <div className="text-center text-blue-600">शिल्लक</div>
               </div>
             
-            {/* Previous Balance Row */}
-            <div className="p-3 border-b bg-gradient-to-r from-blue-50 to-blue-100 grid grid-cols-4 gap-1 text-sm">
-              <div className="font-bold text-blue-800 text-xs">
-                🏦 आरंभिक<br/>
-                <span className="text-xs text-gray-600">
-                  {(() => {
-                    // Show appropriate label based on view period
-                    const openingDateStr = getOpeningBalanceDate();
-                    const [year, month, day] = openingDateStr.split('-').map(Number);
-                    const dateDisplay = `${String(day).padStart(2, '0')}/${String(month).padStart(2, '0')}/${String(year).slice(-2)}`;
-                    
-                    if (searchFilters.dateFrom && searchFilters.dateTo) {
-                      return `(${dateDisplay} closing)`;
-                    } else if (viewPeriod === 'weekly') {
-                      return `(Last week closing)`;
-                    } else if (viewPeriod === 'monthly') {
-                      return `(Last month closing)`;
-                    } else if (viewPeriod === 'yearly') {
-                      return `(Last year closing)`;
-                    } else {
-                      return `(${dateDisplay})`;
-                    }
-                  })()}
-                </span>
-                {loanTransactionCount > 0 && (
-                  <div className="text-xs text-orange-600 mt-1">
-                    🔗 {loanTransactionCount} कर्ज linked
+              {/* Opening Balance Row */}
+              <div className="p-3 border-b border-gray-200 bg-blue-50 grid gap-1 text-sm" style={{ gridTemplateColumns: '2.5fr 1fr 1fr 1fr' }}>
+                <div className="text-xs font-medium text-blue-700">
+                  आरंभिक शिल्लक
+                  <div className="text-xs text-gray-500 mt-0.5">
+                    {(() => {
+                      if (searchFilters.dateFrom && searchFilters.dateTo) {
+                        return '(कस्टम कालावधी)';
+                      } else if (viewPeriod === 'weekly') {
+                        return '(मागील आठवडा)';
+                      } else if (viewPeriod === 'monthly') {
+                        return '(मागील महिना)';
+                      } else if (viewPeriod === 'yearly') {
+                        return '(मागील वर्ष)';
+                      } else {
+                        return '(मागील दिवस)';
+                      }
+                    })()}
                   </div>
-                )}
-              </div>
-              <div></div>
-              <div></div>
-              <div className="font-bold text-blue-800 text-center">
-                ₹{correctOpeningBalance.toLocaleString('en-IN')}
-              </div>
-            </div>
-
-            {/* Transaction Rows */}
-            {isLoading && transactionsList.length === 0 ? (
-              <div className="p-8 text-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                <p className="mt-2 text-gray-600">लोड होत आहे...</p>
-              </div>
-            ) : !isLoading && transactionsList.length === 0 ? (
-              <div className="p-8 text-center text-gray-500">या कालावधीत कोणतेही व्यवहार नाहीत</div>
-            ) : (
-              transactionsList.map((transaction: any, index: number) => {
-                const runningBalance = correctOpeningBalance + 
-                  transactionsList.slice(0, index + 1).reduce((sum, t) => {
-                    return sum + (t.transactionType === 'cash_in' ? Number(t.amount) : -Number(t.amount));
-                  }, 0);
-
-                const isLoanTransaction = transaction.category === 'loan_disbursement' || 
-                                        transaction.category === 'loan_closure' || 
-                                        transaction.category === 'loan_repayment';
-
-                return (
-                  <div
-                    key={transaction.id}
-                    onClick={() => {
-                      if (!isLoanTransaction) {
-                        handleEditTransaction(transaction);
-                      }
-                    }}
-                    onDoubleClick={() => {
-                      if (!isLoanTransaction) {
-                        if (confirm('हा व्यवहार डिलीट करायचा का?')) {
-                          handleDeleteTransaction(transaction.id);
-                        }
-                      }
-                    }}
-                    onContextMenu={(e) => {
-                      e.preventDefault();
-                      if (!isLoanTransaction) {
-                        if (confirm('हा व्यवहार डिलीट करायचा का?')) {
-                          handleDeleteTransaction(transaction.id);
-                        }
-                      }
-                    }}
-                    className={`p-3 border-b transition-colors cursor-pointer ${
-                      isLoanTransaction 
-                        ? 'bg-gradient-to-r from-orange-50 to-yellow-50 border-orange-200 cursor-not-allowed' 
-                        : 'hover:bg-gray-50 active:bg-blue-50'
-                    }`}
-                    title={isLoanTransaction ? "🔒 कर्ज व्यवहार संपादन अक्षम" : "👆 Edit करा | 👆👆 Delete करा | Long-press करा"}
-                  >
-                    {/* 📱 MOBILE: Main Transaction Info Grid */}
-                    <div className="grid gap-2 text-sm" style={{ gridTemplateColumns: '3fr 0.8fr 0.8fr 1fr' }}>
-                    <div className="space-y-1">
-                      <div className="font-bold text-xs text-blue-800">
-                        {DateUtils.isoToShortDate(transaction.transactionDate)}
-                      </div>
-                      <div className="text-xs font-medium text-gray-700 break-words">
-                        {transaction.party?.name || '💵 रोकड'}
-                        {transaction.displayAccountNumber && transaction.displayAccountNumber !== "मॅन्युअल एंट्री" && (
-                          <span className="ml-2 text-xs bg-blue-100 text-blue-800 px-1 rounded">
-                            खाते क्र. {transaction.displayAccountNumber}
-                          </span>
-                        )}
-                      </div>
-                      <div className="text-xs text-gray-500 leading-tight break-words">
-                        {transaction.narration}
-                        {transaction.displayCollateral && transaction.displayCollateral !== "तपशील उपलब्ध नाही" && (
-                          <div className="mt-1 text-xs text-green-700 bg-green-50 px-2 py-1 rounded border border-green-200">
-                            🔸 वस्तू: {transaction.displayCollateral}
-                          </div>
-                        )}
-                      </div>
-                      {isLoanTransaction && (
-                        <div className="bg-orange-100 text-orange-800 rounded px-2 py-1 text-xs font-medium border border-orange-200">
-                          🔒 {transaction.category === 'loan_disbursement' ? 'कर्ज वाटप' : 'कर्ज बंद'}
-                        </div>
-                      )}
-                    </div>
-                    
-                    <div className="text-center">
-                      {transaction.transactionType === 'cash_in' ? (
-                        <div className={`font-bold text-sm ${
-                          isLoanTransaction 
-                            ? 'text-orange-700' 
-                            : 'text-blue-600'
-                        }`}>
-                          ₹{Number(transaction.amount).toLocaleString('en-IN')}
-                          {isLoanTransaction && <div className="text-xs mt-1">🔒</div>}
-                        </div>
-                      ) : (
-                        <div className="h-4"></div>
-                      )}
-                    </div>
-                    
-                    <div className="text-center">
-                      {transaction.transactionType === 'cash_out' ? (
-                        <div className={`font-bold text-sm ${
-                          isLoanTransaction 
-                            ? 'text-orange-700' 
-                            : 'text-red-600'
-                        }`}>
-                          ₹{Number(transaction.amount).toLocaleString('en-IN')}
-                          {isLoanTransaction && <div className="text-xs mt-1">🔒</div>}
-                        </div>
-                      ) : (
-                        <div className="h-4"></div>
-                      )}
-                    </div>
-                    
-                    <div className="text-center font-bold text-sm text-gray-800">
-                      ₹{runningBalance.toLocaleString('en-IN')}
-                    </div>
-                  </div>
-                  
                 </div>
-                );
-              })
-            )}
+                <div></div>
+                <div></div>
+                <div className="font-semibold text-blue-600 text-center text-sm">
+                  ₹{correctOpeningBalance.toLocaleString('en-IN')}
+                </div>
+              </div>
+
+              {/* Transaction Rows */}
+              {isLoading && transactionsList.length === 0 ? (
+                <div className="p-8 text-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
+                  <p className="mt-2 text-gray-500 text-sm">लोड होत आहे...</p>
+                </div>
+              ) : !isLoading && transactionsList.length === 0 ? (
+                <div className="p-8 text-center text-gray-500 text-sm">या कालावधीत कोणतेही व्यवहार नाहीत</div>
+              ) : (
+                transactionsList.map((transaction: any, index: number) => {
+                  const runningBalance = correctOpeningBalance + 
+                    transactionsList.slice(0, index + 1).reduce((sum, t) => {
+                      return sum + (t.transactionType === 'cash_in' ? Number(t.amount) : -Number(t.amount));
+                    }, 0);
+
+                  const isLoanTransaction = transaction.category === 'loan_disbursement' || 
+                                          transaction.category === 'loan_closure' || 
+                                          transaction.category === 'loan_repayment';
+
+                  return (
+                    <div
+                      key={transaction.id}
+                      onClick={() => {
+                        if (!isLoanTransaction) {
+                          handleEditTransaction(transaction);
+                        }
+                      }}
+                      onDoubleClick={() => {
+                        if (!isLoanTransaction) {
+                          if (confirm('हा व्यवहार डिलीट करायचा का?')) {
+                            handleDeleteTransaction(transaction.id);
+                          }
+                        }
+                      }}
+                      onContextMenu={(e) => {
+                        e.preventDefault();
+                        if (!isLoanTransaction) {
+                          if (confirm('हा व्यवहार डिलीट करायचा का?')) {
+                            handleDeleteTransaction(transaction.id);
+                          }
+                        }
+                      }}
+                      className={`p-3 cursor-pointer ${
+                        isLoanTransaction 
+                          ? 'bg-amber-50 border-b border-amber-100 cursor-not-allowed' 
+                          : 'bg-white border-b border-gray-100 hover:bg-gray-50 active:bg-blue-50'
+                      }`}
+                    >
+                      <div className="grid gap-2 text-sm" style={{ gridTemplateColumns: '2.5fr 1fr 1fr 1fr' }}>
+                        <div className="space-y-1 min-w-0">
+                          <div className="text-xs font-medium text-gray-600">
+                            {DateUtils.isoToShortDate(transaction.transactionDate)}
+                          </div>
+                          <div className="text-sm font-medium text-gray-800 break-words">
+                            {transaction.party?.name || 'रोकड'}
+                            {transaction.displayAccountNumber && transaction.displayAccountNumber !== "मॅन्युअल एंट्री" && (
+                              <span className="ml-1 text-xs bg-blue-50 text-blue-700 px-1 rounded">
+                                खाते क्र. {transaction.displayAccountNumber}
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-xs text-gray-500 leading-tight break-words">
+                            {transaction.narration}
+                            {transaction.displayCollateral && transaction.displayCollateral !== "तपशील उपलब्ध नाही" && (
+                              <div className="mt-1 text-xs text-green-700 bg-green-50 px-2 py-0.5 rounded border border-green-200">
+                                वस्तू: {transaction.displayCollateral}
+                              </div>
+                            )}
+                          </div>
+                          {isLoanTransaction && (
+                            <div className="bg-amber-100 text-amber-700 rounded px-2 py-0.5 text-xs font-medium inline-block">
+                              {transaction.category === 'loan_disbursement' ? 'कर्ज वाटप' : 'कर्ज बंद'}
+                            </div>
+                          )}
+                        </div>
+                        
+                        <div className="text-center self-center">
+                          {transaction.transactionType === 'cash_in' ? (
+                            <div className="text-green-600 font-semibold text-sm">
+                              ₹{Number(transaction.amount).toLocaleString('en-IN')}
+                            </div>
+                          ) : (
+                            <div></div>
+                          )}
+                        </div>
+                        
+                        <div className="text-center self-center">
+                          {transaction.transactionType === 'cash_out' ? (
+                            <div className="text-red-600 font-semibold text-sm">
+                              ₹{Number(transaction.amount).toLocaleString('en-IN')}
+                            </div>
+                          ) : (
+                            <div></div>
+                          )}
+                        </div>
+                        
+                        <div className="text-center self-center text-gray-800 font-semibold text-sm">
+                          ₹{runningBalance.toLocaleString('en-IN')}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
             </div>
           ) : (
-            // Journal View (Dual-Entry System)
-            <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+            <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
               {/* Journal Header */}
-              <div className="bg-gradient-to-r from-purple-600 to-purple-700 text-white p-3 grid grid-cols-5 gap-1 text-xs font-bold sticky top-0 z-10">
-                <div className="text-center">📅 दिनांक</div>
-                <div className="text-center">🔢 नंबर</div>
-                <div className="text-center">👤 खाते</div>
-                <div className="text-center text-green-200">नावे (DR)</div>
-                <div className="text-center text-red-200">जमा (CR)</div>
+              <div className="bg-gray-100 text-gray-700 p-3 grid grid-cols-5 gap-1 text-xs font-semibold sticky top-0 z-10">
+                <div className="text-center">दिनांक</div>
+                <div className="text-center">नंबर</div>
+                <div className="text-center">खाते</div>
+                <div className="text-center text-green-600">नावे</div>
+                <div className="text-center text-red-600">जमा</div>
               </div>
 
-              {/* Journal Entries */}
               {journalLoading ? (
                 <div className="p-8 text-center">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto"></div>
-                  <p className="mt-2 text-gray-600">द्विनोंदणी लोड होत आहे...</p>
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
+                  <p className="mt-2 text-gray-500 text-sm">द्विनोंदणी लोड होत आहे...</p>
                 </div>
               ) : !journalEntries || journalEntries.length === 0 ? (
-                <div className="p-8 text-center text-gray-500">या काळात कोणतेही जर्नल entries नाहीत</div>
+                <div className="p-8 text-center text-gray-500 text-sm">या काळात कोणतेही जर्नल entries नाहीत</div>
               ) : (
                 journalEntries.map((entry: any) => (
-                  <div key={entry.id} className="border-b">
-                    {/* Journal Entry Header */}
+                  <div key={entry.id} className="border-b border-gray-100">
                     <div className="p-3 bg-gray-50 border-b border-gray-200">
                       <div className="flex justify-between items-center">
-                        <div className="font-bold text-sm text-purple-800">
-                          📋 जर्नल #{entry.journalNumber}
+                        <div className="font-medium text-sm text-gray-800">
+                          जर्नल #{entry.journalNumber}
                         </div>
-                        <div className="text-xs text-gray-600">
+                        <div className="text-xs text-gray-500">
                           {DateUtils.isoToIndianDate(entry.transactionDate)}
                         </div>
                       </div>
                       {entry.narration && (
-                        <div className="text-xs text-gray-600 mt-1">{entry.narration}</div>
+                        <div className="text-xs text-gray-500 mt-1">{entry.narration}</div>
                       )}
                     </div>
                     
-                    {/* Debit Entries */}
                     {entry.entries?.filter((e: any) => e.type === 'debit').map((debitEntry: any, idx: number) => (
                       <div key={`debit-${idx}`} className="p-2 grid grid-cols-5 gap-1 text-sm border-b border-gray-100">
                         <div className="text-xs text-gray-500">
@@ -1566,11 +1437,11 @@ function MobileCashbook() {
                         <div className="text-xs text-gray-500">
                           {idx === 0 ? entry.journalNumber : ''}
                         </div>
-                        <div className="text-xs font-medium">
+                        <div className="text-xs font-medium text-gray-800">
                           {debitEntry.accountName}
                         </div>
                         <div className="text-center">
-                          <div className="bg-green-100 text-green-800 rounded px-2 py-1 text-xs font-bold">
+                          <div className="bg-green-50 text-green-700 rounded px-2 py-1 text-xs font-semibold border border-green-200">
                             ₹{Number(debitEntry.amount).toLocaleString('en-IN')}
                           </div>
                         </div>
@@ -1578,17 +1449,16 @@ function MobileCashbook() {
                       </div>
                     ))}
                     
-                    {/* Credit Entries */}
                     {entry.entries?.filter((e: any) => e.type === 'credit').map((creditEntry: any, idx: number) => (
                       <div key={`credit-${idx}`} className="p-2 grid grid-cols-5 gap-1 text-sm border-b border-gray-100">
                         <div></div>
                         <div></div>
-                        <div className="text-xs font-medium pl-4">
+                        <div className="text-xs font-medium text-gray-800 pl-4">
                           To {creditEntry.accountName}
                         </div>
                         <div></div>
                         <div className="text-center">
-                          <div className="bg-red-100 text-red-800 rounded px-2 py-1 text-xs font-bold">
+                          <div className="bg-red-50 text-red-700 rounded px-2 py-1 text-xs font-semibold border border-red-200">
                             ₹{Number(creditEntry.amount).toLocaleString('en-IN')}
                           </div>
                         </div>
@@ -1601,157 +1471,89 @@ function MobileCashbook() {
           )}
         </div>
 
-        {/* Enhanced Summary */}
-        <div className="p-2 mb-16">
-          <div className="bg-gradient-to-br from-gray-800 to-gray-900 text-white rounded-xl shadow-lg overflow-hidden">
+        {/* Summary Card */}
+        <div className="px-3 py-3">
+          <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
             <div className="p-4">
-              <div className="text-center mb-4">
-                <h3 className="text-lg font-bold text-yellow-300">
-                  📊 {viewMode === 'cashbook' ? 'रोखवही' : 'द्विनोंदणी'} सारांश
-                </h3>
-                <div className="text-xs text-gray-300 mt-1">{formatDisplayDate()}</div>
-
-                {viewMode === 'cashbook' && isBalanceAccurate && (
-                  <div className="text-xs text-green-300">✅ बॅलन्स accurate आहे</div>
-                )}
-                {viewMode === 'cashbook' && loanTransactionCount > 0 && (
-                  <div className="text-xs text-orange-300 mt-1">
-                    🔗 {loanTransactionCount} कर्ज entries auto-synced
-                  </div>
-                )}
-                {viewMode === 'journal' && (
-                  <div className="text-xs text-purple-300 mt-1">
-                    📋 द्विनोंदणी प्रणाली - प्रत्येक entry च्या दोन्ही बाजू
-                  </div>
-                )}
-              </div>
+              <h3 className="text-base font-semibold text-gray-800 text-center mb-1">सारांश</h3>
+              <div className="text-xs text-gray-500 text-center mb-4">{formatDisplayDate()}</div>
               
               <div className="grid grid-cols-2 gap-3 mb-4">
-                <div className="bg-green-600 rounded-lg p-3 text-center">
-                  <div className="text-xs opacity-90">⬆️ पैसे आले</div>
-                  <div className="font-bold text-sm">₹{totals.cashIn.toLocaleString('en-IN')}</div>
+                <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-center">
+                  <div className="text-xs text-green-600 font-medium">जमा</div>
+                  <div className="font-semibold text-green-600 text-sm mt-1">₹{totals.cashIn.toLocaleString('en-IN')}</div>
                 </div>
                 
-                <div className="bg-red-600 rounded-lg p-3 text-center">
-                  <div className="text-xs opacity-90">⬇️ पैसे दिले</div>
-                  <div className="font-bold text-sm">₹{totals.cashOut.toLocaleString('en-IN')}</div>
+                <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-center">
+                  <div className="text-xs text-red-600 font-medium">नावे</div>
+                  <div className="font-semibold text-red-600 text-sm mt-1">₹{totals.cashOut.toLocaleString('en-IN')}</div>
                 </div>
               </div>
               
-              <div className="border-t border-gray-600 pt-3">
+              <div className="space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span className="opacity-90">🏦 आरंभिक शिल्लक:</span>
-                  <span className="font-medium">₹{correctOpeningBalance.toLocaleString('en-IN')}</span>
+                  <span className="text-gray-500">आरंभिक शिल्लक:</span>
+                  <span className="font-medium text-gray-800">₹{correctOpeningBalance.toLocaleString('en-IN')}</span>
                 </div>
-                <div className="flex justify-between text-sm mt-1">
-                  <span className="opacity-90">🔄 निव्वळ फरक:</span>
-                  <span className={`font-medium ${(totals.cashIn - totals.cashOut) >= 0 ? 'text-green-300' : 'text-red-300'}`}>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-500">निव्वळ फरक:</span>
+                  <span className={`font-medium ${(totals.cashIn - totals.cashOut) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                     ₹{(totals.cashIn - totals.cashOut).toLocaleString('en-IN')}
                   </span>
                 </div>
-                <div className="flex justify-between text-sm mt-2 pt-2 border-t border-gray-600">
-                  <span className="opacity-90 font-semibold">💰 शिल्लक रक्कम:</span>
-                  <span className={`font-bold text-lg ${periodBalance >= 0 ? 'text-green-300' : 'text-red-300'}`}>
-                    ₹{periodBalance.toLocaleString('en-IN')}
-                  </span>
+                <div className="border-t border-gray-200 pt-2 mt-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-semibold text-gray-800">अंतिम शिल्लक:</span>
+                    <span className={`font-bold text-lg ${periodBalance >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
+                      ₹{periodBalance.toLocaleString('en-IN')}
+                    </span>
+                  </div>
                 </div>
-                
-
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Enhanced Fixed Bottom Action Buttons */}
-      {/* Bottom Action Buttons - Normal Mode */}
-      {!isFullScreen && (
-        <div className="fixed bottom-16 left-0 right-0 lg:left-1/2 lg:-translate-x-1/2 lg:max-w-lg lg:w-full bg-gradient-to-t from-white via-white to-transparent border-t-2 border-gray-200 p-3 grid grid-cols-2 gap-3 shadow-2xl z-40">
-          <Dialog open={isQuickEntryOpen && quickEntryType === 'cash_in'} onOpenChange={setIsQuickEntryOpen}>
-            <DialogTrigger asChild>
-              <Button 
-                className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white h-14 text-lg font-bold rounded-xl shadow-lg transform active:scale-95 transition-all"
-                onClick={() => {
-                  setQuickEntryType('cash_in');
-                  setIsQuickEntryOpen(true);
-                }}
-              >
-                <div className="flex flex-col items-center">
-                  <Plus className="h-6 w-6 mb-1" />
-                  <span className="text-sm">
-                    💰 पैसे आले
-                  </span>
-                </div>
-              </Button>
-            </DialogTrigger>
-          </Dialog>
+      {/* Bottom Action Buttons */}
+      <div className="fixed bottom-[72px] left-0 right-0 lg:left-1/2 lg:-translate-x-1/2 lg:max-w-lg lg:w-full bg-white border-t border-gray-200 p-3 grid grid-cols-2 gap-3 shadow-sm z-40">
+        <Dialog open={isQuickEntryOpen && quickEntryType === 'cash_in'} onOpenChange={setIsQuickEntryOpen}>
+          <DialogTrigger asChild>
+            <Button 
+              className="bg-green-500 hover:bg-green-600 text-white h-12 rounded-lg font-medium"
+              onClick={() => {
+                setQuickEntryType('cash_in');
+                setIsQuickEntryOpen(true);
+              }}
+            >
+              पैसे आले
+            </Button>
+          </DialogTrigger>
+        </Dialog>
 
-          <Dialog open={isQuickEntryOpen && quickEntryType === 'cash_out'} onOpenChange={setIsQuickEntryOpen}>
-            <DialogTrigger asChild>
-              <Button 
-                className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white h-14 text-lg font-bold rounded-xl shadow-lg transform active:scale-95 transition-all"
-                onClick={() => {
-                  setQuickEntryType('cash_out');
-                  setIsQuickEntryOpen(true);
-                }}
-              >
-                <div className="flex flex-col items-center">
-                  <Minus className="h-6 w-6 mb-1" />
-                  <span className="text-sm">
-                    💸 पैसे दिले
-                  </span>
-                </div>
-              </Button>
-            </DialogTrigger>
-          </Dialog>
+        <Dialog open={isQuickEntryOpen && quickEntryType === 'cash_out'} onOpenChange={setIsQuickEntryOpen}>
+          <DialogTrigger asChild>
+            <Button 
+              className="bg-red-500 hover:bg-red-600 text-white h-12 rounded-lg font-medium"
+              onClick={() => {
+                setQuickEntryType('cash_out');
+                setIsQuickEntryOpen(true);
+              }}
+            >
+              पैसे दिले
+            </Button>
+          </DialogTrigger>
+        </Dialog>
+      </div>
 
-
-        </div>
-      )}
-
-      {/* Full Screen Floating Action Buttons */}
-      {isFullScreen && (
-        <div className="fixed bottom-8 right-6 flex flex-col gap-3 z-[60]">
-          <Dialog open={isQuickEntryOpen && quickEntryType === 'cash_in'} onOpenChange={setIsQuickEntryOpen}>
-            <DialogTrigger asChild>
-              <Button 
-                className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white shadow-xl rounded-full w-16 h-16 flex items-center justify-center transform hover:scale-105 transition-all"
-                onClick={() => {
-                  setQuickEntryType('cash_in');
-                  setIsQuickEntryOpen(true);
-                }}
-              >
-                <Plus className="h-8 w-8" />
-              </Button>
-            </DialogTrigger>
-          </Dialog>
-
-          <Dialog open={isQuickEntryOpen && quickEntryType === 'cash_out'} onOpenChange={setIsQuickEntryOpen}>
-            <DialogTrigger asChild>
-              <Button 
-                className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white shadow-xl rounded-full w-16 h-16 flex items-center justify-center transform hover:scale-105 transition-all"
-                onClick={() => {
-                  setQuickEntryType('cash_out');
-                  setIsQuickEntryOpen(true);
-                }}
-              >
-                <Minus className="h-8 w-8" />
-              </Button>
-            </DialogTrigger>
-          </Dialog>
-
-
-        </div>
-      )}
-
-      {/* Enhanced Quick Entry Dialog */}
+      {/* Quick Entry Dialog */}
       <Dialog open={isQuickEntryOpen} onOpenChange={setIsQuickEntryOpen}>
         <DialogContent className="sm:max-w-md mx-4 max-h-[85vh] overflow-y-auto" aria-describedby="quick-entry-description">
           <DialogHeader>
             <DialogTitle className={`text-center text-xl font-bold ${
-              quickEntryType === 'cash_in' ? 'text-green-700' : 'text-red-700'
+              quickEntryType === 'cash_in' ? 'text-green-600' : 'text-red-600'
             }`}>
-{quickEntryType === 'cash_in' ? '💰 पैसे आले' : '💸 पैसे दिले'}
+              {quickEntryType === 'cash_in' ? 'पैसे आले' : 'पैसे दिले'}
             </DialogTitle>
           </DialogHeader>
           <div id="quick-entry-description" className="sr-only">
@@ -1761,7 +1563,7 @@ function MobileCashbook() {
           <div className="space-y-5">
             <div className="bg-gray-50 p-3 rounded-lg">
               <Label className="text-sm font-semibold text-gray-800">
-                💵 रक्कम *
+                रक्कम *
               </Label>
               <Input
                 type="number"
@@ -1775,35 +1577,34 @@ function MobileCashbook() {
             
             <div className="bg-gray-50 p-3 rounded-lg">
               <Label className="text-sm font-semibold text-gray-800">
-                📝 तपशील *
+                तपशील *
               </Label>
               <Input
-placeholder="व्यवहाराचा तपशील लिहा... / Enter details..."
+                placeholder="व्यवहाराचा तपशील लिहा..."
                 value={quickEntryForm.narration}
                 onChange={(e) => setQuickEntryForm(prev => ({ ...prev, narration: e.target.value }))}
                 className="mt-2 h-10"
               />
             </div>
             
-            {/* Party Selection - Dual Entry Logic */}
             <div className="bg-gray-50 p-3 rounded-lg">
               <Label className="text-sm font-semibold text-gray-800">
-                👤 व्यक्ती (पर्यायी - dual entry साठी)
+                व्यक्ती (पर्यायी - dual entry साठी)
               </Label>
               <div className="mt-2">
                 <PartySelector
                   value={quickEntryForm.partyId || undefined}
                   onValueChange={(value) => setQuickEntryForm(prev => ({ ...prev, partyId: value || null }))}
-                  placeholder="व्यक्ती निवडा - गणेश निवडल्यास 'गणेश ↔ रोकड' dual entry होईल"
+                  placeholder="व्यक्ती निवडा"
                 />
               </div>
               <div className="mt-2 text-xs text-blue-600">
-                💡 व्यक्ती निवडल्यास automatic dual entry होईल: गणेश ↔ रोकड
+                व्यक्ती निवडल्यास automatic dual entry होईल
               </div>
             </div>
             
             <div className="bg-gray-50 p-3 rounded-lg">
-              <Label className="text-sm font-semibold text-gray-800">📂 प्रकार</Label>
+              <Label className="text-sm font-semibold text-gray-800">प्रकार</Label>
               <Select 
                 value={quickEntryForm.category} 
                 onValueChange={(value) => setQuickEntryForm(prev => ({ ...prev, category: value }))}
@@ -1812,15 +1613,13 @@ placeholder="व्यवहाराचा तपशील लिहा... / En
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="capital">🏦 भांडवल</SelectItem>
-                  <SelectItem value="income">📈 उत्पन्न</SelectItem>
-                  <SelectItem value="expense">📉 खर्च</SelectItem>
-                  <SelectItem value="other">📋 इतर</SelectItem>
+                  <SelectItem value="capital">भांडवल</SelectItem>
+                  <SelectItem value="income">उत्पन्न</SelectItem>
+                  <SelectItem value="expense">खर्च</SelectItem>
+                  <SelectItem value="other">इतर</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-            
-
             
             <div className="grid grid-cols-2 gap-3 pt-3">
               <Button 
@@ -1828,7 +1627,7 @@ placeholder="व्यवहाराचा तपशील लिहा... / En
                 onClick={() => setIsQuickEntryOpen(false)}
                 className="h-10"
               >
-                ❌ रद्द
+                रद्द
               </Button>
               <Button 
                 onClick={() => {
@@ -1840,25 +1639,24 @@ placeholder="व्यवहाराचा तपशील लिहा... / En
                     });
                     return;
                   }
-                  
                   handleQuickEntry();
                 }}
                 disabled={createMutation.isPending}
-                className="bg-blue-600 hover:bg-blue-700 h-10"
+                className="bg-blue-500 hover:bg-blue-600 h-10"
               >
-                {createMutation.isPending ? "⏳ जतन होत आहे..." : "✅ जतन करा"}
+                {createMutation.isPending ? "जतन होत आहे..." : "जतन करा"}
               </Button>
             </div>
           </div>
         </DialogContent>
       </Dialog>
 
-      {/* Enhanced Edit Transaction Dialog */}
+      {/* Edit Transaction Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="sm:max-w-md mx-4 max-h-[85vh] overflow-y-auto" aria-describedby="edit-transaction-mobile-description">
           <DialogHeader>
-            <DialogTitle className="text-center text-xl font-bold text-blue-700">
-              ✏️ व्यवहार संपादित करा
+            <DialogTitle className="text-center text-xl font-bold text-gray-800">
+              व्यवहार संपादित करा
             </DialogTitle>
           </DialogHeader>
           <div id="edit-transaction-mobile-description" className="sr-only">
@@ -1867,8 +1665,8 @@ placeholder="व्यवहाराचा तपशील लिहा... / En
           
           {editingTransaction && (
             <div className="space-y-5">
-              <div className="bg-blue-50 p-4 rounded-lg">
-                <Label className="text-lg font-semibold text-gray-800">💵 रक्कम</Label>
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <Label className="text-sm font-semibold text-gray-800">रक्कम</Label>
                 <Input
                   type="number"
                   value={editingTransaction.amount}
@@ -1877,8 +1675,8 @@ placeholder="व्यवहाराचा तपशील लिहा... / En
                 />
               </div>
               
-              <div className="bg-blue-50 p-4 rounded-lg">
-                <Label className="text-lg font-semibold text-gray-800">📝 तपशील</Label>
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <Label className="text-sm font-semibold text-gray-800">तपशील</Label>
                 <Input
                   value={editingTransaction.narration}
                   onChange={(e) => setEditingTransaction((prev: any) => ({ ...prev, narration: e.target.value }))}
@@ -1886,10 +1684,9 @@ placeholder="व्यवहाराचा तपशील लिहा... / En
                 />
               </div>
               
-              {/* Party Selection for Dual Entry Transactions */}
               {editingTransaction?.partyId && editingTransaction?.partyId !== 'cash' && (
-                <div className="bg-yellow-50 p-4 rounded-lg border-2 border-yellow-200">
-                  <Label className="text-lg font-semibold text-gray-800">👤 पार्टी (द्विनोंदणी)</Label>
+                <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                  <Label className="text-sm font-semibold text-gray-800">पार्टी (द्विनोंदणी)</Label>
                   <Select 
                     value={editingTransaction.partyId} 
                     onValueChange={(value) => setEditingTransaction((prev: any) => ({ ...prev, partyId: value }))}
@@ -1900,12 +1697,12 @@ placeholder="व्यवहाराचा तपशील लिहा... / En
                     <SelectContent>
                       {partiesList?.map((party: any) => (
                         <SelectItem key={party.id} value={party.id}>
-                          👤 {party.name}
+                          {party.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
-                  <div className="text-xs text-yellow-700 mt-1 font-medium">
+                  <div className="text-xs text-gray-500 mt-1">
                     द्विनोंदणी: पार्टी बदलल्यास दोन्ही अकाउंट मध्ये बदल होईल
                   </div>
                 </div>
@@ -1917,7 +1714,7 @@ placeholder="व्यवहाराचा तपशील लिहा... / En
                   onClick={() => setIsEditDialogOpen(false)}
                   className="h-12"
                 >
-                  ❌ रद्द
+                  रद्द
                 </Button>
                 
                 <Button 
@@ -1927,14 +1724,14 @@ placeholder="व्यवहाराचा तपशील लिहा... / En
                       data: {
                         amount: editingTransaction.amount,
                         narration: editingTransaction.narration,
-                        partyId: editingTransaction.partyId, // Include party update for dual entry
+                        partyId: editingTransaction.partyId,
                       }
                     });
                   }}
                   disabled={updateMutation.isPending}
-                  className="bg-blue-600 hover:bg-blue-700 h-12"
+                  className="bg-blue-500 hover:bg-blue-600 h-12"
                 >
-                  {updateMutation.isPending ? "⏳" : "✅ अपडेट"}
+                  {updateMutation.isPending ? "..." : "अपडेट"}
                 </Button>
                 
                 <Button 
@@ -1943,14 +1740,13 @@ placeholder="व्यवहाराचा तपशील लिहा... / En
                   disabled={deleteMutation.isPending}
                   className="h-12"
                 >
-                  {deleteMutation.isPending ? "⏳" : "🗑️ हटवा"}
+                  {deleteMutation.isPending ? "..." : "हटवा"}
                 </Button>
               </div>
             </div>
           )}
         </DialogContent>
       </Dialog>
-
 
     </div>
   );
