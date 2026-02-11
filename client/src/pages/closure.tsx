@@ -474,24 +474,17 @@ export default function Closure() {
       let result;
       
       if (interestType === "simple") {
-        // Handle rate conversion for Simple Interest
         let simpleInterestRate = effectiveRate;
         if (selectedLoan.interestRateType === "monthly") {
-          simpleInterestRate = effectiveRate * 12; // Convert monthly to yearly for 365-day formula
+          simpleInterestRate = effectiveRate * 12;
         }
         
-        // Use calendar-based calculation (same as fixed interest calculator)
         const timePeriod = LoanCalculationsAdvanced.calculateTimePeriod(
           new Date(selectedLoan.loanDate),
           closureDate
         );
         
         const timeInDays = timePeriod.totalDays;
-        const years = timePeriod.years;
-        const months = timePeriod.months;
-        const days = timePeriod.days;
-        
-        // Use proper banking standard 365-day calculation
         const principalNum = Number(selectedLoan.principalAmount);
         const interestAmount = LoanCalculations.calculateSimpleInterest(
           principalNum,
@@ -499,38 +492,34 @@ export default function Closure() {
           timeInDays
         );
         
-        
-        const fullMo = years * 12 + months;
-        let dayFrac = 0;
-        if (days > 0) {
-          switch (advancedCalculationMode) {
-            case 'month': dayFrac = 1; break;
-            case 'half_month':
-              dayFrac = days <= 15 ? 0.5 : 1;
-              break;
-            case 'week':
-              if (days <= 7) dayFrac = 0.25;
-              else if (days <= 15) dayFrac = 0.5;
-              else if (days <= 22) dayFrac = 0.75;
-              else dayFrac = 1;
-              break;
-            default: dayFrac = 0.5; break;
-          }
-        }
+        const calcModeMap: Record<string, string> = {
+          'month': 'month',
+          'half_month': 'half-month',
+          'week': 'week',
+          'day': 'daily'
+        };
+        const closureCalcResult = LoanCalculationsAdvanced.calculateInterestForClosure(
+          principalNum,
+          effectiveRate,
+          new Date(selectedLoan.loanDate),
+          closureDate,
+          'simple',
+          (calcModeMap[advancedCalculationMode] || 'half-month') as any
+        );
         
         result = {
           interestAmount: interestAmount,
           totalPayable: principalNum + interestAmount,
           durationInDays: timeInDays,
-          durationInMonths: fullMo + dayFrac,
-          years: years,
-          months: months,  
-          days: days,
+          durationInMonths: closureCalcResult.durationInMonths,
+          years: timePeriod.years,
+          months: timePeriod.months,  
+          days: timePeriod.days,
           breakdown: {
-            principalAmount: Number(selectedLoan.principalAmount),
+            principalAmount: principalNum,
             interestRate: simpleInterestRate,
             calculationType: 'simple' as const,
-            calculationMode: 'daily' as const,
+            calculationMode: (calcModeMap[advancedCalculationMode] || 'daily') as any,
             periodUsed: `${timeInDays} दिवस`
           }
         };
@@ -725,36 +714,12 @@ export default function Closure() {
     const finalCharges = parseFinalInterest(finalInterestValue, calculationResult.interestAmount);
 
     let monthsDisplay = '';
-    const calcMode = form.getValues("advancedCalculationMode");
-    const interestType = form.getValues("interestType");
-    if (interestType !== "simple" && calculationResult.durationInMonths !== undefined) {
+    if (calculationResult.durationInMonths !== undefined) {
       monthsDisplay = formatRate(calculationResult.durationInMonths);
     } else {
       const y = calculationResult.years || 0;
       const m = calculationResult.months || 0;
-      const d = calculationResult.days || 0;
-      const fullMonths = y * 12 + m;
-      let dayFraction = 0;
-      if (d > 0) {
-        switch (calcMode) {
-          case 'month':
-            dayFraction = 1;
-            break;
-          case 'half_month':
-            dayFraction = d <= 15 ? 0.5 : 1;
-            break;
-          case 'week':
-            if (d <= 7) dayFraction = 0.25;
-            else if (d <= 15) dayFraction = 0.5;
-            else if (d <= 22) dayFraction = 0.75;
-            else dayFraction = 1;
-            break;
-          default:
-            dayFraction = 0.5;
-            break;
-        }
-      }
-      monthsDisplay = formatRate(fullMonths + dayFraction);
+      monthsDisplay = formatRate(y * 12 + m);
     }
 
     const effectiveRate = form.getValues("useCustomRate") && form.getValues("customInterestRate")
