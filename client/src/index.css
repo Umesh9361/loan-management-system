@@ -212,21 +212,21 @@ input[type="date"].date-input-dd-mm-yyyy:not(:placeholder-shown) {
 
 /* Mobile Cashbook Date Picker Specific Styles */
 .mobile-cashbook input[type="date"] {
-  background: rgba(255, 255, 255, 0.15) !important;
-  border: 1px solid rgba(255, 255, 255, 0.3) !important;
-  color: white !important;
-  -webkit-text-fill-color: white !important;
-  border-radius: 6px;
+  background: #f9fafb !important;
+  border: 1px solid #e5e7eb !important;
+  color: #1f2937 !important;
+  -webkit-text-fill-color: #1f2937 !important;
+  border-radius: 8px;
   padding: 8px 12px;
   width: 100%;
   text-align: center;
   font-size: 0.875rem;
-  backdrop-filter: blur(10px);
 }
 
 .mobile-cashbook input[type="date"]::-webkit-calendar-picker-indicator {
-  filter: invert(1);
+  filter: none;
   cursor: pointer;
+  opacity: 0.7;
 }
 
 .mobile-cashbook input[type="date"]::-webkit-inner-spin-button,
@@ -236,8 +236,9 @@ input[type="date"].date-input-dd-mm-yyyy:not(:placeholder-shown) {
 }
 
 .mobile-cashbook input[type="date"]:focus {
-  outline: 2px solid rgba(255, 255, 255, 0.5);
-  background: rgba(255, 255, 255, 0.25) !important;
+  outline: 2px solid #3b82f6;
+  outline-offset: 1px;
+  background: #ffffff !important;
 }
 
 .mobile-cashbook input[type="date"]::-webkit-datetime-edit,
@@ -246,8 +247,8 @@ input[type="date"].date-input-dd-mm-yyyy:not(:placeholder-shown) {
 .mobile-cashbook input[type="date"]::-webkit-datetime-edit-month-field,
 .mobile-cashbook input[type="date"]::-webkit-datetime-edit-day-field,
 .mobile-cashbook input[type="date"]::-webkit-datetime-edit-year-field {
-  -webkit-text-fill-color: white !important;
-  color: white !important;
+  -webkit-text-fill-color: #1f2937 !important;
+  color: #1f2937 !important;
   background: transparent !important;
   opacity: 1 !important;
 }
