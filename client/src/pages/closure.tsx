@@ -95,13 +95,7 @@ export default function Closure() {
       return saved ? Number(saved) : 1;
     } catch { return 1; }
   });
-  const [activeTab, setActiveTab] = useState<string>(() => {
-    try {
-      const saved = sessionStorage.getItem(SUMMARY_STORAGE_KEY);
-      const entries = saved ? JSON.parse(saved) : [];
-      return entries.length > 0 ? "summary" : "closure";
-    } catch { return "closure"; }
-  });
+  const [activeTab, setActiveTab] = useState<string>("closure");
   const [showSummaryReceipt, setShowSummaryReceipt] = useState(false);
   const [summaryReceiptHTML, setSummaryReceiptHTML] = useState<string | null>(null);
   
