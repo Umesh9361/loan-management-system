@@ -606,7 +606,7 @@ export default function Closure() {
           <div style="font-size:${fontSize};color:#444;">${lastEntry.borrowerAddress || ''}</div>
         </div>
         <div style="text-align:right;">
-          <div style="font-size:${fontSize};">तारीख: ${closureDateFormatted}</div>
+          <div style="font-size:${fontSize};font-weight:700;">तारीख: ${closureDateFormatted}</div>
           ${totalPages > 1 ? `<div style="font-size:${fontSize};color:#888;">पान ${pageNum}/${totalPages}</div>` : ''}
         </div>
       </div>
