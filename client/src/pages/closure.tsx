@@ -500,12 +500,27 @@ export default function Closure() {
         );
         
         
+        const fullMo = years * 12 + months;
+        let dayFrac = 0;
+        if (days > 0) {
+          switch (advancedCalculationMode) {
+            case 'month': dayFrac = 1; break;
+            case 'half_month': dayFrac = days <= 15 ? 0.5 : 1; break;
+            case 'week':
+              if (days <= 7) dayFrac = 0.25;
+              else if (days <= 15) dayFrac = 0.5;
+              else if (days <= 22) dayFrac = 0.75;
+              else dayFrac = 1;
+              break;
+            default: dayFrac = days > 15 ? 0.5 : 0; break;
+          }
+        }
+        
         result = {
           interestAmount: interestAmount,
           totalPayable: principalNum + interestAmount,
           durationInDays: timeInDays,
-          durationInMonths: Math.round(timeInDays / 30),
-          // Add detailed period breakdown
+          durationInMonths: fullMo + dayFrac,
           years: years,
           months: months,  
           days: days,
@@ -602,12 +617,12 @@ export default function Closure() {
     const makeHeader = (pageNum: number) => `
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px;">
         <div>
-          <div style="font-weight:700;font-size:${fontSize};">${lastEntry.borrowerName}</div>
-          <div style="font-size:${fontSize};color:#444;">${lastEntry.borrowerAddress || ''}</div>
+          <div style="font-weight:700;font-size:13px;">${lastEntry.borrowerName}</div>
+          <div style="font-size:${fontSize};color:#333;">${lastEntry.borrowerAddress || ''}</div>
         </div>
         <div style="text-align:right;">
           <div style="font-size:${fontSize};font-weight:700;">तारीख: ${closureDateFormatted}</div>
-          ${totalPages > 1 ? `<div style="font-size:${fontSize};color:#888;">पान ${pageNum}/${totalPages}</div>` : ''}
+          ${totalPages > 1 ? `<div style="font-size:${fontSize};color:#666;">पान ${pageNum}/${totalPages}</div>` : ''}
         </div>
       </div>
       <div style="text-align:center;font-weight:700;font-size:${fontSize};margin-bottom:3px;text-decoration:underline;">Estimate</div>`;
@@ -623,27 +638,27 @@ export default function Closure() {
         <col style="width:65px;">
       </colgroup>
       <thead>
-      <tr style="background:#f0f0f0;">
-        <th style="border:1px solid #555;padding:2px 3px;font-size:${fontSize};text-align:center;">अ.नं.</th>
-        <th style="border:1px solid #555;padding:2px 4px;font-size:${fontSize};text-align:left;">तपशील</th>
-        <th style="border:1px solid #555;padding:2px 3px;font-size:${fontSize};text-align:center;font-weight:700;">कोड नं</th>
-        <th style="border:1px solid #555;padding:2px 3px;font-size:${fontSize};text-align:center;">दिनांक</th>
-        ${showCols ? `<th style="border:1px solid #555;padding:2px 2px;font-size:${fontSize};text-align:center;"></th>
-        <th style="border:1px solid #555;padding:2px 2px;font-size:${fontSize};text-align:center;"></th>` : ''}
-        <th style="border:1px solid #555;padding:2px 4px;font-size:${fontSize};text-align:right;">बाजारमूल्य</th>
-        <th style="border:1px solid #555;padding:2px 4px;font-size:${fontSize};text-align:right;">चार्जेस</th>
+      <tr>
+        <th style="border:1px solid #000;padding:3px 3px;font-size:${fontSize};text-align:center;vertical-align:middle;font-weight:700;">अ.नं.</th>
+        <th style="border:1px solid #000;padding:3px 4px;font-size:${fontSize};text-align:left;vertical-align:middle;font-weight:700;">तपशील</th>
+        <th style="border:1px solid #000;padding:3px 3px;font-size:${fontSize};text-align:center;vertical-align:middle;font-weight:700;">कोड नं</th>
+        <th style="border:1px solid #000;padding:3px 3px;font-size:${fontSize};text-align:center;vertical-align:middle;font-weight:700;">दिनांक</th>
+        ${showCols ? `<th style="border:1px solid #000;padding:3px 2px;font-size:${fontSize};text-align:center;vertical-align:middle;font-weight:700;"></th>
+        <th style="border:1px solid #000;padding:3px 2px;font-size:${fontSize};text-align:center;vertical-align:middle;font-weight:700;"></th>` : ''}
+        <th style="border:1px solid #000;padding:3px 4px;font-size:${fontSize};text-align:right;vertical-align:middle;font-weight:700;">बाजारमूल्य</th>
+        <th style="border:1px solid #000;padding:3px 4px;font-size:${fontSize};text-align:right;vertical-align:middle;font-weight:700;">चार्जेस</th>
       </tr>
     </thead>`;
 
     const makeRow = (entry: SummaryEntry, index: number) => `<tr>
-      <td style="border:1px solid #555;padding:2px 3px;text-align:center;font-size:${fontSize};">${index + 1}</td>
-      <td style="border:1px solid #555;padding:2px 4px;font-size:${fontSize};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${entry.collateralDetails || '-'}</td>
-      <td style="border:1px solid #555;padding:2px 3px;text-align:center;font-size:${fontSize};font-weight:700;">${entry.accountNumber}</td>
-      <td style="border:1px solid #555;padding:2px 3px;text-align:center;font-size:${fontSize};">${toShortDate(entry.loanDate)}</td>
-      ${showCols ? `<td style="border:1px solid #555;padding:2px 2px;text-align:center;font-size:${fontSize};">${entry.months}</td>
-      <td style="border:1px solid #555;padding:2px 2px;text-align:center;font-size:${fontSize};">${formatRate(entry.interestRate)}%</td>` : ''}
-      <td style="border:1px solid #555;padding:2px 4px;text-align:right;font-size:${fontSize};font-weight:700;">${Number(Math.round(entry.principalAmount)).toLocaleString('en-IN')}</td>
-      <td style="border:1px solid #555;padding:2px 4px;text-align:right;font-size:${fontSize};font-weight:700;">${Number(Math.round(entry.chargesAmount)).toLocaleString('en-IN')}</td>
+      <td style="border-left:1px solid #000;border-right:1px solid #000;border-bottom:none;padding:4px 3px;text-align:center;font-size:${fontSize};vertical-align:middle;">${index + 1}</td>
+      <td style="border-left:1px solid #000;border-right:1px solid #000;border-bottom:none;padding:4px 4px;font-size:${fontSize};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:middle;">${entry.collateralDetails || '-'}</td>
+      <td style="border-left:1px solid #000;border-right:1px solid #000;border-bottom:none;padding:4px 3px;text-align:center;font-size:${fontSize};font-weight:700;vertical-align:middle;">${entry.accountNumber}</td>
+      <td style="border-left:1px solid #000;border-right:1px solid #000;border-bottom:none;padding:4px 3px;text-align:center;font-size:${fontSize};vertical-align:middle;">${toShortDate(entry.loanDate)}</td>
+      ${showCols ? `<td style="border-left:1px solid #000;border-right:1px solid #000;border-bottom:none;padding:4px 2px;text-align:center;font-size:${fontSize};vertical-align:middle;">${entry.months}</td>
+      <td style="border-left:1px solid #000;border-right:1px solid #000;border-bottom:none;padding:4px 2px;text-align:center;font-size:${fontSize};vertical-align:middle;">${formatRate(entry.interestRate)}%</td>` : ''}
+      <td style="border-left:1px solid #000;border-right:1px solid #000;border-bottom:none;padding:4px 4px;text-align:right;font-size:${fontSize};font-weight:700;vertical-align:middle;">${Number(Math.round(entry.principalAmount)).toLocaleString('en-IN')}</td>
+      <td style="border-left:1px solid #000;border-right:1px solid #000;border-bottom:none;padding:4px 4px;text-align:right;font-size:${fontSize};font-weight:700;vertical-align:middle;">${Number(Math.round(entry.chargesAmount)).toLocaleString('en-IN')}</td>
     </tr>`;
 
     let pagesHTML = '';
@@ -657,14 +672,14 @@ export default function Closure() {
       });
 
       const totalsHTML = isLastPage ? `
-        <tr style="background:#f0f0f0;font-weight:700;">
-          <td colspan="${totalColSpan}" style="border:1px solid #555;padding:2px 4px;text-align:right;font-size:${fontSize};font-weight:700;">एकूण</td>
-          <td style="border:1px solid #555;padding:2px 4px;text-align:right;font-size:${fontSize};font-weight:700;">${Number(Math.round(totalPrincipal)).toLocaleString('en-IN')}</td>
-          <td style="border:1px solid #555;padding:2px 4px;text-align:right;font-size:${fontSize};font-weight:700;">${Number(Math.round(totalCharges)).toLocaleString('en-IN')}</td>
+        <tr>
+          <td colspan="${totalColSpan}" style="border-top:1px solid #000;border-left:1px solid #000;border-right:1px solid #000;border-bottom:none;padding:4px 4px;text-align:right;font-size:${fontSize};font-weight:700;vertical-align:middle;">एकूण</td>
+          <td style="border-top:1px solid #000;border-left:1px solid #000;border-right:1px solid #000;border-bottom:none;padding:4px 4px;text-align:right;font-size:${fontSize};font-weight:700;vertical-align:middle;">${Number(Math.round(totalPrincipal)).toLocaleString('en-IN')}</td>
+          <td style="border-top:1px solid #000;border-left:1px solid #000;border-right:1px solid #000;border-bottom:none;padding:4px 4px;text-align:right;font-size:${fontSize};font-weight:700;vertical-align:middle;">${Number(Math.round(totalCharges)).toLocaleString('en-IN')}</td>
         </tr>
-        <tr style="background:#e0e0e0;font-weight:700;">
-          <td colspan="${grandTotalColSpan}" style="border:1px solid #555;padding:3px 4px;text-align:right;font-size:12px;font-weight:800;">Grand Total</td>
-          <td style="border:1px solid #555;padding:3px 4px;text-align:right;font-size:13px;font-weight:900;">${Number(Math.round(grandTotal)).toLocaleString('en-IN')}</td>
+        <tr>
+          <td colspan="${grandTotalColSpan}" style="border-top:2px double #000;border-bottom:2px double #000;border-left:1px solid #000;border-right:1px solid #000;padding:6px 4px;text-align:right;font-size:${fontSize};font-weight:700;vertical-align:middle;">Grand Total</td>
+          <td style="border-top:2px double #000;border-bottom:2px double #000;border-left:1px solid #000;border-right:1px solid #000;padding:6px 4px;text-align:right;font-size:${fontSize};font-weight:700;vertical-align:middle;">${Number(Math.round(grandTotal)).toLocaleString('en-IN')}</td>
         </tr>` : '';
 
       const continuedNote = !isLastPage ? `<div style="text-align:right;font-size:${fontSize};color:#888;margin-top:1px;">पुढे चालू...</div>` : '';
@@ -708,14 +723,36 @@ export default function Closure() {
     const finalCharges = parseFinalInterest(finalInterestValue, calculationResult.interestAmount);
 
     let monthsDisplay = '';
-    if (calculationResult.durationInMonths !== undefined) {
+    const calcMode = form.getValues("advancedCalculationMode");
+    const interestType = form.getValues("interestType");
+    if (interestType !== "simple" && calculationResult.durationInMonths !== undefined) {
       monthsDisplay = formatRate(calculationResult.durationInMonths);
     } else {
       const y = calculationResult.years || 0;
       const m = calculationResult.months || 0;
       const d = calculationResult.days || 0;
-      const totalMonths = y * 12 + m + (d > 15 ? 0.5 : 0);
-      monthsDisplay = formatRate(totalMonths);
+      const fullMonths = y * 12 + m;
+      let dayFraction = 0;
+      if (d > 0) {
+        switch (calcMode) {
+          case 'month':
+            dayFraction = 1;
+            break;
+          case 'half_month':
+            dayFraction = d <= 15 ? 0.5 : 1;
+            break;
+          case 'week':
+            if (d <= 7) dayFraction = 0.25;
+            else if (d <= 15) dayFraction = 0.5;
+            else if (d <= 22) dayFraction = 0.75;
+            else dayFraction = 1;
+            break;
+          default:
+            dayFraction = d > 15 ? 0.5 : 0;
+            break;
+        }
+      }
+      monthsDisplay = formatRate(fullMonths + dayFraction);
     }
 
     const effectiveRate = form.getValues("useCustomRate") && form.getValues("customInterestRate")
@@ -815,8 +852,10 @@ export default function Closure() {
         box-shadow: none !important;
         margin: 0 !important;
         font-size: 10px !important;
-        line-height: 1.5 !important;
+        line-height: 1.4 !important;
         box-sizing: border-box !important;
+        -webkit-font-smoothing: antialiased !important;
+        text-rendering: optimizeLegibility !important;
       }
       table {
         border-collapse: collapse !important;
@@ -871,7 +910,7 @@ export default function Closure() {
         for (let i = 0; i < pages.length; i++) {
           const page = pages[i];
           const canvas = await html2canvas(page, {
-            scale: 4,
+            scale: 6,
             useCORS: true,
             logging: false,
             backgroundColor: '#ffffff',
@@ -879,13 +918,13 @@ export default function Closure() {
             windowWidth: 794,
             windowHeight: 280,
           });
-          const imgData = canvas.toDataURL('image/png');
+          const imgData = canvas.toDataURL('image/png', 1.0);
           if (i > 0) doc.addPage();
           doc.addImage(imgData, 'PNG', 0, 0, a5W, a5H);
         }
       } else {
         const canvas = await html2canvas(wrapper, {
-          scale: 4,
+          scale: 6,
           useCORS: true,
           logging: false,
           backgroundColor: '#ffffff',
@@ -893,7 +932,7 @@ export default function Closure() {
           windowWidth: 794,
           windowHeight: 280,
         });
-        const imgData = canvas.toDataURL('image/png');
+        const imgData = canvas.toDataURL('image/png', 1.0);
         doc.addImage(imgData, 'PNG', 0, 0, a5W, a5H);
       }
 
