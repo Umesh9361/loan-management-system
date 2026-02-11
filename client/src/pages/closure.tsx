@@ -505,14 +505,9 @@ export default function Closure() {
         if (days > 0) {
           switch (advancedCalculationMode) {
             case 'month': dayFrac = 1; break;
-            case 'half_month': dayFrac = days <= 15 ? 0.5 : 1; break;
-            case 'week':
-              if (days <= 7) dayFrac = 0.25;
-              else if (days <= 15) dayFrac = 0.5;
-              else if (days <= 22) dayFrac = 0.75;
-              else dayFrac = 1;
-              break;
-            default: dayFrac = days > 15 ? 0.5 : 0; break;
+            case 'half_month': dayFrac = 0.5; break;
+            case 'week': dayFrac = 0.25; break;
+            default: dayFrac = 0.5; break;
           }
         }
         
@@ -739,16 +734,13 @@ export default function Closure() {
             dayFraction = 1;
             break;
           case 'half_month':
-            dayFraction = d <= 15 ? 0.5 : 1;
+            dayFraction = 0.5;
             break;
           case 'week':
-            if (d <= 7) dayFraction = 0.25;
-            else if (d <= 15) dayFraction = 0.5;
-            else if (d <= 22) dayFraction = 0.75;
-            else dayFraction = 1;
+            dayFraction = 0.25;
             break;
           default:
-            dayFraction = d > 15 ? 0.5 : 0;
+            dayFraction = 0.5;
             break;
         }
       }
