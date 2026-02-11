@@ -1051,8 +1051,6 @@ export default function Closure() {
                   </Button>
                 </Link>
               </div>
-              <h1 className="text-2xl font-semibold text-gray-900 font-noto">कर्ज बंद करा - सरल पद्धत</h1>
-              <p className="text-gray-600 font-noto">एकाच field मध्ये अंतिम रक्कम एंटर करा</p>
             </div>
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
