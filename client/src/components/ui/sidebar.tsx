@@ -260,6 +260,8 @@ export function Sidebar({ className }: SidebarProps) {
   }, []);
 
   const handleLogout = async () => {
+    sessionStorage.removeItem('closure_summary_entries');
+    sessionStorage.removeItem('closure_summary_counter');
     await AuthService.logout();
     window.location.reload();
   };
