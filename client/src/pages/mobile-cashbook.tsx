@@ -1109,9 +1109,6 @@ function MobileCashbook() {
                     className="font-inter text-gray-900"
                     style={{ colorScheme: 'light' }}
                   />
-                  <div className="text-xs text-blue-500 mt-1 font-medium">
-                    {customDateRange.startDate && DateUtils.isoToIndianDate(customDateRange.startDate)}
-                  </div>
                 </div>
                 <div className="bg-white rounded-lg p-3 border-2 border-blue-200">
                   <div className="text-sm text-blue-600 font-semibold mb-2">
@@ -1125,9 +1122,6 @@ function MobileCashbook() {
                     className="font-inter text-gray-900"
                     style={{ colorScheme: 'light' }}
                   />
-                  <div className="text-xs text-blue-500 mt-1 font-medium">
-                    {customDateRange.endDate && DateUtils.isoToIndianDate(customDateRange.endDate)}
-                  </div>
                 </div>
               </div>
               <div className="flex gap-2">
