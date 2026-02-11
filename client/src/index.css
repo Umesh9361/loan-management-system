@@ -252,6 +252,42 @@ input[type="date"].date-input-dd-mm-yyyy:not(:placeholder-shown) {
   opacity: 1 !important;
 }
 
+/* Custom Date Range Dialog - date inputs on WHITE background need DARK text */
+.mobile-cashbook .custom-date-range input[type="date"] {
+  background: #f8fafc !important;
+  border: 2px solid #3b82f6 !important;
+  color: #1e293b !important;
+  -webkit-text-fill-color: #1e293b !important;
+  font-size: 1rem;
+  font-weight: 600;
+  padding: 10px 12px;
+  backdrop-filter: none;
+}
+
+.mobile-cashbook .custom-date-range input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: none !important;
+  cursor: pointer;
+  opacity: 1;
+}
+
+.mobile-cashbook .custom-date-range input[type="date"]:focus {
+  outline: 2px solid #3b82f6 !important;
+  background: #ffffff !important;
+  border-color: #2563eb !important;
+}
+
+.mobile-cashbook .custom-date-range input[type="date"]::-webkit-datetime-edit,
+.mobile-cashbook .custom-date-range input[type="date"]::-webkit-datetime-edit-fields-wrapper,
+.mobile-cashbook .custom-date-range input[type="date"]::-webkit-datetime-edit-text,
+.mobile-cashbook .custom-date-range input[type="date"]::-webkit-datetime-edit-month-field,
+.mobile-cashbook .custom-date-range input[type="date"]::-webkit-datetime-edit-day-field,
+.mobile-cashbook .custom-date-range input[type="date"]::-webkit-datetime-edit-year-field {
+  -webkit-text-fill-color: #1e293b !important;
+  color: #1e293b !important;
+  background: transparent !important;
+  opacity: 1 !important;
+}
+
 /* Screen Layout: Hide print-only content */
 .print-only {
   display: none !important;
