@@ -76,6 +76,7 @@ function useInactivityRedirect(isLoggedIn: boolean) {
   useEffect(() => {
     if (!isLoggedIn) return;
     if (location === '/' || location === '/login') return;
+    if (location === '/closure') return;
 
     const lastActive = localStorage.getItem(INACTIVITY_KEY);
     if (!lastActive) {
@@ -105,7 +106,7 @@ function useInactivityRedirect(isLoggedIn: boolean) {
         const lastActive = localStorage.getItem(INACTIVITY_KEY);
         if (lastActive) {
           const gap = Date.now() - Number(lastActive);
-          if (gap > INACTIVITY_TIMEOUT && location !== '/' && location !== '/login') {
+          if (gap > INACTIVITY_TIMEOUT && location !== '/' && location !== '/login' && location !== '/closure') {
             localStorage.setItem(INACTIVITY_KEY, String(Date.now()));
             setLocation('/');
             return;
