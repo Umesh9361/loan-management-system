@@ -753,7 +753,6 @@ export default function Closure() {
       title: "हिशोबात जोडले",
       description: `${entry.borrowerName} - ₹${entry.principalAmount.toLocaleString('en-IN')}`,
     });
-    setActiveTab("summary");
   }, [selectedLoan, calculationResult, form, summaryCounter, parseFinalInterest, toast]);
 
   const handleDeleteSummaryEntry = useCallback((entryId: number) => {
