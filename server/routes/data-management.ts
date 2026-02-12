@@ -141,8 +141,55 @@ router.get("/integrity-check", async (req: any, res) => {
 });
 
 /**
+ * POST /api/data-management/rearrange-preview
+ * Preview rearrangement - returns old/new mapping without updating
+ */
+router.post("/rearrange-preview", async (req: any, res) => {
+  try {
+    const tenantId = req.session.tenantId;
+    const { groupId, upToDate } = req.body;
+
+    if (!groupId) {
+      return res.status(400).json({ success: false, message: "ग्रुप ID आवश्यक आहे", mapping: [] });
+    }
+
+    const result = await dataManagementService.previewRearrangeAccountNumbers(tenantId, groupId, upToDate || undefined);
+    res.json(result);
+  } catch (error) {
+    console.error("Rearrange preview error:", error);
+    res.status(500).json({ success: false, message: "Preview अयशस्वी: " + (error as Error).message, mapping: [] });
+  }
+});
+
+/**
+ * POST /api/data-management/rearrange-confirm
+ * Confirm and apply rearrangement after PDF download
+ */
+router.post("/rearrange-confirm", async (req: any, res) => {
+  try {
+    const tenantId = req.session.tenantId;
+    const { groupId, upToDate } = req.body;
+
+    if (!groupId) {
+      return res.status(400).json({ success: false, message: "ग्रुप ID आवश्यक आहे", affectedRecords: 0, details: [] });
+    }
+
+    const result = await dataManagementService.confirmRearrangeAccountNumbers(tenantId, groupId, upToDate || undefined);
+    
+    if (result.success) {
+      res.json({ success: true, message: result.message, summary: { accountsRearranged: result.affectedRecords, timestamp: new Date().toISOString() }, details: result.details });
+    } else {
+      res.status(400).json({ success: false, message: result.message, details: result.details });
+    }
+  } catch (error) {
+    console.error("Rearrange confirm error:", error);
+    res.status(500).json({ success: false, message: "रिअरेंज अयशस्वी: " + (error as Error).message, error: (error as Error).message });
+  }
+});
+
+/**
  * POST /api/data-management/rearrange-account-numbers
- * Rearrange account numbers for a group by loan disbursement date
+ * Legacy endpoint - kept for backward compatibility
  */
 router.post("/rearrange-account-numbers", async (req: any, res) => {
   try {
@@ -150,45 +197,19 @@ router.post("/rearrange-account-numbers", async (req: any, res) => {
     const { groupId } = req.body;
 
     if (!groupId) {
-      return res.status(400).json({ 
-        success: false, 
-        message: "ग्रुप ID आवश्यक आहे",
-        affectedRecords: 0,
-        details: []
-      });
+      return res.status(400).json({ success: false, message: "ग्रुप ID आवश्यक आहे", affectedRecords: 0, details: [] });
     }
 
-    console.log(`🔢 ACCOUNT REARRANGE: Starting for group ${groupId} in tenant ${tenantId}`);
-    
     const result = await dataManagementService.rearrangeAccountNumbers(tenantId, groupId);
     
     if (result.success) {
-      console.log(`✅ ACCOUNT REARRANGE: Successfully rearranged ${result.affectedRecords} account numbers`);
-      res.json({
-        success: true,
-        message: result.message,
-        summary: {
-          accountsRearranged: result.affectedRecords,
-          timestamp: new Date().toISOString()
-        },
-        details: result.details
-      });
+      res.json({ success: true, message: result.message, summary: { accountsRearranged: result.affectedRecords, timestamp: new Date().toISOString() }, details: result.details });
     } else {
-      console.error(`❌ ACCOUNT REARRANGE: Failed - ${result.message}`);
-      res.status(400).json({
-        success: false,
-        message: result.message,
-        details: result.details
-      });
+      res.status(400).json({ success: false, message: result.message, details: result.details });
     }
-    
   } catch (error) {
     console.error("Account rearrangement endpoint error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Account rearrangement failed: " + (error as Error).message,
-      error: (error as Error).message
-    });
+    res.status(500).json({ success: false, message: "Account rearrangement failed: " + (error as Error).message, error: (error as Error).message });
   }
 });
 
