@@ -59,8 +59,8 @@ export default function ActivityLogPage() {
       const response = await apiRequest("/api/activity-logs", "DELETE");
       return await response.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/activity-logs"] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["/api/activity-logs"], refetchType: 'all' });
     }
   });
 
