@@ -1257,7 +1257,7 @@ function Loans() {
           }
         }}>
           <DialogTrigger asChild>
-            <Button className="bg-blue-600 hover:bg-blue-700 active:scale-95 active:bg-blue-800 transition-all duration-150 text-white shadow-md" title="Alt+N: नवीन कर्ज">
+            <Button className="bg-blue-600 hover:bg-blue-700 text-white shadow-md" title="Alt+N: नवीन कर्ज">
               <Plus className="mr-2 h-4 w-4" />
               नवीन कर्ज
             </Button>
@@ -2365,7 +2365,7 @@ function Loans() {
                     scrollToSearchResults();
                   }
                 }}
-                className="bg-blue-600 hover:bg-blue-700 active:scale-95 transition-all duration-150 text-white px-5 shadow-sm"
+                className="bg-blue-600 hover:bg-blue-700 text-white px-5 shadow-sm"
               >
                 <Search className="h-4 w-4 mr-1.5" />
                 शोध
@@ -2455,7 +2455,7 @@ function Loans() {
                 // Always scroll to results area, regardless of search query
                 scrollToSearchResults();
               }}
-              className="flex-1 bg-blue-600 hover:bg-blue-700 active:scale-95 transition-all duration-150 text-white shadow-sm"
+              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white shadow-sm"
             >
               <Search className="mr-2 h-4 w-4" />
               शोधा
@@ -2473,7 +2473,7 @@ function Loans() {
                 setSelectedLoanId(null);
               }}
               variant="outline"
-              className="flex-1 border-gray-300 text-gray-600 hover:text-gray-700 hover:bg-gray-50 active:scale-95 transition-all duration-150"
+              className="flex-1 border-gray-300 text-gray-600 hover:text-gray-700 hover:bg-gray-50"
             >
               <X className="mr-2 h-4 w-4" />
               साफ करा
