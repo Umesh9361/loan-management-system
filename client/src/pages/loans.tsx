@@ -210,10 +210,33 @@ function Loans() {
     }
   };
 
+  const deleteLoanMutation = useMutation({
+    mutationFn: async (loanId: string) => {
+      const response = await apiRequest(`/api/loans/${loanId}`, "DELETE");
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/loans"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/cash-transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/loan-closures"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
+      toast({
+        title: "कर्ज डिलीट झाले",
+        description: "कर्ज आणि संबंधित व्यवहार यशस्वीपणे डिलीट केले गेले.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "डिलीट अयशस्वी",
+        description: error?.message || "कर्ज डिलीट करताना त्रुटी आली. पुन्हा प्रयत्न करा.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleDelete = (loanId: string) => {
     if (confirm("हे कर्ज पूर्णपणे डिलीट करायचे काय? ही क्रिया रद्द करता येणार नाही.")) {
-      // Implement loan deletion logic
-      alert("कर्ज डिलीट करण्याची सुविधा लवकरच उपलब्ध होईल.");
+      deleteLoanMutation.mutate(loanId);
     }
   };
 
