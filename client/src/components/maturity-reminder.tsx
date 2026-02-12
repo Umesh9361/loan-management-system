@@ -243,7 +243,7 @@ export function NotificationPanel({ onClose }: { onClose: () => void }) {
           onClick={(e) => e.stopPropagation()}
           className="fixed top-16 right-4 lg:right-auto lg:left-[calc(18rem+1rem)] w-[420px] max-h-[70vh] bg-white dark:bg-gray-900 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 flex flex-col animate-in fade-in zoom-in-95 duration-200 z-[61]"
         >
-          <div className="bg-gradient-to-r from-orange-500 to-red-500 text-white p-3 rounded-t-xl flex items-center justify-between shrink-0">
+          <div className="bg-gradient-to-r from-indigo-500 to-indigo-600 text-white p-3 rounded-t-xl flex items-center justify-between shrink-0">
             <div className="flex items-center gap-2">
               <div className="bg-white/20 p-1.5 rounded-full">
                 <Bell className="h-4 w-4" />
@@ -251,7 +251,7 @@ export function NotificationPanel({ onClose }: { onClose: () => void }) {
               <div>
                 <h2 className="text-base font-bold">मुदत सूचना</h2>
                 {reminders.length > 0 && (
-                  <p className="text-[11px] text-orange-100">{reminders.length} कर्जांची मुदत जवळ आली आहे</p>
+                  <p className="text-[11px] text-indigo-100">{reminders.length} कर्जांची मुदत जवळ आली आहे</p>
                 )}
               </div>
             </div>
@@ -300,7 +300,7 @@ export function NotificationPanel({ onClose }: { onClose: () => void }) {
           <div className="w-10 h-1 bg-gray-300 dark:bg-gray-600 rounded-full" />
         </div>
 
-        <div className="bg-gradient-to-r from-orange-500 to-red-500 text-white px-4 py-3 flex items-center justify-between shrink-0">
+        <div className="bg-gradient-to-r from-indigo-500 to-indigo-600 text-white px-4 py-3 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2">
             <div className="bg-white/20 p-1.5 rounded-full">
               <Bell className="h-4 w-4" />
@@ -308,7 +308,7 @@ export function NotificationPanel({ onClose }: { onClose: () => void }) {
             <div>
               <h2 className="text-base font-bold">मुदत सूचना</h2>
               {reminders.length > 0 && (
-                <p className="text-[11px] text-orange-100">{reminders.length} कर्जांची मुदत जवळ आली आहे</p>
+                <p className="text-[11px] text-indigo-100">{reminders.length} कर्जांची मुदत जवळ आली आहे</p>
               )}
             </div>
           </div>
@@ -397,16 +397,16 @@ export function MaturityReminderPopup() {
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm">
       <div
-        className="bg-white dark:bg-gray-900 w-full sm:w-[95%] sm:max-w-lg sm:mx-4 sm:rounded-xl rounded-t-2xl shadow-2xl border-t-2 sm:border-2 border-orange-300 dark:border-orange-600 max-h-[90vh] sm:max-h-[80vh] flex flex-col animate-in slide-in-from-bottom sm:fade-in sm:zoom-in-95 duration-300"
+        className="bg-white dark:bg-gray-900 w-full sm:w-[95%] sm:max-w-lg sm:mx-4 sm:rounded-xl rounded-t-2xl shadow-2xl border-t-2 sm:border-2 border-indigo-300 dark:border-indigo-600 max-h-[90vh] sm:max-h-[80vh] flex flex-col animate-in slide-in-from-bottom sm:fade-in sm:zoom-in-95 duration-300"
       >
-        <div className="bg-gradient-to-r from-orange-500 to-red-500 text-white p-3 sm:p-4 rounded-t-2xl sm:rounded-t-xl flex items-center justify-between shrink-0">
+        <div className="bg-gradient-to-r from-indigo-500 to-indigo-600 text-white p-3 sm:p-4 rounded-t-2xl sm:rounded-t-xl flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2 sm:gap-3">
             <div className="bg-white/20 p-1.5 sm:p-2 rounded-full">
               <Bell className="h-4 w-4 sm:h-5 sm:w-5" />
             </div>
             <div>
               <h2 className="text-base sm:text-lg font-bold">मुदत सूचना</h2>
-              <p className="text-[11px] sm:text-xs text-orange-100">{reminders.length} कर्जांची मुदत जवळ आली आहे - follow up घ्या</p>
+              <p className="text-[11px] sm:text-xs text-indigo-100">{reminders.length} कर्जांची मुदत जवळ आली आहे - follow up घ्या</p>
             </div>
           </div>
           <button
