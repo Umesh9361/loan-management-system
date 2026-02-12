@@ -140,6 +140,12 @@ router.get("/integrity-check", async (req: any, res) => {
   }
 });
 
+const rearrangeSchema = z.object({
+  groupId: z.string().min(1, "ग्रुप ID आवश्यक आहे"),
+  upToDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "तारीख YYYY-MM-DD फॉर्मॅट मध्ये असावी").optional(),
+  checksum: z.string().optional()
+});
+
 /**
  * POST /api/data-management/rearrange-preview
  * Preview rearrangement - returns old/new mapping without updating
@@ -147,13 +153,13 @@ router.get("/integrity-check", async (req: any, res) => {
 router.post("/rearrange-preview", async (req: any, res) => {
   try {
     const tenantId = req.session.tenantId;
-    const { groupId, upToDate } = req.body;
-
-    if (!groupId) {
-      return res.status(400).json({ success: false, message: "ग्रुप ID आवश्यक आहे", mapping: [] });
+    const parsed = rearrangeSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ success: false, message: parsed.error.errors[0]?.message || "Invalid input", mapping: [] });
     }
+    const { groupId, upToDate } = parsed.data;
 
-    const result = await dataManagementService.previewRearrangeAccountNumbers(tenantId, groupId, upToDate || undefined);
+    const result = await dataManagementService.previewRearrangeAccountNumbers(tenantId, groupId, upToDate);
     res.json(result);
   } catch (error) {
     console.error("Rearrange preview error:", error);
@@ -168,13 +174,13 @@ router.post("/rearrange-preview", async (req: any, res) => {
 router.post("/rearrange-confirm", async (req: any, res) => {
   try {
     const tenantId = req.session.tenantId;
-    const { groupId, upToDate } = req.body;
-
-    if (!groupId) {
-      return res.status(400).json({ success: false, message: "ग्रुप ID आवश्यक आहे", affectedRecords: 0, details: [] });
+    const parsed = rearrangeSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ success: false, message: parsed.error.errors[0]?.message || "Invalid input", affectedRecords: 0, details: [] });
     }
+    const { groupId, upToDate, checksum } = parsed.data;
 
-    const result = await dataManagementService.confirmRearrangeAccountNumbers(tenantId, groupId, upToDate || undefined);
+    const result = await dataManagementService.confirmRearrangeAccountNumbers(tenantId, groupId, upToDate, checksum);
     
     if (result.success) {
       res.json({ success: true, message: result.message, summary: { accountsRearranged: result.affectedRecords, timestamp: new Date().toISOString() }, details: result.details });
