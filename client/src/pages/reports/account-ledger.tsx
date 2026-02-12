@@ -299,14 +299,13 @@ export default function AccountLedger() {
       const openingBalance = (cashBalance as any)?.openingBalance || 0; // Default to 0 for clean start
       let runningBalance = openingBalance;
 
-      // Add opening balance entry with proper debit/credit display
       const openingDate = new Date(filters.dateFrom).toLocaleDateString('en-GB');
       entries.push({
         date: openingDate,
         formattedDate: openingDate,
         description: 'प्रारंभिक शिल्लक',
-        debit: openingBalance > 0 ? openingBalance : 0,
-        credit: openingBalance < 0 ? Math.abs(openingBalance) : 0,
+        debit: openingBalance < 0 ? Math.abs(openingBalance) : 0,
+        credit: openingBalance > 0 ? openingBalance : 0,
         balance: openingBalance,
         type: 'opening'
       });
@@ -1262,10 +1261,20 @@ export default function AccountLedger() {
                                 {entry.credit > 0 && `₹${Math.round(entry.credit).toLocaleString('en-IN')}`}
                               </TableCell>
                               <TableCell className="border text-right">
-                                <span className={entry.balance < 0 ? 'text-red-600 font-semibold' : ''}>
-                                  {entry.balance < 0 ? '-' : ''}₹{Math.round(Math.abs(entry.balance)).toLocaleString('en-IN')}
-                                  {entry.balance >= 0 ? ' (Dr.)' : ' (Cr.)'}
-                                </span>
+                                {(() => {
+                                  const isCashAccount = statementData.account?.type === 'cash';
+                                  const bal = entry.balance;
+                                  const drLabel = isCashAccount
+                                    ? (bal >= 0 ? ' (Cr.)' : ' (Dr.)')
+                                    : (bal >= 0 ? ' (Dr.)' : ' (Cr.)');
+                                  const isNeg = isCashAccount ? bal < 0 : bal < 0;
+                                  return (
+                                    <span className={isNeg ? 'text-red-600 font-semibold' : ''}>
+                                      {bal < 0 ? '-' : ''}₹{Math.round(Math.abs(bal)).toLocaleString('en-IN')}
+                                      {drLabel}
+                                    </span>
+                                  );
+                                })()}
                               </TableCell>
                             </TableRow>
                           ))}
@@ -1280,10 +1289,19 @@ export default function AccountLedger() {
                               ₹{Math.round(parseFloat(statementData.totalCredit || 0)).toLocaleString('en-IN')}
                             </TableCell>
                             <TableCell className="border text-right">
-                              <span className={statementData.finalBalance < 0 ? 'text-red-600 font-bold' : 'font-bold'}>
-                                {statementData.finalBalance < 0 ? '-' : ''}₹{Math.round(Math.abs(parseFloat(statementData.finalBalance || 0))).toLocaleString('en-IN')}
-                                {statementData.finalBalance >= 0 ? ' (Dr.)' : ' (Cr.)'}
-                              </span>
+                              {(() => {
+                                const isCashAccount = statementData.account?.type === 'cash';
+                                const bal = parseFloat(statementData.finalBalance || 0);
+                                const drLabel = isCashAccount
+                                  ? (bal >= 0 ? ' (Cr.)' : ' (Dr.)')
+                                  : (bal >= 0 ? ' (Dr.)' : ' (Cr.)');
+                                return (
+                                  <span className={bal < 0 ? 'text-red-600 font-bold' : 'font-bold'}>
+                                    {bal < 0 ? '-' : ''}₹{Math.round(Math.abs(bal)).toLocaleString('en-IN')}
+                                    {drLabel}
+                                  </span>
+                                );
+                              })()}
                             </TableCell>
                           </TableRow>
                         </TableBody>
@@ -1300,10 +1318,19 @@ export default function AccountLedger() {
                               <span className="text-green-600">एकूण जमा: ₹{Math.round(statementData.totals.totalCredit).toLocaleString('en-IN')}</span>
                             </div>
                             <div className="text-right">
-                              <span className={statementData.finalBalance < 0 ? 'text-red-600' : ''}>
-                                फरक: {statementData.finalBalance < 0 ? '-' : ''}₹{Math.round(Math.abs(statementData.finalBalance)).toLocaleString('en-IN')}
-                                {statementData.finalBalance >= 0 ? ' (Dr.)' : ' (Cr.)'}
-                              </span>
+                              {(() => {
+                                const isCashAccount = statementData.account?.type === 'cash';
+                                const bal = statementData.finalBalance;
+                                const drLabel = isCashAccount
+                                  ? (bal >= 0 ? ' (Cr.)' : ' (Dr.)')
+                                  : (bal >= 0 ? ' (Dr.)' : ' (Cr.)');
+                                return (
+                                  <span className={bal < 0 ? 'text-red-600' : ''}>
+                                    फरक: {bal < 0 ? '-' : ''}₹{Math.round(Math.abs(bal)).toLocaleString('en-IN')}
+                                    {drLabel}
+                                  </span>
+                                );
+                              })()}
                             </div>
                           </div>
                         </div>
