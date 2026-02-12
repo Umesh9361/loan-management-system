@@ -1707,10 +1707,11 @@ function Loans() {
                               type="number"
                               placeholder="0"
                               className="text-base font-bold"
+                              style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}
                               value={!field.value || field.value === '0' ? '' : field.value}
                               onChange={(e) => {
-                                const value = e.target.value;
-                                field.onChange(value);
+                                const converted = e.target.value.replace(/[०-९]/g, (d: string) => String('०१२३४५६७८९'.indexOf(d)));
+                                field.onChange(converted);
                               }}
                               tabIndex={8}
                             />
@@ -2071,7 +2072,16 @@ function Loans() {
                       <FormItem>
                         <FormLabel className="text-base font-medium">वजन</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="10 ग्राम" tabIndex={15} className="text-base" />
+                          <Input
+                            placeholder="10 ग्राम"
+                            tabIndex={15}
+                            className="text-base"
+                            value={field.value || ''}
+                            onChange={(e) => {
+                              const converted = e.target.value.replace(/[०-९]/g, (d: string) => String('०१२३४५६७८९'.indexOf(d)));
+                              field.onChange(converted);
+                            }}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -2648,10 +2658,20 @@ function Loans() {
                             <Button
                               size="sm"
                               variant="ghost"
-                              className="h-8 w-8 p-0 touch-manipulation"
+                              className="h-10 w-10 p-0 touch-manipulation min-h-[44px] min-w-[44px]"
                               onClick={(e) => e.stopPropagation()}
+                              onPointerDown={(e) => {
+                                (e.currentTarget as any)._startY = e.clientY;
+                              }}
+                              onPointerUp={(e) => {
+                                const startY = (e.currentTarget as any)._startY;
+                                if (startY !== undefined && Math.abs(e.clientY - startY) > 10) {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                }
+                              }}
                             >
-                              <MoreVertical className="h-4 w-4" />
+                              <MoreVertical className="h-5 w-5" />
                               <span className="sr-only">Actions</span>
                             </Button>
                           </DropdownMenuTrigger>
@@ -2860,10 +2880,20 @@ function Loans() {
                           <Button
                             size="sm"
                             variant="ghost"
-                            className="h-10 w-10 p-0 touch-manipulation min-h-[44px] min-w-[44px]"
+                            className="h-11 w-11 p-0 touch-manipulation min-h-[48px] min-w-[48px] rounded-full bg-gray-100 hover:bg-gray-200"
                             onClick={(e) => e.stopPropagation()}
+                            onPointerDown={(e) => {
+                              (e.currentTarget as any)._startY = e.clientY;
+                            }}
+                            onPointerUp={(e) => {
+                              const startY = (e.currentTarget as any)._startY;
+                              if (startY !== undefined && Math.abs(e.clientY - startY) > 10) {
+                                e.preventDefault();
+                                e.stopPropagation();
+                              }
+                            }}
                           >
-                            <MoreVertical className="h-5 w-5" />
+                            <MoreVertical className="h-5 w-5 text-gray-600" />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
