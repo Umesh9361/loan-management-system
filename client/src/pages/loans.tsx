@@ -1597,7 +1597,7 @@ function Loans() {
                         <FormItem>
                           <FormLabel className="text-base font-medium">मोबाइल नंबर</FormLabel>
                           <FormControl>
-                            <Input {...field} placeholder="9876543210" tabIndex={3} className="text-base" />
+                            <Input {...field} placeholder="" tabIndex={3} className="text-base" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
