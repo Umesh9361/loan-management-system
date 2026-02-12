@@ -118,8 +118,9 @@ export default function PartyManagement() {
   const addPartyMutation = useMutation({
     mutationFn: (newParty: z.infer<typeof partySchema>) => 
       apiRequest("/api/parties", "POST", newParty),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/parties"] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["/api/parties"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["/api/cash-transactions"], refetchType: 'all' });
       setShowAddDialog(false);
       form.reset();
       toast({
@@ -140,8 +141,9 @@ export default function PartyManagement() {
   const updatePartyMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: z.infer<typeof partySchema> }) => 
       apiRequest(`/api/parties/${id}`, "PUT", data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/parties"] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["/api/parties"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["/api/cash-transactions"], refetchType: 'all' });
       setShowEditDialog(false);
       setEditingParty(null);
       editForm.reset();
@@ -162,8 +164,9 @@ export default function PartyManagement() {
   // Delete party mutation
   const deletePartyMutation = useMutation({
     mutationFn: (id: string) => apiRequest(`/api/parties/${id}`, "DELETE"),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/parties"] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["/api/parties"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["/api/cash-transactions"], refetchType: 'all' });
       toast({
         title: "यशस्वी!",
         description: "व्यक्ती काढून टाकली",
