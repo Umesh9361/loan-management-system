@@ -2057,7 +2057,17 @@ function Loans() {
                       <FormItem>
                         <FormLabel className="text-base font-medium">तारणाचा तपशील</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="सोने, चांदी, इतर" tabIndex={14} className="text-base" />
+                          <Input
+                            {...field}
+                            placeholder="सोने, चांदी, इतर"
+                            tabIndex={14}
+                            className="text-base"
+                            value={field.value || ''}
+                            onChange={(e) => {
+                              const converted = e.target.value.replace(/[०-९]/g, (d: string) => String('०१२३४५६७८९'.indexOf(d)));
+                              field.onChange(converted);
+                            }}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
