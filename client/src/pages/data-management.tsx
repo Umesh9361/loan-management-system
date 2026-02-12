@@ -356,9 +356,10 @@ function DataManagementPage() {
       </Card>
 
       <Tabs defaultValue="cleanup" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="cleanup">कर्ज क्लीनअप</TabsTrigger>
           <TabsTrigger value="cashbook">कॅशबुक क्लीनअप</TabsTrigger>
+          <TabsTrigger value="rearrange">खाते नंबर रिअरेंज</TabsTrigger>
           <TabsTrigger value="backup">बॅकअप व्यवस्थापन</TabsTrigger>
         </TabsList>
 
@@ -448,46 +449,6 @@ function DataManagementPage() {
                   <Label htmlFor="createBackup" className="text-sm">
                     cleanup करण्यापूर्वी backup तयार करा
                   </Label>
-                </div>
-              </div>
-
-              {/* Account Number Rearrangement Section */}
-              <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-200 mt-6">
-                <h4 className="font-semibold text-blue-700 mb-3">🔢 खाते क्रमांक पुनर्व्यवस्थापन</h4>
-                <p className="text-sm text-blue-600 mb-4">
-                  <strong>फक्त manual account number चेंज होईल</strong> - ग्रुप निवडून कर्ज वितरण तारखेनुसार 1, 2, 3, 4... असे रिअरेंज करा.<br/>
-                  <span className="text-xs text-blue-500">नोट: System ID आणि Loan Number कधीच चेंज होणार नाही, फक्त हाताने टाकलेला account number चेंज होईल</span>
-                </p>
-                <div className="flex items-center gap-4">
-                  <div className="flex-1">
-                    <Label htmlFor="rearrangeGroup">ग्रुप निवडा</Label>
-                    <select 
-                      id="rearrangeGroup"
-                      value={rearrangeGroupId}
-                      onChange={(e) => setRearrangeGroupId(e.target.value)}
-                      className="w-full mt-1 p-2 border rounded-md bg-white dark:bg-gray-800"
-                      autoComplete="off"
-                    >
-                      <option value="">ग्रुप निवडा...</option>
-                      {Array.isArray(groupsData) && groupsData.map((group: any) => (
-                        <option key={group.id} value={group.id}>
-                          {group.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <Button 
-                    onClick={handleRearrangeAccountNumbers}
-                    disabled={!rearrangeGroupId || rearrangeAccountsMutation.isPending}
-                    className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700"
-                  >
-                    {rearrangeAccountsMutation.isPending ? (
-                      <RefreshCw className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <ArrowUpDown className="h-4 w-4" />
-                    )}
-                    {rearrangeAccountsMutation.isPending ? "रिअरेंज करत आहे..." : "खाते क्रमांक रिअरेंज करा"}
-                  </Button>
                 </div>
               </div>
 
@@ -855,6 +816,55 @@ function DataManagementPage() {
                   </AlertDescription>
                 </Alert>
               )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Account Number Rearrange Tab */}
+        <TabsContent value="rearrange">
+          <Card className="border-blue-200 dark:border-blue-800">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <ArrowUpDown className="h-5 w-5 text-blue-600" />
+                🔢 खाते क्रमांक पुनर्व्यवस्थापन
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-sm text-blue-600 dark:text-blue-400">
+                <strong>फक्त manual account number चेंज होईल</strong> - ग्रुप निवडून कर्ज वितरण तारखेनुसार 1, 2, 3, 4... असे रिअरेंज करा.<br/>
+                <span className="text-xs text-blue-500">नोट: System ID आणि Loan Number कधीच चेंज होणार नाही, फक्त हाताने टाकलेला account number चेंज होईल</span>
+              </p>
+              <div className="flex items-center gap-4">
+                <div className="flex-1">
+                  <Label htmlFor="rearrangeGroup">ग्रुप निवडा</Label>
+                  <select 
+                    id="rearrangeGroup"
+                    value={rearrangeGroupId}
+                    onChange={(e) => setRearrangeGroupId(e.target.value)}
+                    className="w-full mt-1 p-2 border rounded-md bg-white dark:bg-gray-800"
+                    autoComplete="off"
+                  >
+                    <option value="">ग्रुप निवडा...</option>
+                    {Array.isArray(groupsData) && groupsData.map((group: any) => (
+                      <option key={group.id} value={group.id}>
+                        {group.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <Button 
+                  onClick={handleRearrangeAccountNumbers}
+                  disabled={!rearrangeGroupId || rearrangeAccountsMutation.isPending}
+                  className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700"
+                >
+                  {rearrangeAccountsMutation.isPending ? (
+                    <RefreshCw className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <ArrowUpDown className="h-4 w-4" />
+                  )}
+                  {rearrangeAccountsMutation.isPending ? "रिअरेंज करत आहे..." : "खाते क्रमांक रिअरेंज करा"}
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
