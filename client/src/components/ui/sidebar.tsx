@@ -491,24 +491,6 @@ export function Sidebar({ className }: SidebarProps) {
             </div>
           )}
           
-          {/* Logout button */}
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="flex-shrink-0 text-red-600 border-red-300 hover:bg-red-50 hover:text-red-700"
-            onClick={async () => {
-              try {
-                await handleLogout();
-              } catch (error) {
-                localStorage.clear();
-                sessionStorage.clear();
-                safeNavigate('/login');
-              }
-            }}
-          >
-            <LogOut className="mr-1 h-4 w-4" />
-            बाहेर पडा
-          </Button>
         </div>
       </div>
     </div>
