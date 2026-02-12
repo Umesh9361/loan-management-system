@@ -449,28 +449,20 @@ function MobileCashbook() {
         transactionType: quickEntryType,
       });
     },
-    onSuccess: (result) => {
-      // Comprehensive real-time balance updates across all systems
-      queryClient.invalidateQueries({ queryKey: ["/api/cash-transactions"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/cash-balance"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/cash-balance/opening"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/cash-balance/closing"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/date-wise-balance"] }); // New comprehensive balance
-      queryClient.invalidateQueries({ queryKey: ["/api/journal-entries"] }); // For dual entry journals
-      queryClient.invalidateQueries({ queryKey: ["/api/loans"] }); // For integrated loan effects
-      queryClient.invalidateQueries({ queryKey: ["/api/reports"] }); // For account statements
-      queryClient.invalidateQueries({ queryKey: ["/api/parties"] }); // For party balances
+    onSuccess: async (result) => {
+      await queryClient.invalidateQueries({ queryKey: ["/api/cash-transactions"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["/api/cash-balance"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["/api/cash-balance/opening"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["/api/cash-balance/closing"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["/api/date-wise-balance"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["/api/journal-entries"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["/api/loans"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["/api/reports"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["/api/parties"], refetchType: 'all' });
       
-      // Period-specific cache invalidation
       const currentDateStr = currentDate.toISOString().split('T')[0];
-      queryClient.invalidateQueries({ queryKey: ["/api/cash-balance/opening", currentDateStr, viewPeriod] });
-      queryClient.invalidateQueries({ queryKey: ["/api/date-wise-balance", currentDateStr, viewPeriod] });
-      
-      // Force immediate refresh for real-time updates
-      queryClient.refetchQueries({ queryKey: ["/api/cash-transactions"] });
-      queryClient.refetchQueries({ queryKey: ["/api/cash-balance"] });
-      queryClient.refetchQueries({ queryKey: ["/api/journal-entries"] }); // For dual entry journals
-      queryClient.refetchQueries({ queryKey: ["/api/date-wise-balance", currentDateStr, viewPeriod] });
+      queryClient.invalidateQueries({ queryKey: ["/api/cash-balance/opening", currentDateStr, viewPeriod], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["/api/date-wise-balance", currentDateStr, viewPeriod], refetchType: 'all' });
       
       setIsQuickEntryOpen(false);
       setQuickEntryForm({ amount: "", narration: "", partyId: null, category: "capital" });
@@ -502,21 +494,16 @@ function MobileCashbook() {
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: any }) => 
       apiRequest(`/api/cash-transactions/${id}`, "PUT", data),
-    onSuccess: () => {
-      // Professional accounting: Update all affected dates and systems
-      queryClient.invalidateQueries({ queryKey: ["/api/cash-transactions"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/cash-balance"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/cash-balance/opening"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/cash-balance/closing"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/journal-entries"] }); // Added journal invalidation
-      queryClient.invalidateQueries({ queryKey: ["/api/loans"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/reports"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/parties"] });
-      
-      // Force immediate synchronization across all dates
-      queryClient.refetchQueries({ queryKey: ["/api/cash-transactions"] });
-      queryClient.refetchQueries({ queryKey: ["/api/cash-balance"] });
-      queryClient.refetchQueries({ queryKey: ["/api/journal-entries"] }); // Added journal refetch
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["/api/cash-transactions"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["/api/cash-balance"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["/api/cash-balance/opening"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["/api/cash-balance/closing"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["/api/journal-entries"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["/api/loans"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["/api/reports"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["/api/parties"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["/api/date-wise-balance"], refetchType: 'all' });
       
       setIsEditDialogOpen(false);
       setEditingTransaction(null);
@@ -542,27 +529,19 @@ function MobileCashbook() {
         throw error;
       }
     },
-    onSuccess: (result, id) => {
-      // Find the deleted transaction to show appropriate message
+    onSuccess: async (result, id) => {
       const deletedTransaction = transactions?.find(t => t.id === id);
       const isDualEntry = deletedTransaction?.partyId && deletedTransaction?.partyId !== 'cash';
       
-      // Professional accounting: Complete system-wide synchronization
-      queryClient.invalidateQueries({ queryKey: ["/api/cash-transactions"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/cash-balance"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/cash-balance/opening"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/cash-balance/closing"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/date-wise-balance"] }); 
-      queryClient.invalidateQueries({ queryKey: ["/api/journal-entries"] }); 
-      queryClient.invalidateQueries({ queryKey: ["/api/loans"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/reports"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/parties"] });
-      
-      // Immediate real-time synchronization across all modules
-      queryClient.refetchQueries({ queryKey: ["/api/cash-transactions"] });
-      queryClient.refetchQueries({ queryKey: ["/api/cash-balance"] });
-      queryClient.refetchQueries({ queryKey: ["/api/journal-entries"] }); 
-      queryClient.refetchQueries({ queryKey: ["/api/date-wise-balance", currentDate.toISOString().split('T')[0], viewPeriod] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/cash-transactions"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["/api/cash-balance"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["/api/cash-balance/opening"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["/api/cash-balance/closing"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["/api/date-wise-balance"], refetchType: 'all' }); 
+      queryClient.invalidateQueries({ queryKey: ["/api/journal-entries"], refetchType: 'all' }); 
+      queryClient.invalidateQueries({ queryKey: ["/api/loans"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["/api/reports"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["/api/parties"], refetchType: 'all' });
       
       // Close edit dialog if transaction was being edited
       setIsEditDialogOpen(false);
