@@ -115,12 +115,12 @@ export default function SuperAdminTenantManagement() {
     mutationFn: async ({ adminId }: { adminId: string; hours?: number }) => {
       await apiRequest(`/api/super-admin/admin/${adminId}/temporary-disable`, "POST");
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       toast({
         title: "Admin Disabled",
         description: "Admin access has been disabled.",
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/super-admin/admin-users"] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/super-admin/admin-users"], refetchType: 'all' });
     },
     onError: (error: any) => {
       toast({
@@ -136,12 +136,12 @@ export default function SuperAdminTenantManagement() {
     mutationFn: async (adminId: string) => {
       await apiRequest(`/api/super-admin/admin/${adminId}/temporary-enable`, "POST");
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       toast({
         title: "Admin Enabled",
         description: "Admin access has been restored.",
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/super-admin/admin-users"] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/super-admin/admin-users"], refetchType: 'all' });
     },
     onError: (error: any) => {
       toast({
@@ -157,12 +157,12 @@ export default function SuperAdminTenantManagement() {
     mutationFn: async ({ tenantId, isActive }: { tenantId: string; isActive: boolean }) => {
       await apiRequest(`/api/super-admin/tenants/${tenantId}/toggle`, "PATCH", { isActive });
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       toast({
         title: "टेनंट स्थिती बदली",
         description: "टेनंट स्थिती यशस्वीरित्या अपडेट झाली.",
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/super-admin/tenants"] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/super-admin/tenants"], refetchType: 'all' });
       setTogglingTenant(null);
     },
     onError: (error: any) => {
@@ -181,10 +181,10 @@ export default function SuperAdminTenantManagement() {
       const response = await apiRequest(`/api/super-admin/delete-tenant/${tenantId}`, "DELETE");
       return response;
     },
-    onSuccess: (data, tenantId) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/super-admin/tenants"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/super-admin/tenant-stats"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/super-admin/storage-analytics"] });
+    onSuccess: async (data, tenantId) => {
+      await queryClient.invalidateQueries({ queryKey: ["/api/super-admin/tenants"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["/api/super-admin/tenant-stats"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["/api/super-admin/storage-analytics"], refetchType: 'all' });
       setDeletingTenant(null);
       
       toast({
@@ -233,7 +233,7 @@ export default function SuperAdminTenantManagement() {
       const response = await apiRequest(`/api/super-admin/delete-admin/${adminId}`, "DELETE");
       return await response.json();
     },
-    onSuccess: (data: any) => {
+    onSuccess: async (data: any) => {
       const tenantDeleted = data?.tenantDeleted;
       toast({
         title: tenantDeleted ? "टेनंट पूर्णपणे डिलीट झाले" : "Admin Deleted Successfully", 
@@ -241,9 +241,9 @@ export default function SuperAdminTenantManagement() {
           ? `शेवटचा admin डिलीट केल्यामुळे संपूर्ण टेनंट आणि सर्व डेटा डिलीट झाला`
           : "Admin user has been permanently deleted.",
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/super-admin/admin-users"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/super-admin/tenants"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/super-admin/tenant-stats"] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/super-admin/admin-users"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["/api/super-admin/tenants"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["/api/super-admin/tenant-stats"], refetchType: 'all' });
       setDeletingAdmin(null);
     },
     onError: (error: any) => {
@@ -332,14 +332,14 @@ export default function SuperAdminTenantManagement() {
     mutationFn: async ({ requestId, newPassword }: { requestId: string; newPassword: string }) => {
       await apiRequest(`/api/super-admin/approve-password-reset/${requestId}`, "POST", { newPassword });
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       toast({
         title: "Password Reset Approved",
         description: "Admin password has been reset successfully.",
       });
       setApproveRequestAdmin(null);
       setRequestPassword("");
-      queryClient.invalidateQueries({ queryKey: ["/api/super-admin/password-reset-requests"] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/super-admin/password-reset-requests"], refetchType: 'all' });
     },
     onError: (error: any) => {
       toast({
