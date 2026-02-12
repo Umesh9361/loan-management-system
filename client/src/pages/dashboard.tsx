@@ -161,11 +161,11 @@ export default function Dashboard() {
               
               <div className="lg:col-span-2 bg-gradient-to-r from-indigo-600 to-blue-600 rounded-xl p-6 shadow-md">
                 <div className="flex items-center space-x-4">
-                  <div className="bg-white/15 backdrop-blur-sm rounded-xl p-3">
+                  <div className={company && (company as any).name && (company as any).licenseNumber ? "bg-white/15 backdrop-blur-sm rounded-xl p-3" : "bg-white rounded-2xl p-2 shadow-lg ring-2 ring-white/30"}>
                     {company && (company as any).name && (company as any).licenseNumber ? (
                       <Building className="h-8 w-8 text-white" />
                     ) : (
-                      <img src="/icons/icon-192x192.png" alt="LonoPro" className="h-8 w-8 rounded-lg" />
+                      <img src="/icons/icon-192x192.png" alt="LonoPro" className="h-10 w-10 rounded-xl" />
                     )}
                   </div>
                   <div className="flex-1">
@@ -181,7 +181,10 @@ export default function Dashboard() {
                         <p className="text-blue-200 text-sm">{(company as any).address}</p>
                       </>
                     ) : (
-                      <h1 className="text-2xl font-bold text-white">Welcome</h1>
+                      <div>
+                        <h1 className="text-2xl font-bold text-white">Welcome</h1>
+                        <p className="text-blue-200 text-sm mt-1">LonoPro</p>
+                      </div>
                     )}
                   </div>
                 </div>
