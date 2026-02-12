@@ -492,7 +492,7 @@ export function Sidebar({ className }: SidebarProps) {
           <Button 
             variant="outline" 
             size="sm" 
-            className="flex-shrink-0 text-indigo-600 border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700"
+            className="flex-shrink-0 text-indigo-600 border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700 hidden lg:flex"
             onClick={async () => {
               try {
                 await handleLogout();
