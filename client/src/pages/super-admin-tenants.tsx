@@ -41,9 +41,9 @@ export default function SuperAdminTenants() {
 
   const deleteTenantMutation = useMutation({
     mutationFn: (tenantId: string) => apiRequest(`/api/super-admin/delete-tenant/${tenantId}`, "DELETE"),
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/super-admin/tenant-stats"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/super-admin/users"] });
+    onSuccess: async (data) => {
+      await queryClient.invalidateQueries({ queryKey: ["/api/super-admin/tenant-stats"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["/api/super-admin/users"], refetchType: 'all' });
       toast({
         title: "यशस्वी!",
         description: `टेनंट आणि त्याचा डेटा डिलीट झाला`,
