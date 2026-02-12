@@ -57,8 +57,10 @@ export default function Company() {
 
   const createMutation = useMutation({
     mutationFn: (data: CompanyFormData) => apiRequest("/api/company", "POST", data),
-    onSuccess: (newCompany) => {
+    onSuccess: async (newCompany) => {
       queryClient.setQueryData(["/api/company"], newCompany);
+      await queryClient.invalidateQueries({ queryKey: ["/api/company"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"], refetchType: 'all' });
       toast({
         title: "यशस्वी",
         description: "कंपनी माहिती यशस्वीपणे जतन केली",
@@ -76,8 +78,10 @@ export default function Company() {
 
   const updateMutation = useMutation({
     mutationFn: (data: CompanyFormData) => apiRequest("/api/company", "PUT", data),
-    onSuccess: (updatedCompany) => {
+    onSuccess: async (updatedCompany) => {
       queryClient.setQueryData(["/api/company"], updatedCompany);
+      await queryClient.invalidateQueries({ queryKey: ["/api/company"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"], refetchType: 'all' });
       toast({
         title: "यशस्वी",
         description: "कंपनी माहिती यशस्वीपणे अपडेट केली",
