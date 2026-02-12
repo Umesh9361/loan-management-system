@@ -1267,9 +1267,11 @@ export default function AccountLedger() {
                                   const drLabel = isCashAccount
                                     ? (bal >= 0 ? ' (Cr.)' : ' (Dr.)')
                                     : (bal >= 0 ? ' (Dr.)' : ' (Cr.)');
-                                  const isNeg = isCashAccount ? bal < 0 : bal < 0;
+                                  const colorClass = isCashAccount
+                                    ? (bal >= 0 ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold')
+                                    : (bal >= 0 ? 'text-blue-600 font-semibold' : 'text-red-600 font-semibold');
                                   return (
-                                    <span className={isNeg ? 'text-red-600 font-semibold' : ''}>
+                                    <span className={colorClass}>
                                       {bal < 0 ? '-' : ''}₹{Math.round(Math.abs(bal)).toLocaleString('en-IN')}
                                       {drLabel}
                                     </span>
@@ -1295,8 +1297,11 @@ export default function AccountLedger() {
                                 const drLabel = isCashAccount
                                   ? (bal >= 0 ? ' (Cr.)' : ' (Dr.)')
                                   : (bal >= 0 ? ' (Dr.)' : ' (Cr.)');
+                                const colorClass = isCashAccount
+                                  ? (bal >= 0 ? 'text-green-600 font-bold' : 'text-red-600 font-bold')
+                                  : (bal >= 0 ? 'text-blue-600 font-bold' : 'text-red-600 font-bold');
                                 return (
-                                  <span className={bal < 0 ? 'text-red-600 font-bold' : 'font-bold'}>
+                                  <span className={colorClass}>
                                     {bal < 0 ? '-' : ''}₹{Math.round(Math.abs(bal)).toLocaleString('en-IN')}
                                     {drLabel}
                                   </span>
