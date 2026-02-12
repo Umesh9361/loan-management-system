@@ -55,7 +55,6 @@ export const userPermissions = pgTable("user_permissions", {
   
   // Additional Report Permissions
   canViewAccountSummaryReport: boolean("can_view_account_summary_report").default(false), // खाते सारांश अहवाल
-  canViewOtherReports: boolean("can_view_other_reports").default(false), // इतर अहवाल
   
   // Borrower Management - Only core permissions used
   canManageBorrowers: boolean("can_manage_borrowers").default(false),
