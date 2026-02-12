@@ -467,8 +467,7 @@ export function Sidebar({ className }: SidebarProps) {
       </div>
 
       {/* Fixed Footer - Always Visible */}
-      <div className="flex-shrink-0 mt-auto border-t p-3 bg-white">
-        {/* User info row with logout button */}
+      <div className="flex-shrink-0 mt-auto border-t p-3 bg-white hidden lg:block">
         <div className="flex items-center justify-between gap-2">
           {(user?.role === 'admin' || user?.role === 'super_admin') ? (
             <Link href="/profile" className="flex items-center space-x-2 min-w-0 flex-1 hover:bg-blue-50 rounded-lg p-1 transition-colors cursor-pointer">
@@ -492,7 +491,7 @@ export function Sidebar({ className }: SidebarProps) {
           <Button 
             variant="outline" 
             size="sm" 
-            className="flex-shrink-0 text-indigo-600 border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700 hidden lg:flex"
+            className="flex-shrink-0 text-indigo-600 border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700"
             onClick={async () => {
               try {
                 await handleLogout();
