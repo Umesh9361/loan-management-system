@@ -1324,8 +1324,11 @@ export default function AccountLedger() {
                                 const drLabel = isCashAccount
                                   ? (bal >= 0 ? ' (Cr.)' : ' (Dr.)')
                                   : (bal >= 0 ? ' (Dr.)' : ' (Cr.)');
+                                const colorClass = isCashAccount
+                                  ? (bal >= 0 ? 'text-green-600' : 'text-red-600')
+                                  : (bal >= 0 ? 'text-blue-600' : 'text-red-600');
                                 return (
-                                  <span className={bal < 0 ? 'text-red-600' : ''}>
+                                  <span className={colorClass}>
                                     फरक: {bal < 0 ? '-' : ''}₹{Math.round(Math.abs(bal)).toLocaleString('en-IN')}
                                     {drLabel}
                                   </span>
