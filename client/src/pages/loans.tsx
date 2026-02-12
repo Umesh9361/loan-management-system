@@ -215,12 +215,12 @@ function Loans() {
       const response = await apiRequest(`/api/loans/${loanId}`, "DELETE");
       return response.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/loans"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/cash-transactions"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/loan-closures"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/groups"] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["/api/loans"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["/api/cash-transactions"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["/api/loan-closures"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["/api/groups"], refetchType: 'all' });
       setSelectedLoanId(null);
       toast({
         title: "कर्ज डिलीट झाले",
@@ -279,9 +279,10 @@ function Loans() {
     },
     onSuccess: async (newLoan) => {
       
-      // Always invalidate queries regardless of photo upload outcome
-      queryClient.invalidateQueries({ queryKey: ["/api/loans"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/borrowers/autocomplete"] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/loans"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["/api/borrowers/autocomplete"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["/api/cash-transactions"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"], refetchType: 'all' });
       
       // Show initial success message for loan creation
       toast({
