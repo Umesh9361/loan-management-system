@@ -67,8 +67,8 @@ export function SuperAdminPasswordRequests() {
       
       return response.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/super-admin/all-users"] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["/api/super-admin/all-users"], refetchType: 'all' });
       setSelectedUser(null);
       setNewPassword("");
       setConfirmPassword("");
