@@ -524,7 +524,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   --card: hsl(0, 0%, 100%);
   --card-foreground: hsl(215, 25%, 15%);
   --border: hsl(220, 13%, 91%);
-  --input: hsl(220, 13%, 91%);
+  --input: hsl(220, 16%, 75%);
   --primary: hsl(213, 94%, 55%); /* Professional Blue */
   --primary-foreground: hsl(0, 0%, 100%);
   --secondary: hsl(47, 96%, 88%); /* Light Gold */
