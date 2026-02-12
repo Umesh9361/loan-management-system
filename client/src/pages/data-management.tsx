@@ -184,7 +184,7 @@ function DataManagementPage() {
   });
 
   const rearrangeConfirmMutation = useMutation({
-    mutationFn: async (params: { groupId: string; upToDate?: string }) => {
+    mutationFn: async (params: { groupId: string; upToDate?: string; checksum?: string }) => {
       const response = await apiRequest("/api/data-management/rearrange-confirm", "POST", params);
       return await response.json();
     },
@@ -256,10 +256,14 @@ function DataManagementPage() {
 
   const formatDateDDMMYYYY = (dateStr: string) => {
     if (!dateStr) return '-';
+    const parts = dateStr.split('T')[0].split('-');
+    if (parts.length === 3) {
+      return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    }
     const d = new Date(dateStr);
-    const day = String(d.getDate()).padStart(2, '0');
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const year = d.getFullYear();
+    const day = String(d.getUTCDate()).padStart(2, '0');
+    const month = String(d.getUTCMonth() + 1).padStart(2, '0');
+    const year = d.getUTCFullYear();
     return `${day}/${month}/${year}`;
   };
 
@@ -360,7 +364,8 @@ function DataManagementPage() {
     if (confirmed) {
       rearrangeConfirmMutation.mutate({
         groupId: rearrangeGroupId,
-        upToDate: rearrangeUpToDate || undefined
+        upToDate: rearrangeUpToDate || undefined,
+        checksum: rearrangePreviewData?.checksum
       });
     }
   };
