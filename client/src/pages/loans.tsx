@@ -2660,23 +2660,23 @@ function Loans() {
                               size="sm"
                               variant="ghost"
                               className="h-10 w-10 p-0 touch-manipulation min-h-[44px] min-w-[44px]"
-                              onPointerDown={(e) => {
-                                (e.currentTarget as any)._startY = e.clientY;
-                                (e.currentTarget as any)._scrolled = false;
+                              onTouchStart={(e) => {
+                                const btn = e.currentTarget as any;
+                                btn._touchStartY = e.touches[0].clientY;
+                                btn._wasDrag = false;
                               }}
-                              onPointerMove={(e) => {
-                                const startY = (e.currentTarget as any)._startY;
-                                if (startY !== undefined && Math.abs(e.clientY - startY) > 8) {
-                                  (e.currentTarget as any)._scrolled = true;
+                              onTouchMove={(e) => {
+                                const btn = e.currentTarget as any;
+                                if (btn._touchStartY !== undefined && Math.abs(e.touches[0].clientY - btn._touchStartY) > 8) {
+                                  btn._wasDrag = true;
                                 }
                               }}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                if ((e.currentTarget as any)._scrolled) {
+                              onTouchEnd={(e) => {
+                                if ((e.currentTarget as any)._wasDrag) {
                                   e.preventDefault();
-                                  e.stopPropagation();
                                 }
                               }}
+                              onClick={(e) => e.stopPropagation()}
                             >
                               <MoreVertical className="h-5 w-5" />
                               <span className="sr-only">Actions</span>
@@ -2888,23 +2888,23 @@ function Loans() {
                             size="sm"
                             variant="ghost"
                             className="h-11 w-11 p-0 touch-manipulation min-h-[48px] min-w-[48px] rounded-full bg-gray-100 hover:bg-gray-200"
-                            onPointerDown={(e) => {
-                              (e.currentTarget as any)._startY = e.clientY;
-                              (e.currentTarget as any)._scrolled = false;
+                            onTouchStart={(e) => {
+                              const btn = e.currentTarget as any;
+                              btn._touchStartY = e.touches[0].clientY;
+                              btn._wasDrag = false;
                             }}
-                            onPointerMove={(e) => {
-                              const startY = (e.currentTarget as any)._startY;
-                              if (startY !== undefined && Math.abs(e.clientY - startY) > 8) {
-                                (e.currentTarget as any)._scrolled = true;
+                            onTouchMove={(e) => {
+                              const btn = e.currentTarget as any;
+                              if (btn._touchStartY !== undefined && Math.abs(e.touches[0].clientY - btn._touchStartY) > 8) {
+                                btn._wasDrag = true;
                               }
                             }}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              if ((e.currentTarget as any)._scrolled) {
+                            onTouchEnd={(e) => {
+                              if ((e.currentTarget as any)._wasDrag) {
                                 e.preventDefault();
-                                e.stopPropagation();
                               }
                             }}
+                            onClick={(e) => e.stopPropagation()}
                           >
                             <MoreVertical className="h-5 w-5 text-gray-600" />
                           </Button>
