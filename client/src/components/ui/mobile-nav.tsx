@@ -105,6 +105,19 @@ export function MobileNav({ hideBottomNav = false }: MobileNavProps = {}) {
           
           <div className="flex items-center gap-1">
             <NotificationBell />
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-9 w-9">
+                  <User className="h-5 w-5 text-indigo-600" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-40">
+                <DropdownMenuItem onClick={handleLogout} className="text-indigo-600 focus:text-indigo-700 focus:bg-indigo-50">
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Log Out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </div>
