@@ -85,20 +85,16 @@ function DataManagementPage() {
       const response = await apiRequest("/api/data-management/cleanup-closed-loans", "POST", options);
       return await response.json();
     },
-    onSuccess: () => {
-      // Comprehensive cache invalidation for all related queries
-      queryClient.invalidateQueries({ queryKey: ["/api/cash-transactions"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/cash-balance"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/mobile-cashbook"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/journal-entries"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/loans"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/borrowers"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/parties"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/reports"] });
-      
-      // Force immediate refetch to reflect deletions
-      queryClient.refetchQueries({ queryKey: ["/api/cash-transactions"] });
-      queryClient.refetchQueries({ queryKey: ["/api/journal-entries"] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["/api/cash-transactions"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["/api/cash-balance"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["/api/mobile-cashbook"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["/api/journal-entries"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["/api/loans"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["/api/borrowers"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["/api/parties"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["/api/reports"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"], refetchType: 'all' });
       
       refetchIntegrity();
     }
@@ -134,20 +130,17 @@ function DataManagementPage() {
       const response = await apiRequest("/api/data-management/restore-system-data", "POST", options);
       return await response.json();
     },
-    onSuccess: () => {
-      // Comprehensive cache invalidation after restore
-      queryClient.invalidateQueries({ queryKey: ["/api/cash-transactions"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/cash-balance"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/mobile-cashbook"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/journal-entries"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/loans"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/borrowers"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/parties"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/reports"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["/api/cash-transactions"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["/api/cash-balance"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["/api/mobile-cashbook"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["/api/journal-entries"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["/api/loans"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["/api/borrowers"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["/api/parties"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["/api/reports"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"], refetchType: 'all' });
       
-      // Force immediate refetch
-      queryClient.refetchQueries({ queryKey: ["/api/dashboard/stats"] });
       refetchIntegrity();
     }
   });
@@ -158,20 +151,17 @@ function DataManagementPage() {
       const response = await apiRequest("/api/data-management/restore-from-backup", "POST", { backupData });
       return await response.json();
     },
-    onSuccess: () => {
-      // Comprehensive cache invalidation after restore
-      queryClient.invalidateQueries({ queryKey: ["/api/cash-transactions"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/cash-balance"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/mobile-cashbook"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/journal-entries"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/loans"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/borrowers"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/parties"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/reports"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["/api/cash-transactions"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["/api/cash-balance"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["/api/mobile-cashbook"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["/api/journal-entries"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["/api/loans"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["/api/borrowers"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["/api/parties"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["/api/reports"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"], refetchType: 'all' });
       
-      // Force immediate refetch
-      queryClient.refetchQueries({ queryKey: ["/api/dashboard/stats"] });
       refetchIntegrity();
     }
   });
@@ -182,11 +172,9 @@ function DataManagementPage() {
       const response = await apiRequest("/api/data-management/rearrange-account-numbers", "POST", { groupId });
       return await response.json();
     },
-    onSuccess: () => {
-      // Invalidate loans cache to reflect new account numbers
-      queryClient.invalidateQueries({ queryKey: ["/api/loans"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/borrowers"] });
-      queryClient.refetchQueries({ queryKey: ["/api/loans"] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["/api/loans"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["/api/borrowers"], refetchType: 'all' });
     }
   });
 
@@ -205,14 +193,13 @@ function DataManagementPage() {
       const response = await apiRequest("/api/data-management/cleanup-cashbook-entries", "POST", options);
       return await response.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/cash-transactions"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/cash-balance"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/mobile-cashbook"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/journal-entries"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/reports"] });
-      queryClient.refetchQueries({ queryKey: ["/api/cash-transactions"] });
-      queryClient.refetchQueries({ queryKey: ["/api/journal-entries"] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["/api/cash-transactions"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["/api/cash-balance"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["/api/mobile-cashbook"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["/api/journal-entries"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["/api/reports"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"], refetchType: 'all' });
       refetchIntegrity();
     }
   });
