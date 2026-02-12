@@ -30,10 +30,12 @@ import {
   User,
   Navigation,
   ArrowUpRight,
-  ArrowDownRight
+  ArrowDownRight,
+  LogOut
 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Link } from "wouter";
+import { AuthService } from "@/lib/auth";
 import { Badge } from "@/components/ui/badge";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
 
@@ -221,6 +223,21 @@ export default function Dashboard() {
                       </label>
                     </div>
                   )}
+                  <div className="pt-3 border-t border-gray-100">
+                    <Button 
+                      variant="outline" 
+                      className="w-full border-indigo-200 text-indigo-600 hover:bg-indigo-50 hover:border-indigo-300 hover:text-indigo-700 text-sm h-9"
+                      onClick={async () => {
+                        sessionStorage.removeItem('closure_summary_entries');
+                        sessionStorage.removeItem('closure_summary_counter');
+                        await AuthService.logout();
+                        window.location.reload();
+                      }}
+                    >
+                      <LogOut className="h-4 w-4 mr-2" />
+                      Log Out
+                    </Button>
+                  </div>
                 </div>
               </div>
             </div>
