@@ -1614,7 +1614,17 @@ function Loans() {
                         <FormItem>
                           <FormLabel className="text-base font-medium">खाते क्रमांक</FormLabel>
                           <FormControl>
-                            <Input {...field} placeholder="खाते क्रमांक" tabIndex={7} className="text-base" />
+                            <Input
+                              {...field}
+                              placeholder="खाते क्रमांक"
+                              tabIndex={7}
+                              className="text-base font-bold"
+                              style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}
+                              onChange={(e) => {
+                                const converted = e.target.value.replace(/[०-९]/g, (d: string) => String('०१२३४५६७८९'.indexOf(d)));
+                                field.onChange(converted);
+                              }}
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -1632,7 +1642,7 @@ function Loans() {
                             <Input
                               type="number"
                               placeholder="0"
-                              className="text-base"
+                              className="text-base font-bold"
                               value={!field.value || field.value === '0' ? '' : field.value}
                               onChange={(e) => {
                                 const value = e.target.value;
