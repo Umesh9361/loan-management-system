@@ -331,12 +331,12 @@ export default function AccountLedger() {
         const amount = parseFloat(transaction.amount || 0);
         let debit = 0, credit = 0;
 
-        if (transaction.transactionType === 'cash_in') {
+        if (transaction.transactionType === 'cash_out') {
           debit = amount;
-          runningBalance += amount;
+          runningBalance -= amount;
         } else {
           credit = amount;
-          runningBalance -= amount;
+          runningBalance += amount;
         }
 
         // CASH ACCOUNT ENHANCEMENT: Show party name in description for dual-entry transactions
@@ -441,7 +441,7 @@ export default function AccountLedger() {
       
       if (transactionDate < fromDate) {
         const amount = parseFloat(transaction.amount || 0);
-        if (transaction.transactionType === 'cash_out') {
+        if (transaction.transactionType === 'cash_in') {
           openingBalance += amount;
         } else {
           openingBalance -= amount;
@@ -477,7 +477,7 @@ export default function AccountLedger() {
       const amount = parseFloat(transaction.amount || 0);
       let debit = 0, credit = 0;
       
-      if (transaction.transactionType === 'cash_out') {
+      if (transaction.transactionType === 'cash_in') {
         debit = amount;
         runningBalance += amount;
       } else {
@@ -488,10 +488,10 @@ export default function AccountLedger() {
       let simpleDescription;
       
       if (transaction.partyId && transaction.partyId === filters.partyId) {
-        if (transaction.transactionType === 'cash_out') {
-          simpleDescription = `${party.name} - रोकड दिली`;
-        } else {
+        if (transaction.transactionType === 'cash_in') {
           simpleDescription = `${party.name} - रोकड मिळाली`;
+        } else {
+          simpleDescription = `${party.name} - रोकड दिली`;
         }
       } else {
         simpleDescription = transaction.narration || 
@@ -1230,8 +1230,8 @@ export default function AccountLedger() {
                           <TableRow>
                             <TableHead className="border text-center">दिनांक</TableHead>
                             <TableHead className="border text-center">तपशील</TableHead>
-                            <TableHead className="border text-center">जमा (Cr.)</TableHead>
                             <TableHead className="border text-center">नावे (Dr.)</TableHead>
+                            <TableHead className="border text-center">जमा (Cr.)</TableHead>
                             <TableHead className="border text-center">शिल्लक</TableHead>
                           </TableRow>
                         </TableHeader>
@@ -1256,10 +1256,10 @@ export default function AccountLedger() {
                                 {entry.description}
                               </TableCell>
                               <TableCell className="border text-right">
-                                {entry.credit > 0 && `₹${Math.round(entry.credit).toLocaleString('en-IN')}`}
+                                {entry.debit > 0 && `₹${Math.round(entry.debit).toLocaleString('en-IN')}`}
                               </TableCell>
                               <TableCell className="border text-right">
-                                {entry.debit > 0 && `₹${Math.round(entry.debit).toLocaleString('en-IN')}`}
+                                {entry.credit > 0 && `₹${Math.round(entry.credit).toLocaleString('en-IN')}`}
                               </TableCell>
                               <TableCell className="border text-right">
                                 <span className={entry.balance < 0 ? 'text-red-600 font-semibold' : ''}>
@@ -1274,10 +1274,10 @@ export default function AccountLedger() {
                           <TableRow className="bg-gray-100 font-bold">
                             <TableCell className="border text-center" colSpan={2}>एकूण</TableCell>
                             <TableCell className="border text-right">
-                              ₹{Math.round(parseFloat(statementData.totalCredit || 0)).toLocaleString('en-IN')}
+                              ₹{Math.round(parseFloat(statementData.totalDebit || 0)).toLocaleString('en-IN')}
                             </TableCell>
                             <TableCell className="border text-right">
-                              ₹{Math.round(parseFloat(statementData.totalDebit || 0)).toLocaleString('en-IN')}
+                              ₹{Math.round(parseFloat(statementData.totalCredit || 0)).toLocaleString('en-IN')}
                             </TableCell>
                             <TableCell className="border text-right">
                               <span className={statementData.finalBalance < 0 ? 'text-red-600 font-bold' : 'font-bold'}>
@@ -1294,10 +1294,10 @@ export default function AccountLedger() {
                         <div className="mt-4 border-t pt-4">
                           <div className="grid grid-cols-3 gap-4 font-semibold text-lg">
                             <div className="text-right">
-                              <span className="text-green-600">एकूण जमा: ₹{Math.round(statementData.totals.totalCredit).toLocaleString('en-IN')}</span>
+                              <span className="text-blue-600">एकूण नावे: ₹{Math.round(statementData.totals.totalDebit).toLocaleString('en-IN')}</span>
                             </div>
                             <div className="text-right">
-                              <span className="text-blue-600">एकूण नावे: ₹{Math.round(statementData.totals.totalDebit).toLocaleString('en-IN')}</span>
+                              <span className="text-green-600">एकूण जमा: ₹{Math.round(statementData.totals.totalCredit).toLocaleString('en-IN')}</span>
                             </div>
                             <div className="text-right">
                               <span className={statementData.finalBalance < 0 ? 'text-red-600' : ''}>
