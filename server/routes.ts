@@ -1249,38 +1249,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { id } = req.params;
       
-      // Get loan details before deletion
-      const loans = await storage.getLoans(req.session.tenantId!);
-      const loan = loans.find(l => l.id === id);
+      const loan = await storage.getLoanById(id, req.session.tenantId!);
       
       if (!loan) {
-        return res.status(404).json({ message: "Loan not found" });
+        return res.status(404).json({ message: "कर्ज सापडले नाही किंवा आधीच डिलीट झाले आहे." });
       }
       
-      // 🚀 REAL-TIME SYNC: Trigger comprehensive loan deletion synchronization
-      await triggerLoanSync({
-        type: 'DELETE',
-        loanId: id,
-        tenantId: req.session.tenantId!,
-        oldData: loan,
-        metadata: {
-          performedBy: req.session.userId!,
-          timestamp: new Date(),
-          reason: 'User requested loan deletion'
-        }
-      });
+      try {
+        await triggerLoanSync({
+          type: 'DELETE',
+          loanId: id,
+          tenantId: req.session.tenantId!,
+          oldData: loan,
+          metadata: {
+            performedBy: req.session.userId!,
+            timestamp: new Date(),
+            reason: 'User requested loan deletion'
+          }
+        });
+      } catch (syncError) {
+        console.error('Loan sync error (non-fatal):', syncError);
+      }
       
       const success = await storage.deleteLoan(id, req.session.tenantId!);
       
       if (!success) {
-        return res.status(404).json({ message: "Failed to delete loan" });
+        return res.status(500).json({ message: "कर्ज डिलीट करताना त्रुटी आली. पुन्हा प्रयत्न करा." });
       }
 
       try { await storage.logUserActivity({ userId: req.session.userId!, tenantId: req.session.tenantId!, activityType: 'delete_loan', description: `कर्ज डिलीट: खाते क्र. ${loan.accountNumber} - ${loan.borrowerName} - ₹${loan.principalAmount}`, metadata: JSON.stringify({ loanId: id, accountNumber: loan.accountNumber, borrowerName: loan.borrowerName, principalAmount: loan.principalAmount, loanDate: loan.loanDate, interestRate: loan.interestRate, groupId: loan.groupId, status: loan.status }) }); } catch(e) { console.error('Audit log error:', e); }
 
-      res.json({ message: "Loan and related cash transactions deleted successfully" });
+      res.json({ message: "कर्ज आणि संबंधित व्यवहार यशस्वीपणे डिलीट केले गेले." });
     } catch (error) {
-      res.status(500).json({ message: "Failed to delete loan" });
+      console.error('Delete loan error:', error);
+      res.status(500).json({ message: "कर्ज डिलीट करताना त्रुटी आली. पुन्हा प्रयत्न करा." });
     }
   });
 
