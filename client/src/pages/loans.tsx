@@ -1243,7 +1243,7 @@ function Loans() {
                   
                   {/* Column 1 - Basic Information */}
                   <div className="space-y-2 sm:space-y-3">
-                    <h3 className="text-base font-semibold border-b pb-1 text-blue-700">मूलभूत माहिती</h3>
+                    <h3 className="text-lg font-semibold border-b pb-1 text-blue-700">मूलभूत माहिती</h3>
                     
                     {/* Group Selection with Autocomplete */}
                     <FormField
@@ -1251,11 +1251,12 @@ function Loans() {
                       name="groupId"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-sm font-medium">ग्रुप निवडा *</FormLabel>
+                          <FormLabel className="text-base font-medium">ग्रुप निवडा *</FormLabel>
                           <FormControl>
                             <div className="relative">
                               <Input
                                 ref={groupInputRef}
+                                className="text-base"
                                 placeholder="ग्रुप नाव टाइप करा (उदा: गजलक्ष्मी)"
                                 value={groupSearchTerm}
                                 tabIndex={1}
@@ -1410,11 +1411,12 @@ function Loans() {
                       name="borrowerName"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-sm font-medium">कर्जदाराचे नाव *</FormLabel>
+                          <FormLabel className="text-base font-medium">कर्जदाराचे नाव *</FormLabel>
                           <FormControl>
                             <div className="relative" ref={borrowerDropdownRef}>
                               <Input
                                 {...field}
+                                className="text-base"
                                 placeholder="कर्जदाराचे नाव टाइप करा (आधीचे कर्जदार दिसतील)"
                                 tabIndex={2}
                                 onChange={(e) => {
@@ -1529,9 +1531,9 @@ function Loans() {
                       name="borrowerMobile"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-sm font-medium">मोबाइल नंबर</FormLabel>
+                          <FormLabel className="text-base font-medium">मोबाइल नंबर</FormLabel>
                           <FormControl>
-                            <Input {...field} placeholder="9876543210" tabIndex={3} />
+                            <Input {...field} placeholder="9876543210" tabIndex={3} className="text-base" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -1544,9 +1546,9 @@ function Loans() {
                       name="borrowerAddress"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-sm font-medium">पत्ता</FormLabel>
+                          <FormLabel className="text-base font-medium">पत्ता</FormLabel>
                           <FormControl>
-                            <Input {...field} placeholder="पूर्ण पत्ता" tabIndex={4} />
+                            <Input {...field} placeholder="पूर्ण पत्ता" tabIndex={4} className="text-base" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -1559,7 +1561,7 @@ function Loans() {
                       name="businessType"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-sm font-medium">व्यवसाय *</FormLabel>
+                          <FormLabel className="text-base font-medium">व्यवसाय *</FormLabel>
                           <Select onValueChange={field.onChange} value={field.value}>
                             <FormControl>
                               <SelectTrigger className="text-base" tabIndex={5}>
@@ -1582,7 +1584,7 @@ function Loans() {
                       name="loanType"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-sm font-medium">कर्जाचा प्रकार *</FormLabel>
+                          <FormLabel className="text-base font-medium">कर्जाचा प्रकार *</FormLabel>
                           <Select onValueChange={field.onChange} value={field.value}>
                             <FormControl>
                               <SelectTrigger className="text-base" tabIndex={6}>
@@ -1602,7 +1604,7 @@ function Loans() {
 
                 {/* Column 2 - Loan Details */}
                 <div className="space-y-3">
-                  <h3 className="text-base font-semibold border-b pb-1 text-green-700">कर्जाची माहिती</h3>
+                  <h3 className="text-lg font-semibold border-b pb-1 text-green-700">कर्जाची माहिती</h3>
                     
                     {/* Account Number */}
                     <FormField
@@ -1610,9 +1612,9 @@ function Loans() {
                       name="accountNumber"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-sm font-medium">खाते क्रमांक</FormLabel>
+                          <FormLabel className="text-base font-medium">खाते क्रमांक</FormLabel>
                           <FormControl>
-                            <Input {...field} placeholder="खाते क्रमांक" tabIndex={7} />
+                            <Input {...field} placeholder="खाते क्रमांक" tabIndex={7} className="text-base" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -1625,11 +1627,12 @@ function Loans() {
                       name="principalAmount"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-sm font-medium">मूळ रक्कम *</FormLabel>
+                          <FormLabel className="text-base font-medium">कर्ज रक्कम *</FormLabel>
                           <FormControl>
                             <Input
                               type="number"
                               placeholder="0"
+                              className="text-base"
                               value={!field.value || field.value === '0' ? '' : field.value}
                               onChange={(e) => {
                                 const value = e.target.value;
@@ -1649,14 +1652,14 @@ function Loans() {
                       name="loanDate"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-sm font-medium">
+                          <FormLabel className="text-base font-medium">
                             कर्ज दिनांक *<span className="hidden sm:inline"> (DD/MM/YYYY)</span>
                           </FormLabel>
                           <FormControl>
                             <div>
                               {/* Desktop: Text input for typing date */}
                               <Input
-                                className="hidden sm:block"
+                                className="hidden sm:block text-base"
                                 value={field.value || DateUtils.getCurrentIndianDate()}
                                 placeholder="DD/MM/YYYY"
                                 tabIndex={9}
@@ -1685,7 +1688,7 @@ function Loans() {
                               {/* Mobile: Native date picker */}
                               <Input
                                 type="date"
-                                className="block sm:hidden"
+                                className="block sm:hidden text-base"
                                 value={field.value ? DateUtils.indianDateToISO(field.value) : DateUtils.indianDateToISO(DateUtils.getCurrentIndianDate())}
                                 tabIndex={9}
                                 onChange={(e) => {
@@ -1749,7 +1752,7 @@ function Loans() {
                             />
                           </FormControl>
                           <div className="space-y-1 leading-none">
-                            <FormLabel className="text-sm font-medium">
+                            <FormLabel className="text-base font-medium">
                               मुदत ठरावीक कर्ज (निश्चित मुदतीसाठी)
                             </FormLabel>
                           </div>
@@ -1764,13 +1767,14 @@ function Loans() {
                         name="maturityMonths"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-sm font-medium">मुदत महिने *</FormLabel>
+                            <FormLabel className="text-base font-medium">मुदत महिने *</FormLabel>
                             <FormControl>
                               <div className="flex items-center space-x-2">
                                 <Input
                                   {...field}
                                   type="number"
                                   placeholder="12"
+                                  className="text-base"
                                   tabIndex={11}
                                   onChange={(e) => {
                                     field.onChange(e.target.value);
@@ -1851,14 +1855,14 @@ function Loans() {
                       name="maturityDate"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-sm font-medium">
+                          <FormLabel className="text-base font-medium">
                             कर्ज मुदत दिनांक *<span className="hidden sm:inline"> (DD/MM/YYYY)</span>
                           </FormLabel>
                           <FormControl>
                             <div>
                               {/* Desktop: Text input for typing date */}
                               <Input
-                                className="hidden sm:block"
+                                className="hidden sm:block text-base"
                                 value={field.value || ''}
                                 placeholder="DD/MM/YYYY"
                                 tabIndex={12}
@@ -1879,7 +1883,7 @@ function Loans() {
                               {/* Mobile: Native date picker */}
                               <Input
                                 type="date"
-                                className="block sm:hidden"
+                                className="block sm:hidden text-base"
                                 value={field.value ? DateUtils.indianDateToISO(field.value) : ''}
                                 tabIndex={12}
                                 onChange={(e) => {
@@ -1903,7 +1907,7 @@ function Loans() {
                       name="interestRateType"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-sm font-medium">व्याजाचा दर प्रकार *</FormLabel>
+                          <FormLabel className="text-base font-medium">व्याजाचा दर प्रकार *</FormLabel>
                           <FormControl>
                             <RadioGroup
                               onValueChange={(value) => {
@@ -1942,7 +1946,7 @@ function Loans() {
                         const isYearly = rateType === "yearly";
                         return (
                           <FormItem>
-                            <FormLabel className="text-sm font-medium">व्याजाचा दर {isYearly ? "वार्षिक" : "मासिक"} *</FormLabel>
+                            <FormLabel className="text-base font-medium">व्याजाचा दर {isYearly ? "वार्षिक" : "मासिक"} *</FormLabel>
                             <FormControl>
                               <div className="relative">
                                 <Input
@@ -1952,7 +1956,7 @@ function Loans() {
                                   tabIndex={13}
                                   placeholder={isYearly ? "12.00" : "1.50"}
                                   onChange={(e) => field.onChange(e.target.value)}
-                                  className="pr-8"
+                                  className="pr-8 text-base"
                                 />
                                 <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500">%</span>
                               </div>
@@ -1969,7 +1973,7 @@ function Loans() {
 
                 {/* Column 3 - Collateral Information */}
                 <div className="space-y-3">
-                  <h3 className="text-base font-semibold border-b pb-1 text-orange-700">तारणाची माहिती</h3>
+                  <h3 className="text-lg font-semibold border-b pb-1 text-orange-700">तारणाची माहिती</h3>
                   
                   {/* Collateral Details */}
                   <FormField
@@ -1977,9 +1981,9 @@ function Loans() {
                     name="collateralDetails"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-sm font-medium">तारणाचा तपशील</FormLabel>
+                        <FormLabel className="text-base font-medium">तारणाचा तपशील</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="सोने, चांदी, इतर" tabIndex={14} />
+                          <Input {...field} placeholder="सोने, चांदी, इतर" tabIndex={14} className="text-base" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -1992,9 +1996,9 @@ function Loans() {
                     name="weight"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-sm font-medium">वजन</FormLabel>
+                        <FormLabel className="text-base font-medium">वजन</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="10 ग्राम" tabIndex={15} />
+                          <Input {...field} placeholder="10 ग्राम" tabIndex={15} className="text-base" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -2007,12 +2011,13 @@ function Loans() {
                     name="marketValue"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-sm font-medium">बाजार मूल्य</FormLabel>
+                        <FormLabel className="text-base font-medium">बाजार मूल्य</FormLabel>
                         <FormControl>
                           <Input
                             {...field}
                             type="number"
                             placeholder="0"
+                            className="text-base"
                             tabIndex={16}
                             onChange={(e) => field.onChange(e.target.value)}
                           />
@@ -2035,9 +2040,9 @@ function Loans() {
                     name="documentDetails"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-sm font-medium">कागदपत्राचा तपशील</FormLabel>
+                        <FormLabel className="text-base font-medium">कागदपत्राचा तपशील</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="कागदपत्राचा तपशील" tabIndex={17} />
+                          <Input {...field} placeholder="कागदपत्राचा तपशील" tabIndex={17} className="text-base" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -2050,9 +2055,9 @@ function Loans() {
                     name="specialConditions"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-sm font-medium">विशेष शर्ती</FormLabel>
+                        <FormLabel className="text-base font-medium">विशेष शर्ती</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="विशेष शर्ती" tabIndex={18} />
+                          <Input {...field} placeholder="विशेष शर्ती" tabIndex={18} className="text-base" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -2065,9 +2070,9 @@ function Loans() {
                     name="otherInfo"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-sm font-medium">इतर संबंधित माहिती</FormLabel>
+                        <FormLabel className="text-base font-medium">इतर संबंधित माहिती</FormLabel>
                         <FormControl>
-                          <Input {...field} placeholder="इतर संबंधित माहिती" tabIndex={19} />
+                          <Input {...field} placeholder="इतर संबंधित माहिती" tabIndex={19} className="text-base" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -2942,7 +2947,7 @@ function Loans() {
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   <div>
-                    <label className="text-sm font-medium text-gray-600">मूळ रक्कम</label>
+                    <label className="text-sm font-medium text-gray-600">कर्ज रक्कम</label>
                     <p className="text-xl font-bold text-green-700">₹ {LoanCalculations.formatAmount(Number(selectedLoanDetails.principalAmount))}</p>
                   </div>
                   <div>
