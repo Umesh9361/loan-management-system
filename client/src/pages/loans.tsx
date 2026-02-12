@@ -2311,32 +2311,31 @@ function Loans() {
       </Card>
 
       {/* Search and Filter Section */}
-      <Card className="bg-blue-50 border-blue-200">
+      <Card className="shadow-sm border border-gray-200">
         <CardContent className="space-y-4 pt-4">
           {/* Smart Text Search */}
           <div>
-            <Label htmlFor="smart-search" className="text-blue-700 font-medium">
-              नाव (राम, उमेश), खाते क्रमांक
+            <Label htmlFor="smart-search" className="text-gray-700 font-medium text-sm mb-1.5">
+              नाव किंवा खाते क्रमांक शोधा
             </Label>
             <div className="flex gap-2">
               <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                 <Input
                   ref={searchInputRef}
                   id="smart-search"
-                  placeholder="शोधा..."
+                  placeholder="नाव, खाते क्रमांक टाका..."
                   value={searchQuery}
                   onChange={(e) => {
                     setSearchQuery(e.target.value);
-                    // Remove immediate search activation - only activate on button click
                   }}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' && searchQuery.trim()) {
                       scrollToSearchResults();
                     }
                   }}
-                  className="pr-10"
+                  className="pl-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                 />
-                <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               </div>
               <Button 
                 type="button"
@@ -2345,8 +2344,9 @@ function Loans() {
                     scrollToSearchResults();
                   }
                 }}
-                className="bg-green-600 hover:bg-green-700 active:scale-95 active:bg-green-800 transition-all duration-150 text-white px-4 shadow-md"
+                className="bg-blue-600 hover:bg-blue-700 active:scale-95 transition-all duration-150 text-white px-5 shadow-sm"
               >
+                <Search className="h-4 w-4 mr-1.5" />
                 शोध
               </Button>
             </div>
@@ -2354,7 +2354,7 @@ function Loans() {
 
           {/* Group Filter */}
           <div>
-            <Label className="text-blue-700 font-medium">ग्रुप निवडा</Label>
+            <Label className="text-gray-700 font-medium text-sm mb-1.5">ग्रुप निवडा</Label>
             <Select value={dateFilter.groupId} onValueChange={(value) => {
               setDateFilter(prev => ({ ...prev, groupId: value }));
             }}>
@@ -2373,7 +2373,7 @@ function Loans() {
           {/* Date Range */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <Label className="text-blue-700 font-medium flex items-center">
+              <Label className="text-gray-700 font-medium text-sm flex items-center">
                 <Calendar className="mr-2 h-4 w-4" />
                 या तारखेपासून
               </Label>
@@ -2383,11 +2383,11 @@ function Loans() {
                 onChange={(e) => {
                   setDateFilter(prev => ({ ...prev, dateFrom: e.target.value }));
                 }}
-                className="border-blue-300"
+                className="border-gray-300"
               />
             </div>
             <div>
-              <Label className="text-blue-700 font-medium flex items-center">
+              <Label className="text-gray-700 font-medium text-sm flex items-center">
                 <Calendar className="mr-2 h-4 w-4" />
                 या तारखेपर्यंत
               </Label>
@@ -2397,7 +2397,7 @@ function Loans() {
                 onChange={(e) => {
                   setDateFilter(prev => ({ ...prev, dateTo: e.target.value }));
                 }}
-                className="border-blue-300"
+                className="border-gray-300"
               />
             </div>
           </div>
@@ -2434,14 +2434,13 @@ function Loans() {
                 // Always scroll to results area, regardless of search query
                 scrollToSearchResults();
               }}
-              className="flex-1 bg-purple-600 hover:bg-purple-700 active:scale-95 active:bg-purple-800 transition-all duration-150 text-white shadow-md"
+              className="flex-1 bg-blue-600 hover:bg-blue-700 active:scale-95 transition-all duration-150 text-white shadow-sm"
             >
               <Search className="mr-2 h-4 w-4" />
               शोधा
             </Button>
             <Button
               onClick={() => {
-                // Clear all filters and reset to original state - NO DATE FILTERS
                 setSearchQuery("");
                 setStatusFilter("all");
                 setDateFilter({
@@ -2449,12 +2448,11 @@ function Loans() {
                   dateFrom: DateUtils.formatForInput(new Date()),
                   dateTo: DateUtils.formatForInput(new Date()),
                 });
-                // Reset completed - no need for search state
                 setSelectedRowIndex(-1);
                 setSelectedLoanId(null);
               }}
               variant="outline"
-              className="flex-1 border-red-300 text-red-600 hover:text-red-700 hover:bg-red-50 active:scale-95 transition-transform duration-150 shadow-sm"
+              className="flex-1 border-gray-300 text-gray-600 hover:text-gray-700 hover:bg-gray-50 active:scale-95 transition-all duration-150"
             >
               <X className="mr-2 h-4 w-4" />
               साफ करा
