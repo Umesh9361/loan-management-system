@@ -331,15 +331,12 @@ export default function AccountLedger() {
         const amount = parseFloat(transaction.amount || 0);
         let debit = 0, credit = 0;
 
-        // CASH ACCOUNT LEDGER FIX: Reverse debit/credit logic for cash account
-        // Cash disbursements (loan disbursements) should show as DEBIT (money going out)
-        // Cash receipts (loan closures, payments) should show as CREDIT (money coming in)
-        if (transaction.transactionType === 'cash_out') {
-          debit = amount;  // Cash going out = Debit in cash ledger
-          runningBalance -= amount;
-        } else {
-          credit = amount; // Cash coming in = Credit in cash ledger
+        if (transaction.transactionType === 'cash_in') {
+          debit = amount;
           runningBalance += amount;
+        } else {
+          credit = amount;
+          runningBalance -= amount;
         }
 
         // CASH ACCOUNT ENHANCEMENT: Show party name in description for dual-entry transactions
@@ -435,19 +432,19 @@ export default function AccountLedger() {
     });
 
     // Calculate balance before the statement period starts
-    let openingBalance = party.openingBalance || 0; // Use party's opening balance if available
+    const rawOpening = parseFloat(party.openingBalance) || 0;
+    let openingBalance = party.openingBalanceType === 'credit' ? -rawOpening : rawOpening;
     
-    // Add all transactions before the statement date range
     allPartyTransactions.forEach((transaction: any) => {
       const transactionDate = new Date(transaction.transactionDate);
       const fromDate = new Date(filters.dateFrom);
       
       if (transactionDate < fromDate) {
         const amount = parseFloat(transaction.amount || 0);
-        if (transaction.transactionType === 'cash_in') {
-          openingBalance += amount; // Party has positive debit balance (paid out money)
+        if (transaction.transactionType === 'cash_out') {
+          openingBalance += amount;
         } else {
-          openingBalance -= amount; // Party has credit balance (received money)
+          openingBalance -= amount;
         }
       }
     });
@@ -480,35 +477,25 @@ export default function AccountLedger() {
       const amount = parseFloat(transaction.amount || 0);
       let debit = 0, credit = 0;
       
-      if (transaction.transactionType === 'cash_in') {
-        // CASH_IN: व्यक्तीने आपल्याला पैसे दिले (Party paid us money)
-        // From party's perspective: Money went OUT of their account → DEBIT (नावे)
-        // Party's account gets debited because they gave us money
+      if (transaction.transactionType === 'cash_out') {
         debit = amount;
-        runningBalance += amount; // Positive balance = Party has paid money (Debit balance)
+        runningBalance += amount;
       } else {
-        // CASH_OUT: आपण व्यक्तीला पैसे दिले (We paid money to party)
-        // From party's perspective: Money came INTO their account → CREDIT (जमा)  
-        // Party's account gets credited because we gave them money
         credit = amount;
-        runningBalance -= amount; // Negative balance = Party received money (Credit balance)
+        runningBalance -= amount;
       }
       
-      // PARTY STATEMENT FIX: Show party name in description for dual-entry transactions
       let simpleDescription;
       
-      // Check if this is a dual-entry transaction with party involvement
       if (transaction.partyId && transaction.partyId === filters.partyId) {
-        // Show party name for clarity in their own statement
-        if (transaction.transactionType === 'cash_in') {
+        if (transaction.transactionType === 'cash_out') {
           simpleDescription = `${party.name} - रोकड दिली`;
         } else {
           simpleDescription = `${party.name} - रोकड मिळाली`;
         }
       } else {
-        // Use narration or simple cash flow for other transactions
         simpleDescription = transaction.narration || 
-          (transaction.transactionType === 'cash_in' ? 'रोकड मिळाली' : 'रोकड दिली');
+          (transaction.transactionType === 'cash_out' ? 'रोकड दिली' : 'रोकड मिळाली');
       }
 
       entries.push({
@@ -1275,8 +1262,8 @@ export default function AccountLedger() {
                                 {entry.debit > 0 && `₹${Math.round(entry.debit).toLocaleString('en-IN')}`}
                               </TableCell>
                               <TableCell className="border text-right">
-                                <span className={entry.balance < 0 ? 'text-red-600 font-semibold' : 'text-green-600'}>
-                                  ₹{Math.round(Math.abs(entry.balance)).toLocaleString('en-IN')}
+                                <span className={entry.balance < 0 ? 'text-red-600 font-semibold' : ''}>
+                                  {entry.balance < 0 ? '-' : ''}₹{Math.round(Math.abs(entry.balance)).toLocaleString('en-IN')}
                                   {entry.balance >= 0 ? ' (Dr.)' : ' (Cr.)'}
                                 </span>
                               </TableCell>
@@ -1293,8 +1280,8 @@ export default function AccountLedger() {
                               ₹{Math.round(parseFloat(statementData.totalDebit || 0)).toLocaleString('en-IN')}
                             </TableCell>
                             <TableCell className="border text-right">
-                              <span className={statementData.finalBalance < 0 ? 'text-red-600 font-bold' : 'text-green-600 font-bold'}>
-                                ₹{Math.round(Math.abs(parseFloat(statementData.finalBalance || 0))).toLocaleString('en-IN')}
+                              <span className={statementData.finalBalance < 0 ? 'text-red-600 font-bold' : 'font-bold'}>
+                                {statementData.finalBalance < 0 ? '-' : ''}₹{Math.round(Math.abs(parseFloat(statementData.finalBalance || 0))).toLocaleString('en-IN')}
                                 {statementData.finalBalance >= 0 ? ' (Dr.)' : ' (Cr.)'}
                               </span>
                             </TableCell>
@@ -1310,12 +1297,12 @@ export default function AccountLedger() {
                               <span className="text-green-600">एकूण जमा: ₹{Math.round(statementData.totals.totalCredit).toLocaleString('en-IN')}</span>
                             </div>
                             <div className="text-right">
-                              <span className="text-blue-600">एकूण नाम: ₹{Math.round(statementData.totals.totalDebit).toLocaleString('en-IN')}</span>
+                              <span className="text-blue-600">एकूण नावे: ₹{Math.round(statementData.totals.totalDebit).toLocaleString('en-IN')}</span>
                             </div>
                             <div className="text-right">
-                              <span className={statementData.totals.balanceDifference >= 0 ? 'text-green-600' : 'text-red-600'}>
-                                फरक: ₹{Math.round(Math.abs(statementData.totals.balanceDifference)).toLocaleString('en-IN')}
-                                {statementData.totals.balanceDifference >= 0 ? ' (Dr.)' : ' (Cr.)'}
+                              <span className={statementData.finalBalance < 0 ? 'text-red-600' : ''}>
+                                फरक: {statementData.finalBalance < 0 ? '-' : ''}₹{Math.round(Math.abs(statementData.finalBalance)).toLocaleString('en-IN')}
+                                {statementData.finalBalance >= 0 ? ' (Dr.)' : ' (Cr.)'}
                               </span>
                             </div>
                           </div>
