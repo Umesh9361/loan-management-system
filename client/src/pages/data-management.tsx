@@ -10,7 +10,10 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { AlertTriangle, ArrowUpDown, CheckCircle, Database, HardDrive, RefreshCw, Shield, Trash2, Upload } from "lucide-react";
+import { AlertTriangle, ArrowUpDown, CheckCircle, Database, Download, HardDrive, RefreshCw, Shield, Trash2, Upload } from "lucide-react";
+import jsPDF from "jspdf";
+import "jspdf-autotable";
+import { initDevanagariFont } from "@/lib/pdf-text-generator";
 
 interface DataManagementResult {
   success: boolean;
@@ -41,6 +44,9 @@ function DataManagementPage() {
   });
 
   const [rearrangeGroupId, setRearrangeGroupId] = useState("");
+  const [rearrangeUpToDate, setRearrangeUpToDate] = useState("");
+  const [rearrangePreviewData, setRearrangePreviewData] = useState<any>(null);
+  const [rearrangePdfDownloaded, setRearrangePdfDownloaded] = useState(false);
 
   const [cashbookCleanupOptions, setCashbookCleanupOptions] = useState({
     dateFrom: "",
@@ -166,17 +172,31 @@ function DataManagementPage() {
     }
   });
 
-  // Account number rearrangement mutation
-  const rearrangeAccountsMutation = useMutation({
-    mutationFn: async (groupId: string) => {
-      const response = await apiRequest("/api/data-management/rearrange-account-numbers", "POST", { groupId });
+  const rearrangePreviewMutation = useMutation({
+    mutationFn: async (params: { groupId: string; upToDate?: string }) => {
+      const response = await apiRequest("/api/data-management/rearrange-preview", "POST", params);
+      return await response.json();
+    },
+    onSuccess: (data: any) => {
+      setRearrangePreviewData(data);
+      setRearrangePdfDownloaded(false);
+    }
+  });
+
+  const rearrangeConfirmMutation = useMutation({
+    mutationFn: async (params: { groupId: string; upToDate?: string }) => {
+      const response = await apiRequest("/api/data-management/rearrange-confirm", "POST", params);
       return await response.json();
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["/api/loans"], refetchType: 'all' });
       queryClient.invalidateQueries({ queryKey: ["/api/borrowers"], refetchType: 'all' });
+      setRearrangePreviewData(null);
+      setRearrangePdfDownloaded(false);
     }
   });
+
+  const rearrangeAccountsMutation = rearrangeConfirmMutation;
 
   const cashbookPreviewMutation = useMutation({
     mutationFn: async (options: { dateFrom: string; dateTo: string }) => {
@@ -226,13 +246,122 @@ function DataManagementPage() {
     }
   };
 
-  const handleRearrangeAccountNumbers = () => {
+  const handleRearrangePreview = () => {
     if (!rearrangeGroupId) return;
+    rearrangePreviewMutation.mutate({
+      groupId: rearrangeGroupId,
+      upToDate: rearrangeUpToDate || undefined
+    });
+  };
+
+  const formatDateDDMMYYYY = (dateStr: string) => {
+    if (!dateStr) return '-';
+    const d = new Date(dateStr);
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const year = d.getFullYear();
+    return `${day}/${month}/${year}`;
+  };
+
+  const generateRearrangePdf = () => {
+    if (!rearrangePreviewData?.mapping?.length) return;
+
+    const mapping = rearrangePreviewData.mapping;
+    const groupName = Array.isArray(groupsData) ? groupsData.find((g: any) => g.id.toString() === rearrangeGroupId)?.name || '' : '';
+
+    const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+    initDevanagariFont(doc);
+
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 10;
+    const tableWidth = (pageWidth - margin * 3) / 2;
+    const rowHeight = 7;
+    const headerHeight = 9;
+    const colWidths = [12, 28, 25, 25];
+    const headers = ['अ.क्र.', 'तारीख', 'जुना क्र.', 'नवीन क्र.'];
+
+    const topY = 25;
+    const usableHeight = pageHeight - topY - margin;
+    const rowsPerColumn = Math.floor((usableHeight - headerHeight) / rowHeight);
+    const totalRows = mapping.length;
+    const totalPages = Math.ceil(totalRows / (rowsPerColumn * 2));
+
+    for (let page = 0; page < totalPages; page++) {
+      if (page > 0) doc.addPage('a4', 'landscape');
+
+      doc.setFont('NotoDevanagari');
+      doc.setFontSize(13);
+      doc.text(`खाते क्रमांक पुनर्व्यवस्थापन - ${groupName}`, pageWidth / 2, 10, { align: 'center' });
+      doc.setFontSize(9);
+      const dateInfo = rearrangeUpToDate ? `${formatDateDDMMYYYY(rearrangeUpToDate)} पर्यंत` : 'सर्व कर्ज';
+      doc.text(`एकूण: ${totalRows} | ${dateInfo}`, pageWidth / 2, 16, { align: 'center' });
+
+      for (let col = 0; col < 2; col++) {
+        const startIdx = page * rowsPerColumn * 2 + col * rowsPerColumn;
+        if (startIdx >= totalRows) continue;
+
+        const xStart = margin + col * (tableWidth + margin);
+        let y = topY;
+
+        doc.setFillColor(79, 70, 229);
+        doc.rect(xStart, y, tableWidth, headerHeight, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(9);
+        doc.setFont('NotoDevanagari');
+
+        let cx = xStart + 2;
+        for (let h = 0; h < headers.length; h++) {
+          doc.text(headers[h], cx, y + 6);
+          cx += colWidths[h];
+        }
+
+        y += headerHeight;
+        doc.setTextColor(0, 0, 0);
+        doc.setFontSize(9);
+
+        const endIdx = Math.min(startIdx + rowsPerColumn, totalRows);
+        for (let r = startIdx; r < endIdx; r++) {
+          const item = mapping[r];
+          if ((r - startIdx) % 2 === 0) {
+            doc.setFillColor(245, 245, 250);
+            doc.rect(xStart, y, tableWidth, rowHeight, 'F');
+          }
+
+          doc.setDrawColor(200, 200, 210);
+          doc.rect(xStart, y, tableWidth, rowHeight, 'S');
+
+          cx = xStart + 2;
+          doc.setFont('NotoDevanagari');
+          doc.text(String(r + 1), cx, y + 5);
+          cx += colWidths[0];
+          doc.text(formatDateDDMMYYYY(item.loanDate), cx, y + 5);
+          cx += colWidths[1];
+          doc.text(String(item.oldAccountNumber), cx, y + 5);
+          cx += colWidths[2];
+          doc.setFont('NotoDevanagari');
+          doc.setTextColor(79, 70, 229);
+          doc.text(String(item.newAccountNumber), cx, y + 5);
+          doc.setTextColor(0, 0, 0);
+
+          y += rowHeight;
+        }
+      }
+    }
+
+    doc.save(`खाते_रिअरेंज_${groupName}.pdf`);
+    setRearrangePdfDownloaded(true);
+  };
+
+  const handleRearrangeConfirm = () => {
     const confirmed = window.confirm(
-      "⚠️ सावधान!\n\nया ग्रुपमधील सर्व कर्जांचे खाते क्रमांक तारखेनुसार बदलले जातील.\n\nतुम्हाला खात्री आहे का?"
+      "⚠️ PDF डाउनलोड झाली आहे.\n\nआता खाते क्रमांक बदलायचे का?\nहे action undo करता येणार नाही!"
     );
     if (confirmed) {
-      rearrangeAccountsMutation.mutate(rearrangeGroupId);
+      rearrangeConfirmMutation.mutate({
+        groupId: rearrangeGroupId,
+        upToDate: rearrangeUpToDate || undefined
+      });
     }
   };
 
@@ -822,25 +951,28 @@ function DataManagementPage() {
 
         {/* Account Number Rearrange Tab */}
         <TabsContent value="rearrange">
-          <Card className="border-blue-200 dark:border-blue-800">
+          <Card className="border-indigo-200 dark:border-indigo-800">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <ArrowUpDown className="h-5 w-5 text-blue-600" />
+                <ArrowUpDown className="h-5 w-5 text-indigo-600" />
                 🔢 खाते क्रमांक पुनर्व्यवस्थापन
               </CardTitle>
+              <CardDescription>
+                ग्रुप निवडून कर्ज वितरण तारखेनुसार 1, 2, 3, 4... असे रिअरेंज करा. फक्त manual account number चेंज होईल.
+              </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <p className="text-sm text-blue-600 dark:text-blue-400">
-                <strong>फक्त manual account number चेंज होईल</strong> - ग्रुप निवडून कर्ज वितरण तारखेनुसार 1, 2, 3, 4... असे रिअरेंज करा.<br/>
-                <span className="text-xs text-blue-500">नोट: System ID आणि Loan Number कधीच चेंज होणार नाही, फक्त हाताने टाकलेला account number चेंज होईल</span>
-              </p>
-              <div className="flex items-center gap-4">
-                <div className="flex-1">
+            <CardContent className="space-y-5">
+              <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg border border-blue-200 text-sm text-blue-600 dark:text-blue-400">
+                <strong>नोट:</strong> System ID आणि Loan Number कधीच चेंज होणार नाही, फक्त हाताने टाकलेला account number चेंज होईल.
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
                   <Label htmlFor="rearrangeGroup">ग्रुप निवडा</Label>
                   <select 
                     id="rearrangeGroup"
                     value={rearrangeGroupId}
-                    onChange={(e) => setRearrangeGroupId(e.target.value)}
+                    onChange={(e) => { setRearrangeGroupId(e.target.value); setRearrangePreviewData(null); setRearrangePdfDownloaded(false); }}
                     className="w-full mt-1 p-2 border rounded-md bg-white dark:bg-gray-800"
                     autoComplete="off"
                   >
@@ -852,19 +984,85 @@ function DataManagementPage() {
                     ))}
                   </select>
                 </div>
-                <Button 
-                  onClick={handleRearrangeAccountNumbers}
-                  disabled={!rearrangeGroupId || rearrangeAccountsMutation.isPending}
-                  className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700"
-                >
-                  {rearrangeAccountsMutation.isPending ? (
-                    <RefreshCw className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <ArrowUpDown className="h-4 w-4" />
-                  )}
-                  {rearrangeAccountsMutation.isPending ? "रिअरेंज करत आहे..." : "खाते क्रमांक रिअरेंज करा"}
-                </Button>
+                <div>
+                  <Label htmlFor="rearrangeDate">तारखेपर्यंत (ऐच्छिक)</Label>
+                  <Input
+                    id="rearrangeDate"
+                    type="date"
+                    value={rearrangeUpToDate}
+                    onChange={(e) => { setRearrangeUpToDate(e.target.value); setRearrangePreviewData(null); setRearrangePdfDownloaded(false); }}
+                    className="mt-1"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">रिकामे ठेवल्यास सर्व कर्ज रिअरेंज होतील</p>
+                </div>
+                <div className="flex items-end">
+                  <Button 
+                    onClick={handleRearrangePreview}
+                    disabled={!rearrangeGroupId || rearrangePreviewMutation.isPending}
+                    className="w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700"
+                  >
+                    {rearrangePreviewMutation.isPending ? (
+                      <RefreshCw className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <ArrowUpDown className="h-4 w-4" />
+                    )}
+                    {rearrangePreviewMutation.isPending ? "तपासत आहे..." : "Preview बघा"}
+                  </Button>
+                </div>
               </div>
+
+              {rearrangePreviewData && rearrangePreviewData.success && (
+                <div className="space-y-4 mt-4">
+                  <Alert className="border-indigo-200 bg-indigo-50 dark:bg-indigo-900/20">
+                    <CheckCircle className="h-4 w-4 text-indigo-600" />
+                    <AlertTitle className="text-indigo-700">
+                      {rearrangePreviewData.totalLoans} कर्ज सापडले
+                    </AlertTitle>
+                    <AlertDescription className="text-indigo-600">
+                      खालील बटणांचा वापर करा: आधी PDF डाउनलोड करा, मग confirm करा.
+                    </AlertDescription>
+                  </Alert>
+
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <Button
+                      onClick={generateRearrangePdf}
+                      className="flex-1 flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700"
+                    >
+                      <Download className="h-4 w-4" />
+                      PDF डाउनलोड करा (जुना → नवीन नंबर)
+                    </Button>
+
+                    <Button
+                      onClick={handleRearrangeConfirm}
+                      disabled={!rearrangePdfDownloaded || rearrangeConfirmMutation.isPending}
+                      className="flex-1 flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 disabled:opacity-50"
+                    >
+                      {rearrangeConfirmMutation.isPending ? (
+                        <RefreshCw className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <CheckCircle className="h-4 w-4" />
+                      )}
+                      {rearrangeConfirmMutation.isPending ? "रिअरेंज करत आहे..." : "खाते क्रमांक बदला"}
+                    </Button>
+                  </div>
+
+                  {!rearrangePdfDownloaded && (
+                    <p className="text-xs text-amber-600 dark:text-amber-400">
+                      ⚠️ कृपया आधी PDF डाउनलोड करा, मगच "खाते क्रमांक बदला" बटण active होईल.
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {rearrangePreviewData && !rearrangePreviewData.success && (
+                <Alert className="border-red-200 bg-red-50 dark:bg-red-900/20">
+                  <AlertTriangle className="h-4 w-4 text-red-600" />
+                  <AlertTitle className="text-red-700">अयशस्वी</AlertTitle>
+                  <AlertDescription className="text-red-600">
+                    {rearrangePreviewData.message}
+                  </AlertDescription>
+                </Alert>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
