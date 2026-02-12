@@ -33,20 +33,77 @@ export class DataManagementService {
   /**
    * Rearrange account numbers for a group by loan disbursement date
    */
-  async rearrangeAccountNumbers(tenantId: string, groupId: string): Promise<DataManagementResult> {
+  async previewRearrangeAccountNumbers(tenantId: string, groupId: string, upToDate?: string): Promise<any> {
     try {
-      console.log(`🔢 REARRANGE: Starting account number rearrangement for group ${groupId} in tenant ${tenantId}`);
-      console.log(`⚠️ SAFETY: Only updating manual accountNumber field, NOT system IDs (id, loanNumber)`);
+      console.log(`🔢 REARRANGE PREVIEW: Generating preview for group ${groupId} in tenant ${tenantId}, upToDate: ${upToDate || 'all'}`);
 
-      // Get all active loans in the group, ordered by loan date (disbursement date)
+      const conditions = [
+        eq(loans.tenantId, tenantId),
+        eq(loans.groupId, groupId),
+        eq(loans.status, 'active')
+      ];
+
+      if (upToDate) {
+        conditions.push(sql`DATE(${loans.loanDate}) <= DATE(${upToDate})`);
+      }
+
       const loansInGroup = await db.select()
         .from(loans)
-        .where(and(
-          eq(loans.tenantId, tenantId),
-          eq(loans.groupId, groupId),
-          eq(loans.status, 'active')
-        ))
-        .orderBy(asc(loans.loanDate)); // Order by loan disbursement date ascending
+        .where(and(...conditions))
+        .orderBy(asc(loans.loanDate));
+
+      if (loansInGroup.length === 0) {
+        return {
+          success: false,
+          message: "या ग्रुप मध्ये कोणते सक्रिय कर्ज नाहीत" + (upToDate ? ` (${upToDate} पर्यंत)` : ""),
+          mapping: []
+        };
+      }
+
+      const mapping = loansInGroup.map((loan: any, i: number) => ({
+        loanId: loan.id,
+        loanDate: loan.loanDate,
+        borrowerName: loan.borrowerName,
+        oldAccountNumber: loan.accountNumber || '-',
+        newAccountNumber: (i + 1).toString()
+      }));
+
+      return {
+        success: true,
+        message: `${loansInGroup.length} कर्ज सापडले`,
+        totalLoans: loansInGroup.length,
+        mapping
+      };
+
+    } catch (error) {
+      console.error("❌ Rearrange preview failed:", error);
+      return {
+        success: false,
+        message: "Preview अयशस्वी: " + (error as Error).message,
+        mapping: []
+      };
+    }
+  }
+
+  async confirmRearrangeAccountNumbers(tenantId: string, groupId: string, upToDate?: string): Promise<DataManagementResult> {
+    try {
+      console.log(`🔢 REARRANGE CONFIRM: Applying changes for group ${groupId} in tenant ${tenantId}, upToDate: ${upToDate || 'all'}`);
+      console.log(`⚠️ SAFETY: Only updating manual accountNumber field, NOT system IDs (id, loanNumber)`);
+
+      const conditions = [
+        eq(loans.tenantId, tenantId),
+        eq(loans.groupId, groupId),
+        eq(loans.status, 'active')
+      ];
+
+      if (upToDate) {
+        conditions.push(sql`DATE(${loans.loanDate}) <= DATE(${upToDate})`);
+      }
+
+      const loansInGroup = await db.select()
+        .from(loans)
+        .where(and(...conditions))
+        .orderBy(asc(loans.loanDate));
 
       if (loansInGroup.length === 0) {
         return {
@@ -57,20 +114,16 @@ export class DataManagementService {
         };
       }
 
-      console.log(`📊 Found ${loansInGroup.length} active loans to rearrange`);
-
-      // Update account numbers sequentially
       let updatedCount = 0;
       for (let i = 0; i < loansInGroup.length; i++) {
         const loan = loansInGroup[i];
-        const newAccountNumber = (i + 1).toString(); // 1, 2, 3, 4...
+        const newAccountNumber = (i + 1).toString();
 
-        // Only update MANUAL account number field (NOT system IDs)
         if (loan.accountNumber !== newAccountNumber) {
           await db.update(loans)
             .set({ 
-              accountNumber: newAccountNumber,  // Only updating manual account number
-              updatedAt: sql`now()`             // Update timestamp for tracking
+              accountNumber: newAccountNumber,
+              updatedAt: sql`now()`
             })
             .where(and(
               eq(loans.tenantId, tenantId),
@@ -78,7 +131,6 @@ export class DataManagementService {
             ));
 
           console.log(`✅ MANUAL ACCOUNT UPDATE: ${loan.accountNumber} → ${newAccountNumber} (${loan.borrowerName})`);
-          console.log(`🔒 SYSTEM SAFE: ID ${loan.id} and loanNumber unchanged`);
           updatedCount++;
         }
       }
@@ -103,6 +155,10 @@ export class DataManagementService {
         details: []
       };
     }
+  }
+
+  async rearrangeAccountNumbers(tenantId: string, groupId: string): Promise<DataManagementResult> {
+    return this.confirmRearrangeAccountNumbers(tenantId, groupId);
   }
   
   /**
