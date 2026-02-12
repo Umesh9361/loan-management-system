@@ -162,7 +162,11 @@ export default function Dashboard() {
               <div className="lg:col-span-2 bg-gradient-to-r from-indigo-600 to-blue-600 rounded-xl p-6 shadow-md">
                 <div className="flex items-center space-x-4">
                   <div className="bg-white/15 backdrop-blur-sm rounded-xl p-3">
-                    <Building className="h-8 w-8 text-white" />
+                    {company && (company as any).name && (company as any).licenseNumber ? (
+                      <Building className="h-8 w-8 text-white" />
+                    ) : (
+                      <img src="/icons/icon-192x192.png" alt="LonoPro" className="h-8 w-8 rounded-lg" />
+                    )}
                   </div>
                   <div className="flex-1">
                     {company && (company as any).name && (company as any).licenseNumber ? (
@@ -177,7 +181,7 @@ export default function Dashboard() {
                         <p className="text-blue-200 text-sm">{(company as any).address}</p>
                       </>
                     ) : (
-                      <h1 className="text-2xl font-bold text-white">मुखपृष्ठ</h1>
+                      <h1 className="text-2xl font-bold text-white">Welcome</h1>
                     )}
                   </div>
                 </div>
