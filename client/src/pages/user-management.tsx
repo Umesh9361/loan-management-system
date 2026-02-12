@@ -178,8 +178,8 @@ export default function UserManagement() {
     mutationFn: async (data: { userData: UserFormData; permissions: PermissionsData }) => {
       await apiRequest("/api/user-management/users", "POST", data);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/user-management/users"] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["/api/user-management/users"], refetchType: 'all' });
       setShowCreateDialog(false);
       toast({ title: "Success", description: "User created successfully" });
     },
@@ -197,8 +197,8 @@ export default function UserManagement() {
     mutationFn: async ({ userId, permissions }: { userId: string; permissions: Partial<PermissionsData> }) => {
       await apiRequest(`/api/user-management/users/${userId}/permissions`, "PUT", permissions);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/user-management/users"] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["/api/user-management/users"], refetchType: 'all' });
       setShowPermissionsDialog(false);
       toast({ title: "Success", description: "Permissions updated successfully" });
     },
@@ -220,8 +220,8 @@ export default function UserManagement() {
     }) => {
       await apiRequest(`/api/user-management/users/${userId}/status`, "PUT", { isActive, isTemporaryDisabled });
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/user-management/users"] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["/api/user-management/users"], refetchType: 'all' });
       toast({ title: "Success", description: "User status updated successfully" });
     },
     onError: (error: any) => {
@@ -258,8 +258,8 @@ export default function UserManagement() {
     mutationFn: async (userId: string) => {
       await apiRequest(`/api/user-management/users/${userId}`, "DELETE");
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/user-management/users"] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["/api/user-management/users"], refetchType: 'all' });
       toast({ title: "Success", description: "User deleted successfully" });
     },
     onError: (error: any) => {
