@@ -52,11 +52,10 @@ export default function Groups() {
 
   const createMutation = useMutation({
     mutationFn: (data: GroupFormData) => apiRequest("/api/groups", "POST", data),
-    onSuccess: () => {
-      // Aggressive cache clearing for immediate update
-      queryClient.invalidateQueries({ queryKey: ["/api/groups"] });
-      queryClient.refetchQueries({ queryKey: ["/api/groups"] });
-      queryClient.removeQueries({ queryKey: ["/api/groups"] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["/api/groups"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["/api/loans"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"], refetchType: 'all' });
       toast({
         title: "यशस्वी",
         description: "ग्रुप यशस्वीपणे तयार केला",
@@ -93,11 +92,10 @@ export default function Groups() {
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: GroupFormData }) => 
       apiRequest(`/api/groups/${id}`, "PUT", data),
-    onSuccess: () => {
-      // Aggressive cache clearing for immediate update
-      queryClient.invalidateQueries({ queryKey: ["/api/groups"] });
-      queryClient.refetchQueries({ queryKey: ["/api/groups"] });
-      queryClient.removeQueries({ queryKey: ["/api/groups"] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["/api/groups"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["/api/loans"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"], refetchType: 'all' });
       toast({
         title: "यशस्वी",
         description: "ग्रुप यशस्वीपणे अपडेट केला",
@@ -134,11 +132,10 @@ export default function Groups() {
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => apiRequest(`/api/groups/${id}`, "DELETE"),
-    onSuccess: () => {
-      // Aggressive cache clearing for immediate update
-      queryClient.invalidateQueries({ queryKey: ["/api/groups"] });
-      queryClient.refetchQueries({ queryKey: ["/api/groups"] });
-      queryClient.removeQueries({ queryKey: ["/api/groups"] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["/api/groups"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["/api/loans"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"], refetchType: 'all' });
       toast({
         title: "यशस्वी",
         description: "ग्रुप यशस्वीपणे डिलीट केला",
