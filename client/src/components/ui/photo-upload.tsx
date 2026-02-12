@@ -741,15 +741,7 @@ export function PhotoUpload({
           </Dialog>
         )}
 
-        {/* Help Text */}
-        <div className="text-xs text-gray-500 space-y-1">
-          <p>• केवळ JPG, PNG फाइल्स support</p>
-          <p>• अपलोड केल्यानंतर automatic compression</p>
-          <p>• कर्ज बंद झाल्यावर फोटो automatic delete</p>
-          {photos.length < maxPhotos && (
-            <p className="text-blue-600">• आणखी {maxPhotos - photos.length} फोटो जोडू शकता</p>
-          )}
-        </div>
+        <p className="text-xs text-gray-500">अधिकतम {maxPhotos} फोटो जोडता येतील</p>
 
       </CardContent>
     </Card>
