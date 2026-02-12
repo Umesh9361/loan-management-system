@@ -38,7 +38,6 @@ import ReceiptGeneratorPage from "@/pages/reports/receipt-generator";
 import BorrowerListReports from "@/pages/reports/borrower-list";
 import AccountSummaryReport from "@/pages/reports/account-summary";
 import OverdueReport from "@/pages/reports/overdue";
-import OtherReports from "@/pages/reports/other";
 import NoticeGeneratorPage from "@/pages/reports/notice-generator";
 
 import SuperAdmin from "@/pages/super-admin";
@@ -212,7 +211,6 @@ function AppContent() {
         <Route path="/reports/borrower-list" component={BorrowerListReports} />
 
         <Route path="/reports/overdue" component={OverdueReport} />
-        <Route path="/reports/other" component={OtherReports} />
         <Route path="/reports/receipt-generator" component={ReceiptGeneratorPage} />
         <Route path="/reports/notice-generator" component={NoticeGeneratorPage} />
         <Route path="/reports/receipt">{() => { window.location.replace('/reports/receipt-generator'); return null; }}</Route>
@@ -278,7 +276,6 @@ function AppContent() {
         {perms.canViewLedgerReport && <Route path="/reports/working-summary" component={WorkingSummary} />}
         {perms.canViewBorrowerListReport && <Route path="/reports/borrower-list" component={BorrowerListReports} />}
         {perms.canViewOverdueReport && <Route path="/reports/overdue" component={OverdueReport} />}
-        {perms.canViewOtherReports && <Route path="/reports/other" component={OtherReports} />}
         
         {/* Receipt routes - Only if loan closure permitted */}
           {perms.canAccessLoanClosure && <Route path="/receipt/closure/:loanId" component={ClosureReceiptPage} />}
@@ -322,7 +319,6 @@ function AppContent() {
         <Route path="/reports/working-summary" component={WorkingSummary} />
         <Route path="/reports/borrower-list" component={BorrowerListReports} />
         <Route path="/reports/overdue" component={OverdueReport} />
-        <Route path="/reports/other" component={OtherReports} />
           <Route path="/receipt/closure/:loanId" component={ClosureReceiptPage} />
           <Route path="/receipt/annual-statement" component={AnnualStatementPage} />
           <Route path="/profile" component={Profile} />
