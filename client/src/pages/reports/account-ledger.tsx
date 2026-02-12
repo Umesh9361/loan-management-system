@@ -508,12 +508,20 @@ export default function AccountLedger() {
       });
     });
     
+    const totalDebit = entries.reduce((sum, entry) => sum + entry.debit, 0);
+    const totalCredit = entries.reduce((sum, entry) => sum + entry.credit, 0);
+    
     setStatementData({
       account: party,
       entries,
-      totalDebit: entries.reduce((sum, entry) => sum + entry.debit, 0),
-      totalCredit: entries.reduce((sum, entry) => sum + entry.credit, 0),
+      totalDebit,
+      totalCredit,
       finalBalance: runningBalance,
+      totals: {
+        totalDebit,
+        totalCredit,
+        balanceDifference: totalDebit - totalCredit
+      },
       dateRange: {
         from: filters.dateFrom,
         to: filters.dateTo
@@ -584,29 +592,36 @@ export default function AccountLedger() {
       const safeAccountNumber = selectedLoan.accountNumber || 'N/A';
 
       // Add opening balance entry (loan disbursement)
+      // FORMAT 8 (LENDER PERSPECTIVE): Disbursement = Dr.(नावे) = we gave the loan
       runningBalance = principalAmount;
       entries.push({
         date: safeLoanDate,
         description: `कर्ज वितरण - खाते क्र. ${safeAccountNumber}`,
-        debit: 0,
-        credit: principalAmount,
+        debit: principalAmount,
+        credit: 0,
         balance: runningBalance,
         type: 'loan_disbursement'
       });
 
       const safeTransactions = Array.isArray(transactions) ? transactions : [];
-      const loanTransactions = safeTransactions.filter((transaction: any) => 
-        transaction.loanId === filters.loanId
-      );
+      // Filter loan transactions, excluding closure-related entries to prevent double-counting
+      // (closure block below handles interest/principal breakdown separately)
+      const loanTransactions = safeTransactions.filter((transaction: any) => {
+        if (transaction.loanId !== filters.loanId) return false;
+        const narration = transaction.narration || '';
+        if (narration.includes('कर्ज बंद') || narration.includes('मुद्दल') || narration.includes('व्याज') || transaction.isSystemGenerated) return false;
+        return true;
+      });
 
+      // FORMAT 8 (LENDER PERSPECTIVE): Payment received = Cr.(जमा) = borrower paid back
       loanTransactions.forEach((transaction: any) => {
         const amount = parseFloat(transaction.amount || 0);
         runningBalance -= amount;
         entries.push({
           date: transaction.transactionDate,
           description: `${transaction.description || 'Payment'} - ${transaction.narration || ''}`,
-          debit: amount,
-          credit: 0,
+          debit: 0,
+          credit: amount,
           balance: runningBalance,
           type: 'payment',
           transactionId: transaction.id
@@ -628,13 +643,17 @@ export default function AccountLedger() {
         
         // Processing closure amounts for ledger entry
         
+        // FORMAT 8 (LENDER PERSPECTIVE):
+        // Interest charge = Dr.(नावे) = additional amount owed to lender
+        // Interest payment = Cr.(जमा) = borrower paid interest
+        // Principal repayment = Cr.(जमा) = borrower returned principal
         if (interestAmount > 0) {
           runningBalance += interestAmount;
           entries.push({
             date: closureDate,
             description: `व्याज`,
-            debit: 0,
-            credit: interestAmount,
+            debit: interestAmount,
+            credit: 0,
             balance: runningBalance,
             type: 'interest_charge'
           });
@@ -643,8 +662,8 @@ export default function AccountLedger() {
           entries.push({
             date: closureDate,
             description: `व्याज परतफेड`,
-            debit: interestAmount,
-            credit: 0,
+            debit: 0,
+            credit: interestAmount,
             balance: runningBalance,
             type: 'interest_payment'
           });
@@ -654,8 +673,8 @@ export default function AccountLedger() {
         entries.push({
           date: closureDate,
           description: `मुद्दल परतफेड`,
-          debit: principalAmount,
-          credit: 0,
+          debit: 0,
+          credit: principalAmount,
           balance: runningBalance,
           type: 'principal_payment'
         });
@@ -739,19 +758,37 @@ export default function AccountLedger() {
       return loanDate >= fromDate && loanDate <= toDate;
     });
 
-    // Skip loan disbursements from loans table to avoid format mismatch
-    // All loan entries will come from cash transactions with proper format
+    // LENDER PERSPECTIVE (Format 8 standard):
+    // Disbursement = Dr.(नावे) = we gave the loan (our receivable increases)
+    // Closure = Cr.(जमा) = we received back (our receivable decreases)
+    // Using loans table as SINGLE authoritative source to prevent duplicates
+
+    // Add loan disbursements from loans table
+    disbursedLoans.forEach((loan: any) => {
+      const amount = parseFloat(loan.principalAmount || 0);
+      if (amount > 0) {
+        runningBalance += amount;
+        entries.push({
+          date: loan.loanDate,
+          description: `कर्ज वितरण - ${loan.borrowerName} (खाते क्र. ${loan.accountNumber})`,
+          debit: amount,
+          credit: 0,
+          balance: runningBalance,
+          type: 'loan_disbursement',
+          loanId: loan.id,
+          borrowerName: loan.borrowerName
+        });
+      }
+    });
 
     // Process ALL closed loans (regardless of disbursement date)
-    // Only filter by closure date being in range
     const closedLoans = (loans as any[]).filter((loan: any) => {
       if (loan.status !== 'closed' || !loan.closedAt) return false;
-      
       const closureDate = new Date(loan.closedAt);
       return closureDate >= fromDate && closureDate <= toDate;
     });
 
-    // Add loan closures (including those disbursed outside date range)
+    // Add loan closures from loans table
     closedLoans.forEach((loan: any) => {
       const totalRepayment = parseFloat(loan.principalAmount || 0) + parseFloat(loan.interest || 0);
       if (totalRepayment > 0) {
@@ -759,8 +796,8 @@ export default function AccountLedger() {
         entries.push({
           date: loan.closedAt.split('T')[0],
           description: `कर्ज बंद - ${loan.borrowerName} (खाते क्र. ${loan.accountNumber})`,
-          debit: totalRepayment,
-          credit: 0,
+          debit: 0,
+          credit: totalRepayment,
           balance: runningBalance,
           type: 'loan_closure',
           loanId: loan.id,
@@ -769,69 +806,14 @@ export default function AccountLedger() {
       }
     });
 
-    // Add cash transactions with correct format to avoid duplicates
-    const filteredTransactions = (transactions as any[]).filter((transaction: any) => {
-      const transactionDate = new Date(transaction.transactionDate);
-      return transactionDate >= fromDate && transactionDate <= toDate;
-    });
-
-    // Process cash transactions but avoid duplicates with loan disbursements
-    const processedLoanIds = new Set();
-    
-    // Track loan disbursements to avoid duplicates
-    disbursedLoans.forEach(loan => processedLoanIds.add(loan.id));
-
-    // LOAN & ADVANCE ACCOUNT: Only loan-related cash transactions 
-    // When loan given: Cash Cr → Loan Dr (shows as Dr in loan account)
-    // When loan closed: Cash Dr → Loan Cr (shows as Cr in loan account)
-    
-    // Filter cash transactions for loan operations only
-    const loanRelatedTransactions = filteredTransactions.filter((transaction: any) => {
-      return transaction.narration && (
-        transaction.narration.includes('कर्ज वितरण') || 
-        transaction.narration.includes('कर्ज बंद')
-      );
-    });
-
-    loanRelatedTransactions.forEach((transaction: any) => {
-      if (transaction.narration.includes('कर्ज वितरण')) {
-        const amount = parseFloat(transaction.amount || 0);
-        runningBalance += amount;
-        
-        entries.push({
-          date: transaction.transactionDate,
-          description: transaction.narration,
-          debit: 0,
-          credit: amount,
-          balance: runningBalance,
-          type: 'loan_disbursement',
-          transactionId: transaction.id
-        });
-      }
-    });
-
-    loanRelatedTransactions.forEach((transaction: any) => {
-      if (transaction.narration.includes('कर्ज बंद')) {
-        const amount = parseFloat(transaction.amount || 0);
-        runningBalance -= amount;
-        
-        entries.push({
-          date: transaction.transactionDate,
-          description: transaction.narration,
-          debit: amount,
-          credit: 0,
-          balance: runningBalance,
-          type: 'loan_closure',
-          transactionId: transaction.id
-        });
-      }
-    });
+    const loanRelatedTransactions = disbursedLoans.length + closedLoans.length;
 
     // Sort entries by date
     entries.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
-    const totalLoanDisbursements = entries.filter(e => e.type === 'loan_disbursement').reduce((sum, entry) => sum + entry.credit, 0);
-    const totalLoanClosures = entries.filter(e => e.type === 'loan_closure').reduce((sum, entry) => sum + entry.debit, 0);
+    // LENDER PERSPECTIVE: Disbursements in Dr.(debit) column, Closures in Cr.(credit) column
+    const totalLoanDisbursements = entries.filter(e => e.type === 'loan_disbursement').reduce((sum, entry) => sum + entry.debit, 0);
+    const totalLoanClosures = entries.filter(e => e.type === 'loan_closure').reduce((sum, entry) => sum + entry.credit, 0);
 
     const totalDebit = entries.reduce((sum, entry) => sum + entry.debit, 0);
     const totalCredit = entries.reduce((sum, entry) => sum + entry.credit, 0);
@@ -840,7 +822,7 @@ export default function AccountLedger() {
       account: {
         name: 'सर्व कर्ज खाते (एकत्रित)',
         type: 'loan',
-        totalLoanTransactions: loanRelatedTransactions.length,
+        totalLoanTransactions: loanRelatedTransactions,
         totalDisbursements: totalLoanDisbursements,
         totalClosures: totalLoanClosures,
         outstandingAmount: totalLoanDisbursements - totalLoanClosures
@@ -1248,14 +1230,16 @@ export default function AccountLedger() {
                               </TableCell>
                               <TableCell className="border text-right">
                                 {(() => {
-                                  const isPartyAccount = !statementData.account?.type;
+                                  // PERMANENT FIX: Cash account = positive Cr.(green)
+                                  // All others (Party, Loan, Individual Loan) = positive Dr.(blue)
+                                  const isCashAccount = statementData.account?.type === 'cash';
                                   const bal = entry.balance;
-                                  const drLabel = isPartyAccount
-                                    ? (bal >= 0 ? ' (Dr.)' : ' (Cr.)')
-                                    : (bal >= 0 ? ' (Cr.)' : ' (Dr.)');
-                                  const colorClass = isPartyAccount
-                                    ? (bal >= 0 ? 'text-blue-600 font-semibold' : 'text-red-600 font-semibold')
-                                    : (bal >= 0 ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold');
+                                  const drLabel = isCashAccount
+                                    ? (bal >= 0 ? ' (Cr.)' : ' (Dr.)')
+                                    : (bal >= 0 ? ' (Dr.)' : ' (Cr.)');
+                                  const colorClass = isCashAccount
+                                    ? (bal >= 0 ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold')
+                                    : (bal >= 0 ? 'text-blue-600 font-semibold' : 'text-red-600 font-semibold');
                                   return (
                                     <span className={colorClass}>
                                       {bal < 0 ? '-' : ''}₹{Math.round(Math.abs(bal)).toLocaleString('en-IN')}
@@ -1278,14 +1262,14 @@ export default function AccountLedger() {
                             </TableCell>
                             <TableCell className="border text-right">
                               {(() => {
-                                const isPartyAccount = !statementData.account?.type;
+                                const isCashAccount = statementData.account?.type === 'cash';
                                 const bal = parseFloat(statementData.finalBalance || 0);
-                                const drLabel = isPartyAccount
-                                  ? (bal >= 0 ? ' (Dr.)' : ' (Cr.)')
-                                  : (bal >= 0 ? ' (Cr.)' : ' (Dr.)');
-                                const colorClass = isPartyAccount
-                                  ? (bal >= 0 ? 'text-blue-600 font-bold' : 'text-red-600 font-bold')
-                                  : (bal >= 0 ? 'text-green-600 font-bold' : 'text-red-600 font-bold');
+                                const drLabel = isCashAccount
+                                  ? (bal >= 0 ? ' (Cr.)' : ' (Dr.)')
+                                  : (bal >= 0 ? ' (Dr.)' : ' (Cr.)');
+                                const colorClass = isCashAccount
+                                  ? (bal >= 0 ? 'text-green-600 font-bold' : 'text-red-600 font-bold')
+                                  : (bal >= 0 ? 'text-blue-600 font-bold' : 'text-red-600 font-bold');
                                 return (
                                   <span className={colorClass}>
                                     {bal < 0 ? '-' : ''}₹{Math.round(Math.abs(bal)).toLocaleString('en-IN')}
@@ -1310,14 +1294,14 @@ export default function AccountLedger() {
                             </div>
                             <div className="text-right">
                               {(() => {
-                                const isPartyAccount = !statementData.account?.type;
+                                const isCashAccount = statementData.account?.type === 'cash';
                                 const bal = statementData.finalBalance;
-                                const drLabel = isPartyAccount
-                                  ? (bal >= 0 ? ' (Dr.)' : ' (Cr.)')
-                                  : (bal >= 0 ? ' (Cr.)' : ' (Dr.)');
-                                const colorClass = isPartyAccount
-                                  ? (bal >= 0 ? 'text-blue-600' : 'text-red-600')
-                                  : (bal >= 0 ? 'text-green-600' : 'text-red-600');
+                                const drLabel = isCashAccount
+                                  ? (bal >= 0 ? ' (Cr.)' : ' (Dr.)')
+                                  : (bal >= 0 ? ' (Dr.)' : ' (Cr.)');
+                                const colorClass = isCashAccount
+                                  ? (bal >= 0 ? 'text-green-600' : 'text-red-600')
+                                  : (bal >= 0 ? 'text-blue-600' : 'text-red-600');
                                 return (
                                   <span className={colorClass}>
                                     फरक: {bal < 0 ? '-' : ''}₹{Math.round(Math.abs(bal)).toLocaleString('en-IN')}
