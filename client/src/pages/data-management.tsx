@@ -421,13 +421,17 @@ function DataManagementPage() {
   };
 
   const handleRearrangeConfirm = () => {
+    if (isPreviewStale || !rearrangePreviewParams) {
+      alert("Preview जुनी झाली आहे. कृपया पुन्हा Preview बघा.");
+      return;
+    }
     const confirmed = window.confirm(
       "⚠️ PDF डाउनलोड झाली आहे.\n\nआता खाते क्रमांक बदलायचे का?\nहे action undo करता येणार नाही!"
     );
     if (confirmed) {
       rearrangeConfirmMutation.mutate({
-        groupId: rearrangeGroupId,
-        upToDate: rearrangeUpToDate || undefined,
+        groupId: rearrangePreviewParams.groupId,
+        upToDate: rearrangePreviewParams.upToDate || undefined,
         checksum: rearrangePreviewData?.checksum
       });
     }
@@ -1056,30 +1060,50 @@ function DataManagementPage() {
                 </div>
                 <div>
                   <Label htmlFor="rearrangeDate">तारखेपर्यंत (ऐच्छिक)</Label>
-                  <div className="relative mt-1">
+                  <div className="flex gap-2 mt-1">
                     <Input
-                      id="rearrangeDateDisplay"
+                      id="rearrangeDateText"
                       type="text"
                       placeholder="DD/MM/YYYY"
                       value={rearrangeUpToDate ? (() => {
                         const p = rearrangeUpToDate.split('-');
                         return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : '';
                       })() : ''}
-                      readOnly
-                      className="cursor-pointer"
-                      onClick={() => {
-                        const el = document.getElementById('rearrangeDateHidden') as HTMLInputElement;
-                        if (el) { el.showPicker?.(); el.focus(); }
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/[^\d/]/g, '');
+                        const match = val.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+                        if (match) {
+                          const [, dd, mm, yyyy] = match;
+                          const d = parseInt(dd), m = parseInt(mm), y = parseInt(yyyy);
+                          if (d >= 1 && d <= 31 && m >= 1 && m <= 12 && y >= 2000 && y <= 2099) {
+                            setRearrangeUpToDate(`${yyyy}-${mm.padStart(2, '0')}-${dd.padStart(2, '0')}`);
+                          }
+                        } else if (val === '') {
+                          setRearrangeUpToDate('');
+                        }
                       }}
+                      className="flex-1"
                     />
-                    <input
-                      id="rearrangeDateHidden"
-                      type="date"
-                      value={rearrangeUpToDate}
-                      onChange={(e) => { setRearrangeUpToDate(e.target.value); }}
-                      className="absolute inset-0 opacity-0 cursor-pointer"
-                      style={{ pointerEvents: 'auto' }}
-                    />
+                    <div className="relative">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="px-3"
+                        onClick={() => {
+                          const el = document.getElementById('rearrangeDatePicker') as HTMLInputElement;
+                          if (el) { try { el.showPicker(); } catch { el.click(); } }
+                        }}
+                      >
+                        📅
+                      </Button>
+                      <input
+                        id="rearrangeDatePicker"
+                        type="date"
+                        value={rearrangeUpToDate}
+                        onChange={(e) => { setRearrangeUpToDate(e.target.value); }}
+                        className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
+                      />
+                    </div>
                   </div>
                   <p className="text-xs text-gray-500 mt-1">रिकामे ठेवल्यास सर्व कर्ज रिअरेंज होतील</p>
                 </div>
