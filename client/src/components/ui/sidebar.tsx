@@ -470,7 +470,6 @@ export function Sidebar({ className }: SidebarProps) {
       <div className="flex-shrink-0 mt-auto border-t p-3 bg-white">
         {/* User info row with logout button */}
         <div className="flex items-center justify-between gap-2">
-          {/* User info - clickable for admin/super_admin to go to profile */}
           {(user?.role === 'admin' || user?.role === 'super_admin') ? (
             <Link href="/profile" className="flex items-center space-x-2 min-w-0 flex-1 hover:bg-blue-50 rounded-lg p-1 transition-colors cursor-pointer">
               <div className="h-8 w-8 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0">
@@ -490,7 +489,23 @@ export function Sidebar({ className }: SidebarProps) {
               </div>
             </div>
           )}
-          
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="flex-shrink-0 text-indigo-600 border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700"
+            onClick={async () => {
+              try {
+                await handleLogout();
+              } catch (error) {
+                localStorage.clear();
+                sessionStorage.clear();
+                safeNavigate('/login');
+              }
+            }}
+          >
+            <LogOut className="mr-1 h-4 w-4" />
+            Log Out
+          </Button>
         </div>
       </div>
     </div>
