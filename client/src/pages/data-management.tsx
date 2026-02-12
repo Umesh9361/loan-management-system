@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -43,10 +43,27 @@ function DataManagementPage() {
     createBackup: true
   });
 
-  const [rearrangeGroupId, setRearrangeGroupId] = useState("");
-  const [rearrangeUpToDate, setRearrangeUpToDate] = useState("");
-  const [rearrangePreviewData, setRearrangePreviewData] = useState<any>(null);
-  const [rearrangePdfDownloaded, setRearrangePdfDownloaded] = useState(false);
+  const [rearrangeGroupId, setRearrangeGroupId] = useState(() => {
+    return sessionStorage.getItem('rearrange_groupId') || "";
+  });
+  const [rearrangeUpToDate, setRearrangeUpToDate] = useState(() => {
+    return sessionStorage.getItem('rearrange_upToDate') || "";
+  });
+  const [rearrangePreviewData, setRearrangePreviewData] = useState<any>(() => {
+    try {
+      const saved = sessionStorage.getItem('rearrange_previewData');
+      return saved ? JSON.parse(saved) : null;
+    } catch { return null; }
+  });
+  const [rearrangePreviewParams, setRearrangePreviewParams] = useState<{ groupId: string; upToDate: string } | null>(() => {
+    try {
+      const saved = sessionStorage.getItem('rearrange_previewParams');
+      return saved ? JSON.parse(saved) : null;
+    } catch { return null; }
+  });
+  const [rearrangePdfDownloaded, setRearrangePdfDownloaded] = useState(() => {
+    return sessionStorage.getItem('rearrange_pdfDownloaded') === 'true';
+  });
 
   const [cashbookCleanupOptions, setCashbookCleanupOptions] = useState({
     dateFrom: "",
@@ -72,6 +89,52 @@ function DataManagementPage() {
       partyWiseImpact: { partyName: string; partyId: string; cashIn: number; cashOut: number; net: number }[];
     };
   } | null>(null);
+
+  useEffect(() => {
+    sessionStorage.setItem('rearrange_groupId', rearrangeGroupId);
+  }, [rearrangeGroupId]);
+
+  useEffect(() => {
+    sessionStorage.setItem('rearrange_upToDate', rearrangeUpToDate);
+  }, [rearrangeUpToDate]);
+
+  useEffect(() => {
+    if (rearrangePreviewData) {
+      sessionStorage.setItem('rearrange_previewData', JSON.stringify(rearrangePreviewData));
+    } else {
+      sessionStorage.removeItem('rearrange_previewData');
+    }
+  }, [rearrangePreviewData]);
+
+  useEffect(() => {
+    if (rearrangePreviewParams) {
+      sessionStorage.setItem('rearrange_previewParams', JSON.stringify(rearrangePreviewParams));
+    } else {
+      sessionStorage.removeItem('rearrange_previewParams');
+    }
+  }, [rearrangePreviewParams]);
+
+  useEffect(() => {
+    sessionStorage.setItem('rearrange_pdfDownloaded', rearrangePdfDownloaded ? 'true' : 'false');
+  }, [rearrangePdfDownloaded]);
+
+  const clearRearrangeSession = useCallback(() => {
+    setRearrangePreviewData(null);
+    setRearrangePreviewParams(null);
+    setRearrangePdfDownloaded(false);
+    setRearrangeGroupId("");
+    setRearrangeUpToDate("");
+    sessionStorage.removeItem('rearrange_groupId');
+    sessionStorage.removeItem('rearrange_upToDate');
+    sessionStorage.removeItem('rearrange_previewData');
+    sessionStorage.removeItem('rearrange_previewParams');
+    sessionStorage.removeItem('rearrange_pdfDownloaded');
+  }, []);
+
+  const isPreviewStale = rearrangePreviewData && rearrangePreviewParams && (
+    rearrangePreviewParams.groupId !== rearrangeGroupId ||
+    rearrangePreviewParams.upToDate !== rearrangeUpToDate
+  );
 
   // Groups query for account rearrangement
   const { data: groupsData } = useQuery({
@@ -179,6 +242,7 @@ function DataManagementPage() {
     },
     onSuccess: (data: any) => {
       setRearrangePreviewData(data);
+      setRearrangePreviewParams({ groupId: rearrangeGroupId, upToDate: rearrangeUpToDate });
       setRearrangePdfDownloaded(false);
     }
   });
@@ -191,8 +255,7 @@ function DataManagementPage() {
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["/api/loans"], refetchType: 'all' });
       queryClient.invalidateQueries({ queryKey: ["/api/borrowers"], refetchType: 'all' });
-      setRearrangePreviewData(null);
-      setRearrangePdfDownloaded(false);
+      clearRearrangeSession();
     }
   });
 
@@ -977,7 +1040,9 @@ function DataManagementPage() {
                   <select 
                     id="rearrangeGroup"
                     value={rearrangeGroupId}
-                    onChange={(e) => { setRearrangeGroupId(e.target.value); setRearrangePreviewData(null); setRearrangePdfDownloaded(false); }}
+                    onChange={(e) => {
+                      setRearrangeGroupId(e.target.value);
+                    }}
                     className="w-full mt-1 p-2 border rounded-md bg-white dark:bg-gray-800"
                     autoComplete="off"
                   >
@@ -991,13 +1056,31 @@ function DataManagementPage() {
                 </div>
                 <div>
                   <Label htmlFor="rearrangeDate">तारखेपर्यंत (ऐच्छिक)</Label>
-                  <Input
-                    id="rearrangeDate"
-                    type="date"
-                    value={rearrangeUpToDate}
-                    onChange={(e) => { setRearrangeUpToDate(e.target.value); setRearrangePreviewData(null); setRearrangePdfDownloaded(false); }}
-                    className="mt-1"
-                  />
+                  <div className="relative mt-1">
+                    <Input
+                      id="rearrangeDateDisplay"
+                      type="text"
+                      placeholder="DD/MM/YYYY"
+                      value={rearrangeUpToDate ? (() => {
+                        const p = rearrangeUpToDate.split('-');
+                        return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : '';
+                      })() : ''}
+                      readOnly
+                      className="cursor-pointer"
+                      onClick={() => {
+                        const el = document.getElementById('rearrangeDateHidden') as HTMLInputElement;
+                        if (el) { el.showPicker?.(); el.focus(); }
+                      }}
+                    />
+                    <input
+                      id="rearrangeDateHidden"
+                      type="date"
+                      value={rearrangeUpToDate}
+                      onChange={(e) => { setRearrangeUpToDate(e.target.value); }}
+                      className="absolute inset-0 opacity-0 cursor-pointer"
+                      style={{ pointerEvents: 'auto' }}
+                    />
+                  </div>
                   <p className="text-xs text-gray-500 mt-1">रिकामे ठेवल्यास सर्व कर्ज रिअरेंज होतील</p>
                 </div>
                 <div className="flex items-end">
@@ -1018,43 +1101,57 @@ function DataManagementPage() {
 
               {rearrangePreviewData && rearrangePreviewData.success && (
                 <div className="space-y-4 mt-4">
-                  <Alert className="border-indigo-200 bg-indigo-50 dark:bg-indigo-900/20">
-                    <CheckCircle className="h-4 w-4 text-indigo-600" />
-                    <AlertTitle className="text-indigo-700">
-                      {rearrangePreviewData.totalLoans} कर्ज सापडले
-                    </AlertTitle>
-                    <AlertDescription className="text-indigo-600">
-                      खालील बटणांचा वापर करा: आधी PDF डाउनलोड करा, मग confirm करा.
-                    </AlertDescription>
-                  </Alert>
+                  {isPreviewStale && (
+                    <Alert className="border-amber-200 bg-amber-50 dark:bg-amber-900/20">
+                      <AlertTriangle className="h-4 w-4 text-amber-600" />
+                      <AlertTitle className="text-amber-700">Preview जुनी झाली आहे</AlertTitle>
+                      <AlertDescription className="text-amber-600">
+                        ग्रुप किंवा तारीख बदलली आहे. कृपया पुन्हा "Preview बघा" क्लिक करा.
+                      </AlertDescription>
+                    </Alert>
+                  )}
 
-                  <div className="flex flex-col sm:flex-row gap-3">
-                    <Button
-                      onClick={generateRearrangePdf}
-                      className="flex-1 flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700"
-                    >
-                      <Download className="h-4 w-4" />
-                      PDF डाउनलोड करा (जुना → नवीन नंबर)
-                    </Button>
+                  {!isPreviewStale && (
+                    <>
+                      <Alert className="border-indigo-200 bg-indigo-50 dark:bg-indigo-900/20">
+                        <CheckCircle className="h-4 w-4 text-indigo-600" />
+                        <AlertTitle className="text-indigo-700">
+                          {rearrangePreviewData.totalLoans} कर्ज सापडले
+                        </AlertTitle>
+                        <AlertDescription className="text-indigo-600">
+                          खालील बटणांचा वापर करा: आधी PDF डाउनलोड करा, मग confirm करा.
+                        </AlertDescription>
+                      </Alert>
 
-                    <Button
-                      onClick={handleRearrangeConfirm}
-                      disabled={!rearrangePdfDownloaded || rearrangeConfirmMutation.isPending}
-                      className="flex-1 flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 disabled:opacity-50"
-                    >
-                      {rearrangeConfirmMutation.isPending ? (
-                        <RefreshCw className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <CheckCircle className="h-4 w-4" />
+                      <div className="flex flex-col sm:flex-row gap-3">
+                        <Button
+                          onClick={generateRearrangePdf}
+                          className="flex-1 flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700"
+                        >
+                          <Download className="h-4 w-4" />
+                          PDF डाउनलोड करा (जुना → नवीन नंबर)
+                        </Button>
+
+                        <Button
+                          onClick={handleRearrangeConfirm}
+                          disabled={!rearrangePdfDownloaded || rearrangeConfirmMutation.isPending}
+                          className="flex-1 flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 disabled:opacity-50"
+                        >
+                          {rearrangeConfirmMutation.isPending ? (
+                            <RefreshCw className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <CheckCircle className="h-4 w-4" />
+                          )}
+                          {rearrangeConfirmMutation.isPending ? "रिअरेंज करत आहे..." : "खाते क्रमांक बदला"}
+                        </Button>
+                      </div>
+
+                      {!rearrangePdfDownloaded && (
+                        <p className="text-xs text-amber-600 dark:text-amber-400">
+                          ⚠️ कृपया आधी PDF डाउनलोड करा, मगच "खाते क्रमांक बदला" बटण active होईल.
+                        </p>
                       )}
-                      {rearrangeConfirmMutation.isPending ? "रिअरेंज करत आहे..." : "खाते क्रमांक बदला"}
-                    </Button>
-                  </div>
-
-                  {!rearrangePdfDownloaded && (
-                    <p className="text-xs text-amber-600 dark:text-amber-400">
-                      ⚠️ कृपया आधी PDF डाउनलोड करा, मगच "खाते क्रमांक बदला" बटण active होईल.
-                    </p>
+                    </>
                   )}
                 </div>
               )}
