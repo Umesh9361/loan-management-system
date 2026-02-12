@@ -26,7 +26,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { LoanCalculations } from "@/lib/calculations";
 import { DateUtils } from "@/lib/date-utils";
-import { Plus, Edit, Trash2, CreditCard, Search, Calendar, Filter, X, FileText, MoreVertical, Lock, Home, RotateCcw, ChevronDown, Check, Camera } from "lucide-react";
+import { Plus, Edit, Trash2, CreditCard, Search, Calendar, Filter, X, FileText, MoreVertical, Lock, Home, RotateCcw, ChevronDown, ChevronRight, Check, Camera } from "lucide-react";
 import { PhotoUpload } from "@/components/ui/photo-upload";
 import { PhotoViewer } from "@/components/ui/photo-viewer";
 import { Link, useLocation } from "wouter";
@@ -76,6 +76,7 @@ function Loans() {
   const [pendingPhotos, setPendingPhotos] = useState<any[]>([]);
   const [isUploadingPhotos, setIsUploadingPhotos] = useState(false);
   const [createdLoanId, setCreatedLoanId] = useState<string | null>(null);
+  const [isPhotoSectionOpen, setIsPhotoSectionOpen] = useState(false);
   
   // Refs for keyboard shortcuts
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -292,18 +293,49 @@ function Loans() {
           : `खाते ${newLoan.accountNumber} यशस्वीपणे तयार केले गेले`,
       });
       
-      // Handle pending photo uploads for new loans
       if (!editingLoan && pendingPhotos.length > 0) {
-        // Store created loan ID for retry mechanism
         setCreatedLoanId(newLoan.id);
-        
         await handlePhotoUpload(newLoan.id);
-      } else {
-        // No pending photos - close dialog immediately
+      }
+      
+      if (editingLoan) {
         form.reset();
         setIsDialogOpen(false);
         setEditingLoan(null);
         setCreatedLoanId(null);
+      } else {
+        const currentGroupId = form.getValues('groupId');
+        const currentGroupName = groupSearchTerm;
+        const todayDate = DateUtils.getCurrentIndianDate();
+        form.reset({
+          groupId: currentGroupId,
+          borrowerName: "",
+          borrowerMobile: "",
+          borrowerAddress: "",
+          businessType: "बिगर शेती",
+          loanType: "विनातारण",
+          accountNumber: "",
+          principalAmount: "",
+          loanDate: todayDate,
+          maturityDate: DateUtils.addMonthsToIndianDate(todayDate, 12),
+          hasMaturity: false,
+          maturityMonths: "",
+          interestRate: "",
+          interestRateType: "monthly",
+          collateralDetails: "",
+          weight: "",
+          marketValue: "",
+          documentDetails: "—",
+          specialConditions: "—",
+          otherInfo: "—",
+        });
+        setGroupSearchTerm(currentGroupName);
+        setBorrowerSearchTerm("");
+        setBorrowerSearchQuery("");
+        setShowBorrowerSuggestions(false);
+        setPendingPhotos([]);
+        setCreatedLoanId(null);
+        setIsPhotoSectionOpen(false);
       }
     },
     onError: (error: Error) => {
@@ -355,10 +387,42 @@ function Loans() {
         description: `${pendingPhotos.length} फोटो यशस्वीरित्या save झाले`,
       });
       
-      // Close dialog after successful upload
-      form.reset();
-      setIsDialogOpen(false);
-      setEditingLoan(null);
+      if (editingLoan) {
+        form.reset();
+        setIsDialogOpen(false);
+        setEditingLoan(null);
+      } else {
+        const currentGroupId = form.getValues('groupId');
+        const currentGroupName = groupSearchTerm;
+        const todayDate = DateUtils.getCurrentIndianDate();
+        form.reset({
+          groupId: currentGroupId,
+          borrowerName: "",
+          borrowerMobile: "",
+          borrowerAddress: "",
+          businessType: "बिगर शेती",
+          loanType: "विनातारण",
+          accountNumber: "",
+          principalAmount: "",
+          loanDate: todayDate,
+          maturityDate: DateUtils.addMonthsToIndianDate(todayDate, 12),
+          hasMaturity: false,
+          maturityMonths: "",
+          interestRate: "",
+          interestRateType: "monthly",
+          collateralDetails: "",
+          weight: "",
+          marketValue: "",
+          documentDetails: "—",
+          specialConditions: "—",
+          otherInfo: "—",
+        });
+        setGroupSearchTerm(currentGroupName);
+        setBorrowerSearchTerm("");
+        setBorrowerSearchQuery("");
+        setShowBorrowerSuggestions(false);
+        setIsPhotoSectionOpen(false);
+      }
       
     } catch (error) {
       console.error('Photo upload error:', error);
@@ -1105,10 +1169,10 @@ function Loans() {
       setShowBorrowerSuggestions(false);
       setShowGroupSuggestions(false);
       
-      // Clear pending photos and created loan ID only when starting new loan (not on edit)
       if (!editingLoan) {
         setPendingPhotos([]);
         setCreatedLoanId(null);
+        setIsPhotoSectionOpen(false);
       }
     }
   }, [isDialogOpen, editingLoan, form]);
@@ -1209,11 +1273,12 @@ function Loans() {
               }
             }}
             onInteractOutside={(e) => {
-              // Prevent parent dialog from closing when camera dialog is open
               if (isCameraDialogOpen) {
                 e.preventDefault();
-                console.log('📸 GUARD: Blocking outside click - camera dialog is open');
               }
+            }}
+            onOpenAutoFocus={(e) => {
+              e.preventDefault();
             }}
           >
             <DialogHeader>
@@ -1256,7 +1321,7 @@ function Loans() {
                             <div className="relative">
                               <Input
                                 ref={groupInputRef}
-                                className="text-base"
+                                className="text-base pr-10"
                                 placeholder="ग्रुप नाव टाइप करा (उदा: गजलक्ष्मी)"
                                 value={groupSearchTerm}
                                 tabIndex={1}
@@ -1276,7 +1341,6 @@ function Loans() {
                                     setShowGroupSuggestions(false);
                                   }
                                 }}
-                                className="pr-10"
                                 onKeyDown={(e) => {
                                   if (!showGroupSuggestions || !Array.isArray(groups)) return;
                                   
@@ -1784,7 +1848,7 @@ function Loans() {
                                   {...field}
                                   type="number"
                                   placeholder="12"
-                                  className="text-base"
+                                  className="text-base w-20"
                                   tabIndex={11}
                                   onChange={(e) => {
                                     field.onChange(e.target.value);
@@ -1845,7 +1909,6 @@ function Loans() {
                                       }
                                     }
                                   }}
-                                  className="w-20"
                                 />
                                 <span className="text-gray-600">महिने</span>
                               </div>
@@ -2091,94 +2154,73 @@ function Loans() {
                 </div>
               </div>
 
-              {/* Photo Upload Section - तारणाचे फोटो */}
-              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 sm:p-4 space-y-3 sm:space-y-4">
-                <h3 className="text-base font-semibold text-amber-800 flex items-center gap-2">
-                  <Camera className="h-5 w-5" />
-                  तारणाचे फोटो (अधिकतम 2)
-                </h3>
-                <p className="text-sm text-amber-700">
-                  सोन्या-चांदीच्या दागिन्यांचे फोटो काढा किंवा गॅलरी मधून निवडा
-                </p>
-                <PhotoUpload 
-                  loanId={editingLoan?.id}
-                  onCameraDialogChange={setIsCameraDialogOpen}
-                  onPhotosChange={(photos) => {
-                    // SYNCHRONOUS handler to prevent form dialog conflicts
-                    if (editingLoan?.id) {
-                      // For existing loans: schedule upload via microtask to avoid form conflicts
-                      const newPhotos = photos.filter(photo => !photo.isExisting);
-                      
-                      if (newPhotos.length > 0) {
-                        // Schedule async upload outside of form event cycle
-                        setTimeout(() => {
-                          void (async () => {
-                            try {
-                              const { photosToFormData } = await import('@/lib/photo-utils');
-                              const formData = photosToFormData(newPhotos, editingLoan.id);
-                              
-                              const response = await fetch(`/api/loans/${editingLoan.id}/photos`, {
-                                method: 'POST',
-                                body: formData
-                              });
-                              
-                              if (!response.ok) {
-                                throw new Error('Photo upload failed');
-                              }
-                              
-                              // Invalidate cache to refresh photos list
-                              queryClient.invalidateQueries({ queryKey: ["/api/loans", editingLoan.id, "photos"] });
-                              
-                              toast({
-                                title: "फोटो अपलोड यशस्वी",
-                                description: `${newPhotos.length} फोटो यशस्वीरित्या save झाले`,
-                              });
-                              
-                              console.log(`📸 Photos uploaded successfully: ${newPhotos.length} new photos`);
-                            } catch (error) {
-                              console.error('Deferred photo upload error:', error);
-                              toast({
-                                title: "फोटो अपलोड त्रुटी",
-                                description: "फोटो upload करताना समस्या झाली",
-                                variant: "destructive",
-                              });
-                            }
-                          })();
-                        }, 0);
-                      }
-                    } else {
-                      // For new loans: store photos in pending state for deferred upload (synchronous)
-                      setPendingPhotos(photos);
-                      console.log(`📸 Photos stored locally for new loan: ${photos.length} photos`);
-                      toast({
-                        title: "फोटो तयार",
-                        description: `${photos.length} फोटो तयार केले, कर्ज save केल्यावर upload होतील`,
-                      });
-                    }
-                  }}
-                  maxPhotos={2}
-                />
+              {/* Photo Upload Section - Collapsible */}
+              <div className="border border-gray-200 rounded-lg overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => setIsPhotoSectionOpen(!isPhotoSectionOpen)}
+                  className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors"
+                >
+                  <span className="flex items-center gap-2 text-base font-medium text-gray-700">
+                    <Camera className="h-5 w-5 text-amber-600" />
+                    तारणाचे फोटो
+                    {pendingPhotos.length > 0 && (
+                      <Badge variant="secondary" className="ml-1 text-xs">{pendingPhotos.length} तयार</Badge>
+                    )}
+                  </span>
+                  {isPhotoSectionOpen ? <ChevronDown className="h-4 w-4 text-gray-500" /> : <ChevronRight className="h-4 w-4 text-gray-500" />}
+                </button>
+                {isPhotoSectionOpen && (
+                  <div className="p-3 sm:p-4 space-y-3">
+                    <PhotoUpload 
+                      loanId={editingLoan?.id}
+                      onCameraDialogChange={setIsCameraDialogOpen}
+                      onPhotosChange={(photos) => {
+                        if (editingLoan?.id) {
+                          const newPhotos = photos.filter(photo => !photo.isExisting);
+                          if (newPhotos.length > 0) {
+                            setTimeout(() => {
+                              void (async () => {
+                                try {
+                                  const { photosToFormData } = await import('@/lib/photo-utils');
+                                  const formData = photosToFormData(newPhotos, editingLoan.id);
+                                  const response = await fetch(`/api/loans/${editingLoan.id}/photos`, {
+                                    method: 'POST',
+                                    body: formData
+                                  });
+                                  if (!response.ok) throw new Error('Photo upload failed');
+                                  queryClient.invalidateQueries({ queryKey: ["/api/loans", editingLoan.id, "photos"] });
+                                  toast({ title: "फोटो अपलोड यशस्वी", description: `${newPhotos.length} फोटो save झाले` });
+                                  setIsPhotoSectionOpen(false);
+                                } catch (error) {
+                                  console.error('Photo upload error:', error);
+                                  toast({ title: "फोटो अपलोड त्रुटी", description: "फोटो upload करताना समस्या झाली", variant: "destructive" });
+                                }
+                              })();
+                            }, 0);
+                          }
+                        } else {
+                          setPendingPhotos(photos);
+                          toast({ title: "फोटो तयार", description: `${photos.length} फोटो तयार, save केल्यावर upload होतील` });
+                          setIsPhotoSectionOpen(false);
+                        }
+                      }}
+                      maxPhotos={2}
+                    />
+                  </div>
+                )}
               </div>
 
-              {/* Photo Upload Status and Retry */}
-              {!editingLoan && pendingPhotos.length > 0 && (
-                <div className={`${createdLoanId ? 'bg-orange-50 border-orange-200' : 'bg-blue-50 border-blue-200'} border rounded-lg p-3 space-y-2`}>
-                  <div className="flex items-center gap-2">
-                    <span className={`${createdLoanId ? 'text-orange-800' : 'text-blue-800'} font-medium`}>
-                      📸 {pendingPhotos.length} फोटो {createdLoanId ? 'upload करावे लागतील' : 'तयार'} 
-                      ({isUploadingPhotos ? 'अपलोड करत आहे...' : createdLoanId ? 'retry करण्यासाठी तयार' : 'कर्ज save केल्यावर upload होतील'})
-                    </span>
-                  </div>
-                  {isUploadingPhotos && (
-                    <div className="flex items-center gap-2">
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-                      <span className="text-sm text-blue-600">फोटो server मध्ये upload करत आहे...</span>
-                    </div>
-                  )}
-                  {createdLoanId && !isUploadingPhotos && (
-                    <div className="text-sm text-orange-700">
-                      कर्ज यशस्वीपणे तयार झाले, पण फोटो upload नाही झाले. कृपया "फोटो अपलोड करा" दाबा.
-                    </div>
+              {/* Photo Upload Status */}
+              {!editingLoan && pendingPhotos.length > 0 && createdLoanId && (
+                <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 flex items-center gap-2">
+                  {isUploadingPhotos ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-orange-600"></div>
+                      <span className="text-sm text-orange-700 font-medium">फोटो upload करत आहे...</span>
+                    </>
+                  ) : (
+                    <span className="text-sm text-orange-700 font-medium">📸 फोटो upload बाकी - "फोटो अपलोड करा" दाबा</span>
                   )}
                 </div>
               )}
