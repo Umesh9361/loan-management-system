@@ -176,12 +176,6 @@ const reports = [
     description: "सर्व खाते - रोकड, व्यक्ती, कर्ज लेजर एकत्र"
   },
 
-  {
-    name: "इतर अहवाल",
-    href: "/reports/other",
-    icon: BarChart3,
-    description: "अतिरिक्त रिपोर्ट्स"
-  },
 ];
 
 interface SidebarProps {
