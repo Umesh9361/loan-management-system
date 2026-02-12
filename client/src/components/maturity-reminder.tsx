@@ -165,7 +165,7 @@ export function NotificationBell({ variant = 'default' }: { variant?: 'default' 
           hasNotifications && "animate-[bell-ring_2s_ease-in-out_infinite]"
         )} />
         {hasNotifications && (
-          <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold text-white bg-red-500 rounded-full border-2 border-white shadow-sm">
+          <span className="absolute -top-0.5 -right-0.5 flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold text-white bg-indigo-500 rounded-full border-2 border-white shadow-sm">
             {displayCount}
           </span>
         )}
@@ -344,7 +344,7 @@ export function NotificationPanel({ onClose }: { onClose: () => void }) {
         <div className="p-3 border-t bg-gray-50 dark:bg-gray-800 shrink-0 safe-area-bottom">
           <Button
             onClick={onClose}
-            className="w-full bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-white h-10 text-sm font-semibold"
+            className="w-full bg-indigo-500 hover:bg-indigo-600 active:bg-indigo-700 text-white h-10 text-sm font-semibold"
           >
             बंद करा
           </Button>
@@ -426,7 +426,7 @@ export function MaturityReminderPopup() {
         <div className="p-3 sm:p-4 border-t bg-gray-50 dark:bg-gray-800 rounded-b-none sm:rounded-b-xl shrink-0 safe-area-bottom">
           <Button
             onClick={handleDismiss}
-            className="w-full bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-white h-10 sm:h-11 text-sm sm:text-base font-semibold"
+            className="w-full bg-indigo-500 hover:bg-indigo-600 active:bg-indigo-700 text-white h-10 sm:h-11 text-sm sm:text-base font-semibold"
           >
             समजले, बंद करा
           </Button>
