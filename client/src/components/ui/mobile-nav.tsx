@@ -13,6 +13,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Sidebar } from "./sidebar";
 import { AuthService } from "@/lib/auth";
+import { useCurrentUser } from "@/hooks/use-current-user";
 import { useSafeNavigation } from "@/hooks/use-safe-navigation";
 import { NotificationBell } from "@/components/maturity-reminder";
 import { 
@@ -55,9 +56,10 @@ interface MobileNavProps {
 }
 
 export function MobileNav({ hideBottomNav = false }: MobileNavProps = {}) {
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
   const [isOpen, setIsOpen] = useState(false);
   const { safeNavigate } = useSafeNavigation();
+  const { user } = useCurrentUser();
 
   const { data: companyData } = useQuery<any>({
     queryKey: ["/api/company"],
@@ -111,7 +113,16 @@ export function MobileNav({ hideBottomNav = false }: MobileNavProps = {}) {
                   <User className="h-5 w-5 text-indigo-600" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-40">
+              <DropdownMenuContent align="end" className="w-44">
+                {(user?.role === 'admin' || user?.role === 'super_admin') && (
+                  <>
+                    <DropdownMenuItem onClick={() => setLocation('/profile')} className="text-gray-700 focus:text-indigo-700 focus:bg-indigo-50">
+                      <UserCheck className="mr-2 h-4 w-4" />
+                      {user?.username || 'Profile'}
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                  </>
+                )}
                 <DropdownMenuItem onClick={handleLogout} className="text-indigo-600 focus:text-indigo-700 focus:bg-indigo-50">
                   <LogOut className="mr-2 h-4 w-4" />
                   Log Out
