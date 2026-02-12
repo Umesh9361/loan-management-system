@@ -2733,13 +2733,15 @@ function Loans() {
                                 पुनरोपन करा
                               </DropdownMenuItem>
                             )}
-                            <DropdownMenuItem 
-                              onClick={() => handleDelete(loan.id)}
-                              className="text-red-600"
-                            >
-                              <Trash2 className="mr-2 h-4 w-4" />
-                              डिलीट करा
-                            </DropdownMenuItem>
+                            {loan.status === 'active' && (
+                              <DropdownMenuItem 
+                                onClick={() => handleDelete(loan.id)}
+                                className="text-red-600"
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                डिलीट करा
+                              </DropdownMenuItem>
+                            )}
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>
@@ -2938,13 +2940,15 @@ function Loans() {
                               पुनरोपन करा
                             </DropdownMenuItem>
                           )}
-                          <DropdownMenuItem 
-                            onClick={() => handleDelete(loan.id)}
-                            className="text-red-600"
-                          >
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            डिलीट करा
-                          </DropdownMenuItem>
+                          {loan.status === 'active' && (
+                            <DropdownMenuItem 
+                              onClick={() => handleDelete(loan.id)}
+                              className="text-red-600"
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              डिलीट करा
+                            </DropdownMenuItem>
+                          )}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>
