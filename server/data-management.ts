@@ -1,4 +1,5 @@
 import { db } from "./db";
+import { createHash } from "crypto";
 import { 
   loans, loanClosures, cashTransactions, parties, borrowers, groups, transactions,
   companies, users, userPermissions, userActivityLogs, journalEntries, journalEntryLines,
@@ -68,10 +69,14 @@ export class DataManagementService {
         newAccountNumber: (i + 1).toString()
       }));
 
+      const checksumData = loansInGroup.map((l: any) => `${l.id}:${l.loanDate}:${l.accountNumber}`).join('|');
+      const checksum = createHash('sha256').update(checksumData).digest('hex').substring(0, 16);
+
       return {
         success: true,
         message: `${loansInGroup.length} कर्ज सापडले`,
         totalLoans: loansInGroup.length,
+        checksum,
         mapping
       };
 
@@ -85,7 +90,7 @@ export class DataManagementService {
     }
   }
 
-  async confirmRearrangeAccountNumbers(tenantId: string, groupId: string, upToDate?: string): Promise<DataManagementResult> {
+  async confirmRearrangeAccountNumbers(tenantId: string, groupId: string, upToDate?: string, checksum?: string): Promise<DataManagementResult> {
     try {
       console.log(`🔢 REARRANGE CONFIRM: Applying changes for group ${groupId} in tenant ${tenantId}, upToDate: ${upToDate || 'all'}`);
       console.log(`⚠️ SAFETY: Only updating manual accountNumber field, NOT system IDs (id, loanNumber)`);
@@ -112,6 +117,19 @@ export class DataManagementService {
           affectedRecords: 0,
           details: []
         };
+      }
+
+      if (checksum) {
+        const currentChecksumData = loansInGroup.map((l: any) => `${l.id}:${l.loanDate}:${l.accountNumber}`).join('|');
+        const currentChecksum = createHash('sha256').update(currentChecksumData).digest('hex').substring(0, 16);
+        if (currentChecksum !== checksum) {
+          return {
+            success: false,
+            message: "Preview नंतर डेटा बदलला आहे. कृपया पुन्हा Preview बघा.",
+            affectedRecords: 0,
+            details: [{ reason: 'checksum_mismatch' }]
+          };
+        }
       }
 
       let updatedCount = 0;
