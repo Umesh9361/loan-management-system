@@ -91,10 +91,8 @@ export default function Login() {
     <div className="min-h-screen flex items-center justify-center px-4 py-12 bg-gray-50">
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
-          <div className="mx-auto h-20 w-20 bg-primary rounded-full flex items-center justify-center mb-6">
-            <Building className="text-white h-8 w-8" />
-          </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">कर्ज व्यवस्थापन प्रणाली</h1>
+          <img src="/icons/icon-192x192.png" alt="LonoPro" className="mx-auto h-20 w-20 rounded-full mb-6" />
+          <h1 className="text-3xl font-bold text-indigo-600 mb-2">Welcome to LonoPro</h1>
           <p className="text-gray-600">आपल्या खात्यात प्रवेश करा</p>
         </div>
         
