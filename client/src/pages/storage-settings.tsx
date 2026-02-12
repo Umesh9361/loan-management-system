@@ -80,9 +80,9 @@ export default function StorageSettings() {
         : '/api/admin/storage-settings/tenant';
       return apiRequest(endpoint, 'POST', data);
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       toast({ title: "सेटिंग्स सेव्ह झाल्या", description: "Photo storage settings यशस्वीरित्या अपडेट केले" });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/storage-settings"] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/admin/storage-settings"], refetchType: 'all' });
     },
     onError: () => {
       toast({ title: "त्रुटी", description: "Settings save करताना त्रुटी झाली", variant: "destructive" });
