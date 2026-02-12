@@ -1680,7 +1680,7 @@ function Loans() {
                           <FormControl>
                             <Input
                               {...field}
-                              placeholder="खाते क्रमांक"
+                              placeholder=""
                               tabIndex={7}
                               className="text-base font-bold"
                               style={{ fontFamily: 'Arial, Helvetica, sans-serif' }}
