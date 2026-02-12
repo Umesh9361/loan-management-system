@@ -2073,6 +2073,7 @@ function Loans() {
                         <FormLabel className="text-base font-medium">वजन</FormLabel>
                         <FormControl>
                           <Input
+                            {...field}
                             placeholder="10 ग्राम"
                             tabIndex={15}
                             className="text-base"
@@ -2659,13 +2660,19 @@ function Loans() {
                               size="sm"
                               variant="ghost"
                               className="h-10 w-10 p-0 touch-manipulation min-h-[44px] min-w-[44px]"
-                              onClick={(e) => e.stopPropagation()}
                               onPointerDown={(e) => {
                                 (e.currentTarget as any)._startY = e.clientY;
+                                (e.currentTarget as any)._scrolled = false;
                               }}
-                              onPointerUp={(e) => {
+                              onPointerMove={(e) => {
                                 const startY = (e.currentTarget as any)._startY;
-                                if (startY !== undefined && Math.abs(e.clientY - startY) > 10) {
+                                if (startY !== undefined && Math.abs(e.clientY - startY) > 8) {
+                                  (e.currentTarget as any)._scrolled = true;
+                                }
+                              }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if ((e.currentTarget as any)._scrolled) {
                                   e.preventDefault();
                                   e.stopPropagation();
                                 }
@@ -2881,13 +2888,19 @@ function Loans() {
                             size="sm"
                             variant="ghost"
                             className="h-11 w-11 p-0 touch-manipulation min-h-[48px] min-w-[48px] rounded-full bg-gray-100 hover:bg-gray-200"
-                            onClick={(e) => e.stopPropagation()}
                             onPointerDown={(e) => {
                               (e.currentTarget as any)._startY = e.clientY;
+                              (e.currentTarget as any)._scrolled = false;
                             }}
-                            onPointerUp={(e) => {
+                            onPointerMove={(e) => {
                               const startY = (e.currentTarget as any)._startY;
-                              if (startY !== undefined && Math.abs(e.clientY - startY) > 10) {
+                              if (startY !== undefined && Math.abs(e.clientY - startY) > 8) {
+                                (e.currentTarget as any)._scrolled = true;
+                              }
+                            }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if ((e.currentTarget as any)._scrolled) {
                                 e.preventDefault();
                                 e.stopPropagation();
                               }
