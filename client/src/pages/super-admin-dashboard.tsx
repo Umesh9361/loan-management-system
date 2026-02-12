@@ -145,8 +145,8 @@ export default function SuperAdminDashboard() {
       
       return response.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/super-admin/tenant-stats"] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["/api/super-admin/tenant-stats"], refetchType: 'all' });
       setIsCreateTenantDialogOpen(false);
       createTenantForm.reset();
       toast({
