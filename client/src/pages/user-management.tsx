@@ -55,7 +55,6 @@ const permissionsSchema = z.object({
   canViewBorrowerListReport: z.boolean().default(false), // कर्जदार सूची
   canViewOverdueReport: z.boolean().default(false), // मुदत संपलेले अहवाल
   canViewAccountSummaryReport: z.boolean().default(false), // खाते सारांश अहवाल
-  canViewOtherReports: z.boolean().default(false) // इतर अहवाल
 });
 
 type User = {
@@ -902,7 +901,6 @@ function PermissionsList({ form, userRole = "user" }: { form: any; userRole?: st
       { key: "canViewBorrowerListReport", label: "कर्जदार यादी अहवाल" },
       { key: "canViewOverdueReport", label: "थकबाकी अहवाल" },
       { key: "canViewAccountSummaryReport", label: "खाते सारांश अहवाल" },
-      { key: "canViewOtherReports", label: "इतर अहवाल" },
     ]
   };
 
