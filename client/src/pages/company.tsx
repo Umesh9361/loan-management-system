@@ -197,7 +197,7 @@ export default function Company() {
                         <Input
                           id="licenseNumber"
                           {...form.register("licenseNumber")}
-                          placeholder="उदा. KRD19"
+                          placeholder=""
                           className="font-inter"
                         />
                       </div>
