@@ -66,20 +66,18 @@ export default function CashTransactions() {
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => apiRequest(`/api/cash-transactions/${id}`, "DELETE"),
-    onSuccess: () => {
-      // Comprehensive real-time cache invalidation for delete operations
-      queryClient.invalidateQueries({ queryKey: ["/api/cash-transactions"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/cash-balance"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/mobile-cashbook"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/date-wise-balance"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/journal-entries"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/loans"] }); // For cash book calculations
-      queryClient.invalidateQueries({ queryKey: ["/api/parties"] }); // For party balances
-      
-      // Force immediate refresh of all cash-related data
-      queryClient.refetchQueries({ queryKey: ["/api/cash-transactions"] });
-      queryClient.refetchQueries({ queryKey: ["/api/cash-balance"] });
-      queryClient.refetchQueries({ queryKey: ["/api/mobile-cashbook"] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["/api/cash-transactions"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["/api/cash-balance"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["/api/mobile-cashbook"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["/api/date-wise-balance"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["/api/journal-entries"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["/api/loans"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["/api/parties"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["/api/cash-balance/opening"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["/api/cash-balance/closing"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["/api/reports"], refetchType: 'all' });
       
       toast({
         title: "यशस्वी!",
