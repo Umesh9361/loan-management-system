@@ -1230,16 +1230,17 @@ export default function AccountLedger() {
                               </TableCell>
                               <TableCell className="border text-right">
                                 {(() => {
-                                  // PERMANENT FIX: Cash account = positive Cr.(green)
-                                  // All others (Party, Loan, Individual Loan) = positive Dr.(blue)
                                   const isCashAccount = statementData.account?.type === 'cash';
+                                  const isLoanAccount = statementData.account?.type === 'individual_loan' || statementData.account?.type === 'loan';
                                   const bal = entry.balance;
                                   const drLabel = isCashAccount
                                     ? (bal >= 0 ? ' (Cr.)' : ' (Dr.)')
                                     : (bal >= 0 ? ' (Dr.)' : ' (Cr.)');
                                   const colorClass = isCashAccount
                                     ? (bal >= 0 ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold')
-                                    : (bal >= 0 ? 'text-blue-600 font-semibold' : 'text-red-600 font-semibold');
+                                    : isLoanAccount
+                                      ? 'text-red-600 font-semibold'
+                                      : (bal >= 0 ? 'text-blue-600 font-semibold' : 'text-red-600 font-semibold');
                                   return (
                                     <span className={colorClass}>
                                       {bal < 0 ? '-' : ''}₹{Math.round(Math.abs(bal)).toLocaleString('en-IN')}
@@ -1263,13 +1264,16 @@ export default function AccountLedger() {
                             <TableCell className="border text-right">
                               {(() => {
                                 const isCashAccount = statementData.account?.type === 'cash';
+                                const isLoanAccount = statementData.account?.type === 'individual_loan' || statementData.account?.type === 'loan';
                                 const bal = parseFloat(statementData.finalBalance || 0);
                                 const drLabel = isCashAccount
                                   ? (bal >= 0 ? ' (Cr.)' : ' (Dr.)')
                                   : (bal >= 0 ? ' (Dr.)' : ' (Cr.)');
                                 const colorClass = isCashAccount
                                   ? (bal >= 0 ? 'text-green-600 font-bold' : 'text-red-600 font-bold')
-                                  : (bal >= 0 ? 'text-blue-600 font-bold' : 'text-red-600 font-bold');
+                                  : isLoanAccount
+                                    ? 'text-red-600 font-bold'
+                                    : (bal >= 0 ? 'text-blue-600 font-bold' : 'text-red-600 font-bold');
                                 return (
                                   <span className={colorClass}>
                                     {bal < 0 ? '-' : ''}₹{Math.round(Math.abs(bal)).toLocaleString('en-IN')}
@@ -1287,7 +1291,7 @@ export default function AccountLedger() {
                         <div className="mt-4 border-t pt-4">
                           <div className="grid grid-cols-3 gap-4 font-semibold text-lg">
                             <div className="text-right">
-                              <span className="text-blue-600">एकूण नावे: ₹{Math.round(statementData.totals.totalDebit).toLocaleString('en-IN')}</span>
+                              <span className={statementData.account?.type === 'individual_loan' || statementData.account?.type === 'loan' ? 'text-red-600' : 'text-blue-600'}>एकूण नावे: ₹{Math.round(statementData.totals.totalDebit).toLocaleString('en-IN')}</span>
                             </div>
                             <div className="text-right">
                               <span className="text-green-600">एकूण जमा: ₹{Math.round(statementData.totals.totalCredit).toLocaleString('en-IN')}</span>
@@ -1295,13 +1299,16 @@ export default function AccountLedger() {
                             <div className="text-right">
                               {(() => {
                                 const isCashAccount = statementData.account?.type === 'cash';
+                                const isLoanAccount = statementData.account?.type === 'individual_loan' || statementData.account?.type === 'loan';
                                 const bal = statementData.finalBalance;
                                 const drLabel = isCashAccount
                                   ? (bal >= 0 ? ' (Cr.)' : ' (Dr.)')
                                   : (bal >= 0 ? ' (Dr.)' : ' (Cr.)');
                                 const colorClass = isCashAccount
                                   ? (bal >= 0 ? 'text-green-600' : 'text-red-600')
-                                  : (bal >= 0 ? 'text-blue-600' : 'text-red-600');
+                                  : isLoanAccount
+                                    ? 'text-red-600'
+                                    : (bal >= 0 ? 'text-blue-600' : 'text-red-600');
                                 return (
                                   <span className={colorClass}>
                                     फरक: {bal < 0 ? '-' : ''}₹{Math.round(Math.abs(bal)).toLocaleString('en-IN')}
