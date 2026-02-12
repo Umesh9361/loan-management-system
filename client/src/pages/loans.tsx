@@ -220,15 +220,26 @@ function Loans() {
       queryClient.invalidateQueries({ queryKey: ["/api/cash-transactions"] });
       queryClient.invalidateQueries({ queryKey: ["/api/loan-closures"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/groups"] });
+      setSelectedLoanId(null);
       toast({
         title: "कर्ज डिलीट झाले",
         description: "कर्ज आणि संबंधित व्यवहार यशस्वीपणे डिलीट केले गेले.",
       });
     },
     onError: (error: any) => {
+      let msg = "कर्ज डिलीट करताना त्रुटी आली. पुन्हा प्रयत्न करा.";
+      try {
+        const errorText = error?.message || '';
+        const jsonMatch = errorText.match(/\{.*\}/);
+        if (jsonMatch) {
+          const parsed = JSON.parse(jsonMatch[0]);
+          msg = parsed.message || msg;
+        }
+      } catch(e) {}
       toast({
         title: "डिलीट अयशस्वी",
-        description: error?.message || "कर्ज डिलीट करताना त्रुटी आली. पुन्हा प्रयत्न करा.",
+        description: msg,
         variant: "destructive",
       });
     },
