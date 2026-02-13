@@ -1028,50 +1028,15 @@ export default function Closure() {
     setIsBtPrinting(true);
     try {
       const canvas = await renderReceiptToCanvas(thermalHTML);
-
-      if (isBluetoothSupported()) {
-        try {
-          toast({ title: "कनेक्ट करत आहे...", description: "ब्लूटूथ प्रिंटर निवडा" });
-          await printReceiptViaBluetooth(canvas, 576);
-          toast({ title: "यशस्वी", description: "प्रिंट पाठवले!" });
-        } catch (btError: any) {
-          console.warn("Bluetooth direct print failed, falling back to image download:", btError);
-          if (btError?.message?.includes('cancelled') || btError?.message?.includes('User cancelled')) {
-            return;
-          }
-          toast({ title: "ब्लूटूथ प्रिंट अयशस्वी", description: "इमेज डाउनलोड करत आहे...", variant: "destructive" });
-          canvas.toBlob((blob) => {
-            if (!blob) return;
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            const borrowerName = currentEntries[currentEntries.length - 1]?.borrowerName || 'receipt';
-            a.download = `पावती_${borrowerName}.png`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-            toast({ title: "यशस्वी", description: "इमेज डाउनलोड झाली - प्रिंटर अॅपमधून प्रिंट करा" });
-          }, 'image/png');
-        }
-      } else {
-        canvas.toBlob((blob) => {
-          if (!blob) return;
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          const borrowerName = currentEntries[currentEntries.length - 1]?.borrowerName || 'receipt';
-          a.download = `पावती_${borrowerName}.png`;
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          URL.revokeObjectURL(url);
-          toast({ title: "यशस्वी", description: "इमेज डाउनलोड झाली - प्रिंटर अॅपमधून प्रिंट करा" });
-        }, 'image/png');
+      toast({ title: "कनेक्ट करत आहे...", description: "ब्लूटूथ प्रिंटर निवडा" });
+      await printReceiptViaBluetooth(canvas, 576);
+      toast({ title: "यशस्वी", description: "प्रिंट पाठवले!" });
+    } catch (error: any) {
+      if (error?.message?.includes('cancelled') || error?.message?.includes('User cancelled')) {
+        return;
       }
-    } catch (error) {
       console.error("Bluetooth print error:", error);
-      toast({ title: "त्रुटी", description: "प्रिंट करण्यात समस्या आली", variant: "destructive" });
+      toast({ title: "ब्लूटूथ प्रिंट अयशस्वी", description: "कृपया पुन्हा प्रयत्न करा", variant: "destructive" });
     } finally {
       setIsBtPrinting(false);
       if (btPrintBtnRef.current) {
