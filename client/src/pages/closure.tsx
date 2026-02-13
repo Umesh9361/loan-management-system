@@ -983,7 +983,7 @@ export default function Closure() {
           </thead>
           <tbody>
             ${rows}
-            <tr style="border-top:1px solid #000;">
+            <tr style="border-top:3px double #000;">
               <td colspan="3" style="padding:12px 4px;text-align:right;font-size:22px;font-weight:700;">एकूण</td>
               <td style="padding:12px 4px;text-align:right;font-size:22px;font-weight:700;">${Number(Math.round(totalPrincipal)).toLocaleString('en-IN')}</td>
               <td style="padding:12px 4px;text-align:right;font-size:22px;font-weight:700;">${Number(Math.round(totalCharges)).toLocaleString('en-IN')}</td>
