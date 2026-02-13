@@ -97,15 +97,17 @@ async function connectToPrinter(): Promise<PrinterConnection> {
 }
 
 async function sendData(characteristic: any, data: Uint8Array): Promise<void> {
-  const CHUNK_SIZE = 100;
+  const useNoResponse = characteristic.properties.writeWithoutResponse;
+  const CHUNK_SIZE = useNoResponse ? 512 : 256;
+  const DELAY = useNoResponse ? 3 : 8;
   for (let i = 0; i < data.length; i += CHUNK_SIZE) {
     const chunk = data.slice(i, i + CHUNK_SIZE);
-    if (characteristic.properties.writeWithoutResponse) {
+    if (useNoResponse) {
       await characteristic.writeValueWithoutResponse(chunk);
     } else {
       await characteristic.writeValue(chunk);
     }
-    await new Promise(r => setTimeout(r, 20));
+    await new Promise(r => setTimeout(r, DELAY));
   }
 }
 
@@ -127,28 +129,11 @@ function imageToMonochromeBitmap(canvas: HTMLCanvasElement, targetWidth: number)
   const widthBytes = Math.ceil(w / 8);
   const bitmap = new Uint8Array(widthBytes * h);
 
-  const grayscale = new Float32Array(w * h);
-  for (let i = 0; i < w * h; i++) {
-    const idx = i * 4;
-    grayscale[i] = 0.299 * pixels[idx] + 0.587 * pixels[idx + 1] + 0.114 * pixels[idx + 2];
-  }
-
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
-      const idx = y * w + x;
-      const oldPixel = grayscale[idx];
-      const newPixel = oldPixel < 128 ? 0 : 255;
-      grayscale[idx] = newPixel;
-      const error = oldPixel - newPixel;
-
-      if (x + 1 < w) grayscale[idx + 1] += error * 7 / 16;
-      if (y + 1 < h) {
-        if (x - 1 >= 0) grayscale[(y + 1) * w + (x - 1)] += error * 3 / 16;
-        grayscale[(y + 1) * w + x] += error * 5 / 16;
-        if (x + 1 < w) grayscale[(y + 1) * w + (x + 1)] += error * 1 / 16;
-      }
-
-      if (newPixel === 0) {
+      const idx = (y * w + x) * 4;
+      const gray = 0.299 * pixels[idx] + 0.587 * pixels[idx + 1] + 0.114 * pixels[idx + 2];
+      if (gray < 128) {
         const byteIdx = y * widthBytes + Math.floor(x / 8);
         bitmap[byteIdx] |= (0x80 >> (x % 8));
       }
