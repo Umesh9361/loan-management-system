@@ -2089,7 +2089,7 @@ export default function Closure() {
                               <th className="border border-gray-300 px-1 py-1 text-center w-20">दिनांक</th>
                               {showDetails && <th className="border border-gray-300 px-1 py-1 text-center w-10"></th>}
                               <th className="border border-gray-300 px-2 py-1 text-right" style={{minWidth:'10ch'}}>बाजारमूल्य</th>
-                              <th className="border border-gray-300 px-2 py-1 text-right" style={{minWidth:'7ch'}}>चार्जेस</th>
+                              <th className="border border-gray-300 px-2 py-1 text-right" style={{minWidth:'10ch'}}>चार्जेस</th>
                               <th className="border border-gray-300 px-1 py-1 w-8"></th>
                             </tr>
                           </thead>
