@@ -34,11 +34,9 @@ function isWebBluetoothSupported(): boolean {
 async function connectToPrinter(): Promise<PrinterConnection> {
   if (cachedConnection?.server?.connected) {
     try {
-      await cachedConnection.characteristic.writeValue(new Uint8Array([0]));
-      return cachedConnection;
-    } catch {
-      cachedConnection = null;
-    }
+      cachedConnection.server.disconnect();
+    } catch { /* ignore */ }
+    cachedConnection = null;
   }
 
   if (!isWebBluetoothSupported()) {
