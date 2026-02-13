@@ -663,7 +663,7 @@ export default function Closure() {
       <td style="border:none;padding:10px 3px;text-align:center;font-size:${fontSize};vertical-align:middle;line-height:1.8;">${index + 1}</td>
       ${showDetailsCols ? `<td style="border:none;padding:10px 4px;font-size:${fontSize};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:middle;line-height:1.8;">${entry.collateralDetails || '-'}</td>` : ''}
       <td style="border:none;padding:10px 3px;text-align:center;font-size:${fontSize};font-weight:700;vertical-align:middle;line-height:1.8;">${entry.accountNumber}</td>
-      <td style="border:none;padding:10px 3px;text-align:center;font-size:${fontSize};vertical-align:middle;line-height:1.8;">${toShortDate(entry.loanDate)}${showInterestRate ? `<span style="margin-left:2px;font-size:${fontSize};font-weight:600;">${formatRate(entry.interestRate)}%</span>` : ''}</td>
+      <td style="border:none;padding:10px 3px;text-align:center;font-size:${fontSize};vertical-align:middle;line-height:1.8;">${toShortDate(entry.loanDate)}${showInterestRate ? `<span style="margin-left:6px;font-size:13px;font-weight:600;">${formatRate(entry.interestRate)}</span>` : ''}</td>
       ${showDetailsCols ? `<td style="border:none;padding:10px 2px;text-align:center;font-size:${fontSize};vertical-align:middle;line-height:1.8;">${entry.months}</td>` : ''}
       <td style="border:none;padding:10px 4px;text-align:right;font-size:${fontSize};font-weight:700;vertical-align:middle;line-height:1.8;">${Number(Math.round(entry.principalAmount)).toLocaleString('en-IN')}</td>
       <td style="border:none;padding:10px 4px;text-align:right;font-size:${fontSize};font-weight:700;vertical-align:middle;line-height:1.8;">${Number(Math.round(entry.chargesAmount)).toLocaleString('en-IN')}</td>
@@ -956,7 +956,7 @@ export default function Closure() {
       rows += `<tr>
         <td style="padding:14px 8px 14px 4px;text-align:center;font-size:16px;font-weight:600;">${i + 1}</td>
         <td style="padding:14px 8px;text-align:center;font-size:22px;font-weight:700;">${entry.accountNumber}</td>
-        <td style="padding:14px 4px;text-align:right;font-size:22px;font-weight:700;">${toShortDate(entry.loanDate)}${showInterestRate ? `<span style="margin-left:3px;font-size:16px;font-weight:600;">${formatRate(entry.interestRate)}%</span>` : ''}</td>
+        <td style="padding:14px 4px;text-align:right;font-size:22px;font-weight:700;">${toShortDate(entry.loanDate)}${showInterestRate ? `<span style="margin-left:8px;font-size:20px;font-weight:600;">${formatRate(entry.interestRate)}</span>` : ''}</td>
         <td style="padding:14px 4px;text-align:right;font-size:22px;font-weight:700;">${Number(Math.round(entry.principalAmount)).toLocaleString('en-IN')}</td>
         <td style="padding:14px 4px;text-align:right;font-size:22px;font-weight:700;">${Number(Math.round(entry.chargesAmount)).toLocaleString('en-IN')}</td>
       </tr>`;
@@ -2099,7 +2099,7 @@ export default function Closure() {
                                 <td className="border border-gray-300 px-1 py-1 text-center text-xs">{index + 1}</td>
                                 {showDetails && <td className="border border-gray-300 px-2 py-1 text-xs"><div className="max-w-[120px] truncate" title={entry.collateralDetails || '-'}>{entry.collateralDetails || '-'}</div></td>}
                                 <td className="border border-gray-300 px-1 py-1 text-center text-xs font-bold">{entry.accountNumber}</td>
-                                <td className="border border-gray-300 px-1 py-1 text-center text-xs">{toShortDate(entry.loanDate)}{showRateMonths ? <span className="ml-0.5 font-semibold">{formatRate(entry.interestRate)}%</span> : ''}</td>
+                                <td className="border border-gray-300 px-1 py-1 text-center text-xs">{toShortDate(entry.loanDate)}{showRateMonths ? <span className="ml-2 text-sm font-semibold">{formatRate(entry.interestRate)}</span> : ''}</td>
                                 {showDetails && <td className="border border-gray-300 px-1 py-1 text-center text-xs">{entry.months}</td>}
                                 <td className="border border-gray-300 px-2 py-1 text-right text-xs font-bold">{Number(Math.round(entry.principalAmount)).toLocaleString('en-IN')}</td>
                                 <td className="border border-gray-300 px-2 py-1 text-right text-xs font-bold">{Number(Math.round(entry.chargesAmount)).toLocaleString('en-IN')}</td>
