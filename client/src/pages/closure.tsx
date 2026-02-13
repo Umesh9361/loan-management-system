@@ -981,7 +981,7 @@ export default function Closure() {
               <td style="padding:12px 4px;text-align:right;font-size:22px;font-weight:700;">${Number(Math.round(totalPrincipal)).toLocaleString('en-IN')}</td>
               <td style="padding:12px 4px;text-align:right;font-size:22px;font-weight:700;">${Number(Math.round(totalCharges)).toLocaleString('en-IN')}</td>
             </tr>
-            <tr style="border-top:1px solid #000;">
+            <tr style="border-top:3px double #000;">
               <td colspan="5" style="padding:16px 4px;text-align:center;font-size:32px;font-weight:900;">Grand Total : ${Number(Math.round(grandTotal)).toLocaleString('en-IN')}</td>
             </tr>
           </tbody>
