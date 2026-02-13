@@ -161,8 +161,8 @@ export default function Dashboard() {
               
               <div className="lg:col-span-2 bg-gradient-to-r from-indigo-600 to-blue-600 rounded-xl p-6 shadow-md">
                 <div className="flex items-center space-x-4">
-                  <div className="bg-white rounded-lg p-1 shadow-lg border border-white/50">
-                    <img src="/icons/icon-192x192.png" alt="LonoPro" className="h-12 w-12 rounded-md" />
+                  <div className="bg-white/90 rounded-lg p-0.5 shadow-md">
+                    <img src="/icons/icon-192x192.png" alt="LonoPro" className="h-14 w-14 rounded-md" />
                   </div>
                   <div className="flex-1">
                     {company && (company as any).name && (company as any).licenseNumber ? (
