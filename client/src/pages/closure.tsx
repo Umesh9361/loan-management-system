@@ -975,8 +975,8 @@ export default function Closure() {
             <col style="width:46px;">
             <col style="width:90px;">
             <col style="width:120px;">
-            <col style="width:auto;">
-            <col style="width:110px;">
+            <col style="width:150px;">
+            <col style="width:150px;">
           </colgroup>
           <thead>
             <tr style="border-bottom:3px double #000;">
