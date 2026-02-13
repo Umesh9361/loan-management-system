@@ -52,6 +52,7 @@ interface SummaryEntry {
   id: number;
   borrowerName: string;
   borrowerAddress: string;
+  groupName: string;
   collateralDetails: string;
   accountNumber: string;
   loanDate: string;
@@ -108,6 +109,7 @@ export default function Closure() {
   const [showSummaryReceipt, setShowSummaryReceipt] = useState(false);
   const [isBtPrinting, setIsBtPrinting] = useState(false);
   const [summaryReceiptHTML, setSummaryReceiptHTML] = useState<string | null>(null);
+  const [printNameMode, setPrintNameMode] = useState<'group' | 'customer'>('group');
   
   const urlParams = new URLSearchParams(window.location.search);
   const loanIdFromUrl = urlParams.get('loanId');
@@ -604,7 +606,7 @@ export default function Closure() {
     return directValue;
   }, []);
 
-  const generateMultiLoanReceiptHTML = useCallback((entries: SummaryEntry[], showCols: boolean, showDetailsCols: boolean = true): string => {
+  const generateMultiLoanReceiptHTML = useCallback((entries: SummaryEntry[], showCols: boolean, showDetailsCols: boolean = true, nameMode: 'group' | 'customer' = 'group'): string => {
     if (entries.length === 0) return '';
     const fontSize = '12px';
     const headFontSize = '10px';
@@ -613,6 +615,8 @@ export default function Closure() {
     const grandTotal = totalPrincipal + totalCharges;
     const lastEntry = entries[entries.length - 1];
     const closureDateFormatted = DateUtils.isoToIndianDate(lastEntry.closureDate);
+    const displayName = nameMode === 'group' ? (lastEntry.groupName || lastEntry.borrowerName) : lastEntry.borrowerName;
+    const displayAddress = nameMode === 'group' ? '' : (lastEntry.borrowerAddress || '');
     const baseColCount = 1 + (showDetailsCols ? 1 : 0) + 2;
     const totalColSpan = baseColCount + (showCols ? 2 : 0);
     const grandTotalColSpan = totalColSpan + 1;
@@ -623,8 +627,8 @@ export default function Closure() {
     const makeHeader = (pageNum: number) => `
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px;line-height:1.8;">
         <div>
-          <div style="font-weight:700;font-size:13px;line-height:1.8;">${lastEntry.borrowerName}</div>
-          <div style="font-size:${fontSize};color:#333;line-height:1.8;">${lastEntry.borrowerAddress || ''}</div>
+          <div style="font-weight:700;font-size:13px;line-height:1.8;">${displayName}</div>
+          ${displayAddress ? `<div style="font-size:${fontSize};color:#333;line-height:1.8;">${displayAddress}</div>` : ''}
         </div>
         <div style="text-align:right;">
           <div style="font-size:12px;font-weight:700;line-height:1.8;">तारीख: ${closureDateFormatted}</div>
@@ -744,6 +748,7 @@ export default function Closure() {
       id: summaryCounter,
       borrowerName: selectedLoan.borrowerName || '',
       borrowerAddress: selectedLoan.borrowerAddress || selectedLoan.address || '',
+      groupName: getGroupName(selectedLoan.groupId) || '',
       collateralDetails: selectedLoan.collateralDetails || '',
       accountNumber: selectedLoan.accountNumber || '',
       loanDate: editableLoanDate || selectedLoan.loanDate || '',
@@ -786,7 +791,7 @@ export default function Closure() {
   const handleGenerateSummaryReceipt = useCallback(() => {
     const currentEntries = summaryEntriesRef.current;
     if (currentEntries.length === 0) return;
-    const html = generateMultiLoanReceiptHTML(currentEntries, showRateMonths, showDetails);
+    const html = generateMultiLoanReceiptHTML(currentEntries, showRateMonths, showDetails, printNameMode);
     if (isMobile) {
       setSummaryReceiptHTML(html);
       setShowSummaryReceipt(true);
@@ -804,7 +809,7 @@ export default function Closure() {
         }
       }
     }
-  }, [isMobile, generateMultiLoanReceiptHTML, showRateMonths, showDetails]);
+  }, [isMobile, generateMultiLoanReceiptHTML, showRateMonths, showDetails, printNameMode]);
 
   const createOffscreenReceiptContainer = useCallback((html: string): HTMLDivElement => {
     const a5LandscapeWidthPx = 794;
@@ -930,13 +935,15 @@ export default function Closure() {
     }
   }, [summaryReceiptHTML, toast, createOffscreenReceiptContainer]);
 
-  const generateThermalReceiptHTML = useCallback((entries: SummaryEntry[]): string => {
+  const generateThermalReceiptHTML = useCallback((entries: SummaryEntry[], nameMode: 'group' | 'customer' = 'group'): string => {
     if (entries.length === 0) return '';
     const totalPrincipal = entries.reduce((sum, e) => sum + e.principalAmount, 0);
     const totalCharges = entries.reduce((sum, e) => sum + e.chargesAmount, 0);
     const grandTotal = totalPrincipal + totalCharges;
     const lastEntry = entries[entries.length - 1];
     const closureDateFormatted = DateUtils.isoToIndianDate(lastEntry.closureDate);
+    const displayName = nameMode === 'group' ? (lastEntry.groupName || lastEntry.borrowerName) : lastEntry.borrowerName;
+    const displayAddress = nameMode === 'group' ? '' : (lastEntry.borrowerAddress || '');
 
     let rows = '';
     entries.forEach((entry, i) => {
@@ -951,12 +958,12 @@ export default function Closure() {
 
     return `
       <div style="padding:6px 12px;font-family:'Noto Sans Devanagari',sans-serif;">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
-          <div style="font-weight:800;font-size:26px;line-height:1.4;">${lastEntry.borrowerName}</div>
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px;">
+          <div style="font-weight:800;font-size:26px;line-height:1.4;">${displayName}</div>
           <div style="font-size:22px;font-weight:700;white-space:nowrap;line-height:1.4;">तारीख: ${closureDateFormatted}</div>
         </div>
-        ${lastEntry.borrowerAddress ? `<div style="font-size:18px;color:#333;margin-bottom:6px;">${lastEntry.borrowerAddress}</div>` : ''}
-        <div style="text-align:center;font-weight:800;font-size:24px;margin-bottom:14px;"><span style="border-bottom:2px solid #000;padding-bottom:8px;">Estimate</span></div>
+        ${displayAddress ? `<div style="font-size:18px;color:#333;margin-bottom:4px;">${displayAddress}</div>` : ''}
+        <div style="text-align:center;font-weight:800;font-size:24px;margin-bottom:10px;"><span style="border-bottom:2px solid #000;padding-bottom:6px;">Estimate</span></div>
         <table style="width:100%;border-collapse:collapse;table-layout:fixed;">
           <colgroup>
             <col style="width:46px;">
@@ -1022,7 +1029,7 @@ export default function Closure() {
   const handleBluetoothPrint = useCallback(async () => {
     const currentEntries = summaryEntriesRef.current;
     if (currentEntries.length === 0 || isBtPrinting) return;
-    const thermalHTML = generateThermalReceiptHTML(currentEntries);
+    const thermalHTML = generateThermalReceiptHTML(currentEntries, printNameMode);
     if (!thermalHTML) return;
 
     setIsBtPrinting(true);
@@ -1047,7 +1054,7 @@ export default function Closure() {
         document.activeElement.blur();
       }
     }
-  }, [generateThermalReceiptHTML, toast, renderReceiptToCanvas, isBtPrinting]);
+  }, [generateThermalReceiptHTML, toast, renderReceiptToCanvas, isBtPrinting, printNameMode]);
 
   const recalculateWithOriginalDate = useCallback((data: ClosureFormData) => {
     if (!selectedLoan) return null;
@@ -1540,6 +1547,26 @@ export default function Closure() {
                         </FormItem>
                       )}
                     />
+
+                    <div className="flex items-center gap-3">
+                      <Label className="text-sm font-medium whitespace-nowrap">पावतीवर नाव:</Label>
+                      <div className="flex rounded-lg border overflow-hidden">
+                        <button
+                          type="button"
+                          onClick={() => setPrintNameMode('group')}
+                          className={`px-3 py-1.5 text-sm font-medium transition-colors ${printNameMode === 'group' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'}`}
+                        >
+                          ग्रुप
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setPrintNameMode('customer')}
+                          className={`px-3 py-1.5 text-sm font-medium transition-colors border-l ${printNameMode === 'customer' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'}`}
+                        >
+                          कस्टमर
+                        </button>
+                      </div>
+                    </div>
 
                     {/* Interest Type Selection */}
                     <div className="space-y-4">
