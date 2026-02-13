@@ -759,7 +759,15 @@ export default function Closure() {
       closureDate: form.getValues("closureDate"),
     };
 
-    setSummaryEntries(prev => [...prev, entry]);
+    setSummaryEntries(prev => {
+      const updated = [...prev, entry];
+      updated.sort((a, b) => {
+        const dateA = a.loanDate ? new Date(a.loanDate).getTime() : 0;
+        const dateB = b.loanDate ? new Date(b.loanDate).getTime() : 0;
+        return dateA - dateB;
+      });
+      return updated;
+    });
     setSummaryCounter(prev => prev + 1);
 
     setSelectedLoan(null);
