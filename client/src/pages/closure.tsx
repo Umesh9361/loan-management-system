@@ -641,12 +641,12 @@ export default function Closure() {
 
     const makeTableHead = () => `
       <colgroup>
-        <col style="width:28px;">
+        <col style="width:30px;">
         ${showDetailsCols ? `<col style="width:auto;">` : ''}
         <col style="width:50px;">
-        <col style="width:56px;">
+        <col style="width:${showInterestRate ? '80px' : '60px'};">
         ${showDetailsCols ? `<col style="width:32px;">` : ''}
-        <col style="width:75px;">
+        <col style="width:70px;">
         <col style="width:65px;">
       </colgroup>
       <thead>
@@ -665,7 +665,7 @@ export default function Closure() {
       <td style="border:none;padding:10px 3px;text-align:center;font-size:${fontSize};vertical-align:middle;line-height:1.8;">${index + 1}</td>
       ${showDetailsCols ? `<td style="border:none;padding:10px 4px;font-size:${fontSize};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:middle;line-height:1.8;">${entry.collateralDetails || '-'}</td>` : ''}
       <td style="border:none;padding:10px 3px;text-align:center;font-size:${fontSize};font-weight:700;vertical-align:middle;line-height:1.8;">${entry.accountNumber}</td>
-      <td style="border:none;padding:10px 3px;text-align:center;font-size:${fontSize};vertical-align:middle;line-height:1.8;">${toShortDate(entry.loanDate)}${showInterestRate ? `<span style="margin-left:12px;font-size:13px;font-weight:600;">${formatRate(entry.interestRate)}</span>` : ''}</td>
+      <td style="border:none;padding:10px 3px;text-align:center;font-size:${fontSize};vertical-align:middle;line-height:1.8;">${toShortDate(entry.loanDate)}${showInterestRate ? `<br><span style="font-size:10px;font-weight:600;">${formatRate(entry.interestRate)}</span>` : ''}</td>
       ${showDetailsCols ? `<td style="border:none;padding:10px 2px;text-align:center;font-size:${fontSize};vertical-align:middle;line-height:1.8;">${entry.months}</td>` : ''}
       <td style="border:none;padding:10px 4px;text-align:right;font-size:${fontSize};font-weight:700;vertical-align:middle;line-height:1.8;">${Number(Math.round(entry.principalAmount)).toLocaleString('en-IN')}</td>
       <td style="border:none;padding:10px 4px;text-align:right;font-size:${fontSize};font-weight:700;vertical-align:middle;line-height:1.8;">${Number(Math.round(entry.chargesAmount)).toLocaleString('en-IN')}</td>
