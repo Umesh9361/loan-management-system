@@ -50,6 +50,7 @@ type ClosureFormData = z.infer<typeof closureSchema>;
 
 interface SummaryEntry {
   id: number;
+  loanId: number;
   borrowerName: string;
   borrowerAddress: string;
   groupName: string;
@@ -730,6 +731,17 @@ export default function Closure() {
     const finalInterestValue = form.getValues("finalInterestAmount");
     if (!finalInterestValue) return;
 
+    const currentEntries = summaryEntriesRef.current;
+    const alreadyExists = currentEntries.some(e => e.loanId === selectedLoan.id);
+    if (alreadyExists) {
+      toast({
+        title: "सूचना",
+        description: `हे कर्ज (खाते क्र. ${selectedLoan.accountNumber}) आधीच हिशोबात जोडले आहे`,
+        variant: "destructive",
+      });
+      return;
+    }
+
     const finalCharges = parseFinalInterest(finalInterestValue, calculationResult.interestAmount);
 
     let monthsDisplay = '';
@@ -746,6 +758,7 @@ export default function Closure() {
 
     const entry: SummaryEntry = {
       id: summaryCounter,
+      loanId: selectedLoan.id,
       borrowerName: selectedLoan.borrowerName || '',
       borrowerAddress: selectedLoan.borrowerAddress || selectedLoan.address || '',
       groupName: getGroupName(selectedLoan.groupId) || '',
