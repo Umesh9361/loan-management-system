@@ -957,8 +957,8 @@ export default function Closure() {
         <td style="padding:14px 8px 14px 4px;text-align:center;font-size:16px;font-weight:600;">${i + 1}</td>
         <td style="padding:14px 8px;text-align:center;font-size:22px;font-weight:700;">${entry.accountNumber}</td>
         <td style="padding:14px 4px;text-align:right;font-size:22px;font-weight:700;">${toShortDate(entry.loanDate)}${showInterestRate ? `<span style="margin-left:16px;font-size:20px;font-weight:600;">${formatRate(entry.interestRate)}</span>` : ''}</td>
-        <td style="padding:14px 4px;text-align:right;font-size:22px;font-weight:700;">${Number(Math.round(entry.principalAmount)).toLocaleString('en-IN')}</td>
-        <td style="padding:14px 4px;text-align:right;font-size:22px;font-weight:700;">${Number(Math.round(entry.chargesAmount)).toLocaleString('en-IN')}</td>
+        <td style="padding:14px 2px;text-align:right;font-size:22px;font-weight:700;">${Number(Math.round(entry.principalAmount)).toLocaleString('en-IN')}</td>
+        <td style="padding:14px 2px;text-align:right;font-size:22px;font-weight:700;">${Number(Math.round(entry.chargesAmount)).toLocaleString('en-IN')}</td>
       </tr>`;
     });
 
@@ -983,16 +983,16 @@ export default function Closure() {
               <th style="padding:10px 8px 10px 4px;font-size:22px;text-align:center;font-weight:700;">अ.नं.</th>
               <th style="padding:10px 8px;font-size:22px;text-align:center;font-weight:700;">कोड नं</th>
               <th style="padding:10px 4px;font-size:22px;text-align:right;font-weight:700;">दिनांक</th>
-              <th style="padding:10px 4px;font-size:22px;text-align:right;font-weight:700;">बाजारमूल्य</th>
-              <th style="padding:10px 4px;font-size:22px;text-align:right;font-weight:700;">चार्जेस</th>
+              <th style="padding:10px 2px;font-size:22px;text-align:right;font-weight:700;">बाजारमूल्य</th>
+              <th style="padding:10px 2px;font-size:22px;text-align:right;font-weight:700;">चार्जेस</th>
             </tr>
           </thead>
           <tbody>
             ${rows}
             <tr style="border-top:3px double #000;">
-              <td colspan="3" style="padding:12px 4px;text-align:right;font-size:22px;font-weight:700;">एकूण</td>
-              <td style="padding:12px 4px;text-align:right;font-size:22px;font-weight:700;">${Number(Math.round(totalPrincipal)).toLocaleString('en-IN')}</td>
-              <td style="padding:12px 4px;text-align:right;font-size:22px;font-weight:700;">${Number(Math.round(totalCharges)).toLocaleString('en-IN')}</td>
+              <td colspan="3" style="padding:12px 2px;text-align:right;font-size:22px;font-weight:700;">एकूण</td>
+              <td style="padding:12px 2px;text-align:right;font-size:22px;font-weight:700;">${Number(Math.round(totalPrincipal)).toLocaleString('en-IN')}</td>
+              <td style="padding:12px 2px;text-align:right;font-size:22px;font-weight:700;">${Number(Math.round(totalCharges)).toLocaleString('en-IN')}</td>
             </tr>
             <tr style="border-top:3px double #000;">
               <td colspan="5" style="padding:16px 4px;text-align:center;font-size:32px;font-weight:900;">Grand Total : ${Number(Math.round(grandTotal)).toLocaleString('en-IN')}</td>
