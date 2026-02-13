@@ -2001,38 +2001,31 @@ export default function Closure() {
                               <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-amber-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-600"></div>
                             </label>
                           </div>
-                          <Button
+                          <button
                             type="button"
-                            variant="outline"
-                            size="sm"
                             onClick={handleGenerateSummaryReceipt}
-                            className="text-xs bg-indigo-50 border-indigo-300 text-indigo-700 hover:bg-indigo-100 active:bg-indigo-200 focus-visible:ring-0 focus-visible:ring-offset-0 focus:outline-none transition-colors"
+                            className="inline-flex items-center rounded-md px-3 h-9 text-xs border border-indigo-300 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 active:bg-indigo-200 transition-colors outline-none"
                           >
                             <Printer className="h-3 w-3 mr-1" />
                             पावती तयार करा
-                          </Button>
-                          <Button
+                          </button>
+                          <button
                             ref={btPrintBtnRef}
                             type="button"
-                            variant="outline"
-                            size="sm"
                             onClick={handleBluetoothPrint}
-                            disabled={isBtPrinting}
-                            className="text-xs bg-indigo-50 border-indigo-300 text-indigo-700 hover:bg-indigo-100 active:bg-indigo-200 focus-visible:ring-0 focus-visible:ring-offset-0 focus:outline-none transition-colors"
+                            className="inline-flex items-center rounded-md px-3 h-9 text-xs border border-indigo-300 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 active:bg-indigo-200 transition-colors outline-none"
                           >
-                            {isBtPrinting ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Bluetooth className="h-3 w-3 mr-1" />}
-                            {isBtPrinting ? 'प्रिंट होत आहे...' : 'ब्लूटूथ प्रिंट'}
-                          </Button>
-                          <Button
+                            <Bluetooth className="h-3 w-3 mr-1" />
+                            ब्लूटूथ प्रिंट
+                          </button>
+                          <button
                             type="button"
-                            variant="outline"
-                            size="sm"
                             onClick={handleClearAllSummary}
-                            className="text-xs bg-red-50 border-red-300 text-red-700 hover:bg-red-100 active:bg-red-200 focus-visible:ring-0 focus-visible:ring-offset-0 focus:outline-none transition-colors"
+                            className="inline-flex items-center rounded-md px-3 h-9 text-xs border border-red-300 bg-red-50 text-red-700 hover:bg-red-100 active:bg-red-200 transition-colors outline-none"
                           >
                             <Trash2 className="h-3 w-3 mr-1" />
                             सर्व काढा
-                          </Button>
+                          </button>
                         </div>
                       </div>
                     </CardHeader>
