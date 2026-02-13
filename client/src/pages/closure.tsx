@@ -107,6 +107,7 @@ export default function Closure() {
   });
   const [activeTab, setActiveTab] = useState<string>("closure");
   const [showSummaryReceipt, setShowSummaryReceipt] = useState(false);
+  const [showPhotos, setShowPhotos] = useState(false);
   const [isBtPrinting, setIsBtPrinting] = useState(false);
   const [summaryReceiptHTML, setSummaryReceiptHTML] = useState<string | null>(null);
   const [printNameMode, setPrintNameMode] = useState<'group' | 'customer'>('group');
@@ -455,6 +456,7 @@ export default function Closure() {
 
   const handleLoanSelect = (loan: any) => {
     setSelectedLoan(loan);
+    setShowPhotos(false);
     form.setValue("loanId", loan.id);
     setSearchQuery(`${loan.borrowerName} - ${loan.accountNumber}`);
     setShowLoanList(false);
@@ -1526,14 +1528,36 @@ export default function Closure() {
                             )}
                           </div>
                           
-                          {/* Photo Viewer Section for Closure */}
+                          {/* Photo Viewer Section - Hidden by default, click to show */}
                           {selectedLoan.id && (
-                            <div className="mt-4 p-4 border rounded-lg bg-amber-50">
-                              <PhotoViewer 
-                                loanId={selectedLoan.id} 
-                                loanAccountNumber={selectedLoan.accountNumber}
-                                readonly={true}
-                              />
+                            <div className="mt-4">
+                              {!showPhotos ? (
+                                <button
+                                  type="button"
+                                  onClick={() => setShowPhotos(true)}
+                                  className="w-full py-2 px-4 text-sm font-medium text-indigo-700 bg-indigo-50 border border-indigo-200 rounded-lg hover:bg-indigo-100 transition-colors"
+                                >
+                                  📷 वस्तूंचे फोटो पहा
+                                </button>
+                              ) : (
+                                <div className="p-4 border rounded-lg bg-amber-50">
+                                  <div className="flex justify-between items-center mb-2">
+                                    <span className="text-sm font-semibold">वस्तूंचे फोटो</span>
+                                    <button
+                                      type="button"
+                                      onClick={() => setShowPhotos(false)}
+                                      className="text-xs text-gray-500 hover:text-gray-700"
+                                    >
+                                      ✕ बंद करा
+                                    </button>
+                                  </div>
+                                  <PhotoViewer 
+                                    loanId={selectedLoan.id} 
+                                    loanAccountNumber={selectedLoan.accountNumber}
+                                    readonly={true}
+                                  />
+                                </div>
+                              )}
                             </div>
                           )}
                         </CardContent>
