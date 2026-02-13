@@ -941,7 +941,7 @@ export default function Closure() {
     let rows = '';
     entries.forEach((entry, i) => {
       rows += `<tr>
-        <td style="padding:14px 8px 14px 4px;text-align:center;font-size:16px;font-weight:400;">${i + 1}</td>
+        <td style="padding:14px 8px 14px 4px;text-align:center;font-size:16px;font-weight:600;">${i + 1}</td>
         <td style="padding:14px 8px;text-align:center;font-size:22px;font-weight:700;">${entry.accountNumber}</td>
         <td style="padding:14px 4px;text-align:right;font-size:22px;font-weight:700;">${toShortDate(entry.loanDate)}</td>
         <td style="padding:14px 4px;text-align:right;font-size:22px;font-weight:700;">${Number(Math.round(entry.principalAmount)).toLocaleString('en-IN')}</td>
