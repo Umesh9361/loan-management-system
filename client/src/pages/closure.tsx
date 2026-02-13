@@ -1017,6 +1017,8 @@ export default function Closure() {
     return canvas;
   }, []);
 
+  const btPrintBtnRef = useRef<HTMLButtonElement>(null);
+
   const handleBluetoothPrint = useCallback(async () => {
     const currentEntries = summaryEntriesRef.current;
     if (currentEntries.length === 0 || isBtPrinting) return;
@@ -1032,34 +1034,52 @@ export default function Closure() {
           toast({ title: "कनेक्ट करत आहे...", description: "ब्लूटूथ प्रिंटर निवडा" });
           await printReceiptViaBluetooth(canvas, 576);
           toast({ title: "यशस्वी", description: "प्रिंट पाठवले!" });
-          return;
         } catch (btError: any) {
           console.warn("Bluetooth direct print failed, falling back to image download:", btError);
           if (btError?.message?.includes('cancelled') || btError?.message?.includes('User cancelled')) {
             return;
           }
           toast({ title: "ब्लूटूथ प्रिंट अयशस्वी", description: "इमेज डाउनलोड करत आहे...", variant: "destructive" });
+          canvas.toBlob((blob) => {
+            if (!blob) return;
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            const borrowerName = currentEntries[currentEntries.length - 1]?.borrowerName || 'receipt';
+            a.download = `पावती_${borrowerName}.png`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            toast({ title: "यशस्वी", description: "इमेज डाउनलोड झाली - प्रिंटर अॅपमधून प्रिंट करा" });
+          }, 'image/png');
         }
+      } else {
+        canvas.toBlob((blob) => {
+          if (!blob) return;
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          const borrowerName = currentEntries[currentEntries.length - 1]?.borrowerName || 'receipt';
+          a.download = `पावती_${borrowerName}.png`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+          toast({ title: "यशस्वी", description: "इमेज डाउनलोड झाली - प्रिंटर अॅपमधून प्रिंट करा" });
+        }, 'image/png');
       }
-
-      canvas.toBlob((blob) => {
-        if (!blob) return;
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        const borrowerName = currentEntries[currentEntries.length - 1]?.borrowerName || 'receipt';
-        a.download = `पावती_${borrowerName}.png`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        toast({ title: "यशस्वी", description: "इमेज डाउनलोड झाली - प्रिंटर अॅपमधून प्रिंट करा" });
-      }, 'image/png');
     } catch (error) {
       console.error("Bluetooth print error:", error);
       toast({ title: "त्रुटी", description: "प्रिंट करण्यात समस्या आली", variant: "destructive" });
     } finally {
       setIsBtPrinting(false);
+      if (btPrintBtnRef.current) {
+        btPrintBtnRef.current.blur();
+      }
+      if (document.activeElement instanceof HTMLElement) {
+        document.activeElement.blur();
+      }
     }
   }, [generateThermalReceiptHTML, toast, renderReceiptToCanvas, isBtPrinting]);
 
@@ -2021,18 +2041,19 @@ export default function Closure() {
                             variant="outline"
                             size="sm"
                             onClick={handleGenerateSummaryReceipt}
-                            className="text-xs bg-indigo-50 border-indigo-300 text-indigo-700 hover:bg-indigo-100 active:bg-indigo-200 focus:ring-1 focus:ring-indigo-300 focus:outline-none transition-colors"
+                            className="text-xs bg-indigo-50 border-indigo-300 text-indigo-700 hover:bg-indigo-100 active:bg-indigo-200 focus-visible:ring-0 focus-visible:ring-offset-0 focus:outline-none transition-colors"
                           >
                             <Printer className="h-3 w-3 mr-1" />
                             पावती तयार करा
                           </Button>
                           <Button
+                            ref={btPrintBtnRef}
                             type="button"
                             variant="outline"
                             size="sm"
                             onClick={handleBluetoothPrint}
                             disabled={isBtPrinting}
-                            className="text-xs bg-indigo-50 border-indigo-300 text-indigo-700 hover:bg-indigo-100 active:bg-indigo-200 focus:ring-1 focus:ring-indigo-300 focus:outline-none transition-colors"
+                            className="text-xs bg-indigo-50 border-indigo-300 text-indigo-700 hover:bg-indigo-100 active:bg-indigo-200 focus-visible:ring-0 focus-visible:ring-offset-0 focus:outline-none transition-colors"
                           >
                             {isBtPrinting ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Bluetooth className="h-3 w-3 mr-1" />}
                             {isBtPrinting ? 'प्रिंट होत आहे...' : 'ब्लूटूथ प्रिंट'}
@@ -2042,7 +2063,7 @@ export default function Closure() {
                             variant="outline"
                             size="sm"
                             onClick={handleClearAllSummary}
-                            className="text-xs bg-red-50 border-red-300 text-red-700 hover:bg-red-100 active:bg-red-200 focus:ring-1 focus:ring-red-300 focus:outline-none transition-colors"
+                            className="text-xs bg-red-50 border-red-300 text-red-700 hover:bg-red-100 active:bg-red-200 focus-visible:ring-0 focus-visible:ring-offset-0 focus:outline-none transition-colors"
                           >
                             <Trash2 className="h-3 w-3 mr-1" />
                             सर्व काढा
