@@ -24,7 +24,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { LoanCalculationsAdvanced } from "@/lib/loan-calculations";
 import { LoanCalculations } from "@/lib/calculations";
 import { DateUtils } from "@/lib/date-utils";
-import { Calculator, FileText, AlertTriangle, CheckCircle, Download, Search, X, Clock, Edit, Calendar, Lightbulb, Sparkles, TrendingUp, Info, Check, AlertCircle, Home, Trash2, Printer, Bluetooth } from "lucide-react";
+import { Calculator, FileText, AlertTriangle, CheckCircle, Download, Search, X, Clock, Edit, Calendar, Lightbulb, Sparkles, TrendingUp, Info, Check, AlertCircle, Home, Trash2, Printer, Bluetooth, Loader2 } from "lucide-react";
 import html2canvas from "html2canvas";
 import { printReceiptViaBluetooth, isBluetoothSupported } from "@/lib/bluetooth-printer";
 import jsPDF from "jspdf";
@@ -106,6 +106,7 @@ export default function Closure() {
   });
   const [activeTab, setActiveTab] = useState<string>("closure");
   const [showSummaryReceipt, setShowSummaryReceipt] = useState(false);
+  const [isBtPrinting, setIsBtPrinting] = useState(false);
   const [summaryReceiptHTML, setSummaryReceiptHTML] = useState<string | null>(null);
   
   const urlParams = new URLSearchParams(window.location.search);
@@ -1018,10 +1019,11 @@ export default function Closure() {
 
   const handleBluetoothPrint = useCallback(async () => {
     const currentEntries = summaryEntriesRef.current;
-    if (currentEntries.length === 0) return;
+    if (currentEntries.length === 0 || isBtPrinting) return;
     const thermalHTML = generateThermalReceiptHTML(currentEntries);
     if (!thermalHTML) return;
 
+    setIsBtPrinting(true);
     try {
       const canvas = await renderReceiptToCanvas(thermalHTML);
 
@@ -1056,8 +1058,10 @@ export default function Closure() {
     } catch (error) {
       console.error("Bluetooth print error:", error);
       toast({ title: "त्रुटी", description: "प्रिंट करण्यात समस्या आली", variant: "destructive" });
+    } finally {
+      setIsBtPrinting(false);
     }
-  }, [generateThermalReceiptHTML, toast, renderReceiptToCanvas]);
+  }, [generateThermalReceiptHTML, toast, renderReceiptToCanvas, isBtPrinting]);
 
   const recalculateWithOriginalDate = useCallback((data: ClosureFormData) => {
     if (!selectedLoan) return null;
@@ -2017,7 +2021,7 @@ export default function Closure() {
                             variant="outline"
                             size="sm"
                             onClick={handleGenerateSummaryReceipt}
-                            className="text-xs bg-green-50 border-green-300 text-green-700 hover:bg-green-100"
+                            className="text-xs bg-indigo-50 border-indigo-300 text-indigo-700 hover:bg-indigo-100 active:bg-indigo-200 focus:ring-1 focus:ring-indigo-300 focus:outline-none transition-colors"
                           >
                             <Printer className="h-3 w-3 mr-1" />
                             पावती तयार करा
@@ -2027,17 +2031,18 @@ export default function Closure() {
                             variant="outline"
                             size="sm"
                             onClick={handleBluetoothPrint}
-                            className="text-xs bg-blue-50 border-blue-300 text-blue-700 hover:bg-blue-100"
+                            disabled={isBtPrinting}
+                            className="text-xs bg-indigo-50 border-indigo-300 text-indigo-700 hover:bg-indigo-100 active:bg-indigo-200 focus:ring-1 focus:ring-indigo-300 focus:outline-none transition-colors"
                           >
-                            <Bluetooth className="h-3 w-3 mr-1" />
-                            ब्लूटूथ प्रिंट
+                            {isBtPrinting ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Bluetooth className="h-3 w-3 mr-1" />}
+                            {isBtPrinting ? 'प्रिंट होत आहे...' : 'ब्लूटूथ प्रिंट'}
                           </Button>
                           <Button
                             type="button"
                             variant="outline"
                             size="sm"
                             onClick={handleClearAllSummary}
-                            className="text-xs bg-red-50 border-red-300 text-red-700 hover:bg-red-100"
+                            className="text-xs bg-red-50 border-red-300 text-red-700 hover:bg-red-100 active:bg-red-200 focus:ring-1 focus:ring-red-300 focus:outline-none transition-colors"
                           >
                             <Trash2 className="h-3 w-3 mr-1" />
                             सर्व काढा
