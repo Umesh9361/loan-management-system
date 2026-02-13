@@ -605,7 +605,8 @@ export default function Closure() {
 
   const generateMultiLoanReceiptHTML = useCallback((entries: SummaryEntry[], showCols: boolean, showDetailsCols: boolean = true): string => {
     if (entries.length === 0) return '';
-    const fontSize = '10px';
+    const fontSize = '12px';
+    const headFontSize = '10px';
     const totalPrincipal = entries.reduce((sum, e) => sum + e.principalAmount, 0);
     const totalCharges = entries.reduce((sum, e) => sum + e.chargesAmount, 0);
     const grandTotal = totalPrincipal + totalCharges;
@@ -643,14 +644,14 @@ export default function Closure() {
       </colgroup>
       <thead>
       <tr>
-        <th style="border:1px solid #000;padding:5px 3px;font-size:${fontSize};text-align:center;vertical-align:middle;font-weight:700;line-height:1.8;">अ.नं.</th>
-        ${showDetailsCols ? `<th style="border:1px solid #000;padding:5px 4px;font-size:${fontSize};text-align:left;vertical-align:middle;font-weight:700;line-height:1.8;">तपशील</th>` : ''}
-        <th style="border:1px solid #000;padding:5px 3px;font-size:${fontSize};text-align:center;vertical-align:middle;font-weight:700;line-height:1.8;">कोड नं</th>
-        <th style="border:1px solid #000;padding:5px 3px;font-size:${fontSize};text-align:center;vertical-align:middle;font-weight:700;line-height:1.8;">दिनांक</th>
-        ${showCols ? `<th style="border:1px solid #000;padding:5px 2px;font-size:${fontSize};text-align:center;vertical-align:middle;font-weight:700;line-height:1.8;"></th>
-        <th style="border:1px solid #000;padding:5px 2px;font-size:${fontSize};text-align:center;vertical-align:middle;font-weight:700;line-height:1.8;"></th>` : ''}
-        <th style="border:1px solid #000;padding:5px 4px;font-size:${fontSize};text-align:right;vertical-align:middle;font-weight:700;line-height:1.8;">बाजारमूल्य</th>
-        <th style="border:1px solid #000;padding:5px 4px;font-size:${fontSize};text-align:right;vertical-align:middle;font-weight:700;line-height:1.8;">चार्जेस</th>
+        <th style="border:none;border-bottom:0.5px solid #000;padding:5px 3px;font-size:${headFontSize};text-align:center;vertical-align:middle;font-weight:700;line-height:1.8;">अ.नं.</th>
+        ${showDetailsCols ? `<th style="border:none;border-bottom:0.5px solid #000;padding:5px 4px;font-size:${headFontSize};text-align:left;vertical-align:middle;font-weight:700;line-height:1.8;">तपशील</th>` : ''}
+        <th style="border:none;border-bottom:0.5px solid #000;padding:5px 3px;font-size:${headFontSize};text-align:center;vertical-align:middle;font-weight:700;line-height:1.8;">कोड नं</th>
+        <th style="border:none;border-bottom:0.5px solid #000;padding:5px 3px;font-size:${headFontSize};text-align:center;vertical-align:middle;font-weight:700;line-height:1.8;">दिनांक</th>
+        ${showCols ? `<th style="border:none;border-bottom:0.5px solid #000;padding:5px 2px;font-size:${headFontSize};text-align:center;vertical-align:middle;font-weight:700;line-height:1.8;"></th>
+        <th style="border:none;border-bottom:0.5px solid #000;padding:5px 2px;font-size:${headFontSize};text-align:center;vertical-align:middle;font-weight:700;line-height:1.8;"></th>` : ''}
+        <th style="border:none;border-bottom:0.5px solid #000;padding:5px 4px;font-size:${headFontSize};text-align:right;vertical-align:middle;font-weight:700;line-height:1.8;">बाजारमूल्य</th>
+        <th style="border:none;border-bottom:0.5px solid #000;padding:5px 4px;font-size:${headFontSize};text-align:right;vertical-align:middle;font-weight:700;line-height:1.8;">चार्जेस</th>
       </tr>
     </thead>`;
 
@@ -677,9 +678,9 @@ export default function Closure() {
 
       const totalsHTML = isLastPage ? `
         <tr>
-          <td colspan="${totalColSpan}" style="border-top:1px solid #000;border-left:none;border-right:none;border-bottom:none;padding:8px 4px;text-align:right;font-size:12px;font-weight:700;vertical-align:middle;line-height:1.8;">एकूण</td>
-          <td style="border-top:1px solid #000;border-left:none;border-right:none;border-bottom:none;padding:8px 4px;text-align:right;font-size:12px;font-weight:700;vertical-align:middle;line-height:1.8;">${Number(Math.round(totalPrincipal)).toLocaleString('en-IN')}</td>
-          <td style="border-top:1px solid #000;border-left:none;border-right:none;border-bottom:none;padding:8px 4px;text-align:right;font-size:12px;font-weight:700;vertical-align:middle;line-height:1.8;">${Number(Math.round(totalCharges)).toLocaleString('en-IN')}</td>
+          <td colspan="${totalColSpan}" style="border-top:0.5px solid #000;border-left:none;border-right:none;border-bottom:none;padding:8px 4px;text-align:right;font-size:${fontSize};font-weight:700;vertical-align:middle;line-height:1.8;">एकूण</td>
+          <td style="border-top:0.5px solid #000;border-left:none;border-right:none;border-bottom:none;padding:8px 4px;text-align:right;font-size:${fontSize};font-weight:700;vertical-align:middle;line-height:1.8;">${Number(Math.round(totalPrincipal)).toLocaleString('en-IN')}</td>
+          <td style="border-top:0.5px solid #000;border-left:none;border-right:none;border-bottom:none;padding:8px 4px;text-align:right;font-size:${fontSize};font-weight:700;vertical-align:middle;line-height:1.8;">${Number(Math.round(totalCharges)).toLocaleString('en-IN')}</td>
         </tr>
         <tr>
           <td colspan="${grandTotalColSpan}" style="border-top:2px double #000;border-bottom:2px double #000;border-left:none;border-right:none;padding:10px 4px;text-align:right;font-size:13px;font-weight:800;vertical-align:middle;line-height:1.8;">Grand Total</td>
@@ -691,7 +692,7 @@ export default function Closure() {
       pagesHTML += `
       <div class="receipt-page" style="width:100%;padding:5mm 7mm;font-size:${fontSize};${p > 0 ? 'page-break-before:always;' : ''}">
         ${makeHeader(p + 1)}
-        <table style="width:100%;border-collapse:collapse;table-layout:fixed;margin-top:2px;border:1px solid #000;">
+        <table style="width:100%;border-collapse:collapse;table-layout:fixed;margin-top:2px;border:none;">
           ${makeTableHead()}
           <tbody>
             ${rows}
