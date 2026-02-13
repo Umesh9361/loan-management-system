@@ -970,13 +970,13 @@ export default function Closure() {
         </div>
         ${displayAddress ? `<div style="font-size:18px;color:#333;margin-bottom:4px;">${displayAddress}</div>` : ''}
         <div style="text-align:center;font-weight:800;font-size:24px;margin-bottom:10px;"><span style="border-bottom:2px solid #000;padding-bottom:6px;">Estimate</span></div>
-        <table style="width:100%;border-collapse:collapse;table-layout:fixed;">
+        <table style="width:100%;border-collapse:collapse;">
           <colgroup>
             <col style="width:46px;">
             <col style="width:90px;">
-            <col style="width:120px;">
             <col style="width:auto;">
-            <col style="width:auto;">
+            <col>
+            <col>
           </colgroup>
           <thead>
             <tr style="border-bottom:3px double #000;">
