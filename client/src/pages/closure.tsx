@@ -683,9 +683,9 @@ export default function Closure() {
 
       const totalsHTML = isLastPage ? `
         <tr>
-          <td colspan="${totalColSpan}" style="border-top:0.5px solid #000;border-left:none;border-right:none;border-bottom:none;padding:8px 4px;text-align:right;font-size:${fontSize};font-weight:700;vertical-align:middle;line-height:1.8;">एकूण</td>
-          <td style="border-top:0.5px solid #000;border-left:none;border-right:none;border-bottom:none;padding:8px 4px;text-align:right;font-size:${fontSize};font-weight:700;vertical-align:middle;line-height:1.8;">${Number(Math.round(totalPrincipal)).toLocaleString('en-IN')}</td>
-          <td style="border-top:0.5px solid #000;border-left:none;border-right:none;border-bottom:none;padding:8px 4px;text-align:right;font-size:${fontSize};font-weight:700;vertical-align:middle;line-height:1.8;">${Number(Math.round(totalCharges)).toLocaleString('en-IN')}</td>
+          <td colspan="${totalColSpan}" style="border-top:2px double #000;border-left:none;border-right:none;border-bottom:none;padding:8px 4px;text-align:right;font-size:${fontSize};font-weight:700;vertical-align:middle;line-height:1.8;">एकूण</td>
+          <td style="border-top:2px double #000;border-left:none;border-right:none;border-bottom:none;padding:8px 4px;text-align:right;font-size:${fontSize};font-weight:700;vertical-align:middle;line-height:1.8;">${Number(Math.round(totalPrincipal)).toLocaleString('en-IN')}</td>
+          <td style="border-top:2px double #000;border-left:none;border-right:none;border-bottom:none;padding:8px 4px;text-align:right;font-size:${fontSize};font-weight:700;vertical-align:middle;line-height:1.8;">${Number(Math.round(totalCharges)).toLocaleString('en-IN')}</td>
         </tr>
         <tr>
           <td colspan="${grandTotalColSpan}" style="border-top:2px double #000;border-bottom:2px double #000;border-left:none;border-right:none;padding:10px 4px;text-align:right;font-size:13px;font-weight:800;vertical-align:middle;line-height:1.8;">Grand Total</td>
