@@ -1,97 +1,78 @@
-const PRINTER_SERVICE_UUIDS = [
-  '000018f0-0000-1000-8000-00805f9b34fb',
-  '0000ff00-0000-1000-8000-00805f9b34fb',
-  'e7810a71-73ae-499d-8c15-faa9aef0c3f2',
-  '49535343-fe7d-4ae5-8fa9-9fafd205e455',
-];
-
-const WRITE_CHARACTERISTIC_UUIDS = [
-  '00002af1-0000-1000-8000-00805f9b34fb',
-  '0000ff02-0000-1000-8000-00805f9b34fb',
-  'bef8d6c9-9c21-4c9e-b632-bd58c1009f9f',
-  '49535343-8841-43f4-a8d4-ecbe34729bb3',
-];
-
 const ESC_INIT = new Uint8Array([0x1B, 0x40]);
 const ESC_ALIGN_CENTER = new Uint8Array([0x1B, 0x61, 0x01]);
 const ESC_ALIGN_LEFT = new Uint8Array([0x1B, 0x61, 0x00]);
-const LF = new Uint8Array([0x0A]);
-const CUT = new Uint8Array([0x1D, 0x56, 0x00]);
 const FEED_LINES = new Uint8Array([0x1B, 0x64, 0x04]);
-
-interface PrinterConnection {
-  device: any;
-  server: any;
-  characteristic: any;
-}
-
-let cachedConnection: PrinterConnection | null = null;
 
 function isWebBluetoothSupported(): boolean {
   return !!(navigator as any).bluetooth;
 }
 
-async function connectToPrinter(): Promise<PrinterConnection> {
-  if (cachedConnection?.server?.connected) {
-    try {
-      cachedConnection.server.disconnect();
-    } catch { /* ignore */ }
-    cachedConnection = null;
-  }
-
+async function connectToPrinter(): Promise<{ characteristic: any }> {
   if (!isWebBluetoothSupported()) {
     throw new Error('Web Bluetooth API उपलब्ध नाही. Chrome/Edge ब्राउझर वापरा.');
   }
 
-  const allServiceUUIDs = PRINTER_SERVICE_UUIDS.map(uuid => uuid.toLowerCase());
-
   const device = await (navigator as any).bluetooth.requestDevice({
-    filters: allServiceUUIDs.map(uuid => ({ services: [uuid] })),
-    optionalServices: allServiceUUIDs,
-  }).catch(() => {
-    return (navigator as any).bluetooth.requestDevice({
-      acceptAllDevices: true,
-      optionalServices: allServiceUUIDs,
-    });
+    acceptAllDevices: true,
+    optionalServices: [
+      '000018f0-0000-1000-8000-00805f9b34fb',
+      '0000ff00-0000-1000-8000-00805f9b34fb',
+      'e7810a71-73ae-499d-8c15-faa9aef0c3f2',
+      '49535343-fe7d-4ae5-8fa9-9fafd205e455',
+    ],
   });
 
   if (!device) throw new Error('प्रिंटर सापडला नाही');
 
   const server = await device.gatt!.connect();
 
-  let writeCharacteristic: any = null;
+  const serviceUUIDs = [
+    '000018f0-0000-1000-8000-00805f9b34fb',
+    '0000ff00-0000-1000-8000-00805f9b34fb',
+    'e7810a71-73ae-499d-8c15-faa9aef0c3f2',
+    '49535343-fe7d-4ae5-8fa9-9fafd205e455',
+  ];
 
-  for (const serviceUUID of allServiceUUIDs) {
+  const writeCharUUIDs = [
+    '00002af1-0000-1000-8000-00805f9b34fb',
+    '0000ff02-0000-1000-8000-00805f9b34fb',
+    'bef8d6c9-9c21-4c9e-b632-bd58c1009f9f',
+    '49535343-8841-43f4-a8d4-ecbe34729bb3',
+  ];
+
+  let writeChar: any = null;
+
+  for (const svcUUID of serviceUUIDs) {
     try {
-      const service = await server.getPrimaryService(serviceUUID);
-      for (const charUUID of WRITE_CHARACTERISTIC_UUIDS) {
+      const service = await server.getPrimaryService(svcUUID);
+      for (const cUUID of writeCharUUIDs) {
         try {
-          const char = await service.getCharacteristic(charUUID);
-          if (char.properties.write || char.properties.writeWithoutResponse) {
-            writeCharacteristic = char;
+          const c = await service.getCharacteristic(cUUID);
+          if (c.properties.write || c.properties.writeWithoutResponse) {
+            writeChar = c;
             break;
           }
-        } catch { /* try next */ }
+        } catch { /* next char */ }
       }
-      if (writeCharacteristic) break;
+      if (writeChar) break;
 
-      const chars = await service.getCharacteristics();
-      for (const char of chars) {
-        if (char.properties.write || char.properties.writeWithoutResponse) {
-          writeCharacteristic = char;
+      const allChars = await service.getCharacteristics();
+      for (const c of allChars) {
+        if (c.properties.write || c.properties.writeWithoutResponse) {
+          writeChar = c;
           break;
         }
       }
-      if (writeCharacteristic) break;
-    } catch { /* try next service */ }
+      if (writeChar) break;
+    } catch { /* next service */ }
   }
 
-  if (!writeCharacteristic) {
+  if (!writeChar) {
+    server.disconnect();
     throw new Error('प्रिंटर कनेक्ट झाला पण write characteristic सापडली नाही');
   }
 
-  cachedConnection = { device, server, characteristic: writeCharacteristic };
-  return cachedConnection;
+  return { characteristic: writeChar };
 }
 
 async function sendData(characteristic: any, data: Uint8Array): Promise<void> {
@@ -141,21 +122,6 @@ function imageToMonochromeBitmap(canvas: HTMLCanvasElement, targetWidth: number)
   return { width: w, height: h, data: bitmap };
 }
 
-function createRasterPrintCommand(bitmap: { width: number; height: number; data: Uint8Array }): Uint8Array {
-  const widthBytes = Math.ceil(bitmap.width / 8);
-  const h = bitmap.height;
-
-  const header = new Uint8Array([
-    0x1D, 0x76, 0x30, 0x00,
-    widthBytes & 0xFF,
-    (widthBytes >> 8) & 0xFF,
-    h & 0xFF,
-    (h >> 8) & 0xFF,
-  ]);
-
-  return concatUint8Arrays([header, bitmap.data]);
-}
-
 function concatUint8Arrays(arrays: Uint8Array[]): Uint8Array {
   const totalLength = arrays.reduce((sum, arr) => sum + arr.length, 0);
   const result = new Uint8Array(totalLength);
@@ -168,20 +134,24 @@ function concatUint8Arrays(arrays: Uint8Array[]): Uint8Array {
 }
 
 export async function printReceiptViaBluetooth(canvas: HTMLCanvasElement, printerWidth: number = 384): Promise<void> {
-  if (!isWebBluetoothSupported()) {
-    throw new Error('Web Bluetooth API उपलब्ध नाही. कृपया Chrome/Edge ब्राउझर वापरा.');
-  }
-
   const connection = await connectToPrinter();
 
   const bitmap = imageToMonochromeBitmap(canvas, printerWidth);
 
-  const imageCommand = createRasterPrintCommand(bitmap);
+  const widthBytes = Math.ceil(bitmap.width / 8);
+  const header = new Uint8Array([
+    0x1D, 0x76, 0x30, 0x00,
+    widthBytes & 0xFF,
+    (widthBytes >> 8) & 0xFF,
+    bitmap.height & 0xFF,
+    (bitmap.height >> 8) & 0xFF,
+  ]);
 
   const fullCommand = concatUint8Arrays([
     ESC_INIT,
     ESC_ALIGN_CENTER,
-    imageCommand,
+    header,
+    bitmap.data,
     FEED_LINES,
     ESC_ALIGN_LEFT,
   ]);
@@ -191,11 +161,4 @@ export async function printReceiptViaBluetooth(canvas: HTMLCanvasElement, printe
 
 export function isBluetoothSupported(): boolean {
   return isWebBluetoothSupported();
-}
-
-export function disconnectPrinter(): void {
-  if (cachedConnection?.server?.connected) {
-    cachedConnection.server.disconnect();
-  }
-  cachedConnection = null;
 }
