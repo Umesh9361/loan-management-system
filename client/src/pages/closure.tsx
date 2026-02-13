@@ -611,7 +611,7 @@ export default function Closure() {
   const generateMultiLoanReceiptHTML = useCallback((entries: SummaryEntry[], showInterestRate: boolean, showDetailsCols: boolean = true, nameMode: 'group' | 'customer' = 'group'): string => {
     if (entries.length === 0) return '';
     const fontSize = '12px';
-    const headFontSize = '10px';
+    const headFontSize = '12px';
     const totalPrincipal = entries.reduce((sum, e) => sum + e.principalAmount, 0);
     const totalCharges = entries.reduce((sum, e) => sum + e.chargesAmount, 0);
     const grandTotal = totalPrincipal + totalCharges;
