@@ -1035,8 +1035,9 @@ export default function Closure() {
       if (error?.message?.includes('cancelled') || error?.message?.includes('User cancelled')) {
         return;
       }
-      console.error("Bluetooth print error:", error);
-      toast({ title: "ब्लूटूथ प्रिंट अयशस्वी", description: "कृपया पुन्हा प्रयत्न करा", variant: "destructive" });
+      const errMsg = error?.message || error?.name || String(error);
+      console.error("Bluetooth print error:", errMsg, error);
+      toast({ title: "ब्लूटूथ प्रिंट अयशस्वी", description: errMsg || "कृपया पुन्हा प्रयत्न करा", variant: "destructive" });
     } finally {
       setIsBtPrinting(false);
       if (btPrintBtnRef.current) {
