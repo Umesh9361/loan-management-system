@@ -641,7 +641,7 @@ export default function Closure() {
 
     const makeTableHead = () => `
       <colgroup>
-        <col style="width:30px;">
+        <col style="width:36px;">
         ${showDetailsCols ? `<col style="width:auto;">` : ''}
         <col style="width:50px;">
         <col style="width:${showInterestRate ? '80px' : '60px'};">
@@ -651,8 +651,8 @@ export default function Closure() {
       </colgroup>
       <thead>
       <tr>
-        <th style="border:none;border-bottom:0.5px solid #000;padding:5px 3px;font-size:${headFontSize};text-align:center;vertical-align:middle;font-weight:700;line-height:1.8;">अ.नं.</th>
-        ${showDetailsCols ? `<th style="border:none;border-bottom:0.5px solid #000;padding:5px 4px;font-size:${headFontSize};text-align:left;vertical-align:middle;font-weight:700;line-height:1.8;">तपशील</th>` : ''}
+        <th style="border:none;border-bottom:0.5px solid #000;padding:5px 4px 5px 2px;font-size:${headFontSize};text-align:center;vertical-align:middle;font-weight:700;line-height:1.8;">अ.नं.</th>
+        ${showDetailsCols ? `<th style="border:none;border-bottom:0.5px solid #000;padding:5px 4px 5px 6px;font-size:${headFontSize};text-align:left;vertical-align:middle;font-weight:700;line-height:1.8;">तपशील</th>` : ''}
         <th style="border:none;border-bottom:0.5px solid #000;padding:5px 3px;font-size:${headFontSize};text-align:center;vertical-align:middle;font-weight:700;line-height:1.8;">कोड नं</th>
         <th style="border:none;border-bottom:0.5px solid #000;padding:5px 3px;font-size:${headFontSize};text-align:center;vertical-align:middle;font-weight:700;line-height:1.8;">दिनांक</th>
         ${showDetailsCols ? `<th style="border:none;border-bottom:0.5px solid #000;padding:5px 2px;font-size:${headFontSize};text-align:center;vertical-align:middle;font-weight:700;line-height:1.8;"></th>` : ''}
@@ -662,8 +662,8 @@ export default function Closure() {
     </thead>`;
 
     const makeRow = (entry: SummaryEntry, index: number) => `<tr>
-      <td style="border:none;padding:10px 3px;text-align:center;font-size:${fontSize};vertical-align:middle;line-height:1.8;">${index + 1}</td>
-      ${showDetailsCols ? `<td style="border:none;padding:10px 4px;font-size:${fontSize};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:middle;line-height:1.8;">${entry.collateralDetails || '-'}</td>` : ''}
+      <td style="border:none;padding:10px 4px 10px 2px;text-align:center;font-size:${fontSize};vertical-align:middle;line-height:1.8;">${index + 1}</td>
+      ${showDetailsCols ? `<td style="border:none;padding:10px 4px 10px 6px;font-size:${fontSize};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:middle;line-height:1.8;">${entry.collateralDetails || '-'}</td>` : ''}
       <td style="border:none;padding:10px 3px;text-align:center;font-size:${fontSize};font-weight:700;vertical-align:middle;line-height:1.8;">${entry.accountNumber}</td>
       <td style="border:none;padding:10px 3px;text-align:center;font-size:${fontSize};vertical-align:middle;line-height:1.8;white-space:nowrap;">${toShortDate(entry.loanDate)}${showInterestRate ? `<span style="margin-left:4px;font-size:10px;font-weight:600;">${formatRate(entry.interestRate)}</span>` : ''}</td>
       ${showDetailsCols ? `<td style="border:none;padding:10px 2px;text-align:center;font-size:${fontSize};vertical-align:middle;line-height:1.8;">${entry.months}</td>` : ''}
