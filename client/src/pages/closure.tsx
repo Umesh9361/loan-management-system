@@ -2099,7 +2099,7 @@ export default function Closure() {
                                 <td className="border border-gray-300 px-1 py-1 text-center text-xs">{index + 1}</td>
                                 {showDetails && <td className="border border-gray-300 px-2 py-1 text-xs"><div className="max-w-[120px] truncate" title={entry.collateralDetails || '-'}>{entry.collateralDetails || '-'}</div></td>}
                                 <td className="border border-gray-300 px-1 py-1 text-center text-xs font-bold">{entry.accountNumber}</td>
-                                <td className="border border-gray-300 px-1 py-1 text-center text-xs">{toShortDate(entry.loanDate)}{showRateMonths ? <span className="ml-4 text-xs font-semibold">{formatRate(entry.interestRate)}</span> : ''}</td>
+                                <td className="border border-gray-300 px-1 py-1 text-center text-xs">{toShortDate(entry.loanDate)}{showRateMonths ? <span className="ml-4 text-xs font-normal">{formatRate(entry.interestRate)}</span> : ''}</td>
                                 {showDetails && <td className="border border-gray-300 px-1 py-1 text-center text-xs">{entry.months}</td>}
                                 <td className="border border-gray-300 px-2 py-1 text-right text-xs font-bold">{Number(Math.round(entry.principalAmount)).toLocaleString('en-IN')}</td>
                                 <td className="border border-gray-300 px-2 py-1 text-right text-xs font-bold">{Number(Math.round(entry.chargesAmount)).toLocaleString('en-IN')}</td>
