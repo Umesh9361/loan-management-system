@@ -1403,8 +1403,9 @@ export default function Closure() {
                                 placeholder="66, 1000, उमेश..."
                                 value={searchQuery}
                                 onChange={(e) => {
-                                  setSearchQuery(e.target.value);
-                                  setShowLoanList(e.target.value.trim().length > 0);
+                                  const converted = e.target.value.replace(/[०-९]/g, (d: string) => String('०१२३४५६७८९'.indexOf(d)));
+                                  setSearchQuery(converted);
+                                  setShowLoanList(converted.trim().length > 0);
                                 }}
                                 onFocus={() => {
                                   if (searchQuery.trim()) {
