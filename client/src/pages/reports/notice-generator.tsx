@@ -421,6 +421,10 @@ export default function NoticeGeneratorPage() {
         logging: false,
         backgroundColor: '#ffffff',
         imageTimeout: 0,
+        width: 560,
+        height: 794,
+        windowWidth: 560,
+        windowHeight: 794,
       });
 
       document.body.removeChild(wrapper);
@@ -476,6 +480,10 @@ export default function NoticeGeneratorPage() {
         logging: false,
         backgroundColor: '#ffffff',
         imageTimeout: 0,
+        width: 560,
+        height: 794,
+        windowWidth: 560,
+        windowHeight: 794,
       });
 
       document.body.removeChild(wrapper);
