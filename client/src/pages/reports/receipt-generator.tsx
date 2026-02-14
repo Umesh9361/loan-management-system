@@ -373,9 +373,9 @@ export default function ReceiptGeneratorPage() {
       
       return (
         <div className="min-h-screen bg-gray-100">
-          <div className="sticky top-0 z-50 bg-blue-50 border-b px-3 py-3">
+          <div className="sticky top-0 z-50 bg-indigo-50 border-b px-3 py-3">
             <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2 text-blue-700 font-semibold">
+              <div className="flex items-center gap-2 text-indigo-700 font-semibold">
                 <Download className="h-5 w-5" />
                 इमेज तयार झाली ✅
               </div>
@@ -447,7 +447,7 @@ export default function ReceiptGeneratorPage() {
             <button 
               type="button"
               onClick={downloadReceiptAsImage}
-              className="flex-1 inline-flex items-center justify-center rounded-md text-sm font-medium h-10 px-3 bg-blue-600 hover:bg-blue-700 text-white active:bg-blue-800"
+              className="flex-1 inline-flex items-center justify-center rounded-md text-sm font-medium h-10 px-3 bg-indigo-600 hover:bg-indigo-700 text-white active:bg-indigo-800"
               style={{ touchAction: 'manipulation' }}
             >
               <Download className="mr-2 h-4 w-4" />

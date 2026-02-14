@@ -709,11 +709,11 @@ export default function OverdueReport() {
           </CardHeader>
           <CardContent className="p-4 space-y-3">
             {/* Projection Mode Selection */}
-            <div className="bg-gradient-to-r from-purple-50 to-blue-50 p-3 rounded-lg mb-3 border border-purple-200">
+            <div className="bg-gradient-to-r from-purple-50 to-indigo-50 p-3 rounded-lg mb-3 border border-purple-200">
               <Label className="text-sm font-semibold text-purple-800 mb-2 block">📊 विश्लेषण प्रकार निवडा</Label>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div 
-                  className={`p-2 rounded-lg border-2 cursor-pointer transition-all ${filters.projectionMode === 'current' ? 'border-blue-500 bg-blue-100' : 'border-gray-300 bg-white'}`}
+                  className={`p-2 rounded-lg border-2 cursor-pointer transition-all ${filters.projectionMode === 'current' ? 'border-indigo-500 bg-indigo-100' : 'border-gray-300 bg-white'}`}
                   onClick={() => setFilters(prev => ({ ...prev, projectionMode: 'current' }))}
                 >
                   <div className="flex items-center gap-2">
@@ -721,10 +721,10 @@ export default function OverdueReport() {
                       type="radio" 
                       checked={filters.projectionMode === 'current'} 
                       onChange={() => setFilters(prev => ({ ...prev, projectionMode: 'current' }))}
-                      className="text-blue-500"
+                      className="text-indigo-500"
                       autoComplete="off"
                     />
-                    <span className="font-semibold text-blue-800">🔍 सध्याचे नुकसान विश्लेषण</span>
+                    <span className="font-semibold text-indigo-800">🔍 सध्याचे नुकसान विश्लेषण</span>
                   </div>
                   <div className="text-sm text-gray-600 mt-1">आजच्या तारखेपर्यंत कोणती कर्जे loss मध्ये आहेत</div>
                 </div>
@@ -772,8 +772,8 @@ export default function OverdueReport() {
               </div>
             )}
 
-            <div className="bg-blue-50 p-3 rounded-lg mb-3">
-              <div className="text-sm text-blue-700 mb-2">
+            <div className="bg-indigo-50 p-3 rounded-lg mb-3">
+              <div className="text-sm text-indigo-700 mb-2">
                 <strong>नोंद:</strong> {filters.projectionMode === 'current' ? 
                   'या तारखांमध्ये दिलेली कर्जे आजच्या तारखेला नुकसानात आहेत का ते तपासले जाईल' :
                   `या तारखांमध्ये दिलेली कर्जे पुढच्या ${filters.futureProjectionPeriod === '1month' ? 'महिन्यात' : filters.futureProjectionPeriod === '3months' ? 'तीन महिन्यात' : filters.futureProjectionPeriod === '6months' ? 'सहा महिन्यात' : 'वर्षभरात'} नुकसानात येतील का ते दाखवले जाईल`
@@ -1076,19 +1076,19 @@ export default function OverdueReport() {
                             className={cn(
                               "cursor-pointer transition-colors border-l-4",
                               selectedRowIndex === index 
-                                ? "bg-blue-100 border-l-blue-500 ring-2 ring-blue-200" 
+                                ? "bg-indigo-100 border-l-indigo-500 ring-2 ring-indigo-200" 
                                 : index % 2 === 0 ? 'bg-white border-l-transparent' : 'bg-gray-50 border-l-transparent',
-                              "hover:bg-blue-50 hover:border-l-blue-300"
+                              "hover:bg-indigo-50 hover:border-l-indigo-300"
                             )}>
                             <td className="border border-gray-300 px-3 py-3 text-base font-bold text-gray-800">{item.borrowerName}</td>
-                            <td className="border border-gray-300 px-3 py-3 text-base text-blue-600 font-medium">{item.borrowerPhone}</td>
+                            <td className="border border-gray-300 px-3 py-3 text-base text-indigo-600 font-medium">{item.borrowerPhone}</td>
                             <td className="border border-gray-300 px-3 py-3 text-base text-gray-600">{item.groupName}</td>
                             <td className="border border-gray-300 px-3 py-3 text-base text-center text-gray-700">{formatDate(item.loanDate)}</td>
                             <td className="border border-gray-300 px-3 py-3 text-base text-right font-semibold text-purple-700">{formatCurrency(item.principalAmount)}</td>
                             <td className="border border-gray-300 px-3 py-3 text-base text-right font-semibold text-orange-700">{formatCurrency(item.interestToDate)}</td>
                             <td className="border border-gray-300 px-3 py-3 text-base text-center font-semibold text-amber-700">{item.goldWeight}</td>
                             <td className="border border-gray-300 px-3 py-3 text-base text-right font-semibold text-green-700">{formatCurrency(item.currentGoldValue)}</td>
-                            <td className="border border-gray-300 px-3 py-3 text-base text-right font-bold text-blue-700">{formatCurrency(item.totalAmount)}</td>
+                            <td className="border border-gray-300 px-3 py-3 text-base text-right font-bold text-indigo-700">{formatCurrency(item.totalAmount)}</td>
                             <td className={`border border-gray-300 px-3 py-3 text-base text-right font-bold ${item.lossAmount > 0 ? 'text-red-600 bg-red-50' : 'text-green-600 bg-green-50'}`}>
                               {item.lossAmount > 0 ? formatCurrency(item.lossAmount) : '✓ सुरक्षित'}
                             </td>
@@ -1176,7 +1176,7 @@ export default function OverdueReport() {
               <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">
                 <Button 
                   onClick={() => window.print()}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 flex items-center gap-2"
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 flex items-center gap-2"
                 >
                   <Printer className="h-4 w-4" />
                   Print Report
@@ -1199,16 +1199,16 @@ export default function OverdueReport() {
             <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle className="font-noto flex items-center gap-2 text-lg">
-                  <Eye className="h-5 w-5 text-blue-600" />
+                  <Eye className="h-5 w-5 text-indigo-600" />
                   कर्ज तपशील - {selectedLoan.borrowerName}
                 </DialogTitle>
               </DialogHeader>
               
               <div className="space-y-4">
                 {/* Essential Loan Info */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-gradient-to-r from-indigo-50 to-indigo-50 rounded-lg border border-indigo-200">
                   <div>
-                    <Label className="text-sm font-semibold text-blue-700">तारणाचा तपशील</Label>
+                    <Label className="text-sm font-semibold text-indigo-700">तारणाचा तपशील</Label>
                     <p className="text-base font-medium text-gray-800 mt-1">{selectedLoan.goldItem}</p>
                   </div>
                   <div>
@@ -1248,8 +1248,8 @@ export default function OverdueReport() {
 
         {/* Keyboard Navigation Help */}
         {reportGenerated && overdueData.length > 0 && (
-          <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200 print:hidden">
-            <div className="text-xs text-blue-700">
+          <div className="mt-4 p-3 bg-indigo-50 rounded-lg border border-indigo-200 print:hidden">
+            <div className="text-xs text-indigo-700">
               <strong>⌨️ Keyboard Navigation:</strong> Use ↑↓ arrows to navigate rows, Enter to view details, <strong>Space for photos</strong>, Escape to close
             </div>
           </div>

@@ -137,7 +137,7 @@ export default function PartyStatement() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-amber-50">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-amber-50">
       <MobileNav />
       
       <div className="lg:flex">
@@ -204,8 +204,8 @@ export default function PartyStatement() {
                           value={filters.dateFrom}
                           onChange={(e) => setFilters(prev => ({ ...prev, dateFrom: e.target.value }))}
                         />
-                        <div className="bg-blue-50 border border-blue-200 rounded-md px-3 py-2">
-                          <p className="text-sm font-medium text-blue-800">
+                        <div className="bg-indigo-50 border border-indigo-200 rounded-md px-3 py-2">
+                          <p className="text-sm font-medium text-indigo-800">
                             {filters.dateFrom ? (
                               <>✓ निवडलेली तारीख: <span className="font-bold">{DateUtils.isoToIndianDate(filters.dateFrom)}</span></>
                             ) : (
@@ -224,8 +224,8 @@ export default function PartyStatement() {
                           value={filters.dateTo}
                           onChange={(e) => setFilters(prev => ({ ...prev, dateTo: e.target.value }))}
                         />
-                        <div className="bg-blue-50 border border-blue-200 rounded-md px-3 py-2">
-                          <p className="text-sm font-medium text-blue-800">
+                        <div className="bg-indigo-50 border border-indigo-200 rounded-md px-3 py-2">
+                          <p className="text-sm font-medium text-indigo-800">
                             {filters.dateTo ? (
                               <>✓ निवडलेली तारीख: <span className="font-bold">{DateUtils.isoToIndianDate(filters.dateTo)}</span></>
                             ) : (

@@ -305,8 +305,8 @@ export default function PartySelector({ value, onValueChange, placeholder = "व
                 />
                 
                 {/* Opening Balance Section */}
-                <div className="space-y-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                  <h4 className="font-semibold text-blue-800 text-sm">🏦 Opening Balance (प्राम्भिक शिल्लक)</h4>
+                <div className="space-y-3 p-3 bg-indigo-50 rounded-lg border border-indigo-200">
+                  <h4 className="font-semibold text-indigo-800 text-sm">🏦 Opening Balance (प्राम्भिक शिल्लक)</h4>
                   
                   <div className="grid grid-cols-2 gap-3">
                     <FormField
@@ -365,7 +365,7 @@ export default function PartySelector({ value, onValueChange, placeholder = "व
                     )}
                   />
                   
-                  <div className="text-xs text-blue-600 bg-blue-100 p-2 rounded">
+                  <div className="text-xs text-indigo-600 bg-indigo-100 p-2 rounded">
                     <strong>नोट:</strong> 
                     <br/>• <strong>Credit:</strong> पैसे मिळणार (Cash, Income, त्यांना देणे आहे)
                     <br/>• <strong>Debit:</strong> पैसे द्यायचे (Expense, Asset, त्यांच्याकडून घेणे आहे)

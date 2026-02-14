@@ -106,9 +106,9 @@ export default function Dashboard() {
       amount: `₹${(currentMonth.disbursementAmount || 0).toLocaleString('en-IN')}`,
       previousValue: previousMonth.disbursements || 0,
       icon: CreditCard,
-      iconColor: "text-blue-600",
-      iconBg: "bg-blue-100",
-      borderColor: "border-l-blue-500",
+      iconColor: "text-indigo-600",
+      iconBg: "bg-indigo-100",
+      borderColor: "border-l-indigo-500",
       isCount: true,
     },
     {
@@ -146,7 +146,7 @@ export default function Dashboard() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50/30 to-slate-50">
       <MobileNav />
       
       <div className="lg:flex">
@@ -159,7 +159,7 @@ export default function Dashboard() {
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
               
-              <div className="lg:col-span-2 bg-gradient-to-r from-indigo-600 to-blue-600 rounded-xl p-6 shadow-md">
+              <div className="lg:col-span-2 bg-gradient-to-r from-indigo-600 to-indigo-600 rounded-xl p-6 shadow-md">
                 <div className="flex items-center space-x-4">
                   <div className="bg-white/90 rounded-lg p-0.5 shadow-md">
                     <img src="/icons/icon-192x192.png" alt="LonoPro" className="h-14 w-14 rounded-md" />
@@ -170,16 +170,16 @@ export default function Dashboard() {
                         <h1 className="text-2xl font-bold text-white mb-1">{(company as any).name}</h1>
                         <div className="flex items-center space-x-2 mb-1">
                           <Award className="h-4 w-4 text-amber-300" />
-                          <span className="text-sm font-medium text-blue-100">
+                          <span className="text-sm font-medium text-indigo-100">
                             परवाना क्र: {(company as any).licenseNumber}
                           </span>
                         </div>
-                        <p className="text-blue-200 text-sm">{(company as any).address}</p>
+                        <p className="text-indigo-200 text-sm">{(company as any).address}</p>
                       </>
                     ) : (
                       <div>
                         <h1 className="text-2xl font-bold text-white">Welcome</h1>
-                        <p className="text-blue-200 text-sm mt-1">LonoPro</p>
+                        <p className="text-indigo-200 text-sm mt-1">LonoPro</p>
                       </div>
                     )}
                   </div>
@@ -196,7 +196,7 @@ export default function Dashboard() {
                     </Button>
                   </Link>
                   <Link href="/mobile-cashbook">
-                    <Button variant="outline" className="w-full border-gray-200 text-gray-700 hover:bg-blue-50 hover:border-blue-200 hover:text-blue-700 text-sm h-9">
+                    <Button variant="outline" className="w-full border-gray-200 text-gray-700 hover:bg-indigo-50 hover:border-indigo-200 hover:text-indigo-700 text-sm h-9">
                       <HandCoins className="h-4 w-4 mr-2" />
                       Cashbook
                     </Button>
@@ -222,7 +222,7 @@ export default function Dashboard() {
                           disabled={bottomNavToggle.isPending || !company}
                           autoComplete="off"
                         />
-                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
                       </label>
                     </div>
                   )}
@@ -288,7 +288,7 @@ export default function Dashboard() {
               </h3>
               
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="bg-gradient-to-br from-slate-50 to-blue-50/50 border border-gray-100 rounded-xl p-4">
+                <div className="bg-gradient-to-br from-slate-50 to-indigo-50/50 border border-gray-100 rounded-xl p-4">
                   <h4 className="text-base font-semibold text-gray-700 mb-4 text-center">मासिक कर्ज प्रगती</h4>
                   <ResponsiveContainer width="100%" height={300}>
                     <LineChart data={[
@@ -342,12 +342,12 @@ export default function Dashboard() {
                     <h4 className="text-base font-semibold text-gray-700 mb-4 text-center">तीन महिन्यांची कामगिरी</h4>
                     
                     <div className="grid grid-cols-2 gap-3 mb-4">
-                      <div className="bg-blue-50 border border-blue-100 rounded-lg p-4 text-center">
-                        <div className="text-2xl font-bold text-blue-700">
+                      <div className="bg-indigo-50 border border-indigo-100 rounded-lg p-4 text-center">
+                        <div className="text-2xl font-bold text-indigo-700">
                           {(stats as any).threeMonthPerformance?.totalDisbursements || 0}
                         </div>
-                        <div className="text-sm font-medium text-blue-600">एकूण कर्ज वाटप</div>
-                        <div className="text-xs text-blue-400 mt-1">3 महिन्यांमध्ये</div>
+                        <div className="text-sm font-medium text-indigo-600">एकूण कर्ज वाटप</div>
+                        <div className="text-xs text-indigo-400 mt-1">3 महिन्यांमध्ये</div>
                       </div>
                       <div className="bg-teal-50 border border-teal-100 rounded-lg p-4 text-center">
                         <div className="text-2xl font-bold text-teal-700">
@@ -399,7 +399,7 @@ export default function Dashboard() {
                         </div>
                         <div className="flex justify-between items-center">
                           <span className="text-sm text-gray-500">पुढील लक्ष्य:</span>
-                          <span className="font-semibold text-sm text-blue-600">
+                          <span className="font-semibold text-sm text-indigo-600">
                             {Math.max(((stats as any).currentMonth?.disbursements || 0) + 5, 10)}+ कर्जे
                           </span>
                         </div>
@@ -421,7 +421,7 @@ export default function Dashboard() {
                   <div className="space-y-4">
                     {Array.isArray(groups) && (groups as any[]).slice(0, 5).map((group: any, index: number) => {
                       const colors = [
-                        { bg: "bg-blue-100", text: "text-blue-600" },
+                        { bg: "bg-indigo-100", text: "text-indigo-600" },
                         { bg: "bg-green-100", text: "text-green-600" },
                         { bg: "bg-purple-100", text: "text-purple-600" },
                         { bg: "bg-orange-100", text: "text-orange-600" },

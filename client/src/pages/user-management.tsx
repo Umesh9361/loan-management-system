@@ -119,7 +119,7 @@ export default function UserManagement() {
             </p>
             <Button 
               onClick={() => safeNavigate('/')}
-              className="bg-blue-600 hover:bg-blue-700"
+              className="bg-indigo-600 hover:bg-indigo-700"
             >
               मुख्य पटलावर जा
             </Button>
@@ -331,7 +331,7 @@ export default function UserManagement() {
             variant="outline"
             size="sm"
             disabled={isLoading}
-            className="border-blue-200 text-blue-700 hover:bg-blue-50"
+            className="border-indigo-200 text-indigo-700 hover:bg-indigo-50"
           >
             {isLoading ? "🔄" : "🔄"} Force Refresh
           </Button>
@@ -920,9 +920,9 @@ function PermissionsList({ form, userRole = "user" }: { form: any; userRole?: st
 
   return (
     <div className="space-y-6">
-      <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
-        <h4 className="font-semibold text-blue-800 mb-2">भूमिका आधारित परमिशन (Role-Based Permissions)</h4>
-        <div className="text-sm text-blue-700">
+      <div className="bg-indigo-50 border border-indigo-200 p-4 rounded-lg">
+        <h4 className="font-semibold text-indigo-800 mb-2">भूमिका आधारित परमिशन (Role-Based Permissions)</h4>
+        <div className="text-sm text-indigo-700">
           <p><strong>User:</strong> फक्त forms आणि reports - कोणते admin panels नाहीत</p>
           <p><strong>Admin:</strong> User permissions + management functions</p>
           <p><strong>Super Admin:</strong> सर्व permissions including super admin panel</p>
@@ -964,7 +964,7 @@ function PermissionsList({ form, userRole = "user" }: { form: any; userRole?: st
       
       {filteredCategories.map(([category, permissions]) => (
         <div key={category}>
-          <h3 className="text-lg font-semibold mb-3 text-blue-600">{category}</h3>
+          <h3 className="text-lg font-semibold mb-3 text-indigo-600">{category}</h3>
           <div className="grid grid-cols-1 gap-3 bg-gray-50 p-4 rounded-lg">
             {permissions.map((permission) => {
               const { key, label } = permission;
@@ -1001,8 +1001,8 @@ function PermissionsList({ form, userRole = "user" }: { form: any; userRole?: st
         </div>
       ))}
       
-      <div className="bg-blue-50 p-4 rounded-lg">
-        <p className="text-sm text-blue-700">
+      <div className="bg-indigo-50 p-4 rounded-lg">
+        <p className="text-sm text-indigo-700">
           <strong>लक्ष ठेवा:</strong> लाल तार्‍यांका (*) असलेली permissions सर्व users साठी आवश्यक आहेत.
           Dashboard आणि Interest Calculator सर्वांना उपलब्ध असतील.
         </p>

@@ -124,7 +124,7 @@ export function SuperAdminPasswordRequests() {
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center space-x-4">
-            <Link href="/super-admin" className="text-blue-600 hover:text-blue-700">
+            <Link href="/super-admin" className="text-indigo-600 hover:text-indigo-700">
               <ArrowLeft className="h-6 w-6" />
             </Link>
             <div>
@@ -162,7 +162,7 @@ export function SuperAdminPasswordRequests() {
                   <p className="text-sm font-medium text-gray-600">एकूण यूजर्स</p>
                   <p className="text-2xl font-bold text-gray-900">{allUsers.length}</p>
                 </div>
-                <UserCheck className="h-8 w-8 text-blue-600" />
+                <UserCheck className="h-8 w-8 text-indigo-600" />
               </div>
             </CardContent>
           </Card>

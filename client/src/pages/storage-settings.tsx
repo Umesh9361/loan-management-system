@@ -148,7 +148,7 @@ export default function StorageSettings() {
                   </Button>
                 </Link>
                 <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center">
+                  <div className="h-10 w-10 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl flex items-center justify-center">
                     <Settings className="h-5 w-5 text-white" />
                   </div>
                   <div>
@@ -164,7 +164,7 @@ export default function StorageSettings() {
 
               {isLoading ? (
                 <div className="text-center py-12">
-                  <Loader2 className="h-8 w-8 animate-spin mx-auto text-blue-600" />
+                  <Loader2 className="h-8 w-8 animate-spin mx-auto text-indigo-600" />
                   <p className="mt-2 text-gray-600">लोड होत आहे...</p>
                 </div>
               ) : (
@@ -179,12 +179,12 @@ export default function StorageSettings() {
                           onClick={() => setProvider('local')}
                           className={`cursor-pointer p-4 rounded-lg border-2 transition-all ${
                             provider === 'local' 
-                              ? 'border-blue-500 bg-blue-50' 
+                              ? 'border-indigo-500 bg-indigo-50' 
                               : 'border-gray-200 hover:border-gray-300'
                           }`}
                         >
                           <div className="flex items-center gap-3 mb-2">
-                            <HardDrive className={`h-8 w-8 ${provider === 'local' ? 'text-blue-600' : 'text-gray-400'}`} />
+                            <HardDrive className={`h-8 w-8 ${provider === 'local' ? 'text-indigo-600' : 'text-gray-400'}`} />
                             <div>
                               <h3 className="font-semibold text-gray-900 font-noto">Local Storage</h3>
                               <p className="text-xs text-gray-500">सर्व्हर/PC वर फोटो सेव्ह</p>

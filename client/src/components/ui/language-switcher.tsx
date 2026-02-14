@@ -22,13 +22,13 @@ export function LanguageSwitcher() {
       <DropdownMenuContent align="end">
         <DropdownMenuItem 
           onClick={() => handleLanguageChange('mr')}
-          className={language === 'mr' ? 'bg-blue-50' : ''}
+          className={language === 'mr' ? 'bg-indigo-50' : ''}
         >
           मराठी (Marathi)
         </DropdownMenuItem>
         <DropdownMenuItem 
           onClick={() => handleLanguageChange('en')}
-          className={language === 'en' ? 'bg-blue-50' : ''}
+          className={language === 'en' ? 'bg-indigo-50' : ''}
         >
           English
         </DropdownMenuItem>

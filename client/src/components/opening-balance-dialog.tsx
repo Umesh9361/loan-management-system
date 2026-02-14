@@ -93,7 +93,7 @@ export function OpeningBalanceDialog({ open, onOpenChange }: OpeningBalanceDialo
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md mx-2 my-2 max-h-[85vh] overflow-y-auto" aria-describedby="opening-balance-description">
         <DialogHeader>
-          <DialogTitle className="text-center text-xl font-bold text-blue-700">
+          <DialogTitle className="text-center text-xl font-bold text-indigo-700">
             🏦 आरंभिक शिल्लक सेट करा
           </DialogTitle>
           <DialogDescription className="text-center">
@@ -186,7 +186,7 @@ export function OpeningBalanceDialog({ open, onOpenChange }: OpeningBalanceDialo
               <Button 
                 type="submit" 
                 disabled={createMutation.isPending}
-                className="h-12 flex-1 bg-blue-600 hover:bg-blue-700"
+                className="h-12 flex-1 bg-indigo-600 hover:bg-indigo-700"
               >
                 {createMutation.isPending ? "⏳ सेट करत आहे..." : "✅ सेट करा"}
               </Button>

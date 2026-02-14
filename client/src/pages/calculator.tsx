@@ -401,7 +401,7 @@ export default function InterestCalculator() {
                   <div className="flex items-center justify-between mb-4">
                     <Label className="text-base font-medium">गणना पद्धत</Label>
                     <div className="flex items-center space-x-3">
-                      <span className={`text-sm ${!isAdvanced ? 'font-semibold text-blue-600' : 'text-gray-600'}`}>साधे व्याज</span>
+                      <span className={`text-sm ${!isAdvanced ? 'font-semibold text-indigo-600' : 'text-gray-600'}`}>साधे व्याज</span>
                       <label className="relative inline-flex items-center cursor-pointer">
                         <input
                           type="checkbox"
@@ -410,7 +410,7 @@ export default function InterestCalculator() {
                           className="sr-only peer"
                           autoComplete="off"
                         />
-                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
                       </label>
                       <span className={`text-sm ${isAdvanced ? 'font-semibold text-green-600' : 'text-gray-600'}`}>ॲडव्हान्स व्याज</span>
                     </div>
@@ -424,7 +424,7 @@ export default function InterestCalculator() {
                         <select 
                           value={compoundFrequency} 
                           onChange={(e) => setCompoundFrequency(e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
                           autoComplete="off"
                         >
                           <option value="yearly">वार्षिक (Yearly)</option>
@@ -441,14 +441,14 @@ export default function InterestCalculator() {
                     <div className="space-y-4 mt-4">
                       <Label className="text-sm font-medium mb-2 block">गणना पद्धत निवडा</Label>
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                        <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-blue-50">
+                        <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-indigo-50">
                           <input
                             type="radio"
                             value="full-month"
                             checked={calculationMode === "full-month"}
                             onChange={(e) => setCalculationMode(e.target.value)}
                             id="month-calc"
-                            className="text-blue-600"
+                            className="text-indigo-600"
                             autoComplete="off"
                           />
                           <Label htmlFor="month-calc" className="cursor-pointer">
@@ -522,21 +522,21 @@ export default function InterestCalculator() {
             {results && (
               <Card ref={resultsRef} className="bg-gradient-to-r from-green-50 to-emerald-50 border-green-200">
                 <CardHeader>
-                  <CardTitle className={`${results.isAdvanced ? 'text-green-800' : 'text-blue-800'} flex items-center gap-2`}>
+                  <CardTitle className={`${results.isAdvanced ? 'text-green-800' : 'text-indigo-800'} flex items-center gap-2`}>
                     <TrendingUp className="h-5 w-5" />
                     {results.isAdvanced ? 'ॲडव्हान्स व्याज गणना परिणाम' : 'साधे व्याज गणना परिणाम'}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   {/* Duration Display */}
-                  <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                    <h3 className="text-lg font-semibold mb-3 flex items-center gap-2 text-blue-800">
+                  <div className="mb-6 p-4 bg-indigo-50 rounded-lg border border-indigo-200">
+                    <h3 className="text-lg font-semibold mb-3 flex items-center gap-2 text-indigo-800">
                       <Calendar className="h-5 w-5" />
                       कर्ज कालावधी
                     </h3>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
                       <div>
-                        <div className="text-2xl font-bold text-blue-600">{results.totalDays}</div>
+                        <div className="text-2xl font-bold text-indigo-600">{results.totalDays}</div>
                         <div className="text-sm text-gray-600">एकूण दिवस</div>
                       </div>
                       <div>
@@ -567,7 +567,7 @@ export default function InterestCalculator() {
                           </div>
                           <div>
                             <span className="font-medium">बँकिंग महिने:</span>
-                            <div className="text-blue-700">{results.calendarAccuracy.bankingMonths?.toFixed(3)} महिने</div>
+                            <div className="text-indigo-700">{results.calendarAccuracy.bankingMonths?.toFixed(3)} महिने</div>
                           </div>
                           <div>
                             <span className="font-medium">अचूक महिना:</span>
@@ -595,7 +595,7 @@ export default function InterestCalculator() {
                       <div className="text-sm text-gray-600">मुद्दल रक्कम</div>
                     </div>
                     <div className="bg-white p-4 rounded-lg border border-green-200">
-                      <div className="text-2xl font-bold text-blue-600">
+                      <div className="text-2xl font-bold text-indigo-600">
                         ₹{results.interest.toLocaleString('en-IN')}
                       </div>
                       <div className="text-sm text-gray-600">व्याज रक्कम</div>
@@ -609,8 +609,8 @@ export default function InterestCalculator() {
                   </div>
 
                   {/* Date Range Display */}
-                  <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                    <h4 className="font-semibold text-blue-800 mb-2 flex items-center gap-2">
+                  <div className="mt-6 p-4 bg-indigo-50 rounded-lg border border-indigo-200">
+                    <h4 className="font-semibold text-indigo-800 mb-2 flex items-center gap-2">
                       <Calendar className="h-4 w-4" />
                       कर्ज कालावधी तपशील
                     </h4>
@@ -632,11 +632,11 @@ export default function InterestCalculator() {
                     </h4>
                     {results.isAdvanced ? (
                       <div className="text-sm text-gray-600">
-                        <div className="bg-gradient-to-r from-green-100 to-blue-100 p-4 rounded-lg border-2 border-green-300 mb-3">
+                        <div className="bg-gradient-to-r from-green-100 to-indigo-100 p-4 rounded-lg border-2 border-green-300 mb-3">
                           <div className="font-bold text-green-800 mb-2">चक्रवाढ व्याज गणना तपशील</div>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                             <div>
-                              <div className="font-semibold text-blue-700">कंपाऊंड वारंवारता: {compoundFrequency === 'yearly' ? 'वार्षिक' : compoundFrequency === 'half_yearly' ? 'सहा महिने' : compoundFrequency === 'quarterly' ? 'तीन महिने' : 'मासिक'}</div>
+                              <div className="font-semibold text-indigo-700">कंपाऊंड वारंवारता: {compoundFrequency === 'yearly' ? 'वार्षिक' : compoundFrequency === 'half_yearly' ? 'सहा महिने' : compoundFrequency === 'quarterly' ? 'तीन महिने' : 'मासिक'}</div>
                               <div className="text-purple-700">दिन गणना पद्धत: {calculationMode === 'month' ? 'पूर्ण महिना (1 दिवस = 1 महिना)' : calculationMode === 'half_month' ? 'अर्धा महिना (1-15=0.5, 16+=1)' : calculationMode === 'week' ? 'आठवडा (1-7=0.25, 8-15=0.5, 16-21=0.75, 22+=1)' : 'दैनिक अचूक गणना'}</div>
                             </div>
                             <div>
@@ -654,12 +654,12 @@ export default function InterestCalculator() {
                         )}
                       </div>
                     ) : (
-                      <div className="bg-gradient-to-r from-blue-100 to-indigo-100 p-4 rounded-lg border-2 border-blue-300">
-                        <div className="font-bold text-blue-800 mb-2">साधे व्याज गणना (365 दिवसांचे बँकिंग मानक)</div>
+                      <div className="bg-gradient-to-r from-indigo-100 to-indigo-100 p-4 rounded-lg border-2 border-indigo-300">
+                        <div className="font-bold text-indigo-800 mb-2">साधे व्याज गणना (365 दिवसांचे बँकिंग मानक)</div>
                         <div className="text-sm text-gray-700 mb-2">
                           <span className="font-semibold">सूत्र:</span> व्याज = (मुद्दल × व्याजदर × दिवस) ÷ (100 × 365)
                         </div>
-                        <div className="text-sm text-blue-700 font-medium bg-white p-2 rounded border">
+                        <div className="text-sm text-indigo-700 font-medium bg-white p-2 rounded border">
                           व्याज = ({results.principal} × {interestRate} × {results.totalDays}) ÷ (100 × 365) = ₹{results.interest}
                         </div>
                         <div className="text-xs text-gray-600 mt-2 italic">

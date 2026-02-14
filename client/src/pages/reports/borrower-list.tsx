@@ -3924,7 +3924,7 @@ export default function BorrowerListReports() {
                           setSelectedSuggestionIndex(-1);
                         }, 200);
                       }}
-                      className="text-lg h-14 border-2 border-gray-300 focus:border-blue-600 bg-white font-noto mt-2"
+                      className="text-lg h-14 border-2 border-gray-300 focus:border-indigo-600 bg-white font-noto mt-2"
                       placeholder={
                         !groupId || groupId === "" 
                           ? "🚫 पहिले ग्रुप निवडा..." 
@@ -3953,7 +3953,7 @@ export default function BorrowerListReports() {
                   
                   {/* Enhanced Smart Suggestions Dropdown - Same as Loan Form */}
                   {showBorrowerSuggestions && borrowerSearchTerm.trim().length >= 1 && smartBorrowerSuggestions.length > 0 && (
-                    <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-white border-2 border-blue-300 rounded-lg shadow-xl max-h-80 overflow-y-auto">
+                    <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-white border-2 border-indigo-300 rounded-lg shadow-xl max-h-80 overflow-y-auto">
                       {smartBorrowerSuggestions.map((borrower: any, index: number) => (
                         <div
                           key={borrower.id}
@@ -3963,20 +3963,20 @@ export default function BorrowerListReports() {
                           }}
                           className={`p-4 border-b border-gray-100 last:border-b-0 cursor-pointer transition-all duration-200 ${
                             selectedSuggestionIndex === index 
-                              ? 'bg-blue-100 border-blue-300 shadow-md scale-[1.02] ring-2 ring-blue-200' 
-                              : 'hover:bg-blue-50 hover:shadow-sm'
-                          } active:bg-blue-200 active:scale-[0.98]`}
+                              ? 'bg-indigo-100 border-indigo-300 shadow-md scale-[1.02] ring-2 ring-indigo-200' 
+                              : 'hover:bg-indigo-50 hover:shadow-sm'
+                          } active:bg-indigo-200 active:scale-[0.98]`}
                         >
                           <div className="flex items-center justify-between">
                             <div className="flex-1">
                               <div className="text-lg font-semibold text-gray-900 font-noto">
                                 {borrower.name}
                                 {index === selectedSuggestionIndex && (
-                                  <Check className="inline h-4 w-4 ml-2 text-blue-600" />
+                                  <Check className="inline h-4 w-4 ml-2 text-indigo-600" />
                                 )}
                               </div>
                               <div className="flex gap-3 text-base text-gray-600">
-                                <span className="flex items-center text-blue-600 font-semibold">
+                                <span className="flex items-center text-indigo-600 font-semibold">
                                   💰 {borrower.loanCount} कर्ज{borrower.loanCount > 1 ? 'े' : ''}
                                 </span>
                               </div>
@@ -4023,7 +4023,7 @@ export default function BorrowerListReports() {
                       id="date-filter-toggle"
                       checked={dateFilterEnabled}
                       onChange={(e) => setDateFilterEnabled(e.target.checked)}
-                      className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                      className="w-4 h-4 text-indigo-600 bg-gray-100 border-gray-300 rounded focus:ring-indigo-500"
                       autoComplete="off"
                     />
                     <Label htmlFor="date-filter-toggle" className="text-sm font-medium text-gray-700">
@@ -4032,7 +4032,7 @@ export default function BorrowerListReports() {
                   </div>
                   
                   {dateFilterEnabled && (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pl-6 border-l-2 border-blue-200 bg-blue-50 p-4 rounded-lg">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pl-6 border-l-2 border-indigo-200 bg-indigo-50 p-4 rounded-lg">
                       <div>
                         <Label htmlFor="start-date" className="text-sm font-medium text-gray-700">
                           पासून तारीख
@@ -4099,7 +4099,7 @@ export default function BorrowerListReports() {
                         भविष्यातील मेच्योरिटी फिल्टर (आगामी कालावधी)
                       </Label>
                     </div>
-                    <div className="text-xs text-gray-600 bg-blue-50 p-2 rounded border">
+                    <div className="text-xs text-gray-600 bg-indigo-50 p-2 rounded border">
                       💡 <strong>सूचना:</strong> दोन्ही checkbox select करून specific period वाले borrowers च्या future maturity पाहू शकता
                     </div>
                   </div>

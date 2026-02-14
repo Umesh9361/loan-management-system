@@ -4,12 +4,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 import { Label } from "@/components/ui/label";
-import { Calendar, Printer, Download, FileText } from "lucide-react";
+import { Calendar, Printer, Download, FileText, FileDown } from "lucide-react";
 import { exportCapitalAccountToExcel } from "@/utils/excel-export";
 import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { Sidebar } from "@/components/ui/sidebar";
 import { MobileNav } from "@/components/ui/mobile-nav";
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 export default function CapitalAccountReport() {
   const { toast } = useToast();
@@ -381,6 +383,149 @@ export default function CapitalAccountReport() {
     }
   };
 
+  const handleMobilePdfDownload = async () => {
+    if (entries.length === 0 && openingBalance === 0) {
+      alert("प्रथम तारीख निवडा आणि डेटा लोड करा");
+      return;
+    }
+
+    try {
+      const a5WidthPx = 560;
+      const companyName = (company as any)?.name || 'कंपनी नाव';
+
+      let rows = '';
+      if (openingBalance !== 0) {
+        rows += `<tr style="background:#fff4e6;">
+          <td style="border:2px solid #1e40af;padding:6px;text-align:center;font-size:11px;font-weight:600;">-</td>
+          <td style="border:2px solid #1e40af;padding:6px;text-align:center;font-size:11px;font-weight:600;">${new Date(dateFrom).toLocaleDateString('en-GB')}</td>
+          <td style="border:2px solid #1e40af;padding:6px;text-align:center;font-size:11px;font-weight:600;">-</td>
+          <td style="border:2px solid #1e40af;padding:6px;text-align:center;font-size:11px;font-weight:600;">-</td>
+          <td style="border:2px solid #1e40af;padding:6px;text-align:center;font-size:11px;font-weight:600;">-</td>
+          <td style="border:2px solid #1e40af;padding:6px;text-align:center;font-size:11px;font-weight:600;">-</td>
+          <td style="border:2px solid #1e40af;padding:6px;text-align:right;font-size:11px;font-weight:bold;">${openingBalance.toLocaleString('en-IN')} (ओपनिंग)</td>
+        </tr>`;
+      }
+
+      entries.forEach((entry: any, index: number) => {
+        rows += `<tr>
+          <td style="border:2px solid #1e40af;padding:6px;text-align:center;font-size:11px;font-weight:600;">${index + 1}</td>
+          <td style="border:2px solid #1e40af;padding:6px;text-align:center;font-size:11px;font-weight:600;">${new Date(entry.date).toLocaleDateString('en-GB')}</td>
+          <td style="border:2px solid #1e40af;padding:6px;text-align:right;font-size:11px;font-weight:600;">${entry.loanRepayment > 0 ? entry.loanRepayment.toLocaleString('en-IN') : '-'}</td>
+          <td style="border:2px solid #1e40af;padding:6px;text-align:center;font-size:11px;font-weight:600;">${entry.loanRepayment > 0 && entry.repaymentPageNo ? entry.repaymentPageNo : '-'}</td>
+          <td style="border:2px solid #1e40af;padding:6px;text-align:right;font-size:11px;font-weight:600;">${entry.loanDisbursement > 0 ? entry.loanDisbursement.toLocaleString('en-IN') : '-'}</td>
+          <td style="border:2px solid #1e40af;padding:6px;text-align:center;font-size:11px;font-weight:600;">${entry.loanDisbursement > 0 && entry.disbursementPageNo ? entry.disbursementPageNo : '-'}</td>
+          <td style="border:2px solid #1e40af;padding:6px;text-align:right;font-size:11px;font-weight:bold;">${entry.netBalance.toLocaleString('en-IN')}</td>
+        </tr>`;
+      });
+
+      rows += `<tr style="background:#e3f2fd;">
+        <td style="border:2px solid #1e40af;padding:6px;text-align:center;font-size:11px;font-weight:bold;">-</td>
+        <td style="border:2px solid #1e40af;padding:6px;text-align:center;font-size:11px;font-weight:bold;">${new Date(dateTo).toLocaleDateString('en-GB')}</td>
+        <td style="border:2px solid #1e40af;padding:6px;text-align:right;font-size:11px;font-weight:bold;">${periodRepayment.toLocaleString('en-IN')} (एकूण)</td>
+        <td style="border:2px solid #1e40af;padding:6px;text-align:center;font-size:11px;font-weight:bold;">एकूण</td>
+        <td style="border:2px solid #1e40af;padding:6px;text-align:right;font-size:11px;font-weight:bold;">${periodDisbursement.toLocaleString('en-IN')} (एकूण)</td>
+        <td style="border:2px solid #1e40af;padding:6px;text-align:center;font-size:11px;font-weight:bold;">एकूण</td>
+        <td style="border:2px solid #1e40af;padding:6px;text-align:right;font-size:11px;font-weight:bold;">${closingBalance.toLocaleString('en-IN')} (क्लोजिंग)</td>
+      </tr>`;
+
+      const fullHTML = `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; background: white; width: ${a5WidthPx}px; padding: 12px; }
+      </style></head><body>
+        <div style="text-align:center;margin-bottom:12px;">
+          <h2 style="font-size:16px;margin-bottom:4px;">भांडवल खाते</h2>
+          <p style="font-size:13px;margin-bottom:2px;">नमुना क्रमांक १३</p>
+          <p style="font-size:11px;margin-bottom:6px;">(नियम १९ पहा)</p>
+          <p style="font-size:12px;margin-bottom:4px;font-weight:bold;">${companyName}</p>
+          <p style="font-size:11px;">कालावधी: ${new Date(dateFrom).toLocaleDateString('en-GB')} ते ${new Date(dateTo).toLocaleDateString('en-GB')}</p>
+        </div>
+        <table style="width:100%;border-collapse:collapse;table-layout:fixed;">
+          <thead>
+            <tr>
+              <th style="border:2px solid #1e40af;padding:5px;text-align:center;font-size:9px;background:#f0f0f0;font-weight:bold;width:6%;">अ.क्र.</th>
+              <th style="border:2px solid #1e40af;padding:5px;text-align:center;font-size:9px;background:#f0f0f0;font-weight:bold;width:12%;">दिनांक</th>
+              <th style="border:2px solid #1e40af;padding:5px;text-align:center;font-size:9px;background:#f0f0f0;font-weight:bold;width:16%;">कर्ज परतफेड</th>
+              <th style="border:2px solid #1e40af;padding:5px;text-align:center;font-size:9px;background:#f0f0f0;font-weight:bold;width:10%;">पान क्र.</th>
+              <th style="border:2px solid #1e40af;padding:5px;text-align:center;font-size:9px;background:#f0f0f0;font-weight:bold;width:16%;">कर्ज वाटप</th>
+              <th style="border:2px solid #1e40af;padding:5px;text-align:center;font-size:9px;background:#f0f0f0;font-weight:bold;width:10%;">पान क्र.</th>
+              <th style="border:2px solid #1e40af;padding:5px;text-align:center;font-size:9px;background:#f0f0f0;font-weight:bold;width:20%;">निव्वळ शिल्लक</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </body></html>`;
+
+      const iframe = document.createElement('iframe');
+      iframe.style.position = 'fixed';
+      iframe.style.left = '-9999px';
+      iframe.style.top = '0';
+      iframe.style.width = a5WidthPx + 'px';
+      iframe.style.height = '2000px';
+      iframe.style.border = 'none';
+      iframe.style.overflow = 'visible';
+      iframe.style.zIndex = '-9999';
+      iframe.style.pointerEvents = 'none';
+      iframe.style.opacity = '0';
+
+      document.body.appendChild(iframe);
+
+      const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+      if (!iframeDoc) {
+        document.body.removeChild(iframe);
+        alert("PDF तयार करण्यात समस्या आली.");
+        return;
+      }
+
+      iframeDoc.open();
+      iframeDoc.write(fullHTML);
+      iframeDoc.close();
+
+      await new Promise(resolve => setTimeout(resolve, 400));
+
+      const targetEl = iframeDoc.body;
+      const contentHeight = targetEl.scrollHeight;
+
+      const canvas = await html2canvas(targetEl, {
+        scale: 4,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff',
+        imageTimeout: 0,
+        width: a5WidthPx,
+        height: contentHeight,
+        windowWidth: a5WidthPx,
+        windowHeight: contentHeight,
+      });
+
+      document.body.removeChild(iframe);
+
+      const imgData = canvas.toDataURL('image/png');
+      const a5Width = 148;
+      const a5Height = 210;
+      const imgTotalHeight = (canvas.height * a5Width) / canvas.width;
+      const totalPages = Math.ceil(imgTotalHeight / a5Height);
+
+      const doc = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a5',
+        compress: false,
+      });
+
+      for (let page = 0; page < totalPages; page++) {
+        if (page > 0) doc.addPage();
+        const yOffset = -(page * a5Height);
+        doc.addImage(imgData, 'PNG', 0, yOffset, a5Width, imgTotalHeight);
+      }
+
+      doc.save(`भांडवल_खाते_नमुना१३_${dateFrom}_to_${dateTo}.pdf`);
+    } catch (error) {
+      console.error('Mobile PDF generation error:', error);
+      const existingIframe = document.querySelector('iframe[style*="-9999px"]');
+      if (existingIframe) existingIframe.remove();
+      alert("PDF तयार करण्यात समस्या आली. कृपया पुन्हा प्रयत्न करा.");
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -419,7 +564,7 @@ export default function CapitalAccountReport() {
                       type="date"
                       value={dateFrom}
                       onChange={(e) => setDateFrom(e.target.value)}
-                      className="border-2 border-blue-200 focus:border-blue-500 font-inter"
+                      className="border-2 border-indigo-200 focus:border-indigo-500 font-inter"
                     />
                   </div>
                   <div>
@@ -431,12 +576,12 @@ export default function CapitalAccountReport() {
                       type="date"
                       value={dateTo}
                       onChange={(e) => setDateTo(e.target.value)}
-                      className="border-2 border-blue-200 focus:border-blue-500 font-inter"
+                      className="border-2 border-indigo-200 focus:border-indigo-500 font-inter"
                     />
                   </div>
                   <div>
                     <Label className="text-sm font-semibold text-gray-700">रिपोर्ट पाहा</Label>
-                    <div className="flex gap-2 mt-1">
+                    <div className="flex gap-2 mt-1 flex-wrap">
                       <Button 
                         onClick={handlePrint} 
                         className="btn-professional btn-primary print:hidden"
@@ -452,6 +597,16 @@ export default function CapitalAccountReport() {
                         <Download className="h-4 w-4 mr-2" />
                         एक्सेल एक्सपोर्ट
                       </Button>
+                      {isMobile && (
+                        <Button 
+                          onClick={handleMobilePdfDownload} 
+                          className="btn-professional print:hidden bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border-indigo-200" 
+                          variant="outline"
+                        >
+                          <FileDown className="h-4 w-4 mr-2" />
+                          मोबाईल PDF
+                        </Button>
+                      )}
                     </div>
                   </div>
                   <div className="md:col-span-1"></div>

@@ -85,7 +85,7 @@ export default function LoanCashImpact({ loanId, showDetails = true }: LoanCashI
           <div className="border-t pt-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center">
-                <TrendingUp className="h-4 w-4 text-blue-600 mr-2" />
+                <TrendingUp className="h-4 w-4 text-indigo-600 mr-2" />
                 <span className="text-sm font-medium">नेट रोकड प्रवाह</span>
               </div>
               <Badge variant={netCashFlow >= 0 ? "default" : "destructive"}>

@@ -20,17 +20,17 @@ const activityTypeLabels: Record<string, { label: string; color: string }> = {
   login: { label: "लॉगिन", color: "bg-green-100 text-green-800" },
   logout: { label: "लॉगआउट", color: "bg-gray-100 text-gray-800" },
   create_group: { label: "नवीन ग्रुप", color: "bg-emerald-100 text-emerald-800" },
-  update_group: { label: "ग्रुप अपडेट", color: "bg-blue-100 text-blue-800" },
+  update_group: { label: "ग्रुप अपडेट", color: "bg-indigo-100 text-indigo-800" },
   delete_group: { label: "ग्रुप डिलीट", color: "bg-red-100 text-red-800" },
   create_loan: { label: "नवीन कर्ज", color: "bg-emerald-100 text-emerald-800" },
-  update_loan: { label: "कर्ज अपडेट", color: "bg-blue-100 text-blue-800" },
+  update_loan: { label: "कर्ज अपडेट", color: "bg-indigo-100 text-indigo-800" },
   delete_loan: { label: "कर्ज डिलीट", color: "bg-red-100 text-red-800" },
   reopen_loan: { label: "कर्ज पुन्हा सुरू", color: "bg-orange-100 text-orange-800" },
   create_party: { label: "नवीन पार्टी", color: "bg-emerald-100 text-emerald-800" },
-  update_party: { label: "पार्टी अपडेट", color: "bg-blue-100 text-blue-800" },
+  update_party: { label: "पार्टी अपडेट", color: "bg-indigo-100 text-indigo-800" },
   delete_party: { label: "पार्टी डिलीट", color: "bg-red-100 text-red-800" },
   create_cash_transaction: { label: "नवीन रोख व्यवहार", color: "bg-emerald-100 text-emerald-800" },
-  update_cash_transaction: { label: "रोख व्यवहार अपडेट", color: "bg-blue-100 text-blue-800" },
+  update_cash_transaction: { label: "रोख व्यवहार अपडेट", color: "bg-indigo-100 text-indigo-800" },
   delete_cash_transaction: { label: "रोख व्यवहार डिलीट", color: "bg-red-100 text-red-800" },
   delete_photo: { label: "फोटो डिलीट", color: "bg-red-100 text-red-800" },
 };
@@ -87,9 +87,9 @@ export default function ActivityLogPage() {
 
   return (
     <div className="container mx-auto p-4 max-w-5xl">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
         <div>
-          <h1 className="text-2xl font-bold">कार्यवाही नोंद (Activity Log)</h1>
+          <h1 className="text-xl sm:text-2xl font-bold">कार्यवाही नोंद (Activity Log)</h1>
           <p className="text-muted-foreground text-sm mt-1">
             सर्व नवीन, डिलीट आणि अपडेट ऑपरेशन्सची नोंद
           </p>
@@ -100,6 +100,7 @@ export default function ActivityLogPage() {
             size="sm"
             onClick={() => refetch()}
             disabled={isLoading}
+            className="min-h-[40px]"
           >
             <RefreshCw className={`h-4 w-4 mr-1 ${isLoading ? 'animate-spin' : ''}`} />
             रिफ्रेश
@@ -109,6 +110,7 @@ export default function ActivityLogPage() {
             size="sm"
             onClick={handleClearLogs}
             disabled={clearLogsMutation.isPending || logs.length === 0}
+            className="min-h-[40px]"
           >
             <Trash2 className="h-4 w-4 mr-1" />
             {clearLogsMutation.isPending ? "साफ करत आहे..." : "सर्व लॉग साफ करा"}
@@ -133,7 +135,7 @@ export default function ActivityLogPage() {
         </Badge>
         <Badge 
           variant={filterType === "update" ? "default" : "outline"} 
-          className="cursor-pointer px-3 py-1 border-blue-300"
+          className="cursor-pointer px-3 py-1 border-indigo-300"
           onClick={() => setFilterType("update")}
         >
           अपडेट ({updateCount})

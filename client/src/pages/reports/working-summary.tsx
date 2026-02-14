@@ -176,7 +176,7 @@ export default function WorkingSummary() {
                   className="font-inter"
                 />
               </div>
-              <Button onClick={handleSearch} className="bg-blue-600 hover:bg-blue-700 text-white">
+              <Button onClick={handleSearch} className="bg-indigo-600 hover:bg-indigo-700 text-white">
                 <Search className="mr-2 h-4 w-4" />
                 शोधा
               </Button>
@@ -263,7 +263,7 @@ export default function WorkingSummary() {
                       ))}
                       
                       {/* Total Row */}
-                      <tr className="border-t-2 border-gray-800 bg-blue-50">
+                      <tr className="border-t-2 border-gray-800 bg-indigo-50">
                         <td className="p-3 font-bold border-r border-gray-300 text-sm">एकूण</td>
                         <td className="p-3 text-center font-bold border-r border-gray-300 text-sm">
                           {filteredData.totals.totalLoans}
@@ -274,16 +274,16 @@ export default function WorkingSummary() {
                         <td className="p-3 text-center font-bold border-r border-gray-300 text-sm">
                           {filteredData.totals.closedLoans}
                         </td>
-                        <td className="p-3 text-right font-bold border-r border-gray-300 text-blue-600 text-sm">
+                        <td className="p-3 text-right font-bold border-r border-gray-300 text-indigo-600 text-sm">
                           ₹{formatAmount(filteredData.totals.totalAmount)}
                         </td>
-                        <td className="p-3 text-right font-bold border-r border-gray-300 text-blue-600 text-sm">
+                        <td className="p-3 text-right font-bold border-r border-gray-300 text-indigo-600 text-sm">
                           ₹{formatAmount(filteredData.totals.closedAmount)}
                         </td>
-                        <td className="p-3 text-right font-bold border-r border-gray-300 text-blue-600 text-sm">
+                        <td className="p-3 text-right font-bold border-r border-gray-300 text-indigo-600 text-sm">
                           ₹{formatAmount(filteredData.totals.activeBalance)}
                         </td>
-                        <td className="p-3 text-right font-bold text-blue-600 text-sm">
+                        <td className="p-3 text-right font-bold text-indigo-600 text-sm">
                           ₹{formatAmount(filteredData.totals.totalInterest)}
                         </td>
                       </tr>
@@ -305,13 +305,13 @@ export default function WorkingSummary() {
             {/* Summary Statistics - Screen Only */}
             {filteredData && (
               <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4 print:hidden">
-                <div className="p-4 border-2 rounded-lg border-blue-500 bg-blue-50">
+                <div className="p-4 border-2 rounded-lg border-indigo-500 bg-indigo-50">
                   <div className="text-center">
                     <p className="text-sm font-medium text-gray-600">एकूण चालू कर्ज</p>
-                    <p className="text-2xl font-bold text-blue-600">
+                    <p className="text-2xl font-bold text-indigo-600">
                       {filteredData.totals.activeLoans}
                     </p>
-                    <p className="text-sm text-blue-600">
+                    <p className="text-sm text-indigo-600">
                       ₹{formatAmount(filteredData.totals.activeBalance)}
                     </p>
                   </div>
@@ -373,7 +373,7 @@ export default function WorkingSummary() {
           <Button
             variant="ghost"
             size="sm"
-            className="flex flex-col items-center px-2 py-1 h-auto text-blue-600"
+            className="flex flex-col items-center px-2 py-1 h-auto text-indigo-600"
           >
             <span className="text-xs">अहवाल</span>
           </Button>
@@ -450,13 +450,13 @@ export default function WorkingSummary() {
           .border-t-2.border-gray-800 { border-top: 2px solid #000 !important; }
           
           /* Background preservation */
-          .bg-blue-50 { background-color: #f0f4ff !important; }
+          .bg-indigo-50 { background-color: #f0f4ff !important; }
           .bg-gray-50, .bg-gray-100 { background-color: #f8f8f8 !important; }
           
           /* Text emphasis */
           .font-bold { font-weight: bold !important; }
           .font-medium { font-weight: 500 !important; }
-          .text-blue-600 { color: #1e40af !important; font-weight: bold !important; }
+          .text-indigo-600 { color: #1e40af !important; font-weight: bold !important; }
           
           /* Remove spacing */
           .mt-4, .mt-6, .mt-8 { margin-top: 8px !important; }

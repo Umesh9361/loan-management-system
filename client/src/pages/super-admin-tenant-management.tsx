@@ -405,7 +405,7 @@ export default function SuperAdminTenantManagement() {
               <Button 
                 variant="outline" 
                 onClick={() => setChangingOwnPassword(true)}
-                className="flex items-center gap-2 bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100"
+                className="flex items-center gap-2 bg-indigo-50 border-indigo-200 text-indigo-700 hover:bg-indigo-100"
               >
                 <Lock className="h-4 w-4" />
                 स्वतःचा पासवर्ड बदला
@@ -1042,7 +1042,7 @@ export default function SuperAdminTenantManagement() {
                       <Button
                         onClick={handleChangeOwnPassword}
                         disabled={changeOwnPasswordMutation.isPending || !currentPassword || !newOwnPassword || !confirmOwnPassword}
-                        className="flex-1 bg-blue-600 hover:bg-blue-700"
+                        className="flex-1 bg-indigo-600 hover:bg-indigo-700"
                       >
                         {changeOwnPasswordMutation.isPending ? "बदलत आहे..." : "पासवर्ड बदला"}
                       </Button>

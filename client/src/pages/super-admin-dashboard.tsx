@@ -404,7 +404,7 @@ export default function SuperAdminDashboard() {
                               <p className="text-sm text-gray-600">टेनंट ID: {tenant.tenantId}</p>
                             </div>
                             <div className="text-right">
-                              <p className="text-2xl font-bold text-blue-600">{tenant.storage.formattedSize}</p>
+                              <p className="text-2xl font-bold text-indigo-600">{tenant.storage.formattedSize}</p>
                               <p className="text-sm text-gray-600">एकूण स्टोरेज</p>
                             </div>
                           </div>

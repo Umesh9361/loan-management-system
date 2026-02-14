@@ -10,7 +10,7 @@ export default function CashReportWidget() {
       description: "नियम १८ प्रमाणे दैनंदिन रोकड व्यवहार नोंद",
       icon: FileText,
       href: "/reports/cashbook-ledger",
-      color: "from-blue-500 to-blue-600"
+      color: "from-indigo-500 to-indigo-600"
     },
     {
       title: "व्यक्तीवार खाते",

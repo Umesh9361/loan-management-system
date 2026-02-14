@@ -350,7 +350,7 @@ export default function PartyManagement() {
                                     onClick={() => handleEdit(party)}
                                     title="संपादित करा"
                                   >
-                                    <Edit className="h-4 w-4 text-blue-500" />
+                                    <Edit className="h-4 w-4 text-indigo-500" />
                                   </Button>
                                   <Button
                                     variant="ghost"
@@ -483,8 +483,8 @@ function PartyForm({
         />
         
         {/* Opening Balance Section */}
-        <div className="space-y-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
-          <h4 className="font-semibold text-blue-800 text-sm">🏦 Opening Balance (प्राम्भिक शिल्लक)</h4>
+        <div className="space-y-3 p-3 bg-indigo-50 rounded-lg border border-indigo-200">
+          <h4 className="font-semibold text-indigo-800 text-sm">🏦 Opening Balance (प्राम्भिक शिल्लक)</h4>
           
           <div className="grid grid-cols-2 gap-3">
             <FormField
@@ -543,7 +543,7 @@ function PartyForm({
             )}
           />
           
-          <div className="text-xs text-blue-600 bg-blue-100 p-2 rounded">
+          <div className="text-xs text-indigo-600 bg-indigo-100 p-2 rounded">
             <strong>नोट:</strong> Credit = या व्यक्तीकडून आम्हाला पैसे मिळणार, Debit = या व्यक्तीला आम्ही पैसे द्यायचे
           </div>
         </div>

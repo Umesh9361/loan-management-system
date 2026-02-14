@@ -236,7 +236,7 @@ input[type="date"].date-input-dd-mm-yyyy:not(:placeholder-shown) {
 }
 
 .mobile-cashbook input[type="date"]:focus {
-  outline: 2px solid #3b82f6;
+  outline: 2px solid #6366f1;
   outline-offset: 1px;
   background: #ffffff !important;
 }
@@ -256,7 +256,7 @@ input[type="date"].date-input-dd-mm-yyyy:not(:placeholder-shown) {
 /* Custom Date Range Dialog - date inputs on WHITE background need DARK text */
 .mobile-cashbook .custom-date-range input[type="date"] {
   background: #f8fafc !important;
-  border: 2px solid #3b82f6 !important;
+  border: 2px solid #6366f1 !important;
   color: #1e293b !important;
   -webkit-text-fill-color: #1e293b !important;
   font-size: 0.875rem;
@@ -272,9 +272,9 @@ input[type="date"].date-input-dd-mm-yyyy:not(:placeholder-shown) {
 }
 
 .mobile-cashbook .custom-date-range input[type="date"]:focus {
-  outline: 2px solid #3b82f6 !important;
+  outline: 2px solid #6366f1 !important;
   background: #ffffff !important;
-  border-color: #2563eb !important;
+  border-color: #4f46e5 !important;
 }
 
 .mobile-cashbook .custom-date-range input[type="date"]::-webkit-datetime-edit,
@@ -514,30 +514,30 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 }
 
 :root {
-  /* Modern Banking Theme - Professional Blue & Gold */
-  --background: hsl(220, 30%, 97%);
-  --foreground: hsl(215, 25%, 15%);
-  --muted: hsl(220, 14%, 96%);
-  --muted-foreground: hsl(215, 16%, 47%);
+  /* Modern Banking Theme - Professional Indigo & Gold */
+  --background: hsl(226, 30%, 97%);
+  --foreground: hsl(224, 25%, 15%);
+  --muted: hsl(226, 14%, 96%);
+  --muted-foreground: hsl(224, 16%, 47%);
   --popover: hsl(0, 0%, 100%);
-  --popover-foreground: hsl(215, 25%, 15%);
+  --popover-foreground: hsl(224, 25%, 15%);
   --card: hsl(0, 0%, 100%);
-  --card-foreground: hsl(215, 25%, 15%);
-  --border: hsl(220, 13%, 91%);
-  --input: hsl(220, 16%, 75%);
-  --primary: hsl(213, 94%, 55%); /* Professional Blue */
+  --card-foreground: hsl(224, 25%, 15%);
+  --border: hsl(226, 13%, 91%);
+  --input: hsl(226, 16%, 75%);
+  --primary: hsl(239, 84%, 67%); /* Professional Indigo */
   --primary-foreground: hsl(0, 0%, 100%);
   --secondary: hsl(47, 96%, 88%); /* Light Gold */
-  --secondary-foreground: hsl(215, 25%, 15%);
+  --secondary-foreground: hsl(224, 25%, 15%);
   --accent: hsl(45, 93%, 47%); /* Rich Gold */
   --accent-foreground: hsl(0, 0%, 100%);
   --destructive: hsl(0, 84%, 60%);
   --destructive-foreground: hsl(0, 0%, 100%);
-  --ring: hsl(213, 94%, 55%);
+  --ring: hsl(239, 84%, 67%);
   --radius: 0.75rem;
   
   /* Enhanced gradients for modern look */
-  --gradient-primary: linear-gradient(135deg, hsl(213, 94%, 55%) 0%, hsl(213, 94%, 45%) 100%);
+  --gradient-primary: linear-gradient(135deg, hsl(239, 84%, 67%) 0%, hsl(239, 84%, 57%) 100%);
   --gradient-secondary: linear-gradient(135deg, hsl(47, 96%, 88%) 0%, hsl(45, 93%, 47%) 100%);
   --gradient-card: linear-gradient(145deg, hsl(0, 0%, 100%) 0%, hsl(220, 30%, 98%) 100%);
   --shadow-card: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
@@ -545,29 +545,29 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 }
 
 .dark {
-  /* Dark mode with elegant color scheme */
-  --background: hsl(215, 28%, 7%);
-  --foreground: hsl(220, 20%, 95%);
-  --muted: hsl(215, 27%, 12%);
-  --muted-foreground: hsl(220, 15%, 65%);
-  --popover: hsl(215, 28%, 9%);
-  --popover-foreground: hsl(220, 20%, 95%);
-  --card: hsl(215, 28%, 9%);
-  --card-foreground: hsl(220, 20%, 95%);
-  --border: hsl(215, 27%, 15%);
-  --input: hsl(215, 27%, 15%);
-  --primary: hsl(213, 94%, 65%);
-  --primary-foreground: hsl(215, 28%, 7%);
+  /* Dark mode with elegant Indigo scheme */
+  --background: hsl(224, 28%, 7%);
+  --foreground: hsl(226, 20%, 95%);
+  --muted: hsl(224, 27%, 12%);
+  --muted-foreground: hsl(226, 15%, 65%);
+  --popover: hsl(224, 28%, 9%);
+  --popover-foreground: hsl(226, 20%, 95%);
+  --card: hsl(224, 28%, 9%);
+  --card-foreground: hsl(226, 20%, 95%);
+  --border: hsl(224, 27%, 15%);
+  --input: hsl(224, 27%, 15%);
+  --primary: hsl(239, 84%, 72%);
+  --primary-foreground: hsl(224, 28%, 7%);
   --secondary: hsl(45, 93%, 25%);
-  --secondary-foreground: hsl(220, 20%, 95%);
+  --secondary-foreground: hsl(226, 20%, 95%);
   --accent: hsl(45, 93%, 55%);
-  --accent-foreground: hsl(215, 28%, 7%);
+  --accent-foreground: hsl(224, 28%, 7%);
   --destructive: hsl(0, 84%, 65%);
   --destructive-foreground: hsl(0, 0%, 100%);
-  --ring: hsl(213, 94%, 65%);
+  --ring: hsl(239, 84%, 72%);
   --radius: 0.75rem;
   
-  --gradient-primary: linear-gradient(135deg, hsl(213, 94%, 65%) 0%, hsl(213, 94%, 55%) 100%);
+  --gradient-primary: linear-gradient(135deg, hsl(239, 84%, 72%) 0%, hsl(239, 84%, 62%) 100%);
   --gradient-secondary: linear-gradient(135deg, hsl(45, 93%, 25%) 0%, hsl(45, 93%, 55%) 100%);
   --gradient-card: linear-gradient(145deg, hsl(215, 28%, 9%) 0%, hsl(215, 28%, 11%) 100%);
   --shadow-card: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
@@ -614,7 +614,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   }
 
   .btn-primary-gradient {
-    @apply bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-medium rounded-lg px-6 py-3 transition-all duration-200;
+    @apply bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 text-white font-medium rounded-lg px-6 py-3 transition-all duration-200;
     background: var(--gradient-primary);
   }
 
@@ -630,23 +630,23 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   }
 
   .input-modern {
-    @apply bg-white border-gray-200 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200;
+    @apply bg-white border-gray-200 rounded-lg px-4 py-3 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   }
 
   .input-modern:focus {
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 0 0 3px rgba(59, 130, 246, 0.1);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 0 0 3px rgba(99, 102, 241, 0.1);
   }
 
   .header-gradient {
-    @apply bg-gradient-to-r from-blue-500 via-blue-600 to-blue-700 text-white;
-    background: linear-gradient(90deg, hsl(213, 94%, 55%) 0%, hsl(213, 94%, 50%) 50%, hsl(213, 94%, 45%) 100%);
+    @apply bg-gradient-to-r from-indigo-600 via-indigo-700 to-indigo-800 text-white;
+    background: linear-gradient(90deg, hsl(239, 84%, 67%) 0%, hsl(239, 84%, 57%) 50%, hsl(239, 84%, 47%) 100%);
   }
 
   .stats-card {
-    @apply bg-gradient-to-br from-white to-blue-50 border border-blue-100 rounded-xl p-6;
-    background: linear-gradient(135deg, hsl(0, 0%, 100%) 0%, hsl(213, 100%, 97%) 100%);
-    box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.1);
+    @apply bg-gradient-to-br from-white to-indigo-50 border border-indigo-100 rounded-xl p-6;
+    background: linear-gradient(135deg, hsl(0, 0%, 100%) 0%, hsl(226, 100%, 97%) 100%);
+    box-shadow: 0 4px 6px -1px rgba(99, 102, 241, 0.1);
   }
 
   .table-modern {
@@ -663,7 +663,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   }
 
   .table-modern tr:hover td {
-    @apply bg-blue-50;
+    @apply bg-indigo-50;
   }
   
   /* Enhanced Responsive Utilities */
@@ -755,7 +755,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   }
   
   .nav-item.active {
-    @apply bg-blue-50 text-blue-700 border-r-2 border-blue-500;
+    @apply bg-indigo-50 text-indigo-700 border-r-2 border-indigo-500;
   }
   
   .nav-item i {
@@ -767,7 +767,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   }
   
   .mobile-nav-item.active {
-    @apply text-blue-600;
+    @apply text-indigo-600;
   }
   
   .mobile-nav-item i {
@@ -847,7 +847,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 }
 
 .ledger-opening-row {
-  @apply bg-blue-50 font-semibold;
+  @apply bg-indigo-50 font-semibold;
 }
 
 @media print {

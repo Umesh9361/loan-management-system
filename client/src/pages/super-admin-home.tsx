@@ -99,20 +99,20 @@ export default function SuperAdminHome() {
                 </Link>
 
                 <Link href="/company">
-                  <Card className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-105 bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
+                  <Card className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-105 bg-gradient-to-br from-indigo-50 to-indigo-100 border-indigo-200">
                     <CardHeader className="pb-2">
                       <div className="flex items-center justify-between">
-                        <CardTitle className="text-lg font-noto text-blue-800">
+                        <CardTitle className="text-lg font-noto text-indigo-800">
                           कंपनी नोंदणी
                         </CardTitle>
-                        <Building className="h-8 w-8 text-blue-600" />
+                        <Building className="h-8 w-8 text-indigo-600" />
                       </div>
                     </CardHeader>
                     <CardContent>
-                      <p className="text-sm text-blue-700 font-inter">
+                      <p className="text-sm text-indigo-700 font-inter">
                         कंपनी माहिती आणि कॉन्फिगरेशन व्यवस्थापित करा
                       </p>
-                      <Button className="w-full mt-3 bg-blue-600 hover:bg-blue-700">
+                      <Button className="w-full mt-3 bg-indigo-600 hover:bg-indigo-700">
                         कंपनी व्यवस्थापन
                       </Button>
                     </CardContent>
@@ -147,7 +147,7 @@ export default function SuperAdminHome() {
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center font-noto">
-                      <CreditCard className="h-5 w-5 mr-2 text-blue-600" />
+                      <CreditCard className="h-5 w-5 mr-2 text-indigo-600" />
                       आर्थिक व्यवस्थापन
                     </CardTitle>
                   </CardHeader>
@@ -223,10 +223,10 @@ export default function SuperAdminHome() {
                       <h3 className="font-semibold text-green-800 font-noto">सिस्टम ऑनलाइन</h3>
                       <p className="text-sm text-green-600">सर्व सेवा कार्यरत</p>
                     </div>
-                    <div className="text-center p-4 bg-blue-50 rounded-lg">
-                      <Shield className="h-8 w-8 text-blue-600 mx-auto mb-2" />
-                      <h3 className="font-semibold text-blue-800 font-noto">सुरक्षा सक्रिय</h3>
-                      <p className="text-sm text-blue-600">सर्व कनेक्शन सुरक्षित</p>
+                    <div className="text-center p-4 bg-indigo-50 rounded-lg">
+                      <Shield className="h-8 w-8 text-indigo-600 mx-auto mb-2" />
+                      <h3 className="font-semibold text-indigo-800 font-noto">सुरक्षा सक्रिय</h3>
+                      <p className="text-sm text-indigo-600">सर्व कनेक्शन सुरक्षित</p>
                     </div>
                     <div className="text-center p-4 bg-purple-50 rounded-lg">
                       <UserCheck className="h-8 w-8 text-purple-600 mx-auto mb-2" />

@@ -1312,7 +1312,7 @@ export default function Closure() {
             <button
               type="button"
               onClick={downloadReceiptAsPDF}
-              className="flex-1 inline-flex items-center justify-center rounded-md text-sm font-medium h-10 px-3 bg-blue-600 hover:bg-blue-700 text-white"
+              className="flex-1 inline-flex items-center justify-center rounded-md text-sm font-medium h-10 px-3 bg-indigo-600 hover:bg-indigo-700 text-white"
             >
               <Download className="mr-2 h-4 w-4" />
               PDF
@@ -1365,7 +1365,7 @@ export default function Closure() {
               <TabsList className="grid w-full grid-cols-2 mb-4 h-12 bg-white shadow-sm border">
                 <TabsTrigger 
                   value="closure" 
-                  className="text-sm font-semibold data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md rounded-md transition-all"
+                  className="text-sm font-semibold data-[state=active]:bg-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-md rounded-md transition-all"
                 >
                   <Calculator className="h-4 w-4 mr-2" />
                   कर्ज बंद करा
@@ -1385,7 +1385,7 @@ export default function Closure() {
               </TabsList>
 
               <TabsContent value="closure" className="mt-0">
-            <Card className="shadow-2xl bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 border-2 border-blue-200">
+            <Card className="shadow-2xl bg-gradient-to-br from-indigo-50 via-indigo-50 to-purple-50 border-2 border-indigo-200">
               
               <CardContent className="p-6 bg-white rounded-lg">
                 <Form {...form}>
@@ -1468,7 +1468,7 @@ export default function Closure() {
                                 >
                                   <div className="flex justify-between items-start">
                                     <div className="flex-1">
-                                      <div className="font-medium text-blue-800">{loan.borrowerName}</div>
+                                      <div className="font-medium text-indigo-800">{loan.borrowerName}</div>
                                       <div className="text-sm text-gray-600">
                                         खाते क्रमांक: {loan.accountNumber} | ग्रुप: {getGroupName(loan.groupId)}
                                       </div>
@@ -1529,7 +1529,7 @@ export default function Closure() {
                                   setCalculationResult(null);
                                   form.setValue("finalInterestAmount", "");
                                 }}
-                                className="inline-block w-auto h-7 px-2 py-0 text-sm border-blue-300"
+                                className="inline-block w-auto h-7 px-2 py-0 text-sm border-indigo-300"
                               />
                               {editableLoanDate && selectedLoan.loanDate && editableLoanDate !== selectedLoan.loanDate && (
                                 <span className="ml-2 text-xs text-orange-600 font-medium">
@@ -1606,14 +1606,14 @@ export default function Closure() {
                         <button
                           type="button"
                           onClick={() => setPrintNameMode('group')}
-                          className={`px-3 py-1.5 text-sm font-medium transition-colors ${printNameMode === 'group' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'}`}
+                          className={`px-3 py-1.5 text-sm font-medium transition-colors ${printNameMode === 'group' ? 'bg-indigo-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'}`}
                         >
                           ग्रुप
                         </button>
                         <button
                           type="button"
                           onClick={() => setPrintNameMode('customer')}
-                          className={`px-3 py-1.5 text-sm font-medium transition-colors border-l ${printNameMode === 'customer' ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'}`}
+                          className={`px-3 py-1.5 text-sm font-medium transition-colors border-l ${printNameMode === 'customer' ? 'bg-indigo-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'}`}
                         >
                           कस्टमर
                         </button>
@@ -1634,7 +1634,7 @@ export default function Closure() {
                                 onValueChange={field.onChange}
                                 className="grid grid-cols-1 md:grid-cols-3 gap-4"
                               >
-                                <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-blue-50">
+                                <div className="flex items-center space-x-2 p-3 border rounded-lg hover:bg-indigo-50">
                                   <RadioGroupItem value="simple" id="simple" />
                                   <Label htmlFor="simple" className="cursor-pointer font-noto">
                                     <div className="font-medium">साधे व्याज</div>
@@ -1778,7 +1778,7 @@ export default function Closure() {
                         type="button"
                         onClick={calculateInterest}
                         disabled={!selectedLoan}
-                        className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 transform hover:scale-105 transition-all duration-300 shadow-lg"
+                        className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 transform hover:scale-105 transition-all duration-300 shadow-lg"
                       >
                         <Calculator className="h-4 w-4 mr-2" />
                         व्याज गणना करा
@@ -1787,23 +1787,23 @@ export default function Closure() {
 
                     {/* Calculation Results */}
                     {calculationResult && (
-                      <Card className="border-2 border-blue-300 bg-gradient-to-r from-blue-50 to-indigo-50">
+                      <Card className="border-2 border-indigo-300 bg-gradient-to-r from-indigo-50 to-indigo-50">
                         <CardHeader className="pb-3">
-                          <CardTitle className="text-blue-800 flex items-center gap-2">
+                          <CardTitle className="text-indigo-800 flex items-center gap-2">
                             <Clock className="h-5 w-5" />
                             गणना निकाल
                           </CardTitle>
                         </CardHeader>
                         <CardContent>
                           {/* Duration Display - Same as Interest Calculator */}
-                          <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                            <h3 className="text-lg font-semibold mb-3 flex items-center gap-2 text-blue-800">
+                          <div className="mb-6 p-4 bg-indigo-50 rounded-lg border border-indigo-200">
+                            <h3 className="text-lg font-semibold mb-3 flex items-center gap-2 text-indigo-800">
                               <Calendar className="h-5 w-5" />
                               कर्ज कालावधी
                             </h3>
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
                               <div>
-                                <div className="text-2xl font-bold text-blue-600">{calculationResult.durationInDays}</div>
+                                <div className="text-2xl font-bold text-indigo-600">{calculationResult.durationInDays}</div>
                                 <div className="text-sm text-gray-600">एकूण दिवस</div>
                               </div>
                               <div>
@@ -1820,7 +1820,7 @@ export default function Closure() {
                               </div>
                             </div>
                             {calculationResult.durationInMonths !== undefined && (
-                              <div className="mt-3 pt-2 border-t border-blue-100 text-center">
+                              <div className="mt-3 pt-2 border-t border-indigo-100 text-center">
                                 <span className="text-sm text-gray-600">
                                   {form.watch("interestType") === "simple" 
                                     ? "एकूण कालावधी: " 
@@ -1837,10 +1837,10 @@ export default function Closure() {
                           
                           {/* Amount Display */}
                           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
+                            <div className="bg-indigo-50 rounded-lg p-3 border border-indigo-200">
                               <div className="flex justify-between items-center">
                                 <span className="text-sm text-gray-600">मुद्दल रक्कम</span>
-                                <span className="text-lg font-semibold text-blue-600">
+                                <span className="text-lg font-semibold text-indigo-600">
                                   ₹{Number(selectedLoan?.principalAmount || 0).toLocaleString('en-IN')}
                                 </span>
                               </div>
@@ -2022,7 +2022,7 @@ export default function Closure() {
                       <Button
                         type="submit"
                         disabled={closureMutation.isPending || cleanupMutation.isPending || !selectedLoan || !form.watch("finalInterestAmount")}
-                        className="bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 transform hover:scale-105 transition-all duration-300"
+                        className="bg-gradient-to-r from-green-600 to-indigo-600 hover:from-green-700 hover:to-indigo-700 transform hover:scale-105 transition-all duration-300"
                       >
                         {(closureMutation.isPending || cleanupMutation.isPending) ? (
                           <>
@@ -2193,7 +2193,7 @@ export default function Closure() {
                       <Button 
                         variant="outline" 
                         onClick={() => setActiveTab("closure")}
-                        className="text-blue-600 border-blue-300"
+                        className="text-indigo-600 border-indigo-300"
                       >
                         <Calculator className="h-4 w-4 mr-2" />
                         कर्ज बंद करा टॅब वर जा

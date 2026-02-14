@@ -1228,7 +1228,7 @@ function Loans() {
   }, [searchQuery, isDialogOpen]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-white">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-indigo-50 to-white">
       <MobileNav />
       
       <div className="lg:flex">
@@ -1257,7 +1257,7 @@ function Loans() {
           }
         }}>
           <DialogTrigger asChild>
-            <Button className="bg-blue-600 hover:bg-blue-700 text-white shadow-md" title="Alt+N: नवीन कर्ज">
+            <Button className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-md" title="Alt+N: नवीन कर्ज">
               <Plus className="mr-2 h-4 w-4" />
               नवीन कर्ज
             </Button>
@@ -1308,7 +1308,7 @@ function Loans() {
                   
                   {/* Column 1 - Basic Information */}
                   <div className="space-y-2 sm:space-y-3">
-                    <h3 className="text-lg font-semibold border-b pb-1 text-blue-700">मूलभूत माहिती</h3>
+                    <h3 className="text-lg font-semibold border-b pb-1 text-indigo-700">मूलभूत माहिती</h3>
                     
                     {/* Group Selection with Autocomplete */}
                     <FormField
@@ -1442,8 +1442,8 @@ function Loans() {
                                         key={group.id}
                                         className={`p-3 cursor-pointer border-b border-gray-100 last:border-b-0 transition-colors ${
                                           index === selectedGroupSuggestionIndex 
-                                            ? 'bg-blue-100 border-blue-200' 
-                                            : 'hover:bg-blue-50'
+                                            ? 'bg-indigo-100 border-indigo-200' 
+                                            : 'hover:bg-indigo-50'
                                         }`}
                                         onMouseEnter={() => setSelectedGroupSuggestionIndex(index)}
                                         onMouseDown={(e) => {
@@ -1553,8 +1553,8 @@ function Loans() {
                                       key={index}
                                       className={`p-3 cursor-pointer border-b border-gray-100 last:border-b-0 transition-colors ${
                                         index === selectedSuggestionIndex 
-                                          ? 'bg-blue-100 border-blue-200' 
-                                          : 'hover:bg-blue-50'
+                                          ? 'bg-indigo-100 border-indigo-200' 
+                                          : 'hover:bg-indigo-50'
                                       }`}
                                       onMouseEnter={() => setSelectedSuggestionIndex(index)}
                                       onMouseDown={(e) => {
@@ -2304,7 +2304,7 @@ function Loans() {
       </div>
 
       {/* Keyboard Shortcuts Guide - Hidden on mobile (keyboard shortcuts not useful on mobile) */}
-      <Card className="hidden lg:block bg-gradient-to-r from-purple-50 to-blue-50 border-purple-200">
+      <Card className="hidden lg:block bg-gradient-to-r from-purple-50 to-indigo-50 border-purple-200">
         <CardContent className="pt-4">
           <div className="flex flex-wrap gap-2 text-sm">
             <div className="flex items-center gap-1 bg-white px-2 py-1 rounded border">
@@ -2355,7 +2355,7 @@ function Loans() {
                       scrollToSearchResults();
                     }
                   }}
-                  className="pl-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                  className="pl-10 border-gray-300 focus:border-indigo-500 focus:ring-indigo-500"
                 />
               </div>
               <Button 
@@ -2365,7 +2365,7 @@ function Loans() {
                     scrollToSearchResults();
                   }
                 }}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-5 shadow-sm"
+                className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 shadow-sm"
               >
                 <Search className="h-4 w-4 mr-1.5" />
                 शोध
@@ -2425,7 +2425,7 @@ function Loans() {
 
           {/* Status Filter */}
           <div>
-            <Label className="text-blue-700 font-medium mb-3 block">कर्जाची स्थिती</Label>
+            <Label className="text-indigo-700 font-medium mb-3 block">कर्जाची स्थिती</Label>
             <RadioGroup
               value={statusFilter}
               onValueChange={(value) => {
@@ -2434,8 +2434,8 @@ function Loans() {
               className="flex space-x-6"
             >
               <div className="flex items-center space-x-2">
-                <RadioGroupItem value="all" id="status-all" className="text-blue-600" />
-                <Label htmlFor="status-all" className="text-blue-700">सर्व</Label>
+                <RadioGroupItem value="all" id="status-all" className="text-indigo-600" />
+                <Label htmlFor="status-all" className="text-indigo-700">सर्व</Label>
               </div>
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="active" id="status-active" className="text-green-600" />
@@ -2455,7 +2455,7 @@ function Loans() {
                 // Always scroll to results area, regardless of search query
                 scrollToSearchResults();
               }}
-              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white shadow-sm"
+              className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm"
             >
               <Search className="mr-2 h-4 w-4" />
               शोधा
@@ -2494,7 +2494,7 @@ function Loans() {
               }
             </CardTitle>
             {searchQuery ? (
-              <p className="text-sm text-blue-600 mt-2">
+              <p className="text-sm text-indigo-600 mt-2">
                 "<span className="font-medium">{searchQuery}</span>" साठी शोध परिणाम दाखवत आहेत
               </p>
             ) : (
@@ -2509,16 +2509,16 @@ function Loans() {
               {/* Performance and Navigation Info */}
               <div className="mb-4 space-y-3">
                 {/* Keyboard Navigation Hint - Desktop Only */}
-                <div className="hidden md:block p-3 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg">
+                <div className="hidden md:block p-3 bg-gradient-to-r from-indigo-50 to-indigo-50 border border-indigo-200 rounded-lg">
                   <div className="flex items-center justify-between text-sm">
                     <div className="flex items-center space-x-4">
-                      <span className="text-blue-700 font-medium">⌨️ कीबोर्ड नेव्हिगेशन:</span>
-                      <span className="text-blue-600">↑↓ निवडा</span>
+                      <span className="text-indigo-700 font-medium">⌨️ कीबोर्ड नेव्हिगेशन:</span>
+                      <span className="text-indigo-600">↑↓ निवडा</span>
                       <span className="text-green-600">Enter संपादन</span>
                       <span className="text-purple-600">Space तपशील</span>
                       <span className="text-gray-600">Esc बाहेर</span>
                     </div>
-                    <span className="text-blue-600 text-xs">
+                    <span className="text-indigo-600 text-xs">
                       {paginatedLoans.length > 0 ? `${selectedRowIndex + 1}/${paginatedLoans.length}` : "0/0"}
                     </span>
                   </div>
@@ -2566,7 +2566,7 @@ function Loans() {
                           <button
                             onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                             disabled={currentPage === 1}
-                            className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-sm hover:bg-blue-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="px-2 py-1 bg-indigo-100 text-indigo-700 rounded text-sm hover:bg-indigo-200 disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             ← पूर्व
                           </button>
@@ -2576,7 +2576,7 @@ function Loans() {
                           <button
                             onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
                             disabled={currentPage === totalPages}
-                            className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-sm hover:bg-blue-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="px-2 py-1 bg-indigo-100 text-indigo-700 rounded text-sm hover:bg-indigo-200 disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             पुढे →
                           </button>
@@ -2610,10 +2610,10 @@ function Loans() {
                       className={`
                         ${loan.status === 'closed' 
                           ? 'bg-red-50 hover:bg-red-100 border-l-4 border-l-red-400 text-red-900' 
-                          : 'bg-white hover:bg-blue-50 border-l-4 border-l-transparent hover:border-l-blue-400'
+                          : 'bg-white hover:bg-indigo-50 border-l-4 border-l-transparent hover:border-l-indigo-400'
                         }
                         ${selectedRowIndex === index 
-                          ? 'bg-gradient-to-r from-blue-100 to-indigo-100 border-2 border-blue-400 shadow-md ring-2 ring-blue-200 ring-opacity-50' 
+                          ? 'bg-gradient-to-r from-indigo-100 to-indigo-100 border-2 border-indigo-400 shadow-md ring-2 ring-indigo-200 ring-opacity-50' 
                           : 'border-b border-gray-100'
                         }
                         cursor-pointer transition-all duration-200 ease-in-out transform hover:scale-[1.005] hover:shadow-sm
@@ -2710,7 +2710,7 @@ function Loans() {
                                   alert("पावती तयार करण्यात समस्या आली. कृपया पुन्हा प्रयत्न करा.");
                                 }
                               }}
-                              className="text-blue-600"
+                              className="text-indigo-600"
                             >
                               <FileText className="mr-2 h-4 w-4" />
                               पावती काढा
@@ -2773,10 +2773,10 @@ function Loans() {
                       p-4 rounded-xl border shadow-sm transition-all duration-200 cursor-pointer
                       ${loan.status === 'closed' 
                         ? 'bg-red-50 border-red-200 hover:bg-red-100' 
-                        : 'bg-white border-gray-200 hover:bg-blue-50'
+                        : 'bg-white border-gray-200 hover:bg-indigo-50'
                       }
                       ${selectedRowIndex === index 
-                        ? 'ring-2 ring-blue-400 bg-gradient-to-r from-blue-50 to-indigo-50 shadow-md' 
+                        ? 'ring-2 ring-indigo-400 bg-gradient-to-r from-indigo-50 to-indigo-50 shadow-md' 
                         : ''
                       }
                     `}
@@ -2811,10 +2811,10 @@ function Loans() {
                     </div>
 
                     {/* Amount - Prominent */}
-                    <div className="mb-3 p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg">
+                    <div className="mb-3 p-3 bg-gradient-to-r from-indigo-50 to-indigo-50 rounded-lg">
                       <div className="text-center">
-                        <p className="text-sm text-blue-600 font-medium">कर्ज रक्कम</p>
-                        <p className="text-2xl font-bold text-blue-900 font-inter">
+                        <p className="text-sm text-indigo-600 font-medium">कर्ज रक्कम</p>
+                        <p className="text-2xl font-bold text-indigo-900 font-inter">
                           ₹ {LoanCalculations.formatAmount(Number(loan.principalAmount))}
                         </p>
                       </div>
@@ -2860,7 +2860,7 @@ function Loans() {
                               e.stopPropagation();
                               handleEdit(loan);
                             }}
-                            className="px-4 py-2.5 bg-blue-100 text-blue-700 rounded-lg text-sm font-medium hover:bg-blue-200 transition-colors min-h-[44px] min-w-[80px] touch-manipulation"
+                            className="px-4 py-2.5 bg-indigo-100 text-indigo-700 rounded-lg text-sm font-medium hover:bg-indigo-200 transition-colors min-h-[44px] min-w-[80px] touch-manipulation"
                           >
                             <Edit className="w-3 h-3 mr-1 inline" />
                             संपादन
@@ -2981,7 +2981,7 @@ function Loans() {
                         });
                       }
                     }}
-                    className="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors text-sm font-medium"
+                    className="px-4 py-2 bg-indigo-100 text-indigo-700 rounded-lg hover:bg-indigo-200 transition-colors text-sm font-medium"
                   >
                     ↑ वरच्या बाजूला जा
                   </button>
@@ -2993,7 +2993,7 @@ function Loans() {
                 <div className="mt-6 text-center">
                   <button
                     onClick={() => setCurrentPage(prev => prev + 1)}
-                    className="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all font-medium shadow-sm"
+                    className="px-6 py-3 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white rounded-lg hover:from-indigo-700 hover:to-indigo-800 transition-all font-medium shadow-sm"
                   >
                     आणखी {Math.min(pageSize, totalRecords - (currentPage * pageSize))} कर्जे लोड करा
                   </button>
@@ -3012,7 +3012,7 @@ function Loans() {
       <Dialog open={showDetailsModal} onOpenChange={setShowDetailsModal}>
         <DialogContent className="w-[95vw] h-[90vh] max-w-4xl max-h-none overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-xl font-bold text-blue-800">
+            <DialogTitle className="text-xl font-bold text-indigo-800">
               📋 संपूर्ण कर्ज तपशील
             </DialogTitle>
             <DialogDescription>
@@ -3023,8 +3023,8 @@ function Loans() {
           {selectedLoanDetails && (
             <div className="space-y-6 py-4">
               {/* Basic Information Section */}
-              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg border border-blue-200">
-                <h3 className="text-lg font-semibold text-blue-800 mb-3 flex items-center">
+              <div className="bg-gradient-to-r from-indigo-50 to-indigo-50 p-4 rounded-lg border border-indigo-200">
+                <h3 className="text-lg font-semibold text-indigo-800 mb-3 flex items-center">
                   👤 मूलभूत माहिती
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -3185,7 +3185,7 @@ function Loans() {
                       setShowDetailsModal(false);
                       handleEdit(selectedLoanDetails);
                     }}
-                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                    className="bg-indigo-600 hover:bg-indigo-700 text-white"
                   >
                     <Edit className="mr-2 h-4 w-4" />
                     संपादन करा
@@ -3220,17 +3220,17 @@ function Loans() {
 
       {/* Performance Info Card - Only show when no filters are active AND no search query */}
       {!hasSearchQuery && !hasDateFilters && !hasStatusFilter && (
-        <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200">
+        <Card className="bg-gradient-to-br from-indigo-50 to-indigo-50 border-indigo-200">
           <CardContent className="p-6">
             <div className="flex items-center justify-center text-center">
               <div>
-                <CreditCard className="h-16 w-16 text-blue-400 mx-auto mb-4" />
+                <CreditCard className="h-16 w-16 text-indigo-400 mx-auto mb-4" />
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">कर्ज शोधा</h3>
                 <p className="text-gray-600 mb-4">
                   वरील search box वापरून कर्ज शोधा.<br/>
                   Performance साठी default list दिसत नाही.
                 </p>
-                <div className="bg-white/70 p-4 rounded-lg border border-blue-200">
+                <div className="bg-white/70 p-4 rounded-lg border border-indigo-200">
                   <p className="text-sm text-gray-700">
                     📝 <strong>सूचना:</strong> कर्जदाराचे नाव, कर्ज क्रमांक, किंवा रक्कम टाइप करा
                   </p>

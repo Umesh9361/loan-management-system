@@ -914,7 +914,7 @@ function MobileCashbook() {
               onClick={() => setViewMode('cashbook')}
               className={`flex-1 py-2 text-sm font-medium rounded-full transition-all ${
                 viewMode === 'cashbook' 
-                  ? 'bg-blue-500 text-white shadow-sm' 
+                  ? 'bg-indigo-500 text-white shadow-sm' 
                   : 'text-gray-600'
               }`}
             >
@@ -924,7 +924,7 @@ function MobileCashbook() {
               onClick={() => setViewMode('journal')}
               className={`flex-1 py-2 text-sm font-medium rounded-full transition-all ${
                 viewMode === 'journal' 
-                  ? 'bg-blue-500 text-white shadow-sm' 
+                  ? 'bg-indigo-500 text-white shadow-sm' 
                   : 'text-gray-600'
               }`}
             >
@@ -953,7 +953,7 @@ function MobileCashbook() {
                 }}
                 className={`whitespace-nowrap px-3 py-1.5 text-xs font-medium rounded-full transition-all ${
                   (viewPeriod === period && !(searchFilters.dateFrom && searchFilters.dateTo) && !isDateRangeOpen)
-                    ? 'bg-blue-500 text-white' 
+                    ? 'bg-indigo-500 text-white' 
                     : 'bg-gray-100 text-gray-600'
                 }`}
               >
@@ -967,7 +967,7 @@ function MobileCashbook() {
               onClick={() => setIsDateRangeOpen(!isDateRangeOpen)}
               className={`whitespace-nowrap px-3 py-1.5 text-xs font-medium rounded-full transition-all ${
                 (isDateRangeOpen || (searchFilters.dateFrom && searchFilters.dateTo)) 
-                  ? 'bg-blue-500 text-white' 
+                  ? 'bg-indigo-500 text-white' 
                   : 'bg-gray-100 text-gray-600'
               }`}
             >
@@ -1030,7 +1030,7 @@ function MobileCashbook() {
                   }
                 }}
                 disabled={!customDateRange.startDate || !customDateRange.endDate}
-                className="flex-1 h-8 rounded-md bg-blue-500 hover:bg-blue-600 text-white text-xs font-medium"
+                className="flex-1 h-8 rounded-md bg-indigo-500 hover:bg-indigo-600 text-white text-xs font-medium"
               >
                 शोधा
               </Button>
@@ -1069,7 +1069,7 @@ function MobileCashbook() {
                   style={{ colorScheme: 'light' }}
                 />
               </div>
-              <div className="text-sm text-blue-600 font-medium">
+              <div className="text-sm text-indigo-600 font-medium">
                 आरंभिक शिल्लक: ₹{correctOpeningBalance.toLocaleString('en-IN')}
               </div>
             </div>
@@ -1107,7 +1107,7 @@ function MobileCashbook() {
                     const timer = setTimeout(() => {}, 300);
                     setSearchDebounceTimer(timer);
                   }}
-                  className="h-11 px-4 text-base bg-gray-50 border-gray-200 rounded-lg focus:bg-white focus:border-blue-400 focus:ring-1 focus:ring-blue-200"
+                  className="h-11 px-4 text-base bg-gray-50 border-gray-200 rounded-lg focus:bg-white focus:border-indigo-400 focus:ring-1 focus:ring-indigo-200"
                   data-testid="input-unified-search"
                 />
                 <p className="text-xs text-gray-500">
@@ -1120,7 +1120,7 @@ function MobileCashbook() {
                 <select
                   value={searchFilters.transactionType}
                   onChange={(e) => setSearchFilters(prev => ({ ...prev, transactionType: e.target.value }))}
-                  className="w-full px-3 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:border-blue-400 focus:ring-1 focus:ring-blue-200"
+                  className="w-full px-3 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:border-indigo-400 focus:ring-1 focus:ring-indigo-200"
                   autoComplete="off"
                 >
                   <option value="">सर्व व्यवहार</option>
@@ -1154,15 +1154,15 @@ function MobileCashbook() {
                       }
                     }}
                     placeholder="3, 6, 12, 24"
-                    className="w-full h-10 px-3 text-center text-base bg-white border border-gray-200 rounded-md focus:border-blue-400 focus:ring-1 focus:ring-blue-200"
+                    className="w-full h-10 px-3 text-center text-base bg-white border border-gray-200 rounded-md focus:border-indigo-400 focus:ring-1 focus:ring-indigo-200"
                     data-testid="input-months-back"
                   />
                   <p className="text-xs text-gray-500 mt-2 text-center">
                     महिने संख्या टाका
                   </p>
                   {searchFilters.monthsBack && !isNaN(parseInt(searchFilters.monthsBack)) && (
-                    <div className="mt-2 p-2 bg-blue-50 rounded-md border border-blue-100">
-                      <p className="text-xs text-blue-700 text-center font-medium">
+                    <div className="mt-2 p-2 bg-indigo-50 rounded-md border border-indigo-100">
+                      <p className="text-xs text-indigo-700 text-center font-medium">
                         श्रेणी: {(() => {
                           const today = new Date();
                           const monthsAgo = new Date(today);
@@ -1198,12 +1198,12 @@ function MobileCashbook() {
                 <div>तारीख</div>
                 <div className="text-center text-green-600">जमा</div>
                 <div className="text-center text-red-600">नावे</div>
-                <div className="text-center text-blue-600">शिल्लक</div>
+                <div className="text-center text-indigo-600">शिल्लक</div>
               </div>
             
               {/* Opening Balance Row */}
-              <div className="p-3 border-b border-gray-200 bg-blue-50 grid gap-1 text-sm" style={{ gridTemplateColumns: '2.5fr 1fr 1fr 1fr' }}>
-                <div className="text-xs font-medium text-blue-700">
+              <div className="p-3 border-b border-gray-200 bg-indigo-50 grid gap-1 text-sm" style={{ gridTemplateColumns: '2.5fr 1fr 1fr 1fr' }}>
+                <div className="text-xs font-medium text-indigo-700">
                   आरंभिक शिल्लक
                   <div className="text-xs text-gray-500 mt-0.5">
                     {(() => {
@@ -1223,7 +1223,7 @@ function MobileCashbook() {
                 </div>
                 <div></div>
                 <div></div>
-                <div className="font-semibold text-blue-600 text-center text-sm">
+                <div className="font-semibold text-indigo-600 text-center text-sm">
                   ₹{correctOpeningBalance.toLocaleString('en-IN')}
                 </div>
               </div>
@@ -1231,7 +1231,7 @@ function MobileCashbook() {
               {/* Transaction Rows */}
               {isLoading && transactionsList.length === 0 ? (
                 <div className="p-8 text-center">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500 mx-auto"></div>
                   <p className="mt-2 text-gray-500 text-sm">लोड होत आहे...</p>
                 </div>
               ) : !isLoading && transactionsList.length === 0 ? (
@@ -1273,7 +1273,7 @@ function MobileCashbook() {
                       className={`p-3 cursor-pointer ${
                         isLoanTransaction 
                           ? 'bg-amber-50 border-b border-amber-100 cursor-not-allowed' 
-                          : 'bg-white border-b border-gray-100 hover:bg-gray-50 active:bg-blue-50'
+                          : 'bg-white border-b border-gray-100 hover:bg-gray-50 active:bg-indigo-50'
                       }`}
                     >
                       <div className="grid gap-2 text-sm" style={{ gridTemplateColumns: '2.5fr 1fr 1fr 1fr' }}>
@@ -1284,7 +1284,7 @@ function MobileCashbook() {
                           <div className="text-sm font-medium text-gray-800 break-words">
                             {transaction.party?.name || 'रोकड'}
                             {transaction.displayAccountNumber && transaction.displayAccountNumber !== "मॅन्युअल एंट्री" && (
-                              <span className="ml-1 text-xs bg-blue-50 text-blue-700 px-1 rounded">
+                              <span className="ml-1 text-xs bg-indigo-50 text-indigo-700 px-1 rounded">
                                 खाते क्र. {transaction.displayAccountNumber}
                               </span>
                             )}
@@ -1346,7 +1346,7 @@ function MobileCashbook() {
 
               {journalLoading ? (
                 <div className="p-8 text-center">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500 mx-auto"></div>
                   <p className="mt-2 text-gray-500 text-sm">द्विनोंदणी लोड होत आहे...</p>
                 </div>
               ) : !journalEntries || journalEntries.length === 0 ? (
@@ -1443,7 +1443,7 @@ function MobileCashbook() {
                 <div className="border-t border-gray-200 pt-2 mt-2">
                   <div className="flex justify-between items-center">
                     <span className="text-sm font-semibold text-gray-800">अंतिम शिल्लक:</span>
-                    <span className={`font-bold text-lg ${periodBalance >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
+                    <span className={`font-bold text-lg ${periodBalance >= 0 ? 'text-indigo-600' : 'text-red-600'}`}>
                       ₹{periodBalance.toLocaleString('en-IN')}
                     </span>
                   </div>
@@ -1540,7 +1540,7 @@ function MobileCashbook() {
                   placeholder="व्यक्ती निवडा"
                 />
               </div>
-              <div className="mt-2 text-xs text-blue-600">
+              <div className="mt-2 text-xs text-indigo-600">
                 व्यक्ती निवडल्यास automatic dual entry होईल
               </div>
             </div>
@@ -1584,7 +1584,7 @@ function MobileCashbook() {
                   handleQuickEntry();
                 }}
                 disabled={createMutation.isPending}
-                className="bg-blue-500 hover:bg-blue-600 h-10"
+                className="bg-indigo-500 hover:bg-indigo-600 h-10"
               >
                 {createMutation.isPending ? "जतन होत आहे..." : "जतन करा"}
               </Button>
@@ -1675,7 +1675,7 @@ function MobileCashbook() {
                     });
                   }}
                   disabled={updateMutation.isPending}
-                  className="bg-blue-500 hover:bg-blue-600 h-12"
+                  className="bg-indigo-500 hover:bg-indigo-600 h-12"
                 >
                   {updateMutation.isPending ? "..." : "अपडेट"}
                 </Button>

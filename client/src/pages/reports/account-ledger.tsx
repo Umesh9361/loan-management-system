@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Printer, Search, Home, FileText, ArrowLeft, User, Wallet, CreditCard, Download } from "lucide-react";
+import { Printer, Search, Home, FileText, ArrowLeft, User, Wallet, CreditCard, Download, FileDown } from "lucide-react";
 import { exportAccountLedgerToExcel } from "@/utils/excel-export";
 import { Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
@@ -16,6 +16,8 @@ import { Sidebar } from "@/components/ui/sidebar";
 import { MobileNav } from "@/components/ui/mobile-nav";
 import { useRealTimeSync } from "@/hooks/use-real-time-sync";
 import type { Company } from "@shared/schema";
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 export default function AccountLedger() {
   const [, setLocation] = useLocation();
@@ -83,6 +85,14 @@ export default function AccountLedger() {
 
   const [statementData, setStatementData] = useState<any>(null);
   const [selectedAccount, setSelectedAccount] = useState<any>(null);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 1024);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
   
   // 🚀 REAL-TIME SYNC: Enable automatic updates for all loan operations
   const { triggerCompleteSync } = useRealTimeSync({
@@ -847,8 +857,186 @@ export default function AccountLedger() {
     window.print();
   };
 
+  const handleMobilePdfDownload = async () => {
+    if (!statementData || !statementData.entries || statementData.entries.length === 0) {
+      alert("प्रथम खाते निवडा आणि लेजर तयार करा");
+      return;
+    }
+
+    try {
+      const a5WidthPx = 560;
+      const companyName = company?.name || 'कंपनी नाव';
+      const accountName = statementData.account?.borrowerName || statementData.account?.name || 'खाते';
+      const accountType = statementData.account?.type || '';
+      const isCashAccount = accountType === 'cash';
+      const isLoanAccount = accountType === 'individual_loan' || accountType === 'loan';
+
+      let headerTitle = 'खाते लेजर';
+      if (accountType === 'individual_loan') {
+        headerTitle = 'नमुना क्रमांक आठ (नियम 18 पहा)';
+      } else if (accountType === 'cash') {
+        headerTitle = 'रोकड खाते लेजर';
+      } else if (accountType === 'party') {
+        headerTitle = 'व्यक्ती खाते लेजर';
+      } else if (accountType === 'loan') {
+        headerTitle = 'सर्व कर्ज खाते (एकत्रित) लेजर';
+      }
+
+      let accountInfoHTML = '';
+      if (statementData.account?.accountNumber) {
+        accountInfoHTML += `<p style="font-size:10px;margin:2px 0;">खाते क्र.: ${statementData.account.accountNumber}</p>`;
+      }
+      if (statementData.account?.principalAmount) {
+        const amt = parseFloat(statementData.account.principalAmount);
+        accountInfoHTML += `<p style="font-size:10px;margin:2px 0;">मुद्दल: ₹${isNaN(amt) ? '0' : amt.toLocaleString('en-IN')}</p>`;
+      }
+      if (statementData.account?.interestRate) {
+        accountInfoHTML += `<p style="font-size:10px;margin:2px 0;">व्याज दर: ${statementData.account.interestRate}% ${statementData.account.interestRateType === 'monthly' ? 'मासिक' : 'वार्षिक'}</p>`;
+      }
+      if (statementData.account?.loanDate) {
+        accountInfoHTML += `<p style="font-size:10px;margin:2px 0;">कर्ज दिनांक: ${DateUtils.isoToIndianDate(statementData.account.loanDate)}</p>`;
+      }
+
+      let rows = '';
+      statementData.entries.forEach((entry: any) => {
+        const bal = entry.balance || 0;
+        const drLabel = isCashAccount
+          ? (bal >= 0 ? ' (Cr.)' : ' (Dr.)')
+          : (bal >= 0 ? ' (Dr.)' : ' (Cr.)');
+        const balColor = isCashAccount
+          ? (bal >= 0 ? 'color:green;' : 'color:red;')
+          : isLoanAccount
+            ? 'color:red;'
+            : (bal >= 0 ? 'color:blue;' : 'color:red;');
+
+        const dateDisplay = entry.type === 'opening' ? 'प्रारंभिक' : DateUtils.isoToIndianDate(entry.date);
+
+        rows += `<tr style="${entry.type === 'opening' ? 'background:#f5f5f5;font-weight:600;' : ''}">
+          <td style="border:1px solid #1e40af;padding:5px;text-align:center;font-size:10px;">${dateDisplay}</td>
+          <td style="border:1px solid #1e40af;padding:5px;text-align:left;font-size:10px;">${entry.description || ''}</td>
+          <td style="border:1px solid #1e40af;padding:5px;text-align:right;font-size:10px;">${entry.debit > 0 ? '₹' + Math.round(entry.debit).toLocaleString('en-IN') : ''}</td>
+          <td style="border:1px solid #1e40af;padding:5px;text-align:right;font-size:10px;">${entry.credit > 0 ? '₹' + Math.round(entry.credit).toLocaleString('en-IN') : ''}</td>
+          <td style="border:1px solid #1e40af;padding:5px;text-align:right;font-size:10px;font-weight:600;${balColor}">${bal < 0 ? '-' : ''}₹${Math.round(Math.abs(bal)).toLocaleString('en-IN')}${drLabel}</td>
+        </tr>`;
+      });
+
+      const finalBal = parseFloat(statementData.finalBalance || 0);
+      const finalDrLabel = isCashAccount
+        ? (finalBal >= 0 ? ' (Cr.)' : ' (Dr.)')
+        : (finalBal >= 0 ? ' (Dr.)' : ' (Cr.)');
+      const finalBalColor = isCashAccount
+        ? (finalBal >= 0 ? 'color:green;' : 'color:red;')
+        : isLoanAccount
+          ? 'color:red;'
+          : (finalBal >= 0 ? 'color:blue;' : 'color:red;');
+
+      rows += `<tr style="background:#e8e8e8;font-weight:bold;">
+        <td style="border:2px solid #1e40af;padding:5px;text-align:center;font-size:10px;" colspan="2">एकूण</td>
+        <td style="border:2px solid #1e40af;padding:5px;text-align:right;font-size:10px;">₹${Math.round(parseFloat(statementData.totalDebit || 0)).toLocaleString('en-IN')}</td>
+        <td style="border:2px solid #1e40af;padding:5px;text-align:right;font-size:10px;">₹${Math.round(parseFloat(statementData.totalCredit || 0)).toLocaleString('en-IN')}</td>
+        <td style="border:2px solid #1e40af;padding:5px;text-align:right;font-size:10px;font-weight:bold;${finalBalColor}">${finalBal < 0 ? '-' : ''}₹${Math.round(Math.abs(finalBal)).toLocaleString('en-IN')}${finalDrLabel}</td>
+      </tr>`;
+
+      const fullHTML = `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; background: white; width: ${a5WidthPx}px; padding: 12px; }
+      </style></head><body>
+        <div style="text-align:center;margin-bottom:10px;">
+          <h2 style="font-size:15px;margin-bottom:3px;">${headerTitle}</h2>
+          <p style="font-size:12px;margin-bottom:3px;font-weight:bold;">${companyName}</p>
+          <p style="font-size:11px;margin-bottom:2px;font-weight:600;">खाते: ${accountName}</p>
+          ${accountInfoHTML}
+          <p style="font-size:10px;margin-top:4px;">कालावधी: ${DateUtils.isoToIndianDate(filters.dateFrom)} ते ${DateUtils.isoToIndianDate(filters.dateTo)}</p>
+        </div>
+        <table style="width:100%;border-collapse:collapse;table-layout:fixed;">
+          <thead>
+            <tr>
+              <th style="border:2px solid #1e40af;padding:5px;text-align:center;font-size:9px;background:#f0f0f0;font-weight:bold;width:14%;">दिनांक</th>
+              <th style="border:2px solid #1e40af;padding:5px;text-align:center;font-size:9px;background:#f0f0f0;font-weight:bold;width:32%;">तपशील</th>
+              <th style="border:2px solid #1e40af;padding:5px;text-align:center;font-size:9px;background:#f0f0f0;font-weight:bold;width:16%;">नावे (Dr.)</th>
+              <th style="border:2px solid #1e40af;padding:5px;text-align:center;font-size:9px;background:#f0f0f0;font-weight:bold;width:16%;">जमा (Cr.)</th>
+              <th style="border:2px solid #1e40af;padding:5px;text-align:center;font-size:9px;background:#f0f0f0;font-weight:bold;width:22%;">शिल्लक</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </body></html>`;
+
+      const iframe = document.createElement('iframe');
+      iframe.style.position = 'fixed';
+      iframe.style.left = '-9999px';
+      iframe.style.top = '0';
+      iframe.style.width = a5WidthPx + 'px';
+      iframe.style.height = '2000px';
+      iframe.style.border = 'none';
+      iframe.style.overflow = 'visible';
+      iframe.style.zIndex = '-9999';
+      iframe.style.pointerEvents = 'none';
+      iframe.style.opacity = '0';
+
+      document.body.appendChild(iframe);
+
+      const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+      if (!iframeDoc) {
+        document.body.removeChild(iframe);
+        alert("PDF तयार करण्यात समस्या आली.");
+        return;
+      }
+
+      iframeDoc.open();
+      iframeDoc.write(fullHTML);
+      iframeDoc.close();
+
+      await new Promise(resolve => setTimeout(resolve, 400));
+
+      const targetEl = iframeDoc.body;
+      const contentHeight = targetEl.scrollHeight;
+
+      const canvas = await html2canvas(targetEl, {
+        scale: 4,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff',
+        imageTimeout: 0,
+        width: a5WidthPx,
+        height: contentHeight,
+        windowWidth: a5WidthPx,
+        windowHeight: contentHeight,
+      });
+
+      document.body.removeChild(iframe);
+
+      const imgData = canvas.toDataURL('image/png');
+      const a5Width = 148;
+      const a5Height = 210;
+      const imgTotalHeight = (canvas.height * a5Width) / canvas.width;
+      const totalPages = Math.ceil(imgTotalHeight / a5Height);
+
+      const doc = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a5',
+        compress: false,
+      });
+
+      for (let page = 0; page < totalPages; page++) {
+        if (page > 0) doc.addPage();
+        const yOffset = -(page * a5Height);
+        doc.addImage(imgData, 'PNG', 0, yOffset, a5Width, imgTotalHeight);
+      }
+
+      const safeAccountName = (accountName || 'खाते').replace(/[/\\?%*:|"<>]/g, '_');
+      doc.save(`खाते_लेजर_${safeAccountName}_${filters.dateFrom}_to_${filters.dateTo}.pdf`);
+    } catch (error) {
+      console.error('Mobile PDF generation error:', error);
+      const existingIframe = document.querySelector('iframe[style*="-9999px"]');
+      if (existingIframe) existingIframe.remove();
+      alert("PDF तयार करण्यात समस्या आली. कृपया पुन्हा प्रयत्न करा.");
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-amber-50">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-amber-50">
       <MobileNav />
       
       <div className="lg:flex">
@@ -1046,7 +1234,7 @@ export default function AccountLedger() {
                       लेजर तयार करा
                     </Button>
                     {statementData && (
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 flex-wrap">
                         <Button onClick={handlePrint} variant="outline">
                           <Printer className="h-4 w-4 mr-2" />
                           प्रिंट करा
@@ -1058,6 +1246,13 @@ export default function AccountLedger() {
                           </svg>
                           Excel एक्सपोर्ट
                         </Button>
+
+                        {isMobile && (
+                          <Button onClick={handleMobilePdfDownload} variant="outline" className="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border-indigo-200">
+                            <FileDown className="h-4 w-4 mr-2" />
+                            मोबाईल PDF
+                          </Button>
+                        )}
                       </div>
                     )}
                   </div>
@@ -1150,7 +1345,7 @@ export default function AccountLedger() {
                           </div>
                         </div>
                         {statementData.account.totalLoans && (
-                          <div className="mt-2 p-2 bg-blue-50 rounded">
+                          <div className="mt-2 p-2 bg-indigo-50 rounded">
                             <p><strong>एकूण कर्ज:</strong> {statementData.account.totalLoans} कर्ज</p>
                             <p><strong>एकूण कर्ज राशी:</strong> ₹{(() => {
                               try {
@@ -1240,7 +1435,7 @@ export default function AccountLedger() {
                                     ? (bal >= 0 ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold')
                                     : isLoanAccount
                                       ? 'text-red-600 font-semibold'
-                                      : (bal >= 0 ? 'text-blue-600 font-semibold' : 'text-red-600 font-semibold');
+                                      : (bal >= 0 ? 'text-indigo-600 font-semibold' : 'text-red-600 font-semibold');
                                   return (
                                     <span className={colorClass}>
                                       {bal < 0 ? '-' : ''}₹{Math.round(Math.abs(bal)).toLocaleString('en-IN')}
@@ -1273,7 +1468,7 @@ export default function AccountLedger() {
                                   ? (bal >= 0 ? 'text-green-600 font-bold' : 'text-red-600 font-bold')
                                   : isLoanAccount
                                     ? 'text-red-600 font-bold'
-                                    : (bal >= 0 ? 'text-blue-600 font-bold' : 'text-red-600 font-bold');
+                                    : (bal >= 0 ? 'text-indigo-600 font-bold' : 'text-red-600 font-bold');
                                 return (
                                   <span className={colorClass}>
                                     {bal < 0 ? '-' : ''}₹{Math.round(Math.abs(bal)).toLocaleString('en-IN')}
@@ -1291,7 +1486,7 @@ export default function AccountLedger() {
                         <div className="mt-4 border-t pt-4">
                           <div className="grid grid-cols-3 gap-4 font-semibold text-lg">
                             <div className="text-right">
-                              <span className={statementData.account?.type === 'individual_loan' || statementData.account?.type === 'loan' ? 'text-red-600' : 'text-blue-600'}>एकूण नावे: ₹{Math.round(statementData.totals.totalDebit).toLocaleString('en-IN')}</span>
+                              <span className={statementData.account?.type === 'individual_loan' || statementData.account?.type === 'loan' ? 'text-red-600' : 'text-indigo-600'}>एकूण नावे: ₹{Math.round(statementData.totals.totalDebit).toLocaleString('en-IN')}</span>
                             </div>
                             <div className="text-right">
                               <span className="text-green-600">एकूण जमा: ₹{Math.round(statementData.totals.totalCredit).toLocaleString('en-IN')}</span>
@@ -1308,7 +1503,7 @@ export default function AccountLedger() {
                                   ? (bal >= 0 ? 'text-green-600' : 'text-red-600')
                                   : isLoanAccount
                                     ? 'text-red-600'
-                                    : (bal >= 0 ? 'text-blue-600' : 'text-red-600');
+                                    : (bal >= 0 ? 'text-indigo-600' : 'text-red-600');
                                 return (
                                   <span className={colorClass}>
                                     फरक: {bal < 0 ? '-' : ''}₹{Math.round(Math.abs(bal)).toLocaleString('en-IN')}

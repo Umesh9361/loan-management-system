@@ -149,10 +149,10 @@ export function MobileNav({ hideBottomNav = false }: MobileNavProps = {}) {
                   size="sm"
                   className={cn(
                     "flex flex-col items-center gap-1 h-auto py-2 px-2 min-w-0 flex-1",
-                    isActive ? "text-blue-600 bg-blue-50" : "text-gray-600"
+                    isActive ? "text-indigo-600 bg-indigo-50" : "text-gray-600"
                   )}
                 >
-                  <Icon className={cn("h-4 w-4", isActive && "text-blue-600")} />
+                  <Icon className={cn("h-4 w-4", isActive && "text-indigo-600")} />
                   <span className="text-xs truncate">{item.name}</span>
                 </Button>
               </Link>

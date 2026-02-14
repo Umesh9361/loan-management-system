@@ -598,7 +598,7 @@ export default function AccountSummaryReport() {
               ))}
               
               {/* Grand Total Row */}
-              <tr className="bg-blue-100 border-t-2 border-black font-bold">
+              <tr className="bg-indigo-100 border-t-2 border-black font-bold">
                 <td className="border border-black p-2 text-left font-bold">
                   एकूण योग
                 </td>

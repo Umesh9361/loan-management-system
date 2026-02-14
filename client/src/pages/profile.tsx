@@ -158,7 +158,7 @@ export default function Profile() {
                   <div>
                     <Label className="text-sm font-medium text-gray-700">भूमिका</Label>
                     <div className="mt-1 px-3 py-2 bg-gray-50 border border-gray-200 rounded-md flex items-center">
-                      <Shield className="mr-2 h-4 w-4 text-blue-600" />
+                      <Shield className="mr-2 h-4 w-4 text-indigo-600" />
                       {user?.role === 'admin' ? 'प्रशासक' : 'क्लर्क'}
                     </div>
                   </div>
@@ -245,13 +245,13 @@ export default function Profile() {
                 <CardContent>
                   {user?.role === 'super_admin' ? (
                     <div className="text-center py-8">
-                      <Key className="h-12 w-12 text-blue-400 mx-auto mb-4" />
+                      <Key className="h-12 w-12 text-indigo-400 mx-auto mb-4" />
                       <p className="text-gray-600 mb-4 font-noto">
                         सुपर अॅडमिन म्हणून आपण Tenant Management मध्ये आपला पासवर्ड बदलू शकता
                       </p>
                       <Button 
                         onClick={() => safeNavigate('/super-admin-tenant-management')}
-                        className="bg-blue-600 hover:bg-blue-700"
+                        className="bg-indigo-600 hover:bg-indigo-700"
                       >
                         Tenant Management वर जा
                       </Button>
@@ -262,7 +262,7 @@ export default function Profile() {
                       <p className="text-gray-600 mb-4">सुरक्षिततेसाठी आपला पासवर्ड नियमितपणे बदला</p>
                       <Button 
                         onClick={() => setIsChangingPassword(true)}
-                        className="bg-blue-600 hover:bg-blue-700"
+                        className="bg-indigo-600 hover:bg-indigo-700"
                       >
                         पासवर्ड बदला
                       </Button>
@@ -327,7 +327,7 @@ export default function Profile() {
                         <Button 
                           type="submit" 
                           disabled={passwordChangeMutation.isPending}
-                          className="bg-blue-600 hover:bg-blue-700"
+                          className="bg-indigo-600 hover:bg-indigo-700"
                         >
                           {passwordChangeMutation.isPending ? "बदलत आहे..." : "पासवर्ड बदला"}
                         </Button>

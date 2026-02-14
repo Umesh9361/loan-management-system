@@ -337,7 +337,7 @@ export default function WorkingCashBook() {
       {/* Mobile & Universal Navigation Header */}
       <div className="mb-4">
         <div className="flex items-center justify-between bg-white px-4 py-3 border border-gray-200 rounded-lg shadow-sm">
-          <h1 className="text-lg font-semibold text-blue-900">रोकड वही (नमुना क्र. ७)</h1>
+          <h1 className="text-lg font-semibold text-indigo-900">रोकड वही (नमुना क्र. ७)</h1>
           <div className="flex gap-2">
             <Link href="/">
               <Button variant="outline" size="sm" className="text-xs">
@@ -387,7 +387,7 @@ export default function WorkingCashBook() {
                   className="font-inter"
                 />
               </div>
-              <Button onClick={handleSearch} className="bg-blue-600 hover:bg-blue-700 text-white">
+              <Button onClick={handleSearch} className="bg-indigo-600 hover:bg-indigo-700 text-white">
                 <Search className="mr-2 h-4 w-4" />
                 शोधा
               </Button>
@@ -408,7 +408,7 @@ export default function WorkingCashBook() {
               
               {/* Transaction Count Info */}
               {filteredData && (
-                <div className="px-3 py-1 bg-blue-100 text-blue-800 rounded text-xs">
+                <div className="px-3 py-1 bg-indigo-100 text-indigo-800 rounded text-xs">
                   एकूण: {filteredData.allTransactionsCount} | फिल्टर: {filteredData.filteredTransactionsCount}
                 </div>
               )}
@@ -501,9 +501,9 @@ export default function WorkingCashBook() {
             {/* Balance Summary */}
             {filteredData && (
               <div className="mt-4 print:mt-2 grid grid-cols-1 md:grid-cols-3 gap-4 print:gap-2">
-                <div className="bg-blue-50 border border-blue-200 rounded p-3 print:p-2">
-                  <h4 className="font-semibold text-blue-800 mb-1">सुरुवातीची शिल्लक</h4>
-                  <p className="text-lg font-mono text-blue-900">
+                <div className="bg-indigo-50 border border-indigo-200 rounded p-3 print:p-2">
+                  <h4 className="font-semibold text-indigo-800 mb-1">सुरुवातीची शिल्लक</h4>
+                  <p className="text-lg font-mono text-indigo-900">
                     ₹{formatAmount(Math.abs(filteredData.openingBalance))} 
                     {filteredData.openingBalance < 0 && ' (कमतरता)'}
                   </p>

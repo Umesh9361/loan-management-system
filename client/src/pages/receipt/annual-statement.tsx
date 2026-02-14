@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Printer, CheckCircle, X, FileText } from "lucide-react";
+import { Printer, CheckCircle, X, FileText, Download } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { Sidebar } from "@/components/ui/sidebar";
 import { MobileNav } from "@/components/ui/mobile-nav";
@@ -11,6 +11,8 @@ import { ReceiptGenerator } from "@/components/receipt-generator";
 import { Badge } from "@/components/ui/badge";
 import { DateUtils } from "@/lib/date-utils";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { jsPDF } from "jspdf";
+import html2canvas from "html2canvas";
 
 export default function AnnualStatementPage() {
   const isMobile = useIsMobile();
@@ -210,6 +212,110 @@ export default function AnnualStatementPage() {
     }
   };
 
+  const handleMobilePdfDownload = async () => {
+    if (!receiptHTML) {
+      alert("प्रथम विवरणपत्र तयार करा");
+      return;
+    }
+
+    try {
+      const a5WidthPx = 560;
+      const a5HeightPx = 794;
+
+      const iframe = document.createElement('iframe');
+      iframe.style.position = 'fixed';
+      iframe.style.left = '-9999px';
+      iframe.style.top = '0';
+      iframe.style.width = a5WidthPx + 'px';
+      iframe.style.height = a5HeightPx + 'px';
+      iframe.style.border = 'none';
+      iframe.style.overflow = 'hidden';
+      iframe.style.zIndex = '-9999';
+      iframe.style.pointerEvents = 'none';
+      iframe.style.opacity = '0';
+
+      document.body.appendChild(iframe);
+
+      const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+      if (!iframeDoc) {
+        document.body.removeChild(iframe);
+        alert("PDF तयार करण्यात समस्या आली.");
+        return;
+      }
+
+      iframeDoc.open();
+      iframeDoc.write(receiptHTML);
+      iframeDoc.close();
+
+      const iframeBody = iframeDoc.body;
+      iframeBody.style.margin = '0';
+      iframeBody.style.padding = '0';
+      iframeBody.style.width = a5WidthPx + 'px';
+      iframeBody.style.background = 'white';
+
+      const receiptContainer = iframeDoc.querySelector('.receipt-container') as HTMLElement;
+      if (receiptContainer) {
+        receiptContainer.style.width = a5WidthPx + 'px';
+        receiptContainer.style.minWidth = a5WidthPx + 'px';
+        receiptContainer.style.maxWidth = a5WidthPx + 'px';
+        receiptContainer.style.minHeight = a5HeightPx + 'px';
+        receiptContainer.style.padding = '15px';
+        receiptContainer.style.boxSizing = 'border-box';
+        receiptContainer.style.background = 'white';
+      }
+
+      const controlPanel = iframeDoc.querySelector('.control-panel') as HTMLElement;
+      if (controlPanel) controlPanel.style.display = 'none';
+
+      const fieldValues = iframeDoc.querySelectorAll('.field-value');
+      fieldValues.forEach((el: Element) => {
+        const htmlEl = el as HTMLElement;
+        htmlEl.style.paddingBottom = '8px';
+        htmlEl.style.lineHeight = '2';
+      });
+
+      await new Promise(resolve => setTimeout(resolve, 400));
+
+      const targetEl = receiptContainer || iframeBody;
+
+      const canvas = await html2canvas(targetEl, {
+        scale: 4,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff',
+        imageTimeout: 0,
+        width: a5WidthPx,
+        height: a5HeightPx,
+        windowWidth: a5WidthPx,
+        windowHeight: a5HeightPx,
+      });
+
+      document.body.removeChild(iframe);
+
+      const imgData = canvas.toDataURL('image/png');
+
+      const doc = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a5',
+        compress: false,
+      });
+
+      const a5Width = 148;
+      const a5Height = 210;
+
+      doc.addImage(imgData, 'PNG', 0, 0, a5Width, a5Height);
+
+      const fileName = `विवरणपत्र_नमुना१४_${selectedBorrower || 'statement'}.pdf`;
+      doc.save(fileName);
+    } catch (error) {
+      console.error('PDF generation error:', error);
+      const existingIframe = document.querySelector('iframe[style*="-9999px"]');
+      if (existingIframe) existingIframe.remove();
+      alert("PDF तयार करण्यात समस्या आली. कृपया पुन्हा प्रयत्न करा.");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <MobileNav />
@@ -226,8 +332,8 @@ export default function AnnualStatementPage() {
             {showDesktopPreview && receiptHTML && !isMobile && (
               <div className="fixed top-0 right-0 bottom-0 left-0 lg:left-72 z-40 bg-gray-100 flex flex-col">
                 {/* Header with buttons */}
-                <div className="bg-blue-50 px-6 py-4 border-b shadow-sm flex items-center justify-between">
-                  <h2 className="text-blue-700 font-semibold text-lg flex items-center gap-2">
+                <div className="bg-indigo-50 px-6 py-4 border-b shadow-sm flex items-center justify-between">
+                  <h2 className="text-indigo-700 font-semibold text-lg flex items-center gap-2">
                     <FileText className="h-5 w-5" />
                     वार्षिक विवरणपत्र - नमुना क्र. १४
                   </h2>
@@ -329,15 +435,15 @@ export default function AnnualStatementPage() {
               {filteredLoans.length > 1 && (
                 <div className="mb-6 space-y-2">
                   <Label className="text-base font-semibold">कर्ज निवडा * ({filteredLoans.length} कर्जे आढळली - निवडलेल्या वर्षापर्यंतची)</Label>
-                  <Card className="border-2 border-blue-300 max-h-64 overflow-y-auto">
+                  <Card className="border-2 border-indigo-300 max-h-64 overflow-y-auto">
                     <CardContent className="p-0">
                       {filteredLoans.map((loan: any) => (
                         <div
                           key={loan.id}
                           className={`p-4 border-b last:border-b-0 cursor-pointer transition-all ${
                             selectedLoan?.id === loan.id 
-                              ? 'bg-blue-100 border-l-4 border-l-blue-600 shadow-md' 
-                              : 'hover:bg-gray-50 hover:border-l-2 hover:border-l-blue-300'
+                              ? 'bg-indigo-100 border-l-4 border-l-indigo-600 shadow-md' 
+                              : 'hover:bg-gray-50 hover:border-l-2 hover:border-l-indigo-300'
                           }`}
                           onClick={() => {
                             console.log('🖱️ Loan clicked:', loan.accountNumber, loan.id);
@@ -348,7 +454,7 @@ export default function AnnualStatementPage() {
                           <div className="flex justify-between items-start">
                             <div className="flex-1">
                               <div className="flex items-center gap-2">
-                                <div className={`font-semibold ${selectedLoan?.id === loan.id ? 'text-blue-900' : 'text-blue-800'}`}>
+                                <div className={`font-semibold ${selectedLoan?.id === loan.id ? 'text-indigo-900' : 'text-indigo-800'}`}>
                                   खाते क्रमांक: {loan.accountNumber}
                                 </div>
                                 <Badge variant="outline" className="text-xs bg-orange-50 border-orange-300 text-orange-700">
@@ -368,7 +474,7 @@ export default function AnnualStatementPage() {
                               )}
                             </div>
                             {selectedLoan?.id === loan.id && (
-                              <Badge variant="default" className="ml-2 bg-blue-600">
+                              <Badge variant="default" className="ml-2 bg-indigo-600">
                                 <CheckCircle className="h-4 w-4 mr-1" />
                                 निवडले
                               </Badge>
@@ -426,7 +532,7 @@ export default function AnnualStatementPage() {
                   विवरणपत्र तयार करा
                 </Button>
                 
-                {statementData && (
+                {statementData && !isMobile && (
                   <Button 
                     onClick={handlePrint}
                     variant="outline"
@@ -435,6 +541,17 @@ export default function AnnualStatementPage() {
                   >
                     <Printer className="h-4 w-4" />
                     प्रिंट करा
+                  </Button>
+                )}
+                {statementData && isMobile && (
+                  <Button 
+                    onClick={handleMobilePdfDownload}
+                    variant="outline"
+                    className="flex items-center gap-2 bg-green-50 border-green-300 text-green-700"
+                    data-testid="button-pdf-download"
+                  >
+                    <Download className="h-4 w-4" />
+                    PDF डाउनलोड
                   </Button>
                 )}
               </div>
@@ -470,37 +587,37 @@ export default function AnnualStatementPage() {
                         <tr className="border-b">
                           <td className="p-2">वर्षाच्या सुरुवातीस देय (मूळ + व्याज)</td>
                           <td className="p-2 text-right font-medium">
-                            ₹{statementData.openingTotal?.toLocaleString('en-IN')}
+                            ₹{Math.round(statementData.openingTotal || 0).toLocaleString('en-IN')}
                           </td>
                         </tr>
                         <tr className="border-b">
                           <td className="p-2">वर्ष भरात दिलेलें एकूण कर्ज</td>
                           <td className="p-2 text-right font-medium">
-                            ₹{statementData.yearDisbursement?.toLocaleString('en-IN')}
+                            ₹{Math.round(statementData.yearDisbursement || 0).toLocaleString('en-IN')}
                           </td>
                         </tr>
                         <tr className="border-b">
                           <td className="p-2">वर्ष भरात प्राप्त परतफेड (मूळ)</td>
                           <td className="p-2 text-right font-medium">
-                            ₹{statementData.yearPrincipalRepayment?.toLocaleString('en-IN')}
+                            ₹{Math.round(statementData.yearPrincipalRepayment || 0).toLocaleString('en-IN')}
                           </td>
                         </tr>
                         <tr className="border-b">
                           <td className="p-2">वर्ष भरात प्राप्त परतफेड (व्याज)</td>
                           <td className="p-2 text-right font-medium">
-                            ₹{statementData.yearInterestRepayment?.toLocaleString('en-IN')}
+                            ₹{Math.round(statementData.yearInterestRepayment || 0).toLocaleString('en-IN')}
                           </td>
                         </tr>
                         <tr className="border-b bg-gray-50">
                           <td className="p-2 font-semibold">वर्ष अखेरीस देय (मूळ)</td>
                           <td className="p-2 text-right font-semibold">
-                            ₹{statementData.closingPrincipal?.toLocaleString('en-IN')}
+                            ₹{Math.round(statementData.closingPrincipal || 0).toLocaleString('en-IN')}
                           </td>
                         </tr>
                         <tr className="bg-gray-50">
                           <td className="p-2 font-semibold">वर्ष अखेरीस देय (व्याज)</td>
                           <td className="p-2 text-right font-semibold">
-                            ₹{statementData.closingInterest?.toLocaleString('en-IN')}
+                            ₹{Math.round(statementData.closingInterest || 0).toLocaleString('en-IN')}
                           </td>
                         </tr>
                       </tbody>

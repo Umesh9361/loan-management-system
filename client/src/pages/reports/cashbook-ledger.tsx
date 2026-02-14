@@ -331,7 +331,7 @@ export default function CashbookLedger() {
                   </TableRow>
 
                   {/* Closing Balance */}
-                  <TableRow className="bg-blue-50 border-t-2 border-gray-800">
+                  <TableRow className="bg-indigo-50 border-t-2 border-gray-800">
                     <TableCell colSpan={5} className="text-center py-4">
                       <span className="text-lg font-bold">
                         🔻 क्लोजिंग बॅलन्स: ₹{closingBalance.toLocaleString('en-IN', { minimumFractionDigits: 2 })} 🔻

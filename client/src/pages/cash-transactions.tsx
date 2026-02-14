@@ -217,7 +217,7 @@ export default function CashTransactions() {
                     <h1 className="text-2xl font-semibold text-gray-900">रोकड व्यवहार व्यवस्थापन</h1>
                     <p className="text-gray-600">रोकड आल्या-गेल्याचे व्यवहार व त्यांचे तपशील</p>
                   </div>
-                  <div className="text-sm text-gray-600 bg-blue-50 p-2 rounded-lg">
+                  <div className="text-sm text-gray-600 bg-indigo-50 p-2 rounded-lg">
                     <strong>शॉर्टकट:</strong> Ctrl+F=व्यक्ती फिल्टर | Ctrl+D=पासून दिनांक | Ctrl+T=पर्यंत दिनांक | Ctrl+R=फिल्टर साफ करा
                   </div>
                 </div>
@@ -253,15 +253,15 @@ export default function CashTransactions() {
                   </CardContent>
                 </Card>
 
-                <Card className="bg-blue-50 border-blue-200">
+                <Card className="bg-indigo-50 border-indigo-200">
                   <CardHeader className="pb-2">
-                    <CardTitle className="flex items-center text-sm text-blue-700">
+                    <CardTitle className="flex items-center text-sm text-indigo-700">
                       <Filter className="h-4 w-4 mr-2" />
                       नेट बॅलन्स
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold text-blue-700">
+                    <div className="text-2xl font-bold text-indigo-700">
                       ₹{(totals.cashIn - totals.cashOut).toLocaleString('en-IN')}
                     </div>
                   </CardContent>
@@ -456,7 +456,7 @@ export default function CashTransactions() {
                                     onClick={() => setEditTransaction(transaction)}
                                     title="संपादित करा"
                                   >
-                                    <Edit className="h-4 w-4 text-blue-500" />
+                                    <Edit className="h-4 w-4 text-indigo-500" />
                                   </Button>
                                   <Button
                                     variant="ghost"

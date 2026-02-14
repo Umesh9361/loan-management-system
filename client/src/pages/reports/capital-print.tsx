@@ -137,7 +137,7 @@ export default function CapitalPrint() {
                   className="font-inter"
                 />
               </div>
-              <Button onClick={handleSearch} className="bg-blue-600 hover:bg-blue-700 text-white">
+              <Button onClick={handleSearch} className="bg-indigo-600 hover:bg-indigo-700 text-white">
                 <Search className="mr-2 h-4 w-4" />
                 शोधा
               </Button>
@@ -212,14 +212,14 @@ export default function CapitalPrint() {
                       ))}
                       
                       {/* Closing Balance Row */}
-                      <tr className="border-t-2 border-gray-800 bg-blue-50">
+                      <tr className="border-t-2 border-gray-800 bg-indigo-50">
                         <td className="p-3 font-bold border-r border-gray-300 text-center text-sm">
                           {new Date(dateFilters.dateTo).toLocaleDateString('en-GB')}
                         </td>
                         <td className="p-3 font-bold border-r border-gray-300 text-sm">शेवटची शिल्लक</td>
                         <td className="p-3 border-r border-gray-300"></td>
                         <td className="p-3 border-r border-gray-300"></td>
-                        <td className="p-3 text-right font-bold text-blue-600 text-sm">
+                        <td className="p-3 text-right font-bold text-indigo-600 text-sm">
                           ₹{formatAmount(Math.abs(filteredData.closingBalance))} {filteredData.closingBalance >= 0 ? '(जमा)' : '(नावे)'}
                         </td>
                       </tr>
@@ -241,13 +241,13 @@ export default function CapitalPrint() {
             {/* Closing Balance Summary - Screen Only */}
             {filteredData && (
               <div className="mt-6 flex justify-center print:hidden">
-                <div className="p-4 border-2 rounded-lg border-blue-500 bg-blue-50">
+                <div className="p-4 border-2 rounded-lg border-indigo-500 bg-indigo-50">
                   <div className="text-center">
                     <p className="text-sm font-medium text-gray-600">शेवटची भांडवल शिल्लक</p>
-                    <p className="text-2xl font-bold text-blue-600">
+                    <p className="text-2xl font-bold text-indigo-600">
                       ₹{formatAmount(Math.abs(filteredData.closingBalance))}
                     </p>
-                    <p className="text-sm text-blue-600">
+                    <p className="text-sm text-indigo-600">
                       {filteredData.closingBalance >= 0 ? '(जमा शिल्लक)' : '(नावे शिल्लक)'}
                     </p>
                   </div>
@@ -287,7 +287,7 @@ export default function CapitalPrint() {
           <Button
             variant="ghost"
             size="sm"
-            className="flex flex-col items-center px-2 py-1 h-auto text-blue-600"
+            className="flex flex-col items-center px-2 py-1 h-auto text-indigo-600"
           >
             <span className="text-xs">अहवाल</span>
           </Button>
@@ -366,13 +366,13 @@ export default function CapitalPrint() {
           
           /* Background preservation */
           .bg-yellow-50 { background-color: #fffef0 !important; }
-          .bg-blue-50 { background-color: #f0f4ff !important; }
+          .bg-indigo-50 { background-color: #f0f4ff !important; }
           .bg-gray-50, .bg-gray-100 { background-color: #f8f8f8 !important; }
           
           /* Text emphasis */
           .font-bold { font-weight: bold !important; }
           .font-medium { font-weight: 500 !important; }
-          .text-blue-600 { color: #1e40af !important; font-weight: bold !important; }
+          .text-indigo-600 { color: #1e40af !important; font-weight: bold !important; }
           
           /* Remove spacing */
           .mt-4, .mt-6, .mt-8 { margin-top: 8px !important; }

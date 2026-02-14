@@ -220,7 +220,7 @@ export default function PartyLedger({ className }: PartyLedgerProps) {
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {/* Opening Balance Row */}
-                <tr className="bg-blue-50">
+                <tr className="bg-indigo-50">
                   <td className="px-4 py-3 text-sm">
                     {DateUtils.formatForDisplay(selectedParty?.openingBalanceDate || dateFrom)}
                   </td>
@@ -343,7 +343,7 @@ export default function PartyLedger({ className }: PartyLedgerProps) {
               </div>
               <div>
                 <p className="text-sm text-gray-600">Total Transactions</p>
-                <p className="text-lg font-bold text-blue-600">
+                <p className="text-lg font-bold text-indigo-600">
                   {transactionsWithBalance.length}
                 </p>
               </div>

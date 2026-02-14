@@ -840,9 +840,9 @@ function DataManagementPage() {
                         <div className="text-2xl font-bold text-orange-600">{cashbookPreview.deletableJournalCount}</div>
                         <div className="text-sm text-orange-500 mt-1">सामान्य journal entries हटवल्या जातील</div>
                       </div>
-                      <div className="bg-blue-50 dark:bg-blue-900/20 p-3 sm:p-4 rounded-xl border-2 border-blue-200 text-center">
-                        <div className="text-2xl font-bold text-blue-600">{cashbookPreview.protectedJournalCount}</div>
-                        <div className="text-sm text-blue-500 mt-1">कर्ज journal entries सुरक्षित</div>
+                      <div className="bg-indigo-50 dark:bg-indigo-900/20 p-3 sm:p-4 rounded-xl border-2 border-indigo-200 text-center">
+                        <div className="text-2xl font-bold text-indigo-600">{cashbookPreview.protectedJournalCount}</div>
+                        <div className="text-sm text-indigo-500 mt-1">कर्ज journal entries सुरक्षित</div>
                       </div>
                     </div>
 
@@ -887,16 +887,16 @@ function DataManagementPage() {
                         </div>
 
                         {cashbookPreview.balanceImpact.adjustmentType !== 'none' && (
-                          <div className="bg-blue-50 dark:bg-blue-900/30 p-3 rounded-xl border-2 border-blue-200">
-                            <h5 className="font-semibold text-blue-800 dark:text-blue-300 mb-1">
+                          <div className="bg-indigo-50 dark:bg-indigo-900/30 p-3 rounded-xl border-2 border-indigo-200">
+                            <h5 className="font-semibold text-indigo-800 dark:text-indigo-300 mb-1">
                               क्लीनअप नंतर बॅलन्स ठीक करण्यासाठी:
                             </h5>
-                            <p className="text-sm text-blue-700 dark:text-blue-400">
+                            <p className="text-sm text-indigo-700 dark:text-indigo-400">
                               एक <strong>{cashbookPreview.balanceImpact.adjustmentType === 'cash_in' ? 'जमा (Cash In)' : 'नावे (Cash Out)'}</strong> एन्ट्री
                               {' '}<strong>₹{cashbookPreview.balanceImpact.adjustmentAmount.toLocaleString('hi-IN')}</strong> रकमेची
                               {' '}क्लीनअप तारखेच्या सुरुवातीला टाका.
                             </p>
-                            <p className="text-xs text-blue-600 dark:text-blue-500 mt-1">
+                            <p className="text-xs text-indigo-600 dark:text-indigo-500 mt-1">
                               उदा. narration: "जुन्या entries adjustment" म्हणून टाका.
                             </p>
                           </div>
@@ -989,10 +989,10 @@ function DataManagementPage() {
                     </Alert>
 
                     {cashbookPreview?.balanceImpact && cashbookPreview.balanceImpact.adjustmentType !== 'none' && (
-                      <Alert className="border-2 border-blue-300 bg-blue-50 dark:bg-blue-900/20 rounded-xl">
-                        <AlertTriangle className="h-4 w-4 text-blue-600" />
-                        <AlertTitle className="text-blue-700">बॅलन्स ठीक करण्यासाठी पुढील पाऊल:</AlertTitle>
-                        <AlertDescription className="text-blue-600 space-y-2">
+                      <Alert className="border-2 border-indigo-300 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl">
+                        <AlertTriangle className="h-4 w-4 text-indigo-600" />
+                        <AlertTitle className="text-indigo-700">बॅलन्स ठीक करण्यासाठी पुढील पाऊल:</AlertTitle>
+                        <AlertDescription className="text-indigo-600 space-y-2">
                           <p className="font-semibold">
                             एक <strong>{cashbookPreview.balanceImpact.adjustmentType === 'cash_in' ? 'जमा (Cash In)' : 'नावे (Cash Out)'}</strong> एन्ट्री
                             {' '}₹<strong>{cashbookPreview.balanceImpact.adjustmentAmount.toLocaleString('hi-IN')}</strong> रकमेची
@@ -1039,7 +1039,7 @@ function DataManagementPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="p-4 sm:p-6 space-y-5">
-                <div className="bg-blue-50 dark:bg-blue-900/20 p-3 sm:p-4 rounded-xl border-2 border-blue-200 text-sm text-blue-600 dark:text-blue-400">
+                <div className="bg-indigo-50 dark:bg-indigo-900/20 p-3 sm:p-4 rounded-xl border-2 border-indigo-200 text-sm text-indigo-600 dark:text-indigo-400">
                   <strong>नोट:</strong> System ID आणि Loan Number कधीच चेंज होणार नाही, फक्त हाताने टाकलेला account number चेंज होईल.
                 </div>
 
@@ -1200,22 +1200,22 @@ function DataManagementPage() {
 
           <TabsContent value="backup">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card className="border-2 border-blue-200 dark:border-blue-800 rounded-xl shadow-sm">
+              <Card className="border-2 border-indigo-200 dark:border-indigo-800 rounded-xl shadow-sm">
                 <CardHeader className="p-4 sm:p-6">
-                  <CardTitle className="flex items-center gap-2 text-blue-700 dark:text-blue-400">
-                    <div className="p-1.5 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg">
+                  <CardTitle className="flex items-center gap-2 text-indigo-700 dark:text-indigo-400">
+                    <div className="p-1.5 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-lg">
                       <Database className="h-4 w-4 text-white" />
                     </div>
                     डेटा बॅकअप
                   </CardTitle>
-                  <CardDescription className="text-blue-600 dark:text-blue-400">
+                  <CardDescription className="text-indigo-600 dark:text-indigo-400">
                     संपूर्ण सिस्टम डेटाचा complete backup तयार करा
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="p-4 sm:p-6 space-y-4">
-                  <div className="bg-blue-50 dark:bg-blue-900/20 p-3 sm:p-4 rounded-xl border-2 border-blue-200">
-                    <h4 className="font-semibold text-blue-700 mb-3">✅ हे backup मध्ये समाविष्ट असेल:</h4>
-                    <ul className="list-disc list-inside space-y-1 text-sm text-blue-600">
+                  <div className="bg-indigo-50 dark:bg-indigo-900/20 p-3 sm:p-4 rounded-xl border-2 border-indigo-200">
+                    <h4 className="font-semibold text-indigo-700 mb-3">✅ हे backup मध्ये समाविष्ट असेल:</h4>
+                    <ul className="list-disc list-inside space-y-1 text-sm text-indigo-600">
                       <li>सर्व loans आणि borrower data</li>
                       <li>सर्व cash transactions आणि journal entries</li>
                       <li>Groups, parties आणि company information</li>
@@ -1243,10 +1243,10 @@ function DataManagementPage() {
                   </Button>
 
                   {backupMutation.data && (backupMutation.data as any).success && (
-                    <Alert className="border-2 border-blue-200 rounded-xl">
-                      <CheckCircle className="h-4 w-4 text-blue-600" />
-                      <AlertTitle className="text-blue-700">बॅकअप यशस्वी ✅</AlertTitle>
-                      <AlertDescription className="text-blue-600">
+                    <Alert className="border-2 border-indigo-200 rounded-xl">
+                      <CheckCircle className="h-4 w-4 text-indigo-600" />
+                      <AlertTitle className="text-indigo-700">बॅकअप यशस्वी ✅</AlertTitle>
+                      <AlertDescription className="text-indigo-600">
                         <p>{(backupMutation.data as any).message}</p>
                         {(() => {
                           const ts = (backupMutation.data as any).summary?.timestamp;
@@ -1356,10 +1356,10 @@ function DataManagementPage() {
                   )}
 
                   {restoreFromBackupMutation.data && (
-                    <Alert className="border-2 border-blue-200 rounded-xl">
-                      <CheckCircle className="h-4 w-4 text-blue-600" />
-                      <AlertTitle className="text-blue-700">बॅकअप रिस्टोर यशस्वी ✅</AlertTitle>
-                      <AlertDescription className="text-blue-600">
+                    <Alert className="border-2 border-indigo-200 rounded-xl">
+                      <CheckCircle className="h-4 w-4 text-indigo-600" />
+                      <AlertTitle className="text-indigo-700">बॅकअप रिस्टोर यशस्वी ✅</AlertTitle>
+                      <AlertDescription className="text-indigo-600">
                         <p>{(restoreFromBackupMutation.data as any).message}</p>
                         <p className="text-sm mt-1 font-semibold">
                           Records restored: {(restoreFromBackupMutation.data as any).summary?.recordsRestored || 0}

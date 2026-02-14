@@ -431,7 +431,7 @@ export default function BorrowerLedger() {
             </div>
             
             <div className="flex gap-2 flex-wrap">
-              <Button onClick={handleSearch} className="bg-blue-600 hover:bg-blue-700 text-white">
+              <Button onClick={handleSearch} className="bg-indigo-600 hover:bg-indigo-700 text-white">
                 <Search className="mr-2 h-4 w-4" />
                 खाते वही तयार करा
               </Button>
@@ -458,10 +458,10 @@ export default function BorrowerLedger() {
             {selectedBorrower && (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
                 {/* Left: Borrower Details */}
-                <div className="bg-blue-50 p-4 rounded-lg border-l-4 border-blue-500">
-                  <h3 className="text-lg font-bold text-blue-800 mb-3">कर्जदाराचे तपशील</h3>
+                <div className="bg-indigo-50 p-4 rounded-lg border-l-4 border-indigo-500">
+                  <h3 className="text-lg font-bold text-indigo-800 mb-3">कर्जदाराचे तपशील</h3>
                   <div className="space-y-2">
-                    <p className="text-sm"><span className="font-semibold">नाव:</span> <span className="font-bold text-blue-900">{selectedBorrower.borrowerName}</span></p>
+                    <p className="text-sm"><span className="font-semibold">नाव:</span> <span className="font-bold text-indigo-900">{selectedBorrower.borrowerName}</span></p>
                     <p className="text-sm"><span className="font-semibold">खाते क्र.:</span> <span className="font-bold">{selectedBorrower.accountNumber || selectedBorrower.id.slice(0, 8)}</span></p>
                     <p className="text-sm"><span className="font-semibold">पत्ता:</span> {selectedBorrower.address || 'अज्ञात'}</p>
                     <p className="text-sm"><span className="font-semibold">मोबाईल:</span> {selectedBorrower.mobileNumber || 'अज्ञात'}</p>
@@ -597,7 +597,7 @@ export default function BorrowerLedger() {
           <Button
             variant="ghost"
             size="sm"
-            className="flex flex-col items-center px-2 py-1 h-auto text-blue-600"
+            className="flex flex-col items-center px-2 py-1 h-auto text-indigo-600"
           >
             <span className="text-xs">अहवाल</span>
           </Button>

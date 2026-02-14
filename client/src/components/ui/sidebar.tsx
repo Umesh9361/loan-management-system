@@ -280,7 +280,7 @@ export function Sidebar({ className }: SidebarProps) {
       {/* Custom Scrollable Area with Wider Scrollbar */}
       <div 
         ref={scrollRef}
-        className="flex-1 min-h-0 overflow-auto sidebar-scroll px-2 lg:px-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset"
+        className="flex-1 min-h-0 overflow-auto sidebar-scroll px-2 lg:px-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-inset"
       >
         <div className="space-y-1 py-3 lg:py-4">
           {navigation.map((item) => {
@@ -295,8 +295,8 @@ export function Sidebar({ className }: SidebarProps) {
                   className={cn(
                     "w-full justify-start text-sm lg:text-base py-3 lg:py-3.5 h-auto font-medium rounded-lg transition-all duration-200",
                     isActive 
-                      ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-md transform scale-105" 
-                      : "hover:bg-blue-50 hover:text-blue-700 hover:transform hover:scale-102"
+                      ? "bg-gradient-to-r from-indigo-500 to-indigo-600 text-white shadow-md transform scale-105" 
+                      : "hover:bg-indigo-50 hover:text-indigo-700 hover:transform hover:scale-102"
                   )}
                 >
                   <Icon className="mr-2 lg:mr-3 h-4 w-4 lg:h-4 lg:w-4 flex-shrink-0" />
@@ -309,7 +309,7 @@ export function Sidebar({ className }: SidebarProps) {
           <Separator className="my-4" />
           
           <div className="px-2 lg:px-3 py-2">
-            <h3 className="text-sm lg:text-base font-bold text-blue-600 uppercase tracking-wider bg-blue-50 rounded-lg px-3 py-2 font-noto">
+            <h3 className="text-sm lg:text-base font-bold text-indigo-600 uppercase tracking-wider bg-indigo-50 rounded-lg px-3 py-2 font-noto">
               📊 अहवाल
             </h3>
           </div>
@@ -333,7 +333,7 @@ export function Sidebar({ className }: SidebarProps) {
                     variant={isActive ? "secondary" : "ghost"}
                     className={cn(
                       "w-full justify-start text-sm lg:text-base py-3 lg:py-3.5 h-auto font-medium report-button-fix",
-                      isActive && "bg-blue-50 text-blue-700 border-r-2 border-blue-500"
+                      isActive && "bg-indigo-50 text-indigo-700 border-r-2 border-indigo-500"
                     )}
                     data-report-button="true"
                     data-href={item.href}
@@ -437,7 +437,7 @@ export function Sidebar({ className }: SidebarProps) {
                   scrollRef.current.scrollTo({ top: 0, behavior: 'smooth' });
                 }
               }}
-              className="text-sm px-3 py-2 h-8 font-medium hover:bg-blue-50 hover:text-blue-700 transition-colors"
+              className="text-sm px-3 py-2 h-8 font-medium hover:bg-indigo-50 hover:text-indigo-700 transition-colors"
             >
               ⬆️ वर जा
             </Button>
@@ -452,7 +452,7 @@ export function Sidebar({ className }: SidebarProps) {
                   });
                 }
               }}
-              className="text-sm px-3 py-2 h-8 font-medium hover:bg-blue-50 hover:text-blue-700 transition-colors"
+              className="text-sm px-3 py-2 h-8 font-medium hover:bg-indigo-50 hover:text-indigo-700 transition-colors"
             >
               ⬇️ खाली जा
             </Button>
@@ -464,12 +464,12 @@ export function Sidebar({ className }: SidebarProps) {
       <div className="flex-shrink-0 mt-auto border-t p-3 bg-white hidden lg:block">
         <div className="flex items-center justify-between gap-2">
           {(user?.role === 'admin' || user?.role === 'super_admin') ? (
-            <Link href="/profile" className="flex items-center space-x-2 min-w-0 flex-1 hover:bg-blue-50 rounded-lg p-1 transition-colors cursor-pointer">
+            <Link href="/profile" className="flex items-center space-x-2 min-w-0 flex-1 hover:bg-indigo-50 rounded-lg p-1 transition-colors cursor-pointer">
               <div className="h-8 w-8 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0">
                 <UserCheck className="h-4 w-4 text-primary" />
               </div>
               <div className="min-w-0">
-                <p className="text-sm font-medium text-blue-600 truncate hover:text-blue-700">{user?.username}</p>
+                <p className="text-sm font-medium text-indigo-600 truncate hover:text-indigo-700">{user?.username}</p>
               </div>
             </Link>
           ) : (

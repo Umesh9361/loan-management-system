@@ -145,8 +145,8 @@ export function ForgotPassword({ onBack }: ForgotPasswordProps) {
           </div>
         </form>
 
-        <div className="mt-6 p-3 bg-blue-50 rounded-lg">
-          <p className="text-xs text-blue-600">
+        <div className="mt-6 p-3 bg-indigo-50 rounded-lg">
+          <p className="text-xs text-indigo-600">
             <strong>Note:</strong> Only tenant admins can request password resets. 
             Regular users should contact their admin for password changes.
           </p>

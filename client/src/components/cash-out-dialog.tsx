@@ -160,7 +160,7 @@ export default function CashOutDialog({ open, onOpenChange }: CashOutDialogProps
           )}
           
           {/* Dual Entry Toggle */}
-          <div className="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border">
+          <div className="flex items-center justify-between p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg border">
             <div>
               <Label className="text-sm font-medium">द्विनोंदणी (Dual Entry)</Label>
               <p className="text-xs text-gray-600 dark:text-gray-400">

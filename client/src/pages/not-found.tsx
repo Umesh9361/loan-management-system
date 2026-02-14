@@ -30,7 +30,7 @@ export default function NotFound() {
           <Button
             onClick={handleHomeNavigation}
             disabled={isNavigating}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50"
+            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white disabled:opacity-50"
           >
             <Home className="mr-2 h-4 w-4" />
             {isNavigating ? 'जात आहे...' : 'मुख्यपृष्ठावर परत जा'}

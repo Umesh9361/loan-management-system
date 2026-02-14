@@ -18,7 +18,7 @@ export function SuperAdminUsers() {
           </p>
           <button 
             onClick={() => safeNavigate('/super-admin/password-requests')}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg"
+            className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-lg"
           >
             पासवर्ड रीसेट व्यवस्थापन
           </button>
