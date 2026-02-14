@@ -843,6 +843,8 @@ export default function Closure() {
     wrapper.style.width = a5LandscapeWidthPx + 'px';
     wrapper.style.minWidth = a5LandscapeWidthPx + 'px';
     wrapper.style.maxWidth = a5LandscapeWidthPx + 'px';
+    wrapper.style.height = a5LandscapeHeightPx + 'px';
+    wrapper.style.minHeight = a5LandscapeHeightPx + 'px';
     wrapper.style.background = 'white';
     wrapper.style.zIndex = '-9999';
     wrapper.style.overflow = 'hidden';
@@ -917,12 +919,16 @@ export default function Closure() {
       if (pages.length > 0) {
         for (let i = 0; i < pages.length; i++) {
           const page = pages[i];
+          page.style.height = '280px';
+          page.style.minHeight = '280px';
           const canvas = await html2canvas(page, {
             scale: 6,
             useCORS: true,
             logging: false,
             backgroundColor: '#ffffff',
             imageTimeout: 0,
+            width: 794,
+            height: 280,
             windowWidth: 794,
             windowHeight: 280,
           });
@@ -937,6 +943,8 @@ export default function Closure() {
           logging: false,
           backgroundColor: '#ffffff',
           imageTimeout: 0,
+          width: 794,
+          height: 280,
           windowWidth: 794,
           windowHeight: 280,
         });
