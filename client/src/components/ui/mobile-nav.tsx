@@ -103,7 +103,10 @@ export function MobileNav({ hideBottomNav = false }: MobileNavProps = {}) {
             </SheetContent>
           </Sheet>
           
-          <h1 className="text-base font-semibold truncate">कर्ज व्यवस्थापन</h1>
+          <div className="flex items-center gap-2">
+            <img src="/icons/icon-192x192.png" alt="LonoPro" className="h-7 w-7 rounded-md" />
+            <h1 className="text-base font-semibold truncate">LonoPro</h1>
+          </div>
           
           <div className="flex items-center gap-1">
             <NotificationBell />

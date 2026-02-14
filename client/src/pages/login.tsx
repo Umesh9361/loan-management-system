@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { AuthService, type LoginCredentials } from "@/lib/auth";
 import { queryClient } from "@/lib/queryClient";
@@ -18,7 +17,6 @@ const loginSchema = z.object({
   tenantId: z.string().min(1, "कंपनी ओळखकर्ता आवश्यक आहे"),
   username: z.string().min(1, "वापरकर्ता नाव आवश्यक आहे"),
   password: z.string().min(1, "पासवर्ड आवश्यक आहे"),
-  rememberMe: z.boolean().optional(),
 });
 
 type LoginFormData = z.infer<typeof loginSchema>;
@@ -36,7 +34,6 @@ export default function Login() {
       tenantId: "",
       username: "",
       password: "",
-      rememberMe: false,
     },
   });
 
@@ -101,7 +98,7 @@ export default function Login() {
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6" autoComplete="off">
               <div>
                 <Label htmlFor="tenantId" className="block text-sm font-medium text-gray-700 mb-2">
-                  कंपनी ओळखकर्ता (Tenant ID)
+                  कंपनी ओळखकर्ता (ID)
                 </Label>
                 <div className="relative">
                   <Input
@@ -151,10 +148,11 @@ export default function Login() {
                   <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                   <button
                     type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-3 text-gray-400 hover:text-gray-600 p-0 bg-transparent border-none cursor-pointer"
+                    onPointerDown={(e) => { e.preventDefault(); setShowPassword(!showPassword); }}
+                    className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600 p-1 bg-transparent border-none cursor-pointer touch-manipulation"
+                    tabIndex={-1}
                   >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    {showPassword ? <Eye className="h-5 w-5" /> : <EyeOff className="h-5 w-5" />}
                   </button>
                 </div>
                 {form.formState.errors.password && (
@@ -162,16 +160,7 @@ export default function Login() {
                 )}
               </div>
 
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="rememberMe"
-                    {...form.register("rememberMe")}
-                  />
-                  <Label htmlFor="rememberMe" className="text-sm text-gray-700">
-                    मला आठवण ठेवा
-                  </Label>
-                </div>
+              <div className="flex items-center justify-end">
                 <button 
                   type="button"
                   onClick={() => setShowForgotPassword(true)}

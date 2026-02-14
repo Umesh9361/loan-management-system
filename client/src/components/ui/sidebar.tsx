@@ -265,9 +265,7 @@ export function Sidebar({ className }: SidebarProps) {
       <div className="header-gradient p-4 border-b">
         <div className="flex items-center justify-between w-full min-w-0">
           <div className="flex items-center space-x-3">
-            <div className="h-10 w-10 lg:h-12 lg:w-12 bg-white bg-opacity-20 rounded-xl flex items-center justify-center flex-shrink-0 backdrop-blur-sm">
-              <Building className="h-5 w-5 lg:h-6 lg:w-6 text-white" />
-            </div>
+            <img src="/icons/icon-192x192.png" alt="LonoPro" className="h-10 w-10 lg:h-12 lg:w-12 rounded-xl flex-shrink-0" />
             <div>
               <h1 className="text-sm lg:text-lg font-bold text-white font-noto">
                 कर्ज व्यवस्थापन
