@@ -14,6 +14,7 @@ import { toast } from "@/hooks/use-toast";
 import { DateUtils } from "@/lib/date-utils";
 import { jsPDF } from "jspdf";
 import "jspdf-autotable";
+import html2canvas from "html2canvas";
 import { exportToExcel } from "@/utils/excel-export";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { PhotoViewer } from "@/components/ui/photo-viewer";
@@ -1071,19 +1072,222 @@ export default function BorrowerListReports() {
       return;
     }
     
-    // Mobile device detection
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     
     if (isMobile) {
-      // For mobile devices, use direct print method
-      toast({
-        title: "मोबाईल व्ह्यू",
-        description: "मोबाईलसाठी डायरेक्ट प्रिंट वापरत आहे...",
-      });
-      handleDirectPrint(filteredLoans);
+      handleMobilePdfDownload(filteredLoans);
     } else {
-      // For desktop, try popup first
       printReport(filteredLoans);
+    }
+  };
+
+  const handleMobilePdfDownload = async (reportData: any[]) => {
+    const selectedGroup = Array.isArray(groups) ? groups.find(g => g.id === groupId) : null;
+    const groupName = selectedGroup?.name || 'सर्व गट';
+
+    toast({
+      title: "PDF तयार करत आहे...",
+      description: "कृपया थांबा, A4 PDF डाउनलोड होईल",
+    });
+
+    try {
+      const reportHTML = generateReportHTML(reportData, groupName);
+
+      const container = document.createElement('div');
+      container.style.position = 'absolute';
+      container.style.left = '-9999px';
+      container.style.top = '0';
+      container.style.width = '1123px';
+      container.style.background = '#ffffff';
+
+      const parser = new DOMParser();
+      const htmlDoc = parser.parseFromString(reportHTML, 'text/html');
+      const bodyContent = htmlDoc.body.innerHTML;
+      const originalStyle = htmlDoc.head.querySelector('style')?.textContent || '';
+
+      let printCss = '';
+      const printStartIdx = originalStyle.indexOf('@media print');
+      if (printStartIdx !== -1) {
+        let braceCount = 0;
+        let started = false;
+        let contentStart = 0;
+        for (let i = printStartIdx; i < originalStyle.length; i++) {
+          if (originalStyle[i] === '{') {
+            if (!started) { started = true; contentStart = i + 1; }
+            braceCount++;
+          } else if (originalStyle[i] === '}') {
+            braceCount--;
+            if (braceCount === 0 && started) {
+              printCss = originalStyle.substring(contentStart, i);
+              break;
+            }
+          }
+        }
+      }
+
+      let baseStyle = originalStyle.replace(/@page\s*\{[^}]*\}/g, '');
+      if (printStartIdx !== -1) {
+        const printBlockStart = printStartIdx;
+        let bc = 0; let st = false;
+        for (let i = printBlockStart; i < baseStyle.length; i++) {
+          if (baseStyle[i] === '{') { st = true; bc++; }
+          else if (baseStyle[i] === '}') { bc--; if (bc === 0 && st) { baseStyle = baseStyle.substring(0, printBlockStart) + baseStyle.substring(i + 1); break; } }
+        }
+      }
+
+      container.innerHTML = `
+        <style>
+          ${baseStyle}
+          ${printCss}
+          .mobile-hide { display: table-cell !important; }
+          .no-print { display: none !important; }
+          * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+
+          .header {
+            display: none !important;
+          }
+          .company-name {
+            display: none !important;
+          }
+          .report-info {
+            background: none !important;
+            border: none !important;
+            border-radius: 0 !important;
+            border-bottom: 1.5px solid #000 !important;
+            padding: 4px 4px 6px !important;
+            margin-bottom: 6px !important;
+          }
+          .report-info div {
+            color: #000 !important;
+          }
+
+          table {
+            table-layout: fixed !important;
+            width: 100% !important;
+            border-collapse: collapse !important;
+            box-shadow: none !important;
+            border-radius: 0 !important;
+          }
+          th {
+            background: #e8e8e8 !important;
+            color: #000 !important;
+            font-weight: 700 !important;
+            border-top: 1.5px solid #000 !important;
+            border-bottom: 1.5px solid #000 !important;
+            border-left: none !important;
+            border-right: none !important;
+            text-align: center !important;
+            padding: 8px 4px !important;
+            font-size: 15px !important;
+            line-height: 1.3 !important;
+            height: 44px !important;
+          }
+          th:nth-child(1) { min-width: 55px !important; width: 55px !important; }
+          th[style*="font-size: 10px"] {
+            font-size: 11px !important;
+            line-height: 1.15 !important;
+            word-break: keep-all !important;
+          }
+          td {
+            border-bottom: 0.5px solid #bbb !important;
+            border-left: none !important;
+            border-right: none !important;
+            border-top: none !important;
+            color: #000 !important;
+            background: transparent !important;
+          }
+          tr:nth-child(even) { background-color: transparent !important; }
+          tr:nth-child(odd) { background-color: transparent !important; }
+          tr:hover { background-color: transparent !important; }
+
+          .footer {
+            border-top: 1px solid #000 !important;
+            color: #333 !important;
+            background: none !important;
+          }
+
+          td:nth-child(1) { text-align: center !important; min-width: 55px !important; width: 55px !important; }
+          td:nth-child(5) { text-align: center !important; }
+
+          .closing-wise-table td:nth-child(7) { text-align: center !important; }
+          .closing-wise-table td:nth-child(9) { text-align: center !important; }
+          .maturity-wise-table td:nth-child(5) { text-align: center !important; }
+        </style>
+        ${bodyContent}
+      `;
+
+      document.body.appendChild(container);
+
+      await new Promise(resolve => setTimeout(resolve, 600));
+
+      const canvas = await html2canvas(container, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff',
+        width: 1123,
+        windowWidth: 1123,
+      });
+
+      document.body.removeChild(container);
+
+      const a4Width = 210;
+      const a4Height = 297;
+      const margin = 5;
+      const contentWidth = a4Width - (margin * 2);
+      const contentHeight = a4Height - (margin * 2);
+
+      const imgWidth = canvas.width;
+      const imgHeight = canvas.height;
+      const ratio = contentWidth / imgWidth;
+      const scaledHeight = imgHeight * ratio;
+
+      const pageContentHeight = contentHeight;
+      const totalPages = Math.ceil(scaledHeight / pageContentHeight);
+
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4',
+      });
+
+      for (let page = 0; page < totalPages; page++) {
+        if (page > 0) {
+          pdf.addPage();
+        }
+
+        const sourceY = (page * pageContentHeight) / ratio;
+        const sourceHeight = Math.min(pageContentHeight / ratio, imgHeight - sourceY);
+
+        const pageCanvas = document.createElement('canvas');
+        pageCanvas.width = imgWidth;
+        pageCanvas.height = sourceHeight;
+        const ctx = pageCanvas.getContext('2d');
+        if (ctx) {
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
+          ctx.drawImage(canvas, 0, sourceY, imgWidth, sourceHeight, 0, 0, imgWidth, sourceHeight);
+        }
+
+        const pageImgData = pageCanvas.toDataURL('image/jpeg', 0.95);
+        const drawHeight = sourceHeight * ratio;
+        pdf.addImage(pageImgData, 'JPEG', margin, margin, contentWidth, drawHeight);
+      }
+
+      const tabName = activeTab === 'date-wise' ? 'डेटवाईज' : activeTab === 'closing-wise' ? 'क्लोजिंगवाईज' : activeTab === 'name-wise' ? 'नेमवाईज' : 'मुदतवाईज';
+      pdf.save(`कर्जदार_यादी_${tabName}_${groupName}.pdf`);
+
+      toast({
+        title: "PDF डाउनलोड झाली",
+        description: `${reportData.length} नोंदी सह A4 PDF तयार झाली`,
+      });
+    } catch (error) {
+      console.error('PDF generation error:', error);
+      toast({
+        title: "PDF त्रुटी",
+        description: "PDF तयार करताना समस्या आली, कृपया पुन्हा प्रयत्न करा",
+        variant: "destructive",
+      });
     }
   };
 
@@ -1930,6 +2134,11 @@ export default function BorrowerListReports() {
               }
             }
             
+            /* Hide keyboard navigation help on mobile */
+            @media screen and (max-width: 768px) {
+              .print-hide { display: none !important; }
+            }
+            
             /* Mobile-First Responsive Design */
             @media screen and (max-width: 768px) {
               body {
@@ -2730,8 +2939,8 @@ export default function BorrowerListReports() {
             <div style="flex: 1; text-align: center; font-weight: bold; font-size: 16px; color: #2563eb;">
               ${groupName}
             </div>
-            <div class="print-date-range" style="flex: 1; text-align: right; font-weight: bold; font-size: 14px; color: #dc2626;">
-              ${new Date(dateFrom).toLocaleDateString('en-GB')} ते ${new Date(dateTo).toLocaleDateString('en-GB')}
+            <div class="print-date-range" style="flex: 1; text-align: right; font-weight: bold; font-size: 14px; color: #dc2626; padding-right: 30px;">
+              ${new Date(dateFrom).toLocaleDateString('en-GB')} &nbsp;ते&nbsp; ${new Date(dateTo).toLocaleDateString('en-GB')}
             </div>
           </div>
           
@@ -3330,21 +3539,28 @@ export default function BorrowerListReports() {
   };
   
   return (
+    <>
+    <style>{`.no-scrollbar::-webkit-scrollbar { display: none; } .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }`}</style>
     <div className="min-h-screen bg-gray-50 pb-20 lg:pb-4">
       <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-6 max-w-7xl">
         
         {/* Header - Mobile Responsive */}
         <div className="mb-6 flex flex-col gap-4">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div>
-              <h1 className="text-xl sm:text-2xl font-bold text-gray-800 mb-2">कर्जदाराची यादी</h1>
-              <p className="text-sm sm:text-base text-gray-600">विविध प्रकारचे कर्जदार अहवाल तयार करा</p>
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 bg-gradient-to-br from-indigo-500 to-indigo-700 rounded-xl shadow-md">
+                <Users className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5">कर्जदाराची यादी</h1>
+                <p className="text-xs sm:text-sm text-gray-500">विविध प्रकारचे कर्जदार अहवाल तयार करा</p>
+              </div>
             </div>
             <Button
               variant="outline"
               size="sm"
               onClick={() => safeNavigate('/')}
-              className="self-end sm:self-auto"
+              className="hidden sm:flex self-end sm:self-auto border-indigo-200 text-indigo-600 hover:bg-indigo-50 hover:border-indigo-300"
             >
               <ArrowLeft className="mr-2 h-4 w-4" />
               मुख्य पान
@@ -3355,7 +3571,7 @@ export default function BorrowerListReports() {
           <div className="flex flex-col sm:flex-row gap-2 print-hide">
             <Button 
               onClick={handleGenerateReport}
-              className="flex-1 sm:flex-none h-12 sm:h-10 text-base sm:text-sm font-medium touch-manipulation px-6 py-3 sm:px-4 sm:py-2 rounded-lg active:scale-[0.98] transition-transform bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200"
+              className="flex-1 sm:flex-none h-12 sm:h-10 text-base sm:text-sm font-medium touch-manipulation px-6 py-3 sm:px-4 sm:py-2 rounded-lg active:scale-[0.98] transition-transform bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white shadow-sm"
               size="default"
               data-testid="button-generate-report"
               style={{ WebkitTouchCallout: 'none', WebkitUserSelect: 'none' }}
@@ -3385,7 +3601,7 @@ export default function BorrowerListReports() {
                 handleDirectPrint(filteredLoans);
               }}
               variant="outline"
-              className="flex-1 sm:flex-none h-12 sm:h-10 bg-orange-50 hover:bg-orange-100 text-orange-700 border-orange-200 text-base sm:text-sm font-medium touch-manipulation px-6 py-3 sm:px-4 sm:py-2 rounded-lg active:scale-[0.98] transition-transform"
+              className="hidden sm:flex flex-1 sm:flex-none h-12 sm:h-10 bg-orange-50 hover:bg-orange-100 text-orange-700 border-orange-200 text-base sm:text-sm font-medium touch-manipulation px-6 py-3 sm:px-4 sm:py-2 rounded-lg active:scale-[0.98] transition-transform"
               size="default"
               data-testid="button-direct-print"
               style={{ WebkitTouchCallout: 'none', WebkitUserSelect: 'none' }}
@@ -3518,7 +3734,7 @@ export default function BorrowerListReports() {
                 }
               }}
               variant="outline"
-              className="flex-1 sm:flex-none h-12 sm:h-10 bg-green-50 hover:bg-green-100 text-green-700 border-green-200 text-base sm:text-sm font-medium touch-manipulation px-6 py-3 sm:px-4 sm:py-2 rounded-lg active:scale-[0.98] transition-transform"
+              className="hidden sm:flex flex-1 sm:flex-none h-12 sm:h-10 bg-green-50 hover:bg-green-100 text-green-700 border-green-200 text-base sm:text-sm font-medium touch-manipulation px-6 py-3 sm:px-4 sm:py-2 rounded-lg active:scale-[0.98] transition-transform"
               size="default"
               data-testid="button-excel-export"
               style={{ WebkitTouchCallout: 'none', WebkitUserSelect: 'none' }}
@@ -3530,51 +3746,51 @@ export default function BorrowerListReports() {
         </div>
         
         {/* Tab Navigation - Mobile Responsive */}
-        <Card className="mb-6">
-          <div className="flex flex-col sm:flex-row border-b overflow-x-auto">
+        <Card className="mb-6 border-2 border-indigo-100 shadow-sm rounded-xl overflow-hidden">
+          <div className="grid grid-cols-4 sm:flex border-b">
             <button
               onClick={() => setActiveTab('date-wise')}
-              className={`flex-1 py-3 px-2 sm:px-4 text-center font-medium transition-colors whitespace-nowrap ${
+              className={`py-2.5 sm:py-3 px-1 sm:px-4 text-center font-semibold transition-all text-[11px] sm:text-base sm:flex-1 ${
                 activeTab === 'date-wise'
-                  ? 'border-b-2 border-blue-600 text-blue-600 bg-blue-50'
-                  : 'text-gray-600 hover:text-gray-800'
+                  ? 'border-b-3 border-indigo-600 text-white bg-gradient-to-r from-indigo-600 to-indigo-700 shadow-sm'
+                  : 'text-gray-600 hover:text-indigo-700 hover:bg-indigo-50'
               }`}
             >
-              <Calendar className="inline-block mr-1 sm:mr-2 h-4 w-4" />
-              <span className="text-sm sm:text-base">डेट वाईज</span>
+              <Calendar className="hidden sm:inline-block sm:mr-2 h-4 w-4" />
+              डेट वाईज
             </button>
             <button
               onClick={() => setActiveTab('closing-wise')}
-              className={`flex-1 py-3 px-2 sm:px-4 text-center font-medium transition-colors whitespace-nowrap ${
+              className={`py-2.5 sm:py-3 px-1 sm:px-4 text-center font-semibold transition-all text-[11px] sm:text-base sm:flex-1 ${
                 activeTab === 'closing-wise'
-                  ? 'border-b-2 border-blue-600 text-blue-600 bg-blue-50'
-                  : 'text-gray-600 hover:text-gray-800'
+                  ? 'border-b-3 border-indigo-600 text-white bg-gradient-to-r from-indigo-600 to-indigo-700 shadow-sm'
+                  : 'text-gray-600 hover:text-indigo-700 hover:bg-indigo-50'
               }`}
             >
-              <Receipt className="inline-block mr-1 sm:mr-2 h-4 w-4" />
-              <span className="text-sm sm:text-base">क्लोजिंग वाईज</span>
+              <Receipt className="hidden sm:inline-block sm:mr-2 h-4 w-4" />
+              क्लोजिंग वाईज
             </button>
             <button
               onClick={() => setActiveTab('name-wise')}
-              className={`flex-1 py-3 px-2 sm:px-4 text-center font-medium transition-colors whitespace-nowrap ${
+              className={`py-2.5 sm:py-3 px-1 sm:px-4 text-center font-semibold transition-all text-[11px] sm:text-base sm:flex-1 ${
                 activeTab === 'name-wise'
-                  ? 'border-b-2 border-blue-600 text-blue-600 bg-blue-50'
-                  : 'text-gray-600 hover:text-gray-800'
+                  ? 'border-b-3 border-indigo-600 text-white bg-gradient-to-r from-indigo-600 to-indigo-700 shadow-sm'
+                  : 'text-gray-600 hover:text-indigo-700 hover:bg-indigo-50'
               }`}
             >
-              <Users className="inline-block mr-1 sm:mr-2 h-4 w-4" />
-              <span className="text-sm sm:text-base">नेम वाईज</span>
+              <Users className="hidden sm:inline-block sm:mr-2 h-4 w-4" />
+              नेम वाईज
             </button>
             <button
               onClick={() => setActiveTab('maturity-wise')}
-              className={`flex-1 py-3 px-2 sm:px-4 text-center font-medium transition-colors whitespace-nowrap ${
+              className={`py-2.5 sm:py-3 px-1 sm:px-4 text-center font-semibold transition-all text-[11px] sm:text-base sm:flex-1 ${
                 activeTab === 'maturity-wise'
-                  ? 'border-b-2 border-blue-600 text-blue-600 bg-blue-50'
-                  : 'text-gray-600 hover:text-gray-800'
+                  ? 'border-b-3 border-indigo-600 text-white bg-gradient-to-r from-indigo-600 to-indigo-700 shadow-sm'
+                  : 'text-gray-600 hover:text-indigo-700 hover:bg-indigo-50'
               }`}
             >
-              <Calendar className="inline-block mr-1 sm:mr-2 h-4 w-4" />
-              <span className="text-sm sm:text-base">मुदत संपलेले</span>
+              <Calendar className="hidden sm:inline-block sm:mr-2 h-4 w-4" />
+              मुदत संपलेले
             </button>
           </div>
         </Card>
@@ -3934,29 +4150,29 @@ export default function BorrowerListReports() {
         
         {/* Data Display Section with Pagination */}
         {totalItems > 0 ? (
-          <Card className="mt-6 p-4 sm:p-6">
+          <Card className="mt-6 p-3 sm:p-6 border-2 border-indigo-100 shadow-sm rounded-xl">
             {/* Pagination Info */}
-            <div className="mb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-              <div className="text-sm text-gray-600">
-                {totalItems} पैकी {startItem}-{endItem} नोंदी दाखवत आहे
+            <div className="mb-3 flex justify-between items-center">
+              <div className="text-xs sm:text-sm text-indigo-700 font-medium bg-indigo-50 px-3 py-1.5 rounded-lg">
+                {totalItems} पैकी {startItem}-{endItem} नोंदी
               </div>
-              <div className="text-sm text-gray-600">
+              <div className="text-xs sm:text-sm text-indigo-600 font-medium">
                 पान {currentPage} / {totalPages}
               </div>
             </div>
 
-            {/* Table Display */}
-            <div className="overflow-x-auto border rounded-lg">
-              <table className="w-full border-collapse">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="border p-2 text-left text-xs sm:text-sm font-medium">अ.क्र.</th>
-                    <th className="border p-2 text-left text-xs sm:text-sm font-medium">तारीख</th>
-                    <th className="border p-2 text-right text-xs sm:text-sm font-medium">रक्कम</th>
-                    <th className="border p-2 text-left text-xs sm:text-sm font-medium">नाव</th>
-                    <th className="border p-2 text-left text-xs sm:text-sm font-medium hidden sm:table-cell">कोड नं</th>
-                    <th className="border p-2 text-left text-xs sm:text-sm font-medium hidden sm:table-cell">तपशील</th>
-                    <th className="border p-2 text-center text-xs sm:text-sm font-medium hidden sm:table-cell">वजन</th>
+            {/* Table Display - All 7 columns visible on mobile with horizontal scroll */}
+            <div className="overflow-x-auto sm:overflow-x-visible border border-indigo-200 rounded-lg -mx-1 sm:mx-0">
+              <table className="w-full border-collapse min-w-[700px] sm:min-w-0">
+                <thead>
+                  <tr className="bg-gradient-to-r from-indigo-600 to-indigo-700">
+                    <th className="border border-indigo-500 p-2 text-center text-xs sm:text-sm font-semibold text-white">अ.क्र.</th>
+                    <th className="border border-indigo-500 p-2 text-center text-xs sm:text-sm font-semibold text-white">तारीख</th>
+                    <th className="border border-indigo-500 p-2 text-right text-xs sm:text-sm font-semibold text-white">रक्कम</th>
+                    <th className="border border-indigo-500 p-2 text-left text-xs sm:text-sm font-semibold text-white">नाव</th>
+                    <th className="border border-indigo-500 p-2 text-center text-xs sm:text-sm font-semibold text-white">खाते नं</th>
+                    <th className="border border-indigo-500 p-2 text-left text-xs sm:text-sm font-semibold text-white">तपशील</th>
+                    <th className="border border-indigo-500 p-2 text-center text-xs sm:text-sm font-semibold text-white">वजन</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -3969,22 +4185,23 @@ export default function BorrowerListReports() {
                     return (
                       <tr 
                         key={loan.id} 
-                        className={`hover:bg-gray-50 ${isClosedLoan ? 'bg-red-100 text-red-800' : ''}`}
+                        className={`${isClosedLoan ? 'bg-red-50 text-red-800' : index % 2 === 0 ? 'bg-white' : 'bg-indigo-50/30'} hover:bg-indigo-50`}
                       >
-                        <td className="border p-2 text-center text-xs sm:text-sm">{globalIndex}</td>
-                        <td className="border p-2 text-center text-xs sm:text-sm">{shortDate}</td>
-                        <td className="border p-2 text-right text-xs sm:text-sm font-medium">₹{Math.round(loan.principalAmount).toLocaleString('en-IN')}</td>
-                        <td className="border p-2 text-xs sm:text-sm">
-                          {loan.borrowerName.length > 20 ? loan.borrowerName.substring(0, 20) + '...' : loan.borrowerName}
+                        <td className="border border-indigo-100 p-1.5 sm:p-2 text-center text-xs sm:text-sm">{globalIndex}</td>
+                        <td className="border border-indigo-100 p-1.5 sm:p-2 text-center text-xs sm:text-sm whitespace-nowrap">{shortDate}</td>
+                        <td className="border border-indigo-100 p-1.5 sm:p-2 text-right text-xs sm:text-sm font-medium whitespace-nowrap">{Math.round(loan.principalAmount).toLocaleString('en-IN')}</td>
+                        <td className="border border-indigo-100 p-1.5 sm:p-2 text-xs sm:text-sm">
+                          <span className="sm:hidden">{loan.borrowerName.length > 20 ? loan.borrowerName.substring(0, 20) + '...' : loan.borrowerName}</span>
+                          <span className="hidden sm:inline">{loan.borrowerName}</span>
                           {isClosedLoan && <span className="text-red-600 ml-1">(बंद)</span>}
                         </td>
-                        <td className="border p-2 text-center text-xs sm:text-sm hidden sm:table-cell">
+                        <td className="border border-indigo-100 p-1.5 sm:p-2 text-center text-xs sm:text-sm">
                           {(loan.accountNumber || loan.id.slice(0, 5)).toString().substring(0, 7)}
                         </td>
-                        <td className="border p-2 text-xs sm:text-sm hidden sm:table-cell">
+                        <td className="border border-indigo-100 p-1.5 sm:p-2 text-xs sm:text-sm">
                           {loan.itemDescription || loan.collateralDetails || 'सोन्याचे दागिने'}
                         </td>
-                        <td className="border p-2 text-center text-xs sm:text-sm hidden sm:table-cell">
+                        <td className="border border-indigo-100 p-1.5 sm:p-2 text-center text-xs sm:text-sm">
                           {loan.weight || '10'}
                         </td>
                       </tr>
@@ -4003,7 +4220,7 @@ export default function BorrowerListReports() {
                     size="sm"
                     onClick={() => setCurrentPage(1)}
                     disabled={currentPage === 1}
-                    className="text-xs"
+                    className="text-xs border-indigo-200 text-indigo-600 hover:bg-indigo-50 disabled:opacity-40"
                   >
                     पहिला
                   </Button>
@@ -4012,7 +4229,7 @@ export default function BorrowerListReports() {
                     size="sm"
                     onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                     disabled={currentPage === 1}
-                    className="text-xs"
+                    className="text-xs border-indigo-200 text-indigo-600 hover:bg-indigo-50 disabled:opacity-40"
                   >
                     मागे
                   </Button>
@@ -4038,7 +4255,7 @@ export default function BorrowerListReports() {
                         variant={currentPage === pageNum ? "default" : "outline"}
                         size="sm"
                         onClick={() => setCurrentPage(pageNum)}
-                        className="text-xs w-8 h-8"
+                        className={`text-xs w-8 h-8 ${currentPage === pageNum ? 'bg-indigo-600 hover:bg-indigo-700 text-white' : 'border-indigo-200 text-indigo-600 hover:bg-indigo-50'}`}
                       >
                         {pageNum}
                       </Button>
@@ -4052,7 +4269,7 @@ export default function BorrowerListReports() {
                     size="sm"
                     onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
                     disabled={currentPage === totalPages}
-                    className="text-xs"
+                    className="text-xs border-indigo-200 text-indigo-600 hover:bg-indigo-50 disabled:opacity-40"
                   >
                     पुढे
                   </Button>
@@ -4061,7 +4278,7 @@ export default function BorrowerListReports() {
                     size="sm"
                     onClick={() => setCurrentPage(totalPages)}
                     disabled={currentPage === totalPages}
-                    className="text-xs"
+                    className="text-xs border-indigo-200 text-indigo-600 hover:bg-indigo-50 disabled:opacity-40"
                   >
                     शेवटचा
                   </Button>
@@ -4071,15 +4288,16 @@ export default function BorrowerListReports() {
           </Card>
         ) : (
           /* Empty State */
-          <Card className="mt-6 p-4 sm:p-6">
-            <div className="text-center text-gray-500">
-              <FileText className="mx-auto h-8 sm:h-12 w-8 sm:w-12 mb-3 text-gray-400" />
-              <p className="text-sm sm:text-base">रिपोर्ट पाहण्यासाठी वरील फिल्टर निवडा</p>
+          <Card className="mt-6 p-4 sm:p-6 border-2 border-indigo-100 shadow-sm rounded-xl">
+            <div className="text-center text-indigo-400">
+              <FileText className="mx-auto h-8 sm:h-12 w-8 sm:w-12 mb-3 text-indigo-300" />
+              <p className="text-sm sm:text-base text-indigo-500">रिपोर्ट पाहण्यासाठी वरील फिल्टर निवडा</p>
             </div>
           </Card>
         )}
         
       </div>
     </div>
+    </>
   );
 }
