@@ -390,65 +390,78 @@ export default function CapitalAccountReport() {
     }
 
     try {
-      const a5WidthPx = 560;
+      const renderWidthPx = 794;
       const companyName = (company as any)?.name || 'कंपनी नाव';
+      const bdr = '0.5px solid #bbb';
+      const thStyle = `border:none;border-top:1px solid #333;border-bottom:1px solid #333;padding:8px 4px;text-align:center;font-size:9px;background:#f0f0f0;font-weight:bold;line-height:1.4;`;
+      const tdBase = `border:none;border-bottom:0.5px solid #ddd;padding:7px 5px;font-size:10px;font-weight:600;line-height:1.5;`;
 
       let rows = '';
-      if (openingBalance !== 0) {
-        rows += `<tr style="background:#fff4e6;">
-          <td style="border:2px solid #1e40af;padding:6px;text-align:center;font-size:11px;font-weight:600;">-</td>
-          <td style="border:2px solid #1e40af;padding:6px;text-align:center;font-size:11px;font-weight:600;">${new Date(dateFrom).toLocaleDateString('en-GB')}</td>
-          <td style="border:2px solid #1e40af;padding:6px;text-align:center;font-size:11px;font-weight:600;">-</td>
-          <td style="border:2px solid #1e40af;padding:6px;text-align:center;font-size:11px;font-weight:600;">-</td>
-          <td style="border:2px solid #1e40af;padding:6px;text-align:center;font-size:11px;font-weight:600;">-</td>
-          <td style="border:2px solid #1e40af;padding:6px;text-align:center;font-size:11px;font-weight:600;">-</td>
-          <td style="border:2px solid #1e40af;padding:6px;text-align:right;font-size:11px;font-weight:bold;">${openingBalance.toLocaleString('en-IN')} (ओपनिंग)</td>
-        </tr>`;
-      }
+      rows += `<tr style="background:#fff4e6;">
+        <td style="${tdBase}text-align:center;">-</td>
+        <td style="${tdBase}text-align:center;">${new Date(dateFrom).toLocaleDateString('en-GB')}</td>
+        <td style="${tdBase}text-align:center;">-</td>
+        <td style="${tdBase}text-align:center;">-</td>
+        <td style="${tdBase}text-align:center;">-</td>
+        <td style="${tdBase}text-align:center;">-</td>
+        <td style="${tdBase}text-align:right;font-weight:bold;font-size:12px;background:#eef2ff;color:#1e40af;white-space:nowrap;"><span style="font-size:12px;">${openingBalance.toLocaleString('en-IN')}</span> <span style="font-size:9px;">ओपनिंग बॅलन्स</span></td>
+      </tr>`;
 
       entries.forEach((entry: any, index: number) => {
         rows += `<tr>
-          <td style="border:2px solid #1e40af;padding:6px;text-align:center;font-size:11px;font-weight:600;">${index + 1}</td>
-          <td style="border:2px solid #1e40af;padding:6px;text-align:center;font-size:11px;font-weight:600;">${new Date(entry.date).toLocaleDateString('en-GB')}</td>
-          <td style="border:2px solid #1e40af;padding:6px;text-align:right;font-size:11px;font-weight:600;">${entry.loanRepayment > 0 ? entry.loanRepayment.toLocaleString('en-IN') : '-'}</td>
-          <td style="border:2px solid #1e40af;padding:6px;text-align:center;font-size:11px;font-weight:600;">${entry.loanRepayment > 0 && entry.repaymentPageNo ? entry.repaymentPageNo : '-'}</td>
-          <td style="border:2px solid #1e40af;padding:6px;text-align:right;font-size:11px;font-weight:600;">${entry.loanDisbursement > 0 ? entry.loanDisbursement.toLocaleString('en-IN') : '-'}</td>
-          <td style="border:2px solid #1e40af;padding:6px;text-align:center;font-size:11px;font-weight:600;">${entry.loanDisbursement > 0 && entry.disbursementPageNo ? entry.disbursementPageNo : '-'}</td>
-          <td style="border:2px solid #1e40af;padding:6px;text-align:right;font-size:11px;font-weight:bold;">${entry.netBalance.toLocaleString('en-IN')}</td>
+          <td style="${tdBase}text-align:center;">${index + 1}</td>
+          <td style="${tdBase}text-align:center;">${new Date(entry.date).toLocaleDateString('en-GB')}</td>
+          <td style="${tdBase}text-align:right;">${entry.loanRepayment > 0 ? '<span style="font-weight:bold;">' + entry.loanRepayment.toLocaleString('en-IN') + '</span>' : '<span style="color:#999;">-</span>'}</td>
+          <td style="${tdBase}text-align:center;">${entry.loanRepayment > 0 && entry.repaymentPageNo ? entry.repaymentPageNo : '<span style="color:#999;">-</span>'}</td>
+          <td style="${tdBase}text-align:right;">${entry.loanDisbursement > 0 ? '<span style="font-weight:bold;">' + entry.loanDisbursement.toLocaleString('en-IN') + '</span>' : '<span style="color:#999;">-</span>'}</td>
+          <td style="${tdBase}text-align:center;">${entry.loanDisbursement > 0 && entry.disbursementPageNo ? entry.disbursementPageNo : '<span style="color:#999;">-</span>'}</td>
+          <td style="${tdBase}text-align:right;font-weight:bold;font-size:12px;background:#eef2ff;color:#1e40af;">${entry.netBalance.toLocaleString('en-IN')}</td>
         </tr>`;
       });
 
-      rows += `<tr style="background:#e3f2fd;">
-        <td style="border:2px solid #1e40af;padding:6px;text-align:center;font-size:11px;font-weight:bold;">-</td>
-        <td style="border:2px solid #1e40af;padding:6px;text-align:center;font-size:11px;font-weight:bold;">${new Date(dateTo).toLocaleDateString('en-GB')}</td>
-        <td style="border:2px solid #1e40af;padding:6px;text-align:right;font-size:11px;font-weight:bold;">${periodRepayment.toLocaleString('en-IN')} (एकूण)</td>
-        <td style="border:2px solid #1e40af;padding:6px;text-align:center;font-size:11px;font-weight:bold;">एकूण</td>
-        <td style="border:2px solid #1e40af;padding:6px;text-align:right;font-size:11px;font-weight:bold;">${periodDisbursement.toLocaleString('en-IN')} (एकूण)</td>
-        <td style="border:2px solid #1e40af;padding:6px;text-align:center;font-size:11px;font-weight:bold;">एकूण</td>
-        <td style="border:2px solid #1e40af;padding:6px;text-align:right;font-size:11px;font-weight:bold;">${closingBalance.toLocaleString('en-IN')} (क्लोजिंग)</td>
-      </tr>`;
+      const totTd = `border:none;border-top:1px solid #333;border-bottom:1px solid #333;padding:7px 5px;font-size:10px;font-weight:bold;line-height:1.5;background:#e3f2fd;`;
+      if (entries.length > 0 || openingBalance !== 0) {
+        rows += `<tr>
+          <td style="${totTd}text-align:center;"></td>
+          <td style="${totTd}text-align:center;"></td>
+          <td style="${totTd}text-align:right;">${periodRepayment.toLocaleString('en-IN')}</td>
+          <td style="${totTd}text-align:center;"></td>
+          <td style="${totTd}text-align:right;">${periodDisbursement.toLocaleString('en-IN')}</td>
+          <td style="${totTd}text-align:center;"></td>
+          <td style="${totTd}text-align:right;font-size:12px;background:#c7d2fe;color:#1e40af;white-space:nowrap;"><span style="font-size:12px;">${closingBalance.toLocaleString('en-IN')}</span> <span style="font-size:9px;">क्लोजिंग बॅलन्स</span></td>
+        </tr>`;
+      }
 
       const fullHTML = `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: Arial, sans-serif; background: white; width: ${a5WidthPx}px; padding: 12px; }
+        body { font-family: Arial, sans-serif; background: white; width: ${renderWidthPx}px; padding: 20px 30px; }
+        table { width: 100%; border-collapse: collapse; table-layout: fixed; }
       </style></head><body>
-        <div style="text-align:center;margin-bottom:12px;">
-          <h2 style="font-size:16px;margin-bottom:4px;">भांडवल खाते</h2>
-          <p style="font-size:13px;margin-bottom:2px;">नमुना क्रमांक १३</p>
-          <p style="font-size:11px;margin-bottom:6px;">(नियम १९ पहा)</p>
-          <p style="font-size:12px;margin-bottom:4px;font-weight:bold;">${companyName}</p>
-          <p style="font-size:11px;">कालावधी: ${new Date(dateFrom).toLocaleDateString('en-GB')} ते ${new Date(dateTo).toLocaleDateString('en-GB')}</p>
+        <div style="text-align:center;margin-bottom:18px;padding-bottom:12px;border-bottom:1px solid #ddd;">
+          <p style="font-size:18px;font-weight:bold;margin-bottom:6px;">${companyName}</p>
+          <p style="font-size:15px;font-weight:bold;margin-bottom:4px;">भांडवल खाते</p>
+          <p style="font-size:11px;color:#555;margin-bottom:3px;">नमुना क्रमांक १३ (नियम १८ पहा)</p>
+          <p style="font-size:11px;color:#555;">कालावधी: ${new Date(dateFrom).toLocaleDateString('en-GB')} ते ${new Date(dateTo).toLocaleDateString('en-GB')}</p>
         </div>
-        <table style="width:100%;border-collapse:collapse;table-layout:fixed;">
+        <table>
+          <colgroup>
+            <col style="width:5%;">
+            <col style="width:11%;">
+            <col style="width:18%;">
+            <col style="width:9%;">
+            <col style="width:17%;">
+            <col style="width:8%;">
+            <col style="width:25%;">
+          </colgroup>
           <thead>
             <tr>
-              <th style="border:2px solid #1e40af;padding:5px;text-align:center;font-size:9px;background:#f0f0f0;font-weight:bold;width:6%;">अ.क्र.</th>
-              <th style="border:2px solid #1e40af;padding:5px;text-align:center;font-size:9px;background:#f0f0f0;font-weight:bold;width:12%;">दिनांक</th>
-              <th style="border:2px solid #1e40af;padding:5px;text-align:center;font-size:9px;background:#f0f0f0;font-weight:bold;width:16%;">कर्ज परतफेड</th>
-              <th style="border:2px solid #1e40af;padding:5px;text-align:center;font-size:9px;background:#f0f0f0;font-weight:bold;width:10%;">पान क्र.</th>
-              <th style="border:2px solid #1e40af;padding:5px;text-align:center;font-size:9px;background:#f0f0f0;font-weight:bold;width:16%;">कर्ज वाटप</th>
-              <th style="border:2px solid #1e40af;padding:5px;text-align:center;font-size:9px;background:#f0f0f0;font-weight:bold;width:10%;">पान क्र.</th>
-              <th style="border:2px solid #1e40af;padding:5px;text-align:center;font-size:9px;background:#f0f0f0;font-weight:bold;width:20%;">निव्वळ शिल्लक</th>
+              <th style="${thStyle}">अ.क्र.</th>
+              <th style="${thStyle}">दिनांक</th>
+              <th style="${thStyle}">कर्जाची रकमेची एकूण परतफेड</th>
+              <th style="${thStyle}">रोकड वहीतील पान क्रमांक</th>
+              <th style="${thStyle}">कर्ज वाटपाची एकूण रक्कम</th>
+              <th style="${thStyle}">रोकड वहीतील पान क्रमांक</th>
+              <th style="${thStyle}background:#dbeafe;font-size:10px;">व्यवसायात गुंतवलेली निव्वळ शिल्लक रक्कम</th>
             </tr>
           </thead>
           <tbody>${rows}</tbody>
@@ -459,7 +472,7 @@ export default function CapitalAccountReport() {
       iframe.style.position = 'fixed';
       iframe.style.left = '-9999px';
       iframe.style.top = '0';
-      iframe.style.width = a5WidthPx + 'px';
+      iframe.style.width = renderWidthPx + 'px';
       iframe.style.height = '2000px';
       iframe.style.border = 'none';
       iframe.style.overflow = 'visible';
@@ -486,36 +499,39 @@ export default function CapitalAccountReport() {
       const contentHeight = targetEl.scrollHeight;
 
       const canvas = await html2canvas(targetEl, {
-        scale: 4,
+        scale: 3,
         useCORS: true,
         logging: false,
         backgroundColor: '#ffffff',
         imageTimeout: 0,
-        width: a5WidthPx,
+        width: renderWidthPx,
         height: contentHeight,
-        windowWidth: a5WidthPx,
+        windowWidth: renderWidthPx,
         windowHeight: contentHeight,
       });
 
       document.body.removeChild(iframe);
 
       const imgData = canvas.toDataURL('image/png');
-      const a5Width = 148;
-      const a5Height = 210;
-      const imgTotalHeight = (canvas.height * a5Width) / canvas.width;
-      const totalPages = Math.ceil(imgTotalHeight / a5Height);
+      const pageWidth = 210;
+      const pageHeight = 297;
+      const marginTop = 8;
+      const marginBottom = 8;
+      const usableHeight = pageHeight - marginTop - marginBottom;
+      const imgTotalHeight = (canvas.height * pageWidth) / canvas.width;
+      const totalPages = Math.ceil(imgTotalHeight / usableHeight);
 
       const doc = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
-        format: 'a5',
-        compress: false,
+        format: 'a4',
+        compress: true,
       });
 
       for (let page = 0; page < totalPages; page++) {
         if (page > 0) doc.addPage();
-        const yOffset = -(page * a5Height);
-        doc.addImage(imgData, 'PNG', 0, yOffset, a5Width, imgTotalHeight);
+        const yOffset = marginTop - (page * usableHeight);
+        doc.addImage(imgData, 'PNG', 0, yOffset, pageWidth, imgTotalHeight);
       }
 
       doc.save(`भांडवल_खाते_नमुना१३_${dateFrom}_to_${dateTo}.pdf`);
@@ -542,7 +558,7 @@ export default function CapitalAccountReport() {
             {/* Header */}
             <div className="mb-6">
               <h1 className="text-2xl font-semibold text-foreground heading-professional">भांडवल खाते</h1>
-              <p className="text-muted-foreground">नमुना क्रमांक १३ (नियम १९ पहा) - कर्ज वाटप अहवाल</p>
+              <p className="text-muted-foreground">नमुना क्रमांक १३ (नियम १८ पहा) - कर्ज वाटप अहवाल</p>
             </div>
 
             {/* Date Filter */}
@@ -589,14 +605,16 @@ export default function CapitalAccountReport() {
                         <Printer className="h-4 w-4 mr-2" />
                         प्रिंट करा
                       </Button>
-                      <Button 
-                        onClick={handleExcelExport} 
-                        className="btn-professional print:hidden bg-green-50 hover:bg-green-100 text-green-700 border-green-200" 
-                        variant="outline"
-                      >
-                        <Download className="h-4 w-4 mr-2" />
-                        एक्सेल एक्सपोर्ट
-                      </Button>
+                      {!isMobile && (
+                        <Button 
+                          onClick={handleExcelExport} 
+                          className="btn-professional print:hidden bg-green-50 hover:bg-green-100 text-green-700 border-green-200" 
+                          variant="outline"
+                        >
+                          <Download className="h-4 w-4 mr-2" />
+                          एक्सेल एक्सपोर्ट
+                        </Button>
+                      )}
                       {isMobile && (
                         <Button 
                           onClick={handleMobilePdfDownload} 
@@ -622,7 +640,7 @@ export default function CapitalAccountReport() {
                 <div className="capital-header" style={{ textAlign: 'center', marginBottom: '20px', fontWeight: 'bold' }}>
                   <h1 style={{ fontSize: '20px', marginBottom: '8px' }}>भांडवल खाते</h1>
                   <p style={{ fontSize: '16px', marginBottom: '2px' }}>नमुना क्रमांक १३</p>
-                  <p style={{ fontSize: '14px', marginBottom: '20px' }}>(नियम १९ पहा)</p>
+                  <p style={{ fontSize: '14px', marginBottom: '20px' }}>(नियम १८ पहा)</p>
                   {dateFrom && dateTo && (
                     <p style={{ fontSize: '16px', marginBottom: '20px' }}>
                       कालावधी: {new Date(dateFrom).toLocaleDateString('en-GB')} ते {new Date(dateTo).toLocaleDateString('en-GB')}
@@ -736,15 +754,15 @@ export default function CapitalAccountReport() {
                                 {new Date(dateTo).toLocaleDateString('en-GB')}
                               </td>
                               <td className="amount-col" style={{ border: '2px solid #1e40af', padding: '10px', textAlign: 'right', fontSize: '13px', fontWeight: 'bold', background: '#e3f2fd' }}>
-                                {periodRepayment.toLocaleString('en-IN')} (एकूण)
+                                {periodRepayment.toLocaleString('en-IN')}
                               </td>
                               <td style={{ border: '2px solid #1e40af', padding: '10px', textAlign: 'center', fontSize: '13px', fontWeight: 'bold', background: '#e3f2fd' }}>एकूण</td>
                               <td className="amount-col" style={{ border: '2px solid #1e40af', padding: '10px', textAlign: 'right', fontSize: '13px', fontWeight: 'bold', background: '#e3f2fd' }}>
-                                {periodDisbursement.toLocaleString('en-IN')} (एकूण)
+                                {periodDisbursement.toLocaleString('en-IN')}
                               </td>
                               <td style={{ border: '2px solid #1e40af', padding: '10px', textAlign: 'center', fontSize: '13px', fontWeight: 'bold', background: '#e3f2fd' }}>एकूण</td>
                               <td className="amount-col" style={{ border: '2px solid #1e40af', padding: '10px', textAlign: 'right', fontSize: '13px', fontWeight: 'bold', background: '#e3f2fd' }}>
-                                {closingBalance.toLocaleString('en-IN')} (क्लोजिंग)
+                                {closingBalance.toLocaleString('en-IN')} क्लोजिंग बॅलन्स
                               </td>
                             </tr>
                           )}

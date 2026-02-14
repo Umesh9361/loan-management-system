@@ -7,9 +7,9 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Printer, Search, Home, FileText, ArrowLeft, User, Wallet, CreditCard, Download, FileDown } from "lucide-react";
+import { Printer, Search, FileText, User, Wallet, CreditCard, Download, FileDown } from "lucide-react";
 import { exportAccountLedgerToExcel } from "@/utils/excel-export";
-import { Link, useLocation } from "wouter";
+import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { DateUtils } from "@/lib/date-utils";
 import { Sidebar } from "@/components/ui/sidebar";
@@ -70,7 +70,11 @@ export default function AccountLedger() {
     document.head.appendChild(styleElement);
     
     return () => {
-      document.head.removeChild(styleElement);
+      try {
+        if (styleElement.parentNode) {
+          document.head.removeChild(styleElement);
+        }
+      } catch (e) {}
     };
   }, []);
   
@@ -864,7 +868,7 @@ export default function AccountLedger() {
     }
 
     try {
-      const a5WidthPx = 560;
+      const renderWidthPx = 794;
       const companyName = company?.name || 'कंपनी नाव';
       const accountName = statementData.account?.borrowerName || statementData.account?.name || 'खाते';
       const accountType = statementData.account?.type || '';
@@ -872,8 +876,10 @@ export default function AccountLedger() {
       const isLoanAccount = accountType === 'individual_loan' || accountType === 'loan';
 
       let headerTitle = 'खाते लेजर';
+      let subTitle = '';
       if (accountType === 'individual_loan') {
-        headerTitle = 'नमुना क्रमांक आठ (नियम 18 पहा)';
+        headerTitle = 'नमुना क्रमांक आठ';
+        subTitle = '(नियम १८ पहा)';
       } else if (accountType === 'cash') {
         headerTitle = 'रोकड खाते लेजर';
       } else if (accountType === 'party') {
@@ -884,18 +890,21 @@ export default function AccountLedger() {
 
       let accountInfoHTML = '';
       if (statementData.account?.accountNumber) {
-        accountInfoHTML += `<p style="font-size:10px;margin:2px 0;">खाते क्र.: ${statementData.account.accountNumber}</p>`;
+        accountInfoHTML += `<span style="font-size:11px;margin-right:15px;">खाते क्र.: ${statementData.account.accountNumber}</span>`;
       }
       if (statementData.account?.principalAmount) {
         const amt = parseFloat(statementData.account.principalAmount);
-        accountInfoHTML += `<p style="font-size:10px;margin:2px 0;">मुद्दल: ₹${isNaN(amt) ? '0' : amt.toLocaleString('en-IN')}</p>`;
+        accountInfoHTML += `<span style="font-size:11px;margin-right:15px;">मुद्दल: ₹${isNaN(amt) ? '0' : amt.toLocaleString('en-IN')}</span>`;
       }
       if (statementData.account?.interestRate) {
-        accountInfoHTML += `<p style="font-size:10px;margin:2px 0;">व्याज दर: ${statementData.account.interestRate}% ${statementData.account.interestRateType === 'monthly' ? 'मासिक' : 'वार्षिक'}</p>`;
+        accountInfoHTML += `<span style="font-size:11px;margin-right:15px;">व्याज दर: ${statementData.account.interestRate}% ${statementData.account.interestRateType === 'monthly' ? 'मासिक' : 'वार्षिक'}</span>`;
       }
       if (statementData.account?.loanDate) {
-        accountInfoHTML += `<p style="font-size:10px;margin:2px 0;">कर्ज दिनांक: ${DateUtils.isoToIndianDate(statementData.account.loanDate)}</p>`;
+        accountInfoHTML += `<span style="font-size:11px;">कर्ज दिनांक: ${DateUtils.isoToIndianDate(statementData.account.loanDate)}</span>`;
       }
+
+      const thStyle = `border:none;border-top:1px solid #333;border-bottom:1px solid #333;padding:8px 4px;text-align:center;font-size:10px;background:#f0f0f0;font-weight:bold;line-height:1.4;`;
+      const tdBase = `border:none;border-bottom:0.5px solid #ddd;padding:7px 5px;font-size:10px;font-weight:600;line-height:1.5;`;
 
       let rows = '';
       statementData.entries.forEach((entry: any) => {
@@ -907,16 +916,17 @@ export default function AccountLedger() {
           ? (bal >= 0 ? 'color:green;' : 'color:red;')
           : isLoanAccount
             ? 'color:red;'
-            : (bal >= 0 ? 'color:blue;' : 'color:red;');
+            : (bal >= 0 ? 'color:#1e40af;' : 'color:red;');
 
         const dateDisplay = entry.type === 'opening' ? 'प्रारंभिक' : DateUtils.isoToIndianDate(entry.date);
+        const rowBg = entry.type === 'opening' ? 'background:#fff4e6;' : '';
 
-        rows += `<tr style="${entry.type === 'opening' ? 'background:#f5f5f5;font-weight:600;' : ''}">
-          <td style="border:1px solid #1e40af;padding:5px;text-align:center;font-size:10px;">${dateDisplay}</td>
-          <td style="border:1px solid #1e40af;padding:5px;text-align:left;font-size:10px;">${entry.description || ''}</td>
-          <td style="border:1px solid #1e40af;padding:5px;text-align:right;font-size:10px;">${entry.debit > 0 ? '₹' + Math.round(entry.debit).toLocaleString('en-IN') : ''}</td>
-          <td style="border:1px solid #1e40af;padding:5px;text-align:right;font-size:10px;">${entry.credit > 0 ? '₹' + Math.round(entry.credit).toLocaleString('en-IN') : ''}</td>
-          <td style="border:1px solid #1e40af;padding:5px;text-align:right;font-size:10px;font-weight:600;${balColor}">${bal < 0 ? '-' : ''}₹${Math.round(Math.abs(bal)).toLocaleString('en-IN')}${drLabel}</td>
+        rows += `<tr style="${rowBg}">
+          <td style="${tdBase}text-align:center;">${dateDisplay}</td>
+          <td style="${tdBase}text-align:left;">${entry.description || ''}</td>
+          <td style="${tdBase}text-align:right;">${entry.debit > 0 ? Math.round(entry.debit).toLocaleString('en-IN') : '<span style="color:#999;">-</span>'}</td>
+          <td style="${tdBase}text-align:right;">${entry.credit > 0 ? Math.round(entry.credit).toLocaleString('en-IN') : '<span style="color:#999;">-</span>'}</td>
+          <td style="${tdBase}text-align:right;font-weight:bold;font-size:11px;background:#eef2ff;${balColor}">${bal < 0 ? '-' : ''}${Math.round(Math.abs(bal)).toLocaleString('en-IN')}${drLabel}</td>
         </tr>`;
       });
 
@@ -928,34 +938,45 @@ export default function AccountLedger() {
         ? (finalBal >= 0 ? 'color:green;' : 'color:red;')
         : isLoanAccount
           ? 'color:red;'
-          : (finalBal >= 0 ? 'color:blue;' : 'color:red;');
+          : (finalBal >= 0 ? 'color:#1e40af;' : 'color:red;');
 
-      rows += `<tr style="background:#e8e8e8;font-weight:bold;">
-        <td style="border:2px solid #1e40af;padding:5px;text-align:center;font-size:10px;" colspan="2">एकूण</td>
-        <td style="border:2px solid #1e40af;padding:5px;text-align:right;font-size:10px;">₹${Math.round(parseFloat(statementData.totalDebit || 0)).toLocaleString('en-IN')}</td>
-        <td style="border:2px solid #1e40af;padding:5px;text-align:right;font-size:10px;">₹${Math.round(parseFloat(statementData.totalCredit || 0)).toLocaleString('en-IN')}</td>
-        <td style="border:2px solid #1e40af;padding:5px;text-align:right;font-size:10px;font-weight:bold;${finalBalColor}">${finalBal < 0 ? '-' : ''}₹${Math.round(Math.abs(finalBal)).toLocaleString('en-IN')}${finalDrLabel}</td>
+      const totTd = `border:none;border-top:1px solid #333;border-bottom:1px solid #333;padding:7px 5px;font-size:10px;font-weight:bold;line-height:1.5;background:#e3f2fd;`;
+
+      rows += `<tr>
+        <td style="${totTd}text-align:center;" colspan="2">एकूण</td>
+        <td style="${totTd}text-align:right;">${Math.round(parseFloat(statementData.totalDebit || 0)).toLocaleString('en-IN')}</td>
+        <td style="${totTd}text-align:right;">${Math.round(parseFloat(statementData.totalCredit || 0)).toLocaleString('en-IN')}</td>
+        <td style="${totTd}text-align:right;font-size:12px;background:#c7d2fe;color:#1e40af;white-space:nowrap;${finalBalColor}"><span style="font-size:12px;">${finalBal < 0 ? '-' : ''}${Math.round(Math.abs(finalBal)).toLocaleString('en-IN')}</span> <span style="font-size:9px;">${finalDrLabel.trim()}</span></td>
       </tr>`;
 
       const fullHTML = `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: Arial, sans-serif; background: white; width: ${a5WidthPx}px; padding: 12px; }
+        body { font-family: Arial, sans-serif; background: white; width: ${renderWidthPx}px; padding: 20px 30px; }
+        table { width: 100%; border-collapse: collapse; table-layout: fixed; }
       </style></head><body>
-        <div style="text-align:center;margin-bottom:10px;">
-          <h2 style="font-size:15px;margin-bottom:3px;">${headerTitle}</h2>
-          <p style="font-size:12px;margin-bottom:3px;font-weight:bold;">${companyName}</p>
-          <p style="font-size:11px;margin-bottom:2px;font-weight:600;">खाते: ${accountName}</p>
-          ${accountInfoHTML}
-          <p style="font-size:10px;margin-top:4px;">कालावधी: ${DateUtils.isoToIndianDate(filters.dateFrom)} ते ${DateUtils.isoToIndianDate(filters.dateTo)}</p>
+        <div style="text-align:center;margin-bottom:18px;padding-bottom:12px;border-bottom:1px solid #ddd;">
+          <p style="font-size:18px;font-weight:bold;margin-bottom:6px;">${companyName}</p>
+          <p style="font-size:15px;font-weight:bold;margin-bottom:4px;">${headerTitle}</p>
+          ${subTitle ? `<p style="font-size:11px;color:#555;margin-bottom:3px;">${subTitle}</p>` : ''}
+          <p style="font-size:13px;font-weight:600;margin-bottom:4px;">खाते: ${accountName}</p>
+          ${accountInfoHTML ? `<p style="margin-bottom:3px;">${accountInfoHTML}</p>` : ''}
+          <p style="font-size:11px;color:#555;">कालावधी: ${DateUtils.isoToIndianDate(filters.dateFrom)} ते ${DateUtils.isoToIndianDate(filters.dateTo)}</p>
         </div>
-        <table style="width:100%;border-collapse:collapse;table-layout:fixed;">
+        <table>
+          <colgroup>
+            <col style="width:12%;">
+            <col style="width:34%;">
+            <col style="width:16%;">
+            <col style="width:16%;">
+            <col style="width:22%;">
+          </colgroup>
           <thead>
             <tr>
-              <th style="border:2px solid #1e40af;padding:5px;text-align:center;font-size:9px;background:#f0f0f0;font-weight:bold;width:14%;">दिनांक</th>
-              <th style="border:2px solid #1e40af;padding:5px;text-align:center;font-size:9px;background:#f0f0f0;font-weight:bold;width:32%;">तपशील</th>
-              <th style="border:2px solid #1e40af;padding:5px;text-align:center;font-size:9px;background:#f0f0f0;font-weight:bold;width:16%;">नावे (Dr.)</th>
-              <th style="border:2px solid #1e40af;padding:5px;text-align:center;font-size:9px;background:#f0f0f0;font-weight:bold;width:16%;">जमा (Cr.)</th>
-              <th style="border:2px solid #1e40af;padding:5px;text-align:center;font-size:9px;background:#f0f0f0;font-weight:bold;width:22%;">शिल्लक</th>
+              <th style="${thStyle}">दिनांक</th>
+              <th style="${thStyle}">तपशील</th>
+              <th style="${thStyle}">नावे (Dr.)</th>
+              <th style="${thStyle}">जमा (Cr.)</th>
+              <th style="${thStyle}background:#dbeafe;font-size:10px;">शिल्लक</th>
             </tr>
           </thead>
           <tbody>${rows}</tbody>
@@ -966,7 +987,7 @@ export default function AccountLedger() {
       iframe.style.position = 'fixed';
       iframe.style.left = '-9999px';
       iframe.style.top = '0';
-      iframe.style.width = a5WidthPx + 'px';
+      iframe.style.width = renderWidthPx + 'px';
       iframe.style.height = '2000px';
       iframe.style.border = 'none';
       iframe.style.overflow = 'visible';
@@ -993,36 +1014,39 @@ export default function AccountLedger() {
       const contentHeight = targetEl.scrollHeight;
 
       const canvas = await html2canvas(targetEl, {
-        scale: 4,
+        scale: 3,
         useCORS: true,
         logging: false,
         backgroundColor: '#ffffff',
         imageTimeout: 0,
-        width: a5WidthPx,
+        width: renderWidthPx,
         height: contentHeight,
-        windowWidth: a5WidthPx,
+        windowWidth: renderWidthPx,
         windowHeight: contentHeight,
       });
 
       document.body.removeChild(iframe);
 
       const imgData = canvas.toDataURL('image/png');
-      const a5Width = 148;
-      const a5Height = 210;
-      const imgTotalHeight = (canvas.height * a5Width) / canvas.width;
-      const totalPages = Math.ceil(imgTotalHeight / a5Height);
+      const pageWidth = 210;
+      const pageHeight = 297;
+      const marginTop = 8;
+      const marginBottom = 8;
+      const usableHeight = pageHeight - marginTop - marginBottom;
+      const imgTotalHeight = (canvas.height * pageWidth) / canvas.width;
+      const totalPages = Math.ceil(imgTotalHeight / usableHeight);
 
       const doc = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
-        format: 'a5',
-        compress: false,
+        format: 'a4',
+        compress: true,
       });
 
       for (let page = 0; page < totalPages; page++) {
         if (page > 0) doc.addPage();
-        const yOffset = -(page * a5Height);
-        doc.addImage(imgData, 'PNG', 0, yOffset, a5Width, imgTotalHeight);
+        const yOffset = marginTop - (page * usableHeight);
+        doc.addImage(imgData, 'PNG', 0, yOffset, pageWidth, imgTotalHeight);
       }
 
       const safeAccountName = (accountName || 'खाते').replace(/[/\\?%*:|"<>]/g, '_');
@@ -1050,37 +1074,25 @@ export default function AccountLedger() {
           <div className="px-4 sm:px-6 lg:px-8 py-6">
             <div className="space-y-6">
               {/* Header */}
-              <div className="flex items-center justify-between print:hidden">
-                <div className="flex items-center gap-4">
-                  <Link href="/">
-                    <Button variant="outline" size="sm" className="btn-primary-gradient flex items-center gap-2 text-white border-0">
-                      <ArrowLeft className="h-4 w-4" />
-                      मुखपृष्ठ
-                    </Button>
-                  </Link>
-                  <h1 className="text-2xl font-bold text-foreground heading-professional font-noto">
-                    खाते लेजर (सर्वप्रकार)
-                  </h1>
-                </div>
+              <div className="mb-6 print:hidden">
+                <h1 className="text-2xl font-semibold text-foreground heading-professional">खाते लेजर (सर्वप्रकार)</h1>
+                <p className="text-muted-foreground">सर्व प्रकारचे खाते लेजर एकाच ठिकाणी</p>
               </div>
 
               {/* Account Selection & Filters */}
-              <Card className="card-professional print:hidden">
+              <Card className="card-professional print:hidden mb-6">
                 <CardHeader>
-                  <CardTitle className="flex items-center heading-professional">
-                    <Search className="h-5 w-5 mr-2" />
+                  <CardTitle className="flex items-center gap-2 heading-professional">
+                    <Search className="h-5 w-5" />
                     खाते प्रकार आणि कालावधी निवडा
                   </CardTitle>
-                  <p className="text-sm text-gray-600 mt-2">
-                    सर्व प्रकारचे खाते लेजर एकाच ठिकाणी - रोकड खाते, व्यक्ती खाते, आणि कर्ज खाते
-                  </p>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
                     {/* Account Type Selection */}
                     <div>
-                      <Label>खाते प्रकार निवडा</Label>
-                      <Select value={filters.accountType} onValueChange={handleAccountTypeChange}>
+                      <Label className="text-sm font-semibold text-gray-700">खाते प्रकार निवडा</Label>
+                      <Select value={filters.accountType || undefined} onValueChange={handleAccountTypeChange}>
                         <SelectTrigger>
                           <SelectValue placeholder="खाते प्रकार निवडा" />
                         </SelectTrigger>
@@ -1116,8 +1128,8 @@ export default function AccountLedger() {
                     {/* Party Selection (only when party account type is selected) */}
                     {filters.accountType === 'party' && (
                       <div>
-                        <Label>व्यक्ती निवडा</Label>
-                        <Select value={filters.partyId} onValueChange={(value) => setFilters(prev => ({ ...prev, partyId: value }))}>
+                        <Label className="text-sm font-semibold text-gray-700">व्यक्ती निवडा</Label>
+                        <Select value={filters.partyId || undefined} onValueChange={(value) => setFilters(prev => ({ ...prev, partyId: value }))}>
                           <SelectTrigger>
                             <SelectValue placeholder="व्यक्ती निवडा" />
                           </SelectTrigger>
@@ -1140,9 +1152,9 @@ export default function AccountLedger() {
                     {/* Individual Loan Selection (only when individual_loan account type is selected) */}
                     {filters.accountType === 'individual_loan' && (
                       <div>
-                        <Label>कर्जदार निवडा</Label>
+                        <Label className="text-sm font-semibold text-gray-700">कर्जदार निवडा</Label>
                         <Select 
-                          value={filters.loanId} 
+                          value={filters.loanId || undefined} 
                           onValueChange={(value) => {
                             try {
                               console.log('🔍 DROPDOWN: Loan selection changed to:', value);
@@ -1201,60 +1213,58 @@ export default function AccountLedger() {
 
                     {/* Date From */}
                     <div>
-                      <Label htmlFor="dateFrom">पासून दिनांक</Label>
-                      <div className="space-y-2">
-                        <Input
-                          id="dateFrom"
-                          type="date"
-                          value={filters.dateFrom}
-                          onChange={(e) => setFilters(prev => ({ ...prev, dateFrom: e.target.value }))}
-                        />
-
-                      </div>
+                      <Label htmlFor="dateFrom" className="text-sm font-semibold text-gray-700">पासून दिनांक (From Date)</Label>
+                      <Input
+                        id="dateFrom"
+                        type="date"
+                        value={filters.dateFrom}
+                        onChange={(e) => setFilters(prev => ({ ...prev, dateFrom: e.target.value }))}
+                        className="border-2 border-indigo-200 focus:border-indigo-500 font-inter"
+                      />
                     </div>
 
                     {/* Date To */}
                     <div>
-                      <Label htmlFor="dateTo">पर्यंत दिनांक</Label>
-                      <div className="space-y-2">
-                        <Input
-                          id="dateTo"
-                          type="date"
-                          value={filters.dateTo}
-                          onChange={(e) => setFilters(prev => ({ ...prev, dateTo: e.target.value }))}
-                        />
-
-                      </div>
+                      <Label htmlFor="dateTo" className="text-sm font-semibold text-gray-700">पर्यंत दिनांक (To Date)</Label>
+                      <Input
+                        id="dateTo"
+                        type="date"
+                        value={filters.dateTo}
+                        onChange={(e) => setFilters(prev => ({ ...prev, dateTo: e.target.value }))}
+                        className="border-2 border-indigo-200 focus:border-indigo-500 font-inter"
+                      />
                     </div>
-                  </div>
 
-                  <div className="flex justify-between mt-4">
-                    <Button onClick={generateStatement} className="btn-primary-gradient text-white">
-                      <Search className="h-4 w-4 mr-2" />
-                      लेजर तयार करा
-                    </Button>
-                    {statementData && (
-                      <div className="flex gap-2 flex-wrap">
-                        <Button onClick={handlePrint} variant="outline">
-                          <Printer className="h-4 w-4 mr-2" />
-                          प्रिंट करा
+                    {/* Buttons */}
+                    <div>
+                      <Label className="text-sm font-semibold text-gray-700">रिपोर्ट पाहा</Label>
+                      <div className="flex gap-2 mt-1 flex-wrap">
+                        <Button onClick={generateStatement} className="btn-professional btn-primary print:hidden">
+                          <Search className="h-4 w-4 mr-2" />
+                          लेजर तयार करा
                         </Button>
-                        
-                        <Button onClick={handleExcelExport} variant="outline" className="bg-green-50 hover:bg-green-100 border-green-300">
-                          <svg className="mr-2 h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
-                            <path d="M4 2a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2V4a2 2 0 00-2-2H4zm2 2h8v12H6V4z"/>
-                          </svg>
-                          Excel एक्सपोर्ट
-                        </Button>
-
-                        {isMobile && (
-                          <Button onClick={handleMobilePdfDownload} variant="outline" className="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border-indigo-200">
-                            <FileDown className="h-4 w-4 mr-2" />
-                            मोबाईल PDF
-                          </Button>
+                        {statementData && (
+                          <>
+                            <Button onClick={handlePrint} variant="outline" className="btn-professional print:hidden">
+                              <Printer className="h-4 w-4 mr-2" />
+                              प्रिंट करा
+                            </Button>
+                            {!isMobile && (
+                              <Button onClick={handleExcelExport} variant="outline" className="btn-professional print:hidden bg-green-50 hover:bg-green-100 text-green-700 border-green-200">
+                                <Download className="h-4 w-4 mr-2" />
+                                एक्सेल एक्सपोर्ट
+                              </Button>
+                            )}
+                            {isMobile && (
+                              <Button onClick={handleMobilePdfDownload} variant="outline" className="btn-professional print:hidden bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border-indigo-200">
+                                <FileDown className="h-4 w-4 mr-2" />
+                                मोबाईल PDF
+                              </Button>
+                            )}
+                          </>
                         )}
                       </div>
-                    )}
+                    </div>
                   </div>
                 </CardContent>
               </Card>

@@ -270,8 +270,9 @@ export default function AnnualStatementPage() {
       const fieldValues = iframeDoc.querySelectorAll('.field-value');
       fieldValues.forEach((el: Element) => {
         const htmlEl = el as HTMLElement;
-        htmlEl.style.paddingBottom = '8px';
-        htmlEl.style.lineHeight = '2';
+        htmlEl.style.paddingBottom = '14px';
+        htmlEl.style.lineHeight = '2.2';
+        htmlEl.style.marginBottom = '4px';
       });
 
       await new Promise(resolve => setTimeout(resolve, 400));
