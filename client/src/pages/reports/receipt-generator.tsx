@@ -218,20 +218,36 @@ export default function ReceiptGeneratorPage() {
       
       const { default: html2canvas } = await import('html2canvas');
       
-      // Capture the receipt-container directly with A5 dimensions for accurate sizing
+      const a5WidthPx = 560;
+      const a5HeightPx = 794;
+      const origWidth = receiptContainer.style.width;
+      const origMinWidth = receiptContainer.style.minWidth;
+      const origMaxWidth = receiptContainer.style.maxWidth;
+      const origMinHeight = receiptContainer.style.minHeight;
+      receiptContainer.style.width = a5WidthPx + 'px';
+      receiptContainer.style.minWidth = a5WidthPx + 'px';
+      receiptContainer.style.maxWidth = a5WidthPx + 'px';
+      receiptContainer.style.minHeight = a5HeightPx + 'px';
+
       const canvas = await html2canvas(receiptContainer, {
         scale: 4,
         useCORS: true,
         logging: false,
         backgroundColor: '#ffffff',
         imageTimeout: 0,
-        removeContainer: true
+        removeContainer: true,
+        width: a5WidthPx,
+        height: a5HeightPx,
+        windowWidth: a5WidthPx,
+        windowHeight: a5HeightPx,
       });
       
-      // Remove export-mode class after capture
       receiptContainer.classList.remove('export-mode');
+      receiptContainer.style.width = origWidth;
+      receiptContainer.style.minWidth = origMinWidth;
+      receiptContainer.style.maxWidth = origMaxWidth;
+      receiptContainer.style.minHeight = origMinHeight;
       
-      // Use PNG (lossless) for crisp text - no JPEG artifacts
       const imgData = canvas.toDataURL('image/png');
       
       const doc = new jsPDF({
@@ -243,13 +259,8 @@ export default function ReceiptGeneratorPage() {
       
       const a5Width = 148;
       const a5Height = 210;
-      const margin = 3;
-      const contentWidth = a5Width - (margin * 2);
-      const imgAspectRatio = canvas.height / canvas.width;
-      const contentHeight = contentWidth * imgAspectRatio;
       
-      // Add high-res PNG image for maximum text clarity
-      doc.addImage(imgData, 'PNG', margin, margin, contentWidth, Math.min(contentHeight, a5Height - (margin * 2)));
+      doc.addImage(imgData, 'PNG', 0, 0, a5Width, a5Height);
       
       const selectedLoan = (loans as any[]).find((l: any) => l.id === selectedLoanId);
       const fileName = selectedLoan 
@@ -287,44 +298,50 @@ export default function ReceiptGeneratorPage() {
       
       const { default: html2canvas } = await import('html2canvas');
       
-      // Capture the receipt-container directly with A5 dimensions for accurate sizing
+      const a5WidthPx = 560;
+      const a5HeightPx = 794;
+      const origWidth = receiptContainer.style.width;
+      const origMinWidth = receiptContainer.style.minWidth;
+      const origMaxWidth = receiptContainer.style.maxWidth;
+      const origMinHeight = receiptContainer.style.minHeight;
+      receiptContainer.style.width = a5WidthPx + 'px';
+      receiptContainer.style.minWidth = a5WidthPx + 'px';
+      receiptContainer.style.maxWidth = a5WidthPx + 'px';
+      receiptContainer.style.minHeight = a5HeightPx + 'px';
+
       const canvas = await html2canvas(receiptContainer, {
         scale: 4,
         useCORS: true,
         logging: false,
         backgroundColor: '#ffffff',
         imageTimeout: 0,
-        removeContainer: true
+        removeContainer: true,
+        width: a5WidthPx,
+        height: a5HeightPx,
+        windowWidth: a5WidthPx,
+        windowHeight: a5HeightPx,
       });
       
-      // Remove export-mode class after capture
       receiptContainer.classList.remove('export-mode');
+      receiptContainer.style.width = origWidth;
+      receiptContainer.style.minWidth = origMinWidth;
+      receiptContainer.style.maxWidth = origMaxWidth;
+      receiptContainer.style.minHeight = origMinHeight;
       
-      // A5 size in pixels at 150 DPI (same proportions as PDF)
-      const a5Width = 874;
-      const a5Height = 1240;
-      const margin = 12;
-      
+      const a5ImgWidth = 874;
+      const a5ImgHeight = 1240;
       const resizedCanvas = document.createElement('canvas');
-      resizedCanvas.width = a5Width;
-      resizedCanvas.height = a5Height;
+      resizedCanvas.width = a5ImgWidth;
+      resizedCanvas.height = a5ImgHeight;
       const ctx = resizedCanvas.getContext('2d');
-      
       if (ctx) {
         ctx.imageSmoothingEnabled = true;
         ctx.imageSmoothingQuality = 'high';
-        
         ctx.fillStyle = '#ffffff';
-        ctx.fillRect(0, 0, a5Width, a5Height);
-        
-        const contentWidth = a5Width - (margin * 2);
-        const imgAspectRatio = canvas.height / canvas.width;
-        const contentHeight = Math.min(contentWidth * imgAspectRatio, a5Height - (margin * 2));
-        
-        ctx.drawImage(canvas, margin, margin, contentWidth, contentHeight);
+        ctx.fillRect(0, 0, a5ImgWidth, a5ImgHeight);
+        ctx.drawImage(canvas, 0, 0, a5ImgWidth, a5ImgHeight);
       }
       
-      // Direct download - same as PDF
       const imageUrl = resizedCanvas.toDataURL('image/png');
       const link = document.createElement('a');
       link.href = imageUrl;
