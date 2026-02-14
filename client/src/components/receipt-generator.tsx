@@ -729,7 +729,7 @@ export class ReceiptGenerator {
     company: { name?: string; licenseNumber?: string } | null
   ): string {
     const formatAmount = (amount: number) => {
-      return amount ? `₹${amount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '₹0.00';
+      return amount ? `₹${Math.round(amount).toLocaleString('en-IN')}` : '₹0';
     };
     
     const formatDate = (dateStr: string) => {
@@ -832,6 +832,9 @@ export class ReceiptGenerator {
             margin-left: 8px;
             border-bottom: 1px dotted #000;
             min-width: 200px;
+            padding-bottom: 6px;
+            line-height: 1.8;
+            vertical-align: baseline;
         }
 
         .radio-option {

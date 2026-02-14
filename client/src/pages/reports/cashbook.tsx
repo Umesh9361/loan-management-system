@@ -10,9 +10,7 @@ import { LoanCalculations } from "@/lib/loan-calculations";
 import { useQuery } from "@tanstack/react-query";
 import { useRealTimeSync } from "@/hooks/use-real-time-sync";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Printer, FileDown, FileSpreadsheet, Home, ArrowLeft } from "lucide-react";
-import { useLocation } from "wouter";
-import { useSafeNavigation } from "@/hooks/use-safe-navigation";
+import { Search, Printer, FileDown, FileSpreadsheet } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
@@ -26,8 +24,6 @@ function CashBookReport() {
   });
   const [printFormat, setPrintFormat] = useState<'vertical' | 'horizontal'>('horizontal');
   const printRef = useRef<HTMLDivElement>(null);
-  const [location] = useLocation();
-  const { safeNavigate } = useSafeNavigation();
   const [isMobile, setIsMobile] = useState(false);
 
   React.useEffect(() => {
@@ -395,30 +391,34 @@ function CashBookReport() {
     }
 
     try {
-      const a5WidthPx = 560;
+      const renderWidthPx = 794;
       const companyName = (company as any)?.name || 'कंपनी नाव';
+      const bdr = '0.5px solid #aaa';
+      const thStyle = `border:${bdr};padding:6px 4px;text-align:center;font-size:10px;background:#f5f5f5;font-weight:bold;line-height:1.5;`;
+      const tdBase = `border:${bdr};padding:6px 5px;font-size:10px;line-height:1.6;`;
 
       let tableHTML = '';
       if (printFormat === 'vertical') {
-        const rows = finalTransactions.map((row: any) => `
-          <tr style="${row.isOpeningBalance ? 'background:#fff4e6;' : ''}">
-            <td style="border:1px solid #1e40af;padding:6px;text-align:center;font-size:11px;">${DateUtils.isoToIndianDate(row.date).replace(/20(\d{2})/g, '$1')}</td>
-            <td style="border:1px solid #1e40af;padding:6px;text-align:left;font-size:11px;">${row.description}</td>
-            <td style="border:1px solid #1e40af;padding:6px;text-align:right;font-size:11px;">${row.credit ? LoanCalculations.formatAmount(row.credit) : '-'}</td>
-            <td style="border:1px solid #1e40af;padding:6px;text-align:right;font-size:11px;">${row.debit ? LoanCalculations.formatAmount(row.debit) : '-'}</td>
-            <td style="border:1px solid #1e40af;padding:6px;text-align:right;font-size:11px;font-weight:600;">${LoanCalculations.formatAmount(row.balance)}</td>
-          </tr>
-        `).join('');
+        const rows = finalTransactions.map((row: any, idx: number) => {
+          const bgStyle = row.isOpeningBalance ? 'background:#fef9ef;' : (idx % 2 === 1 ? 'background:#fafafa;' : '');
+          return `<tr style="${bgStyle}">
+            <td style="${tdBase}text-align:center;">${DateUtils.isoToIndianDate(row.date).replace(/20(\d{2})/g, '$1')}</td>
+            <td style="${tdBase}text-align:left;">${row.description}</td>
+            <td style="${tdBase}text-align:right;">${row.credit ? LoanCalculations.formatAmount(row.credit) : '-'}</td>
+            <td style="${tdBase}text-align:right;">${row.debit ? LoanCalculations.formatAmount(row.debit) : '-'}</td>
+            <td style="${tdBase}text-align:right;font-weight:600;">${LoanCalculations.formatAmount(row.balance)}</td>
+          </tr>`;
+        }).join('');
 
         tableHTML = `
           <table style="width:100%;border-collapse:collapse;table-layout:fixed;">
             <thead>
               <tr>
-                <th style="border:2px solid #1e40af;padding:8px;text-align:center;font-size:12px;background:#f0f0f0;font-weight:bold;width:15%;">तारीख</th>
-                <th style="border:2px solid #1e40af;padding:8px;text-align:center;font-size:12px;background:#f0f0f0;font-weight:bold;width:35%;">तपशील</th>
-                <th style="border:2px solid #1e40af;padding:8px;text-align:center;font-size:12px;background:#f0f0f0;font-weight:bold;width:16%;">जमा (Cr.)</th>
-                <th style="border:2px solid #1e40af;padding:8px;text-align:center;font-size:12px;background:#f0f0f0;font-weight:bold;width:16%;">नावे (Dr.)</th>
-                <th style="border:2px solid #1e40af;padding:8px;text-align:center;font-size:12px;background:#f0f0f0;font-weight:bold;width:18%;">शिल्लक</th>
+                <th style="${thStyle}width:12%;">तारीख</th>
+                <th style="${thStyle}width:40%;">तपशील</th>
+                <th style="${thStyle}width:15%;">जमा (Cr.)</th>
+                <th style="${thStyle}width:15%;">नावे (Dr.)</th>
+                <th style="${thStyle}width:18%;">शिल्लक</th>
               </tr>
             </thead>
             <tbody>${rows}</tbody>
@@ -428,41 +428,68 @@ function CashBookReport() {
         const hData = getHorizontalData();
         const maxRows = Math.max(hData.creditRows.length, hData.debitRows.length);
         let tRows = '';
+
+        const dtW = '60px';
+        const amW = '80px';
+
         for (let i = 0; i < maxRows; i++) {
           const cr = hData.creditRows[i];
           const dr = hData.debitRows[i];
-          tRows += `<tr>
-            <td style="border:1px solid #1e40af;padding:4px;text-align:center;font-size:10px;width:12%;">${cr ? DateUtils.isoToIndianDate(cr.date).replace(/20(\d{2})/g, '$1') : ''}</td>
-            <td style="border:1px solid #1e40af;padding:4px;text-align:left;font-size:10px;width:23%;">${cr?.description || ''}</td>
-            <td style="border:1px solid #1e40af;padding:4px;text-align:right;font-size:10px;border-right:2px solid #000;width:15%;">${cr ? LoanCalculations.formatAmount(cr.amount) : ''}</td>
-            <td style="border:1px solid #1e40af;padding:4px;text-align:center;font-size:10px;width:12%;">${dr ? DateUtils.isoToIndianDate(dr.date).replace(/20(\d{2})/g, '$1') : ''}</td>
-            <td style="border:1px solid #1e40af;padding:4px;text-align:left;font-size:10px;width:23%;">${dr?.description || ''}</td>
-            <td style="border:1px solid #1e40af;padding:4px;text-align:right;font-size:10px;width:15%;">${dr ? LoanCalculations.formatAmount(dr.amount) : ''}</td>
+          const isCrBal = cr?.description?.includes('शिल्लक') || cr?.description?.includes('मागील');
+          const isDrBal = dr?.description?.includes('शिल्लक') || dr?.description?.includes('मागील');
+          const isBalRow = isCrBal || isDrBal;
+          const rowBg = isBalRow ? 'background:#eef2ff;' : (i % 2 === 1 ? 'background:#fafafa;' : '');
+          const balCellBg = isBalRow ? 'background:#eef2ff;' : '';
+
+          const crDtStyle = `border:${bdr};padding:4px 2px 5px;font-size:7px;line-height:1.4;color:#666;text-align:center;${balCellBg}${isCrBal ? 'font-weight:bold;color:#333;' : ''}`;
+          const crDescStyle = `border:${bdr};padding:5px 4px 6px;font-size:8.5px;line-height:1.5;text-align:left;${balCellBg}${isCrBal ? 'font-weight:bold;font-size:9px;color:#3730a3;' : ''}`;
+          const crAmtStyle = `border:${bdr};padding:5px 3px 6px;font-size:8px;line-height:1.5;text-align:right;border-right:1px solid #999;${balCellBg}${isCrBal ? 'font-weight:bold;font-size:9px;' : ''}`;
+          const drDtStyle = `border:${bdr};padding:4px 2px 5px;font-size:7px;line-height:1.4;color:#666;text-align:center;${balCellBg}${isDrBal ? 'font-weight:bold;color:#333;' : ''}`;
+          const drDescStyle = `border:${bdr};padding:5px 4px 6px;font-size:8.5px;line-height:1.5;text-align:left;${balCellBg}${isDrBal ? 'font-weight:bold;font-size:9px;color:#3730a3;' : ''}`;
+          const drAmtStyle = `border:${bdr};padding:5px 3px 6px;font-size:8px;line-height:1.5;text-align:right;${balCellBg}${isDrBal ? 'font-weight:bold;font-size:9px;' : ''}`;
+
+          tRows += `<tr style="${rowBg}">
+            <td style="${crDtStyle}">${cr ? DateUtils.isoToIndianDate(cr.date).replace(/20(\d{2})/g, '$1') : ''}</td>
+            <td style="${crDescStyle}">${cr?.description || ''}</td>
+            <td style="${crAmtStyle}">${cr ? LoanCalculations.formatAmount(cr.amount) : ''}</td>
+            <td style="${drDtStyle}">${dr ? DateUtils.isoToIndianDate(dr.date).replace(/20(\d{2})/g, '$1') : ''}</td>
+            <td style="${drDescStyle}">${dr?.description || ''}</td>
+            <td style="${drAmtStyle}">${dr ? LoanCalculations.formatAmount(dr.amount) : ''}</td>
           </tr>`;
         }
-        tRows += `<tr style="border-top:2px solid #000;font-weight:bold;background:#f0f0f0;">
-          <td style="border:1px solid #1e40af;padding:4px;text-align:center;font-size:10px;">-</td>
-          <td style="border:1px solid #1e40af;padding:4px;text-align:center;font-size:10px;">एकूण</td>
-          <td style="border:1px solid #1e40af;padding:4px;text-align:right;font-size:10px;border-right:2px solid #000;">${LoanCalculations.formatAmount(hData.grandTotalCredit)}</td>
-          <td style="border:1px solid #1e40af;padding:4px;text-align:center;font-size:10px;">-</td>
-          <td style="border:1px solid #1e40af;padding:4px;text-align:center;font-size:10px;">एकूण</td>
-          <td style="border:1px solid #1e40af;padding:4px;text-align:right;font-size:10px;">${LoanCalculations.formatAmount(hData.grandTotalDebit)}</td>
+
+        const totStyle = `border:${bdr};padding:6px 3px;font-size:9px;font-weight:bold;line-height:1.5;border-top:1.5px solid #555;background:#e0e7ff;`;
+        tRows += `<tr>
+          <td style="${totStyle}text-align:center;"></td>
+          <td style="${totStyle}text-align:center;">एकूण</td>
+          <td style="${totStyle}text-align:right;border-right:1px solid #999;">${LoanCalculations.formatAmount(hData.grandTotalCredit)}</td>
+          <td style="${totStyle}text-align:center;"></td>
+          <td style="${totStyle}text-align:center;">एकूण</td>
+          <td style="${totStyle}text-align:right;">${LoanCalculations.formatAmount(hData.grandTotalDebit)}</td>
         </tr>`;
 
         tableHTML = `
+          <div style="display:flex;width:100%;border:${bdr};">
+            <div style="width:50%;text-align:center;padding:5px 2px;font-size:10px;background:#eef2ff;font-weight:bold;border-right:1px solid #999;">जमा (Credit)</div>
+            <div style="width:50%;text-align:center;padding:5px 2px;font-size:10px;background:#fef2f2;font-weight:bold;">नावे (Debit)</div>
+          </div>
           <table style="width:100%;border-collapse:collapse;table-layout:fixed;">
+            <colgroup>
+              <col style="width:${dtW};">
+              <col>
+              <col style="width:${amW};">
+              <col style="width:${dtW};">
+              <col>
+              <col style="width:${amW};">
+            </colgroup>
             <thead>
               <tr>
-                <th colspan="3" style="border:2px solid #1e40af;padding:6px;text-align:center;font-size:13px;background:#dbeafe;font-weight:bold;">जमा (Credit)</th>
-                <th colspan="3" style="border:2px solid #1e40af;padding:6px;text-align:center;font-size:13px;background:#fee2e2;font-weight:bold;">नावे (Debit)</th>
-              </tr>
-              <tr>
-                <th style="border:2px solid #1e40af;padding:4px;text-align:center;font-size:11px;background:#f0f0f0;width:12%;">दिनांक</th>
-                <th style="border:2px solid #1e40af;padding:4px;text-align:center;font-size:11px;background:#f0f0f0;width:23%;">तपशील</th>
-                <th style="border:2px solid #1e40af;padding:4px;text-align:center;font-size:11px;background:#f0f0f0;border-right:2px solid #000;width:15%;">रक्कम</th>
-                <th style="border:2px solid #1e40af;padding:4px;text-align:center;font-size:11px;background:#f0f0f0;width:12%;">दिनांक</th>
-                <th style="border:2px solid #1e40af;padding:4px;text-align:center;font-size:11px;background:#f0f0f0;width:23%;">तपशील</th>
-                <th style="border:2px solid #1e40af;padding:4px;text-align:center;font-size:11px;background:#f0f0f0;width:15%;">रक्कम</th>
+                <th style="${thStyle}font-size:9px;">दिनांक</th>
+                <th style="${thStyle}font-size:10px;">तपशील</th>
+                <th style="${thStyle}border-right:1px solid #999;font-size:10px;">रक्कम</th>
+                <th style="${thStyle}font-size:9px;">दिनांक</th>
+                <th style="${thStyle}font-size:10px;">तपशील</th>
+                <th style="${thStyle}font-size:10px;">रक्कम</th>
               </tr>
             </thead>
             <tbody>${tRows}</tbody>
@@ -472,14 +499,14 @@ function CashBookReport() {
 
       const fullHTML = `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: Arial, sans-serif; background: white; width: ${a5WidthPx}px; padding: 15px; }
+        body { font-family: Arial, sans-serif; background: white; width: ${renderWidthPx}px; padding: 20px 30px; }
+        table { width: 100%; border-collapse: collapse; table-layout: fixed; }
       </style></head><body>
-        <div style="text-align:center;margin-bottom:15px;">
-          <h2 style="font-size:16px;margin-bottom:4px;">रोकड वही</h2>
-          <p style="font-size:13px;margin-bottom:2px;">नमुना क्र. ७</p>
-          <p style="font-size:11px;margin-bottom:8px;">(नियम १८ पहा)</p>
-          <p style="font-size:12px;margin-bottom:4px;font-weight:bold;">${companyName}</p>
-          <p style="font-size:11px;">कालावधी: ${DateUtils.isoToIndianDate(dateFilters.dateFrom)} ते ${DateUtils.isoToIndianDate(dateFilters.dateTo)}</p>
+        <div style="text-align:center;margin-bottom:18px;padding-bottom:12px;border-bottom:1px solid #ddd;">
+          <p style="font-size:18px;font-weight:bold;margin-bottom:6px;">${companyName}</p>
+          <p style="font-size:15px;font-weight:bold;margin-bottom:4px;">रोकड वही</p>
+          <p style="font-size:11px;color:#555;margin-bottom:3px;">नमुना क्र. ७ (नियम १८ पहा)</p>
+          <p style="font-size:11px;color:#555;">कालावधी: ${DateUtils.isoToIndianDate(dateFilters.dateFrom)} ते ${DateUtils.isoToIndianDate(dateFilters.dateTo)}</p>
         </div>
         ${tableHTML}
       </body></html>`;
@@ -488,7 +515,7 @@ function CashBookReport() {
       iframe.style.position = 'fixed';
       iframe.style.left = '-9999px';
       iframe.style.top = '0';
-      iframe.style.width = a5WidthPx + 'px';
+      iframe.style.width = renderWidthPx + 'px';
       iframe.style.height = '2000px';
       iframe.style.border = 'none';
       iframe.style.overflow = 'visible';
@@ -515,36 +542,39 @@ function CashBookReport() {
       const contentHeight = targetEl.scrollHeight;
 
       const canvas = await html2canvas(targetEl, {
-        scale: 4,
+        scale: 3,
         useCORS: true,
         logging: false,
         backgroundColor: '#ffffff',
         imageTimeout: 0,
-        width: a5WidthPx,
+        width: renderWidthPx,
         height: contentHeight,
-        windowWidth: a5WidthPx,
+        windowWidth: renderWidthPx,
         windowHeight: contentHeight,
       });
 
       document.body.removeChild(iframe);
 
       const imgData = canvas.toDataURL('image/png');
-      const a5Width = 148;
-      const a5Height = 210;
-      const imgTotalHeight = (canvas.height * a5Width) / canvas.width;
-      const totalPages = Math.ceil(imgTotalHeight / a5Height);
+      const pageWidth = 210;
+      const pageHeight = 297;
+      const marginTop = 8;
+      const marginBottom = 8;
+      const usableHeight = pageHeight - marginTop - marginBottom;
+      const imgTotalHeight = (canvas.height * pageWidth) / canvas.width;
+      const totalPages = Math.ceil(imgTotalHeight / usableHeight);
 
       const doc = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
-        format: 'a5',
-        compress: false,
+        format: 'a4',
+        compress: true,
       });
 
       for (let page = 0; page < totalPages; page++) {
         if (page > 0) doc.addPage();
-        const yOffset = -(page * a5Height);
-        doc.addImage(imgData, 'PNG', 0, yOffset, a5Width, imgTotalHeight);
+        const yOffset = marginTop - (page * usableHeight);
+        doc.addImage(imgData, 'PNG', 0, yOffset, pageWidth, imgTotalHeight);
       }
 
       doc.save(`रोकड_वही_नमुना७_${dateFilters.dateFrom}_to_${dateFilters.dateTo}.pdf`);
@@ -736,23 +766,9 @@ function CashBookReport() {
           <main className="flex-1 w-full lg:pl-72 pb-16 lg:pb-0">
             <div className="px-4 sm:px-6 lg:px-8 py-6">
               {/* Header */}
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-4">
-                  <Button
-                    onClick={() => safeNavigate('/dashboard')}
-                    variant="ghost"
-                    size="icon"
-                    className="text-gray-600 hover:text-gray-900"
-                  >
-                    <ArrowLeft className="h-5 w-5" />
-                  </Button>
-                  <div>
-                    <h1 className="text-2xl font-bold text-gray-900">रोकड वही अहवाल (नमुना क्र. ७)</h1>
-                    <p className="text-muted-foreground">
-                      दैनंदिन रोकड व्यवहाराची नोंद
-                    </p>
-                  </div>
-                </div>
+              <div className="mb-6">
+                <h1 className="text-2xl font-semibold text-foreground heading-professional">रोकड वही</h1>
+                <p className="text-muted-foreground">नमुना क्र. ७ (नियम १८ पहा) - दैनंदिन रोकड व्यवहाराची नोंद</p>
               </div>
 
               {/* Filters Card */}
@@ -804,29 +820,21 @@ function CashBookReport() {
 
               {/* Report Content */}
               <Card>
-                <CardHeader>
-                  <CardTitle className="text-xl print-company-name">{(company as any)?.name || "टेस्ट कंपनी"}</CardTitle>
-                  <p className="text-gray-600 screen-title">रोकड वही अहवाल (नमुना क्र. ७)</p>
-                  <div className="text-gray-600 print-title" style={{ display: 'none' }}>
-                    <div>रोकड वही</div>
-                    <div>नमुना क्र. ७</div>
-                    <div>(नियम १८ पहा)</div>
-                  </div>
-                  <p className="text-sm text-gray-500">
-                    {DateUtils.isoToIndianDate(dateFilters.dateFrom)} ते {DateUtils.isoToIndianDate(dateFilters.dateTo)}
-                  </p>
-                </CardHeader>
                 <CardContent className="p-0">
                   <div className="print-content">
                     <div className="mb-4 flex gap-2 px-6 pt-6 print:hidden flex-wrap">
-                    <Button onClick={handleExportExcel} variant="outline" className="bg-green-50 hover:bg-green-100 text-green-700 border-green-200">
-                      <FileSpreadsheet className="w-4 h-4 mr-2" />
-                      Excel
-                    </Button>
-                    <Button onClick={handleExportPDF} variant="outline" className="bg-red-50 hover:bg-red-100 text-red-700 border-red-200">
-                      <FileDown className="w-4 h-4 mr-2" />
-                      PDF
-                    </Button>
+                    {!isMobile && (
+                      <>
+                        <Button onClick={handleExportExcel} variant="outline" className="bg-green-50 hover:bg-green-100 text-green-700 border-green-200">
+                          <FileSpreadsheet className="w-4 h-4 mr-2" />
+                          Excel
+                        </Button>
+                        <Button onClick={handleExportPDF} variant="outline" className="bg-red-50 hover:bg-red-100 text-red-700 border-red-200">
+                          <FileDown className="w-4 h-4 mr-2" />
+                          PDF
+                        </Button>
+                      </>
+                    )}
                     {isMobile && (
                       <Button onClick={handleMobilePdfDownload} variant="outline" className="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border-indigo-200">
                         <FileDown className="w-4 h-4 mr-2" />
@@ -835,8 +843,8 @@ function CashBookReport() {
                     )}
                   </div>
 
-                  {/* Professional Print Header - matches capital account style */}
-                  <div className="cashbook-header print:block hidden" style={{ textAlign: 'center', marginBottom: '20px', fontWeight: 'bold' }}>
+                  {/* Professional Header - matches capital account style */}
+                  <div className="cashbook-header" style={{ textAlign: 'center', marginBottom: '20px', fontWeight: 'bold' }}>
                     <h1 style={{ fontSize: '20px', marginBottom: '8px' }}>रोकड वही</h1>
                     <p style={{ fontSize: '16px', marginBottom: '2px' }}>नमुना क्र. ७</p>
                     <p style={{ fontSize: '14px', marginBottom: '20px' }}>(नियम १८ पहा)</p>
@@ -859,29 +867,29 @@ function CashBookReport() {
                       <Table className="professional-vertical-table">
                         <TableHeader>
                           <TableRow>
-                            <TableHead className="w-24 text-center border-2 border-indigo-600 bg-indigo-50">तारीख</TableHead>
-                            <TableHead className="text-center border-2 border-indigo-600 bg-indigo-50">तपशील</TableHead>
-                            <TableHead className="w-28 text-center border-2 border-indigo-600 bg-indigo-50">जमा (Cr.)</TableHead>
-                            <TableHead className="w-28 text-center border-2 border-indigo-600 bg-indigo-50">नावे (Dr.)</TableHead>
-                            <TableHead className="w-32 text-center border-2 border-indigo-600 bg-indigo-50">शिल्लक</TableHead>
+                            <TableHead className="w-16 sm:w-24 text-center border border-indigo-300 bg-indigo-50 text-xs sm:text-sm px-1 sm:px-3">तारीख</TableHead>
+                            <TableHead className="text-center border border-indigo-300 bg-indigo-50 text-xs sm:text-sm px-1 sm:px-3">तपशील</TableHead>
+                            <TableHead className="w-16 sm:w-28 text-center border border-indigo-300 bg-indigo-50 text-xs sm:text-sm px-1 sm:px-3">जमा</TableHead>
+                            <TableHead className="w-16 sm:w-28 text-center border border-indigo-300 bg-indigo-50 text-xs sm:text-sm px-1 sm:px-3">नावे</TableHead>
+                            <TableHead className="w-20 sm:w-32 text-center border border-indigo-300 bg-indigo-50 text-xs sm:text-sm px-1 sm:px-3">शिल्लक</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
                           {finalTransactions.map((row: any, index: number) => (
                             <TableRow key={index} className={row.isOpeningBalance ? "bg-yellow-50" : ""}>
-                              <TableCell className="text-center text-sm border-2 border-indigo-600">
+                              <TableCell className="text-center text-xs sm:text-sm border border-indigo-200 px-1 sm:px-3 py-1.5 sm:py-2">
                                 {DateUtils.isoToIndianDate(row.date).replace(/20(\d{2})/g, '$1')}
                               </TableCell>
-                              <TableCell className="text-left text-sm border-2 border-indigo-600">
+                              <TableCell className="text-left text-xs sm:text-sm border border-indigo-200 px-1 sm:px-3 py-1.5 sm:py-2">
                                 {row.description}
                               </TableCell>
-                              <TableCell className="text-right text-sm border-2 border-indigo-600">
+                              <TableCell className="text-right text-xs sm:text-sm border border-indigo-200 px-1 sm:px-3 py-1.5 sm:py-2">
                                 {row.credit ? `${LoanCalculations.formatAmount(row.credit)}` : "-"}
                               </TableCell>
-                              <TableCell className="text-right text-sm border-2 border-indigo-600">
+                              <TableCell className="text-right text-xs sm:text-sm border border-indigo-200 px-1 sm:px-3 py-1.5 sm:py-2">
                                 {row.debit ? `${LoanCalculations.formatAmount(row.debit)}` : "-"}
                               </TableCell>
-                              <TableCell className="text-right text-sm border-2 border-indigo-600 font-semibold">
+                              <TableCell className="text-right text-xs sm:text-sm border border-indigo-200 px-1 sm:px-3 py-1.5 sm:py-2 font-semibold">
                                 {LoanCalculations.formatAmount(row.balance)}
                               </TableCell>
                             </TableRow>
@@ -890,11 +898,11 @@ function CashBookReport() {
                       </Table>
                       
                       {/* Summary Stats */}
-                      <div className="mt-6 bg-indigo-50 p-4 rounded-lg">
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                      <div className="mt-4 sm:mt-6 bg-indigo-50 p-3 sm:p-4 rounded-lg">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4 text-center">
                           <div>
-                            <p className="text-sm text-gray-600">प्रारंभिक शिल्लक</p>
-                            <p className="text-lg font-semibold">
+                            <p className="text-xs sm:text-sm text-gray-600">प्रारंभिक शिल्लक</p>
+                            <p className="text-sm sm:text-lg font-semibold">
                               {(() => {
                                 const balance = openingBalance || 0;
                                 return `${LoanCalculations.formatAmount(Math.abs(balance))}`;
@@ -902,16 +910,16 @@ function CashBookReport() {
                             </p>
                           </div>
                           <div>
-                            <p className="text-sm text-gray-600">एकूण जमा</p>
-                            <p className="text-lg font-semibold text-green-600">{LoanCalculations.formatAmount(totalCredit)}</p>
+                            <p className="text-xs sm:text-sm text-gray-600">एकूण जमा</p>
+                            <p className="text-sm sm:text-lg font-semibold text-green-600">{LoanCalculations.formatAmount(totalCredit)}</p>
                           </div>
                           <div>
-                            <p className="text-sm text-gray-600">एकूण नावे</p>
-                            <p className="text-lg font-semibold text-red-600">{LoanCalculations.formatAmount(totalDebit)}</p>
+                            <p className="text-xs sm:text-sm text-gray-600">एकूण नावे</p>
+                            <p className="text-sm sm:text-lg font-semibold text-red-600">{LoanCalculations.formatAmount(totalDebit)}</p>
                           </div>
                           <div>
-                            <p className="text-sm text-gray-600">अंतिम शिल्लक</p>
-                            <p className="text-lg font-semibold">{LoanCalculations.formatAmount(Math.abs(closingBalance))}</p>
+                            <p className="text-xs sm:text-sm text-gray-600">अंतिम शिल्लक</p>
+                            <p className="text-sm sm:text-lg font-semibold">{LoanCalculations.formatAmount(Math.abs(closingBalance))}</p>
                           </div>
                         </div>
                       </div>
@@ -921,11 +929,11 @@ function CashBookReport() {
                     <div className="professional-t-format border border-gray-300 overflow-hidden">
                       {/* Main Header */}
                       <div className="flex border-b-4 border-black">
-                        <div className="w-1/2 border-r-2 border-black text-center py-3 bg-indigo-100">
-                          <h3 className="font-bold text-lg">जमा <span className="text-sm font-normal">(Credit)</span></h3>
+                        <div className="w-1/2 border-r-2 border-black text-center py-2 sm:py-3 bg-indigo-100">
+                          <h3 className="font-bold text-sm sm:text-lg">जमा <span className="text-xs sm:text-sm font-normal">(Credit)</span></h3>
                         </div>
-                        <div className="w-1/2 text-center py-3 bg-red-100">
-                          <h3 className="font-bold text-lg">नावे <span className="text-sm font-normal">(Debit)</span></h3>
+                        <div className="w-1/2 text-center py-2 sm:py-3 bg-red-100">
+                          <h3 className="font-bold text-sm sm:text-lg">नावे <span className="text-xs sm:text-sm font-normal">(Debit)</span></h3>
                         </div>
                       </div>
                       
@@ -933,18 +941,18 @@ function CashBookReport() {
                       <div className="flex border-b-2 border-black">
                         {/* Left Sub Header */}
                         <div className="w-1/2 border-r-2 border-black">
-                          <div className="flex text-center font-semibold text-sm py-2">
-                            <div className="w-16 border-r border-gray-300">दिनांक</div>
+                          <div className="flex text-center font-semibold text-xs sm:text-sm py-1.5 sm:py-2">
+                            <div className="w-12 sm:w-16 border-r border-gray-300">दिनांक</div>
                             <div className="flex-1 border-r border-gray-300">तपशील</div>
-                            <div className="w-24">रक्कम</div>
+                            <div className="w-16 sm:w-24">रक्कम</div>
                           </div>
                         </div>
                         {/* Right Sub Header */}
                         <div className="w-1/2">
-                          <div className="flex text-center font-semibold text-sm py-2">
-                            <div className="w-16 border-r border-gray-300">दिनांक</div>
+                          <div className="flex text-center font-semibold text-xs sm:text-sm py-1.5 sm:py-2">
+                            <div className="w-12 sm:w-16 border-r border-gray-300">दिनांक</div>
                             <div className="flex-1 border-r border-gray-300">तपशील</div>
-                            <div className="w-24">रक्कम</div>
+                            <div className="w-16 sm:w-24">रक्कम</div>
                           </div>
                         </div>
                       </div>
@@ -970,24 +978,24 @@ function CashBookReport() {
                                   return (
                                     <tr key={index} className={`border-b border-gray-200 ${hasBalance ? 'bg-indigo-50' : ''}`}>
                                       {/* Credit Side */}
-                                      <td className="w-16 px-1 py-1 text-center text-xs border-r border-gray-300 align-top" style={{ width: '12%' }}>
+                                      <td className="w-12 sm:w-16 px-1 py-1 text-center text-[10px] sm:text-xs border-r border-gray-300 align-top" style={{ width: '12%' }}>
                                         {creditRow ? DateUtils.isoToIndianDate(creditRow.date).replace(/20(\d{2})/g, '$1') : ''}
                                       </td>
-                                      <td className={`px-2 py-1 border-r border-gray-300 align-top ${isCreditBalance ? 'text-base font-bold bg-indigo-100 border-2 border-indigo-400' : 'text-sm'}`} style={{ width: '35%' }}>
+                                      <td className={`px-1 sm:px-2 py-1 border-r border-gray-300 align-top ${isCreditBalance ? 'text-xs sm:text-base font-bold bg-indigo-100 border-2 border-indigo-400' : 'text-xs sm:text-sm'}`} style={{ width: '35%' }}>
                                         {creditRow?.description || ''}
                                       </td>
-                                      <td className={`w-24 px-1 py-1 text-right border-r-2 border-black align-top text-sm ${isCreditBalance ? 'amount-bold' : ''}`} style={{ width: '15%' }}>
+                                      <td className={`w-16 sm:w-24 px-1 py-1 text-right border-r-2 border-black align-top text-xs sm:text-sm ${isCreditBalance ? 'amount-bold' : ''}`} style={{ width: '15%' }}>
                                         {creditRow ? LoanCalculations.formatAmount(creditRow.amount) : ''}
                                       </td>
                                       
                                       {/* Debit Side */}
-                                      <td className="w-16 px-1 py-1 text-center text-xs border-r border-gray-300 align-top" style={{ width: '12%' }}>
+                                      <td className="w-12 sm:w-16 px-1 py-1 text-center text-[10px] sm:text-xs border-r border-gray-300 align-top" style={{ width: '12%' }}>
                                         {debitRow ? DateUtils.isoToIndianDate(debitRow.date).replace(/20(\d{2})/g, '$1') : ''}
                                       </td>
-                                      <td className={`px-2 py-1 border-r border-gray-300 align-top ${isDebitBalance ? 'text-base font-bold bg-indigo-100 border-2 border-indigo-400' : 'text-sm'}`} style={{ width: '35%' }}>
+                                      <td className={`px-1 sm:px-2 py-1 border-r border-gray-300 align-top ${isDebitBalance ? 'text-xs sm:text-base font-bold bg-indigo-100 border-2 border-indigo-400' : 'text-xs sm:text-sm'}`} style={{ width: '35%' }}>
                                         {debitRow?.description || ''}
                                       </td>
-                                      <td className={`w-24 px-1 py-1 text-right align-top text-sm ${isDebitBalance ? 'amount-bold' : ''}`} style={{ width: '15%' }}>
+                                      <td className={`w-16 sm:w-24 px-1 py-1 text-right align-top text-xs sm:text-sm ${isDebitBalance ? 'amount-bold' : ''}`} style={{ width: '15%' }}>
                                         {debitRow ? LoanCalculations.formatAmount(debitRow.amount) : ''}
                                       </td>
                                     </tr>
@@ -995,13 +1003,13 @@ function CashBookReport() {
                                 })}
                                 
                                 {/* Totals Row - Perfect Alignment */}
-                                <tr className="border-t-2 border-black font-bold text-sm bg-indigo-50">
-                                  <td className="w-16 px-1 py-2 text-center border-r border-gray-300">-</td>
-                                  <td className="px-2 py-2 text-center border-r border-gray-300">एकूण</td>
-                                  <td className="w-24 px-1 py-2 text-right border-r-2 border-black">{LoanCalculations.formatAmount(grandTotalCredit)}</td>
-                                  <td className="w-16 px-1 py-2 text-center border-r border-gray-300">-</td>
-                                  <td className="px-2 py-2 text-center border-r border-gray-300">एकूण</td>
-                                  <td className="w-24 px-1 py-2 text-right">{LoanCalculations.formatAmount(grandTotalDebit)}</td>
+                                <tr className="border-t-2 border-black font-bold text-xs sm:text-sm bg-indigo-50">
+                                  <td className="w-12 sm:w-16 px-1 py-1.5 sm:py-2 text-center border-r border-gray-300"></td>
+                                  <td className="px-1 sm:px-2 py-1.5 sm:py-2 text-center border-r border-gray-300">एकूण</td>
+                                  <td className="w-16 sm:w-24 px-1 py-1.5 sm:py-2 text-right border-r-2 border-black">{LoanCalculations.formatAmount(grandTotalCredit)}</td>
+                                  <td className="w-12 sm:w-16 px-1 py-1.5 sm:py-2 text-center border-r border-gray-300"></td>
+                                  <td className="px-1 sm:px-2 py-1.5 sm:py-2 text-center border-r border-gray-300">एकूण</td>
+                                  <td className="w-16 sm:w-24 px-1 py-1.5 sm:py-2 text-right">{LoanCalculations.formatAmount(grandTotalDebit)}</td>
                                 </tr>
                               </tbody>
                             </table>
