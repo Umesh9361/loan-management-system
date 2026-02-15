@@ -1,0 +1,1 @@
+function r(t,n){const e=new FormData;return t.filter(o=>!o.isExisting).forEach(o=>{const s=o.compressed||o.file,a=`${n}_${o.id}_${o.type}.jpg`;e.append("photos",s,a)}),e}export{r as photosToFormData};
