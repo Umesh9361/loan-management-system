@@ -56,7 +56,7 @@ const createTenantSchema = z.object({
   companyName: z.string().min(1, "Company name आवश्यक आहे"),
   companyAddress: z.string().optional(),
   subscriptionType: z.enum(["lifetime", "time_limited"]).default("lifetime"),
-  subscriptionMonths: z.number().min(1).max(24).optional(),
+  subscriptionMonths: z.number().min(1).optional(),
 }).refine((data) => data.adminPassword === data.confirmPassword, {
   message: "दोन्ही passwords सारखे असावेत",
   path: ["confirmPassword"],
@@ -278,8 +278,7 @@ export default function SuperAdminDashboard() {
                         <Input
                           type="number"
                           min={1}
-                          max={24}
-                          placeholder="उदा: 6"
+                          placeholder="उदा: 12, 24, 36"
                           {...createTenantForm.register("subscriptionMonths", { valueAsNumber: true })}
                         />
                         {createTenantForm.formState.errors.subscriptionMonths && (
