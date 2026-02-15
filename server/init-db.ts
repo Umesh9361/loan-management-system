@@ -34,6 +34,26 @@ export async function initializeDatabase() {
       await connectionTest();
       console.log("Database connection established successfully");
       
+      // SCHEMA MIGRATIONS FIRST - must run before any ORM queries
+      // 6. AUTO-MIGRATION: Ensure new columns exist in database
+      try {
+        await db.execute(sql`ALTER TABLE companies ADD COLUMN IF NOT EXISTS bottom_nav_enabled BOOLEAN NOT NULL DEFAULT true`);
+        console.log("✅ Schema migration: bottom_nav_enabled column verified");
+      } catch (migrationError) {
+        console.warn("⚠️  Schema migration warning (non-fatal):", migrationError instanceof Error ? migrationError.message : migrationError);
+      }
+
+      // 6b. AUTO-MIGRATION: Subscription management columns
+      try {
+        await db.execute(sql`ALTER TABLE companies ADD COLUMN IF NOT EXISTS subscription_type VARCHAR(20) NOT NULL DEFAULT 'lifetime'`);
+        await db.execute(sql`ALTER TABLE companies ADD COLUMN IF NOT EXISTS subscription_start_date TIMESTAMP`);
+        await db.execute(sql`ALTER TABLE companies ADD COLUMN IF NOT EXISTS subscription_end_date TIMESTAMP`);
+        await db.execute(sql`ALTER TABLE companies ADD COLUMN IF NOT EXISTS subscription_months INTEGER`);
+        console.log("✅ Schema migration: subscription columns verified");
+      } catch (migrationError) {
+        console.warn("⚠️  Subscription migration warning (non-fatal):", migrationError instanceof Error ? migrationError.message : migrationError);
+      }
+
       console.log("Checking for system initialization...");
       
       // CRITICAL FIX: Separate Super Admin and Normal Admin creation
@@ -124,25 +144,6 @@ export async function initializeDatabase() {
       console.log("✅ Multi-tenant admin structure verified and secured");
       console.log("✅ Future-proof prevention system activated");
       
-      // 6. AUTO-MIGRATION: Ensure new columns exist in database
-      try {
-        await db.execute(sql`ALTER TABLE companies ADD COLUMN IF NOT EXISTS bottom_nav_enabled BOOLEAN NOT NULL DEFAULT true`);
-        console.log("✅ Schema migration: bottom_nav_enabled column verified");
-      } catch (migrationError) {
-        console.warn("⚠️  Schema migration warning (non-fatal):", migrationError instanceof Error ? migrationError.message : migrationError);
-      }
-
-      // 6b. AUTO-MIGRATION: Subscription management columns
-      try {
-        await db.execute(sql`ALTER TABLE companies ADD COLUMN IF NOT EXISTS subscription_type VARCHAR(20) NOT NULL DEFAULT 'lifetime'`);
-        await db.execute(sql`ALTER TABLE companies ADD COLUMN IF NOT EXISTS subscription_start_date TIMESTAMP`);
-        await db.execute(sql`ALTER TABLE companies ADD COLUMN IF NOT EXISTS subscription_end_date TIMESTAMP`);
-        await db.execute(sql`ALTER TABLE companies ADD COLUMN IF NOT EXISTS subscription_months INTEGER`);
-        console.log("✅ Schema migration: subscription columns verified");
-      } catch (migrationError) {
-        console.warn("⚠️  Subscription migration warning (non-fatal):", migrationError instanceof Error ? migrationError.message : migrationError);
-      }
-
       // 7. FINAL GUARDIAN VALIDATION: Double-check everything is correct
       await SuperAdminGuardian.validateAndFixRoleAssignments();
       console.log("🛡️  SUPER ADMIN GUARDIAN: Final validation completed");

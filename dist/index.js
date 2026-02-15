@@ -11334,6 +11334,21 @@ async function initializeDatabase() {
       };
       await connectionTest();
       console.log("Database connection established successfully");
+      try {
+        await db.execute(sql11`ALTER TABLE companies ADD COLUMN IF NOT EXISTS bottom_nav_enabled BOOLEAN NOT NULL DEFAULT true`);
+        console.log("\u2705 Schema migration: bottom_nav_enabled column verified");
+      } catch (migrationError) {
+        console.warn("\u26A0\uFE0F  Schema migration warning (non-fatal):", migrationError instanceof Error ? migrationError.message : migrationError);
+      }
+      try {
+        await db.execute(sql11`ALTER TABLE companies ADD COLUMN IF NOT EXISTS subscription_type VARCHAR(20) NOT NULL DEFAULT 'lifetime'`);
+        await db.execute(sql11`ALTER TABLE companies ADD COLUMN IF NOT EXISTS subscription_start_date TIMESTAMP`);
+        await db.execute(sql11`ALTER TABLE companies ADD COLUMN IF NOT EXISTS subscription_end_date TIMESTAMP`);
+        await db.execute(sql11`ALTER TABLE companies ADD COLUMN IF NOT EXISTS subscription_months INTEGER`);
+        console.log("\u2705 Schema migration: subscription columns verified");
+      } catch (migrationError) {
+        console.warn("\u26A0\uFE0F  Subscription migration warning (non-fatal):", migrationError instanceof Error ? migrationError.message : migrationError);
+      }
       console.log("Checking for system initialization...");
       const [existingSuperAdmin] = await db.select().from(users).where(and12(
         eq13(users.tenantId, "SUPER_ADMIN"),
@@ -11390,21 +11405,6 @@ async function initializeDatabase() {
       console.log(`\u2705 System validation complete: ${superAdminCount} Super Admin(s) found`);
       console.log("\u2705 Multi-tenant admin structure verified and secured");
       console.log("\u2705 Future-proof prevention system activated");
-      try {
-        await db.execute(sql11`ALTER TABLE companies ADD COLUMN IF NOT EXISTS bottom_nav_enabled BOOLEAN NOT NULL DEFAULT true`);
-        console.log("\u2705 Schema migration: bottom_nav_enabled column verified");
-      } catch (migrationError) {
-        console.warn("\u26A0\uFE0F  Schema migration warning (non-fatal):", migrationError instanceof Error ? migrationError.message : migrationError);
-      }
-      try {
-        await db.execute(sql11`ALTER TABLE companies ADD COLUMN IF NOT EXISTS subscription_type VARCHAR(20) NOT NULL DEFAULT 'lifetime'`);
-        await db.execute(sql11`ALTER TABLE companies ADD COLUMN IF NOT EXISTS subscription_start_date TIMESTAMP`);
-        await db.execute(sql11`ALTER TABLE companies ADD COLUMN IF NOT EXISTS subscription_end_date TIMESTAMP`);
-        await db.execute(sql11`ALTER TABLE companies ADD COLUMN IF NOT EXISTS subscription_months INTEGER`);
-        console.log("\u2705 Schema migration: subscription columns verified");
-      } catch (migrationError) {
-        console.warn("\u26A0\uFE0F  Subscription migration warning (non-fatal):", migrationError instanceof Error ? migrationError.message : migrationError);
-      }
       await super_admin_guardian_default.validateAndFixRoleAssignments();
       console.log("\u{1F6E1}\uFE0F  SUPER ADMIN GUARDIAN: Final validation completed");
       console.log("Database initialization completed successfully");
