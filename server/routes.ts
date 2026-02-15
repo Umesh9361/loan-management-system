@@ -3383,6 +3383,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json({ message: "सदस्यत्व कायमस्वरूपी केले", subscriptionType: 'lifetime' });
       }
       
+      if (action === 'set_time_limited') {
+        const months = parseInt(subscriptionMonths) || 12;
+        const endDate = new Date(now.getFullYear(), now.getMonth() + months, now.getDate());
+        
+        await db.update(companies)
+          .set({ 
+            subscriptionType: 'time_limited',
+            subscriptionStartDate: now,
+            subscriptionEndDate: endDate, 
+            subscriptionMonths: months,
+            updatedAt: now 
+          })
+          .where(eq(companies.tenantId, tenantId));
+        
+        return res.json({ 
+          message: `सदस्यत्व कालमर्यादित केले (${months} महिने)`, 
+          subscriptionType: 'time_limited',
+          subscriptionEndDate: endDate,
+          subscriptionMonths: months
+        });
+      }
+      
       if (action === 'renew' || action === 'extend') {
         const months = parseInt(subscriptionMonths) || 12;
         let startDate: Date;
