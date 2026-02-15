@@ -52,10 +52,8 @@ export default function Dashboard() {
 
   const { data: stats = {}, isLoading: statsLoading } = useQuery({
     queryKey: ["/api/dashboard/stats"], 
-    staleTime: 0,
-    gcTime: 0,
-    refetchOnMount: true,
-    refetchOnWindowFocus: true,
+    staleTime: 30000,
+    gcTime: 60000,
   });
 
   const { data: periodStats, isLoading: periodStatsLoading } = useQuery({
@@ -65,8 +63,8 @@ export default function Dashboard() {
       if (!res.ok) throw new Error('Failed');
       return res.json();
     },
-    staleTime: 0,
-    gcTime: 0,
+    staleTime: 30000,
+    gcTime: 60000,
   });
 
   const { data: monthlyProgress, isLoading: progressLoading } = useQuery({
@@ -77,6 +75,7 @@ export default function Dashboard() {
       return res.json();
     },
     staleTime: 60000,
+    gcTime: 120000,
   });
 
   const { data: recentTransactions = [], isLoading: transactionsLoading } = useQuery({
@@ -124,8 +123,9 @@ export default function Dashboard() {
   const today = new Date().toISOString().split('T')[0];
 
   const formatCompact = (num: number): string => {
-    const abs = Math.abs(num);
-    const sign = num < 0 ? '-' : '';
+    const n = Number(num) || 0;
+    const abs = Math.abs(n);
+    const sign = n < 0 ? '-' : '';
     if (abs >= 10000000) return `${sign}${(abs / 10000000).toFixed(2)} कोटी`;
     if (abs >= 100000) return `${sign}${(abs / 100000).toFixed(2)} लाख`;
     if (abs >= 1000) return `${sign}${(abs / 1000).toFixed(2)} हजार`;
@@ -348,7 +348,7 @@ export default function Dashboard() {
                           <span className={`flex items-center gap-0.5 font-semibold shrink-0 ${isImprovement ? 'text-emerald-600' : 'text-red-500'}`}>
                             {isImprovement ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
                             {card.isCount 
-                              ? Math.abs(card.value - card.previousValue)
+                              ? Math.abs(Number(card.value || 0) - Number(card.previousValue || 0))
                               : 'बदल'
                             }
                           </span>
