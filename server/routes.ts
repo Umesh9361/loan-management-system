@@ -10,7 +10,7 @@ import { PhotoStorageFactory, CloudinaryStorageProvider } from "./photo-storage-
 import path from 'path';
 import fs from 'fs/promises';
 import { z } from "zod";
-import { and, eq, sql, or, ne, inArray, desc } from "drizzle-orm";
+import { and, eq, sql, or, ne, inArray, desc, count, sum, gte, lte } from "drizzle-orm";
 import connectPgSimple from "connect-pg-simple";
 import { pool } from "./db";
 
@@ -1815,6 +1815,184 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
 
+
+  app.get("/api/dashboard/period-stats", requireAuth, async (req, res) => {
+    try {
+      const period = (req.query.period as string) || '1m';
+      const tenantId = req.session.tenantId!;
+      const now = new Date();
+
+      let startDate: string;
+      let endDate: string;
+      let prevStartDate: string;
+      let prevEndDate: string;
+
+      if (period === '1m') {
+        startDate = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+        endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
+        prevStartDate = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString().split('T')[0];
+        prevEndDate = new Date(now.getFullYear(), now.getMonth(), 0).toISOString().split('T')[0];
+      } else {
+        const monthsBack = period === '3y' ? 36 : period === '1y' ? 12 : 3;
+        startDate = new Date(now.getFullYear(), now.getMonth() - (monthsBack - 1), 1).toISOString().split('T')[0];
+        endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
+        prevStartDate = new Date(now.getFullYear(), now.getMonth() - (monthsBack * 2 - 1), 1).toISOString().split('T')[0];
+        prevEndDate = new Date(now.getFullYear(), now.getMonth() - monthsBack, 0).toISOString().split('T')[0];
+      }
+
+      const [curDisb] = await db.select({ count: count(), totalAmount: sum(loans.principalAmount) })
+        .from(loans)
+        .where(and(eq(loans.tenantId, tenantId), gte(loans.loanDate, startDate), lte(loans.loanDate, endDate)));
+
+      const [prevDisb] = await db.select({ count: count(), totalAmount: sum(loans.principalAmount) })
+        .from(loans)
+        .where(and(eq(loans.tenantId, tenantId), gte(loans.loanDate, prevStartDate), lte(loans.loanDate, prevEndDate)));
+
+      const [curClos] = await db.select({ count: count(), totalAmount: sum(loanClosures.totalAmount) })
+        .from(loanClosures)
+        .where(and(eq(loanClosures.tenantId, tenantId), gte(loanClosures.closureDate, startDate), lte(loanClosures.closureDate, endDate)));
+
+      const [prevClos] = await db.select({ count: count(), totalAmount: sum(loanClosures.totalAmount) })
+        .from(loanClosures)
+        .where(and(eq(loanClosures.tenantId, tenantId), gte(loanClosures.closureDate, prevStartDate), lte(loanClosures.closureDate, prevEndDate)));
+
+      const [curCash] = await db.select({
+        count: count(),
+        totalIn: sum(sql`CASE WHEN ${cashTransactions.transactionType} = 'cash_in' THEN ${cashTransactions.amount} ELSE 0 END`),
+        totalOut: sum(sql`CASE WHEN ${cashTransactions.transactionType} = 'cash_out' THEN ${cashTransactions.amount} ELSE 0 END`)
+      })
+        .from(cashTransactions)
+        .where(and(eq(cashTransactions.tenantId, tenantId), gte(cashTransactions.transactionDate, startDate), lte(cashTransactions.transactionDate, endDate)));
+
+      const [prevCash] = await db.select({
+        count: count(),
+        totalIn: sum(sql`CASE WHEN ${cashTransactions.transactionType} = 'cash_in' THEN ${cashTransactions.amount} ELSE 0 END`),
+        totalOut: sum(sql`CASE WHEN ${cashTransactions.transactionType} = 'cash_out' THEN ${cashTransactions.amount} ELSE 0 END`)
+      })
+        .from(cashTransactions)
+        .where(and(eq(cashTransactions.tenantId, tenantId), gte(cashTransactions.transactionDate, prevStartDate), lte(cashTransactions.transactionDate, prevEndDate)));
+
+      res.json({
+        current: {
+          disbursements: Number(curDisb?.count || 0),
+          disbursementAmount: Number(curDisb?.totalAmount || 0),
+          closures: Number(curClos?.count || 0),
+          closureAmount: Number(curClos?.totalAmount || 0),
+          transactions: Number(curCash?.count || 0),
+          cashIn: Number(curCash?.totalIn || 0),
+          cashOut: Number(curCash?.totalOut || 0)
+        },
+        previous: {
+          disbursements: Number(prevDisb?.count || 0),
+          disbursementAmount: Number(prevDisb?.totalAmount || 0),
+          closures: Number(prevClos?.count || 0),
+          closureAmount: Number(prevClos?.totalAmount || 0),
+          transactions: Number(prevCash?.count || 0),
+          cashIn: Number(prevCash?.totalIn || 0),
+          cashOut: Number(prevCash?.totalOut || 0)
+        }
+      });
+    } catch (error) {
+      console.error("Period stats error:", error);
+      res.status(500).json({ message: "Failed to fetch period stats" });
+    }
+  });
+
+  app.get("/api/dashboard/monthly-progress", requireAuth, async (req, res) => {
+    try {
+      const period = (req.query.period as string) || '3m';
+      const tenantId = req.session.tenantId!;
+      
+      const monthsBack = period === '3y' ? 36 : period === '1y' ? 12 : 3;
+      const currentDate = new Date();
+      const startDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - (monthsBack - 1), 1);
+      const startDateStr = startDate.toISOString().split('T')[0];
+      const endDateStr = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).toISOString().split('T')[0];
+
+      const monthlyDisbursements = await db.select({
+        month: sql<string>`TO_CHAR(${loans.loanDate}::date, 'YYYY-MM')`,
+        count: count(),
+        totalAmount: sum(loans.principalAmount)
+      })
+        .from(loans)
+        .where(and(
+          eq(loans.tenantId, tenantId),
+          gte(loans.loanDate, startDateStr),
+          lte(loans.loanDate, endDateStr)
+        ))
+        .groupBy(sql`TO_CHAR(${loans.loanDate}::date, 'YYYY-MM')`)
+        .orderBy(sql`TO_CHAR(${loans.loanDate}::date, 'YYYY-MM')`);
+
+      const monthlyClosures = await db.select({
+        month: sql<string>`TO_CHAR(${loanClosures.closureDate}::date, 'YYYY-MM')`,
+        count: count(),
+        totalAmount: sum(loanClosures.actualPaidAmount)
+      })
+        .from(loanClosures)
+        .where(and(
+          eq(loanClosures.tenantId, tenantId),
+          gte(loanClosures.closureDate, startDateStr),
+          lte(loanClosures.closureDate, endDateStr)
+        ))
+        .groupBy(sql`TO_CHAR(${loanClosures.closureDate}::date, 'YYYY-MM')`)
+        .orderBy(sql`TO_CHAR(${loanClosures.closureDate}::date, 'YYYY-MM')`);
+
+      const marathiMonths: Record<string, string> = {
+        '01': 'जानेवारी', '02': 'फेब्रुवारी', '03': 'मार्च', '04': 'एप्रिल',
+        '05': 'मे', '06': 'जून', '07': 'जुलै', '08': 'ऑगस्ट',
+        '09': 'सप्टेंबर', '10': 'ऑक्टोबर', '11': 'नोव्हेंबर', '12': 'डिसेंबर'
+      };
+
+      const disbMap = new Map(monthlyDisbursements.map((d: any) => [d.month, d]));
+      const closMap = new Map(monthlyClosures.map((c: any) => [c.month, c]));
+
+      const monthlyData = [];
+      let totalDisbursements = 0;
+      let totalClosures = 0;
+      let totalAmount = 0;
+
+      for (let i = 0; i < monthsBack; i++) {
+        const d = new Date(startDate.getFullYear(), startDate.getMonth() + i, 1);
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const label = monthsBack > 12 
+          ? `${marathiMonths[mm]} ${d.getFullYear().toString().slice(-2)}`
+          : `${marathiMonths[mm]} ${d.getFullYear()}`;
+
+        const disb = Number(disbMap.get(key)?.count || 0);
+        const clos = Number(closMap.get(key)?.count || 0);
+        const amt = Number(disbMap.get(key)?.totalAmount || 0);
+
+        totalDisbursements += disb;
+        totalClosures += clos;
+        totalAmount += amt;
+
+        monthlyData.push({
+          month: label,
+          disbursements: disb,
+          closures: clos,
+          amount: amt,
+          net: disb - clos
+        });
+      }
+
+      const successRate = totalDisbursements > 0 ? Math.round((totalClosures / totalDisbursements) * 100) : 0;
+
+      res.json({
+        monthlyData,
+        summary: {
+          totalDisbursements,
+          totalClosures,
+          totalAmount,
+          successRate,
+          netGrowth: totalDisbursements - totalClosures
+        }
+      });
+    } catch (error) {
+      console.error("Monthly progress error:", error);
+      res.status(500).json({ message: "Failed to fetch monthly progress" });
+    }
+  });
 
   // Reports routes
   app.get("/api/reports/cashbook", requireAuth, async (req, res) => {
