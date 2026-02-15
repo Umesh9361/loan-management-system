@@ -1147,9 +1147,19 @@ export default function SuperAdminTenantManagement() {
                       <span className="text-sm font-noto">सध्याचे सदस्यत्व:</span>
                       {getSubscriptionBadge(subscriptionTenant)}
                     </div>
-                    {subscriptionTenant.subscriptionEndDate && (
+                    {subscriptionTenant.subscriptionType === 'time_limited' && subscriptionTenant.subscriptionStartDate && (
                       <p className="text-xs text-gray-500 mt-1 font-noto">
-                        समाप्ती: {new Date(subscriptionTenant.subscriptionEndDate).toLocaleDateString('hi-IN')}
+                        सुरुवात: {new Date(subscriptionTenant.subscriptionStartDate).toLocaleDateString('hi-IN')}
+                      </p>
+                    )}
+                    {subscriptionTenant.subscriptionEndDate && (
+                      <p className="text-xs font-semibold mt-1 font-noto text-red-600">
+                        समाप्ती तारीख: {new Date(subscriptionTenant.subscriptionEndDate).toLocaleDateString('hi-IN')}
+                      </p>
+                    )}
+                    {subscriptionTenant.subscriptionMonths && (
+                      <p className="text-xs text-gray-500 mt-1 font-noto">
+                        कालावधी: {subscriptionTenant.subscriptionMonths} महिने
                       </p>
                     )}
                   </div>
@@ -1162,28 +1172,37 @@ export default function SuperAdminTenantManagement() {
                       className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     >
                       <option value="">-- निवडा --</option>
-                      <option value="set_lifetime">कायमस्वरूपी करा (Lifetime)</option>
-                      <option value="renew">नूतनीकरण करा (Renew)</option>
-                      <option value="extend">कालावधी वाढवा (Extend)</option>
+                      {subscriptionTenant.subscriptionType !== 'lifetime' && (
+                        <option value="set_lifetime">कायमस्वरूपी करा (Lifetime)</option>
+                      )}
+                      {subscriptionTenant.subscriptionType === 'lifetime' && (
+                        <option value="set_time_limited">कालमर्यादित करा (Time Limited)</option>
+                      )}
+                      <option value="renew">नूतनीकरण करा (आजपासून)</option>
+                      <option value="extend">कालावधी वाढवा (सध्याच्या समाप्तीपासून)</option>
                     </select>
                   </div>
 
-                  {(subscriptionAction === 'renew' || subscriptionAction === 'extend') && (
+                  {(subscriptionAction === 'renew' || subscriptionAction === 'extend' || subscriptionAction === 'set_time_limited') && (
                     <div>
                       <Label className="font-noto">कालावधी (महिने)</Label>
                       <Input
                         type="number"
                         min={1}
-                        max={24}
                         value={renewMonths}
                         onChange={(e) => setRenewMonths(e.target.value)}
-                        placeholder="उदा: 12"
+                        placeholder="उदा: 12, 24, 36"
                       />
-                      <p className="text-xs text-gray-500 mt-1 font-noto">
-                        {subscriptionAction === 'extend' 
-                          ? "सध्याच्या समाप्ती तारखेपासून वाढवले जाईल" 
-                          : "आजपासून नवीन कालावधी सुरू होईल"}
-                      </p>
+                      {renewMonths && parseInt(renewMonths) > 0 && (
+                        <div className="bg-indigo-50 rounded p-2 mt-2">
+                          <p className="text-xs text-indigo-700 font-noto">
+                            {subscriptionAction === 'extend' && subscriptionTenant.subscriptionEndDate
+                              ? `नवीन समाप्ती: ${new Date(new Date(subscriptionTenant.subscriptionEndDate).getFullYear(), new Date(subscriptionTenant.subscriptionEndDate).getMonth() + parseInt(renewMonths), new Date(subscriptionTenant.subscriptionEndDate).getDate()).toLocaleDateString('hi-IN')}`
+                              : `समाप्ती तारीख: ${new Date(new Date().getFullYear(), new Date().getMonth() + parseInt(renewMonths), new Date().getDate()).toLocaleDateString('hi-IN')}`
+                            }
+                          </p>
+                        </div>
+                      )}
                     </div>
                   )}
 
@@ -1193,7 +1212,7 @@ export default function SuperAdminTenantManagement() {
                     </Button>
                     <Button
                       onClick={handleSubscriptionAction}
-                      disabled={!subscriptionAction || subscriptionMutation.isPending}
+                      disabled={!subscriptionAction || subscriptionMutation.isPending || ((subscriptionAction === 'renew' || subscriptionAction === 'extend' || subscriptionAction === 'set_time_limited') && (!renewMonths || parseInt(renewMonths) < 1))}
                       className="bg-indigo-600 hover:bg-indigo-700"
                     >
                       {subscriptionMutation.isPending ? "अपडेट करत आहे..." : "अपडेट करा"}
