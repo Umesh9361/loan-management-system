@@ -10274,6 +10274,23 @@ async function registerRoutes(app2) {
         }).where(eq12(companies.tenantId, tenantId));
         return res.json({ message: "\u0938\u0926\u0938\u094D\u092F\u0924\u094D\u0935 \u0915\u093E\u092F\u092E\u0938\u094D\u0935\u0930\u0942\u092A\u0940 \u0915\u0947\u0932\u0947", subscriptionType: "lifetime" });
       }
+      if (action === "set_time_limited") {
+        const months = parseInt(subscriptionMonths) || 12;
+        const endDate = new Date(now.getFullYear(), now.getMonth() + months, now.getDate());
+        await db.update(companies).set({
+          subscriptionType: "time_limited",
+          subscriptionStartDate: now,
+          subscriptionEndDate: endDate,
+          subscriptionMonths: months,
+          updatedAt: now
+        }).where(eq12(companies.tenantId, tenantId));
+        return res.json({
+          message: `\u0938\u0926\u0938\u094D\u092F\u0924\u094D\u0935 \u0915\u093E\u0932\u092E\u0930\u094D\u092F\u093E\u0926\u093F\u0924 \u0915\u0947\u0932\u0947 (${months} \u092E\u0939\u093F\u0928\u0947)`,
+          subscriptionType: "time_limited",
+          subscriptionEndDate: endDate,
+          subscriptionMonths: months
+        });
+      }
       if (action === "renew" || action === "extend") {
         const months = parseInt(subscriptionMonths) || 12;
         let startDate;
@@ -11378,6 +11395,15 @@ async function initializeDatabase() {
         console.log("\u2705 Schema migration: bottom_nav_enabled column verified");
       } catch (migrationError) {
         console.warn("\u26A0\uFE0F  Schema migration warning (non-fatal):", migrationError instanceof Error ? migrationError.message : migrationError);
+      }
+      try {
+        await db.execute(sql11`ALTER TABLE companies ADD COLUMN IF NOT EXISTS subscription_type VARCHAR(20) NOT NULL DEFAULT 'lifetime'`);
+        await db.execute(sql11`ALTER TABLE companies ADD COLUMN IF NOT EXISTS subscription_start_date TIMESTAMP`);
+        await db.execute(sql11`ALTER TABLE companies ADD COLUMN IF NOT EXISTS subscription_end_date TIMESTAMP`);
+        await db.execute(sql11`ALTER TABLE companies ADD COLUMN IF NOT EXISTS subscription_months INTEGER`);
+        console.log("\u2705 Schema migration: subscription columns verified");
+      } catch (migrationError) {
+        console.warn("\u26A0\uFE0F  Subscription migration warning (non-fatal):", migrationError instanceof Error ? migrationError.message : migrationError);
       }
       await super_admin_guardian_default.validateAndFixRoleAssignments();
       console.log("\u{1F6E1}\uFE0F  SUPER ADMIN GUARDIAN: Final validation completed");

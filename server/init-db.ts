@@ -132,6 +132,17 @@ export async function initializeDatabase() {
         console.warn("⚠️  Schema migration warning (non-fatal):", migrationError instanceof Error ? migrationError.message : migrationError);
       }
 
+      // 6b. AUTO-MIGRATION: Subscription management columns
+      try {
+        await db.execute(sql`ALTER TABLE companies ADD COLUMN IF NOT EXISTS subscription_type VARCHAR(20) NOT NULL DEFAULT 'lifetime'`);
+        await db.execute(sql`ALTER TABLE companies ADD COLUMN IF NOT EXISTS subscription_start_date TIMESTAMP`);
+        await db.execute(sql`ALTER TABLE companies ADD COLUMN IF NOT EXISTS subscription_end_date TIMESTAMP`);
+        await db.execute(sql`ALTER TABLE companies ADD COLUMN IF NOT EXISTS subscription_months INTEGER`);
+        console.log("✅ Schema migration: subscription columns verified");
+      } catch (migrationError) {
+        console.warn("⚠️  Subscription migration warning (non-fatal):", migrationError instanceof Error ? migrationError.message : migrationError);
+      }
+
       // 7. FINAL GUARDIAN VALIDATION: Double-check everything is correct
       await SuperAdminGuardian.validateAndFixRoleAssignments();
       console.log("🛡️  SUPER ADMIN GUARDIAN: Final validation completed");
