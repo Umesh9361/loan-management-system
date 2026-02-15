@@ -1785,25 +1785,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Dashboard stats with cache prevention
   // Dashboard stats - NO CACHE for real-time updates
   app.get("/api/dashboard/stats", requireAuth, async (req, res) => {
-    // Disable all caching for real-time dashboard updates
-    res.set({
-      'Cache-Control': 'no-cache, no-store, must-revalidate',
-      'Pragma': 'no-cache',
-      'Expires': '0',
-      'ETag': `"dashboard-${Date.now()}"` // Force unique response
-    });
     try {
-      console.log(`📊 Dashboard stats request for tenant: ${req.session.tenantId}`);
       const stats = await storage.getDashboardStats(req.session.tenantId!);
-      console.log(`✅ Dashboard stats retrieved successfully:`, stats);
-      
-      // Server-side cache but prevent browser cache for fresh data
-      res.set({
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'Pragma': 'no-cache',
-        'Expires': '0'
-      });
-      
       res.json(stats);
     } catch (error) {
       console.error("❌ Dashboard stats error:", error);
@@ -1840,37 +1823,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
         prevEndDate = new Date(now.getFullYear(), now.getMonth() - monthsBack, 0).toISOString().split('T')[0];
       }
 
-      const [curDisb] = await db.select({ count: count(), totalAmount: sum(loans.principalAmount) })
-        .from(loans)
-        .where(and(eq(loans.tenantId, tenantId), gte(loans.loanDate, startDate), lte(loans.loanDate, endDate)));
-
-      const [prevDisb] = await db.select({ count: count(), totalAmount: sum(loans.principalAmount) })
-        .from(loans)
-        .where(and(eq(loans.tenantId, tenantId), gte(loans.loanDate, prevStartDate), lte(loans.loanDate, prevEndDate)));
-
-      const [curClos] = await db.select({ count: count(), totalAmount: sum(loanClosures.totalAmount) })
-        .from(loanClosures)
-        .where(and(eq(loanClosures.tenantId, tenantId), gte(loanClosures.closureDate, startDate), lte(loanClosures.closureDate, endDate)));
-
-      const [prevClos] = await db.select({ count: count(), totalAmount: sum(loanClosures.totalAmount) })
-        .from(loanClosures)
-        .where(and(eq(loanClosures.tenantId, tenantId), gte(loanClosures.closureDate, prevStartDate), lte(loanClosures.closureDate, prevEndDate)));
-
-      const [curCash] = await db.select({
-        count: count(),
-        totalIn: sum(sql`CASE WHEN ${cashTransactions.transactionType} = 'cash_in' THEN ${cashTransactions.amount} ELSE 0 END`),
-        totalOut: sum(sql`CASE WHEN ${cashTransactions.transactionType} = 'cash_out' THEN ${cashTransactions.amount} ELSE 0 END`)
-      })
-        .from(cashTransactions)
-        .where(and(eq(cashTransactions.tenantId, tenantId), gte(cashTransactions.transactionDate, startDate), lte(cashTransactions.transactionDate, endDate)));
-
-      const [prevCash] = await db.select({
-        count: count(),
-        totalIn: sum(sql`CASE WHEN ${cashTransactions.transactionType} = 'cash_in' THEN ${cashTransactions.amount} ELSE 0 END`),
-        totalOut: sum(sql`CASE WHEN ${cashTransactions.transactionType} = 'cash_out' THEN ${cashTransactions.amount} ELSE 0 END`)
-      })
-        .from(cashTransactions)
-        .where(and(eq(cashTransactions.tenantId, tenantId), gte(cashTransactions.transactionDate, prevStartDate), lte(cashTransactions.transactionDate, prevEndDate)));
+      const [
+        [curDisb], [prevDisb], [curClos], [prevClos], [curCash], [prevCash]
+      ] = await Promise.all([
+        db.select({ count: count(), totalAmount: sum(loans.principalAmount) })
+          .from(loans)
+          .where(and(eq(loans.tenantId, tenantId), gte(loans.loanDate, startDate), lte(loans.loanDate, endDate))),
+        db.select({ count: count(), totalAmount: sum(loans.principalAmount) })
+          .from(loans)
+          .where(and(eq(loans.tenantId, tenantId), gte(loans.loanDate, prevStartDate), lte(loans.loanDate, prevEndDate))),
+        db.select({ count: count(), totalAmount: sum(loanClosures.totalAmount) })
+          .from(loanClosures)
+          .where(and(eq(loanClosures.tenantId, tenantId), gte(loanClosures.closureDate, startDate), lte(loanClosures.closureDate, endDate))),
+        db.select({ count: count(), totalAmount: sum(loanClosures.totalAmount) })
+          .from(loanClosures)
+          .where(and(eq(loanClosures.tenantId, tenantId), gte(loanClosures.closureDate, prevStartDate), lte(loanClosures.closureDate, prevEndDate))),
+        db.select({
+          count: count(),
+          totalIn: sum(sql`CASE WHEN ${cashTransactions.transactionType} = 'cash_in' THEN ${cashTransactions.amount} ELSE 0 END`),
+          totalOut: sum(sql`CASE WHEN ${cashTransactions.transactionType} = 'cash_out' THEN ${cashTransactions.amount} ELSE 0 END`)
+        }).from(cashTransactions)
+          .where(and(eq(cashTransactions.tenantId, tenantId), gte(cashTransactions.transactionDate, startDate), lte(cashTransactions.transactionDate, endDate))),
+        db.select({
+          count: count(),
+          totalIn: sum(sql`CASE WHEN ${cashTransactions.transactionType} = 'cash_in' THEN ${cashTransactions.amount} ELSE 0 END`),
+          totalOut: sum(sql`CASE WHEN ${cashTransactions.transactionType} = 'cash_out' THEN ${cashTransactions.amount} ELSE 0 END`)
+        }).from(cashTransactions)
+          .where(and(eq(cashTransactions.tenantId, tenantId), gte(cashTransactions.transactionDate, prevStartDate), lte(cashTransactions.transactionDate, prevEndDate))),
+      ]);
 
       res.json({
         current: {
@@ -1909,33 +1889,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const startDateStr = startDate.toISOString().split('T')[0];
       const endDateStr = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).toISOString().split('T')[0];
 
-      const monthlyDisbursements = await db.select({
-        month: sql<string>`TO_CHAR(${loans.loanDate}::date, 'YYYY-MM')`,
-        count: count(),
-        totalAmount: sum(loans.principalAmount)
-      })
-        .from(loans)
-        .where(and(
-          eq(loans.tenantId, tenantId),
-          gte(loans.loanDate, startDateStr),
-          lte(loans.loanDate, endDateStr)
-        ))
-        .groupBy(sql`TO_CHAR(${loans.loanDate}::date, 'YYYY-MM')`)
-        .orderBy(sql`TO_CHAR(${loans.loanDate}::date, 'YYYY-MM')`);
-
-      const monthlyClosures = await db.select({
-        month: sql<string>`TO_CHAR(${loanClosures.closureDate}::date, 'YYYY-MM')`,
-        count: count(),
-        totalAmount: sum(loanClosures.actualPaidAmount)
-      })
-        .from(loanClosures)
-        .where(and(
-          eq(loanClosures.tenantId, tenantId),
-          gte(loanClosures.closureDate, startDateStr),
-          lte(loanClosures.closureDate, endDateStr)
-        ))
-        .groupBy(sql`TO_CHAR(${loanClosures.closureDate}::date, 'YYYY-MM')`)
-        .orderBy(sql`TO_CHAR(${loanClosures.closureDate}::date, 'YYYY-MM')`);
+      const [monthlyDisbursements, monthlyClosures] = await Promise.all([
+        db.select({
+          month: sql<string>`TO_CHAR(${loans.loanDate}::date, 'YYYY-MM')`,
+          count: count(),
+          totalAmount: sum(loans.principalAmount)
+        })
+          .from(loans)
+          .where(and(
+            eq(loans.tenantId, tenantId),
+            gte(loans.loanDate, startDateStr),
+            lte(loans.loanDate, endDateStr)
+          ))
+          .groupBy(sql`TO_CHAR(${loans.loanDate}::date, 'YYYY-MM')`)
+          .orderBy(sql`TO_CHAR(${loans.loanDate}::date, 'YYYY-MM')`),
+        db.select({
+          month: sql<string>`TO_CHAR(${loanClosures.closureDate}::date, 'YYYY-MM')`,
+          count: count(),
+          totalAmount: sum(loanClosures.actualPaidAmount)
+        })
+          .from(loanClosures)
+          .where(and(
+            eq(loanClosures.tenantId, tenantId),
+            gte(loanClosures.closureDate, startDateStr),
+            lte(loanClosures.closureDate, endDateStr)
+          ))
+          .groupBy(sql`TO_CHAR(${loanClosures.closureDate}::date, 'YYYY-MM')`)
+          .orderBy(sql`TO_CHAR(${loanClosures.closureDate}::date, 'YYYY-MM')`),
+      ]);
 
       const marathiMonths: Record<string, string> = {
         '01': 'जानेवारी', '02': 'फेब्रुवारी', '03': 'मार्च', '04': 'एप्रिल',
