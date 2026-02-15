@@ -10,6 +10,8 @@ import { Input } from "@/components/ui/input";
 import { ArrowLeft, FileText, Users, Calendar, Receipt, ChevronDown, Check, Table, Printer, Eye } from "lucide-react";
 import { useLocation } from "wouter";
 import { useSafeNavigation } from "@/hooks/use-safe-navigation";
+import { MobileNav } from "@/components/ui/mobile-nav";
+import { Sidebar } from "@/components/ui/sidebar";
 import { toast } from "@/hooks/use-toast";
 import { DateUtils } from "@/lib/date-utils";
 import { jsPDF } from "jspdf";
@@ -3541,7 +3543,13 @@ export default function BorrowerListReports() {
   return (
     <>
     <style>{`.no-scrollbar::-webkit-scrollbar { display: none; } .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }`}</style>
-    <div className="min-h-screen bg-gray-50 pb-20 lg:pb-4">
+    <div className="min-h-screen bg-gray-50">
+      <MobileNav />
+      <div className="lg:flex">
+        <aside className="hidden lg:block lg:w-72 lg:fixed lg:inset-y-0 print:hidden">
+          <Sidebar />
+        </aside>
+        <main className="flex-1 w-full lg:pl-72 pb-20 lg:pb-4">
       <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-6 max-w-7xl">
         
         {/* Header - Mobile Responsive */}
@@ -4296,6 +4304,8 @@ export default function BorrowerListReports() {
           </Card>
         )}
         
+      </div>
+        </main>
       </div>
     </div>
     </>
