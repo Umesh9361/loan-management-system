@@ -3389,6 +3389,10 @@ export class DatabaseStorage implements IStorage {
           address: companies.address,
           createdAt: companies.createdAt,
           isActive: companies.isActive,
+          subscriptionType: companies.subscriptionType,
+          subscriptionStartDate: companies.subscriptionStartDate,
+          subscriptionEndDate: companies.subscriptionEndDate,
+          subscriptionMonths: companies.subscriptionMonths,
           userCount: sql<number>`(
             SELECT COUNT(*)::int 
             FROM ${users} 

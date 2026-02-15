@@ -97,6 +97,10 @@ export const companies = pgTable("companies", {
   bottomNavEnabled: boolean("bottom_nav_enabled").notNull().default(true),
   showSummaryRateMonths: boolean("show_summary_rate_months").notNull().default(true),
   showSummaryDetails: boolean("show_summary_details").notNull().default(true),
+  subscriptionType: varchar("subscription_type", { length: 20 }).notNull().default("lifetime"),
+  subscriptionStartDate: timestamp("subscription_start_date"),
+  subscriptionEndDate: timestamp("subscription_end_date"),
+  subscriptionMonths: integer("subscription_months"),
   createdAt: timestamp("created_at").notNull().default(sql`now()`),
   updatedAt: timestamp("updated_at").notNull().default(sql`now()`),
 });

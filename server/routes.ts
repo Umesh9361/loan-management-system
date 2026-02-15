@@ -4,7 +4,7 @@ import session, { SessionOptions } from "express-session";
 import { storage } from "./storage";
 import { db } from "./db";
 import bcrypt from "bcrypt";
-import { insertUserSchema, insertCompanySchema, insertGroupSchema, insertLoanSchema, insertTransactionSchema, insertLoanClosureSchema, insertPartySchema, insertCashTransactionSchema, cashTransactions, loans, groups, loanPhotos, loanClosures, transactions, insertLoanPhotoSchema, systemSettings, tenantStorageSettings, userActivityLogs, users } from "@shared/schema";
+import { insertUserSchema, insertCompanySchema, insertGroupSchema, insertLoanSchema, insertTransactionSchema, insertLoanClosureSchema, insertPartySchema, insertCashTransactionSchema, cashTransactions, loans, groups, loanPhotos, loanClosures, transactions, insertLoanPhotoSchema, systemSettings, tenantStorageSettings, userActivityLogs, users, companies } from "@shared/schema";
 import { photoUpload, PhotoService } from "./photo-service";
 import { PhotoStorageFactory, CloudinaryStorageProvider } from "./photo-storage-provider";
 import path from 'path';
@@ -133,6 +133,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     next();
   };
+
+  const checkSubscription = async (req: any, res: any, next: any) => {
+    try {
+      const tenantId = req.session?.tenantId;
+      if (!tenantId || req.session?.role === 'super_admin') {
+        return next();
+      }
+      
+      if (req.method === 'GET') {
+        return next();
+      }
+      
+      const company = await storage.getCompany(tenantId);
+      if (!company || company.subscriptionType === 'lifetime' || !company.subscriptionEndDate) {
+        return next();
+      }
+      
+      const now = new Date();
+      const endDate = new Date(company.subscriptionEndDate);
+      if (now > endDate) {
+        return res.status(403).json({ 
+          message: "सदस्यत्व कालबाह्य झाले आहे. कृपया Super Admin शी संपर्क साधा नूतनीकरणासाठी.",
+          subscriptionExpired: true 
+        });
+      }
+      
+      next();
+    } catch (error) {
+      next();
+    }
+  };
+
+  app.use('/api', checkSubscription);
 
   // Session verification endpoint for frontend
   app.get("/api/auth/verify", (req, res) => {
@@ -763,6 +796,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+
+  // ==========================================
+  // SUBSCRIPTION STATUS CHECK API - सदस्यत्व तपासणी
+  // ==========================================
+  app.get("/api/subscription-status", requireAuth, async (req, res) => {
+    try {
+      const tenantId = req.session.tenantId!;
+      const company = await storage.getCompany(tenantId);
+      
+      if (!company) {
+        return res.json({ subscriptionType: 'lifetime', isExpired: false, daysRemaining: null, showReminder: false });
+      }
+      
+      const subType = company.subscriptionType || 'lifetime';
+      
+      if (subType === 'lifetime') {
+        return res.json({ 
+          subscriptionType: 'lifetime', 
+          isExpired: false, 
+          daysRemaining: null, 
+          showReminder: false,
+          subscriptionEndDate: null,
+          subscriptionMonths: null 
+        });
+      }
+      
+      if (!company.subscriptionEndDate) {
+        return res.json({ subscriptionType: subType, isExpired: false, daysRemaining: null, showReminder: false });
+      }
+      
+      const now = new Date();
+      const endDate = new Date(company.subscriptionEndDate);
+      const diffMs = endDate.getTime() - now.getTime();
+      const daysRemaining = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+      const isExpired = daysRemaining <= 0;
+      
+      let showReminder = false;
+      let reminderType = '';
+      if (!isExpired) {
+        if (daysRemaining <= 8) {
+          showReminder = true;
+          reminderType = 'urgent';
+        } else if (daysRemaining <= 30) {
+          showReminder = true;
+          reminderType = 'warning';
+        }
+      }
+      
+      res.json({ 
+        subscriptionType: subType, 
+        isExpired, 
+        daysRemaining, 
+        showReminder,
+        reminderType,
+        subscriptionEndDate: company.subscriptionEndDate,
+        subscriptionStartDate: company.subscriptionStartDate,
+        subscriptionMonths: company.subscriptionMonths
+      });
+    } catch (error) {
+      console.error("Error checking subscription status:", error);
+      res.json({ subscriptionType: 'lifetime', isExpired: false, daysRemaining: null, showReminder: false });
+    }
+  });
 
   // ==========================================
   // MATURITY REMINDER API - मुदत संपण्याची सूचना
@@ -3030,7 +3126,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Access denied. Super admin required." });
       }
       
-      const { tenantId: rawTenantId, adminUsername: rawAdminUsername, adminPassword, companyName, companyAddress } = req.body;
+      const { tenantId: rawTenantId, adminUsername: rawAdminUsername, adminPassword, companyName, companyAddress, subscriptionType, subscriptionMonths } = req.body;
       
       if (!rawTenantId || !rawAdminUsername || !adminPassword || !companyName) {
         return res.status(400).json({ 
@@ -3073,14 +3169,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         createdBy: req.session.userId // Super admin who created this
       });
       
-      // Create company record for new tenant
+      // Create company record for new tenant with subscription info
+      const now = new Date();
+      const subType = subscriptionType || 'lifetime';
+      const subMonths = subType === 'time_limited' ? (parseInt(subscriptionMonths) || 12) : null;
+      const subStartDate = subType === 'time_limited' ? now : null;
+      const subEndDate = subType === 'time_limited' && subMonths ? new Date(now.getFullYear(), now.getMonth() + subMonths, now.getDate()) : null;
+      
       const company = await storage.createCompany({
         name: companyName,
         address: companyAddress || '',
         tenantId: tenantId,
         contactNumber: '',
         email: '',
-        licenseNumber: ''
+        licenseNumber: '',
+        subscriptionType: subType,
+        subscriptionMonths: subMonths,
+        subscriptionStartDate: subStartDate,
+        subscriptionEndDate: subEndDate,
       });
       
       // Create COMPLETE permissions for new tenant admin - FULL SYSTEM ACCESS
@@ -3239,6 +3345,77 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching tenants:", error);
       res.status(500).json({ message: "Failed to fetch tenants" });
+    }
+  });
+
+  // Super Admin - Renew/Extend subscription
+  app.patch("/api/super-admin/tenants/:tenantId/subscription", requireAuth, async (req, res) => {
+    try {
+      if (req.session.role !== 'super_admin') {
+        return res.status(403).json({ message: "Access denied. Super admin required." });
+      }
+      
+      const { tenantId } = req.params;
+      const { action, subscriptionType, subscriptionMonths } = req.body;
+      
+      if (tenantId === 'SUPER_ADMIN') {
+        return res.status(403).json({ message: "SUPER_ADMIN subscription बदलता येत नाही." });
+      }
+      
+      const company = await storage.getCompany(tenantId);
+      if (!company) {
+        return res.status(404).json({ message: "Tenant not found" });
+      }
+      
+      const now = new Date();
+      
+      if (action === 'set_lifetime') {
+        await db.update(companies)
+          .set({ 
+            subscriptionType: 'lifetime', 
+            subscriptionStartDate: null, 
+            subscriptionEndDate: null, 
+            subscriptionMonths: null,
+            updatedAt: now 
+          })
+          .where(eq(companies.tenantId, tenantId));
+        
+        return res.json({ message: "सदस्यत्व कायमस्वरूपी केले", subscriptionType: 'lifetime' });
+      }
+      
+      if (action === 'renew' || action === 'extend') {
+        const months = parseInt(subscriptionMonths) || 12;
+        let startDate: Date;
+        
+        if (action === 'extend' && company.subscriptionEndDate && new Date(company.subscriptionEndDate) > now) {
+          startDate = new Date(company.subscriptionEndDate);
+        } else {
+          startDate = now;
+        }
+        
+        const endDate = new Date(startDate.getFullYear(), startDate.getMonth() + months, startDate.getDate());
+        
+        await db.update(companies)
+          .set({ 
+            subscriptionType: 'time_limited',
+            subscriptionStartDate: action === 'renew' ? now : (company.subscriptionStartDate || now),
+            subscriptionEndDate: endDate, 
+            subscriptionMonths: months,
+            updatedAt: now 
+          })
+          .where(eq(companies.tenantId, tenantId));
+        
+        return res.json({ 
+          message: action === 'renew' ? "सदस्यत्व नूतनीकरण केले" : "सदस्यत्व वाढवले", 
+          subscriptionEndDate: endDate,
+          subscriptionMonths: months
+        });
+      }
+      
+      res.status(400).json({ message: "Invalid action" });
+    } catch (error) {
+      console.error('Error updating subscription:', error);
+      res.status(500).json({ message: "Failed to update subscription" });
     }
   });
 

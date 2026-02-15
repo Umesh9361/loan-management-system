@@ -66,6 +66,10 @@ interface TenantInfo {
   daysSinceLastActivity: number;
   isInactive: boolean;
   isActive: boolean;
+  subscriptionType?: string;
+  subscriptionStartDate?: string | null;
+  subscriptionEndDate?: string | null;
+  subscriptionMonths?: number | null;
 }
 
 export default function SuperAdminTenantManagement() {
@@ -93,6 +97,9 @@ export default function SuperAdminTenantManagement() {
   const [showOwnNewPassword, setShowOwnNewPassword] = useState(false);
   const [showOwnConfirmPassword, setShowOwnConfirmPassword] = useState(false);
   const [togglingTenant, setTogglingTenant] = useState<string | null>(null);
+  const [subscriptionTenant, setSubscriptionTenant] = useState<TenantInfo | null>(null);
+  const [subscriptionAction, setSubscriptionAction] = useState<string>("");
+  const [renewMonths, setRenewMonths] = useState<string>("12");
 
   // Fetch all tenants
   const { data: tenants = [], isLoading, refetch } = useQuery<TenantInfo[]>({
@@ -349,6 +356,61 @@ export default function SuperAdminTenantManagement() {
       });
     },
   });
+
+  const subscriptionMutation = useMutation({
+    mutationFn: async ({ tenantId, action, subscriptionMonths }: { tenantId: string; action: string; subscriptionMonths?: string }) => {
+      await apiRequest(`/api/super-admin/tenants/${tenantId}/subscription`, "PATCH", { action, subscriptionMonths });
+    },
+    onSuccess: async () => {
+      toast({
+        title: "सदस्यत्व अपडेट",
+        description: "सदस्यत्व यशस्वीपणे अपडेट केले",
+      });
+      setSubscriptionTenant(null);
+      setSubscriptionAction("");
+      setRenewMonths("12");
+      await queryClient.invalidateQueries({ queryKey: ["/api/super-admin/tenants"], refetchType: 'all' });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "त्रुटी",
+        description: error.message || "सदस्यत्व अपडेट करण्यात अपयश",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleSubscriptionAction = () => {
+    if (!subscriptionTenant) return;
+    subscriptionMutation.mutate({
+      tenantId: subscriptionTenant.tenantId,
+      action: subscriptionAction,
+      subscriptionMonths: renewMonths,
+    });
+  };
+
+  const getSubscriptionBadge = (tenant: TenantInfo) => {
+    if (!tenant.subscriptionType || tenant.subscriptionType === 'lifetime') {
+      return <Badge className="bg-green-100 text-green-800 border-green-300">कायमस्वरूपी</Badge>;
+    }
+    if (tenant.subscriptionEndDate) {
+      const endDate = new Date(tenant.subscriptionEndDate);
+      const now = new Date();
+      const daysRemaining = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+      
+      if (daysRemaining <= 0) {
+        return <Badge className="bg-red-100 text-red-800 border-red-300">कालबाह्य</Badge>;
+      }
+      if (daysRemaining <= 8) {
+        return <Badge className="bg-red-100 text-red-800 border-red-300">{daysRemaining} दिवस शिल्लक</Badge>;
+      }
+      if (daysRemaining <= 30) {
+        return <Badge className="bg-orange-100 text-orange-800 border-orange-300">{daysRemaining} दिवस शिल्लक</Badge>;
+      }
+      return <Badge className="bg-blue-100 text-blue-800 border-blue-300">{daysRemaining} दिवस शिल्लक</Badge>;
+    }
+    return <Badge className="bg-gray-100 text-gray-600">कालमर्यादित</Badge>;
+  };
 
   if (isLoading) {
     return (
@@ -714,6 +776,7 @@ export default function SuperAdminTenantManagement() {
                         <TableHead>वापरकर्ते</TableHead>
                         <TableHead>कर्जे</TableHead>
                         <TableHead>शेवटची गतिविधी</TableHead>
+                        <TableHead>सदस्यत्व</TableHead>
                         <TableHead>स्थिती</TableHead>
                         <TableHead className="text-center">सक्रिय/निष्क्रिय</TableHead>
                         <TableHead className="text-center">क्रिया</TableHead>
@@ -758,6 +821,23 @@ export default function SuperAdminTenantManagement() {
                               <div className="text-gray-500">
                                 {tenant.daysSinceLastActivity} दिवस आधी
                               </div>
+                            </div>
+                          </TableCell>
+
+                          <TableCell>
+                            <div className="flex flex-col gap-1">
+                              {getSubscriptionBadge(tenant)}
+                              {tenant.subscriptionEndDate && (
+                                <div className="text-xs text-gray-500">
+                                  {new Date(tenant.subscriptionEndDate).toLocaleDateString('hi-IN')}
+                                </div>
+                              )}
+                              <button
+                                className="text-xs text-indigo-600 hover:text-indigo-800 underline text-left"
+                                onClick={() => { setSubscriptionTenant(tenant); setSubscriptionAction(""); }}
+                              >
+                                व्यवस्थापन
+                              </button>
                             </div>
                           </TableCell>
                           
@@ -1052,6 +1132,77 @@ export default function SuperAdminTenantManagement() {
               </Dialog>
             )}
           </div>
+
+          {subscriptionTenant && (
+            <Dialog open={!!subscriptionTenant} onOpenChange={() => setSubscriptionTenant(null)}>
+              <DialogContent className="max-w-md">
+                <DialogHeader>
+                  <DialogTitle className="font-noto">सदस्यत्व व्यवस्थापन</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div className="bg-gray-50 rounded-lg p-3">
+                    <p className="font-semibold font-noto">{subscriptionTenant.companyName}</p>
+                    <p className="text-sm text-gray-500">ID: {subscriptionTenant.tenantId}</p>
+                    <div className="mt-2 flex items-center gap-2">
+                      <span className="text-sm font-noto">सध्याचे सदस्यत्व:</span>
+                      {getSubscriptionBadge(subscriptionTenant)}
+                    </div>
+                    {subscriptionTenant.subscriptionEndDate && (
+                      <p className="text-xs text-gray-500 mt-1 font-noto">
+                        समाप्ती: {new Date(subscriptionTenant.subscriptionEndDate).toLocaleDateString('hi-IN')}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="font-noto">क्रिया निवडा</Label>
+                    <select
+                      value={subscriptionAction}
+                      onChange={(e) => setSubscriptionAction(e.target.value)}
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    >
+                      <option value="">-- निवडा --</option>
+                      <option value="set_lifetime">कायमस्वरूपी करा (Lifetime)</option>
+                      <option value="renew">नूतनीकरण करा (Renew)</option>
+                      <option value="extend">कालावधी वाढवा (Extend)</option>
+                    </select>
+                  </div>
+
+                  {(subscriptionAction === 'renew' || subscriptionAction === 'extend') && (
+                    <div>
+                      <Label className="font-noto">कालावधी (महिने)</Label>
+                      <Input
+                        type="number"
+                        min={1}
+                        max={24}
+                        value={renewMonths}
+                        onChange={(e) => setRenewMonths(e.target.value)}
+                        placeholder="उदा: 12"
+                      />
+                      <p className="text-xs text-gray-500 mt-1 font-noto">
+                        {subscriptionAction === 'extend' 
+                          ? "सध्याच्या समाप्ती तारखेपासून वाढवले जाईल" 
+                          : "आजपासून नवीन कालावधी सुरू होईल"}
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="flex justify-end space-x-2 pt-2">
+                    <Button variant="outline" onClick={() => setSubscriptionTenant(null)}>
+                      रद्द करा
+                    </Button>
+                    <Button
+                      onClick={handleSubscriptionAction}
+                      disabled={!subscriptionAction || subscriptionMutation.isPending}
+                      className="bg-indigo-600 hover:bg-indigo-700"
+                    >
+                      {subscriptionMutation.isPending ? "अपडेट करत आहे..." : "अपडेट करा"}
+                    </Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+          )}
         </main>
       </div>
     </div>

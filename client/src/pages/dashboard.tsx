@@ -11,6 +11,7 @@ import { MobileNav } from "@/components/ui/mobile-nav";
 import { LoanCalculations } from "@/lib/calculations";
 import { DateUtils } from "@/lib/date-utils";
 import { MaturityReminderPopup } from "@/components/maturity-reminder";
+import { SubscriptionReminder } from "@/components/subscription-reminder";
 import { 
   CreditCard, 
   HandCoins, 
@@ -209,6 +210,7 @@ export default function Dashboard() {
 
         <main className="flex-1 w-full lg:pl-72 pb-16 lg:pb-0">
           <div className="px-4 sm:px-6 lg:px-8 py-6">
+            <SubscriptionReminder />
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
               

@@ -55,9 +55,19 @@ const createTenantSchema = z.object({
   confirmPassword: z.string().min(1, "Confirm Password आवश्यक आहे"),
   companyName: z.string().min(1, "Company name आवश्यक आहे"),
   companyAddress: z.string().optional(),
+  subscriptionType: z.enum(["lifetime", "time_limited"]).default("lifetime"),
+  subscriptionMonths: z.number().min(1).max(24).optional(),
 }).refine((data) => data.adminPassword === data.confirmPassword, {
   message: "दोन्ही passwords सारखे असावेत",
   path: ["confirmPassword"],
+}).refine((data) => {
+  if (data.subscriptionType === "time_limited" && (!data.subscriptionMonths || data.subscriptionMonths < 1)) {
+    return false;
+  }
+  return true;
+}, {
+  message: "कालमर्यादित सदस्यत्वासाठी महिने आवश्यक आहेत",
+  path: ["subscriptionMonths"],
 });
 
 type CreateTenantFormData = z.infer<typeof createTenantSchema>;
@@ -97,6 +107,8 @@ export default function SuperAdminDashboard() {
       confirmPassword: "",
       companyName: "",
       companyAddress: "",
+      subscriptionType: "lifetime",
+      subscriptionMonths: undefined,
     },
   });
 
@@ -248,6 +260,35 @@ export default function SuperAdminDashboard() {
                       <Label>कंपनी पत्ता (वैकल्पिक)</Label>
                       <Input {...createTenantForm.register("companyAddress")} />
                     </div>
+
+                    <div>
+                      <Label>सदस्यत्व प्रकार</Label>
+                      <select
+                        {...createTenantForm.register("subscriptionType")}
+                        className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      >
+                        <option value="lifetime">कायमस्वरूपी (Lifetime)</option>
+                        <option value="time_limited">कालमर्यादित (Time Limited)</option>
+                      </select>
+                    </div>
+
+                    {createTenantForm.watch("subscriptionType") === "time_limited" && (
+                      <div>
+                        <Label>सदस्यत्व कालावधी (महिने)</Label>
+                        <Input
+                          type="number"
+                          min={1}
+                          max={24}
+                          placeholder="उदा: 6"
+                          {...createTenantForm.register("subscriptionMonths", { valueAsNumber: true })}
+                        />
+                        {createTenantForm.formState.errors.subscriptionMonths && (
+                          <p className="text-red-500 text-sm mt-1">
+                            {createTenantForm.formState.errors.subscriptionMonths.message}
+                          </p>
+                        )}
+                      </div>
+                    )}
                     
                     <div>
                       <Label>Admin Username</Label>

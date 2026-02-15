@@ -178,6 +178,10 @@ var init_schema = __esm({
       bottomNavEnabled: boolean("bottom_nav_enabled").notNull().default(true),
       showSummaryRateMonths: boolean("show_summary_rate_months").notNull().default(true),
       showSummaryDetails: boolean("show_summary_details").notNull().default(true),
+      subscriptionType: varchar("subscription_type", { length: 20 }).notNull().default("lifetime"),
+      subscriptionStartDate: timestamp("subscription_start_date"),
+      subscriptionEndDate: timestamp("subscription_end_date"),
+      subscriptionMonths: integer("subscription_months"),
       createdAt: timestamp("created_at").notNull().default(sql`now()`),
       updatedAt: timestamp("updated_at").notNull().default(sql`now()`)
     });
@@ -4681,6 +4685,10 @@ var DatabaseStorage = class {
         address: companies.address,
         createdAt: companies.createdAt,
         isActive: companies.isActive,
+        subscriptionType: companies.subscriptionType,
+        subscriptionStartDate: companies.subscriptionStartDate,
+        subscriptionEndDate: companies.subscriptionEndDate,
+        subscriptionMonths: companies.subscriptionMonths,
         userCount: sql2`(
             SELECT COUNT(*)::int 
             FROM ${users} 
@@ -7672,6 +7680,33 @@ async function registerRoutes(app2) {
     }
     next();
   };
+  const checkSubscription = async (req, res, next) => {
+    try {
+      const tenantId = req.session?.tenantId;
+      if (!tenantId || req.session?.role === "super_admin") {
+        return next();
+      }
+      if (req.method === "GET") {
+        return next();
+      }
+      const company = await storage.getCompany(tenantId);
+      if (!company || company.subscriptionType === "lifetime" || !company.subscriptionEndDate) {
+        return next();
+      }
+      const now = /* @__PURE__ */ new Date();
+      const endDate = new Date(company.subscriptionEndDate);
+      if (now > endDate) {
+        return res.status(403).json({
+          message: "\u0938\u0926\u0938\u094D\u092F\u0924\u094D\u0935 \u0915\u093E\u0932\u092C\u093E\u0939\u094D\u092F \u091D\u093E\u0932\u0947 \u0906\u0939\u0947. \u0915\u0943\u092A\u092F\u093E Super Admin \u0936\u0940 \u0938\u0902\u092A\u0930\u094D\u0915 \u0938\u093E\u0927\u093E \u0928\u0942\u0924\u0928\u0940\u0915\u0930\u0923\u093E\u0938\u093E\u0920\u0940.",
+          subscriptionExpired: true
+        });
+      }
+      next();
+    } catch (error) {
+      next();
+    }
+  };
+  app2.use("/api", checkSubscription);
   app2.get("/api/auth/verify", (req, res) => {
     console.log("\u{1F510} SESSION VERIFY:", {
       hasSession: !!req.session,
@@ -8192,6 +8227,58 @@ async function registerRoutes(app2) {
       res.json({ message: "Group deleted successfully" });
     } catch (error) {
       res.status(500).json({ message: "Failed to delete group" });
+    }
+  });
+  app2.get("/api/subscription-status", requireAuth2, async (req, res) => {
+    try {
+      const tenantId = req.session.tenantId;
+      const company = await storage.getCompany(tenantId);
+      if (!company) {
+        return res.json({ subscriptionType: "lifetime", isExpired: false, daysRemaining: null, showReminder: false });
+      }
+      const subType = company.subscriptionType || "lifetime";
+      if (subType === "lifetime") {
+        return res.json({
+          subscriptionType: "lifetime",
+          isExpired: false,
+          daysRemaining: null,
+          showReminder: false,
+          subscriptionEndDate: null,
+          subscriptionMonths: null
+        });
+      }
+      if (!company.subscriptionEndDate) {
+        return res.json({ subscriptionType: subType, isExpired: false, daysRemaining: null, showReminder: false });
+      }
+      const now = /* @__PURE__ */ new Date();
+      const endDate = new Date(company.subscriptionEndDate);
+      const diffMs = endDate.getTime() - now.getTime();
+      const daysRemaining = Math.ceil(diffMs / (1e3 * 60 * 60 * 24));
+      const isExpired = daysRemaining <= 0;
+      let showReminder = false;
+      let reminderType = "";
+      if (!isExpired) {
+        if (daysRemaining <= 8) {
+          showReminder = true;
+          reminderType = "urgent";
+        } else if (daysRemaining <= 30) {
+          showReminder = true;
+          reminderType = "warning";
+        }
+      }
+      res.json({
+        subscriptionType: subType,
+        isExpired,
+        daysRemaining,
+        showReminder,
+        reminderType,
+        subscriptionEndDate: company.subscriptionEndDate,
+        subscriptionStartDate: company.subscriptionStartDate,
+        subscriptionMonths: company.subscriptionMonths
+      });
+    } catch (error) {
+      console.error("Error checking subscription status:", error);
+      res.json({ subscriptionType: "lifetime", isExpired: false, daysRemaining: null, showReminder: false });
     }
   });
   app2.get("/api/maturity-reminders", requireAuth2, async (req, res) => {
@@ -9975,7 +10062,7 @@ async function registerRoutes(app2) {
       if (req.session.role !== "super_admin") {
         return res.status(403).json({ message: "Access denied. Super admin required." });
       }
-      const { tenantId: rawTenantId, adminUsername: rawAdminUsername, adminPassword, companyName, companyAddress } = req.body;
+      const { tenantId: rawTenantId, adminUsername: rawAdminUsername, adminPassword, companyName, companyAddress, subscriptionType, subscriptionMonths } = req.body;
       if (!rawTenantId || !rawAdminUsername || !adminPassword || !companyName) {
         return res.status(400).json({
           message: "Tenant ID, admin username, password, and company name are required"
@@ -10009,13 +10096,22 @@ async function registerRoutes(app2) {
         createdBy: req.session.userId
         // Super admin who created this
       });
+      const now = /* @__PURE__ */ new Date();
+      const subType = subscriptionType || "lifetime";
+      const subMonths = subType === "time_limited" ? parseInt(subscriptionMonths) || 12 : null;
+      const subStartDate = subType === "time_limited" ? now : null;
+      const subEndDate = subType === "time_limited" && subMonths ? new Date(now.getFullYear(), now.getMonth() + subMonths, now.getDate()) : null;
       const company = await storage.createCompany({
         name: companyName,
         address: companyAddress || "",
         tenantId,
         contactNumber: "",
         email: "",
-        licenseNumber: ""
+        licenseNumber: "",
+        subscriptionType: subType,
+        subscriptionMonths: subMonths,
+        subscriptionStartDate: subStartDate,
+        subscriptionEndDate: subEndDate
       });
       await storage.createUserPermissions({
         userId: newAdmin.id,
@@ -10151,6 +10247,59 @@ async function registerRoutes(app2) {
     } catch (error) {
       console.error("Error fetching tenants:", error);
       res.status(500).json({ message: "Failed to fetch tenants" });
+    }
+  });
+  app2.patch("/api/super-admin/tenants/:tenantId/subscription", requireAuth2, async (req, res) => {
+    try {
+      if (req.session.role !== "super_admin") {
+        return res.status(403).json({ message: "Access denied. Super admin required." });
+      }
+      const { tenantId } = req.params;
+      const { action, subscriptionType, subscriptionMonths } = req.body;
+      if (tenantId === "SUPER_ADMIN") {
+        return res.status(403).json({ message: "SUPER_ADMIN subscription \u092C\u0926\u0932\u0924\u093E \u092F\u0947\u0924 \u0928\u093E\u0939\u0940." });
+      }
+      const company = await storage.getCompany(tenantId);
+      if (!company) {
+        return res.status(404).json({ message: "Tenant not found" });
+      }
+      const now = /* @__PURE__ */ new Date();
+      if (action === "set_lifetime") {
+        await db.update(companies).set({
+          subscriptionType: "lifetime",
+          subscriptionStartDate: null,
+          subscriptionEndDate: null,
+          subscriptionMonths: null,
+          updatedAt: now
+        }).where(eq12(companies.tenantId, tenantId));
+        return res.json({ message: "\u0938\u0926\u0938\u094D\u092F\u0924\u094D\u0935 \u0915\u093E\u092F\u092E\u0938\u094D\u0935\u0930\u0942\u092A\u0940 \u0915\u0947\u0932\u0947", subscriptionType: "lifetime" });
+      }
+      if (action === "renew" || action === "extend") {
+        const months = parseInt(subscriptionMonths) || 12;
+        let startDate;
+        if (action === "extend" && company.subscriptionEndDate && new Date(company.subscriptionEndDate) > now) {
+          startDate = new Date(company.subscriptionEndDate);
+        } else {
+          startDate = now;
+        }
+        const endDate = new Date(startDate.getFullYear(), startDate.getMonth() + months, startDate.getDate());
+        await db.update(companies).set({
+          subscriptionType: "time_limited",
+          subscriptionStartDate: action === "renew" ? now : company.subscriptionStartDate || now,
+          subscriptionEndDate: endDate,
+          subscriptionMonths: months,
+          updatedAt: now
+        }).where(eq12(companies.tenantId, tenantId));
+        return res.json({
+          message: action === "renew" ? "\u0938\u0926\u0938\u094D\u092F\u0924\u094D\u0935 \u0928\u0942\u0924\u0928\u0940\u0915\u0930\u0923 \u0915\u0947\u0932\u0947" : "\u0938\u0926\u0938\u094D\u092F\u0924\u094D\u0935 \u0935\u093E\u0922\u0935\u0932\u0947",
+          subscriptionEndDate: endDate,
+          subscriptionMonths: months
+        });
+      }
+      res.status(400).json({ message: "Invalid action" });
+    } catch (error) {
+      console.error("Error updating subscription:", error);
+      res.status(500).json({ message: "Failed to update subscription" });
     }
   });
   app2.patch("/api/super-admin/tenants/:tenantId/toggle", requireAuth2, async (req, res) => {
