@@ -835,139 +835,70 @@ export class DatabaseStorage implements IStorage {
     const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString().split('T')[0];
     const prevMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0).toISOString().split('T')[0];
 
-    // Current month loan disbursements 
-    const currentMonthDisbursements = await db.select({ 
-      count: count(),
-      totalAmount: sum(loans.principalAmount)
-    })
-      .from(loans)
-      .where(and(
-        eq(loans.tenantId, tenantId),
-        gte(loans.loanDate, currentMonthStart),
-        lte(loans.loanDate, currentMonthEnd)
-      ));
-
-    // Previous month loan disbursements
-    const prevMonthDisbursements = await db.select({ 
-      count: count(),
-      totalAmount: sum(loans.principalAmount)
-    })
-      .from(loans)
-      .where(and(
-        eq(loans.tenantId, tenantId),
-        gte(loans.loanDate, prevMonthStart),
-        lte(loans.loanDate, prevMonthEnd)
-      ));
-
-    // Current month loan closures
-    const currentMonthClosures = await db.select({ 
-      count: count(),
-      totalAmount: sum(loanClosures.totalAmount)
-    })
-      .from(loanClosures)
-      .where(and(
-        eq(loanClosures.tenantId, tenantId),
-        gte(loanClosures.closureDate, currentMonthStart),
-        lte(loanClosures.closureDate, currentMonthEnd)
-      ));
-
-    // Previous month loan closures
-    const prevMonthClosures = await db.select({ 
-      count: count(),
-      totalAmount: sum(loanClosures.totalAmount)
-    })
-      .from(loanClosures)
-      .where(and(
-        eq(loanClosures.tenantId, tenantId),
-        gte(loanClosures.closureDate, prevMonthStart),
-        lte(loanClosures.closureDate, prevMonthEnd)
-      ));
-
-    // Current month cash transactions
-    const currentMonthCashStats = await db.select({
-      count: count(),
-      totalIn: sum(sql`CASE WHEN ${cashTransactions.transactionType} = 'cash_in' THEN ${cashTransactions.amount} ELSE 0 END`),
-      totalOut: sum(sql`CASE WHEN ${cashTransactions.transactionType} = 'cash_out' THEN ${cashTransactions.amount} ELSE 0 END`)
-    })
-      .from(cashTransactions)
-      .where(and(
-        eq(cashTransactions.tenantId, tenantId),
-        gte(cashTransactions.transactionDate, currentMonthStart),
-        lte(cashTransactions.transactionDate, currentMonthEnd)
-      ));
-
-    // Previous month cash transactions
-    const prevMonthCashStats = await db.select({
-      count: count(),
-      totalIn: sum(sql`CASE WHEN ${cashTransactions.transactionType} = 'cash_in' THEN ${cashTransactions.amount} ELSE 0 END`),
-      totalOut: sum(sql`CASE WHEN ${cashTransactions.transactionType} = 'cash_out' THEN ${cashTransactions.amount} ELSE 0 END`)
-    })
-      .from(cashTransactions)
-      .where(and(
-        eq(cashTransactions.tenantId, tenantId),
-        gte(cashTransactions.transactionDate, prevMonthStart),
-        lte(cashTransactions.transactionDate, prevMonthEnd)
-      ));
-
-    // Overall stats
-    const activeLoans = await db.select({ 
-      total: sum(loans.principalAmount),
-      count: count()
-    })
-      .from(loans)
-      .where(and(eq(loans.tenantId, tenantId), eq(loans.status, "active")));
-
-    const closedLoans = await db.select({ 
-      total: sum(loans.principalAmount) 
-    })
-      .from(loans)
-      .where(and(eq(loans.tenantId, tenantId), eq(loans.status, "closed")));
-
-    const borrowersResult = await db.selectDistinct({ borrowerId: loans.borrowerId })
-      .from(loans)
-      .where(and(eq(loans.tenantId, tenantId), eq(loans.status, "active")));
-
-    // Three month calculations (last 3 months including current)
     const currentDate = new Date();
     const threeMonthsAgo = new Date(currentDate.getFullYear(), currentDate.getMonth() - 2, 1);
     const threeMonthsAgoStr = threeMonthsAgo.toISOString().split('T')[0];
-    
-    // Three month loan disbursements
-    const threeMonthDisbursements = await db.select({
-      count: count(),
-      totalAmount: sum(loans.principalAmount)
-    })
-      .from(loans)
-      .where(and(
-        eq(loans.tenantId, tenantId),
-        gte(loans.loanDate, threeMonthsAgoStr),
-        lte(loans.loanDate, currentMonthEnd)
-      ));
 
-    // Three month loan closures 
-    const threeMonthClosures = await db.select({
-      count: count(),
-      totalAmount: sum(loanClosures.actualPaidAmount)
-    })
-      .from(loanClosures)
-      .where(and(
-        eq(loanClosures.tenantId, tenantId),
-        gte(loanClosures.closureDate, threeMonthsAgoStr),
-        lte(loanClosures.closureDate, currentMonthEnd)
-      ));
-
-    // Three month cash transactions
-    const threeMonthCashStats = await db.select({
-      count: count(),
-      totalIn: sum(sql`CASE WHEN ${cashTransactions.transactionType} = 'cash_in' THEN ${cashTransactions.amount} ELSE 0 END`),
-      totalOut: sum(sql`CASE WHEN ${cashTransactions.transactionType} = 'cash_out' THEN ${cashTransactions.amount} ELSE 0 END`)
-    })
-      .from(cashTransactions)
-      .where(and(
-        eq(cashTransactions.tenantId, tenantId),
-        gte(cashTransactions.transactionDate, threeMonthsAgoStr),
-        lte(cashTransactions.transactionDate, currentMonthEnd)
-      ));
+    const [
+      currentMonthDisbursements,
+      prevMonthDisbursements,
+      currentMonthClosures,
+      prevMonthClosures,
+      currentMonthCashStats,
+      prevMonthCashStats,
+      activeLoans,
+      closedLoans,
+      borrowersResult,
+      threeMonthDisbursements,
+      threeMonthClosures,
+      threeMonthCashStats,
+    ] = await Promise.all([
+      db.select({ count: count(), totalAmount: sum(loans.principalAmount) })
+        .from(loans)
+        .where(and(eq(loans.tenantId, tenantId), gte(loans.loanDate, currentMonthStart), lte(loans.loanDate, currentMonthEnd))),
+      db.select({ count: count(), totalAmount: sum(loans.principalAmount) })
+        .from(loans)
+        .where(and(eq(loans.tenantId, tenantId), gte(loans.loanDate, prevMonthStart), lte(loans.loanDate, prevMonthEnd))),
+      db.select({ count: count(), totalAmount: sum(loanClosures.totalAmount) })
+        .from(loanClosures)
+        .where(and(eq(loanClosures.tenantId, tenantId), gte(loanClosures.closureDate, currentMonthStart), lte(loanClosures.closureDate, currentMonthEnd))),
+      db.select({ count: count(), totalAmount: sum(loanClosures.totalAmount) })
+        .from(loanClosures)
+        .where(and(eq(loanClosures.tenantId, tenantId), gte(loanClosures.closureDate, prevMonthStart), lte(loanClosures.closureDate, prevMonthEnd))),
+      db.select({
+        count: count(),
+        totalIn: sum(sql`CASE WHEN ${cashTransactions.transactionType} = 'cash_in' THEN ${cashTransactions.amount} ELSE 0 END`),
+        totalOut: sum(sql`CASE WHEN ${cashTransactions.transactionType} = 'cash_out' THEN ${cashTransactions.amount} ELSE 0 END`)
+      }).from(cashTransactions)
+        .where(and(eq(cashTransactions.tenantId, tenantId), gte(cashTransactions.transactionDate, currentMonthStart), lte(cashTransactions.transactionDate, currentMonthEnd))),
+      db.select({
+        count: count(),
+        totalIn: sum(sql`CASE WHEN ${cashTransactions.transactionType} = 'cash_in' THEN ${cashTransactions.amount} ELSE 0 END`),
+        totalOut: sum(sql`CASE WHEN ${cashTransactions.transactionType} = 'cash_out' THEN ${cashTransactions.amount} ELSE 0 END`)
+      }).from(cashTransactions)
+        .where(and(eq(cashTransactions.tenantId, tenantId), gte(cashTransactions.transactionDate, prevMonthStart), lte(cashTransactions.transactionDate, prevMonthEnd))),
+      db.select({ total: sum(loans.principalAmount), count: count() })
+        .from(loans)
+        .where(and(eq(loans.tenantId, tenantId), eq(loans.status, "active"))),
+      db.select({ total: sum(loans.principalAmount) })
+        .from(loans)
+        .where(and(eq(loans.tenantId, tenantId), eq(loans.status, "closed"))),
+      db.selectDistinct({ borrowerId: loans.borrowerId })
+        .from(loans)
+        .where(and(eq(loans.tenantId, tenantId), eq(loans.status, "active"))),
+      db.select({ count: count(), totalAmount: sum(loans.principalAmount) })
+        .from(loans)
+        .where(and(eq(loans.tenantId, tenantId), gte(loans.loanDate, threeMonthsAgoStr), lte(loans.loanDate, currentMonthEnd))),
+      db.select({ count: count(), totalAmount: sum(loanClosures.actualPaidAmount) })
+        .from(loanClosures)
+        .where(and(eq(loanClosures.tenantId, tenantId), gte(loanClosures.closureDate, threeMonthsAgoStr), lte(loanClosures.closureDate, currentMonthEnd))),
+      db.select({
+        count: count(),
+        totalIn: sum(sql`CASE WHEN ${cashTransactions.transactionType} = 'cash_in' THEN ${cashTransactions.amount} ELSE 0 END`),
+        totalOut: sum(sql`CASE WHEN ${cashTransactions.transactionType} = 'cash_out' THEN ${cashTransactions.amount} ELSE 0 END`)
+      }).from(cashTransactions)
+        .where(and(eq(cashTransactions.tenantId, tenantId), gte(cashTransactions.transactionDate, threeMonthsAgoStr), lte(cashTransactions.transactionDate, currentMonthEnd))),
+    ]);
 
     const totalDisbursed = Number(activeLoans[0]?.total || 0) + Number(closedLoans[0]?.total || 0);
     const totalRepaid = Number(closedLoans[0]?.total || 0);
