@@ -8,6 +8,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { AuthService } from "@/lib/auth";
 import { useEffect, useRef } from "react";
+import { NotificationBell } from "@/components/maturity-reminder";
 import { 
   Building, 
   Users, 
@@ -272,6 +273,9 @@ export function Sidebar({ className }: SidebarProps) {
               </h1>
             </div>
           </div>
+          {user && (user.role === 'admin' || user.role === 'superadmin') && (
+            <NotificationBell variant="sidebar" />
+          )}
         </div>
       </div>
 

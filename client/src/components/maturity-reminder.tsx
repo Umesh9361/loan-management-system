@@ -1,10 +1,24 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect, useRef, useCallback } from "react";
-import { AlertTriangle, Calendar, Clock, X, Bell, IndianRupee } from "lucide-react";
+import { AlertTriangle, Calendar, Clock, X, Bell, IndianRupee, Check, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
+import { apiRequest } from "@/lib/queryClient";
+
+interface NotificationWarning {
+  id: string;
+  tenantId: string;
+  warningType: string;
+  severity: string;
+  title: string;
+  message: string;
+  metadata: string | null;
+  isRead: boolean;
+  isDismissed: boolean;
+  createdAt: string;
+}
 
 interface MaturityReminder {
   loanId: string;
@@ -143,7 +157,14 @@ export function NotificationBell({ variant = 'default' }: { variant?: 'default' 
     refetchOnWindowFocus: false,
   });
 
-  const count = data?.count || 0;
+  const { data: unreadData } = useQuery<{ count: number }>({
+    queryKey: ["/api/notification-warnings/unread-count"],
+    refetchInterval: 30000,
+  });
+
+  const maturityCount = data?.count || 0;
+  const warningCount = unreadData?.count || 0;
+  const count = maturityCount + warningCount;
   const hasNotifications = count > 0;
   const displayCount = count > 99 ? '99+' : String(count);
 
@@ -177,19 +198,117 @@ export function NotificationBell({ variant = 'default' }: { variant?: 'default' 
   );
 }
 
+function formatWarningDateTime(dateStr: string): string {
+  const d = new Date(dateStr);
+  const day = String(d.getDate()).padStart(2, '0');
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const year = d.getFullYear();
+  const hours = String(d.getHours()).padStart(2, '0');
+  const minutes = String(d.getMinutes()).padStart(2, '0');
+  return `${day}/${month}/${year} ${hours}:${minutes}`;
+}
+
+function DateWarningsTab() {
+  const qc = useQueryClient();
+  const { data: warnings = [] } = useQuery<NotificationWarning[]>({
+    queryKey: ["/api/notification-warnings"],
+  });
+  const { data: unreadData } = useQuery<{ count: number }>({
+    queryKey: ["/api/notification-warnings/unread-count"],
+  });
+  const unreadCount = unreadData?.count || 0;
+
+  const markReadMutation = useMutation({
+    mutationFn: async (id: string) => { await apiRequest(`/api/notification-warnings/${id}/read`, "PATCH"); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/notification-warnings"] }); qc.invalidateQueries({ queryKey: ["/api/notification-warnings/unread-count"] }); },
+  });
+  const dismissMutation = useMutation({
+    mutationFn: async (id: string) => { await apiRequest(`/api/notification-warnings/${id}/dismiss`, "PATCH"); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/notification-warnings"] }); qc.invalidateQueries({ queryKey: ["/api/notification-warnings/unread-count"] }); },
+  });
+  const clearAllMutation = useMutation({
+    mutationFn: async () => { await apiRequest("/api/notification-warnings/clear-all", "DELETE"); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/notification-warnings"] }); qc.invalidateQueries({ queryKey: ["/api/notification-warnings/unread-count"] }); },
+  });
+  const markAllReadMutation = useMutation({
+    mutationFn: async () => { await apiRequest("/api/notification-warnings/mark-all-read", "PATCH"); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["/api/notification-warnings"] }); qc.invalidateQueries({ queryKey: ["/api/notification-warnings/unread-count"] }); },
+  });
+
+  return (
+    <div className="flex flex-col flex-1 min-h-0">
+      {(unreadCount > 0 || warnings.length > 0) && (
+        <div className="flex items-center justify-end gap-1 px-3 py-1.5 border-b border-gray-100 shrink-0">
+          {unreadCount > 0 && (
+            <Button variant="ghost" size="sm" className="h-6 text-[10px] text-indigo-600" onClick={() => markAllReadMutation.mutate()} disabled={markAllReadMutation.isPending}>
+              <Check className="h-3 w-3 mr-0.5" />सर्व वाचलेले
+            </Button>
+          )}
+          {warnings.length > 0 && (
+            <Button variant="ghost" size="sm" className="h-6 text-[10px] text-red-600" onClick={() => { if (window.confirm("सर्व सूचना बंद करायच्या का?")) clearAllMutation.mutate(); }} disabled={clearAllMutation.isPending}>
+              <Trash2 className="h-3 w-3 mr-0.5" />सर्व बंद
+            </Button>
+          )}
+        </div>
+      )}
+      <div className="overflow-y-auto flex-1 overscroll-contain">
+        {warnings.length === 0 ? (
+          <div className="text-center py-8 text-gray-500">
+            <Bell className="h-10 w-10 mx-auto mb-2 opacity-30" />
+            <p className="text-sm">कोणत्याही तारीख चेतावणी नाहीत</p>
+          </div>
+        ) : (
+          <div className="divide-y divide-gray-50">
+            {warnings.map((w) => (
+              <div key={w.id} className={`p-3 hover:bg-gray-50 transition-colors ${!w.isRead ? 'bg-amber-50/50' : ''}`}
+                onClick={() => { if (!w.isRead) markReadMutation.mutate(w.id); }}>
+                <div className="flex items-start gap-2">
+                  <div className={`mt-0.5 p-1 rounded-full shrink-0 ${w.severity === 'critical' ? 'bg-red-100 text-red-600' : 'bg-amber-100 text-amber-600'}`}>
+                    <AlertTriangle className="h-3.5 w-3.5" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className={`text-xs font-semibold ${w.severity === 'critical' ? 'text-red-700' : 'text-amber-700'}`}>{w.title}</p>
+                      {!w.isRead && <span className="w-2 h-2 bg-indigo-500 rounded-full shrink-0"></span>}
+                    </div>
+                    <p className="text-xs text-gray-600 mt-0.5 break-words">{w.message}</p>
+                    <div className="flex items-center justify-between mt-1.5">
+                      <span className="text-[10px] text-gray-400 flex items-center gap-1">
+                        <Clock className="h-2.5 w-2.5" />{formatWarningDateTime(w.createdAt)}
+                      </span>
+                      <button onClick={(e) => { e.stopPropagation(); dismissMutation.mutate(w.id); }} className="text-[10px] text-gray-400 hover:text-red-500 flex items-center gap-0.5">
+                        <X className="h-3 w-3" />बंद करा
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function NotificationPanel({ onClose }: { onClose: () => void }) {
   const panelRef = useRef<HTMLDivElement>(null);
   const [autoPopup, setAutoPopup] = useState(getAutoPopupEnabled);
   const [touchStartY, setTouchStartY] = useState<number | null>(null);
   const [isDesktop, setIsDesktop] = useState(false);
+  const [activeTab, setActiveTab] = useState<'maturity' | 'warnings'>('maturity');
 
   const { data } = useQuery<{ success: boolean; reminders: MaturityReminder[]; count: number }>({
     queryKey: ["/api/maturity-reminders"],
     staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
   });
+  const { data: unreadData } = useQuery<{ count: number }>({
+    queryKey: ["/api/notification-warnings/unread-count"],
+  });
 
   const reminders = data?.reminders || [];
+  const warningCount = unreadData?.count || 0;
 
   useEffect(() => {
     const check = () => setIsDesktop(window.innerWidth >= 1024);
@@ -228,12 +347,71 @@ export function NotificationPanel({ onClose }: { onClose: () => void }) {
   const handleTouchEnd = (e: React.TouchEvent) => {
     if (touchStartY !== null) {
       const diff = e.changedTouches[0].clientY - touchStartY;
-      if (diff > 80) {
-        onClose();
-      }
+      if (diff > 80) { onClose(); }
     }
     setTouchStartY(null);
   };
+
+  const tabBar = (
+    <div className="flex border-b border-gray-200 dark:border-gray-700 shrink-0">
+      <button
+        onClick={() => setActiveTab('maturity')}
+        className={cn(
+          "flex-1 py-2 text-xs font-medium text-center border-b-2 transition-colors",
+          activeTab === 'maturity' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700'
+        )}
+      >
+        मुदत सूचना {reminders.length > 0 && <Badge className="ml-1 bg-indigo-100 text-indigo-700 text-[10px] px-1 py-0">{reminders.length}</Badge>}
+      </button>
+      <button
+        onClick={() => setActiveTab('warnings')}
+        className={cn(
+          "flex-1 py-2 text-xs font-medium text-center border-b-2 transition-colors",
+          activeTab === 'warnings' ? 'border-amber-500 text-amber-600' : 'border-transparent text-gray-500 hover:text-gray-700'
+        )}
+      >
+        तारीख चेतावणी {warningCount > 0 && <Badge className="ml-1 bg-amber-100 text-amber-700 text-[10px] px-1 py-0">{warningCount}</Badge>}
+      </button>
+    </div>
+  );
+
+  const maturityContent = (
+    <div className="flex flex-col flex-1 min-h-0">
+      <div className="flex items-center justify-between px-4 py-2 border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-850 shrink-0">
+        <span className="text-xs font-medium text-gray-700 dark:text-gray-300">स्वयं सूचना</span>
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] text-gray-500">{autoPopup ? 'ON' : 'OFF'}</span>
+          <Switch checked={autoPopup} onCheckedChange={handleToggleAutoPopup} />
+        </div>
+      </div>
+      <div className="overflow-y-auto flex-1 p-3 space-y-2.5 overscroll-contain">
+        {reminders.length === 0 ? (
+          <div className="text-center py-8 text-gray-500">
+            <Bell className="h-10 w-10 mx-auto mb-2 opacity-30" />
+            <p className="text-sm">सध्या कोणतीही मुदत सूचना नाही</p>
+          </div>
+        ) : (
+          reminders.map((reminder) => (
+            <ReminderCard key={reminder.loanId} reminder={reminder} />
+          ))
+        )}
+      </div>
+    </div>
+  );
+
+  const header = (
+    <div className="bg-gradient-to-r from-indigo-500 to-indigo-600 text-white p-3 rounded-t-xl flex items-center justify-between shrink-0">
+      <div className="flex items-center gap-2">
+        <div className="bg-white/20 p-1.5 rounded-full">
+          <Bell className="h-4 w-4" />
+        </div>
+        <h2 className="text-base font-bold">सूचना</h2>
+      </div>
+      <button onClick={onClose} className="bg-white/20 hover:bg-white/30 rounded-full p-1.5 transition-colors">
+        <X className="h-4 w-4" />
+      </button>
+    </div>
+  );
 
   if (isDesktop) {
     return (
@@ -243,46 +421,9 @@ export function NotificationPanel({ onClose }: { onClose: () => void }) {
           onClick={(e) => e.stopPropagation()}
           className="fixed top-16 right-4 lg:right-auto lg:left-[calc(18rem+1rem)] w-[420px] max-h-[70vh] bg-white dark:bg-gray-900 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 flex flex-col animate-in fade-in zoom-in-95 duration-200 z-[61]"
         >
-          <div className="bg-gradient-to-r from-indigo-500 to-indigo-600 text-white p-3 rounded-t-xl flex items-center justify-between shrink-0">
-            <div className="flex items-center gap-2">
-              <div className="bg-white/20 p-1.5 rounded-full">
-                <Bell className="h-4 w-4" />
-              </div>
-              <div>
-                <h2 className="text-base font-bold">मुदत सूचना</h2>
-                {reminders.length > 0 && (
-                  <p className="text-[11px] text-indigo-100">{reminders.length} कर्जांची मुदत जवळ आली आहे</p>
-                )}
-              </div>
-            </div>
-            <button
-              onClick={onClose}
-              className="bg-white/20 hover:bg-white/30 rounded-full p-1.5 transition-colors"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          </div>
-
-          <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-850 shrink-0">
-            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">स्वयं सूचना</span>
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-gray-500">{autoPopup ? 'ON' : 'OFF'}</span>
-              <Switch checked={autoPopup} onCheckedChange={handleToggleAutoPopup} />
-            </div>
-          </div>
-
-          <div className="overflow-y-auto flex-1 p-3 space-y-2.5 overscroll-contain">
-            {reminders.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
-                <Bell className="h-10 w-10 mx-auto mb-2 opacity-30" />
-                <p className="text-sm">सध्या कोणतीही मुदत सूचना नाही</p>
-              </div>
-            ) : (
-              reminders.map((reminder) => (
-                <ReminderCard key={reminder.loanId} reminder={reminder} />
-              ))
-            )}
-          </div>
+          {header}
+          {tabBar}
+          {activeTab === 'maturity' ? maturityContent : <DateWarningsTab />}
         </div>
       </div>
     );
@@ -305,41 +446,15 @@ export function NotificationPanel({ onClose }: { onClose: () => void }) {
             <div className="bg-white/20 p-1.5 rounded-full">
               <Bell className="h-4 w-4" />
             </div>
-            <div>
-              <h2 className="text-base font-bold">मुदत सूचना</h2>
-              {reminders.length > 0 && (
-                <p className="text-[11px] text-indigo-100">{reminders.length} कर्जांची मुदत जवळ आली आहे</p>
-              )}
-            </div>
+            <h2 className="text-base font-bold">सूचना</h2>
           </div>
-          <button
-            onClick={onClose}
-            className="bg-white/20 hover:bg-white/30 rounded-full p-1.5 transition-colors"
-          >
+          <button onClick={onClose} className="bg-white/20 hover:bg-white/30 rounded-full p-1.5 transition-colors">
             <X className="h-4 w-4" />
           </button>
         </div>
 
-        <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-850 shrink-0">
-          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">स्वयं सूचना</span>
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-gray-500">{autoPopup ? 'ON' : 'OFF'}</span>
-            <Switch checked={autoPopup} onCheckedChange={handleToggleAutoPopup} />
-          </div>
-        </div>
-
-        <div className="overflow-y-auto flex-1 p-3 space-y-2.5 overscroll-contain">
-          {reminders.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              <Bell className="h-10 w-10 mx-auto mb-2 opacity-30" />
-              <p className="text-sm">सध्या कोणतीही मुदत सूचना नाही</p>
-            </div>
-          ) : (
-            reminders.map((reminder) => (
-              <ReminderCard key={reminder.loanId} reminder={reminder} />
-            ))
-          )}
-        </div>
+        {tabBar}
+        {activeTab === 'maturity' ? maturityContent : <DateWarningsTab />}
 
         <div className="p-3 border-t bg-gray-50 dark:bg-gray-800 shrink-0 safe-area-bottom">
           <Button

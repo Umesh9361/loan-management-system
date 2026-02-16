@@ -12,7 +12,6 @@ import { LoanCalculations } from "@/lib/calculations";
 import { DateUtils } from "@/lib/date-utils";
 import { MaturityReminderPopup } from "@/components/maturity-reminder";
 import { SubscriptionReminder } from "@/components/subscription-reminder";
-import { NotificationBell } from "@/components/notification-bell";
 import { 
   CreditCard, 
   HandCoins, 
@@ -216,11 +215,6 @@ export default function Dashboard() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
               
               <div className="lg:col-span-2 bg-gradient-to-r from-indigo-600 to-indigo-600 rounded-xl p-6 shadow-md relative">
-                {isAdmin && (
-                  <div className="absolute top-3 right-3 z-10">
-                    <NotificationBell />
-                  </div>
-                )}
                 <div className="flex items-center space-x-4">
                   <div className="bg-white/90 rounded-lg p-0.5 shadow-md">
                     <img src="/icons/icon-192x192.png" alt="LonoPro" className="h-14 w-14 rounded-md" />
