@@ -135,9 +135,9 @@ export default function Dashboard() {
 
   const periodLabels: Record<string, { title: string; prev: string }> = {
     '1m': { title: 'या महिन्यात', prev: 'मागील महिना' },
-    '3m': { title: 'पाठीमागील ३ महिन्यांत', prev: 'त्याआधीचे ३ महिने' },
+    '3m': { title: 'पाठीमागील 3 महिन्यांत', prev: 'त्याआधीचे 3 महिने' },
     '1y': { title: 'पाठीमागील वर्षात', prev: 'त्याआधीचे वर्ष' },
-    '3y': { title: 'पाठीमागील ३ वर्षांत', prev: 'त्याआधीचे ३ वर्षे' },
+    '3y': { title: 'पाठीमागील 3 वर्षांत', prev: 'त्याआधीचे 3 वर्षे' },
   };
   
   const cur = (periodStats as any)?.current || {};
@@ -306,9 +306,9 @@ export default function Dashboard() {
                 <div className="flex bg-gray-100 rounded-lg p-0.5 gap-0.5">
                   {[
                     { key: '1m' as const, label: 'महिना' },
-                    { key: '3m' as const, label: '३ म.' },
-                    { key: '1y' as const, label: '१ वर्ष' },
-                    { key: '3y' as const, label: '३ वर्षे' },
+                    { key: '3m' as const, label: '3 म.' },
+                    { key: '1y' as const, label: '1 वर्ष' },
+                    { key: '3y' as const, label: '3 वर्षे' },
                   ].map((opt) => (
                     <button
                       key={opt.key}
@@ -365,13 +365,13 @@ export default function Dashboard() {
             <div className="bg-white border border-gray-100 rounded-xl shadow-sm p-4 sm:p-6 mb-8">
               <div className="flex flex-col sm:flex-row justify-between items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
                 <h3 className="text-sm sm:text-lg font-bold text-gray-800">
-                  {progressPeriod === '3m' ? 'पाठीमागील तीन महिन्यांची' : progressPeriod === '1y' ? 'पाठीमागील वर्षाची' : 'पाठीमागील तीन वर्षांची'} कर्ज प्रगती
+                  {progressPeriod === '3m' ? 'पाठीमागील 3 महिन्यांची' : progressPeriod === '1y' ? 'पाठीमागील वर्षाची' : 'पाठीमागील 3 वर्षांची'} कर्ज प्रगती
                 </h3>
                 <div className="flex bg-gray-100 rounded-lg p-1 gap-1">
                   {[
-                    { key: '3m' as const, label: '३ महिने' },
-                    { key: '1y' as const, label: '१ वर्ष' },
-                    { key: '3y' as const, label: '३ वर्षे' },
+                    { key: '3m' as const, label: '3 महिने' },
+                    { key: '1y' as const, label: '1 वर्ष' },
+                    { key: '3y' as const, label: '3 वर्षे' },
                   ].map((opt) => (
                     <button
                       key={opt.key}
@@ -459,7 +459,7 @@ export default function Dashboard() {
                 <div className="space-y-4">
                   <div className="bg-gradient-to-br from-slate-50 to-indigo-50/30 border border-gray-100 rounded-xl p-5">
                     <h4 className="text-base font-semibold text-gray-700 mb-4 text-center">
-                      {progressPeriod === '3m' ? 'तीन महिन्यांची' : progressPeriod === '1y' ? 'वर्षाची' : 'तीन वर्षांची'} कामगिरी
+                      {progressPeriod === '3m' ? '3 महिन्यांची' : progressPeriod === '1y' ? 'वर्षाची' : '3 वर्षांची'} कामगिरी
                     </h4>
                     
                     <div className="grid grid-cols-2 gap-2 sm:gap-3 mb-3 sm:mb-4">
@@ -592,13 +592,13 @@ export default function Dashboard() {
         <DialogContent className="max-w-[95vw] w-full max-h-[95vh] p-4 sm:p-6">
           <div className="flex flex-col sm:flex-row justify-between items-center gap-3 mb-4">
             <h3 className="text-lg font-bold text-gray-800">
-              {progressPeriod === '3m' ? 'पाठीमागील तीन महिन्यांची' : progressPeriod === '1y' ? 'पाठीमागील वर्षाची' : 'पाठीमागील तीन वर्षांची'} कर्ज प्रगती
+              {progressPeriod === '3m' ? 'पाठीमागील 3 महिन्यांची' : progressPeriod === '1y' ? 'पाठीमागील वर्षाची' : 'पाठीमागील 3 वर्षांची'} कर्ज प्रगती
             </h3>
             <div className="flex bg-gray-100 rounded-lg p-1 gap-1">
               {[
-                { key: '3m' as const, label: '३ महिने' },
-                { key: '1y' as const, label: '१ वर्ष' },
-                { key: '3y' as const, label: '३ वर्षे' },
+                { key: '3m' as const, label: '3 महिने' },
+                { key: '1y' as const, label: '1 वर्ष' },
+                { key: '3y' as const, label: '3 वर्षे' },
               ].map((opt) => (
                 <button
                   key={opt.key}
