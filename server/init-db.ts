@@ -1,6 +1,6 @@
 import { db } from "./db";
-import { users } from "@shared/schema";
-import { eq, and, sql } from "drizzle-orm";
+import { users, userActivityLogs, notificationWarnings } from "@shared/schema";
+import { eq, and, sql, lt } from "drizzle-orm";
 import bcrypt from "bcrypt";
 import SuperAdminGuardian from "./super-admin-guardian";
 
@@ -167,6 +167,35 @@ export async function initializeDatabase() {
       // 7. FINAL GUARDIAN VALIDATION: Double-check everything is correct
       await SuperAdminGuardian.validateAndFixRoleAssignments();
       console.log("🛡️  SUPER ADMIN GUARDIAN: Final validation completed");
+      
+      // 8. AUTO-CLEANUP: Delete activity logs older than 90 days
+      try {
+        const ninetyDaysAgo = new Date();
+        ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+        
+        const deletedLogs = await db.delete(userActivityLogs)
+          .where(lt(userActivityLogs.createdAt, ninetyDaysAgo));
+        
+        const deletedCount = deletedLogs.rowCount || 0;
+        if (deletedCount > 0) {
+          console.log(`🧹 AUTO-CLEANUP: ${deletedCount} activity logs older than 90 days deleted`);
+        } else {
+          console.log("🧹 AUTO-CLEANUP: No old activity logs to clean (all within 90 days)");
+        }
+
+        const deletedNotifications = await db.delete(notificationWarnings)
+          .where(and(
+            lt(notificationWarnings.createdAt, ninetyDaysAgo),
+            eq(notificationWarnings.isDismissed, true)
+          ));
+        
+        const notifCount = deletedNotifications.rowCount || 0;
+        if (notifCount > 0) {
+          console.log(`🧹 AUTO-CLEANUP: ${notifCount} dismissed notifications older than 90 days deleted`);
+        }
+      } catch (cleanupError) {
+        console.warn("⚠️  Auto-cleanup warning (non-fatal):", cleanupError instanceof Error ? cleanupError.message : cleanupError);
+      }
       
       console.log("Database initialization completed successfully");
       return; // Success, exit the retry loop
