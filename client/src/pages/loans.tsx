@@ -26,12 +26,13 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { LoanCalculations } from "@/lib/calculations";
 import { DateUtils } from "@/lib/date-utils";
-import { Plus, Edit, Trash2, CreditCard, Search, Calendar, Filter, X, FileText, MoreVertical, Lock, Home, RotateCcw, ChevronDown, ChevronRight, Check, Camera, AlertTriangle } from "lucide-react";
+import { Plus, Edit, Trash2, CreditCard, Search, Calendar, Filter, X, FileText, MoreVertical, Lock, Home, RotateCcw, ChevronDown, ChevronRight, Check, Camera, AlertTriangle, Printer, CheckSquare, Square } from "lucide-react";
 import { PhotoUpload } from "@/components/ui/photo-upload";
 import { PhotoViewer } from "@/components/ui/photo-viewer";
 import { Link, useLocation } from "wouter";
 import { ReceiptGenerator } from "@/components/receipt-generator";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { LabelPrintDialog } from "@/components/label-print-dialog";
 
 
 const loanSchema = z.object({
@@ -106,6 +107,10 @@ function Loans() {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(100);
   const [showLoadMore, setShowLoadMore] = useState(false);
+
+  const [selectedLoanIds, setSelectedLoanIds] = useState<Set<string | number>>(new Set());
+  const [labelPrintDialogOpen, setLabelPrintDialogOpen] = useState(false);
+  const [labelPrintLoans, setLabelPrintLoans] = useState<any[]>([]);
 
   // Loan details modal state
   const [selectedLoanDetails, setSelectedLoanDetails] = useState<any>(null);
@@ -259,6 +264,33 @@ function Loans() {
     if (confirm("हे कर्ज पूर्णपणे डिलीट करायचे काय? ही क्रिया रद्द करता येणार नाही.")) {
       deleteLoanMutation.mutate(loanId);
     }
+  };
+
+  const toggleLoanSelection = (loanId: string | number) => {
+    setSelectedLoanIds(prev => {
+      const next = new Set(prev);
+      if (next.has(loanId)) next.delete(loanId);
+      else next.add(loanId);
+      return next;
+    });
+  };
+
+  const handleLabelPrintSingle = (loan: any) => {
+    setLabelPrintLoans([{
+      ...loan,
+      groupName: loan.groupName || loan.group?.name || "",
+      interestRate: loan.interestRate,
+      interestRateType: loan.interestRateType,
+      maturityDate: loan.maturityDate,
+      loanType: loan.loanType,
+      businessType: loan.businessType,
+      borrowerMobile: loan.borrowerMobile,
+      borrowerAddress: loan.borrowerAddress,
+      marketValue: loan.marketValue,
+      documentDetails: loan.documentDetails,
+      specialConditions: loan.specialConditions,
+    }]);
+    setLabelPrintDialogOpen(true);
   };
 
 
@@ -2537,6 +2569,44 @@ function Loans() {
           <CardContent>
             {/* Modern Grid with Enhanced Styling */}
             <div className="relative">
+              {/* Multi-select Action Bar */}
+              {selectedLoanIds.size > 0 && (
+                <div className="mb-3 p-3 bg-indigo-50 border border-indigo-200 rounded-lg flex items-center justify-between flex-wrap gap-2">
+                  <div className="flex items-center gap-2">
+                    <CheckSquare className="h-4 w-4 text-indigo-600" />
+                    <span className="text-sm font-medium text-indigo-700">
+                      {selectedLoanIds.size} निवडले
+                    </span>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="text-xs text-gray-500 h-7"
+                      onClick={() => setSelectedLoanIds(new Set())}
+                    >
+                      <X className="h-3 w-3 mr-1" />
+                      रद्द करा
+                    </Button>
+                  </div>
+                  <Button
+                    size="sm"
+                    className="bg-indigo-600 hover:bg-indigo-700 text-white h-8"
+                    onClick={() => {
+                      const selected = Array.isArray(paginatedLoans) ? paginatedLoans.filter((l: any) => selectedLoanIds.has(l.id)).map((l: any) => ({
+                        ...l,
+                        groupName: l.groupName || l.group?.name || "",
+                      })) : [];
+                      if (selected.length > 0) {
+                        setLabelPrintLoans(selected);
+                        setLabelPrintDialogOpen(true);
+                      }
+                    }}
+                  >
+                    <Printer className="h-3.5 w-3.5 mr-1.5" />
+                    लेबल प्रिंट ({selectedLoanIds.size})
+                  </Button>
+                </div>
+              )}
+
               {/* Performance and Navigation Info */}
               <div className="mb-4 space-y-3">
                 {/* Keyboard Navigation Hint - Desktop Only */}
@@ -2623,6 +2693,23 @@ function Loans() {
                 <Table>
                   <TableHeader>
                     <TableRow className="bg-gradient-to-r from-gray-50 to-gray-100 border-b-2 border-gray-200">
+                      <TableHead className="font-semibold text-gray-700 py-4 w-10">
+                        <button
+                          onClick={() => {
+                            const allIds = Array.isArray(paginatedLoans) ? paginatedLoans.map((l: any) => l.id) : [];
+                            const allSelected = allIds.length > 0 && allIds.every((id: any) => selectedLoanIds.has(id));
+                            if (allSelected) setSelectedLoanIds(new Set());
+                            else setSelectedLoanIds(new Set(allIds));
+                          }}
+                          className="p-1 rounded hover:bg-gray-200 transition-colors"
+                          title="सर्व निवडा / रद्द करा"
+                        >
+                          {Array.isArray(paginatedLoans) && paginatedLoans.length > 0 && paginatedLoans.every((l: any) => selectedLoanIds.has(l.id))
+                            ? <CheckSquare className="h-4 w-4 text-indigo-600" />
+                            : <Square className="h-4 w-4 text-gray-400" />
+                          }
+                        </button>
+                      </TableHead>
                       <TableHead className="font-semibold text-gray-700 py-4">खाते नंबर</TableHead>
                       <TableHead className="font-semibold text-gray-700 py-4">नाव</TableHead>
                       <TableHead className="font-semibold text-gray-700 py-4">मोबाइल</TableHead>
@@ -2655,6 +2742,17 @@ function Loans() {
                       }}
                       data-testid={`row-loan-${loan.id}`}
                     >
+                      <TableCell className="w-10" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          onClick={() => toggleLoanSelection(loan.id)}
+                          className="p-1 rounded hover:bg-gray-200 transition-colors"
+                        >
+                          {selectedLoanIds.has(loan.id)
+                            ? <CheckSquare className="h-4 w-4 text-indigo-600" />
+                            : <Square className="h-4 w-4 text-gray-400" />
+                          }
+                        </button>
+                      </TableCell>
                       <TableCell className="font-bold text-base font-inter">
                         {loan.accountNumber || "—"}
                       </TableCell>
@@ -2746,6 +2844,13 @@ function Loans() {
                               <FileText className="mr-2 h-4 w-4" />
                               पावती काढा
                             </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={() => handleLabelPrintSingle(loan)}
+                              className="text-teal-600"
+                            >
+                              <Printer className="mr-2 h-4 w-4" />
+                              लेबल प्रिंट
+                            </DropdownMenuItem>
                             {loan.status === 'active' && (
                               <DropdownMenuItem 
                                 onClick={() => handleCloseLoan(loan)}
@@ -2780,7 +2885,7 @@ function Loans() {
                   ))}
                   {(!Array.isArray(paginatedLoans) || paginatedLoans.length === 0) && (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center py-8">
+                      <TableCell colSpan={10} className="text-center py-8">
                         <CreditCard className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                         <p className="text-gray-500">
                           शोध निकालांसाठी कोणतीही कर्जे आढळली नाहीत
@@ -2817,13 +2922,27 @@ function Loans() {
                     }}
                     data-testid={`card-loan-${loan.id}`}
                   >
-                    {/* Header with Name and Status */}
+                    {/* Header with Checkbox, Name and Status */}
                     <div className="flex justify-between items-start mb-3">
-                      <div>
-                        <h3 className="font-noto font-semibold text-lg text-gray-900">{loan.borrowerName}</h3>
-                        <p className="text-sm font-bold text-gray-700 font-inter">
-                          खाते: {loan.accountNumber || "—"}
-                        </p>
+                      <div className="flex items-start gap-2">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleLoanSelection(loan.id);
+                          }}
+                          className="mt-1 p-0.5 rounded hover:bg-gray-200 transition-colors flex-shrink-0"
+                        >
+                          {selectedLoanIds.has(loan.id)
+                            ? <CheckSquare className="h-5 w-5 text-indigo-600" />
+                            : <Square className="h-5 w-5 text-gray-400" />
+                          }
+                        </button>
+                        <div>
+                          <h3 className="font-noto font-semibold text-lg text-gray-900">{loan.borrowerName}</h3>
+                          <p className="text-sm font-bold text-gray-700 font-inter">
+                            खाते: {loan.accountNumber || "—"}
+                          </p>
+                        </div>
                       </div>
                       <Badge 
                         className={`
@@ -2953,6 +3072,13 @@ function Loans() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
+                          <DropdownMenuItem 
+                            onClick={() => handleLabelPrintSingle(loan)}
+                            className="text-teal-600"
+                          >
+                            <Printer className="mr-2 h-4 w-4" />
+                            लेबल प्रिंट
+                          </DropdownMenuItem>
                           {loan.status === 'active' && (
                             <DropdownMenuItem 
                               onClick={() => handleCloseLoan(loan)}
@@ -3323,6 +3449,12 @@ function Loans() {
           </div>
         </div>
       )}
+
+      <LabelPrintDialog
+        open={labelPrintDialogOpen}
+        onOpenChange={setLabelPrintDialogOpen}
+        loans={labelPrintLoans}
+      />
     </div>
   );
 }
