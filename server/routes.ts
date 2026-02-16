@@ -797,6 +797,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/label-settings", requireAuth, async (req, res) => {
+    try {
+      const company = await storage.getCompany(req.session.tenantId!);
+      if (!company) {
+        return res.status(404).json({ message: "कंपनी सापडली नाही" });
+      }
+      const settings = company.labelSettings ? JSON.parse(company.labelSettings) : null;
+      res.json(settings);
+    } catch (error) {
+      res.status(500).json({ message: "लेबल सेटिंग्ज लोड करताना त्रुटी" });
+    }
+  });
+
+  app.put("/api/label-settings", requireAuth, async (req, res) => {
+    try {
+      const body = req.body;
+      if (!body || !body.fields || !Array.isArray(body.fields) || body.fields.length === 0) {
+        return res.status(400).json({ message: "अवैध सेटिंग्ज: fields आवश्यक आहे" });
+      }
+      const settingsJson = JSON.stringify(body);
+      if (settingsJson.length > 10000) {
+        return res.status(400).json({ message: "सेटिंग्ज खूप मोठ्या आहेत" });
+      }
+      const company = await storage.updateCompany(req.session.tenantId!, { labelSettings: settingsJson } as any);
+      if (!company) {
+        return res.status(404).json({ message: "कंपनी सापडली नाही" });
+      }
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ message: "लेबल सेटिंग्ज सेव्ह करताना त्रुटी" });
+    }
+  });
+
   // Groups routes
   // Groups data - NO CACHE for debugging display issues
   app.get("/api/groups", requireAuth, async (req, res) => {
