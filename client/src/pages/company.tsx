@@ -10,7 +10,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Sidebar } from "@/components/ui/sidebar";
 import { MobileNav } from "@/components/ui/mobile-nav";
+import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
+import { useCurrentUser } from "@/hooks/use-current-user";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 
 const companySchema = z.object({
@@ -26,6 +28,8 @@ type CompanyFormData = z.infer<typeof companySchema>;
 export default function Company() {
   const { toast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
+  const { user: currentUser } = useCurrentUser();
+  const isAdmin = currentUser?.role === 'admin' || currentUser?.role === 'super_admin';
 
   const { data: company, isLoading, error } = useQuery<any>({
     queryKey: ["/api/company"],
@@ -300,6 +304,52 @@ export default function Company() {
                 )}
               </CardContent>
             </Card>
+
+            {isAdmin && company && (
+              <Card className="mt-6">
+                <CardHeader>
+                  <CardTitle className="text-lg">⚙️ सिस्टम सेटिंग्स</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-center justify-between p-4 rounded-lg border border-gray-200 bg-gray-50">
+                    <div className="flex-1">
+                      <h3 className="font-medium text-sm">डेटा एन्ट्री मोड</h3>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        जुने ट्रांजेक्शन अपलोड करताना हा मोड चालू करा. चालू असताना जुन्या तारखेच्या चेतावणी बंद राहतील.
+                        <br />
+                        <span className="text-red-600 font-medium">⚠️ भविष्यातील (future) तारीख चेतावणी नेहमीच चालू राहतील.</span>
+                        <br />
+                        <span className="text-amber-600 font-medium">सर्व जुने ट्रांजेक्शन एन्ट्री झाल्यावर हा मोड बंद करा.</span>
+                      </p>
+                    </div>
+                    <Switch
+                      checked={company?.dataEntryMode || false}
+                      onCheckedChange={async (checked: boolean) => {
+                        try {
+                          await apiRequest("/api/company/data-entry-mode-toggle", "PUT", { enabled: checked });
+                          queryClient.invalidateQueries({ queryKey: ["/api/company"] });
+                          toast({
+                            title: checked ? "डेटा एन्ट्री मोड चालू" : "डेटा एन्ट्री मोड बंद",
+                            description: checked 
+                              ? "तारीख चेतावणी तात्पुरत्या बंद आहेत" 
+                              : "तारीख चेतावणी पुन्हा चालू झाल्या",
+                          });
+                        } catch (error) {
+                          toast({
+                            title: "त्रुटी",
+                            description: "सेटिंग बदलता आली नाही",
+                            variant: "destructive",
+                          });
+                        }
+                      }}
+                    />
+                  </div>
+                  <div className={`text-xs px-3 py-2 rounded ${company?.dataEntryMode ? 'bg-amber-100 text-amber-700' : 'bg-green-100 text-green-700'}`}>
+                    स्थिती: {company?.dataEntryMode ? '🔶 डेटा एन्ट्री मोड चालू - तारीख चेतावणी बंद' : '✅ सामान्य मोड - तारीख चेतावणी चालू'}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
         </main>
       </div>

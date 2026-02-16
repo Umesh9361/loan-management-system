@@ -77,6 +77,20 @@ export const userActivityLogs = pgTable("user_activity_logs", {
   createdAt: timestamp("created_at").notNull().default(sql`now()`),
 });
 
+// Notification warnings table
+export const notificationWarnings = pgTable("notification_warnings", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  tenantId: varchar("tenant_id", { length: 20 }).notNull(),
+  warningType: varchar("warning_type", { length: 50 }).notNull(),
+  severity: varchar("severity", { length: 20 }).notNull().default("warning"),
+  title: text("title").notNull(),
+  message: text("message").notNull(),
+  metadata: text("metadata"),
+  isRead: boolean("is_read").notNull().default(false),
+  isDismissed: boolean("is_dismissed").notNull().default(false),
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+});
+
 // Sessions table for express-session (managed by connect-pg-simple)
 export const sessions = pgTable("sessions", {
   sid: varchar("sid").primaryKey(),
@@ -101,6 +115,7 @@ export const companies = pgTable("companies", {
   subscriptionStartDate: timestamp("subscription_start_date"),
   subscriptionEndDate: timestamp("subscription_end_date"),
   subscriptionMonths: integer("subscription_months"),
+  dataEntryMode: boolean("data_entry_mode").notNull().default(false),
   createdAt: timestamp("created_at").notNull().default(sql`now()`),
   updatedAt: timestamp("updated_at").notNull().default(sql`now()`),
 });
@@ -649,3 +664,10 @@ export const insertTenantStorageSettingSchema = createInsertSchema(tenantStorage
 });
 export type TenantStorageSetting = typeof tenantStorageSettings.$inferSelect;
 export type InsertTenantStorageSetting = z.infer<typeof insertTenantStorageSettingSchema>;
+
+export const insertNotificationWarningSchema = createInsertSchema(notificationWarnings).omit({
+  id: true,
+  createdAt: true,
+});
+export type NotificationWarning = typeof notificationWarnings.$inferSelect;
+export type InsertNotificationWarning = z.infer<typeof insertNotificationWarningSchema>;

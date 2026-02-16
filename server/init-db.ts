@@ -54,6 +54,26 @@ export async function initializeDatabase() {
         console.warn("⚠️  Subscription migration warning (non-fatal):", migrationError instanceof Error ? migrationError.message : migrationError);
       }
 
+      // 6c. AUTO-MIGRATION: Data entry mode and notification warnings
+      try {
+        await db.execute(sql`ALTER TABLE companies ADD COLUMN IF NOT EXISTS data_entry_mode BOOLEAN NOT NULL DEFAULT false`);
+        await db.execute(sql`CREATE TABLE IF NOT EXISTS notification_warnings (
+          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+          tenant_id VARCHAR(20) NOT NULL,
+          warning_type VARCHAR(50) NOT NULL,
+          severity VARCHAR(20) NOT NULL DEFAULT 'warning',
+          title TEXT NOT NULL,
+          message TEXT NOT NULL,
+          metadata TEXT,
+          is_read BOOLEAN NOT NULL DEFAULT false,
+          is_dismissed BOOLEAN NOT NULL DEFAULT false,
+          created_at TIMESTAMP NOT NULL DEFAULT now()
+        )`);
+        console.log("✅ Schema migration: data_entry_mode and notification_warnings verified");
+      } catch (migrationError) {
+        console.warn("⚠️  Data entry mode migration warning (non-fatal):", migrationError instanceof Error ? migrationError.message : migrationError);
+      }
+
       console.log("Checking for system initialization...");
       
       // CRITICAL FIX: Separate Super Admin and Normal Admin creation

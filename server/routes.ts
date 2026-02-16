@@ -4,7 +4,7 @@ import session, { SessionOptions } from "express-session";
 import { storage } from "./storage";
 import { db } from "./db";
 import bcrypt from "bcrypt";
-import { insertUserSchema, insertCompanySchema, insertGroupSchema, insertLoanSchema, insertTransactionSchema, insertLoanClosureSchema, insertPartySchema, insertCashTransactionSchema, cashTransactions, loans, groups, loanPhotos, loanClosures, transactions, insertLoanPhotoSchema, systemSettings, tenantStorageSettings, userActivityLogs, users, companies } from "@shared/schema";
+import { insertUserSchema, insertCompanySchema, insertGroupSchema, insertLoanSchema, insertTransactionSchema, insertLoanClosureSchema, insertPartySchema, insertCashTransactionSchema, cashTransactions, loans, groups, loanPhotos, loanClosures, transactions, insertLoanPhotoSchema, systemSettings, tenantStorageSettings, userActivityLogs, users, companies, notificationWarnings } from "@shared/schema";
 import { photoUpload, PhotoService } from "./photo-service";
 import { PhotoStorageFactory, CloudinaryStorageProvider } from "./photo-storage-provider";
 import path from 'path';
@@ -654,6 +654,126 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Data Entry Mode toggle - डेटा एन्ट्री मोड
+  app.put("/api/company/data-entry-mode-toggle", requireAuth, async (req: any, res) => {
+    try {
+      if (req.session.role !== 'admin' && req.session.role !== 'super_admin') {
+        return res.status(403).json({ message: "फक्त अ‍ॅडमिन हे बदलू शकतो" });
+      }
+      const { enabled } = req.body;
+      if (typeof enabled !== 'boolean') {
+        return res.status(400).json({ message: "Invalid value" });
+      }
+      const tenantId = req.session.tenantId!;
+      const company = await storage.updateCompany(tenantId, { dataEntryMode: enabled });
+      if (!company) {
+        return res.status(404).json({ message: "कंपनी सापडली नाही" });
+      }
+      invalidateCache('company', tenantId);
+      return res.json(company);
+    } catch (error) {
+      console.error("Data entry mode toggle error:", error);
+      res.status(500).json({ message: "सेटिंग बदलताना त्रुटी झाली" });
+    }
+  });
+
+  // Notification Warnings - Bell notification system
+  app.get("/api/notification-warnings", requireAuth, async (req: any, res) => {
+    try {
+      const tenantId = req.session.tenantId!;
+      const warnings = await db.select()
+        .from(notificationWarnings)
+        .where(and(
+          eq(notificationWarnings.tenantId, tenantId),
+          eq(notificationWarnings.isDismissed, false)
+        ))
+        .orderBy(desc(notificationWarnings.createdAt));
+      res.json(warnings);
+    } catch (error) {
+      console.error("Notification warnings fetch error:", error);
+      res.json([]);
+    }
+  });
+
+  app.get("/api/notification-warnings/unread-count", requireAuth, async (req: any, res) => {
+    try {
+      const tenantId = req.session.tenantId!;
+      const [result] = await db.select({ count: count() })
+        .from(notificationWarnings)
+        .where(and(
+          eq(notificationWarnings.tenantId, tenantId),
+          eq(notificationWarnings.isRead, false),
+          eq(notificationWarnings.isDismissed, false)
+        ));
+      res.json({ count: result?.count || 0 });
+    } catch (error) {
+      console.error("Unread count error:", error);
+      res.json({ count: 0 });
+    }
+  });
+
+  app.patch("/api/notification-warnings/:id/read", requireAuth, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      await db.update(notificationWarnings)
+        .set({ isRead: true })
+        .where(and(
+          eq(notificationWarnings.id, id),
+          eq(notificationWarnings.tenantId, req.session.tenantId!)
+        ));
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Mark read error:", error);
+      res.status(500).json({ message: "Error marking notification as read" });
+    }
+  });
+
+  app.patch("/api/notification-warnings/:id/dismiss", requireAuth, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      await db.update(notificationWarnings)
+        .set({ isDismissed: true, isRead: true })
+        .where(and(
+          eq(notificationWarnings.id, id),
+          eq(notificationWarnings.tenantId, req.session.tenantId!)
+        ));
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Dismiss error:", error);
+      res.status(500).json({ message: "Error dismissing notification" });
+    }
+  });
+
+  app.delete("/api/notification-warnings/clear-all", requireAuth, async (req: any, res) => {
+    try {
+      if (req.session.role !== 'admin' && req.session.role !== 'super_admin') {
+        return res.status(403).json({ message: "फक्त अ‍ॅडमिन हे करू शकतो" });
+      }
+      await db.update(notificationWarnings)
+        .set({ isDismissed: true, isRead: true })
+        .where(eq(notificationWarnings.tenantId, req.session.tenantId!));
+      res.json({ success: true, message: "सर्व सूचना बंद केल्या" });
+    } catch (error) {
+      console.error("Clear all warnings error:", error);
+      res.status(500).json({ message: "सूचना बंद करताना त्रुटी झाली" });
+    }
+  });
+
+  app.patch("/api/notification-warnings/mark-all-read", requireAuth, async (req: any, res) => {
+    try {
+      await db.update(notificationWarnings)
+        .set({ isRead: true })
+        .where(and(
+          eq(notificationWarnings.tenantId, req.session.tenantId!),
+          eq(notificationWarnings.isRead, false)
+        ));
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Mark all read error:", error);
+      res.status(500).json({ message: "Error marking all as read" });
+    }
+  });
+
   app.put("/api/company", requireAuth, cacheBuster(['company:']), async (req, res) => {
     try {
       const companyData = insertCompanySchema.partial().parse(req.body);
@@ -1175,6 +1295,115 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       try { await storage.logUserActivity({ userId: req.session.userId!, tenantId: req.session.tenantId!, activityType: 'create_loan', description: `नवीन कर्ज तयार: खाते क्र. ${loan.accountNumber} - ${loan.borrowerName} - ₹${loan.principalAmount}`, metadata: JSON.stringify({ loanId: loan.id, accountNumber: loan.accountNumber, borrowerName: loan.borrowerName, principalAmount: loan.principalAmount, loanDate: loan.loanDate, interestRate: loan.interestRate, groupId: loan.groupId }) }); } catch(e) { console.error('Audit log error:', e); }
+
+      // 🔔 DATE WARNING: Check loan date for suspicious dates
+      try {
+        const tenantId = req.session.tenantId!;
+        const loanDateStr = loanData.loanDate;
+        const loanDateObj = new Date(loanDateStr + 'T00:00:00Z');
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const todayUTC = new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate()));
+        
+        let warningNeeded = false;
+        let warningTitle = '';
+        let warningMessage = '';
+        let warningSeverity = 'warning';
+        
+        // Check 1: Future date (ALWAYS warn, even in data entry mode)
+        if (loanDateObj > todayUTC) {
+          warningNeeded = true;
+          warningSeverity = 'critical';
+          const dd = String(loanDateObj.getUTCDate()).padStart(2, '0');
+          const mm = String(loanDateObj.getUTCMonth() + 1).padStart(2, '0');
+          const yyyy = loanDateObj.getUTCFullYear();
+          warningTitle = `⚠️ भविष्यातील तारीख - कर्ज वितरण`;
+          warningMessage = `कर्ज वितरण तारीख ${dd}/${mm}/${yyyy} ही आजच्या पुढची (भविष्यातील) आहे! खाते क्र. ${loan.accountNumber} - ${loan.borrowerName} - ₹${loan.principalAmount}. कृपया तारीख तपासा.`;
+        } else {
+          // Check 2: Compare with last loan date of same group (only if data entry mode is OFF)
+          const [companyData] = await db.select({ dataEntryMode: companies.dataEntryMode })
+            .from(companies)
+            .where(eq(companies.tenantId, tenantId));
+          
+          if (!companyData?.dataEntryMode && loanData.groupId) {
+            // Get last loan date of same group
+            const lastGroupLoan = await db.select({ loanDate: loans.loanDate })
+              .from(loans)
+              .where(and(
+                eq(loans.tenantId, tenantId),
+                eq(loans.groupId, loanData.groupId),
+                ne(loans.id, loan.id)
+              ))
+              .orderBy(desc(loans.loanDate))
+              .limit(1);
+            
+            if (lastGroupLoan.length > 0) {
+              const lastDateStr = lastGroupLoan[0].loanDate;
+              const lastDateObj = new Date(lastDateStr + 'T00:00:00Z');
+              const diffDays = Math.abs(Math.round((loanDateObj.getTime() - lastDateObj.getTime()) / (1000 * 60 * 60 * 24)));
+              
+              if (diffDays > 5) {
+                warningNeeded = true;
+                const dd1 = String(loanDateObj.getUTCDate()).padStart(2, '0');
+                const mm1 = String(loanDateObj.getUTCMonth() + 1).padStart(2, '0');
+                const yyyy1 = loanDateObj.getUTCFullYear();
+                const dd2 = String(lastDateObj.getUTCDate()).padStart(2, '0');
+                const mm2 = String(lastDateObj.getUTCMonth() + 1).padStart(2, '0');
+                const yyyy2 = lastDateObj.getUTCFullYear();
+                
+                // Get group name
+                let groupName = 'अज्ञात ग्रुप';
+                if (loanData.groupId) {
+                  const grps = await storage.getGroups(tenantId);
+                  const grp = grps.find((g: any) => g.id === loanData.groupId);
+                  if (grp) groupName = grp.name;
+                }
+                
+                warningTitle = `⚠️ तारीख फरक - कर्ज वितरण (${groupName})`;
+                warningMessage = `कर्ज वितरण तारीख ${dd1}/${mm1}/${yyyy1} ही ${groupName} ग्रुपच्या शेवटच्या कर्ज तारखेपासून (${dd2}/${mm2}/${yyyy2}) ${diffDays} दिवसांचा फरक आहे. खाते क्र. ${loan.accountNumber} - ${loan.borrowerName} - ₹${loan.principalAmount}. कृपया तारीख तपासा.`;
+              }
+            }
+          }
+        }
+        
+        if (warningNeeded) {
+          // Create activity log warning
+          await storage.logUserActivity({
+            userId: req.session.userId!,
+            tenantId: tenantId,
+            activityType: 'date_warning',
+            description: warningMessage,
+            metadata: JSON.stringify({
+              warningType: 'loan_disbursement_date',
+              severity: warningSeverity,
+              loanId: loan.id,
+              accountNumber: loan.accountNumber,
+              borrowerName: loan.borrowerName,
+              loanDate: loanData.loanDate,
+              groupId: loanData.groupId
+            })
+          });
+          
+          // Create bell notification
+          await db.insert(notificationWarnings).values({
+            tenantId: tenantId,
+            warningType: 'loan_disbursement_date',
+            severity: warningSeverity,
+            title: warningTitle,
+            message: warningMessage,
+            metadata: JSON.stringify({
+              loanId: loan.id,
+              accountNumber: loan.accountNumber,
+              borrowerName: loan.borrowerName,
+              loanDate: loanData.loanDate
+            })
+          });
+          
+          console.log(`🔔 DATE WARNING: ${warningTitle}`);
+        }
+      } catch (warnError) {
+        console.error('Date warning check error (non-fatal):', warnError);
+      }
 
       res.json(loan);
     } catch (error) {
@@ -1772,7 +2001,101 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`✅ LOAN CLOSURE COMPLETED: Account ${loanDetails?.accountNumber} - Amount ₹${closureData.totalAmount}`);
       console.log(`🎯 SINGLE SOURCE: Cash transaction handled by storage.ts only`);
-      
+
+      // 🔔 DATE WARNING: Check closure date for suspicious dates
+      try {
+        const tenantId = req.session.tenantId!;
+        const closureDateStr = closureData.closureDate;
+        const closureDateObj = new Date(closureDateStr + 'T00:00:00Z');
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const todayUTC = new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate()));
+        
+        let closureWarningNeeded = false;
+        let closureWarningTitle = '';
+        let closureWarningMessage = '';
+        let closureWarningSeverity = 'warning';
+        
+        // Check 1: Future date (ALWAYS warn)
+        if (closureDateObj > todayUTC) {
+          closureWarningNeeded = true;
+          closureWarningSeverity = 'critical';
+          const dd = String(closureDateObj.getUTCDate()).padStart(2, '0');
+          const mm = String(closureDateObj.getUTCMonth() + 1).padStart(2, '0');
+          const yyyy = closureDateObj.getUTCFullYear();
+          closureWarningTitle = `⚠️ भविष्यातील तारीख - कर्ज बंद`;
+          closureWarningMessage = `कर्ज बंद तारीख ${dd}/${mm}/${yyyy} ही आजच्या पुढची (भविष्यातील) आहे! खाते क्र. ${loanDetails.accountNumber} - ${loanDetails.borrowerName} - ₹${closureData.totalAmount}. कृपया तारीख तपासा.`;
+        } else {
+          // Check 2: Compare with last closure date (only if data entry mode is OFF)
+          const [companyData] = await db.select({ dataEntryMode: companies.dataEntryMode })
+            .from(companies)
+            .where(eq(companies.tenantId, tenantId));
+          
+          if (!companyData?.dataEntryMode) {
+            // Get last closure date in system for this tenant
+            const lastClosure = await db.select({ closureDate: loanClosures.closureDate })
+              .from(loanClosures)
+              .where(eq(loanClosures.tenantId, tenantId))
+              .orderBy(desc(loanClosures.closureDate))
+              .limit(1);
+            
+            if (lastClosure.length > 0) {
+              const lastClosureDateStr = lastClosure[0].closureDate;
+              const lastClosureDateObj = new Date(lastClosureDateStr + 'T00:00:00Z');
+              const diffDays = Math.abs(Math.round((closureDateObj.getTime() - lastClosureDateObj.getTime()) / (1000 * 60 * 60 * 24)));
+              
+              if (diffDays > 5) {
+                closureWarningNeeded = true;
+                const dd1 = String(closureDateObj.getUTCDate()).padStart(2, '0');
+                const mm1 = String(closureDateObj.getUTCMonth() + 1).padStart(2, '0');
+                const yyyy1 = closureDateObj.getUTCFullYear();
+                const dd2 = String(lastClosureDateObj.getUTCDate()).padStart(2, '0');
+                const mm2 = String(lastClosureDateObj.getUTCMonth() + 1).padStart(2, '0');
+                const yyyy2 = lastClosureDateObj.getUTCFullYear();
+                
+                closureWarningTitle = `⚠️ तारीख फरक - कर्ज बंद`;
+                closureWarningMessage = `कर्ज बंद तारीख ${dd1}/${mm1}/${yyyy1} ही शेवटच्या कर्ज बंद तारखेपासून (${dd2}/${mm2}/${yyyy2}) ${diffDays} दिवसांचा फरक आहे. खाते क्र. ${loanDetails.accountNumber} - ${loanDetails.borrowerName} - ₹${closureData.totalAmount}. कृपया तारीख तपासा.`;
+              }
+            }
+          }
+        }
+        
+        if (closureWarningNeeded) {
+          await storage.logUserActivity({
+            userId: req.session.userId!,
+            tenantId: tenantId,
+            activityType: 'date_warning',
+            description: closureWarningMessage,
+            metadata: JSON.stringify({
+              warningType: 'loan_closure_date',
+              severity: closureWarningSeverity,
+              loanId: id,
+              accountNumber: loanDetails.accountNumber,
+              borrowerName: loanDetails.borrowerName,
+              closureDate: closureData.closureDate
+            })
+          });
+          
+          await db.insert(notificationWarnings).values({
+            tenantId: tenantId,
+            warningType: 'loan_closure_date',
+            severity: closureWarningSeverity,
+            title: closureWarningTitle,
+            message: closureWarningMessage,
+            metadata: JSON.stringify({
+              loanId: id,
+              accountNumber: loanDetails.accountNumber,
+              borrowerName: loanDetails.borrowerName,
+              closureDate: closureData.closureDate
+            })
+          });
+          
+          console.log(`🔔 DATE WARNING: ${closureWarningTitle}`);
+        }
+      } catch (warnError) {
+        console.error('Closure date warning check error (non-fatal):', warnError);
+      }
+
       res.json(closure);
     } catch (error) {
       console.error("Closure error:", error);

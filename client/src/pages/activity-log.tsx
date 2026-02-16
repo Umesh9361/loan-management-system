@@ -33,6 +33,7 @@ const activityTypeLabels: Record<string, { label: string; color: string }> = {
   update_cash_transaction: { label: "रोख व्यवहार अपडेट", color: "bg-indigo-100 text-indigo-800" },
   delete_cash_transaction: { label: "रोख व्यवहार डिलीट", color: "bg-red-100 text-red-800" },
   delete_photo: { label: "फोटो डिलीट", color: "bg-red-100 text-red-800" },
+  date_warning: { label: "⚠️ तारीख चेतावणी", color: "bg-amber-100 text-amber-800" },
 };
 
 function formatDateTime(dateStr: string): string {
@@ -84,6 +85,7 @@ export default function ActivityLogPage() {
   const updateCount = logs.filter(l => l.activityType.startsWith("update_") || l.activityType === "reopen_loan").length;
   const createCount = logs.filter(l => l.activityType.startsWith("create_")).length;
   const loginCount = logs.filter(l => l.activityType === "login" || l.activityType === "logout").length;
+  const warningCount = logs.filter(l => l.activityType === "date_warning").length;
 
   return (
     <div className="container mx-auto p-4 max-w-5xl">
@@ -154,6 +156,13 @@ export default function ActivityLogPage() {
         >
           लॉगिन/लॉगआउट ({loginCount})
         </Badge>
+        <Badge 
+          variant={filterType === "date_warning" ? "default" : "outline"} 
+          className="cursor-pointer px-3 py-1 border-amber-300"
+          onClick={() => setFilterType("date_warning")}
+        >
+          ⚠️ चेतावणी ({warningCount})
+        </Badge>
       </div>
 
       {clearLogsMutation.isSuccess && (
@@ -184,11 +193,12 @@ export default function ActivityLogPage() {
               color: "bg-gray-100 text-gray-800" 
             };
             const isDelete = log.activityType.startsWith("delete_");
+            const isWarning = log.activityType === "date_warning";
             
             return (
               <Card 
                 key={log.id} 
-                className={`${isDelete ? 'border-red-200' : 'border-gray-200'}`}
+                className={`${isWarning ? 'border-amber-300 bg-amber-50' : isDelete ? 'border-red-200' : 'border-gray-200'}`}
               >
                 <CardContent className="py-3 px-4">
                   <div className="flex items-start justify-between gap-3">
