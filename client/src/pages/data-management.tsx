@@ -330,93 +330,234 @@ function DataManagementPage() {
     return `${day}/${month}/${year}`;
   };
 
+  const isMobileDevice = () => {
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  };
+
+  const drawPageTitle = (doc: any, pageWidth: number, groupName: string, totalRows: number, pageNum: number, totalPages: number, sideMargin: number) => {
+    const dateInfo = rearrangeUpToDate ? `${formatDateDDMMYYYY(rearrangeUpToDate)} पर्यंत` : 'सर्व कर्ज';
+    doc.setFont('NotoDevanagari');
+    doc.setFontSize(14);
+    doc.setTextColor(0, 0, 0);
+    doc.text(`खाते क्रमांक पुनर्व्यवस्थापन`, pageWidth / 2, 12, { align: 'center' });
+    doc.setFontSize(11);
+    doc.text(groupName, pageWidth / 2, 18, { align: 'center' });
+    doc.setFontSize(9);
+    doc.setTextColor(80, 80, 80);
+    doc.text(`एकूण कर्ज: ${totalRows}  |  ${dateInfo}  |  पान ${pageNum}/${totalPages}`, pageWidth / 2, 23, { align: 'center' });
+    doc.setDrawColor(79, 70, 229);
+    doc.setLineWidth(0.5);
+    doc.line(sideMargin, 25, pageWidth - sideMargin, 25);
+  };
+
+  const drawTableHeader = (doc: any, xStart: number, y: number, colWidths: number[], headers: string[], tableWidth: number, headerHeight: number, fontSize: number) => {
+    doc.setFillColor(79, 70, 229);
+    doc.rect(xStart, y, tableWidth, headerHeight, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(fontSize);
+    doc.setFont('NotoDevanagari');
+    let cx = xStart;
+    for (let h = 0; h < headers.length; h++) {
+      const textX = cx + colWidths[h] / 2;
+      doc.text(headers[h], textX, y + headerHeight * 0.65, { align: 'center' });
+      cx += colWidths[h];
+    }
+  };
+
+  const drawTableRow = (doc: any, item: any, rowIndex: number, serialNum: number, xStart: number, y: number, colWidths: number[], tableWidth: number, rowHeight: number, fontSize: number, showIndigo: boolean) => {
+    if (rowIndex % 2 === 0) {
+      doc.setFillColor(245, 245, 250);
+      doc.rect(xStart, y, tableWidth, rowHeight, 'F');
+    }
+    doc.setDrawColor(210, 210, 220);
+    doc.line(xStart, y + rowHeight, xStart + tableWidth, y + rowHeight);
+
+    doc.setFontSize(fontSize);
+    doc.setFont('NotoDevanagari');
+    let cx = xStart;
+
+    doc.setTextColor(0, 0, 0);
+    doc.text(String(serialNum), cx + colWidths[0] / 2, y + rowHeight * 0.65, { align: 'center' });
+    cx += colWidths[0];
+
+    doc.text(formatDateDDMMYYYY(item.loanDate), cx + colWidths[1] / 2, y + rowHeight * 0.65, { align: 'center' });
+    cx += colWidths[1];
+
+    doc.text(String(item.oldAccountNumber), cx + colWidths[2] / 2, y + rowHeight * 0.65, { align: 'center' });
+    cx += colWidths[2];
+
+    if (showIndigo) {
+      doc.setTextColor(79, 70, 229);
+    } else {
+      doc.setTextColor(0, 0, 0);
+    }
+    doc.text(String(item.newAccountNumber), cx + colWidths[3] / 2, y + rowHeight * 0.65, { align: 'center' });
+    doc.setTextColor(0, 0, 0);
+  };
+
   const generateRearrangePdf = () => {
     if (!rearrangePreviewData?.mapping?.length) return;
 
     const mapping = rearrangePreviewData.mapping;
     const groupName = Array.isArray(groupsData) ? groupsData.find((g: any) => g.id.toString() === rearrangeGroupId)?.name || '' : '';
 
-    const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
     initDevanagariFont(doc);
 
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
-    const margin = 10;
-    const tableWidth = (pageWidth - margin * 3) / 2;
+    const sideMargin = 15;
+    const topMarginFirst = 28;
+    const bottomMargin = 12;
+    const columnGap = 8;
     const rowHeight = 7;
-    const headerHeight = 9;
-    const colWidths = [12, 28, 25, 25];
+    const headerHeight = 8;
+    const fontSize = 9;
     const headers = ['अ.क्र.', 'तारीख', 'जुना क्र.', 'नवीन क्र.'];
 
-    const topY = 25;
-    const usableHeight = pageHeight - topY - margin;
+    const availableWidth = pageWidth - sideMargin * 2 - columnGap;
+    const singleTableWidth = availableWidth / 2;
+    const colWidths = [
+      singleTableWidth * 0.15,
+      singleTableWidth * 0.35,
+      singleTableWidth * 0.25,
+      singleTableWidth * 0.25
+    ];
+
+    const usableHeight = pageHeight - topMarginFirst - bottomMargin;
     const rowsPerColumn = Math.floor((usableHeight - headerHeight) / rowHeight);
     const totalRows = mapping.length;
-    const totalPages = Math.ceil(totalRows / (rowsPerColumn * 2));
+    const rowsPerPage = rowsPerColumn * 2;
+    const totalPages = Math.ceil(totalRows / rowsPerPage);
 
     for (let page = 0; page < totalPages; page++) {
-      if (page > 0) doc.addPage('a4', 'landscape');
+      if (page > 0) doc.addPage('a4', 'portrait');
 
-      doc.setFont('NotoDevanagari');
-      doc.setFontSize(13);
-      doc.text(`खाते क्रमांक पुनर्व्यवस्थापन - ${groupName}`, pageWidth / 2, 10, { align: 'center' });
-      doc.setFontSize(9);
-      const dateInfo = rearrangeUpToDate ? `${formatDateDDMMYYYY(rearrangeUpToDate)} पर्यंत` : 'सर्व कर्ज';
-      doc.text(`एकूण: ${totalRows} | ${dateInfo}`, pageWidth / 2, 16, { align: 'center' });
+      drawPageTitle(doc, pageWidth, groupName, totalRows, page + 1, totalPages, sideMargin);
 
       for (let col = 0; col < 2; col++) {
-        const startIdx = page * rowsPerColumn * 2 + col * rowsPerColumn;
+        const startIdx = page * rowsPerPage + col * rowsPerColumn;
         if (startIdx >= totalRows) continue;
 
-        const xStart = margin + col * (tableWidth + margin);
-        let y = topY;
+        const xStart = sideMargin + col * (singleTableWidth + columnGap);
+        let y = topMarginFirst;
 
-        doc.setFillColor(79, 70, 229);
-        doc.rect(xStart, y, tableWidth, headerHeight, 'F');
-        doc.setTextColor(255, 255, 255);
-        doc.setFontSize(9);
-        doc.setFont('NotoDevanagari');
-
-        let cx = xStart + 2;
-        for (let h = 0; h < headers.length; h++) {
-          doc.text(headers[h], cx, y + 6);
-          cx += colWidths[h];
-        }
-
+        drawTableHeader(doc, xStart, y, colWidths, headers, singleTableWidth, headerHeight, fontSize);
         y += headerHeight;
-        doc.setTextColor(0, 0, 0);
-        doc.setFontSize(9);
 
         const endIdx = Math.min(startIdx + rowsPerColumn, totalRows);
         for (let r = startIdx; r < endIdx; r++) {
-          const item = mapping[r];
-          if ((r - startIdx) % 2 === 0) {
-            doc.setFillColor(245, 245, 250);
-            doc.rect(xStart, y, tableWidth, rowHeight, 'F');
-          }
-
-          doc.setDrawColor(200, 200, 210);
-          doc.rect(xStart, y, tableWidth, rowHeight, 'S');
-
-          cx = xStart + 2;
-          doc.setFont('NotoDevanagari');
-          doc.text(String(r + 1), cx, y + 5);
-          cx += colWidths[0];
-          doc.text(formatDateDDMMYYYY(item.loanDate), cx, y + 5);
-          cx += colWidths[1];
-          doc.text(String(item.oldAccountNumber), cx, y + 5);
-          cx += colWidths[2];
-          doc.setFont('NotoDevanagari');
-          doc.setTextColor(79, 70, 229);
-          doc.text(String(item.newAccountNumber), cx, y + 5);
-          doc.setTextColor(0, 0, 0);
-
+          drawTableRow(doc, mapping[r], r - startIdx, r + 1, xStart, y, colWidths, singleTableWidth, rowHeight, fontSize, true);
           y += rowHeight;
         }
+
+        doc.setDrawColor(79, 70, 229);
+        doc.setLineWidth(0.3);
+        doc.rect(xStart, topMarginFirst, singleTableWidth, y - topMarginFirst, 'S');
       }
     }
 
     doc.save(`खाते_रिअरेंज_${groupName}.pdf`);
+    setRearrangePdfDownloaded(true);
+  };
+
+  const generateMobileRearrangePdf = () => {
+    if (!rearrangePreviewData?.mapping?.length) return;
+
+    const mapping = rearrangePreviewData.mapping;
+    const groupName = Array.isArray(groupsData) ? groupsData.find((g: any) => g.id.toString() === rearrangeGroupId)?.name || '' : '';
+
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    initDevanagariFont(doc);
+
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const sideMargin = 12;
+    const topMarginFirst = 28;
+    const bottomMargin = 15;
+    const rowHeight = 8;
+    const headerHeight = 9;
+    const fontSize = 11;
+    const headers = ['अ.क्र.', 'तारीख', 'जुना क्र.', 'नवीन क्र.'];
+
+    const tableWidth = pageWidth - sideMargin * 2;
+    const colWidths = [
+      tableWidth * 0.12,
+      tableWidth * 0.35,
+      tableWidth * 0.26,
+      tableWidth * 0.27
+    ];
+
+    const usableHeight = pageHeight - topMarginFirst - bottomMargin;
+    const rowsPerPage = Math.floor((usableHeight - headerHeight) / rowHeight);
+    const totalRows = mapping.length;
+    const totalPages = Math.ceil(totalRows / rowsPerPage);
+
+    for (let page = 0; page < totalPages; page++) {
+      if (page > 0) doc.addPage('a4', 'portrait');
+
+      drawPageTitle(doc, pageWidth, groupName, totalRows, page + 1, totalPages, sideMargin);
+
+      let y = topMarginFirst;
+      const xStart = sideMargin;
+
+      doc.setFillColor(220, 220, 225);
+      doc.rect(xStart, y, tableWidth, headerHeight, 'F');
+      doc.setDrawColor(0, 0, 0);
+      doc.setLineWidth(0.4);
+      doc.line(xStart, y, xStart + tableWidth, y);
+      doc.line(xStart, y + headerHeight, xStart + tableWidth, y + headerHeight);
+      doc.setTextColor(0, 0, 0);
+      doc.setFontSize(fontSize);
+      doc.setFont('NotoDevanagari');
+      let cx = xStart;
+      for (let h = 0; h < headers.length; h++) {
+        doc.text(headers[h], cx + colWidths[h] / 2, y + headerHeight * 0.65, { align: 'center' });
+        cx += colWidths[h];
+      }
+
+      y += headerHeight;
+
+      const startIdx = page * rowsPerPage;
+      const endIdx = Math.min(startIdx + rowsPerPage, totalRows);
+
+      for (let r = startIdx; r < endIdx; r++) {
+        const item = mapping[r];
+        doc.setFontSize(fontSize);
+        doc.setFont('NotoDevanagari');
+        doc.setTextColor(0, 0, 0);
+
+        cx = xStart;
+        doc.text(String(r + 1), cx + colWidths[0] / 2, y + rowHeight * 0.62, { align: 'center' });
+        cx += colWidths[0];
+
+        doc.text(formatDateDDMMYYYY(item.loanDate), cx + colWidths[1] / 2, y + rowHeight * 0.62, { align: 'center' });
+        cx += colWidths[1];
+
+        doc.text(String(item.oldAccountNumber), cx + colWidths[2] / 2, y + rowHeight * 0.62, { align: 'center' });
+        cx += colWidths[2];
+
+        doc.setTextColor(0, 0, 0);
+        doc.text(String(item.newAccountNumber), cx + colWidths[3] / 2, y + rowHeight * 0.62, { align: 'center' });
+
+        doc.setDrawColor(180, 180, 185);
+        doc.setLineWidth(0.2);
+        doc.line(xStart, y + rowHeight, xStart + tableWidth, y + rowHeight);
+
+        y += rowHeight;
+      }
+
+      doc.setDrawColor(0, 0, 0);
+      doc.setLineWidth(0.4);
+      doc.line(xStart, y, xStart + tableWidth, y);
+
+      doc.setFontSize(8);
+      doc.setTextColor(120, 120, 120);
+      doc.setFont('NotoDevanagari');
+      doc.text(`पान ${page + 1} / ${totalPages}`, pageWidth / 2, pageHeight - 8, { align: 'center' });
+    }
+
+    doc.save(`खाते_रिअरेंज_${groupName}_mobile.pdf`);
     setRearrangePdfDownloaded(true);
   };
 
@@ -1153,13 +1294,23 @@ function DataManagementPage() {
                         </Alert>
 
                         <div className="flex flex-col sm:flex-row gap-3">
-                          <Button
-                            onClick={generateRearrangePdf}
-                            className="flex-1 flex items-center justify-center gap-2 min-h-[44px] text-sm font-semibold rounded-lg shadow-sm bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white"
-                          >
-                            <Download className="h-4 w-4" />
-                            PDF डाउनलोड करा (जुना → नवीन नंबर)
-                          </Button>
+                          {isMobileDevice() ? (
+                            <Button
+                              onClick={generateMobileRearrangePdf}
+                              className="flex-1 flex items-center justify-center gap-2 min-h-[44px] text-sm font-semibold rounded-lg shadow-sm bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white"
+                            >
+                              <Download className="h-4 w-4" />
+                              PDF डाउनलोड करा (जुना → नवीन नंबर)
+                            </Button>
+                          ) : (
+                            <Button
+                              onClick={generateRearrangePdf}
+                              className="flex-1 flex items-center justify-center gap-2 min-h-[44px] text-sm font-semibold rounded-lg shadow-sm bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white"
+                            >
+                              <Download className="h-4 w-4" />
+                              PDF डाउनलोड करा (जुना → नवीन नंबर)
+                            </Button>
+                          )}
 
                           <Button
                             onClick={handleRearrangeConfirm}
