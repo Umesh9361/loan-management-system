@@ -1120,7 +1120,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/borrowers/autocomplete", requireAuth, async (req, res) => {
     try {
       const { search } = req.query;
-      const searchTerm = ((search as string) || '').trim();
+      const rawSearch = ((search as string) || '');
+      const trimmedStart = rawSearch.trimStart();
+      const firstWord = trimmedStart.split(/\s/)[0] || '';
+      const searchTerm = (firstWord.length <= 1 && trimmedStart.length > firstWord.length) ? trimmedStart : rawSearch.trim();
       
       if (searchTerm.length < 2) {
         return res.json([]);
