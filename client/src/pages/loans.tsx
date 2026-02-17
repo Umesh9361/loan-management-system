@@ -563,7 +563,7 @@ function Loans() {
       if (!res.ok) throw new Error('Failed to fetch borrower suggestions');
       return res.json();
     },
-    enabled: borrowerSearchTerm.trim().length >= 2, // Start searching after 2 characters
+    enabled: borrowerSearchTerm.length >= 2,
     staleTime: 30 * 1000, // 30 seconds cache for autocomplete
     gcTime: 2 * 60 * 1000, // 2 minutes garbage collection
   });
@@ -1549,11 +1549,14 @@ function Loans() {
                                 onChange={(e) => {
                                   const value = e.target.value;
                                   field.onChange(value);
-                                  setBorrowerSearchTerm(value.trim()); // Trim trailing space from Android keyboard suggestions
+                                  const trimmedVal = value.trimStart();
+                                  const firstWord = trimmedVal.split(/\s/)[0] || '';
+                                  const smartTrim = (firstWord.length <= 1 && trimmedVal.length > firstWord.length) ? trimmedVal : value.trim();
+                                  setBorrowerSearchTerm(smartTrim);
                                   setBorrowerSearchQuery(value);
                                   setSelectedSuggestionIndex(-1); // Reset selection
                                   
-                                  if (value.trim().length >= 2) {
+                                  if (smartTrim.length >= 2) {
                                     setShowBorrowerSuggestions(true);
                                   } else {
                                     setShowBorrowerSuggestions(false);
