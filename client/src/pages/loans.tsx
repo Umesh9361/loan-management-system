@@ -2578,8 +2578,22 @@ function Loans() {
                   <div className="flex items-center gap-2">
                     <CheckSquare className="h-4 w-4 text-indigo-600" />
                     <span className="text-sm font-medium text-indigo-700">
-                      {selectedLoanIds.size} निवडले
+                      {selectedLoanIds.size} / {sortedLoans.length} निवडले
                     </span>
+                    {selectedLoanIds.size < sortedLoans.length && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-xs text-indigo-600 border-indigo-300 h-7"
+                        onClick={() => {
+                          const allIds = sortedLoans.map((l: any) => l.id);
+                          setSelectedLoanIds(new Set(allIds));
+                        }}
+                      >
+                        <CheckSquare className="h-3 w-3 mr-1" />
+                        सर्व {sortedLoans.length} निवडा
+                      </Button>
+                    )}
                     <Button
                       size="sm"
                       variant="ghost"
@@ -2594,7 +2608,7 @@ function Loans() {
                     size="sm"
                     className="bg-indigo-600 hover:bg-indigo-700 text-white h-8"
                     onClick={() => {
-                      const selected = Array.isArray(paginatedLoans) ? paginatedLoans.filter((l: any) => selectedLoanIds.has(l.id)).map((l: any) => ({
+                      const selected = Array.isArray(sortedLoans) ? sortedLoans.filter((l: any) => selectedLoanIds.has(l.id)).map((l: any) => ({
                         ...l,
                         groupName: l.groupName || l.group?.name || "",
                       })) : [];
@@ -2699,15 +2713,15 @@ function Loans() {
                       <TableHead className="font-semibold text-gray-700 py-4 w-10">
                         <button
                           onClick={() => {
-                            const allIds = Array.isArray(paginatedLoans) ? paginatedLoans.map((l: any) => l.id) : [];
+                            const allIds = Array.isArray(sortedLoans) ? sortedLoans.map((l: any) => l.id) : [];
                             const allSelected = allIds.length > 0 && allIds.every((id: any) => selectedLoanIds.has(id));
                             if (allSelected) setSelectedLoanIds(new Set());
                             else setSelectedLoanIds(new Set(allIds));
                           }}
                           className="p-1 rounded hover:bg-gray-200 transition-colors"
-                          title="सर्व निवडा / रद्द करा"
+                          title={`सर्व ${sortedLoans.length} निवडा / रद्द करा`}
                         >
-                          {Array.isArray(paginatedLoans) && paginatedLoans.length > 0 && paginatedLoans.every((l: any) => selectedLoanIds.has(l.id))
+                          {Array.isArray(sortedLoans) && sortedLoans.length > 0 && sortedLoans.every((l: any) => selectedLoanIds.has(l.id))
                             ? <CheckSquare className="h-4 w-4 text-indigo-600" />
                             : <Square className="h-4 w-4 text-gray-400" />
                           }
@@ -2718,6 +2732,7 @@ function Loans() {
                       <TableHead className="font-semibold text-gray-700 py-4">मोबाइल</TableHead>
                       <TableHead className="font-semibold text-gray-700 py-4">वस्तु</TableHead>
                       <TableHead className="font-semibold text-gray-700 py-4">वजन</TableHead>
+                      <TableHead className="font-semibold text-gray-700 py-4">व्याज%</TableHead>
                       <TableHead className="font-semibold text-gray-700 py-4 min-w-[120px]">रक्कम</TableHead>
                       <TableHead className="font-semibold text-gray-700 py-4">तारीख</TableHead>
                       <TableHead className="font-semibold text-gray-700 py-4">स्थिती</TableHead>
@@ -2766,6 +2781,9 @@ function Loans() {
                       </TableCell>
                       <TableCell className="font-inter text-sm">
                         {loan.weight || "—"}
+                      </TableCell>
+                      <TableCell className="font-inter text-sm">
+                        {loan.interestRate ? `${loan.interestRate}%` : "—"}
                       </TableCell>
                       <TableCell className="font-inter min-w-[120px] whitespace-nowrap">
                         ₹ {LoanCalculations.formatAmount(Number(loan.principalAmount))}
@@ -2888,7 +2906,7 @@ function Loans() {
                   ))}
                   {(!Array.isArray(paginatedLoans) || paginatedLoans.length === 0) && (
                     <TableRow>
-                      <TableCell colSpan={10} className="text-center py-8">
+                      <TableCell colSpan={11} className="text-center py-8">
                         <CreditCard className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                         <p className="text-gray-500">
                           शोध निकालांसाठी कोणतीही कर्जे आढळली नाहीत
@@ -2992,6 +3010,10 @@ function Loans() {
                       <div>
                         <p className="text-gray-600">वजन</p>
                         <p className="font-medium font-inter">{loan.weight || "—"}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-600">व्याजदर</p>
+                        <p className="font-medium font-inter">{loan.interestRate ? `${loan.interestRate}%` : "—"}</p>
                       </div>
                     </div>
 
