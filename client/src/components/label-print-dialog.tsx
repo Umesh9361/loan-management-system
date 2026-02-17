@@ -96,7 +96,7 @@ const DEFAULT_FIELDS: LabelField[] = [
   { id: 'details', label: 'तपशील', enabled: true, fontSize: 6.5, bold: false, type: 'data' },
   { id: 'interestRate', label: 'व्याजदर', enabled: true, fontSize: 7.5, bold: true, type: 'data' },
   { id: 'weight', label: 'वजन', enabled: true, fontSize: 7.5, bold: true, type: 'pair', pairedWith: 'date' },
-  { id: 'date', label: 'तारीख', enabled: true, fontSize: 7.5, bold: true, type: 'pair', pairedWith: 'weight' },
+  { id: 'date', label: 'तारीख', enabled: true, fontSize: 10, bold: true, type: 'pair', pairedWith: 'weight' },
 ];
 
 const DEFAULT_SETTINGS: LabelSettings = {
@@ -361,7 +361,8 @@ function generateLabelHtml(loan: LabelLoan, settings: LabelSettings): string {
         height: ${contentHeight}mm;
         display: flex;
         flex-direction: column;
-        justify-content: space-between;
+        justify-content: flex-start;
+        gap: 0.3mm;
         overflow: hidden;
       ">
         ${rendered.join('\n')}
