@@ -419,7 +419,7 @@ export function NotificationPanel({ onClose }: { onClose: () => void }) {
         <div
           ref={panelRef}
           onClick={(e) => e.stopPropagation()}
-          className="fixed top-16 right-4 lg:right-auto lg:left-[calc(18rem+1rem)] w-[420px] max-h-[70vh] bg-white dark:bg-gray-900 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 flex flex-col animate-in fade-in zoom-in-95 duration-200 z-[61]"
+          className="fixed top-16 right-4 lg:right-auto lg:left-[calc(18rem+1rem)] w-[420px] max-h-[85vh] bg-white dark:bg-gray-900 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 flex flex-col animate-in fade-in zoom-in-95 duration-200 z-[61]"
         >
           {header}
           {tabBar}
@@ -435,7 +435,7 @@ export function NotificationPanel({ onClose }: { onClose: () => void }) {
         ref={panelRef}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
-        className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 rounded-t-2xl shadow-2xl max-h-[85vh] flex flex-col animate-in slide-in-from-bottom duration-300 z-[61]"
+        className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 rounded-t-2xl shadow-2xl max-h-[92vh] flex flex-col animate-in slide-in-from-bottom duration-300 z-[61]"
       >
         <div className="flex justify-center py-2 shrink-0">
           <div className="w-10 h-1 bg-gray-300 dark:bg-gray-600 rounded-full" />
