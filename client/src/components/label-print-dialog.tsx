@@ -243,14 +243,10 @@ function generateLabelHtml(loan: LabelLoan, settings: LabelSettings): string {
 
     if (field.id === 'details') {
       const detailsText = val;
-      const charCount = detailsText.length;
-      let fontSize = field.fontSize;
-      if (charCount > 60) fontSize = Math.max(4, fontSize - 1.5);
-      else if (charCount > 40) fontSize = Math.max(4, fontSize - 1);
-      else if (charCount > 25) fontSize = Math.max(4, fontSize - 0.5);
+      const fontSize = field.fontSize;
       const lineH = +(fontSize * 1.25).toFixed(1);
-      const maxH = +(lineH * 2.1).toFixed(1);
-      return `<div style="font-size: ${fontSize}pt; font-weight: ${field.bold ? '800' : '400'}; line-height: ${lineH}pt; word-wrap: break-word; overflow-wrap: break-word; white-space: normal; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; color: #444; max-height: ${maxH}pt; width: 100%; flex-shrink: 0; flex-grow: 0; margin-top: -2pt;">${detailsText}</div>`;
+      const maxH = +(lineH * 3.15).toFixed(1);
+      return `<div style="font-size: ${fontSize}pt; font-weight: ${field.bold ? '800' : '400'}; line-height: ${lineH}pt; word-wrap: break-word; overflow-wrap: break-word; white-space: normal; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; color: #444; max-height: ${maxH}pt; width: 100%; flex-shrink: 0; flex-grow: 0; margin-top: -2pt;">${detailsText}</div>`;
     }
 
     const lineH = +(field.fontSize * 1.3).toFixed(1);
