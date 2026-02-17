@@ -250,7 +250,7 @@ function generateLabelHtml(loan: LabelLoan, settings: LabelSettings): string {
       else if (charCount > 25) fontSize = Math.max(4, fontSize - 0.5);
       const lineH = +(fontSize * 1.25).toFixed(1);
       const maxH = +(lineH * 2.1).toFixed(1);
-      return `<div style="font-size: ${fontSize}pt; font-weight: ${field.bold ? '800' : '400'}; line-height: ${lineH}pt; word-wrap: break-word; overflow-wrap: break-word; white-space: normal; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; color: #444; max-height: ${maxH}pt; width: 100%; flex-shrink: 0; flex-grow: 0; margin-top: -1pt;">${detailsText}</div>`;
+      return `<div style="font-size: ${fontSize}pt; font-weight: ${field.bold ? '800' : '400'}; line-height: ${lineH}pt; word-wrap: break-word; overflow-wrap: break-word; white-space: normal; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; color: #444; max-height: ${maxH}pt; width: 100%; flex-shrink: 0; flex-grow: 0; margin-top: -2pt;">${detailsText}</div>`;
     }
 
     const lineH = +(field.fontSize * 1.3).toFixed(1);
@@ -261,6 +261,7 @@ function generateLabelHtml(loan: LabelLoan, settings: LabelSettings): string {
     }
     if (field.id === 'interestRate') style += ` text-align: center; color: #444;`;
     if (field.id === 'date') style += ` font-family: 'Arial','Helvetica',sans-serif; letter-spacing: 0.3pt;`;
+    if (field.id === 'groupBorrower') style += ` margin-top: -1pt;`;
     return `<div style="${style}">${val}</div>`;
   }
 
