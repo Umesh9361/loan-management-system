@@ -3,6 +3,24 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { initializeDatabase } from "./init-db";
 import { LoginHealthMonitor } from "./login-health-monitor";
+import { db } from "./db";
+import { notificationWarnings } from "@shared/schema";
+import { lt } from "drizzle-orm";
+
+async function cleanupOldNotifications() {
+  try {
+    const fifteenDaysAgo = new Date();
+    fifteenDaysAgo.setDate(fifteenDaysAgo.getDate() - 15);
+    const result = await db.delete(notificationWarnings)
+      .where(lt(notificationWarnings.createdAt, fifteenDaysAgo));
+    const deletedCount = result.rowCount || 0;
+    if (deletedCount > 0) {
+      console.log(`Auto-cleanup: ${deletedCount} old notification warnings (15+ days) deleted`);
+    }
+  } catch (error) {
+    console.error("Auto-cleanup notification warnings error:", error);
+  }
+}
 
 const app = express();
 
@@ -115,6 +133,9 @@ app.use((req, res, next) => {
     
     // Run login health check after database initialization
     await LoginHealthMonitor.autoRepairCredentials();
+    
+    await cleanupOldNotifications();
+    setInterval(cleanupOldNotifications, 24 * 60 * 60 * 1000);
     
     const server = await registerRoutes(app);
     console.log("Routes registered successfully");
