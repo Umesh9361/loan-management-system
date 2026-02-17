@@ -305,26 +305,21 @@ function generateLabelHtml(loan: LabelLoan, settings: LabelSettings): string {
     </div>`;
   }
 
+  const trioWeight = enabledFields.find(f => f.id === 'weight' && f.enabled);
+  const trioRate = enabledFields.find(f => f.id === 'interestRate' && f.enabled);
+  const trioDate = enabledFields.find(f => f.id === 'date' && f.enabled);
+  const hasTrio = !!(trioWeight && trioRate && trioDate);
+  if (hasTrio) {
+    processedIds.add('weight');
+    processedIds.add('interestRate');
+    processedIds.add('date');
+  }
+
   for (let i = 0; i < enabledFields.length; i++) {
     const field = enabledFields[i];
     if (processedIds.has(field.id)) continue;
 
     const next1 = enabledFields[i + 1];
-    const next2 = enabledFields[i + 2];
-    if (next1 && next2 && !processedIds.has(next1.id) && !processedIds.has(next2.id)) {
-      const ids = new Set([field.id, next1.id, next2.id]);
-      if (ids.has('weight') && ids.has('interestRate') && ids.has('date')) {
-        const wf = [field, next1, next2].find(f => f.id === 'weight')!;
-        const irf = [field, next1, next2].find(f => f.id === 'interestRate')!;
-        const df = [field, next1, next2].find(f => f.id === 'date')!;
-        processedIds.add(field.id);
-        processedIds.add(next1.id);
-        processedIds.add(next2.id);
-        rendered.push(renderTrioRow(wf, irf, df));
-        i += 2;
-        continue;
-      }
-    }
 
     if (field.type === 'pair' && field.pairedWith) {
       if (next1 && !processedIds.has(next1.id) && arePairPartners(field, next1)) {
@@ -340,6 +335,10 @@ function generateLabelHtml(loan: LabelLoan, settings: LabelSettings): string {
       processedIds.add(field.id);
       rendered.push(renderSingleField(field));
     }
+  }
+
+  if (hasTrio) {
+    rendered.push(renderTrioRow(trioWeight!, trioRate!, trioDate!));
   }
 
   return `
