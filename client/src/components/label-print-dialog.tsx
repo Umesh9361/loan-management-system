@@ -254,8 +254,8 @@ function generateLabelHtml(loan: LabelLoan, settings: LabelSettings): string {
     if (field.hasOvalBorder) {
       style += ` border: 0.6pt solid #333; border-radius: 50px; padding: 1.5pt 4pt; letter-spacing: 0.3pt; font-family: 'Arial','Helvetica',sans-serif; display: inline-block; max-width: 100%; box-sizing: border-box; margin: 0.5pt 0;`;
     }
-    if (field.id === 'interestRate') style += ` text-align: center; color: #444; margin-top: 1pt;`;
-    if (field.id === 'weight') style += ` margin-top: 1pt;`;
+    if (field.id === 'interestRate') style += ` text-align: center; color: #444; margin-top: 2pt;`;
+    if (field.id === 'weight') style += ` margin-top: 2pt;`;
     if (field.id === 'date') style += ` font-family: 'Arial','Helvetica',sans-serif; letter-spacing: 0.3pt;`;
     if (field.id === 'groupBorrower') style += ` margin-top: 0.5pt;`;
     return `<div style="${style}">${val}</div>`;
@@ -275,7 +275,7 @@ function generateLabelHtml(loan: LabelLoan, settings: LabelSettings): string {
     if (leftField.id === 'date') leftStyle += ` font-family: 'Arial','Helvetica',sans-serif; letter-spacing: 0.3pt;`;
     if (rightField.id === 'date') rightStyle += ` font-family: 'Arial','Helvetica',sans-serif; letter-spacing: 0.3pt;`;
     const hasWeightOrRate = (leftField.id === 'weight' || leftField.id === 'interestRate' || rightField.id === 'weight' || rightField.id === 'interestRate');
-    const pairMargin = hasWeightOrRate ? 'margin-top:1pt;' : '';
+    const pairMargin = hasWeightOrRate ? 'margin-top:2pt;' : '';
     return `<div style="display:flex;justify-content:space-between;align-items:center;gap:3pt;line-height:${rowLineH}pt;max-height:${pairMaxH}pt;overflow:hidden;flex-shrink:0;flex-grow:0;width:100%;${pairMargin}">
       <span style="${leftStyle}">${leftVal}</span>
       <span style="${rightStyle}">${rightVal}</span>
@@ -302,7 +302,7 @@ function generateLabelHtml(loan: LabelLoan, settings: LabelSettings): string {
     if (rightField.hasOvalBorder) rightStyle += ` border: 0.6pt solid #333; border-radius: 50px; padding: 1.5pt 4pt; font-family: 'Arial','Helvetica',sans-serif; display: inline-block; box-sizing: border-box;`;
     if (rightField.id === 'date') rightStyle += ` font-family: 'Arial','Helvetica',sans-serif; letter-spacing: 0.3pt;`;
     const hasWeightOrRate = [leftField, centerField, rightField].some(f => f.id === 'weight' || f.id === 'interestRate');
-    const trioMargin = hasWeightOrRate ? 'margin-top:1pt;' : '';
+    const trioMargin = hasWeightOrRate ? 'margin-top:2pt;' : '';
     return `<div style="display:flex;justify-content:space-between;align-items:center;gap:3pt;line-height:${rowLineH}pt;max-height:${trioMaxH}pt;overflow:hidden;flex-shrink:0;flex-grow:0;width:100%;${trioMargin}">
       <span style="${leftStyle}">${leftVal}</span>
       <span style="${centerStyle}">${centerVal}</span>
