@@ -96,7 +96,7 @@ export default function OverdueReport() {
     dateTo: new Date().toISOString().split('T')[0],
     groupId: "all",
     currentGoldRate: "",
-    finePurityPercentage: "",
+    finePurityPercentage: "82",
     monthlyInterestRate: "",
     interestRateMode: 'loan-wise',
     projectionMode: 'current',
@@ -942,12 +942,11 @@ export default function OverdueReport() {
               step="0.1"
               min="50"
               max="100"
-              placeholder="उदा: 80"
               value={filters.finePurityPercentage || ''}
               onChange={(e) => setFilters(prev => ({ ...prev, finePurityPercentage: e.target.value }))}
               className="mt-1 bg-white border-2 border-green-300 focus:border-green-500"
             />
-            <div className="text-xs text-green-600 mt-1">80%, 90%, 91.6% etc</div>
+            <div className="text-xs text-green-600 mt-1">82%, 90%, 91.6% etc</div>
           </div>
         </div>
 
@@ -1001,7 +1000,7 @@ export default function OverdueReport() {
                 dateTo: new Date().toISOString().split('T')[0],
                 groupId: "all",
                 currentGoldRate: "",
-                finePurityPercentage: "",
+                finePurityPercentage: "82",
                 monthlyInterestRate: "",
                 interestRateMode: 'loan-wise',
                 projectionMode: 'current',

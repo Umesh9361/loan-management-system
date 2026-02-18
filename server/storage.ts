@@ -2220,6 +2220,13 @@ export class DatabaseStorage implements IStorage {
       if (filters.customerName) {
         conditions.push(eq(loans.borrowerName, filters.customerName));
       }
+      if (filters.dateFrom) {
+        conditions.push(gte(loans.loanDate, filters.dateFrom));
+      }
+      if (filters.dateTo) {
+        conditions.push(lte(loans.loanDate, filters.dateTo));
+      }
+      console.log(`📅 DATE FILTER: ${filters.dateFrom} to ${filters.dateTo}`);
 
       console.log('📋 Fetching active loans with group info...');
       const activeLoans = await db
