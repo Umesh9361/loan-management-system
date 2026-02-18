@@ -235,7 +235,6 @@ function Loans() {
       return response.json();
     },
     onSuccess: async () => {
-      const scrollPos = savedScrollPositionRef.current;
       await queryClient.invalidateQueries({ queryKey: ["/api/loans"], refetchType: 'all' });
       queryClient.invalidateQueries({ queryKey: ["/api/cash-transactions"], refetchType: 'all' });
       queryClient.invalidateQueries({ queryKey: ["/api/loan-closures"], refetchType: 'all' });
@@ -246,14 +245,6 @@ function Loans() {
         title: "कर्ज डिलीट झाले",
         description: "कर्ज आणि संबंधित व्यवहार यशस्वीपणे डिलीट केले गेले.",
       });
-      if (scrollPos !== null) {
-        requestAnimationFrame(() => {
-          setTimeout(() => {
-            window.scrollTo(0, scrollPos);
-            savedScrollPositionRef.current = null;
-          }, 100);
-        });
-      }
     },
     onError: (error: any) => {
       let msg = "कर्ज डिलीट करताना त्रुटी आली. पुन्हा प्रयत्न करा.";
@@ -365,19 +356,10 @@ function Loans() {
       }
       
       if (editingLoan) {
-        const scrollPos = savedScrollPositionRef.current;
         form.reset();
         setIsDialogOpen(false);
         setEditingLoan(null);
         setCreatedLoanId(null);
-        if (scrollPos !== null) {
-          requestAnimationFrame(() => {
-            setTimeout(() => {
-              window.scrollTo(0, scrollPos);
-              savedScrollPositionRef.current = null;
-            }, 100);
-          });
-        }
       } else {
         const currentGroupId = form.getValues('groupId');
         const currentGroupName = groupSearchTerm;
@@ -1262,6 +1244,26 @@ function Loans() {
       }
     }
   }, [isDialogOpen, editingLoan, form]);
+
+  // Scroll position restore after edit/delete - reliable multi-attempt restore
+  useEffect(() => {
+    if (!isDialogOpen && savedScrollPositionRef.current !== null) {
+      const targetScroll = savedScrollPositionRef.current;
+      let attempts = 0;
+      const maxAttempts = 10;
+      const tryRestore = () => {
+        attempts++;
+        window.scrollTo(0, targetScroll);
+        if (attempts < maxAttempts && Math.abs(window.scrollY - targetScroll) > 50) {
+          requestAnimationFrame(tryRestore);
+        } else {
+          savedScrollPositionRef.current = null;
+        }
+      };
+      const timer = setTimeout(tryRestore, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [isDialogOpen, loans]);
 
   // Comprehensive Keyboard Shortcuts System
   useEffect(() => {
