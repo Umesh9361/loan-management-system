@@ -639,7 +639,12 @@ export default function OverdueReport() {
   }, [reportGenerated, isGenerating, overdueData, dataTableRef]);
 
   // Sort overdue data by loss (max loss first), then loan date, then amount
-  const sortedOverdueData = [...(overdueData as OverdueItem[])].sort((a, b) => {
+  const filteredOverdueData = [...(overdueData as OverdueItem[])].filter(item => {
+    const margin = item.currentGoldValue - item.totalAmount;
+    return item.lossAmount > 0 || margin < 1000;
+  });
+  
+  const sortedOverdueData = filteredOverdueData.sort((a, b) => {
     // First sort by loss amount (descending - max loss on top)
     if (b.lossAmount !== a.lossAmount) {
       return b.lossAmount - a.lossAmount;
@@ -657,6 +662,8 @@ export default function OverdueReport() {
   const totalLoss = sortedOverdueData.reduce((sum: number, item: OverdueItem) => sum + item.lossAmount, 0);
   const totalLoans = sortedOverdueData.length;
   const averageLoss = totalLoans > 0 ? totalLoss / totalLoans : 0;
+  const totalAllLoans = (overdueData as OverdueItem[]).length;
+  const filteredOutCount = totalAllLoans - totalLoans;
 
   return (
     <>
@@ -773,7 +780,7 @@ export default function OverdueReport() {
             )}
 
             <div className="bg-indigo-50 p-3 rounded-lg mb-3">
-              <div className="text-sm text-indigo-700 mb-2">
+              <div className="text-[10px] sm:text-xs text-indigo-700 mb-2">
                 <strong>नोंद:</strong> {filters.projectionMode === 'current' ? 
                   'या तारखांमध्ये दिलेली कर्जे आजच्या तारखेला नुकसानात आहेत का ते तपासले जाईल' :
                   `या तारखांमध्ये दिलेली कर्जे पुढच्या ${filters.futureProjectionPeriod === '1month' ? 'महिन्यात' : filters.futureProjectionPeriod === '3months' ? 'तीन महिन्यात' : filters.futureProjectionPeriod === '6months' ? 'सहा महिन्यात' : 'वर्षभरात'} नुकसानात येतील का ते दाखवले जाईल`
@@ -783,7 +790,7 @@ export default function OverdueReport() {
 
             {/* Interest Calculation Formula Display */}
             <div className="bg-green-50 p-3 rounded-lg mb-3 border border-green-200">
-              <div className="text-sm text-green-800">
+              <div className="text-[10px] sm:text-xs text-green-800">
                 <strong>📊 व्याज गणना पद्धत:</strong> Advanced Compound Interest (Calculator च्या सारखेच)<br/>
                 <strong>📋 नियम:</strong> 2 दिवस झाले तरी पूर्ण महिना कन्सिडर केला जातो<br/>
                 <strong>🔄 कंपाउंड:</strong> दर वर्षी व्याज मुळ रकमेत जमा होते (Yearly Compounding)<br/>
@@ -791,7 +798,7 @@ export default function OverdueReport() {
               </div>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
               {/* Date Range */}
               <div>
                 <Label className="text-sm font-semibold">पासून तारीख * (कर्ज वितरण)</Label>
@@ -842,7 +849,7 @@ export default function OverdueReport() {
                 <Input
                   type="number"
                   step="0.01"
-                  placeholder="70"
+                  placeholder="उदा: 7000"
                   value={filters.currentGoldRate || ''}
                   onChange={(e) => setFilters(prev => ({ ...prev, currentGoldRate: e.target.value }))}
                   className="mt-1 bg-white border-2 border-orange-300 focus:border-orange-500"
@@ -858,7 +865,7 @@ export default function OverdueReport() {
                   step="0.1"
                   min="50"
                   max="100"
-                  placeholder="80"
+                  placeholder="उदा: 80"
                   value={filters.finePurityPercentage || ''}
                   onChange={(e) => setFilters(prev => ({ ...prev, finePurityPercentage: e.target.value }))}
                   className="mt-1 bg-white border-2 border-green-300 focus:border-green-500"
@@ -898,7 +905,7 @@ export default function OverdueReport() {
                     step="0.1"
                     min="0.1"
                     max="50"
-                    placeholder="1.5"
+                    placeholder="उदा: 1.5"
                     value={filters.monthlyInterestRate || ''}
                     onChange={(e) => setFilters(prev => ({ ...prev, monthlyInterestRate: e.target.value }))}
                     className="mt-1 bg-white border-2 border-purple-300 focus:border-purple-500"
@@ -952,10 +959,10 @@ export default function OverdueReport() {
             {/* Report Header - Only on Screen */}
             <div className="p-4 border-b-2 border-gray-200 print:hidden">
               <div className="text-center">
-                <h1 className="text-2xl font-bold text-gray-800 mb-2">
+                <h1 className="text-lg sm:text-2xl font-bold text-gray-800 mb-2">
                   {filters.projectionMode === 'current' ? 'मुदत वाढलेल्या कर्जांचा तपशील' : 'भविष्यातील नुकसान अंदाज रिपोर्ट'}
                 </h1>
-                <h2 className="text-lg font-semibold text-gray-600 mb-4">
+                <h2 className="text-sm sm:text-lg font-semibold text-gray-600 mb-4">
                   {filters.projectionMode === 'current' ? 'Current Loss Analysis Report' : 
                     `Future Loss Projection - ${filters.futureProjectionPeriod === '1month' ? 'Next Month' : filters.futureProjectionPeriod === '3months' ? 'Next 3 Months' : filters.futureProjectionPeriod === '6months' ? 'Next 6 Months' : 'Next Year'}`
                   }
@@ -977,8 +984,8 @@ export default function OverdueReport() {
                 
                 {/* Summary Line - Screen Only */}
                 <div className="mt-6 pt-4 border-t border-gray-300">
-                  <p className="text-base font-semibold text-gray-700">
-                    Total Loans: {totalLoans} | Total Loss: {formatCurrency(totalLoss)} | Average Loss: {formatCurrency(averageLoss)}
+                  <p className="text-sm sm:text-base font-semibold text-gray-700">
+                    Total Loans: {totalLoans} (सुरक्षित वगळले: {filteredOutCount}) | Total Loss: {formatCurrency(totalLoss)} | Average Loss: {formatCurrency(averageLoss)}
                   </p>
                 </div>
               </div>
@@ -1050,7 +1057,60 @@ export default function OverdueReport() {
                 </Card>
               ) : (
                 <Card className="overflow-hidden">
-                  <div className="overflow-x-auto">
+                  <div className="sm:hidden divide-y divide-gray-100">
+                    {sortedOverdueData.map((item: OverdueItem, index: number) => (
+                      <div 
+                        key={item.loanId}
+                        onClick={() => handleRowSelect(item)}
+                        className={cn(
+                          "p-3 cursor-pointer transition-colors",
+                          selectedRowIndex === index ? "bg-indigo-50 border-l-4 border-l-indigo-500" : "",
+                          "active:bg-indigo-50"
+                        )}
+                      >
+                        <div className="flex justify-between items-start mb-2">
+                          <div>
+                            <div className="font-bold text-gray-900 text-sm">{item.borrowerName}</div>
+                            <div className="text-xs text-gray-500">{item.groupName} | {formatDate(item.loanDate)}</div>
+                          </div>
+                          <div className={`text-xs font-bold px-2 py-0.5 rounded-full ${
+                            item.lossAmount > 0 ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'
+                          }`}>
+                            {item.lossAmount > 0 ? `नुकसान: ${formatCurrency(item.lossAmount)}` : 'कमी सुरक्षित'}
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-3 gap-2 text-xs">
+                          <div>
+                            <span className="text-gray-500">मुद्दल</span>
+                            <div className="font-semibold text-purple-700">{formatCurrency(item.principalAmount)}</div>
+                          </div>
+                          <div>
+                            <span className="text-gray-500">व्याज</span>
+                            <div className="font-semibold text-orange-700">{formatCurrency(item.interestToDate)}</div>
+                          </div>
+                          <div>
+                            <span className="text-gray-500">एकूण</span>
+                            <div className="font-semibold text-indigo-700">{formatCurrency(item.totalAmount)}</div>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-3 gap-2 text-xs mt-1">
+                          <div>
+                            <span className="text-gray-500">वजन</span>
+                            <div className="font-semibold text-amber-700">{item.goldWeight}g</div>
+                          </div>
+                          <div>
+                            <span className="text-gray-500">सोन्याची किंमत</span>
+                            <div className="font-semibold text-green-700">{formatCurrency(item.currentGoldValue)}</div>
+                          </div>
+                          <div>
+                            <span className="text-gray-500">दिवस</span>
+                            <div className="font-semibold text-gray-700">{item.daysOverdue}</div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="hidden sm:block overflow-x-auto">
                     <table className="w-full border-collapse">
                       <thead>
                         <tr className="bg-gradient-to-r from-red-50 to-orange-50 border-b-2 border-red-200">
@@ -1163,7 +1223,7 @@ export default function OverdueReport() {
                         fontSize: '9pt',
                         color: 'black'
                       }}>
-                        Total Loans: {totalLoans} | Total Loss: {formatCurrency(totalLoss)} | Average Loss: {formatCurrency(averageLoss)}
+                        Total Loans: {totalLoans} (सुरक्षित वगळले: {filteredOutCount}) | Total Loss: {formatCurrency(totalLoss)} | Average Loss: {formatCurrency(averageLoss)}
                       </td>
                     </tr>
                   )}
@@ -1176,14 +1236,14 @@ export default function OverdueReport() {
               <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">
                 <Button 
                   onClick={() => window.print()}
-                  className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 flex items-center gap-2"
+                  className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 flex items-center gap-2"
                 >
                   <Printer className="h-4 w-4" />
                   Print Report
                 </Button>
                 <Button 
                   onClick={exportToExcel}
-                  className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 flex items-center gap-2"
+                  className="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white px-6 py-2 flex items-center gap-2"
                 >
                   <FileSpreadsheet className="h-4 w-4" />
                   Excel Export
@@ -1248,7 +1308,7 @@ export default function OverdueReport() {
 
         {/* Keyboard Navigation Help */}
         {reportGenerated && overdueData.length > 0 && (
-          <div className="mt-4 p-3 bg-indigo-50 rounded-lg border border-indigo-200 print:hidden">
+          <div className="hidden sm:block mt-4 p-3 bg-indigo-50 rounded-lg border border-indigo-200 print:hidden">
             <div className="text-xs text-indigo-700">
               <strong>⌨️ Keyboard Navigation:</strong> Use ↑↓ arrows to navigate rows, Enter to view details, <strong>Space for photos</strong>, Escape to close
             </div>
