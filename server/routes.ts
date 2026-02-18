@@ -5051,6 +5051,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   }
 
+  async function fetchGoldRateFromGoodReturns(): Promise<{ rate24k: number; rate22k: number } | null> {
+    try {
+      const response = await fetch('https://www.goodreturns.in/gold-rates/', {
+        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
+        signal: AbortSignal.timeout(10000)
+      });
+      if (!response.ok) return null;
+      const html = await response.text();
+
+      const match24k = html.match(/id="24K-price"[^>]*>[\s\S]*?([\d,]+)/);
+      const match22k = html.match(/id="22K-price"[^>]*>[\s\S]*?([\d,]+)/);
+
+      if (match24k) {
+        const rate24k = parseInt(match24k[1].replace(/,/g, ''));
+        const rate22k = match22k ? parseInt(match22k[1].replace(/,/g, '')) : 0;
+        console.log(`✅ GoodReturns Gold Rate fetched - 24K: ₹${rate24k}/g, 22K: ₹${rate22k}/g`);
+        return { rate24k, rate22k };
+      }
+      return null;
+    } catch (error) {
+      console.log('⚠️ GoodReturns fetch failed:', (error as Error).message);
+      return null;
+    }
+  }
+
   app.get("/api/gold-rate", async (req, res) => {
     try {
       const now = Date.now();
@@ -5119,7 +5144,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Layer 3: No data available - manual entry needed
+      // Layer 3: GoodReturns (backup 2)
+      const grData = await fetchGoldRateFromGoodReturns();
+      if (grData && grData.rate24k > 0) {
+        const rate10g = grData.rate24k * 10;
+        const rate995 = Math.round(rate10g * 995 / 999);
+        goldRateCache.rate = rate995;
+        goldRateCache.perGram = Math.round(rate995 / 10);
+        goldRateCache.source = 'GoodReturns';
+        goldRateCache.timestamp = now;
+        return res.json({
+          success: true,
+          rate: rate995,
+          perGram: Math.round(rate995 / 10),
+          rate999: rate10g,
+          rate916: grData.rate22k ? grData.rate22k * 10 : 0,
+          source: 'GoodReturns',
+          cached: false
+        });
+      }
+
+      // Layer 4: No data available - manual entry needed
       return res.json({
         success: false,
         rate: null,
