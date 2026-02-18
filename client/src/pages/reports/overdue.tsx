@@ -1049,10 +1049,14 @@ export default function OverdueReport() {
 
             {/* Screen Display - Professional Table View */}
             <div ref={dataTableRef} className="print:hidden">
-              {(overdueData as OverdueItem[]).length === 0 ? (
+              {sortedOverdueData.length === 0 ? (
                 <Card className="p-8 text-center">
-                  <div className="text-gray-500 text-lg">
-                    {isGenerating ? "डेटा लोड होत आहे..." : "सध्या कोणतीही सक्रिय कर्जे नुकसानात नाहीत 🎉"}
+                  <div className="text-gray-500 text-base sm:text-lg">
+                    {isGenerating ? "डेटा लोड होत आहे..." : (
+                      filteredOutCount > 0 
+                        ? `सर्व ${totalAllLoans} कर्जे सुरक्षित आहेत 🎉 (कोणतेही नुकसान नाही)`
+                        : "सध्या कोणतीही सक्रिय कर्जे नुकसानात नाहीत 🎉"
+                    )}
                   </div>
                 </Card>
               ) : (
@@ -1187,7 +1191,7 @@ export default function OverdueReport() {
                   </tr>
                 </thead>
                 <tbody>
-                  {(overdueData as OverdueItem[]).length === 0 ? (
+                  {sortedOverdueData.length === 0 ? (
                     <tr>
                       <td colSpan={11} style={{border: '1px solid black', padding: '10px', textAlign: 'center', color: 'black'}}>
                         {isGenerating ? "डेटा लोड होत आहे..." : "सक्रिय कर्जे नाहीत / No Active Loans"}
@@ -1307,7 +1311,7 @@ export default function OverdueReport() {
         )}
 
         {/* Keyboard Navigation Help */}
-        {reportGenerated && overdueData.length > 0 && (
+        {reportGenerated && sortedOverdueData.length > 0 && (
           <div className="hidden sm:block mt-4 p-3 bg-indigo-50 rounded-lg border border-indigo-200 print:hidden">
             <div className="text-xs text-indigo-700">
               <strong>⌨️ Keyboard Navigation:</strong> Use ↑↓ arrows to navigate rows, Enter to view details, <strong>Space for photos</strong>, Escape to close
