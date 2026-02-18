@@ -1767,7 +1767,7 @@ function Loans() {
                       name="accountNumber"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-base font-medium">खाते क्रमांक</FormLabel>
+                          <FormLabel className="text-base font-medium">खाते क्रमांक *</FormLabel>
                           <FormControl>
                             <Input
                               {...field}

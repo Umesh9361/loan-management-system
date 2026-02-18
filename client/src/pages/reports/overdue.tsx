@@ -1053,12 +1053,6 @@ export default function OverdueReport() {
               <h1 className="text-2xl font-bold text-red-700">
                 {filters.projectionMode === 'current' ? '🔍 सध्याचे लॉस रिपोर्ट' : '🔮 भविष्यातील लॉस अंदाज'}
               </h1>
-              <p className="text-sm text-gray-600">
-                {filters.projectionMode === 'current' ? 
-                  'आजच्या तारखेपर्यंत सोन्याच्या कर्जावरील नुकसान विश्लेषण' : 
-                  `पुढच्या ${filters.futureProjectionPeriod === '1month' ? 'महिन्यात' : filters.futureProjectionPeriod === '3months' ? 'तीन महिन्यात' : filters.futureProjectionPeriod === '6months' ? 'सहा महिन्यात' : 'वर्षभरात'} कोणती कर्जे नुकसानात येतील`
-                }
-              </p>
             </div>
           </div>
           <div className="flex items-center gap-2 text-red-600">
