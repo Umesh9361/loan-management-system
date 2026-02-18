@@ -710,7 +710,7 @@ export default function AccountSummaryReport() {
                         <Input id="toDate" type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} className="font-inter" />
                       </div>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 flex-wrap">
                       <Button onClick={handlePrint} className="flex items-center gap-2 no-print">
                         <Printer className="h-4 w-4" />
                         प्रिंट करा
@@ -719,6 +719,18 @@ export default function AccountSummaryReport() {
                         <Download className="mr-2 h-4 w-4" />
                         Excel एक्सपोर्ट
                       </Button>
+                      {groupSummaries.length > 0 && (
+                        <Button
+                          variant="outline"
+                          size="default"
+                          className="text-indigo-600 border-indigo-200 hover:bg-indigo-50 gap-1.5 no-print"
+                          onClick={() => document.getElementById('group-performance-section')?.scrollIntoView({ behavior: 'smooth' })}
+                        >
+                          <BarChart3 className="h-4 w-4" />
+                          परफॉर्मन्स विश्लेषण पहा
+                          <ChevronDown className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -734,22 +746,6 @@ export default function AccountSummaryReport() {
                     </div>
                   )}
                 </div>
-
-                {/* Shortcut to group performance */}
-                {groupSummaries.length > 0 && (
-                  <div className="flex justify-center no-print">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="text-indigo-600 border-indigo-200 hover:bg-indigo-50 gap-1.5"
-                      onClick={() => document.getElementById('group-performance-section')?.scrollIntoView({ behavior: 'smooth' })}
-                    >
-                      <BarChart3 className="h-4 w-4" />
-                      परफॉर्मन्स विश्लेषण पहा
-                      <ChevronDown className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
-                )}
 
                 {/* ==================== गट परफॉर्मन्स विश्लेषण ==================== */}
                 {groupSummaries.length > 0 && (() => {
@@ -1063,7 +1059,7 @@ export default function AccountSummaryReport() {
                       </div>
                     </div>
 
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 flex-wrap">
                       <Button 
                         onClick={handlePrint} 
                         className="flex items-center gap-2 no-print" 
@@ -1081,6 +1077,18 @@ export default function AccountSummaryReport() {
                         <Download className="mr-2 h-4 w-4" />
                         Excel एक्सपोर्ट
                       </Button>
+                      {customerMode === "top50" && customerSummaries.length > 0 && (
+                        <Button
+                          variant="outline"
+                          size="default"
+                          className="text-indigo-600 border-indigo-200 hover:bg-indigo-50 gap-1.5 no-print"
+                          onClick={() => document.getElementById('customer-performance-section')?.scrollIntoView({ behavior: 'smooth' })}
+                        >
+                          <BarChart3 className="h-4 w-4" />
+                          परफॉर्मन्स विश्लेषण पहा
+                          <ChevronDown className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -1114,22 +1122,6 @@ export default function AccountSummaryReport() {
                         <p className="text-sm text-gray-400 mt-1">कृपया तारीख कालावधी तपासा</p>
                       </>
                     )}
-                  </div>
-                )}
-
-                {/* Shortcut to customer performance */}
-                {customerMode === "top50" && customerSummaries.length > 0 && (
-                  <div className="flex justify-center no-print">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="text-indigo-600 border-indigo-200 hover:bg-indigo-50 gap-1.5"
-                      onClick={() => document.getElementById('customer-performance-section')?.scrollIntoView({ behavior: 'smooth' })}
-                    >
-                      <BarChart3 className="h-4 w-4" />
-                      परफॉर्मन्स विश्लेषण पहा
-                      <ChevronDown className="h-3.5 w-3.5" />
-                    </Button>
                   </div>
                 )}
 
