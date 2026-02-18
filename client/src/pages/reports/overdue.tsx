@@ -112,6 +112,7 @@ export default function OverdueReport() {
   const [selectedCustomerName, setSelectedCustomerName] = useState("");
   const [showCustomerSuggestions, setShowCustomerSuggestions] = useState(false);
   const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1);
+  const [goldRateManuallyEdited, setGoldRateManuallyEdited] = useState(false);
   const customerInputRef = useRef<HTMLInputElement>(null);
   const customerSuggestionsRef = useRef<HTMLDivElement>(null);
 
@@ -183,7 +184,7 @@ export default function OverdueReport() {
   });
 
   useEffect(() => {
-    if (goldRateData && goldRateData.success && goldRateData.perGram && !filters.currentGoldRate) {
+    if (goldRateData && goldRateData.success && goldRateData.perGram && !filters.currentGoldRate && !goldRateManuallyEdited) {
       setFilters(prev => ({ ...prev, currentGoldRate: goldRateData.perGram.toString() }));
     }
   }, [goldRateData]);
@@ -209,7 +210,9 @@ export default function OverdueReport() {
       
       console.log('🚀 FRONTEND API CALL:', `/api/overdue-report?${params.toString()}`);
       
-      const response = await fetch(`/api/overdue-report?${params.toString()}`);
+      const response = await fetch(`/api/overdue-report?${params.toString()}`, {
+        credentials: 'include',
+      });
       if (!response.ok) {
         throw new Error('Failed to fetch overdue report');
       }
@@ -696,8 +699,8 @@ export default function OverdueReport() {
 
   const filteredOverdueData = viewMode === "default" 
     ? [...(overdueData as OverdueItem[])].filter(item => {
-        const margin = item.currentGoldValue - item.totalAmount;
-        return item.lossAmount > 0 || margin < 1000;
+        const security = getSecurityLevel(item);
+        return security.level === 'loss' || security.level === 'low';
       })
     : [...(overdueData as OverdueItem[])];
 
@@ -727,6 +730,7 @@ export default function OverdueReport() {
       <CardHeader className="bg-gradient-to-r from-red-500 to-orange-500 text-white">
         <CardTitle className="flex items-center gap-2">
           <Calculator className="h-5 w-5" />
+          {activeTab === "group" ? "गट प्रमाणे लॉस रिपोर्ट फिल्टर" : "कस्टमर प्रमाणे लॉस रिपोर्ट फिल्टर"}
         </CardTitle>
       </CardHeader>
       <CardContent className="p-4 space-y-3">
@@ -916,7 +920,10 @@ export default function OverdueReport() {
               step="0.01"
               placeholder="उदा: 7000"
               value={filters.currentGoldRate || ''}
-              onChange={(e) => setFilters(prev => ({ ...prev, currentGoldRate: e.target.value }))}
+              onChange={(e) => {
+                setFilters(prev => ({ ...prev, currentGoldRate: e.target.value }));
+                setGoldRateManuallyEdited(true);
+              }}
               className="mt-1 bg-white border-2 border-orange-300 focus:border-orange-500"
             />
             {goldRateData?.success ? (
@@ -1003,6 +1010,7 @@ export default function OverdueReport() {
               setReportGenerated(false);
               setCustomerSearchTerm("");
               setSelectedCustomerName("");
+              setGoldRateManuallyEdited(false);
             }}
             className="text-orange-600 border-orange-300 hover:bg-orange-50"
           >
@@ -1231,9 +1239,11 @@ export default function OverdueReport() {
                 <Card className="p-8 text-center">
                   <div className="text-gray-500 text-base sm:text-lg">
                     {isGenerating ? "डेटा लोड होत आहे..." : (
-                      filteredOutCount > 0 
-                        ? `सर्व ${totalAllLoans} कर्जे सुरक्षित आहेत 🎉 (कोणतेही नुकसान नाही)`
-                        : "सध्या कोणतीही सक्रिय कर्जे नुकसानात नाहीत 🎉"
+                      viewMode === "default" && filteredOutCount > 0
+                        ? `सर्व ${totalAllLoans} कर्जे सुरक्षित आहेत 🎉 (कोणतेही नुकसान नाही) — "सर्व पहा" वर क्लिक करून सर्व कर्जे पाहा`
+                        : totalAllLoans === 0 
+                          ? "या कालावधीत कोणतीही सक्रिय कर्जे नाहीत"
+                          : "सध्या कोणतीही सक्रिय कर्जे नुकसानात नाहीत 🎉"
                     )}
                   </div>
                 </Card>
