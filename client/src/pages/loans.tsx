@@ -2119,7 +2119,7 @@ function Loans() {
                                   type="number"
                                   step="0.01"
                                   tabIndex={13}
-                                  placeholder={isYearly ? "12.00" : "1.50"}
+                                  placeholder=""
                                   onChange={(e) => field.onChange(e.target.value)}
                                   className="pr-8 text-base"
                                 />
