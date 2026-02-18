@@ -3009,11 +3009,10 @@ function Loans() {
                       </div>
                       <div>
                         <p className="text-gray-600">वजन</p>
-                        <p className="font-medium font-inter">{loan.weight || "—"}</p>
-                      </div>
-                      <div className="col-start-2">
-                        <p className="text-gray-600">व्याजदर</p>
-                        <p className="font-medium font-inter">{loan.interestRate ? `${loan.interestRate}%` : "—"}</p>
+                        <p className="font-medium font-inter">
+                          {loan.weight || "—"}
+                          {loan.interestRate ? <span className="ml-6 text-gray-500">{loan.interestRate}%</span> : null}
+                        </p>
                       </div>
                     </div>
 
