@@ -2206,6 +2206,7 @@ export class DatabaseStorage implements IStorage {
       interestRateMode?: string;
       projectionMode?: string;
       futureProjectionPeriod?: string;
+      customerName?: string;
     }
   ): Promise<any[]> {
     console.log(`🔍 OVERDUE STORAGE START: tenant=${tenantId}`);
@@ -2215,6 +2216,9 @@ export class DatabaseStorage implements IStorage {
       const conditions = [eq(loans.tenantId, tenantId)];
       if (filters.groupId && filters.groupId !== 'all') {
         conditions.push(eq(loans.groupId, filters.groupId));
+      }
+      if (filters.customerName) {
+        conditions.push(eq(loans.borrowerName, filters.customerName));
       }
 
       console.log('📋 Fetching active loans with group info...');

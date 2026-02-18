@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { ArrowLeft, Calculator, TrendingDown, AlertTriangle, Printer, Eye, Camera, FileSpreadsheet } from "lucide-react";
+import { ArrowLeft, Calculator, TrendingDown, AlertTriangle, Printer, Eye, Camera, FileSpreadsheet, Users, User } from "lucide-react";
 import * as XLSX from 'xlsx';
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
@@ -15,7 +15,6 @@ import { Sidebar } from "@/components/ui/sidebar";
 import { MobileNav } from "@/components/ui/mobile-nav";
 import { PhotoViewer } from "@/components/ui/photo-viewer";
 
-// Extend window object for photo functionality
 declare global {
   interface Window {
     overduePhotoUrls: string[];
@@ -30,7 +29,7 @@ interface OverdueReportFilters {
   currentGoldRate: string;
   finePurityPercentage: string;
   monthlyInterestRate: string;
-  interestRateMode: 'loan-wise' | 'manual'; // New option
+  interestRateMode: 'loan-wise' | 'manual';
   projectionMode: 'current' | 'future';
   futureProjectionPeriod: '1month' | '3months' | '6months' | '1year';
 }
@@ -56,6 +55,21 @@ interface OverdueItem {
   daysOverdue: number;
 }
 
+function getSecurityLevel(item: OverdueItem): { level: string; label: string; color: string; bgColor: string; order: number } {
+  const margin = item.currentGoldValue - item.totalAmount;
+  const marginPercent = item.currentGoldValue > 0 ? (margin / item.currentGoldValue) * 100 : -100;
+  
+  if (item.lossAmount > 0 || margin < 0) {
+    return { level: 'loss', label: 'नुकसान', color: 'text-red-700', bgColor: 'bg-red-100', order: 1 };
+  } else if (marginPercent < 10 || margin < 1000) {
+    return { level: 'low', label: 'कमी सुरक्षित', color: 'text-orange-700', bgColor: 'bg-orange-100', order: 2 };
+  } else if (marginPercent < 30) {
+    return { level: 'medium', label: 'मध्यम सुरक्षित', color: 'text-yellow-700', bgColor: 'bg-yellow-100', order: 3 };
+  } else {
+    return { level: 'safe', label: 'पूर्ण सुरक्षित', color: 'text-green-700', bgColor: 'bg-green-100', order: 4 };
+  }
+}
+
 export default function OverdueReport() {
   const [, setLocation] = useLocation();
   const reportSectionRef = useRef<HTMLDivElement>(null);
@@ -63,49 +77,120 @@ export default function OverdueReport() {
   
   const handleBackNavigation = () => {
     try {
-      // Check if there's history to go back to
       if (window.history.length > 1 && document.referrer) {
         window.history.back();
       } else {
-        // Fallback to dashboard if no history or referrer
         setLocation("/dashboard");
       }
     } catch (error) {
-      // Safety fallback in case of any navigation errors
       console.warn("Navigation error, falling back to dashboard:", error);
       setLocation("/dashboard");
     }
   };
 
+  const [activeTab, setActiveTab] = useState<"group" | "customer">("group");
+  const [viewMode, setViewMode] = useState<"default" | "all">("default");
+
   const [filters, setFilters] = useState<OverdueReportFilters>({
-    dateFrom: new Date().toISOString().split('T')[0], // Today's date as default
-    dateTo: new Date().toISOString().split('T')[0], // Today's date
-    groupId: "all", // All groups
-    currentGoldRate: "", // User will enter
-    finePurityPercentage: "", // User will enter
-    monthlyInterestRate: "", // User will enter
-    interestRateMode: 'loan-wise', // Default to loan-wise to use individual rates
-    projectionMode: 'current', // Current analysis
+    dateFrom: new Date().toISOString().split('T')[0],
+    dateTo: new Date().toISOString().split('T')[0],
+    groupId: "all",
+    currentGoldRate: "",
+    finePurityPercentage: "",
+    monthlyInterestRate: "",
+    interestRateMode: 'loan-wise',
+    projectionMode: 'current',
     futureProjectionPeriod: '3months',
   });
 
   const [reportGenerated, setReportGenerated] = useState(false);
-  
-  // Row selection for keyboard navigation
   const [selectedRowIndex, setSelectedRowIndex] = useState<number>(-1);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [selectedLoan, setSelectedLoan] = useState<OverdueItem | null>(null);
 
-  // Fetch groups for dropdown
+  const [customerSearchTerm, setCustomerSearchTerm] = useState("");
+  const [selectedCustomerName, setSelectedCustomerName] = useState("");
+  const [showCustomerSuggestions, setShowCustomerSuggestions] = useState(false);
+  const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1);
+  const customerInputRef = useRef<HTMLInputElement>(null);
+  const customerSuggestionsRef = useRef<HTMLDivElement>(null);
+
+  const { data: customerAutocompleteSuggestions = [] } = useQuery<any[]>({
+    queryKey: ["/api/borrowers/autocomplete", customerSearchTerm],
+    queryFn: async () => {
+      const res = await fetch(`/api/borrowers/autocomplete?search=${encodeURIComponent(customerSearchTerm)}`, {
+        credentials: 'include',
+      });
+      if (!res.ok) throw new Error('Failed to fetch borrower suggestions');
+      return res.json();
+    },
+    enabled: customerSearchTerm.length >= 2,
+    staleTime: 30 * 1000,
+    gcTime: 2 * 60 * 1000,
+  });
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        customerSuggestionsRef.current &&
+        !customerSuggestionsRef.current.contains(event.target as Node) &&
+        customerInputRef.current &&
+        !customerInputRef.current.contains(event.target as Node)
+      ) {
+        setShowCustomerSuggestions(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleCustomerSelect = (name: string) => {
+    setSelectedCustomerName(name);
+    setCustomerSearchTerm(name);
+    setShowCustomerSuggestions(false);
+    setSelectedSuggestionIndex(-1);
+  };
+
+  const handleCustomerKeyDown = (e: ReactKeyboardEvent<HTMLInputElement>) => {
+    if (!showCustomerSuggestions || customerAutocompleteSuggestions.length === 0) return;
+    
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setSelectedSuggestionIndex(prev => 
+        prev < customerAutocompleteSuggestions.length - 1 ? prev + 1 : 0
+      );
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setSelectedSuggestionIndex(prev => 
+        prev > 0 ? prev - 1 : customerAutocompleteSuggestions.length - 1
+      );
+    } else if (e.key === "Enter" && selectedSuggestionIndex >= 0) {
+      e.preventDefault();
+      const selected = customerAutocompleteSuggestions[selectedSuggestionIndex];
+      handleCustomerSelect(selected.borrowerName || selected.name);
+    } else if (e.key === "Escape") {
+      setShowCustomerSuggestions(false);
+    }
+  };
+
   const { data: groups = [] } = useQuery({
     queryKey: ['/api/groups'],
   });
 
-  // Generate overdue report with proper query parameters
+  const { data: goldRateData } = useQuery<any>({
+    queryKey: ['/api/gold-rate'],
+    staleTime: 4 * 60 * 60 * 1000,
+  });
+
+  useEffect(() => {
+    if (goldRateData && goldRateData.success && goldRateData.perGram && !filters.currentGoldRate) {
+      setFilters(prev => ({ ...prev, currentGoldRate: goldRateData.perGram.toString() }));
+    }
+  }, [goldRateData]);
+
   const { data: overdueData = [], isLoading: isGenerating, refetch: generateReport } = useQuery({
-    queryKey: ['/api/overdue-report', filters],
+    queryKey: ['/api/overdue-report', filters, activeTab, selectedCustomerName],
     queryFn: async () => {
-      // Convert filters to URL parameters properly
       const params = new URLSearchParams({
         dateFrom: filters.dateFrom,
         dateTo: filters.dateTo,
@@ -118,6 +203,10 @@ export default function OverdueReport() {
         futureProjectionPeriod: filters.futureProjectionPeriod,
       });
       
+      if (activeTab === "customer" && selectedCustomerName) {
+        params.append('customerName', selectedCustomerName);
+      }
+      
       console.log('🚀 FRONTEND API CALL:', `/api/overdue-report?${params.toString()}`);
       
       const response = await fetch(`/api/overdue-report?${params.toString()}`);
@@ -126,14 +215,12 @@ export default function OverdueReport() {
       }
       return response.json();
     },
-    enabled: false, // Only run when manually triggered
+    enabled: false,
   });
 
-  // Keyboard navigation handlers
   const handleKeyDown = (event: KeyboardEvent) => {
     if (!reportGenerated || overdueData.length === 0) return;
 
-    // Skip if photo modal is open
     const photoModal = document.getElementById('overdue-photo-modal');
     if (photoModal && photoModal.style.display !== 'none') return;
 
@@ -159,7 +246,7 @@ export default function OverdueReport() {
         setShowDetailsModal(false);
         setSelectedRowIndex(-1);
         break;
-      case ' ': // Space bar for photo viewing
+      case ' ':
         if (selectedRowIndex >= 0 && selectedRowIndex < sortedOverdueData.length) {
           event.preventDefault();
           openPhotoModal(sortedOverdueData[selectedRowIndex]);
@@ -168,21 +255,17 @@ export default function OverdueReport() {
     }
   };
 
-  // Row selection handler
   const handleRowSelect = (loan: OverdueItem) => {
     setSelectedLoan(loan);
     setShowDetailsModal(true);
   };
 
-  // Photo modal functionality for space bar
   const openPhotoModal = async (loan: OverdueItem) => {
     try {
       console.log('📸 Opening photo modal for loan:', loan.loanId);
       
-      // Check if photo modal exists, create if not
       let modal = document.getElementById('overdue-photo-modal');
       if (!modal) {
-        // Create photo modal HTML structure
         const modalHTML = `
           <div id="overdue-photo-modal" style="
             display: none;
@@ -202,7 +285,6 @@ export default function OverdueReport() {
               color: white;
               font-family: inherit;
             ">
-              <!-- Header -->
               <div style="
                 padding: 20px;
                 text-align: center;
@@ -213,7 +295,6 @@ export default function OverdueReport() {
                 <p style="margin: 5px 0 0 0; font-size: 14px; opacity: 0.8;">Space दाबून बंद करा | ← → फोटो नेव्हिगेशन</p>
               </div>
               
-              <!-- Photo Container -->
               <div id="overdue-photo-container" style="
                 flex: 1;
                 display: flex;
@@ -223,7 +304,6 @@ export default function OverdueReport() {
                 position: relative;
               "></div>
               
-              <!-- Navigation Controls -->
               <div style="
                 display: flex;
                 justify-content: center;
@@ -281,12 +361,10 @@ export default function OverdueReport() {
       const prevBtn = document.getElementById('overdue-prev-photo');
       const nextBtn = document.getElementById('overdue-next-photo');
 
-      // Set borrower name
       if (borrowerNameDiv) {
         borrowerNameDiv.textContent = `📋 ${loan.borrowerName || 'कर्जदार'}`;
       }
       
-      // Show loading state
       if (photoContainer) {
         photoContainer.innerHTML = `
           <div style="display: flex; align-items: center; justify-content: center; height: 400px; color: white;">
@@ -300,7 +378,6 @@ export default function OverdueReport() {
       
       modal!.style.display = 'block';
 
-      // Fetch photos from API
       const response = await fetch(`/api/loans/${loan.loanId}/photos`);
       
       if (!response.ok) {
@@ -309,7 +386,6 @@ export default function OverdueReport() {
       
       const photos = await response.json();
       
-      // Store photos globally for navigation
       window.overduePhotoUrls = [];
       window.overdueCurrentPhotoIndex = 0;
       
@@ -319,7 +395,6 @@ export default function OverdueReport() {
           .map(photo => photo.url);
       }
 
-      // If no photos available, show message
       if (window.overduePhotoUrls.length === 0) {
         if (photoContainer) {
           photoContainer.innerHTML = `
@@ -333,17 +408,14 @@ export default function OverdueReport() {
           `;
         }
         
-        // Hide navigation buttons
         if (prevBtn) prevBtn.style.display = 'none';
         if (nextBtn) nextBtn.style.display = 'none';
         if (photoCounter) photoCounter.style.display = 'none';
         return;
       }
 
-      // Reset photo index
       window.overdueCurrentPhotoIndex = 0;
 
-      // Show/hide navigation buttons
       if (window.overduePhotoUrls.length > 1) {
         if (prevBtn) prevBtn.style.display = 'block';
         if (nextBtn) nextBtn.style.display = 'block';
@@ -354,7 +426,6 @@ export default function OverdueReport() {
         if (photoCounter) photoCounter.style.display = 'none';
       }
 
-      // Display first photo
       (window as any).displayOverduePhoto(0);
       
     } catch (error) {
@@ -381,16 +452,13 @@ export default function OverdueReport() {
     }
   };
 
-  // Add global functions for photo navigation
   useEffect(() => {
-    // Define global functions for overdue photo modal
     (window as any).displayOverduePhoto = (index: number) => {
       if (!window.overduePhotoUrls || window.overduePhotoUrls.length === 0) return;
 
       const photoContainer = document.getElementById('overdue-photo-container');
       const photoCounter = document.getElementById('overdue-photo-counter');
       
-      // Ensure index is within bounds
       if (index < 0) window.overdueCurrentPhotoIndex = window.overduePhotoUrls.length - 1;
       else if (index >= window.overduePhotoUrls.length) window.overdueCurrentPhotoIndex = 0;
       else window.overdueCurrentPhotoIndex = index;
@@ -422,7 +490,6 @@ export default function OverdueReport() {
         `;
       }
 
-      // Update counter
       if (photoCounter && window.overduePhotoUrls.length > 1) {
         photoCounter.textContent = `${window.overdueCurrentPhotoIndex + 1} / ${window.overduePhotoUrls.length}`;
       }
@@ -442,16 +509,15 @@ export default function OverdueReport() {
       }
     };
 
-    // Global keyboard handler for photo modal
     const handlePhotoModalKeyboard = (event: KeyboardEvent) => {
       const modal = document.getElementById('overdue-photo-modal');
       if (!modal || modal.style.display === 'none') return;
 
       switch (event.key) {
-        case ' ': // Space bar to close
+        case ' ':
         case 'Escape':
           event.preventDefault();
-          event.stopImmediatePropagation(); // Prevent other listeners
+          event.stopImmediatePropagation();
           (window as any).closeOverduePhotoModal();
           break;
         case 'ArrowLeft':
@@ -467,10 +533,8 @@ export default function OverdueReport() {
       }
     };
 
-    // Add global keyboard listener
     document.addEventListener('keydown', handlePhotoModalKeyboard);
 
-    // Close modal when clicking outside
     const handleModalClick = (event: MouseEvent) => {
       const modal = document.getElementById('overdue-photo-modal');
       if (modal && event.target === modal) {
@@ -486,7 +550,6 @@ export default function OverdueReport() {
     };
   }, []);
 
-  // Setup keyboard navigation
   useEffect(() => {
     if (reportGenerated && overdueData.length > 0) {
       document.addEventListener('keydown', handleKeyDown);
@@ -494,7 +557,6 @@ export default function OverdueReport() {
     }
   }, [reportGenerated, overdueData, selectedRowIndex]);
 
-  // Auto-scroll selected row into view
   useEffect(() => {
     if (selectedRowIndex >= 0) {
       const tableRows = document.querySelectorAll('[data-row-index]');
@@ -508,13 +570,12 @@ export default function OverdueReport() {
     }
   }, [selectedRowIndex]);
 
-  // Excel export function
   const exportToExcel = () => {
     if (!overdueData || overdueData.length === 0) {
       return;
     }
 
-    const sortedData = [...overdueData].sort((a, b) => {
+    const sortedData = [...overdueData].sort((a: any, b: any) => {
       const dateA = new Date(a.loanDate).getTime();
       const dateB = new Date(b.loanDate).getTime();
       if (dateA !== dateB) return dateA - dateB;
@@ -523,8 +584,7 @@ export default function OverdueReport() {
       return a.principalAmount - b.principalAmount;
     });
 
-    // Prepare data for Excel
-    const excelData = sortedData.map((item, index) => ({
+    const excelData = sortedData.map((item: any, index: number) => ({
       'अनुक्रमांक': index + 1,
       'नाव': item.borrowerName,
       'फोन': item.borrowerPhone,
@@ -539,45 +599,40 @@ export default function OverdueReport() {
       'नुकसान': item.lossAmount,
       'नुकसान %': `${item.lossPercentage}%`,
       'दिवस': item.daysOverdue,
-      'जोखीम स्तर': item.riskLevel === 'high' ? 'उच्च' : item.riskLevel === 'medium' ? 'मध्यम' : 'कमी'
+      'सुरक्षा स्तर': getSecurityLevel(item).label,
     }));
 
-    // Create workbook
     const ws = XLSX.utils.json_to_sheet(excelData);
     const wb = XLSX.utils.book_new();
 
-    // Set column widths
     const colWidths = [
-      { wch: 10 }, // अनुक्रमांक
-      { wch: 20 }, // नाव  
-      { wch: 15 }, // फोन
-      { wch: 15 }, // गट
-      { wch: 12 }, // तारीख
-      { wch: 30 }, // तारणाचा तपशील
-      { wch: 12 }, // मुद्दल
-      { wch: 12 }, // व्याज
-      { wch: 12 }, // एकूण
-      { wch: 10 }, // वजन
-      { wch: 15 }, // सोन्याची किंमत
-      { wch: 12 }, // नुकसान
-      { wch: 10 }, // नुकसान %
-      { wch: 8 },  // दिवस
-      { wch: 12 }  // जोखीम स्तर
+      { wch: 10 },
+      { wch: 20 },
+      { wch: 15 },
+      { wch: 15 },
+      { wch: 12 },
+      { wch: 30 },
+      { wch: 12 },
+      { wch: 12 },
+      { wch: 12 },
+      { wch: 10 },
+      { wch: 15 },
+      { wch: 12 },
+      { wch: 10 },
+      { wch: 8 },
+      { wch: 15 },
     ];
     ws['!cols'] = colWidths;
 
     XLSX.utils.book_append_sheet(wb, ws, "Overdue Report");
 
-    // Generate filename with date and mode
     const reportDate = new Date().toLocaleDateString('en-GB').replace(/\//g, '-');
     const modeText = filters.projectionMode === 'current' ? 'Current' : 'Future';
     const filename = `Overdue_Report_${modeText}_${reportDate}.xlsx`;
 
-    // Export file
     XLSX.writeFile(wb, filename);
   };
 
-  // Utility functions
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
@@ -596,7 +651,6 @@ export default function OverdueReport() {
     });
   };
 
-  // Convert ISO date to DD/MM/YY for input fields
   const formatDateForInput = (dateStr: string) => {
     if (!dateStr) return '';
     const date = new Date(dateStr);
@@ -606,7 +660,6 @@ export default function OverdueReport() {
     return `${day}/${month}/${year}`;
   };
 
-  // Convert DD/MM/YY to ISO format for backend
   const parseInputDate = (ddmmyy: string) => {
     if (!ddmmyy || ddmmyy.length !== 8) return '';
     const day = ddmmyy.substring(0, 2);
@@ -621,11 +674,14 @@ export default function OverdueReport() {
       alert("कृपया सर्व आवश्यक फील्ड भरा / Please fill all required fields");
       return;
     }
+    if (activeTab === "customer" && !selectedCustomerName) {
+      alert("कृपया कस्टमर निवडा / Please select a customer");
+      return;
+    }
     generateReport();
     setReportGenerated(true);
   };
 
-  // Auto-scroll to data table when report is loaded
   useEffect(() => {
     if (reportGenerated && !isGenerating && overdueData.length >= 0 && dataTableRef.current) {
       setTimeout(() => {
@@ -638,25 +694,19 @@ export default function OverdueReport() {
     }
   }, [reportGenerated, isGenerating, overdueData, dataTableRef]);
 
-  // Sort overdue data by loss (max loss first), then loan date, then amount
-  const filteredOverdueData = [...(overdueData as OverdueItem[])].filter(item => {
-    const margin = item.currentGoldValue - item.totalAmount;
-    return item.lossAmount > 0 || margin < 1000;
-  });
-  
+  const filteredOverdueData = viewMode === "default" 
+    ? [...(overdueData as OverdueItem[])].filter(item => {
+        const margin = item.currentGoldValue - item.totalAmount;
+        return item.lossAmount > 0 || margin < 1000;
+      })
+    : [...(overdueData as OverdueItem[])];
+
   const sortedOverdueData = filteredOverdueData.sort((a, b) => {
-    // First sort by loss amount (descending - max loss on top)
-    if (b.lossAmount !== a.lossAmount) {
-      return b.lossAmount - a.lossAmount;
-    }
-    // Then by loan date (ascending - older loans first)
-    const dateA = new Date(a.loanDate);
-    const dateB = new Date(b.loanDate);
-    if (dateA.getTime() !== dateB.getTime()) {
-      return dateA.getTime() - dateB.getTime();
-    }
-    // Finally by total amount (ascending - smaller amounts first)
-    return a.totalAmount - b.totalAmount;
+    const secA = getSecurityLevel(a);
+    const secB = getSecurityLevel(b);
+    if (secA.order !== secB.order) return secA.order - secB.order;
+    if (b.lossAmount !== a.lossAmount) return b.lossAmount - a.lossAmount;
+    return new Date(a.loanDate).getTime() - new Date(b.loanDate).getTime();
   });
 
   const totalLoss = sortedOverdueData.reduce((sum: number, item: OverdueItem) => sum + item.lossAmount, 0);
@@ -665,10 +715,314 @@ export default function OverdueReport() {
   const totalAllLoans = (overdueData as OverdueItem[]).length;
   const filteredOutCount = totalAllLoans - totalLoans;
 
+  const levelCounts = {
+    loss: sortedOverdueData.filter(i => getSecurityLevel(i).level === 'loss').length,
+    low: sortedOverdueData.filter(i => getSecurityLevel(i).level === 'low').length,
+    medium: sortedOverdueData.filter(i => getSecurityLevel(i).level === 'medium').length,
+    safe: sortedOverdueData.filter(i => getSecurityLevel(i).level === 'safe').length,
+  };
+
+  const renderFilters = () => (
+    <Card className="bg-white shadow-lg print:hidden">
+      <CardHeader className="bg-gradient-to-r from-red-500 to-orange-500 text-white">
+        <CardTitle className="flex items-center gap-2">
+          <Calculator className="h-5 w-5" />
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="p-4 space-y-3">
+        <div className="bg-gradient-to-r from-purple-50 to-indigo-50 p-3 rounded-lg mb-3 border border-purple-200">
+          <Label className="text-sm font-semibold text-purple-800 mb-2 block">📊 विश्लेषण प्रकार निवडा</Label>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div 
+              className={`p-2 rounded-lg border-2 cursor-pointer transition-all ${filters.projectionMode === 'current' ? 'border-indigo-500 bg-indigo-100' : 'border-gray-300 bg-white'}`}
+              onClick={() => setFilters(prev => ({ ...prev, projectionMode: 'current' }))}
+            >
+              <div className="flex items-center gap-2">
+                <input 
+                  type="radio" 
+                  checked={filters.projectionMode === 'current'} 
+                  onChange={() => setFilters(prev => ({ ...prev, projectionMode: 'current' }))}
+                  className="text-indigo-500"
+                  autoComplete="off"
+                />
+                <span className="font-semibold text-indigo-800">🔍 सध्याचे नुकसान विश्लेषण</span>
+              </div>
+              <div className="text-sm text-gray-600 mt-1">आजच्या तारखेपर्यंत कोणती कर्जे loss मध्ये आहेत</div>
+            </div>
+            
+            <div 
+              className={`p-2 rounded-lg border-2 cursor-pointer transition-all ${filters.projectionMode === 'future' ? 'border-purple-500 bg-purple-100' : 'border-gray-300 bg-white'}`}
+              onClick={() => setFilters(prev => ({ ...prev, projectionMode: 'future' }))}
+            >
+              <div className="flex items-center gap-2">
+                <input 
+                  type="radio" 
+                  checked={filters.projectionMode === 'future'} 
+                  onChange={() => setFilters(prev => ({ ...prev, projectionMode: 'future' }))}
+                  className="text-purple-500"
+                  autoComplete="off"
+                />
+                <span className="font-semibold text-purple-800">🔮 भविष्यातील नुकसान अंदाज</span>
+              </div>
+              <div className="text-sm text-gray-600 mt-1">पुढच्या काळात कोणती कर्जे loss मध्ये येतील</div>
+            </div>
+          </div>
+        </div>
+
+        {filters.projectionMode === 'future' && (
+          <div className="bg-purple-50 p-3 rounded-lg mb-3 border border-purple-200">
+            <Label className="text-sm font-semibold text-purple-800 mb-2 block">⏰ भविष्यातील कालावधी निवडा</Label>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+              {[
+                { value: '1month', label: '1 महिना', desc: 'पुढच्या महिन्यात' },
+                { value: '3months', label: '3 महिने', desc: 'पुढच्या तीन महिन्यात' },
+                { value: '6months', label: '6 महिने', desc: 'पुढच्या सहा महिन्यात' },
+                { value: '1year', label: '1 वर्ष', desc: 'पुढच्या वर्षभरात' }
+              ].map((period) => (
+                <div 
+                  key={period.value}
+                  className={`p-2 rounded-lg border-2 cursor-pointer transition-all text-center ${filters.futureProjectionPeriod === period.value ? 'border-purple-500 bg-purple-200' : 'border-gray-300 bg-white'}`}
+                  onClick={() => setFilters(prev => ({ ...prev, futureProjectionPeriod: period.value as any }))}
+                >
+                  <div className="font-semibold text-purple-800">{period.label}</div>
+                  <div className="text-xs text-gray-600">{period.desc}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="bg-indigo-50 p-3 rounded-lg mb-3">
+          <div className="text-[10px] sm:text-xs text-indigo-700 mb-2">
+            <strong>नोंद:</strong> {filters.projectionMode === 'current' ? 
+              'या तारखांमध्ये दिलेली कर्जे आजच्या तारखेला नुकसानात आहेत का ते तपासले जाईल' :
+              `या तारखांमध्ये दिलेली कर्जे पुढच्या ${filters.futureProjectionPeriod === '1month' ? 'महिन्यात' : filters.futureProjectionPeriod === '3months' ? 'तीन महिन्यात' : filters.futureProjectionPeriod === '6months' ? 'सहा महिन्यात' : 'वर्षभरात'} नुकसानात येतील का ते दाखवले जाईल`
+            }
+          </div>
+        </div>
+
+        <div className="bg-green-50 p-3 rounded-lg mb-3 border border-green-200">
+          <div className="text-[10px] sm:text-xs text-green-800">
+            <strong>📊 व्याज गणना पद्धत:</strong> Advanced Compound Interest (Calculator च्या सारखेच)<br/>
+            <strong>📋 नियम:</strong> 2 दिवस झाले तरी पूर्ण महिना कन्सिडर केला जातो<br/>
+            <strong>🔄 कंपाउंड:</strong> दर वर्षी व्याज मुळ रकमेत जमा होते (Yearly Compounding)<br/>
+            <strong>💡 सध्या:</strong> आजच्या तारखेपर्यंत नुकसान | <strong>🔮 भविष्य:</strong> आजच्या तारखेपासून +6 महिने व्याज
+          </div>
+        </div>
+
+        {activeTab === "customer" && (
+          <div className="bg-blue-50 p-3 rounded-lg mb-3 border border-blue-200">
+            <Label className="text-sm font-semibold text-blue-800 mb-2 block">🔍 कस्टमर शोधा</Label>
+            <div className="relative">
+              <Input
+                ref={customerInputRef}
+                type="text"
+                placeholder="कस्टमरचे नाव टाइप करा..."
+                value={customerSearchTerm}
+                onChange={(e) => {
+                  setCustomerSearchTerm(e.target.value);
+                  setShowCustomerSuggestions(true);
+                  setSelectedSuggestionIndex(-1);
+                  if (e.target.value !== selectedCustomerName) {
+                    setSelectedCustomerName("");
+                  }
+                }}
+                onKeyDown={handleCustomerKeyDown}
+                onFocus={() => {
+                  if (customerSearchTerm.length >= 2) setShowCustomerSuggestions(true);
+                }}
+                className="bg-white border-2 border-blue-300 focus:border-blue-500"
+              />
+              {showCustomerSuggestions && customerAutocompleteSuggestions.length > 0 && (
+                <div
+                  ref={customerSuggestionsRef}
+                  className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto"
+                >
+                  {customerAutocompleteSuggestions.map((suggestion: any, index: number) => (
+                    <div
+                      key={index}
+                      className={cn(
+                        "px-3 py-2 cursor-pointer hover:bg-blue-50 border-b border-gray-100 last:border-b-0",
+                        selectedSuggestionIndex === index && "bg-blue-100"
+                      )}
+                      onClick={() => handleCustomerSelect(suggestion.borrowerName || suggestion.name)}
+                    >
+                      <div className="font-medium text-sm">{suggestion.borrowerName || suggestion.name}</div>
+                      {suggestion.phone && <div className="text-xs text-gray-500">{suggestion.phone}</div>}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            {selectedCustomerName && (
+              <div className="mt-2 text-sm text-blue-700 font-medium">
+                ✅ निवडलेले: {selectedCustomerName}
+              </div>
+            )}
+          </div>
+        )}
+        
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
+          <div>
+            <Label className="text-sm font-semibold">पासून तारीख * (कर्ज वितरण)</Label>
+            <Input
+              type="date"
+              value={filters.dateFrom}
+              onChange={(e) => setFilters(prev => ({ ...prev, dateFrom: e.target.value }))}
+              className="mt-1 font-inter"
+            />
+            <div className="text-xs text-gray-500 mt-1">डीफॉल्ट: आजची तारीख</div>
+          </div>
+          <div>
+            <Label className="text-sm font-semibold">पर्यंत तारीख * (कर्ज वितरण)</Label>
+            <Input
+              type="date"
+              value={filters.dateTo}
+              onChange={(e) => setFilters(prev => ({ ...prev, dateTo: e.target.value }))}
+              className="mt-1 font-inter"
+            />
+            <div className="text-xs text-gray-500 mt-1">आजची तारीख: {formatDate(new Date().toISOString())}</div>
+          </div>
+          
+          {activeTab === "group" && (
+            <div>
+              <Label className="text-sm font-semibold">गट निवड</Label>
+              <Select 
+                value={filters.groupId} 
+                onValueChange={(value) => setFilters(prev => ({ ...prev, groupId: value }))}
+              >
+                <SelectTrigger className="mt-1">
+                  <SelectValue placeholder="सर्व गट / All Groups" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">सर्व गट / All Groups</SelectItem>
+                  {(groups as any[]).map((group: any) => (
+                    <SelectItem key={group.id} value={group.id}>
+                      {group.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <div className="text-xs text-gray-500 mt-1">सर्व गटांसाठी 'All Groups' निवडा</div>
+            </div>
+          )}
+
+          <div>
+            <Label className="text-orange-700 font-medium">
+              {goldRateData?.success ? '💰 सोन्याचा दर (₹/ग्राम) - IBJA' : '💰 सोन्याचा दर (ग्राम)'}
+            </Label>
+            <Input
+              type="number"
+              step="0.01"
+              placeholder="उदा: 7000"
+              value={filters.currentGoldRate || ''}
+              onChange={(e) => setFilters(prev => ({ ...prev, currentGoldRate: e.target.value }))}
+              className="mt-1 bg-white border-2 border-orange-300 focus:border-orange-500"
+            />
+            {goldRateData?.success ? (
+              <div className="text-[10px] text-green-600 mt-0.5">
+                ✅ IBJA: ₹{goldRateData.perGram?.toLocaleString('en-IN')}/g ({goldRateData.source})
+              </div>
+            ) : (
+              <div className="text-xs text-orange-600 mt-1">प्रति ग्राम दर</div>
+            )}
+          </div>
+
+          <div>
+            <Label className="text-green-700 font-medium">⭐ सोन्याची शुद्धता (%)</Label>
+            <Input
+              type="number"
+              step="0.1"
+              min="50"
+              max="100"
+              placeholder="उदा: 80"
+              value={filters.finePurityPercentage || ''}
+              onChange={(e) => setFilters(prev => ({ ...prev, finePurityPercentage: e.target.value }))}
+              className="mt-1 bg-white border-2 border-green-300 focus:border-green-500"
+            />
+            <div className="text-xs text-green-600 mt-1">80%, 90%, 91.6% etc</div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div className="space-y-2">
+            <Label className="text-orange-700 font-medium">⚙️ व्याज दर पद्धत</Label>
+            <Select value={filters.interestRateMode} onValueChange={(value: 'loan-wise' | 'manual') => 
+              setFilters(prev => ({ ...prev, interestRateMode: value }))}>
+              <SelectTrigger className="bg-white border-2 border-orange-300 focus:border-orange-500">
+                <SelectValue placeholder="व्याज दर पद्धत निवडा" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="loan-wise">📋 कर्ज नोंदणीतील व्याज दर</SelectItem>
+                <SelectItem value="manual">✏️ मॅन्युअल व्याज दर</SelectItem>
+              </SelectContent>
+            </Select>
+            <div className="text-xs text-orange-600 mt-1">
+              {filters.interestRateMode === 'loan-wise' 
+                ? "प्रत्येक कर्जाचा नोंदणी केलेला व्याज दर वापरेल" 
+                : "सर्व कर्जांसाठी एकच व्याज दर वापरेल"}
+            </div>
+          </div>
+
+          {filters.interestRateMode === 'manual' && (
+            <div className="space-y-2">
+              <Label className="text-purple-700 font-medium">📊 मासिक व्याज दर (%)</Label>
+              <Input
+                type="number"
+                step="0.1"
+                min="0.1"
+                max="50"
+                placeholder="उदा: 1.5"
+                value={filters.monthlyInterestRate || ''}
+                onChange={(e) => setFilters(prev => ({ ...prev, monthlyInterestRate: e.target.value }))}
+                className="mt-1 bg-white border-2 border-purple-300 focus:border-purple-500"
+              />
+              <div className="text-xs text-purple-600 mt-1">
+                ✏️ उदा: 1.5% किंवा 15 (दोन्ही योग्य) | Both formats supported
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="flex justify-between items-center pt-4">
+          <Button 
+            type="button" 
+            variant="outline" 
+            onClick={() => {
+              setFilters({
+                dateFrom: new Date().toISOString().split('T')[0],
+                dateTo: new Date().toISOString().split('T')[0],
+                groupId: "all",
+                currentGoldRate: "",
+                finePurityPercentage: "",
+                monthlyInterestRate: "",
+                interestRateMode: 'loan-wise',
+                projectionMode: 'current',
+                futureProjectionPeriod: '3months'
+              });
+              setReportGenerated(false);
+              setCustomerSearchTerm("");
+              setSelectedCustomerName("");
+            }}
+            className="text-orange-600 border-orange-300 hover:bg-orange-50"
+          >
+            🗑️ साफ करा
+          </Button>
+          
+          <Button 
+            onClick={handleGenerateReport}
+            disabled={isGenerating}
+            className="bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 text-white px-6 py-2"
+          >
+            {isGenerating ? "तयार करीत आहे..." : "अहवाल तयार करा"}
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
   return (
     <>
-
-      
       <div className="print:hidden">
         <MobileNav />
       </div>
@@ -683,7 +1037,6 @@ export default function OverdueReport() {
         <main className="flex-1 w-full lg:pl-72 pb-16 lg:pb-0 print:pl-0 print:pb-0">
           <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-50 p-4 print:min-h-0 print:bg-white print:p-0">
             <div className="space-y-3 print:max-w-none print:mx-0 print:space-y-0 px-2 lg:px-4">
-        {/* Header - Hidden in Print */}
         <div className="flex items-center justify-between bg-white rounded-lg shadow-md p-3 print:hidden">
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="sm" onClick={handleBackNavigation}>
@@ -707,256 +1060,35 @@ export default function OverdueReport() {
           </div>
         </div>
 
-        {/* Filters Card - Hidden in Print */}
-        <Card className="bg-white shadow-lg print:hidden">
-          <CardHeader className="bg-gradient-to-r from-red-500 to-orange-500 text-white">
-            <CardTitle className="flex items-center gap-2">
-              <Calculator className="h-5 w-5" />
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-4 space-y-3">
-            {/* Projection Mode Selection */}
-            <div className="bg-gradient-to-r from-purple-50 to-indigo-50 p-3 rounded-lg mb-3 border border-purple-200">
-              <Label className="text-sm font-semibold text-purple-800 mb-2 block">📊 विश्लेषण प्रकार निवडा</Label>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div 
-                  className={`p-2 rounded-lg border-2 cursor-pointer transition-all ${filters.projectionMode === 'current' ? 'border-indigo-500 bg-indigo-100' : 'border-gray-300 bg-white'}`}
-                  onClick={() => setFilters(prev => ({ ...prev, projectionMode: 'current' }))}
-                >
-                  <div className="flex items-center gap-2">
-                    <input 
-                      type="radio" 
-                      checked={filters.projectionMode === 'current'} 
-                      onChange={() => setFilters(prev => ({ ...prev, projectionMode: 'current' }))}
-                      className="text-indigo-500"
-                      autoComplete="off"
-                    />
-                    <span className="font-semibold text-indigo-800">🔍 सध्याचे नुकसान विश्लेषण</span>
-                  </div>
-                  <div className="text-sm text-gray-600 mt-1">आजच्या तारखेपर्यंत कोणती कर्जे loss मध्ये आहेत</div>
-                </div>
-                
-                <div 
-                  className={`p-2 rounded-lg border-2 cursor-pointer transition-all ${filters.projectionMode === 'future' ? 'border-purple-500 bg-purple-100' : 'border-gray-300 bg-white'}`}
-                  onClick={() => setFilters(prev => ({ ...prev, projectionMode: 'future' }))}
-                >
-                  <div className="flex items-center gap-2">
-                    <input 
-                      type="radio" 
-                      checked={filters.projectionMode === 'future'} 
-                      onChange={() => setFilters(prev => ({ ...prev, projectionMode: 'future' }))}
-                      className="text-purple-500"
-                      autoComplete="off"
-                    />
-                    <span className="font-semibold text-purple-800">🔮 भविष्यातील नुकसान अंदाज</span>
-                  </div>
-                  <div className="text-sm text-gray-600 mt-1">पुढच्या काळात कोणती कर्जे loss मध्ये येतील</div>
-                </div>
-              </div>
-            </div>
-
-            {/* Future Projection Period - Only show if future mode selected */}
-            {filters.projectionMode === 'future' && (
-              <div className="bg-purple-50 p-3 rounded-lg mb-3 border border-purple-200">
-                <Label className="text-sm font-semibold text-purple-800 mb-2 block">⏰ भविष्यातील कालावधी निवडा</Label>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                  {[
-                    { value: '1month', label: '1 महिना', desc: 'पुढच्या महिन्यात' },
-                    { value: '3months', label: '3 महिने', desc: 'पुढच्या तीन महिन्यात' },
-                    { value: '6months', label: '6 महिने', desc: 'पुढच्या सहा महिन्यात' },
-                    { value: '1year', label: '1 वर्ष', desc: 'पुढच्या वर्षभरात' }
-                  ].map((period) => (
-                    <div 
-                      key={period.value}
-                      className={`p-2 rounded-lg border-2 cursor-pointer transition-all text-center ${filters.futureProjectionPeriod === period.value ? 'border-purple-500 bg-purple-200' : 'border-gray-300 bg-white'}`}
-                      onClick={() => setFilters(prev => ({ ...prev, futureProjectionPeriod: period.value as any }))}
-                    >
-                      <div className="font-semibold text-purple-800">{period.label}</div>
-                      <div className="text-xs text-gray-600">{period.desc}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+        <div className="flex mb-4 bg-white rounded-lg border border-gray-200 p-1 shadow-sm print:hidden">
+          <button 
+            onClick={() => { setActiveTab("group"); setReportGenerated(false); }}
+            className={cn(
+              "flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all",
+              activeTab === "group" 
+                ? "bg-indigo-600 text-white shadow-sm" 
+                : "text-gray-600 hover:bg-gray-100"
             )}
+          >
+            <Users className="h-4 w-4" /> गट प्रमाणे
+          </button>
+          <button 
+            onClick={() => { setActiveTab("customer"); setReportGenerated(false); }}
+            className={cn(
+              "flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all",
+              activeTab === "customer" 
+                ? "bg-indigo-600 text-white shadow-sm" 
+                : "text-gray-600 hover:bg-gray-100"
+            )}
+          >
+            <User className="h-4 w-4" /> कस्टमर नावाप्रमाणे
+          </button>
+        </div>
 
-            <div className="bg-indigo-50 p-3 rounded-lg mb-3">
-              <div className="text-[10px] sm:text-xs text-indigo-700 mb-2">
-                <strong>नोंद:</strong> {filters.projectionMode === 'current' ? 
-                  'या तारखांमध्ये दिलेली कर्जे आजच्या तारखेला नुकसानात आहेत का ते तपासले जाईल' :
-                  `या तारखांमध्ये दिलेली कर्जे पुढच्या ${filters.futureProjectionPeriod === '1month' ? 'महिन्यात' : filters.futureProjectionPeriod === '3months' ? 'तीन महिन्यात' : filters.futureProjectionPeriod === '6months' ? 'सहा महिन्यात' : 'वर्षभरात'} नुकसानात येतील का ते दाखवले जाईल`
-                }
-              </div>
-            </div>
+        {renderFilters()}
 
-            {/* Interest Calculation Formula Display */}
-            <div className="bg-green-50 p-3 rounded-lg mb-3 border border-green-200">
-              <div className="text-[10px] sm:text-xs text-green-800">
-                <strong>📊 व्याज गणना पद्धत:</strong> Advanced Compound Interest (Calculator च्या सारखेच)<br/>
-                <strong>📋 नियम:</strong> 2 दिवस झाले तरी पूर्ण महिना कन्सिडर केला जातो<br/>
-                <strong>🔄 कंपाउंड:</strong> दर वर्षी व्याज मुळ रकमेत जमा होते (Yearly Compounding)<br/>
-                <strong>💡 सध्या:</strong> आजच्या तारखेपर्यंत नुकसान | <strong>🔮 भविष्य:</strong> आजच्या तारखेपासून +6 महिने व्याज
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
-              {/* Date Range */}
-              <div>
-                <Label className="text-sm font-semibold">पासून तारीख * (कर्ज वितरण)</Label>
-                <Input
-                  type="date"
-                  value={filters.dateFrom}
-                  onChange={(e) => setFilters(prev => ({ ...prev, dateFrom: e.target.value }))}
-                  className="mt-1 font-inter"
-                />
-                <div className="text-xs text-gray-500 mt-1">डीफॉल्ट: आजची तारीख</div>
-              </div>
-              <div>
-                <Label className="text-sm font-semibold">पर्यंत तारीख * (कर्ज वितरण)</Label>
-                <Input
-                  type="date"
-                  value={filters.dateTo}
-                  onChange={(e) => setFilters(prev => ({ ...prev, dateTo: e.target.value }))}
-                  className="mt-1 font-inter"
-                />
-                <div className="text-xs text-gray-500 mt-1">आजची तारीख: {formatDate(new Date().toISOString())}</div>
-              </div>
-              
-              {/* Group Selection */}
-              <div>
-                <Label className="text-sm font-semibold">गट निवड</Label>
-                <Select 
-                  value={filters.groupId} 
-                  onValueChange={(value) => setFilters(prev => ({ ...prev, groupId: value }))}
-                >
-                  <SelectTrigger className="mt-1">
-                    <SelectValue placeholder="सर्व गट / All Groups" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">सर्व गट / All Groups</SelectItem>
-                    {(groups as any[]).map((group: any) => (
-                      <SelectItem key={group.id} value={group.id}>
-                        {group.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <div className="text-xs text-gray-500 mt-1">सर्व गटांसाठी 'All Groups' निवडा</div>
-              </div>
-
-              {/* Current Gold Rate - Now in main row for laptop */}
-              <div>
-                <Label className="text-orange-700 font-medium">💰 सोन्याचा दर (ग्राम)</Label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  placeholder="उदा: 7000"
-                  value={filters.currentGoldRate || ''}
-                  onChange={(e) => setFilters(prev => ({ ...prev, currentGoldRate: e.target.value }))}
-                  className="mt-1 bg-white border-2 border-orange-300 focus:border-orange-500"
-                />
-                <div className="text-xs text-orange-600 mt-1">प्रति ग्राम दर</div>
-              </div>
-
-              {/* Gold Purity - Now in main row for laptop */}
-              <div>
-                <Label className="text-green-700 font-medium">⭐ सोन्याची शुद्धता (%)</Label>
-                <Input
-                  type="number"
-                  step="0.1"
-                  min="50"
-                  max="100"
-                  placeholder="उदा: 80"
-                  value={filters.finePurityPercentage || ''}
-                  onChange={(e) => setFilters(prev => ({ ...prev, finePurityPercentage: e.target.value }))}
-                  className="mt-1 bg-white border-2 border-green-300 focus:border-green-500"
-                />
-                <div className="text-xs text-green-600 mt-1">80%, 90%, 91.6% etc</div>
-              </div>
-            </div>
-
-            {/* Interest Rate Mode in separate compact row */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-              {/* Interest Rate Mode Selection */}
-              <div className="space-y-2">
-                <Label className="text-orange-700 font-medium">⚙️ व्याज दर पद्धत</Label>
-                <Select value={filters.interestRateMode} onValueChange={(value: 'loan-wise' | 'manual') => 
-                  setFilters(prev => ({ ...prev, interestRateMode: value }))}>
-                  <SelectTrigger className="bg-white border-2 border-orange-300 focus:border-orange-500">
-                    <SelectValue placeholder="व्याज दर पद्धत निवडा" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="loan-wise">📋 कर्ज नोंदणीतील व्याज दर</SelectItem>
-                    <SelectItem value="manual">✏️ मॅन्युअल व्याज दर</SelectItem>
-                  </SelectContent>
-                </Select>
-                <div className="text-xs text-orange-600 mt-1">
-                  {filters.interestRateMode === 'loan-wise' 
-                    ? "प्रत्येक कर्जाचा नोंदणी केलेला व्याज दर वापरेल" 
-                    : "सर्व कर्जांसाठी एकच व्याज दर वापरेल"}
-                </div>
-              </div>
-
-              {/* Manual Interest Rate - Only show when manual mode selected */}
-              {filters.interestRateMode === 'manual' && (
-                <div className="space-y-2">
-                  <Label className="text-purple-700 font-medium">📊 मासिक व्याज दर (%)</Label>
-                  <Input
-                    type="number"
-                    step="0.1"
-                    min="0.1"
-                    max="50"
-                    placeholder="उदा: 1.5"
-                    value={filters.monthlyInterestRate || ''}
-                    onChange={(e) => setFilters(prev => ({ ...prev, monthlyInterestRate: e.target.value }))}
-                    className="mt-1 bg-white border-2 border-purple-300 focus:border-purple-500"
-                  />
-                  <div className="text-xs text-purple-600 mt-1">
-                    ✏️ उदा: 1.5% किंवा 15 (दोन्ही योग्य) | Both formats supported
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="flex justify-between items-center pt-4">
-              {/* Clear Button - Left side */}
-              <Button 
-                type="button" 
-                variant="outline" 
-                onClick={() => {
-                  setFilters({
-                    dateFrom: new Date().toISOString().split('T')[0],
-                    dateTo: new Date().toISOString().split('T')[0],
-                    groupId: "all",
-                    currentGoldRate: "",
-                    finePurityPercentage: "",
-                    monthlyInterestRate: "",
-                    interestRateMode: 'loan-wise',
-                    projectionMode: 'current',
-                    futureProjectionPeriod: '3months'
-                  });
-                  setReportGenerated(false); // Clear report
-                }}
-                className="text-orange-600 border-orange-300 hover:bg-orange-50"
-              >
-                🗑️ साफ करा
-              </Button>
-              
-              {/* Generate Button - Right side */}
-              <Button 
-                onClick={handleGenerateReport}
-                disabled={isGenerating}
-                className="bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 text-white px-6 py-2"
-              >
-                {isGenerating ? "तयार करीत आहे..." : "अहवाल तयार करा"}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Professional Report Header - Print Optimized */}
         {reportGenerated && (
           <div ref={reportSectionRef} className="bg-white shadow-lg print:shadow-none print-content">
-            {/* Report Header - Only on Screen */}
             <div className="p-4 border-b-2 border-gray-200 print:hidden">
               <div className="text-center">
                 <h1 className="text-lg sm:text-2xl font-bold text-gray-800 mb-2">
@@ -968,12 +1100,14 @@ export default function OverdueReport() {
                   }
                 </h2>
                 
-                {/* Report Parameters - Screen Only */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm mt-6 max-w-2xl mx-auto">
                   <div className="text-left">
                     <p><strong>Report Date:</strong> {formatDate(new Date().toISOString())}</p>
                     <p><strong>Analysis Type:</strong> {filters.projectionMode === 'current' ? 'आजच्या दिनांकापर्यंत' : `${filters.futureProjectionPeriod === '1month' ? 'पुढच्या महिन्यात' : filters.futureProjectionPeriod === '3months' ? 'पुढच्या तीन महिन्यात' : filters.futureProjectionPeriod === '6months' ? 'पुढच्या सहा महिन्यात' : 'पुढच्या वर्षभरात'}`}</p>
                     <p><strong>Date Range:</strong> {formatDateForInput(filters.dateFrom)} to {formatDateForInput(filters.dateTo)}</p>
+                    {activeTab === "customer" && selectedCustomerName && (
+                      <p><strong>Customer:</strong> {selectedCustomerName}</p>
+                    )}
                   </div>
                   <div className="text-left">
                     <p><strong>Gold Rate:</strong> ₹{filters.currentGoldRate}/gram</p>
@@ -982,23 +1116,68 @@ export default function OverdueReport() {
                   </div>
                 </div>
                 
-                {/* Summary Line - Screen Only */}
                 <div className="mt-6 pt-4 border-t border-gray-300">
                   <p className="text-sm sm:text-base font-semibold text-gray-700">
-                    Total Loans: {totalLoans} (सुरक्षित वगळले: {filteredOutCount}) | Total Loss: {formatCurrency(totalLoss)} | Average Loss: {formatCurrency(averageLoss)}
+                    Total Loans: {totalLoans} {viewMode === "default" && `(सुरक्षित वगळले: ${filteredOutCount})`} | Total Loss: {formatCurrency(totalLoss)} | Average Loss: {formatCurrency(averageLoss)}
                   </p>
+                  <div className="flex flex-wrap gap-2 justify-center mt-3">
+                    {levelCounts.loss > 0 && (
+                      <span className="px-3 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700">
+                        नुकसान: {levelCounts.loss}
+                      </span>
+                    )}
+                    {levelCounts.low > 0 && (
+                      <span className="px-3 py-1 rounded-full text-xs font-bold bg-orange-100 text-orange-700">
+                        कमी सुरक्षित: {levelCounts.low}
+                      </span>
+                    )}
+                    {levelCounts.medium > 0 && (
+                      <span className="px-3 py-1 rounded-full text-xs font-bold bg-yellow-100 text-yellow-700">
+                        मध्यम सुरक्षित: {levelCounts.medium}
+                      </span>
+                    )}
+                    {levelCounts.safe > 0 && (
+                      <span className="px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700">
+                        पूर्ण सुरक्षित: {levelCounts.safe}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex justify-center mt-4">
+                  <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
+                    <button 
+                      onClick={() => setViewMode("default")}
+                      className={cn(
+                        "px-3 py-1.5 rounded-md text-xs font-medium transition-all",
+                        viewMode === "default" 
+                          ? "bg-indigo-600 text-white shadow-sm" 
+                          : "text-gray-600 hover:bg-gray-200"
+                      )}
+                    >
+                      डिफॉल्ट (नुकसान + कमी सुरक्षित)
+                    </button>
+                    <button 
+                      onClick={() => setViewMode("all")}
+                      className={cn(
+                        "px-3 py-1.5 rounded-md text-xs font-medium transition-all",
+                        viewMode === "all" 
+                          ? "bg-indigo-600 text-white shadow-sm" 
+                          : "text-gray-600 hover:bg-gray-200"
+                      )}
+                    >
+                      सर्व पहा
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
             
-            {/* Print Header - Professional Layout */}
             <div className="print-only" style={{display: 'none', color: 'black', marginTop: '5px', marginBottom: '15px', padding: '10px', border: '2px solid black'}}>
-              {/* Report Title */}
               <div style={{textAlign: 'center', fontSize: '14pt', fontWeight: 'bold', marginBottom: '12px', textDecoration: 'underline'}}>
                 {filters.projectionMode === 'current' ? 'मुदत वाढलेल्या कर्जांचा तपशील' : 'भविष्यातील नुकसान अंदाज रिपोर्ट'}
               </div>
               
-              {/* Report Details Table */}
               <table style={{width: '100%', borderCollapse: 'collapse', fontSize: '9pt', marginBottom: '10px'}}>
                 <tbody>
                   <tr>
@@ -1047,7 +1226,6 @@ export default function OverdueReport() {
               </table>
             </div>
 
-            {/* Screen Display - Professional Table View */}
             <div ref={dataTableRef} className="print:hidden">
               {sortedOverdueData.length === 0 ? (
                 <Card className="p-8 text-center">
@@ -1062,57 +1240,58 @@ export default function OverdueReport() {
               ) : (
                 <Card className="overflow-hidden">
                   <div className="sm:hidden divide-y divide-gray-100">
-                    {sortedOverdueData.map((item: OverdueItem, index: number) => (
-                      <div 
-                        key={item.loanId}
-                        onClick={() => handleRowSelect(item)}
-                        className={cn(
-                          "p-3 cursor-pointer transition-colors",
-                          selectedRowIndex === index ? "bg-indigo-50 border-l-4 border-l-indigo-500" : "",
-                          "active:bg-indigo-50"
-                        )}
-                      >
-                        <div className="flex justify-between items-start mb-2">
-                          <div>
-                            <div className="font-bold text-gray-900 text-sm">{item.borrowerName}</div>
-                            <div className="text-xs text-gray-500">{item.groupName} | {formatDate(item.loanDate)}</div>
+                    {sortedOverdueData.map((item: OverdueItem, index: number) => {
+                      const security = getSecurityLevel(item);
+                      return (
+                        <div 
+                          key={item.loanId}
+                          onClick={() => handleRowSelect(item)}
+                          className={cn(
+                            "p-3 cursor-pointer transition-colors",
+                            selectedRowIndex === index ? "bg-indigo-50 border-l-4 border-l-indigo-500" : "",
+                            "active:bg-indigo-50"
+                          )}
+                        >
+                          <div className="flex justify-between items-start mb-2">
+                            <div>
+                              <div className="font-bold text-gray-900 text-sm">{item.borrowerName}</div>
+                              <div className="text-xs text-gray-500">{item.groupName} | {formatDate(item.loanDate)}</div>
+                            </div>
+                            <div className={`text-xs font-bold px-2 py-0.5 rounded-full ${security.bgColor} ${security.color}`}>
+                              {security.label}{item.lossAmount > 0 ? `: ${formatCurrency(item.lossAmount)}` : ''}
+                            </div>
                           </div>
-                          <div className={`text-xs font-bold px-2 py-0.5 rounded-full ${
-                            item.lossAmount > 0 ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'
-                          }`}>
-                            {item.lossAmount > 0 ? `नुकसान: ${formatCurrency(item.lossAmount)}` : 'कमी सुरक्षित'}
+                          <div className="grid grid-cols-3 gap-2 text-xs">
+                            <div>
+                              <span className="text-gray-500">मुद्दल</span>
+                              <div className="font-semibold text-purple-700">{formatCurrency(item.principalAmount)}</div>
+                            </div>
+                            <div>
+                              <span className="text-gray-500">व्याज</span>
+                              <div className="font-semibold text-orange-700">{formatCurrency(item.interestToDate)}</div>
+                            </div>
+                            <div>
+                              <span className="text-gray-500">एकूण</span>
+                              <div className="font-semibold text-indigo-700">{formatCurrency(item.totalAmount)}</div>
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-3 gap-2 text-xs mt-1">
+                            <div>
+                              <span className="text-gray-500">वजन</span>
+                              <div className="font-semibold text-amber-700">{item.goldWeight}g</div>
+                            </div>
+                            <div>
+                              <span className="text-gray-500">सोन्याची किंमत</span>
+                              <div className="font-semibold text-green-700">{formatCurrency(item.currentGoldValue)}</div>
+                            </div>
+                            <div>
+                              <span className="text-gray-500">दिवस</span>
+                              <div className="font-semibold text-gray-700">{item.daysOverdue}</div>
+                            </div>
                           </div>
                         </div>
-                        <div className="grid grid-cols-3 gap-2 text-xs">
-                          <div>
-                            <span className="text-gray-500">मुद्दल</span>
-                            <div className="font-semibold text-purple-700">{formatCurrency(item.principalAmount)}</div>
-                          </div>
-                          <div>
-                            <span className="text-gray-500">व्याज</span>
-                            <div className="font-semibold text-orange-700">{formatCurrency(item.interestToDate)}</div>
-                          </div>
-                          <div>
-                            <span className="text-gray-500">एकूण</span>
-                            <div className="font-semibold text-indigo-700">{formatCurrency(item.totalAmount)}</div>
-                          </div>
-                        </div>
-                        <div className="grid grid-cols-3 gap-2 text-xs mt-1">
-                          <div>
-                            <span className="text-gray-500">वजन</span>
-                            <div className="font-semibold text-amber-700">{item.goldWeight}g</div>
-                          </div>
-                          <div>
-                            <span className="text-gray-500">सोन्याची किंमत</span>
-                            <div className="font-semibold text-green-700">{formatCurrency(item.currentGoldValue)}</div>
-                          </div>
-                          <div>
-                            <span className="text-gray-500">दिवस</span>
-                            <div className="font-semibold text-gray-700">{item.daysOverdue}</div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                   <div className="hidden sm:block overflow-x-auto">
                     <table className="w-full border-collapse">
@@ -1132,33 +1311,41 @@ export default function OverdueReport() {
                         </tr>
                       </thead>
                       <tbody>
-                        {sortedOverdueData.map((item: OverdueItem, index: number) => (
-                          <tr 
-                            key={item.loanId} 
-                            data-row-index={index}
-                            onClick={() => handleRowSelect(item)}
-                            className={cn(
-                              "cursor-pointer transition-colors border-l-4",
-                              selectedRowIndex === index 
-                                ? "bg-indigo-100 border-l-indigo-500 ring-2 ring-indigo-200" 
-                                : index % 2 === 0 ? 'bg-white border-l-transparent' : 'bg-gray-50 border-l-transparent',
-                              "hover:bg-indigo-50 hover:border-l-indigo-300"
-                            )}>
-                            <td className="border border-gray-300 px-3 py-3 text-base font-bold text-gray-800">{item.borrowerName}</td>
-                            <td className="border border-gray-300 px-3 py-3 text-base text-indigo-600 font-medium">{item.borrowerPhone}</td>
-                            <td className="border border-gray-300 px-3 py-3 text-base text-gray-600">{item.groupName}</td>
-                            <td className="border border-gray-300 px-3 py-3 text-base text-center text-gray-700">{formatDate(item.loanDate)}</td>
-                            <td className="border border-gray-300 px-3 py-3 text-base text-right font-semibold text-purple-700">{formatCurrency(item.principalAmount)}</td>
-                            <td className="border border-gray-300 px-3 py-3 text-base text-right font-semibold text-orange-700">{formatCurrency(item.interestToDate)}</td>
-                            <td className="border border-gray-300 px-3 py-3 text-base text-center font-semibold text-amber-700">{item.goldWeight}</td>
-                            <td className="border border-gray-300 px-3 py-3 text-base text-right font-semibold text-green-700">{formatCurrency(item.currentGoldValue)}</td>
-                            <td className="border border-gray-300 px-3 py-3 text-base text-right font-bold text-indigo-700">{formatCurrency(item.totalAmount)}</td>
-                            <td className={`border border-gray-300 px-3 py-3 text-base text-right font-bold ${item.lossAmount > 0 ? 'text-red-600 bg-red-50' : 'text-green-600 bg-green-50'}`}>
-                              {item.lossAmount > 0 ? formatCurrency(item.lossAmount) : '✓ सुरक्षित'}
-                            </td>
-                            <td className="border border-gray-300 px-3 py-3 text-base text-center text-gray-700">{item.daysOverdue}</td>
-                          </tr>
-                        ))}
+                        {sortedOverdueData.map((item: OverdueItem, index: number) => {
+                          const security = getSecurityLevel(item);
+                          return (
+                            <tr 
+                              key={item.loanId} 
+                              data-row-index={index}
+                              onClick={() => handleRowSelect(item)}
+                              className={cn(
+                                "cursor-pointer transition-colors border-l-4",
+                                selectedRowIndex === index 
+                                  ? "bg-indigo-100 border-l-indigo-500 ring-2 ring-indigo-200" 
+                                  : index % 2 === 0 ? 'bg-white border-l-transparent' : 'bg-gray-50 border-l-transparent',
+                                "hover:bg-indigo-50 hover:border-l-indigo-300"
+                              )}>
+                              <td className="border border-gray-300 px-3 py-3 text-base font-bold text-gray-800">{item.borrowerName}</td>
+                              <td className="border border-gray-300 px-3 py-3 text-base text-indigo-600 font-medium">{item.borrowerPhone}</td>
+                              <td className="border border-gray-300 px-3 py-3 text-base text-gray-600">{item.groupName}</td>
+                              <td className="border border-gray-300 px-3 py-3 text-base text-center text-gray-700">{formatDate(item.loanDate)}</td>
+                              <td className="border border-gray-300 px-3 py-3 text-base text-right font-semibold text-purple-700">{formatCurrency(item.principalAmount)}</td>
+                              <td className="border border-gray-300 px-3 py-3 text-base text-right font-semibold text-orange-700">{formatCurrency(item.interestToDate)}</td>
+                              <td className="border border-gray-300 px-3 py-3 text-base text-center font-semibold text-amber-700">{item.goldWeight}</td>
+                              <td className="border border-gray-300 px-3 py-3 text-base text-right font-semibold text-green-700">{formatCurrency(item.currentGoldValue)}</td>
+                              <td className="border border-gray-300 px-3 py-3 text-base text-right font-bold text-indigo-700">{formatCurrency(item.totalAmount)}</td>
+                              <td className={`border border-gray-300 px-3 py-3 text-base text-right font-bold ${security.bgColor}`}>
+                                <div className={`${security.color}`}>
+                                  {item.lossAmount > 0 ? formatCurrency(item.lossAmount) : ''}
+                                </div>
+                                <span className={`text-xs font-bold px-1.5 py-0.5 rounded-full ${security.bgColor} ${security.color}`}>
+                                  {security.label}
+                                </span>
+                              </td>
+                              <td className="border border-gray-300 px-3 py-3 text-base text-center text-gray-700">{item.daysOverdue}</td>
+                            </tr>
+                          );
+                        })}
                       </tbody>
                     </table>
                   </div>
@@ -1166,7 +1353,6 @@ export default function OverdueReport() {
               )}
             </div>
 
-            {/* Print Table - Professional Complete Details */}
             <div className="print-only" style={{display: 'none'}}>
               <table style={{
                 width: '100%',
@@ -1216,7 +1402,6 @@ export default function OverdueReport() {
                       </tr>
                     ))
                   )}
-                  {/* Summary Row - Only show when there's data */}
                   {(overdueData as OverdueItem[]).length > 0 && (
                     <tr style={{backgroundColor: '#f8f9fa', borderTop: '2px solid black'}}>
                       <td colSpan={11} style={{
@@ -1227,7 +1412,7 @@ export default function OverdueReport() {
                         fontSize: '9pt',
                         color: 'black'
                       }}>
-                        Total Loans: {totalLoans} (सुरक्षित वगळले: {filteredOutCount}) | Total Loss: {formatCurrency(totalLoss)} | Average Loss: {formatCurrency(averageLoss)}
+                        Total Loans: {totalLoans} {viewMode === "default" && `(सुरक्षित वगळले: ${filteredOutCount})`} | Total Loss: {formatCurrency(totalLoss)} | Average Loss: {formatCurrency(averageLoss)}
                       </td>
                     </tr>
                   )}
@@ -1235,7 +1420,6 @@ export default function OverdueReport() {
               </table>
             </div>
             
-            {/* Export Buttons */}
             <div className="mt-6 text-center print:hidden space-y-3">
               <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">
                 <Button 
@@ -1247,7 +1431,7 @@ export default function OverdueReport() {
                 </Button>
                 <Button 
                   onClick={exportToExcel}
-                  className="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white px-6 py-2 flex items-center gap-2"
+                  className="hidden sm:flex w-auto bg-green-600 hover:bg-green-700 text-white px-6 py-2 items-center gap-2"
                 >
                   <FileSpreadsheet className="h-4 w-4" />
                   Excel Export
@@ -1257,7 +1441,6 @@ export default function OverdueReport() {
           </div>
         )}
 
-        {/* Compact Loan Details Modal */}
         {selectedLoan && (
           <Dialog open={showDetailsModal} onOpenChange={setShowDetailsModal}>
             <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -1269,7 +1452,6 @@ export default function OverdueReport() {
               </DialogHeader>
               
               <div className="space-y-4">
-                {/* Essential Loan Info */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-gradient-to-r from-indigo-50 to-indigo-50 rounded-lg border border-indigo-200">
                   <div>
                     <Label className="text-sm font-semibold text-indigo-700">तारणाचा तपशील</Label>
@@ -1286,7 +1468,6 @@ export default function OverdueReport() {
                   </div>
                 </div>
 
-                {/* Photo Viewer Component */}
                 <div className="border border-gray-200 rounded-lg p-4">
                   <PhotoViewer 
                     loanId={selectedLoan.loanId} 
@@ -1295,7 +1476,6 @@ export default function OverdueReport() {
                   />
                 </div>
 
-                {/* Close Button */}
                 <div className="flex justify-center pt-4">
                   <Button 
                     variant="outline" 
@@ -1310,7 +1490,6 @@ export default function OverdueReport() {
           </Dialog>
         )}
 
-        {/* Keyboard Navigation Help */}
         {reportGenerated && sortedOverdueData.length > 0 && (
           <div className="hidden sm:block mt-4 p-3 bg-indigo-50 rounded-lg border border-indigo-200 print:hidden">
             <div className="text-xs text-indigo-700">

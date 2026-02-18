@@ -2574,11 +2574,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     try {
       console.log('🔍 OVERDUE: Parsing parameters...');
-      const { dateFrom, dateTo, groupId, currentGoldRate, finePurityPercentage, monthlyInterestRate, interestRateMode, projectionMode, futureProjectionPeriod } = req.query;
+      const { dateFrom, dateTo, groupId, currentGoldRate, finePurityPercentage, monthlyInterestRate, interestRateMode, projectionMode, futureProjectionPeriod, customerName } = req.query;
       
-      console.log('🔍 PROJECTION PARAMS:', { projectionMode, futureProjectionPeriod });
+      console.log('🔍 PROJECTION PARAMS:', { projectionMode, futureProjectionPeriod, customerName });
       
-      const filters = {
+      const filters: any = {
         dateFrom: dateFrom as string || new Date().toISOString().split('T')[0],
         dateTo: dateTo as string || new Date().toISOString().split('T')[0],
         groupId: groupId as string === "all" ? "all" : groupId as string || "all",
@@ -2589,6 +2589,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         projectionMode: projectionMode as string || 'current',
         futureProjectionPeriod: futureProjectionPeriod as string || '3months',
       };
+      if (customerName) {
+        filters.customerName = customerName as string;
+      }
 
       console.log('🔍 OVERDUE: Calling storage method for tenant:', req.session.tenantId);
       const overdueData = await storage.getOverdueReportWithCorrectMath(req.session.tenantId!, filters);
@@ -4975,6 +4978,165 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Activity logs clear error:", error);
       res.status(500).json({ message: "Failed to clear activity logs" });
+    }
+  });
+
+  // ==================== IBJA Gold Rate Auto-Fetch ====================
+  const goldRateCache: { rate: number | null; source: string; timestamp: number; perGram: number | null } = {
+    rate: null,
+    source: '',
+    timestamp: 0,
+    perGram: null
+  };
+  const GOLD_CACHE_DURATION = 4 * 60 * 60 * 1000; // 4 hours cache
+
+  async function fetchGoldRateFromIBJA(): Promise<{ rate995: number; rate999: number; rate916: number } | null> {
+    try {
+      const response = await fetch('https://ibjarates.com/', {
+        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
+        signal: AbortSignal.timeout(10000)
+      });
+      if (!response.ok) return null;
+      const html = await response.text();
+
+      const match995 = html.match(/lblGold995_PM[^>]*>(\d+)/);
+      const match999 = html.match(/lblGold999_PM[^>]*>(\d+)/);
+      const match916 = html.match(/lblGold916_PM[^>]*>(\d+)/);
+
+      let rate995 = match995 ? parseInt(match995[1]) : 0;
+      let rate999 = match999 ? parseInt(match999[1]) : 0;
+      let rate916 = match916 ? parseInt(match916[1]) : 0;
+
+      if (rate999 === 0) {
+        const chartMatch = html.match(/purity999[^[]*\[([^\]]+)\]/);
+        if (chartMatch) {
+          const values = chartMatch[1].split(',').map((v: string) => parseInt(v.trim()));
+          rate999 = values[values.length - 1] || 0;
+        }
+      }
+
+      if (rate995 > 0 || rate999 > 0) {
+        console.log(`✅ IBJA Gold Rate fetched - 995: ₹${rate995}/10g, 999: ₹${rate999}/10g, 916: ₹${rate916}/10g`);
+        return { rate995, rate999, rate916 };
+      }
+      return null;
+    } catch (error) {
+      console.log('⚠️ IBJA fetch failed:', (error as Error).message);
+      return null;
+    }
+  }
+
+  async function fetchGoldRateFromAIB(): Promise<{ rate999: number; rate916: number } | null> {
+    try {
+      const response = await fetch('https://allindiabullion.com/', {
+        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
+        signal: AbortSignal.timeout(10000)
+      });
+      if (!response.ok) return null;
+      const html = await response.text();
+
+      const match24k = html.match(/"24K 999[^"]*per 10g[^"]*"[^}]*"price"\s*:\s*"?(\d+)"?/);
+      const match22k = html.match(/"22K 916[^"]*per 10g[^"]*"[^}]*"price"\s*:\s*"?(\d+)"?/);
+
+      if (match24k) {
+        const rate999 = parseInt(match24k[1]);
+        const rate916 = match22k ? parseInt(match22k[1]) : 0;
+        console.log(`✅ AIB Gold Rate fetched - 999: ₹${rate999}/10g, 916: ₹${rate916}/10g`);
+        return { rate999, rate916 };
+      }
+      return null;
+    } catch (error) {
+      console.log('⚠️ AIB fetch failed:', (error as Error).message);
+      return null;
+    }
+  }
+
+  app.get("/api/gold-rate", async (req, res) => {
+    try {
+      const now = Date.now();
+      if (goldRateCache.rate && (now - goldRateCache.timestamp) < GOLD_CACHE_DURATION) {
+        return res.json({
+          success: true,
+          rate: goldRateCache.rate,
+          perGram: goldRateCache.perGram,
+          source: goldRateCache.source,
+          cached: true,
+          timestamp: new Date(goldRateCache.timestamp).toISOString()
+        });
+      }
+
+      // Layer 1: IBJA (995 purity - most accurate for Indian market)
+      const ibjaData = await fetchGoldRateFromIBJA();
+      if (ibjaData && ibjaData.rate995 > 0) {
+        goldRateCache.rate = ibjaData.rate995;
+        goldRateCache.perGram = Math.round(ibjaData.rate995 / 10);
+        goldRateCache.source = 'IBJA (995 शुद्धता)';
+        goldRateCache.timestamp = now;
+        return res.json({
+          success: true,
+          rate: ibjaData.rate995,
+          perGram: Math.round(ibjaData.rate995 / 10),
+          rate999: ibjaData.rate999,
+          rate916: ibjaData.rate916,
+          source: 'IBJA (995 शुद्धता)',
+          cached: false
+        });
+      }
+
+      if (ibjaData && ibjaData.rate999 > 0) {
+        const rate995 = Math.round(ibjaData.rate999 * 995 / 999);
+        goldRateCache.rate = rate995;
+        goldRateCache.perGram = Math.round(rate995 / 10);
+        goldRateCache.source = 'IBJA (999→995 गणना)';
+        goldRateCache.timestamp = now;
+        return res.json({
+          success: true,
+          rate: rate995,
+          perGram: Math.round(rate995 / 10),
+          rate999: ibjaData.rate999,
+          rate916: ibjaData.rate916,
+          source: 'IBJA (999→995 गणना)',
+          cached: false
+        });
+      }
+
+      // Layer 2: All India Bullion (backup)
+      const aibData = await fetchGoldRateFromAIB();
+      if (aibData && aibData.rate999 > 0) {
+        const rate995 = Math.round(aibData.rate999 * 995 / 999);
+        goldRateCache.rate = rate995;
+        goldRateCache.perGram = Math.round(rate995 / 10);
+        goldRateCache.source = 'All India Bullion';
+        goldRateCache.timestamp = now;
+        return res.json({
+          success: true,
+          rate: rate995,
+          perGram: Math.round(rate995 / 10),
+          rate999: aibData.rate999,
+          rate916: aibData.rate916,
+          source: 'All India Bullion',
+          cached: false
+        });
+      }
+
+      // Layer 3: No data available - manual entry needed
+      return res.json({
+        success: false,
+        rate: null,
+        perGram: null,
+        source: 'manual',
+        message: 'ऑनलाईन दर उपलब्ध नाही, कृपया मॅन्युअल दर टाका'
+      });
+
+    } catch (error) {
+      console.error("Gold rate fetch error:", error);
+      return res.json({
+        success: false,
+        rate: null,
+        perGram: null,
+        source: 'manual',
+        message: 'ऑनलाईन दर उपलब्ध नाही'
+      });
     }
   });
 
