@@ -54,8 +54,8 @@ const loanSchema = z.object({
   
   interestRate: z.string().min(1, "व्याजाचा दर आवश्यक आहे"),
   interestRateType: z.string().default("monthly"), // yearly, monthly
-  collateralDetails: z.string().optional(),
-  weight: z.string().optional(),
+  collateralDetails: z.string().min(1, "कृपया तारणाचा तपशील भरा"),
+  weight: z.string().min(1, "कृपया वजन भरा"),
   marketValue: z.string().optional(),
   documentDetails: z.string().optional().default("—"),
   specialConditions: z.string().optional().default("—"),
@@ -2146,11 +2146,11 @@ function Loans() {
                     name="collateralDetails"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-base font-medium">तारणाचा तपशील</FormLabel>
+                        <FormLabel className="text-base font-medium">तारणाचा तपशील <span className="text-red-500">*</span></FormLabel>
                         <FormControl>
                           <Input
                             {...field}
-                            placeholder="सोने, चांदी, इतर"
+                            placeholder=""
                             tabIndex={14}
                             className="text-base"
                             value={field.value || ''}
@@ -2171,11 +2171,11 @@ function Loans() {
                     name="weight"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-base font-medium">वजन</FormLabel>
+                        <FormLabel className="text-base font-medium">वजन <span className="text-red-500">*</span></FormLabel>
                         <FormControl>
                           <Input
                             {...field}
-                            placeholder="10 ग्राम"
+                            placeholder=""
                             tabIndex={15}
                             className="text-base"
                             value={field.value || ''}
