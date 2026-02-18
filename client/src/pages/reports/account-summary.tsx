@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 import { Label } from "@/components/ui/label";
-import { Search, Printer, Calendar, Download, Users, User, Trophy } from "lucide-react";
+import { Search, Printer, Calendar, Download, Users, User, Trophy, BarChart3, TrendingUp, Award } from "lucide-react";
 import { exportAccountSummaryToExcel } from "@/utils/excel-export";
 import { Sidebar } from "@/components/ui/sidebar";
 import { MobileNav } from "@/components/ui/mobile-nav";
@@ -734,6 +734,197 @@ export default function AccountSummaryReport() {
                     </div>
                   )}
                 </div>
+
+                {/* ==================== गट परफॉर्मन्स ग्राफ ==================== */}
+                {groupSummaries.length > 0 && (() => {
+                  const sortedByAmount = [...groupSummaries].sort((a, b) => b.totalAmount - a.totalAmount);
+                  const maxAmount = sortedByAmount[0]?.totalAmount || 1;
+                  const topGroup = sortedByAmount[0];
+
+                  const sortedByLoans = [...groupSummaries].sort((a, b) => b.totalLoans - a.totalLoans);
+                  const maxLoans = sortedByLoans[0]?.totalLoans || 1;
+
+                  const sortedByInterest = [...groupSummaries].sort((a, b) => b.totalInterest - a.totalInterest);
+                  const maxInterest = sortedByInterest[0]?.totalInterest || 1;
+
+                  return (
+                    <div className="mt-6 space-y-6 no-print">
+                      {/* Top Performer Card */}
+                      {topGroup && (
+                        <Card className="border-2 border-yellow-300 bg-gradient-to-r from-yellow-50 to-amber-50">
+                          <CardContent className="py-4 px-5">
+                            <div className="flex items-center gap-3">
+                              <div className="bg-yellow-400 rounded-full p-2.5 shadow-md">
+                                <Award className="h-6 w-6 text-white" />
+                              </div>
+                              <div className="flex-1">
+                                <div className="text-sm text-yellow-700 font-medium">सर्वोत्कृष्ट गट (एकूण वाटप)</div>
+                                <div className="text-xl font-bold text-yellow-900">{topGroup.name}</div>
+                              </div>
+                              <div className="text-right">
+                                <div className="text-lg font-bold text-yellow-900">{formatCurrency(topGroup.totalAmount)}</div>
+                                <div className="text-xs text-yellow-600">{topGroup.totalLoans} कर्जे | {topGroup.closedLoans} बंद</div>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      )}
+
+                      {/* Chart 1: एकूण वाटप रक्कम */}
+                      <Card>
+                        <CardHeader className="pb-3">
+                          <CardTitle className="text-base flex items-center gap-2">
+                            <BarChart3 className="h-5 w-5 text-indigo-600" />
+                            एकूण वाटप रक्कम (गटनिहाय)
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="space-y-3">
+                            {sortedByAmount.map((row, index) => {
+                              const widthPercent = (row.totalAmount / maxAmount) * 100;
+                              const closedPercent = row.totalAmount > 0 ? (row.closedAmount / row.totalAmount) * 100 : 0;
+                              const activePercent = 100 - closedPercent;
+                              return (
+                                <div key={index}>
+                                  <div className="flex justify-between items-center mb-1">
+                                    <span className="text-sm font-medium text-gray-700 truncate max-w-[40%]">{row.name}</span>
+                                    <span className="text-sm font-semibold text-gray-900">{formatCurrency(row.totalAmount)}</span>
+                                  </div>
+                                  <div className="relative h-7 bg-gray-100 rounded-full overflow-hidden">
+                                    <div
+                                      className="absolute inset-y-0 left-0 rounded-full overflow-hidden flex"
+                                      style={{ width: `${Math.max(widthPercent, 2)}%`, transition: 'width 0.8s ease-out' }}
+                                    >
+                                      <div
+                                        className="h-full bg-gradient-to-r from-green-500 to-green-400"
+                                        style={{ width: `${closedPercent}%` }}
+                                        title={`बंद: ${formatCurrency(row.closedAmount)}`}
+                                      />
+                                      <div
+                                        className="h-full bg-gradient-to-r from-indigo-500 to-indigo-400"
+                                        style={{ width: `${activePercent}%` }}
+                                        title={`सक्रिय: ${formatCurrency(row.activeBalance)}`}
+                                      />
+                                    </div>
+                                    {widthPercent > 15 && (
+                                      <span className="absolute inset-y-0 left-2 flex items-center text-xs font-semibold text-white drop-shadow">
+                                        {Math.round(widthPercent)}%
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                          <div className="flex items-center justify-center gap-6 mt-4 text-xs text-gray-500">
+                            <div className="flex items-center gap-1.5">
+                              <div className="w-3 h-3 rounded-full bg-gradient-to-r from-green-500 to-green-400" />
+                              बंद रक्कम
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                              <div className="w-3 h-3 rounded-full bg-gradient-to-r from-indigo-500 to-indigo-400" />
+                              सक्रिय शिल्लक
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      {/* Chart 2: कर्ज संख्या */}
+                      <Card>
+                        <CardHeader className="pb-3">
+                          <CardTitle className="text-base flex items-center gap-2">
+                            <TrendingUp className="h-5 w-5 text-emerald-600" />
+                            कर्ज संख्या (गटनिहाय)
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="space-y-3">
+                            {sortedByLoans.map((row, index) => {
+                              const widthPercent = (row.totalLoans / maxLoans) * 100;
+                              const closedPct = row.totalLoans > 0 ? (row.closedLoans / row.totalLoans) * 100 : 0;
+                              const activePct = 100 - closedPct;
+                              return (
+                                <div key={index}>
+                                  <div className="flex justify-between items-center mb-1">
+                                    <span className="text-sm font-medium text-gray-700 truncate max-w-[40%]">{row.name}</span>
+                                    <div className="flex items-center gap-2 text-sm">
+                                      <span className="text-green-600 font-medium">{row.closedLoans} बंद</span>
+                                      <span className="text-gray-400">/</span>
+                                      <span className="font-semibold text-gray-900">{row.totalLoans} एकूण</span>
+                                    </div>
+                                  </div>
+                                  <div className="relative h-6 bg-gray-100 rounded-full overflow-hidden">
+                                    <div
+                                      className="absolute inset-y-0 left-0 rounded-full overflow-hidden flex"
+                                      style={{ width: `${Math.max(widthPercent, 3)}%`, transition: 'width 0.8s ease-out' }}
+                                    >
+                                      <div
+                                        className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400"
+                                        style={{ width: `${closedPct}%` }}
+                                      />
+                                      <div
+                                        className="h-full bg-gradient-to-r from-orange-400 to-amber-400"
+                                        style={{ width: `${activePct}%` }}
+                                      />
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                          <div className="flex items-center justify-center gap-6 mt-4 text-xs text-gray-500">
+                            <div className="flex items-center gap-1.5">
+                              <div className="w-3 h-3 rounded-full bg-gradient-to-r from-emerald-500 to-emerald-400" />
+                              बंद कर्जे
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                              <div className="w-3 h-3 rounded-full bg-gradient-to-r from-orange-400 to-amber-400" />
+                              सक्रिय कर्जे
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      {/* Chart 3: व्याज उत्पन्न */}
+                      {sortedByInterest.some(r => r.totalInterest > 0) && (
+                        <Card>
+                          <CardHeader className="pb-3">
+                            <CardTitle className="text-base flex items-center gap-2">
+                              <Trophy className="h-5 w-5 text-amber-600" />
+                              व्याज उत्पन्न (गटनिहाय)
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="space-y-3">
+                              {sortedByInterest.filter(r => r.totalInterest > 0).map((row, index) => {
+                                const widthPercent = (row.totalInterest / maxInterest) * 100;
+                                return (
+                                  <div key={index}>
+                                    <div className="flex justify-between items-center mb-1">
+                                      <span className="text-sm font-medium text-gray-700 truncate max-w-[40%]">{row.name}</span>
+                                      <span className="text-sm font-semibold text-amber-700">{formatCurrency(row.totalInterest)}</span>
+                                    </div>
+                                    <div className="relative h-6 bg-gray-100 rounded-full overflow-hidden">
+                                      <div
+                                        className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-amber-500 to-yellow-400"
+                                        style={{ width: `${Math.max(widthPercent, 2)}%`, transition: 'width 0.8s ease-out' }}
+                                      />
+                                      {widthPercent > 15 && (
+                                        <span className="absolute inset-y-0 left-2 flex items-center text-xs font-semibold text-white drop-shadow">
+                                          {Math.round(widthPercent)}%
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      )}
+                    </div>
+                  );
+                })()}
               </>
             )}
 
