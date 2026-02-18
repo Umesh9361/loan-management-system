@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 import { Label } from "@/components/ui/label";
-import { Search, Printer, Calendar, Download, Users, User, Trophy, BarChart3, TrendingUp } from "lucide-react";
+import { Search, Printer, Calendar, Download, Users, User, Trophy, BarChart3, TrendingUp, ChevronDown } from "lucide-react";
 import { exportAccountSummaryToExcel } from "@/utils/excel-export";
 import { Sidebar } from "@/components/ui/sidebar";
 import { MobileNav } from "@/components/ui/mobile-nav";
@@ -735,6 +735,22 @@ export default function AccountSummaryReport() {
                   )}
                 </div>
 
+                {/* Shortcut to group performance */}
+                {groupSummaries.length > 0 && (
+                  <div className="flex justify-center no-print">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-indigo-600 border-indigo-200 hover:bg-indigo-50 gap-1.5"
+                      onClick={() => document.getElementById('group-performance-section')?.scrollIntoView({ behavior: 'smooth' })}
+                    >
+                      <BarChart3 className="h-4 w-4" />
+                      परफॉर्मन्स विश्लेषण पहा
+                      <ChevronDown className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                )}
+
                 {/* ==================== गट परफॉर्मन्स विश्लेषण ==================== */}
                 {groupSummaries.length > 0 && (() => {
                   const maxActiveLoans = Math.max(...groupSummaries.map(g => g.activeLoans), 1);
@@ -759,7 +775,7 @@ export default function AccountSummaryReport() {
                   const maxAmount = Math.max(...groupSummaries.map(g => g.totalAmount), 1);
 
                   return (
-                    <div className="mt-6 space-y-5 no-print">
+                    <div id="group-performance-section" className="mt-6 space-y-5 no-print">
 
                       {/* KPI Summary Row */}
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -1101,6 +1117,22 @@ export default function AccountSummaryReport() {
                   </div>
                 )}
 
+                {/* Shortcut to customer performance */}
+                {customerMode === "top50" && customerSummaries.length > 0 && (
+                  <div className="flex justify-center no-print">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-indigo-600 border-indigo-200 hover:bg-indigo-50 gap-1.5"
+                      onClick={() => document.getElementById('customer-performance-section')?.scrollIntoView({ behavior: 'smooth' })}
+                    >
+                      <BarChart3 className="h-4 w-4" />
+                      परफॉर्मन्स विश्लेषण पहा
+                      <ChevronDown className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                )}
+
                 {/* ==================== टॉप कस्टमर परफॉर्मन्स विश्लेषण ==================== */}
                 {customerMode === "top50" && customerSummaries.length > 0 && (() => {
                   const top10 = customerSummaries.slice(0, 10);
@@ -1122,7 +1154,7 @@ export default function AccountSummaryReport() {
                   }).sort((a, b) => b.smartScore - a.smartScore);
 
                   return (
-                    <div className="mt-6 space-y-5 no-print">
+                    <div id="customer-performance-section" className="mt-6 space-y-5 no-print">
 
                       {/* KPI Summary */}
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
