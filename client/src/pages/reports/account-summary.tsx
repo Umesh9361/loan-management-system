@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 import { Label } from "@/components/ui/label";
-import { Search, Printer, Calendar, Download, Users, User, Trophy, BarChart3, TrendingUp, Award } from "lucide-react";
+import { Search, Printer, Calendar, Download, Users, User, Trophy, BarChart3, TrendingUp } from "lucide-react";
 import { exportAccountSummaryToExcel } from "@/utils/excel-export";
 import { Sidebar } from "@/components/ui/sidebar";
 import { MobileNav } from "@/components/ui/mobile-nav";
@@ -735,193 +735,153 @@ export default function AccountSummaryReport() {
                   )}
                 </div>
 
-                {/* ==================== गट परफॉर्मन्स ग्राफ ==================== */}
+                {/* ==================== गट परफॉर्मन्स विश्लेषण ==================== */}
                 {groupSummaries.length > 0 && (() => {
-                  const sortedByAmount = [...groupSummaries].sort((a, b) => b.totalAmount - a.totalAmount);
-                  const maxAmount = sortedByAmount[0]?.totalAmount || 1;
-                  const topGroup = sortedByAmount[0];
+                  const sortedByRecovery = [...groupSummaries]
+                    .map(g => ({
+                      ...g,
+                      recoveryRate: g.totalAmount > 0 ? Math.min(100, (g.closedAmount / g.totalAmount) * 100) : 0
+                    }))
+                    .sort((a, b) => b.recoveryRate - a.recoveryRate);
 
-                  const sortedByLoans = [...groupSummaries].sort((a, b) => b.totalLoans - a.totalLoans);
-                  const maxLoans = sortedByLoans[0]?.totalLoans || 1;
-
-                  const sortedByInterest = [...groupSummaries].sort((a, b) => b.totalInterest - a.totalInterest);
-                  const maxInterest = sortedByInterest[0]?.totalInterest || 1;
+                  const maxAmount = Math.max(...groupSummaries.map(g => g.totalAmount), 1);
 
                   return (
-                    <div className="mt-6 space-y-6 no-print">
-                      {/* Top Performer Card */}
-                      {topGroup && (
-                        <Card className="border-2 border-yellow-300 bg-gradient-to-r from-yellow-50 to-amber-50">
-                          <CardContent className="py-4 px-5">
-                            <div className="flex items-center gap-3">
-                              <div className="bg-yellow-400 rounded-full p-2.5 shadow-md">
-                                <Award className="h-6 w-6 text-white" />
-                              </div>
-                              <div className="flex-1">
-                                <div className="text-sm text-yellow-700 font-medium">सर्वोत्कृष्ट गट (एकूण वाटप)</div>
-                                <div className="text-xl font-bold text-yellow-900">{topGroup.name}</div>
-                              </div>
-                              <div className="text-right">
-                                <div className="text-lg font-bold text-yellow-900">{formatCurrency(topGroup.totalAmount)}</div>
-                                <div className="text-xs text-yellow-600">{topGroup.totalLoans} कर्जे | {topGroup.closedLoans} बंद</div>
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      )}
+                    <div className="mt-6 space-y-5 no-print">
 
-                      {/* Chart 1: एकूण वाटप रक्कम */}
+                      {/* KPI Summary Row */}
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        <div className="bg-white border border-gray-200 rounded-lg p-3 sm:p-4">
+                          <div className="text-xs text-gray-500 mb-1">एकूण वाटप</div>
+                          <div className="text-base sm:text-lg font-bold text-gray-900">{formatCurrency(groupGrandTotals.totalAmount)}</div>
+                          <div className="text-xs text-gray-400 mt-0.5">{groupGrandTotals.totalLoans} कर्जे</div>
+                        </div>
+                        <div className="bg-white border border-gray-200 rounded-lg p-3 sm:p-4">
+                          <div className="text-xs text-gray-500 mb-1">वसुली (बंद)</div>
+                          <div className="text-base sm:text-lg font-bold text-green-700">{formatCurrency(groupGrandTotals.closedAmount)}</div>
+                          <div className="text-xs text-gray-400 mt-0.5">{groupGrandTotals.closedLoans} बंद कर्जे</div>
+                        </div>
+                        <div className="bg-white border border-gray-200 rounded-lg p-3 sm:p-4">
+                          <div className="text-xs text-gray-500 mb-1">बाकी रक्कम</div>
+                          <div className="text-base sm:text-lg font-bold text-red-600">{formatCurrency(groupGrandTotals.activeBalance)}</div>
+                          <div className="text-xs text-gray-400 mt-0.5">{groupGrandTotals.activeLoans} सक्रिय कर्जे</div>
+                        </div>
+                        <div className="bg-white border border-gray-200 rounded-lg p-3 sm:p-4">
+                          <div className="text-xs text-gray-500 mb-1">व्याज उत्पन्न</div>
+                          <div className="text-base sm:text-lg font-bold text-amber-700">{formatCurrency(groupGrandTotals.totalInterest)}</div>
+                          <div className="text-xs text-gray-400 mt-0.5">
+                            वसुली दर: {groupGrandTotals.totalAmount > 0 ? Math.round(Math.min(100, (groupGrandTotals.closedAmount / groupGrandTotals.totalAmount) * 100)) : 0}%
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* गटनिहाय वाटप vs वसुली तुलना */}
                       <Card>
                         <CardHeader className="pb-3">
                           <CardTitle className="text-base flex items-center gap-2">
                             <BarChart3 className="h-5 w-5 text-indigo-600" />
-                            एकूण वाटप रक्कम (गटनिहाय)
+                            गटनिहाय वाटप व वसुली तुलना
                           </CardTitle>
                         </CardHeader>
                         <CardContent>
-                          <div className="space-y-3">
-                            {sortedByAmount.map((row, index) => {
-                              const widthPercent = (row.totalAmount / maxAmount) * 100;
-                              const closedPercent = row.totalAmount > 0 ? (row.closedAmount / row.totalAmount) * 100 : 0;
-                              const activePercent = 100 - closedPercent;
+                          <div className="space-y-4">
+                            {[...groupSummaries].sort((a, b) => b.totalAmount - a.totalAmount).map((row, index) => {
+                              const totalWidthPct = (row.totalAmount / maxAmount) * 100;
+                              const recoveryPct = row.totalAmount > 0 ? Math.min(100, (row.closedAmount / row.totalAmount) * 100) : 0;
                               return (
                                 <div key={index}>
-                                  <div className="flex justify-between items-center mb-1">
-                                    <span className="text-sm font-medium text-gray-700 truncate max-w-[40%]">{row.name}</span>
-                                    <span className="text-sm font-semibold text-gray-900">{formatCurrency(row.totalAmount)}</span>
+                                  <div className="flex justify-between items-center mb-1.5">
+                                    <span className="text-sm font-medium text-gray-800 truncate max-w-[45%]">{row.name}</span>
+                                    <div className="flex items-center gap-3 text-xs">
+                                      <span className="text-gray-600">वाटप: <span className="font-semibold text-gray-900">{formatCurrency(row.totalAmount)}</span></span>
+                                      <span className="text-gray-400">|</span>
+                                      <span className="text-gray-600">वसुली: <span className="font-semibold text-green-700">{formatCurrency(row.closedAmount)}</span></span>
+                                    </div>
                                   </div>
-                                  <div className="relative h-7 bg-gray-100 rounded-full overflow-hidden">
-                                    <div
-                                      className="absolute inset-y-0 left-0 rounded-full overflow-hidden flex"
-                                      style={{ width: `${Math.max(widthPercent, 2)}%`, transition: 'width 0.8s ease-out' }}
-                                    >
+                                  <div className="flex items-center gap-2">
+                                    <div className="flex-1 relative h-5 bg-gray-100 rounded overflow-hidden">
                                       <div
-                                        className="h-full bg-gradient-to-r from-green-500 to-green-400"
-                                        style={{ width: `${closedPercent}%` }}
-                                        title={`बंद: ${formatCurrency(row.closedAmount)}`}
+                                        className="absolute inset-y-0 left-0 bg-indigo-100 rounded"
+                                        style={{ width: `${Math.max(totalWidthPct, 1)}%`, transition: 'width 0.6s ease-out' }}
                                       />
                                       <div
-                                        className="h-full bg-gradient-to-r from-indigo-500 to-indigo-400"
-                                        style={{ width: `${activePercent}%` }}
-                                        title={`सक्रिय: ${formatCurrency(row.activeBalance)}`}
+                                        className="absolute inset-y-0 left-0 bg-indigo-500 rounded"
+                                        style={{ width: `${Math.max((row.closedAmount / maxAmount) * 100, 0)}%`, transition: 'width 0.6s ease-out' }}
                                       />
                                     </div>
-                                    {widthPercent > 15 && (
-                                      <span className="absolute inset-y-0 left-2 flex items-center text-xs font-semibold text-white drop-shadow">
-                                        {Math.round(widthPercent)}%
-                                      </span>
-                                    )}
+                                    <span className={`text-xs font-bold w-10 text-right ${
+                                      recoveryPct >= 70 ? 'text-green-600' : recoveryPct >= 40 ? 'text-amber-600' : 'text-red-600'
+                                    }`}>
+                                      {Math.round(recoveryPct)}%
+                                    </span>
                                   </div>
                                 </div>
                               );
                             })}
                           </div>
-                          <div className="flex items-center justify-center gap-6 mt-4 text-xs text-gray-500">
+                          <div className="flex items-center justify-center gap-6 mt-4 pt-3 border-t border-gray-100 text-xs text-gray-500">
                             <div className="flex items-center gap-1.5">
-                              <div className="w-3 h-3 rounded-full bg-gradient-to-r from-green-500 to-green-400" />
-                              बंद रक्कम
+                              <div className="w-3 h-3 rounded bg-indigo-100 border border-indigo-200" />
+                              एकूण वाटप
                             </div>
                             <div className="flex items-center gap-1.5">
-                              <div className="w-3 h-3 rounded-full bg-gradient-to-r from-indigo-500 to-indigo-400" />
-                              सक्रिय शिल्लक
+                              <div className="w-3 h-3 rounded bg-indigo-500" />
+                              वसुली रक्कम
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-bold text-green-600">%</span>
+                              वसुली दर
                             </div>
                           </div>
                         </CardContent>
                       </Card>
 
-                      {/* Chart 2: कर्ज संख्या */}
+                      {/* वसुली दर रँकिंग */}
                       <Card>
                         <CardHeader className="pb-3">
                           <CardTitle className="text-base flex items-center gap-2">
-                            <TrendingUp className="h-5 w-5 text-emerald-600" />
-                            कर्ज संख्या (गटनिहाय)
+                            <TrendingUp className="h-5 w-5 text-green-600" />
+                            वसुली दर रँकिंग (गटनिहाय)
                           </CardTitle>
                         </CardHeader>
                         <CardContent>
-                          <div className="space-y-3">
-                            {sortedByLoans.map((row, index) => {
-                              const widthPercent = (row.totalLoans / maxLoans) * 100;
-                              const closedPct = row.totalLoans > 0 ? (row.closedLoans / row.totalLoans) * 100 : 0;
-                              const activePct = 100 - closedPct;
-                              return (
-                                <div key={index}>
-                                  <div className="flex justify-between items-center mb-1">
-                                    <span className="text-sm font-medium text-gray-700 truncate max-w-[40%]">{row.name}</span>
-                                    <div className="flex items-center gap-2 text-sm">
-                                      <span className="text-green-600 font-medium">{row.closedLoans} बंद</span>
-                                      <span className="text-gray-400">/</span>
-                                      <span className="font-semibold text-gray-900">{row.totalLoans} एकूण</span>
-                                    </div>
-                                  </div>
-                                  <div className="relative h-6 bg-gray-100 rounded-full overflow-hidden">
-                                    <div
-                                      className="absolute inset-y-0 left-0 rounded-full overflow-hidden flex"
-                                      style={{ width: `${Math.max(widthPercent, 3)}%`, transition: 'width 0.8s ease-out' }}
-                                    >
-                                      <div
-                                        className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400"
-                                        style={{ width: `${closedPct}%` }}
-                                      />
-                                      <div
-                                        className="h-full bg-gradient-to-r from-orange-400 to-amber-400"
-                                        style={{ width: `${activePct}%` }}
-                                      />
-                                    </div>
-                                  </div>
+                          <div className="space-y-2.5">
+                            {sortedByRecovery.map((row, index) => (
+                              <div key={index} className="flex items-center gap-3">
+                                <span className="text-xs font-bold text-gray-400 w-5 text-right">{index + 1}</span>
+                                <span className="text-sm font-medium text-gray-800 truncate w-1/3 sm:w-1/4">{row.name}</span>
+                                <div className="flex-1 relative h-4 bg-gray-100 rounded overflow-hidden">
+                                  <div
+                                    className={`absolute inset-y-0 left-0 rounded ${
+                                      row.recoveryRate >= 70 ? 'bg-green-500' : row.recoveryRate >= 40 ? 'bg-amber-500' : 'bg-red-400'
+                                    }`}
+                                    style={{ width: `${Math.max(row.recoveryRate, 1)}%`, transition: 'width 0.6s ease-out' }}
+                                  />
                                 </div>
-                              );
-                            })}
+                                <span className={`text-sm font-bold w-12 text-right ${
+                                  row.recoveryRate >= 70 ? 'text-green-600' : row.recoveryRate >= 40 ? 'text-amber-600' : 'text-red-600'
+                                }`}>
+                                  {Math.round(row.recoveryRate)}%
+                                </span>
+                              </div>
+                            ))}
                           </div>
-                          <div className="flex items-center justify-center gap-6 mt-4 text-xs text-gray-500">
+                          <div className="flex items-center justify-center gap-4 mt-4 pt-3 border-t border-gray-100 text-xs text-gray-500">
                             <div className="flex items-center gap-1.5">
-                              <div className="w-3 h-3 rounded-full bg-gradient-to-r from-emerald-500 to-emerald-400" />
-                              बंद कर्जे
+                              <div className="w-3 h-3 rounded bg-green-500" />
+                              ७०%+ उत्तम
                             </div>
                             <div className="flex items-center gap-1.5">
-                              <div className="w-3 h-3 rounded-full bg-gradient-to-r from-orange-400 to-amber-400" />
-                              सक्रिय कर्जे
+                              <div className="w-3 h-3 rounded bg-amber-500" />
+                              ४०-७०% सामान्य
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                              <div className="w-3 h-3 rounded bg-red-400" />
+                              ४०% खाली कमकुवत
                             </div>
                           </div>
                         </CardContent>
                       </Card>
-
-                      {/* Chart 3: व्याज उत्पन्न */}
-                      {sortedByInterest.some(r => r.totalInterest > 0) && (
-                        <Card>
-                          <CardHeader className="pb-3">
-                            <CardTitle className="text-base flex items-center gap-2">
-                              <Trophy className="h-5 w-5 text-amber-600" />
-                              व्याज उत्पन्न (गटनिहाय)
-                            </CardTitle>
-                          </CardHeader>
-                          <CardContent>
-                            <div className="space-y-3">
-                              {sortedByInterest.filter(r => r.totalInterest > 0).map((row, index) => {
-                                const widthPercent = (row.totalInterest / maxInterest) * 100;
-                                return (
-                                  <div key={index}>
-                                    <div className="flex justify-between items-center mb-1">
-                                      <span className="text-sm font-medium text-gray-700 truncate max-w-[40%]">{row.name}</span>
-                                      <span className="text-sm font-semibold text-amber-700">{formatCurrency(row.totalInterest)}</span>
-                                    </div>
-                                    <div className="relative h-6 bg-gray-100 rounded-full overflow-hidden">
-                                      <div
-                                        className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-amber-500 to-yellow-400"
-                                        style={{ width: `${Math.max(widthPercent, 2)}%`, transition: 'width 0.8s ease-out' }}
-                                      />
-                                      {widthPercent > 15 && (
-                                        <span className="absolute inset-y-0 left-2 flex items-center text-xs font-semibold text-white drop-shadow">
-                                          {Math.round(widthPercent)}%
-                                        </span>
-                                      )}
-                                    </div>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          </CardContent>
-                        </Card>
-                      )}
                     </div>
                   );
                 })()}
