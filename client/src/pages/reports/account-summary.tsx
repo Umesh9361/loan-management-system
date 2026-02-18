@@ -748,8 +748,11 @@ export default function AccountSummaryReport() {
                       const recoveryScore = (recoveryRate / 100) * 30;
                       const turnoverScore = ((g.totalAmount + g.closedAmount) / maxTurnover) * 20;
                       const loanCountScore = (g.totalLoans / maxLoanCount) * 15;
-                      const smartScore = activeScore + recoveryScore + turnoverScore + loanCountScore;
-                      return { ...g, recoveryRate, smartScore };
+                      let smartScore = activeScore + recoveryScore + turnoverScore + loanCountScore;
+                      if (g.activeLoans === 0) {
+                        smartScore = smartScore * 0.4;
+                      }
+                      return { ...g, recoveryRate, smartScore, isInactive: g.activeLoans === 0 };
                     })
                     .sort((a, b) => b.smartScore - a.smartScore);
 
@@ -872,7 +875,11 @@ export default function AccountSummaryReport() {
                                     }`}>{index + 1}</span>
                                     <span className="text-sm font-medium text-gray-800 truncate flex-1">{row.name}</span>
                                     <div className="flex items-center gap-2 text-xs text-gray-500">
-                                      <span title="सक्रिय कर्जे">{row.activeLoans} सक्रिय</span>
+                                      {row.isInactive ? (
+                                        <span className="text-red-400 font-medium">निष्क्रिय</span>
+                                      ) : (
+                                        <span title="सक्रिय कर्जे" className="text-indigo-600">{row.activeLoans} सक्रिय</span>
+                                      )}
                                       <span className="text-gray-300">|</span>
                                       <span title="वसुली दर" className={
                                         row.recoveryRate >= 70 ? 'text-green-600 font-medium' : row.recoveryRate >= 40 ? 'text-amber-600' : 'text-red-500'
@@ -883,7 +890,7 @@ export default function AccountSummaryReport() {
                                     <div className="flex-1 relative h-5 bg-gray-100 rounded overflow-hidden">
                                       <div
                                         className={`absolute inset-y-0 left-0 rounded ${
-                                          index === 0 ? 'bg-indigo-500' : index <= 2 ? 'bg-indigo-400' : 'bg-indigo-300'
+                                          row.isInactive ? 'bg-gray-300' : index === 0 ? 'bg-indigo-500' : index <= 2 ? 'bg-indigo-400' : 'bg-indigo-300'
                                         }`}
                                         style={{ width: `${Math.max(barWidth, 2)}%`, transition: 'width 0.6s ease-out' }}
                                       />
@@ -1093,6 +1100,194 @@ export default function AccountSummaryReport() {
                     )}
                   </div>
                 )}
+
+                {/* ==================== टॉप कस्टमर परफॉर्मन्स विश्लेषण ==================== */}
+                {customerMode === "top50" && customerSummaries.length > 0 && (() => {
+                  const top10 = customerSummaries.slice(0, 10);
+                  const maxCustAmount = Math.max(...top10.map(c => Math.max(c.totalAmount, c.closedAmount)), 1);
+                  const maxCustActive = Math.max(...top10.map(c => c.activeLoans), 1);
+                  const maxCustTurnover = Math.max(...top10.map(c => c.totalAmount + c.closedAmount), 1);
+                  const maxCustLoans = Math.max(...top10.map(c => c.totalLoans), 1);
+
+                  const rankedCustomers = top10.map(c => {
+                    const recoveryRate = c.totalAmount > 0 ? Math.min(100, (c.closedAmount / c.totalAmount) * 100) : 0;
+                    const activeScore = (c.activeLoans / maxCustActive) * 35;
+                    const recoveryScore = (recoveryRate / 100) * 30;
+                    const turnoverScore = ((c.totalAmount + c.closedAmount) / maxCustTurnover) * 20;
+                    const loanCountScore = (c.totalLoans / maxCustLoans) * 15;
+                    let smartScore = activeScore + recoveryScore + turnoverScore + loanCountScore;
+                    const isInactive = c.activeLoans === 0;
+                    if (isInactive) smartScore = smartScore * 0.4;
+                    return { ...c, recoveryRate, smartScore, isInactive };
+                  }).sort((a, b) => b.smartScore - a.smartScore);
+
+                  return (
+                    <div className="mt-6 space-y-5 no-print">
+
+                      {/* KPI Summary */}
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        <div className="bg-white border border-gray-200 rounded-lg p-3 sm:p-4">
+                          <div className="text-xs text-gray-500 mb-1">एकूण वाटप</div>
+                          <div className="text-base sm:text-lg font-bold text-gray-900">{formatCurrency(customerGrandTotals.totalAmount)}</div>
+                          <div className="text-xs text-gray-400 mt-0.5">{customerGrandTotals.totalLoans} कर्जे</div>
+                        </div>
+                        <div className="bg-white border border-gray-200 rounded-lg p-3 sm:p-4">
+                          <div className="text-xs text-gray-500 mb-1">वसुली (बंद)</div>
+                          <div className="text-base sm:text-lg font-bold text-green-700">{formatCurrency(customerGrandTotals.closedAmount)}</div>
+                          <div className="text-xs text-gray-400 mt-0.5">{customerGrandTotals.closedLoans} बंद कर्जे</div>
+                        </div>
+                        <div className="bg-white border border-gray-200 rounded-lg p-3 sm:p-4">
+                          <div className="text-xs text-gray-500 mb-1">बाकी रक्कम</div>
+                          <div className="text-base sm:text-lg font-bold text-red-600">{formatCurrency(Math.max(0, customerGrandTotals.activeBalance))}</div>
+                          <div className="text-xs text-gray-400 mt-0.5">{customerGrandTotals.activeLoans} सक्रिय कर्जे</div>
+                        </div>
+                        <div className="bg-white border border-gray-200 rounded-lg p-3 sm:p-4">
+                          <div className="text-xs text-gray-500 mb-1">व्याज उत्पन्न</div>
+                          <div className="text-base sm:text-lg font-bold text-amber-700">{formatCurrency(customerGrandTotals.totalInterest)}</div>
+                          <div className="text-xs text-gray-400 mt-0.5">
+                            वसुली दर: {customerGrandTotals.totalAmount > 0 ? Math.round(Math.min(100, (customerGrandTotals.closedAmount / customerGrandTotals.totalAmount) * 100)) : 0}%
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* टॉप १० कस्टमर वाटप vs वसुली */}
+                      <Card>
+                        <CardHeader className="pb-3">
+                          <CardTitle className="text-base flex items-center gap-2">
+                            <BarChart3 className="h-5 w-5 text-indigo-600" />
+                            टॉप १० कस्टमर - वाटप व वसुली तुलना
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="space-y-4">
+                            {top10.map((row, index) => {
+                              const safeBase = Math.max(row.totalAmount, row.closedAmount, 1);
+                              const barBase = maxCustAmount;
+                              const totalWidthPct = (safeBase / barBase) * 100;
+                              const recoveredWidthPct = Math.min(totalWidthPct, (row.closedAmount / barBase) * 100);
+                              const recoveryPct = safeBase > 0 ? Math.min(100, (row.closedAmount / safeBase) * 100) : 0;
+                              return (
+                                <div key={index}>
+                                  <div className="flex justify-between items-center mb-1.5">
+                                    <span className="text-sm font-medium text-gray-800 truncate max-w-[45%]">{row.name}</span>
+                                    <div className="flex items-center gap-3 text-xs">
+                                      <span className="text-gray-600">वाटप: <span className="font-semibold text-gray-900">{formatCurrency(row.totalAmount)}</span></span>
+                                      <span className="text-gray-400">|</span>
+                                      <span className="text-gray-600">वसुली: <span className="font-semibold text-green-700">{formatCurrency(row.closedAmount)}</span></span>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <div className="flex-1 relative h-5 bg-gray-100 rounded overflow-hidden">
+                                      <div
+                                        className="absolute inset-y-0 left-0 bg-indigo-100 rounded"
+                                        style={{ width: `${Math.max(totalWidthPct, 1)}%`, transition: 'width 0.6s ease-out' }}
+                                      />
+                                      <div
+                                        className="absolute inset-y-0 left-0 bg-indigo-500 rounded"
+                                        style={{ width: `${Math.max(recoveredWidthPct, 0)}%`, transition: 'width 0.6s ease-out' }}
+                                      />
+                                    </div>
+                                    <span className={`text-xs font-bold w-10 text-right ${
+                                      recoveryPct >= 70 ? 'text-green-600' : recoveryPct >= 40 ? 'text-amber-600' : 'text-red-600'
+                                    }`}>
+                                      {Math.round(recoveryPct)}%
+                                    </span>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                          <div className="flex items-center justify-center gap-6 mt-4 pt-3 border-t border-gray-100 text-xs text-gray-500">
+                            <div className="flex items-center gap-1.5">
+                              <div className="w-3 h-3 rounded bg-indigo-100 border border-indigo-200" />
+                              एकूण वाटप
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                              <div className="w-3 h-3 rounded bg-indigo-500" />
+                              वसुली रक्कम
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-bold text-green-600">%</span>
+                              वसुली दर
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      {/* टॉप १० कस्टमर Smart Score रँकिंग */}
+                      <Card>
+                        <CardHeader className="pb-3">
+                          <CardTitle className="text-base flex items-center gap-2">
+                            <TrendingUp className="h-5 w-5 text-indigo-600" />
+                            टॉप १० कस्टमर परफॉर्मन्स रँकिंग
+                          </CardTitle>
+                          <p className="text-xs text-gray-500 mt-1">
+                            सक्रिय कर्जे (३५%) + वसुली दर (३०%) + एकूण उलाढाल (२०%) + कर्ज संख्या (१५%)
+                          </p>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="space-y-3">
+                            {rankedCustomers.map((row, index) => {
+                              const maxScore = rankedCustomers[0]?.smartScore || 1;
+                              const barWidth = (row.smartScore / maxScore) * 100;
+                              return (
+                                <div key={index}>
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <span className={`text-xs font-bold w-5 text-right ${
+                                      index === 0 ? 'text-indigo-600' : 'text-gray-400'
+                                    }`}>{index + 1}</span>
+                                    <span className="text-sm font-medium text-gray-800 truncate flex-1">{row.name}</span>
+                                    <div className="flex items-center gap-2 text-xs text-gray-500">
+                                      {row.isInactive ? (
+                                        <span className="text-red-400 font-medium">निष्क्रिय</span>
+                                      ) : (
+                                        <span className="text-indigo-600">{row.activeLoans} सक्रिय</span>
+                                      )}
+                                      <span className="text-gray-300">|</span>
+                                      <span className={
+                                        row.recoveryRate >= 70 ? 'text-green-600 font-medium' : row.recoveryRate >= 40 ? 'text-amber-600' : 'text-red-500'
+                                      }>{Math.round(row.recoveryRate)}% वसुली</span>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <div className="flex-1 relative h-5 bg-gray-100 rounded overflow-hidden">
+                                      <div
+                                        className={`absolute inset-y-0 left-0 rounded ${
+                                          row.isInactive ? 'bg-gray-300' : index === 0 ? 'bg-indigo-500' : index <= 2 ? 'bg-indigo-400' : 'bg-indigo-300'
+                                        }`}
+                                        style={{ width: `${Math.max(barWidth, 2)}%`, transition: 'width 0.6s ease-out' }}
+                                      />
+                                      {barWidth > 20 && (
+                                        <span className="absolute inset-y-0 left-2 flex items-center text-xs font-semibold text-white">
+                                          {Math.round(row.smartScore)}/100
+                                        </span>
+                                      )}
+                                    </div>
+                                    {barWidth <= 20 && (
+                                      <span className="text-xs font-semibold text-indigo-600 w-14 text-right">
+                                        {Math.round(row.smartScore)}/100
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                          <div className="mt-4 pt-3 border-t border-gray-100 text-xs text-gray-500 space-y-1">
+                            <div className="flex flex-wrap gap-x-4 gap-y-1">
+                              <span><span className="font-medium text-gray-700">सक्रिय कर्जे ३५%</span> - सध्या किती कर्जे चालू आहेत</span>
+                              <span><span className="font-medium text-gray-700">वसुली दर ३०%</span> - किती % रक्कम वसूल झाली</span>
+                            </div>
+                            <div className="flex flex-wrap gap-x-4 gap-y-1">
+                              <span><span className="font-medium text-gray-700">उलाढाल २०%</span> - एकूण किती रक्कम फिरवली</span>
+                              <span><span className="font-medium text-gray-700">कर्ज संख्या १५%</span> - एकूण किती व्यवहार झाले</span>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  );
+                })()}
               </>
             )}
 
