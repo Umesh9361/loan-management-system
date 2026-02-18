@@ -2146,7 +2146,7 @@ function Loans() {
                     name="collateralDetails"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-base font-medium">तारणाचा तपशील <span className="text-red-500">*</span></FormLabel>
+                        <FormLabel className="text-base font-medium">तारणाचा तपशील *</FormLabel>
                         <FormControl>
                           <Input
                             {...field}
@@ -2171,7 +2171,7 @@ function Loans() {
                     name="weight"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-base font-medium">वजन <span className="text-red-500">*</span></FormLabel>
+                        <FormLabel className="text-base font-medium">वजन *</FormLabel>
                         <FormControl>
                           <Input
                             {...field}
