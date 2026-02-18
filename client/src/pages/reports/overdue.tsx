@@ -690,7 +690,7 @@ export default function OverdueReport() {
       setTimeout(() => {
         dataTableRef.current?.scrollIntoView({ 
           behavior: 'smooth', 
-          block: 'center',
+          block: 'end',
           inline: 'nearest'
         });
       }, 300);
