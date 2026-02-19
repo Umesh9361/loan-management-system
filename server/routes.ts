@@ -1181,7 +1181,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       for (const row of borrowerRows) {
         const normalizedKey = (row.borrowerName || '').normalize('NFC').trim().replace(/\s+/g, ' ');
         const existing = mergedMap.get(normalizedKey);
-        if (!existing || (row.latestLoanDate && (!existing.latestLoanDate || row.latestLoanDate > existing.latestLoanDate))) {
+        const rowDate = row.latestLoanDate ? new Date(row.latestLoanDate).getTime() : 0;
+        const existingDate = existing?.latestLoanDate ? new Date(existing.latestLoanDate).getTime() : 0;
+        if (!existing || rowDate > existingDate) {
           mergedMap.set(normalizedKey, {
             borrowerName: normalizedKey,
             borrowerMobile: row.borrowerMobile || existing?.borrowerMobile || null,
