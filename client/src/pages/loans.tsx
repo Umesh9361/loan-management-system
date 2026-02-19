@@ -1639,7 +1639,10 @@ function Loans() {
                               {/* Autocomplete Dropdown */}
                               {showBorrowerSuggestions && borrowerAutocompleteSuggestions.length > 0 && (
                                 <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
-                                  {borrowerAutocompleteSuggestions.map((borrower, index) => (
+                                  {borrowerAutocompleteSuggestions.filter((borrower, index, arr) => {
+                                    const normalizedName = (borrower.borrowerName || '').normalize('NFC').trim().replace(/\s+/g, ' ');
+                                    return arr.findIndex(b => (b.borrowerName || '').normalize('NFC').trim().replace(/\s+/g, ' ') === normalizedName) === index;
+                                  }).map((borrower, index) => (
                                     <div
                                       key={index}
                                       className={`p-3 cursor-pointer border-b border-gray-100 last:border-b-0 transition-colors ${
