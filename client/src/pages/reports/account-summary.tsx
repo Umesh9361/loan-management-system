@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 import { Label } from "@/components/ui/label";
-import { Search, Printer, Calendar, Download, Users, User, Trophy, BarChart3, TrendingUp, ChevronDown } from "lucide-react";
+import { Search, Printer, Calendar, Download, Users, User, Trophy, BarChart3, TrendingUp, ChevronDown, ArrowUp } from "lucide-react";
 import { exportAccountSummaryToExcel } from "@/utils/excel-export";
 import { Sidebar } from "@/components/ui/sidebar";
 import { MobileNav } from "@/components/ui/mobile-nav";
@@ -943,7 +943,7 @@ export default function AccountSummaryReport() {
             {/* ==================== कस्टमर नावाप्रमाणे TAB ==================== */}
             {activeTab === "customer" && (
               <>
-                <Card className="mb-6">
+                <Card className="mb-6" id="customer-search-area">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <User className="h-5 w-5" />
@@ -1082,7 +1082,7 @@ export default function AccountSummaryReport() {
                           variant="outline"
                           size="default"
                           className="text-indigo-600 border-indigo-200 hover:bg-indigo-50 gap-1.5 no-print"
-                          onClick={() => document.getElementById('customer-performance-section')?.scrollIntoView({ behavior: 'smooth' })}
+                          onClick={() => document.getElementById('customer-ranking-section')?.scrollIntoView({ behavior: 'smooth' })}
                         >
                           <BarChart3 className="h-4 w-4" />
                           परफॉर्मन्स विश्लेषण पहा
@@ -1239,7 +1239,7 @@ export default function AccountSummaryReport() {
                       </Card>
 
                       {/* टॉप ५० कस्टमर Smart Score रँकिंग */}
-                      <Card>
+                      <Card id="customer-ranking-section">
                         <CardHeader className="pb-3">
                           <CardTitle className="text-base flex items-center gap-2">
                             <TrendingUp className="h-5 w-5 text-indigo-600" />
@@ -1309,6 +1309,18 @@ export default function AccountSummaryReport() {
                           </div>
                         </CardContent>
                       </Card>
+
+                      <div className="flex justify-center mt-4 no-print">
+                        <Button
+                          variant="outline"
+                          size="default"
+                          className="text-indigo-600 border-indigo-200 hover:bg-indigo-50 gap-1.5"
+                          onClick={() => document.getElementById('customer-search-area')?.scrollIntoView({ behavior: 'smooth' })}
+                        >
+                          <ArrowUp className="h-4 w-4" />
+                          वर जा
+                        </Button>
+                      </div>
                     </div>
                   );
                 })()}
