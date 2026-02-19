@@ -1159,7 +1159,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         borrowerAddress: string | null;
         latestLoanDate: string;
       }>(sql`
-        SELECT DISTINCT ON (borrower_name)
+        SELECT 
           borrower_name as "borrowerName",
           borrower_mobile as "borrowerMobile",
           borrower_address as "borrowerAddress",
@@ -1171,38 +1171,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
           AND LENGTH(TRIM(borrower_name)) >= 3
           AND borrower_name IS NOT NULL 
           AND TRIM(borrower_name) != ''
-        ORDER BY borrower_name, loan_date DESC
-        LIMIT 20
+        ORDER BY loan_date DESC
+        LIMIT 50
       `);
       
-      // Convert rows to array
       const borrowerRows = borrowers.rows || [];
       
-      // Sort results by relevance: exact match > starts with > contains
-      const sortedBorrowers = borrowerRows.sort((a, b) => {
+      const mergedMap = new Map<string, { borrowerName: string; borrowerMobile: string | null; borrowerAddress: string | null; latestLoanDate: string }>();
+      for (const row of borrowerRows) {
+        const normalizedKey = (row.borrowerName || '').normalize('NFC').trim().replace(/\s+/g, ' ');
+        const existing = mergedMap.get(normalizedKey);
+        if (!existing || (row.latestLoanDate && (!existing.latestLoanDate || row.latestLoanDate > existing.latestLoanDate))) {
+          mergedMap.set(normalizedKey, {
+            borrowerName: normalizedKey,
+            borrowerMobile: row.borrowerMobile || existing?.borrowerMobile || null,
+            borrowerAddress: row.borrowerAddress || existing?.borrowerAddress || null,
+            latestLoanDate: row.latestLoanDate,
+          });
+        }
+      }
+      const uniqueBorrowers = Array.from(mergedMap.values());
+      
+      const sortedBorrowers = uniqueBorrowers.sort((a, b) => {
         const aName = a.borrowerName?.toLowerCase() || '';
         const bName = b.borrowerName?.toLowerCase() || '';
-        const search = searchTerm.toLowerCase();
         
-        // Check against all variations for better ranking
         const aExactMatch = searchVariations.some(v => aName === v.toLowerCase());
         const bExactMatch = searchVariations.some(v => bName === v.toLowerCase());
-        
         if (aExactMatch && !bExactMatch) return -1;
         if (!aExactMatch && bExactMatch) return 1;
         
-        // Starts with any variation comes next
         const aStarts = searchVariations.some(v => aName.startsWith(v.toLowerCase()));
         const bStarts = searchVariations.some(v => bName.startsWith(v.toLowerCase()));
         if (aStarts && !bStarts) return -1;
         if (!aStarts && bStarts) return 1;
         
-        // Otherwise maintain date order (already sorted by latest loan date)
         return 0;
       });
       
-      console.log(`🔍 Dual-language autocomplete for "${searchTerm}": ${sortedBorrowers.length} matches found (variations: ${searchVariations.join(', ')})`);
-      res.json(sortedBorrowers.slice(0, 10)); // Return top 10 most relevant
+      console.log(`🔍 Dual-language autocomplete for "${searchTerm}": ${sortedBorrowers.length} unique matches (merged from ${borrowerRows.length} rows)`);
+      res.json(sortedBorrowers.slice(0, 10));
     } catch (error) {
       console.error("Borrower autocomplete error:", error);
       res.status(500).json({ message: "Failed to fetch borrower suggestions" });
@@ -1220,6 +1228,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Using existing convertIndianDateToISO helper function
       const processedBody = {
         ...req.body,
+        borrowerName: req.body.borrowerName ? (req.body.borrowerName as string).normalize('NFC').trim().replace(/\s+/g, ' ') : req.body.borrowerName,
         loanDate: req.body.loanDate ? convertIndianDateToISO(req.body.loanDate) : req.body.loanDate,
         maturityDate: req.body.maturityDate ? convertIndianDateToISO(req.body.maturityDate) : req.body.maturityDate,
       };
@@ -1451,6 +1460,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Convert DD/MM/YYYY dates to YYYY-MM-DD format for database
       const bodyWithConvertedDates = {
         ...req.body,
+        borrowerName: req.body.borrowerName ? (req.body.borrowerName as string).normalize('NFC').trim().replace(/\s+/g, ' ') : req.body.borrowerName,
         loanDate: req.body.loanDate ? convertIndianDateToISO(req.body.loanDate) : req.body.loanDate,
         maturityDate: req.body.maturityDate ? convertIndianDateToISO(req.body.maturityDate) : req.body.maturityDate,
       };
