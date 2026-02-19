@@ -176,6 +176,41 @@ export async function initializeDatabase() {
       await SuperAdminGuardian.validateAndFixRoleAssignments();
       console.log("🛡️  SUPER ADMIN GUARDIAN: Final validation completed");
       
+      // 8a. AUTO-NORMALIZE: Fix Unicode duplicates in borrower names (NFC normalization)
+      try {
+        const allLoans = await db.execute<{ id: string; borrower_name: string }>(sql`
+          SELECT id, borrower_name FROM loans WHERE borrower_name IS NOT NULL
+        `);
+        let normalizedLoans = 0;
+        for (const row of (allLoans.rows || [])) {
+          const original = row.borrower_name;
+          const normalized = original.normalize('NFC').trim().replace(/\s+/g, ' ');
+          if (original !== normalized) {
+            await db.execute(sql`UPDATE loans SET borrower_name = ${normalized} WHERE id = ${row.id}`);
+            normalizedLoans++;
+          }
+        }
+        
+        const allBorrowers = await db.execute<{ id: number; name: string }>(sql`
+          SELECT id, name FROM borrowers WHERE name IS NOT NULL
+        `);
+        let normalizedBorrowers = 0;
+        for (const row of (allBorrowers.rows || [])) {
+          const original = row.name;
+          const normalized = original.normalize('NFC').trim().replace(/\s+/g, ' ');
+          if (original !== normalized) {
+            await db.execute(sql`UPDATE borrowers SET name = ${normalized} WHERE id = ${row.id}`);
+            normalizedBorrowers++;
+          }
+        }
+        
+        if (normalizedLoans > 0 || normalizedBorrowers > 0) {
+          console.log(`🔤 AUTO-NORMALIZE: ${normalizedLoans} loan names + ${normalizedBorrowers} borrower names NFC normalized`);
+        }
+      } catch (normError) {
+        console.warn("⚠️  Auto-normalize warning (non-fatal):", normError instanceof Error ? normError.message : normError);
+      }
+
       // 8. AUTO-CLEANUP: Delete activity logs older than 90 days
       try {
         const ninetyDaysAgo = new Date();
