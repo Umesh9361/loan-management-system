@@ -36,6 +36,7 @@ interface OverdueReportFilters {
 
 interface OverdueItem {
   loanId: string;
+  accountNumber: string;
   borrowerName: string;
   borrowerPhone: string;
   groupName: string;
@@ -589,6 +590,7 @@ export default function OverdueReport() {
 
     const excelData = sortedData.map((item: any, index: number) => ({
       'अनुक्रमांक': index + 1,
+      'खाते नंबर': item.accountNumber || '',
       'नाव': item.borrowerName,
       'फोन': item.borrowerPhone,
       'गट': item.groupName,
@@ -708,7 +710,12 @@ export default function OverdueReport() {
     const secA = getSecurityLevel(a);
     const secB = getSecurityLevel(b);
     if (secA.order !== secB.order) return secA.order - secB.order;
-    if (b.lossAmount !== a.lossAmount) return b.lossAmount - a.lossAmount;
+    const ratioA = a.totalAmount > 0 ? a.currentGoldValue / a.totalAmount : 0;
+    const ratioB = b.totalAmount > 0 ? b.currentGoldValue / b.totalAmount : 0;
+    const ratioDiff = ratioA - ratioB;
+    if (Math.abs(ratioDiff) > 0.001) return ratioDiff;
+    const lossDiff = b.lossAmount - a.lossAmount;
+    if (Math.abs(lossDiff) > 0.01) return lossDiff;
     return new Date(a.loanDate).getTime() - new Date(b.loanDate).getTime();
   });
 
@@ -1258,7 +1265,7 @@ export default function OverdueReport() {
                           <div className="flex justify-between items-start mb-2">
                             <div>
                               <div className="font-bold text-gray-900 text-sm">{item.borrowerName}</div>
-                              <div className="text-xs text-gray-500">{item.groupName} | {formatDate(item.loanDate)}</div>
+                              <div className="text-xs text-gray-500">{item.accountNumber ? `${item.accountNumber} | ` : ''}{item.groupName} | {formatDate(item.loanDate)}</div>
                             </div>
                             <div className={`text-xs font-bold px-2 py-0.5 rounded-full ${security.bgColor} ${security.color}`}>
                               {security.label}{item.lossAmount > 0 ? `: ${formatCurrency(item.lossAmount)}` : ''}
@@ -1300,6 +1307,7 @@ export default function OverdueReport() {
                     <table className="w-full border-collapse">
                       <thead>
                         <tr className="bg-gradient-to-r from-red-50 to-orange-50 border-b-2 border-red-200">
+                          <th className="border border-gray-300 px-3 py-3 text-left text-base font-bold text-gray-700">खाते नं.</th>
                           <th className="border border-gray-300 px-3 py-3 text-left text-base font-bold text-gray-700">नाव</th>
                           <th className="border border-gray-300 px-3 py-3 text-left text-base font-bold text-gray-700">फोन</th>
                           <th className="border border-gray-300 px-3 py-3 text-left text-base font-bold text-gray-700">गट</th>
@@ -1328,6 +1336,7 @@ export default function OverdueReport() {
                                   : index % 2 === 0 ? 'bg-white border-l-transparent' : 'bg-gray-50 border-l-transparent',
                                 "hover:bg-indigo-50 hover:border-l-indigo-300"
                               )}>
+                              <td className="border border-gray-300 px-3 py-3 text-base font-medium text-gray-700">{item.accountNumber || '—'}</td>
                               <td className="border border-gray-300 px-3 py-3 text-base font-bold text-gray-800">{item.borrowerName}</td>
                               <td className="border border-gray-300 px-3 py-3 text-base text-indigo-600 font-medium">{item.borrowerPhone}</td>
                               <td className="border border-gray-300 px-3 py-3 text-base text-gray-600">{item.groupName}</td>
@@ -1366,7 +1375,8 @@ export default function OverdueReport() {
               }}>
                 <thead>
                   <tr style={{backgroundColor: '#f5f5f5'}}>
-                    <th style={{border: '1px solid black', padding: '5px', fontWeight: 'bold', textAlign: 'left', width: '12%'}}>नाव</th>
+                    <th style={{border: '1px solid black', padding: '5px', fontWeight: 'bold', textAlign: 'left', width: '7%'}}>खाते नं.</th>
+                    <th style={{border: '1px solid black', padding: '5px', fontWeight: 'bold', textAlign: 'left', width: '10%'}}>नाव</th>
                     <th style={{border: '1px solid black', padding: '5px', fontWeight: 'bold', textAlign: 'left', width: '8%'}}>फोन</th>
                     <th style={{border: '1px solid black', padding: '5px', fontWeight: 'bold', textAlign: 'left', width: '8%'}}>गट</th>
                     <th style={{border: '1px solid black', padding: '5px', fontWeight: 'bold', textAlign: 'center', width: '7%'}}>तारीख</th>
@@ -1382,13 +1392,14 @@ export default function OverdueReport() {
                 <tbody>
                   {sortedOverdueData.length === 0 ? (
                     <tr>
-                      <td colSpan={11} style={{border: '1px solid black', padding: '10px', textAlign: 'center', color: 'black'}}>
+                      <td colSpan={12} style={{border: '1px solid black', padding: '10px', textAlign: 'center', color: 'black'}}>
                         {isGenerating ? "डेटा लोड होत आहे..." : "सक्रिय कर्जे नाहीत / No Active Loans"}
                       </td>
                     </tr>
                   ) : (
                     sortedOverdueData.map((item: OverdueItem) => (
                       <tr key={item.loanId} style={{backgroundColor: 'white'}}>
+                        <td style={{border: '1px solid black', padding: '3px'}}>{item.accountNumber || '—'}</td>
                         <td style={{border: '1px solid black', padding: '3px', fontWeight: 'bold'}}>{item.borrowerName}</td>
                         <td style={{border: '1px solid black', padding: '3px'}}>{item.borrowerPhone}</td>
                         <td style={{border: '1px solid black', padding: '3px'}}>{item.groupName}</td>
@@ -1407,7 +1418,7 @@ export default function OverdueReport() {
                   )}
                   {(overdueData as OverdueItem[]).length > 0 && (
                     <tr style={{backgroundColor: '#f8f9fa', borderTop: '2px solid black'}}>
-                      <td colSpan={11} style={{
+                      <td colSpan={12} style={{
                         border: '1px solid black', 
                         padding: '8px', 
                         textAlign: 'center', 
