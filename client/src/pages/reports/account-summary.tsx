@@ -1127,13 +1127,13 @@ export default function AccountSummaryReport() {
 
                 {/* ==================== टॉप कस्टमर परफॉर्मन्स विश्लेषण ==================== */}
                 {customerMode === "top50" && customerSummaries.length > 0 && (() => {
-                  const top10 = customerSummaries.slice(0, 10);
-                  const maxCustAmount = Math.max(...top10.map(c => Math.max(c.totalAmount, c.closedAmount)), 1);
-                  const maxCustActive = Math.max(...top10.map(c => c.activeLoans), 1);
-                  const maxCustTurnover = Math.max(...top10.map(c => c.totalAmount + c.closedAmount), 1);
-                  const maxCustLoans = Math.max(...top10.map(c => c.totalLoans), 1);
+                  const top50 = customerSummaries.slice(0, 50);
+                  const maxCustAmount = Math.max(...top50.map(c => Math.max(c.totalAmount, c.closedAmount)), 1);
+                  const maxCustActive = Math.max(...top50.map(c => c.activeLoans), 1);
+                  const maxCustTurnover = Math.max(...top50.map(c => c.totalAmount + c.closedAmount), 1);
+                  const maxCustLoans = Math.max(...top50.map(c => c.totalLoans), 1);
 
-                  const rankedCustomers = top10.map(c => {
+                  const rankedCustomers = top50.map(c => {
                     const recoveryRate = c.totalAmount > 0 ? Math.min(100, (c.closedAmount / c.totalAmount) * 100) : 0;
                     const activeScore = (c.activeLoans / maxCustActive) * 35;
                     const recoveryScore = (recoveryRate / 100) * 30;
@@ -1174,17 +1174,17 @@ export default function AccountSummaryReport() {
                         </div>
                       </div>
 
-                      {/* टॉप १० कस्टमर वाटप vs वसुली */}
+                      {/* टॉप ५० कस्टमर वाटप vs वसुली */}
                       <Card>
                         <CardHeader className="pb-3">
                           <CardTitle className="text-base flex items-center gap-2">
                             <BarChart3 className="h-5 w-5 text-indigo-600" />
-                            टॉप १० कस्टमर - वाटप व वसुली तुलना
+                            टॉप ५० कस्टमर - वाटप व वसुली तुलना
                           </CardTitle>
                         </CardHeader>
                         <CardContent>
                           <div className="space-y-4">
-                            {top10.map((row, index) => {
+                            {top50.map((row, index) => {
                               const safeBase = Math.max(row.totalAmount, row.closedAmount, 1);
                               const barBase = maxCustAmount;
                               const totalWidthPct = (safeBase / barBase) * 100;
@@ -1238,12 +1238,12 @@ export default function AccountSummaryReport() {
                         </CardContent>
                       </Card>
 
-                      {/* टॉप १० कस्टमर Smart Score रँकिंग */}
+                      {/* टॉप ५० कस्टमर Smart Score रँकिंग */}
                       <Card>
                         <CardHeader className="pb-3">
                           <CardTitle className="text-base flex items-center gap-2">
                             <TrendingUp className="h-5 w-5 text-indigo-600" />
-                            टॉप १० कस्टमर परफॉर्मन्स रँकिंग
+                            टॉप ५० कस्टमर परफॉर्मन्स रँकिंग
                           </CardTitle>
                           <p className="text-xs text-gray-500 mt-1">
                             सक्रिय कर्जे (३५%) + वसुली दर (३०%) + एकूण उलाढाल (२०%) + कर्ज संख्या (१५%)
