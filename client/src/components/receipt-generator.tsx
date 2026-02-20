@@ -572,7 +572,17 @@ export class ReceiptGenerator {
         <!-- Closure Receipt (Bottom) - नमुना क्रमांक ११ -->
         <div class="closure-receipt">
             <div class="receipt-header">
-                <div class="form-number">नमुना क्रमांक ११ (नियम १८)</div>
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2px;">
+                  <div style="flex: 1;"></div>
+                  <div style="flex: 2; text-align: center; font-size: 12px; font-weight: bold;">नमुना क्रमांक ११ (नियम १८)</div>
+                  <div style="flex: 1; text-align: right; font-size: 10px; white-space: nowrap;">
+                    <span style="font-weight: 600;">दिनांक:</span>
+                    ${(receiptType === 'blank' || !(closureData && closureData.closureDate)) 
+                      ? `<span style="margin: 0 2px;">&nbsp;&nbsp;&nbsp;</span><span style="color: #555;">/</span><span style="margin: 0 2px;">&nbsp;&nbsp;&nbsp;</span><span style="color: #555;">/</span><span style="margin: 0 2px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>`
+                      : `<span style="font-weight: 500; margin-left: 3px;">${formatDate(closureData.closureDate)}</span>`
+                    }
+                  </div>
+                </div>
                 <div class="receipt-title">पावती</div>
             </div>
 
@@ -924,7 +934,7 @@ export class ReceiptGenerator {
 
     <div class="receipt-container">
         <div class="header">
-            <div class="form-number">नमुना क्र १४<br/>(नियम २०(१) पहा)</div>
+            <div class="form-number">नमुना क्र १४<br/>(नियम २० पहा)</div>
             <div class="title">वर्ष संपल्यानंतर ४५ दिवसांच्या आत सावकाराने कर्जदारास द्यावयाचे वार्षिक लेखा विवरणपत्र</div>
         </div>
 

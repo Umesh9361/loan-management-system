@@ -156,7 +156,7 @@ export default function CapitalPrint() {
         <Card className="print:shadow-none print:border-none">
           <CardHeader className="text-center print:pb-2">
             <CardTitle className="text-xl print:mb-1">{(company as any)?.name || 'कंपनीचे नाव'}</CardTitle>
-            <p className="text-gray-600 print:mb-1">भांडवल खाते अहवाल (नमुना क्रमांक १३)</p>
+            <p className="text-gray-600 print:mb-1">भांडवल खाते अहवाल (नमुना क्रमांक १३ - नियम १९ पहा)</p>
             <p className="text-sm text-gray-500 print:mb-2">
               कालावधी: {new Date(dateFilters.dateFrom).toLocaleDateString('en-GB')} ते {new Date(dateFilters.dateTo).toLocaleDateString('en-GB')}
             </p>

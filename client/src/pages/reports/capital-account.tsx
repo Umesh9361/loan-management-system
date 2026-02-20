@@ -440,7 +440,7 @@ export default function CapitalAccountReport() {
         <div style="text-align:center;margin-bottom:18px;padding-bottom:12px;border-bottom:1px solid #ddd;">
           <p style="font-size:18px;font-weight:bold;margin-bottom:6px;">${companyName}</p>
           <p style="font-size:15px;font-weight:bold;margin-bottom:4px;">भांडवल खाते</p>
-          <p style="font-size:11px;color:#555;margin-bottom:3px;">नमुना क्रमांक १३ (नियम १८ पहा)</p>
+          <p style="font-size:11px;color:#555;margin-bottom:3px;">नमुना क्रमांक १३ (नियम १९ पहा)</p>
           <p style="font-size:11px;color:#555;">कालावधी: ${new Date(dateFrom).toLocaleDateString('en-GB')} ते ${new Date(dateTo).toLocaleDateString('en-GB')}</p>
         </div>
         <table>
@@ -558,7 +558,7 @@ export default function CapitalAccountReport() {
             {/* Header */}
             <div className="mb-6">
               <h1 className="text-2xl font-semibold text-foreground heading-professional">भांडवल खाते</h1>
-              <p className="text-muted-foreground">नमुना क्रमांक १३ (नियम १८ पहा) - कर्ज वाटप अहवाल</p>
+              <p className="text-muted-foreground">नमुना क्रमांक १३ (नियम १९ पहा) - कर्ज वाटप अहवाल</p>
             </div>
 
             {/* Date Filter */}
@@ -640,7 +640,7 @@ export default function CapitalAccountReport() {
                 <div className="capital-header" style={{ textAlign: 'center', marginBottom: '20px', fontWeight: 'bold' }}>
                   <h1 style={{ fontSize: '20px', marginBottom: '8px' }}>भांडवल खाते</h1>
                   <p style={{ fontSize: '16px', marginBottom: '2px' }}>नमुना क्रमांक १३</p>
-                  <p style={{ fontSize: '14px', marginBottom: '20px' }}>(नियम १८ पहा)</p>
+                  <p style={{ fontSize: '14px', marginBottom: '20px' }}>(नियम १९ पहा)</p>
                   {dateFrom && dateTo && (
                     <p style={{ fontSize: '16px', marginBottom: '20px' }}>
                       कालावधी: {new Date(dateFrom).toLocaleDateString('en-GB')} ते {new Date(dateTo).toLocaleDateString('en-GB')}
