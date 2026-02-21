@@ -517,14 +517,23 @@ export class ReceiptGenerator {
             font-size: 13px;
         }
 
+        .form12-receipt .receipt-header {
+            margin-bottom: 2px;
+            padding-bottom: 1px;
+        }
         .form12-receipt .field-row {
-            margin: 4px 0;
-            line-height: 1.4;
+            margin: 2px 0;
+            line-height: 1.3;
+            font-size: 10px;
+        }
+        .form12-receipt .field-label {
+            font-size: 10px;
         }
         .form12-receipt .field-value {
-            padding: 0px 4px 4px 4px;
-            min-height: 18px;
-            line-height: 1.4;
+            padding: 0px 3px 2px 3px;
+            min-height: 14px;
+            line-height: 1.3;
+            font-size: 10px;
         }
 
     </style>
@@ -702,9 +711,9 @@ export class ReceiptGenerator {
         <!-- Form 12 Receipt - नमुना क्रमांक १२ -->
         <div class="form12-receipt">
             <div class="receipt-header">
-                <div class="form-number">नमुना क्रमांक १२ (नियम १८ पहा)</div>
-                <div class="receipt-title" style="font-size: 10px; font-weight: 500;">(तारण जंगम मालाची पावती)</div>
-                <div style="font-size: 10px; margin-top: 2px; margin-bottom: 3px; font-weight: 500; color: #333;">
+                <div class="form-number" style="font-size: 11px; margin-bottom: 1px; padding: 1px 0;">नमुना क्रमांक १२ (नियम १८ पहा)</div>
+                <div style="font-size: 9px; font-weight: 500;">(तारण जंगम मालाची पावती)</div>
+                <div style="font-size: 9px; margin-top: 1px; margin-bottom: 1px; font-weight: 500; color: #333;">
                     सावकार: ${getDisplayData(company?.name)} | परवाना क्र.: ${getDisplayData(company?.licenseNumber)}
                 </div>
             </div>
@@ -740,14 +749,14 @@ export class ReceiptGenerator {
                 <div class="field-value" style="flex: 1;">${getBlankField((loan as any).otherInfo && (loan as any).otherInfo !== '—' ? (loan as any).otherInfo : '')}</div>
             </div>
 
-            <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: 10px; padding: 0 5px;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: 6px; padding: 0 5px;">
                 <div style="text-align: center; width: 45%;">
-                    <div style="border-bottom: 1px solid #333; margin-bottom: 2px; height: 14px;"></div>
-                    <span style="font-size: 10px;">कर्जदाराची सही</span>
+                    <div style="border-bottom: 1px solid #333; margin-bottom: 1px; height: 12px;"></div>
+                    <span style="font-size: 9px;">कर्जदाराची सही</span>
                 </div>
                 <div style="text-align: center; width: 45%;">
-                    <div style="border-bottom: 1px solid #333; margin-bottom: 2px; height: 14px;"></div>
-                    <span style="font-size: 10px;">सावकाराची सही</span>
+                    <div style="border-bottom: 1px solid #333; margin-bottom: 1px; height: 12px;"></div>
+                    <span style="font-size: 9px;">सावकाराची सही</span>
                 </div>
             </div>
         </div>

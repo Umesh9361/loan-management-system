@@ -660,7 +660,8 @@ export default function ReceiptGeneratorPage() {
                               isBackwardClass: false,
                               isFarmer: false,
                               marketValue: null,
-                              weight: ''
+                              weight: '',
+                              otherInfo: ''
                             };
                             
                             // ✅ ENHANCED VALIDATION: Double-check loan status for closure receipts
