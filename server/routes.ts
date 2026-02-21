@@ -10,7 +10,7 @@ import { PhotoStorageFactory, CloudinaryStorageProvider } from "./photo-storage-
 import path from 'path';
 import fs from 'fs/promises';
 import { z } from "zod";
-import { and, eq, sql, or, ne, inArray, desc, count, sum, gte, lte } from "drizzle-orm";
+import { and, eq, sql, or, ne, inArray, desc, asc, count, sum, gte, lte } from "drizzle-orm";
 import connectPgSimple from "connect-pg-simple";
 import { pool } from "./db";
 
@@ -2472,6 +2472,72 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(report);
     } catch (error) {
       res.status(500).json({ message: "Failed to generate capital account report" });
+    }
+  });
+
+  app.get("/api/reports/information-register", requireAuth, async (req, res) => {
+    try {
+      const { dateFrom, dateTo } = req.query;
+      
+      if (!dateFrom || !dateTo) {
+        return res.status(400).json({ message: "Date range required" });
+      }
+      
+      const tenantId = req.session.tenantId!;
+      
+      const allLoans = await db.select()
+        .from(loans)
+        .where(
+          and(
+            eq(loans.tenantId, tenantId),
+            gte(loans.loanDate, dateFrom as string),
+            lte(loans.loanDate, dateTo as string)
+          )
+        )
+        .orderBy(asc(loans.loanDate), asc(loans.borrowerName));
+      
+      const closedLoanIds = allLoans.filter(l => l.status === 'closed').map(l => l.id);
+      let closureMap: Record<string, any> = {};
+      
+      if (closedLoanIds.length > 0) {
+        const closures = await db.select()
+          .from(loanClosures)
+          .where(
+            and(
+              eq(loanClosures.tenantId, tenantId),
+              inArray(loanClosures.loanId, closedLoanIds)
+            )
+          );
+        
+        for (const c of closures) {
+          closureMap[c.loanId] = c;
+        }
+      }
+      
+      const result = allLoans.map((loan, index) => {
+        const closure = closureMap[loan.id];
+        return {
+          srNo: index + 1,
+          borrowerName: loan.borrowerName,
+          borrowerAddress: loan.borrowerAddress || '',
+          loanDate: loan.loanDate,
+          principalAmount: loan.principalAmount,
+          interestRate: loan.interestRate,
+          interestRateType: loan.interestRateType,
+          loanType: loan.loanType,
+          accountNumber: loan.accountNumber,
+          status: loan.status,
+          closureDate: closure?.closureDate || null,
+          principalPaid: closure?.principalPaid || null,
+          interestPaid: closure?.interestPaid || null,
+          isClosed: loan.status === 'closed',
+        };
+      });
+      
+      res.json(result);
+    } catch (error) {
+      console.error("Information register error:", error);
+      res.status(500).json({ message: "Failed to generate information register" });
     }
   });
 
