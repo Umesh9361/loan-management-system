@@ -30,7 +30,7 @@ export class ReceiptGenerator {
   static generateLoanReceipt(
     loan: Loan, 
     company: { name?: string; licenseNumber?: string } | null,
-    receiptType: 'combined' | 'disbursement' | 'closure' | 'blank' = 'combined',
+    receiptType: 'combined' | 'disbursement' | 'closure' | 'blank' | 'form12' | 'combined10_12' = 'combined',
     closureData?: any
   ): string {
     const formatDate = (date: string) => {
@@ -176,6 +176,22 @@ export class ReceiptGenerator {
                 page-break-inside: avoid !important;
                 page-break-before: avoid !important;
             }
+            
+            .form12-receipt {
+                width: 100% !important;
+                height: 94mm !important;
+                min-height: 94mm !important;
+                max-height: 94mm !important;
+                flex: 0 0 94mm !important;
+                padding: 3mm !important;
+                margin: 0 !important;
+                margin-bottom: 3mm !important;
+                border: 1px solid #333 !important;
+                box-sizing: border-box !important;
+                overflow: hidden !important;
+                page-break-inside: avoid !important;
+                page-break-before: avoid !important;
+            }
         }
 
         * {
@@ -232,6 +248,17 @@ export class ReceiptGenerator {
         }
         
         .receipt-container.export-mode .closure-receipt {
+            flex: 0 0 auto !important;
+            height: 95mm !important;
+            min-height: 95mm !important;
+            max-height: 95mm !important;
+            overflow: visible !important;
+            padding: 3mm !important;
+            margin-bottom: 4mm !important;
+            margin-top: 0 !important;
+        }
+        
+        .receipt-container.export-mode .form12-receipt {
             flex: 0 0 auto !important;
             height: 95mm !important;
             min-height: 95mm !important;
@@ -328,6 +355,25 @@ export class ReceiptGenerator {
         
         @media screen and (min-width: 600px) {
             .closure-receipt {
+                flex: 1;
+                overflow: hidden;
+            }
+        }
+
+        .form12-receipt {
+            flex: none;
+            padding: 3mm;
+            position: relative;
+            margin-top: 2mm;
+            height: auto;
+            border: 1px solid #333;
+            background: white;
+            box-sizing: border-box;
+            overflow: visible;
+        }
+        
+        @media screen and (min-width: 600px) {
+            .form12-receipt {
                 flex: 1;
                 overflow: hidden;
             }
@@ -475,7 +521,7 @@ export class ReceiptGenerator {
 <body>
 
     <div class="receipt-container">
-        ${(receiptType === 'disbursement' || receiptType === 'combined' || receiptType === 'blank') ? `
+        ${(receiptType === 'disbursement' || receiptType === 'combined' || receiptType === 'combined10_12' || receiptType === 'blank') ? `
         <!-- Loan Statement Receipt (Top) - नमुना क्रमांक १० -->
         <div class="loan-receipt">
             <div class="receipt-header">
@@ -561,7 +607,7 @@ export class ReceiptGenerator {
         </div>
         ` : ''}
 
-        ${(receiptType === 'combined' || receiptType === 'blank') ? `
+        ${(receiptType === 'combined' || receiptType === 'combined10_12' || receiptType === 'blank') ? `
         <!-- Cutting Line -->
         <div class="cutting-line">
             <span class="cutting-symbol">✂</span>
@@ -640,6 +686,76 @@ export class ReceiptGenerator {
             </div>
         </div>
         ` : ''}
+
+        ${(receiptType === 'form12' || receiptType === 'combined10_12') ? `
+        <!-- Form 12 Receipt - नमुना क्रमांक १२ -->
+        <div class="form12-receipt">
+            <div class="receipt-header">
+                <div class="form-number">नमुना क्रमांक १२ (नियम १८ पहा)</div>
+                <div class="receipt-title">कर्ज देताना कर्जदारास द्यावयाची पावती</div>
+                <div style="font-size: 9px; margin-top: 2px; margin-bottom: 3px; font-weight: 500; color: #333;">
+                    सावकार: ${getDisplayData(company?.name)} | परवाना क्र.: ${getDisplayData(company?.licenseNumber)}
+                </div>
+            </div>
+
+            <div class="field-row">
+                <span class="field-label">कर्जदाराचे नाव:</span>
+                <div class="field-value">${getBlankField(loan.borrowerName)}</div>
+            </div>
+
+            <div class="field-row">
+                <span class="field-label">पत्ता:</span>
+                <div class="field-value" style="flex: 1;">${getBlankField(loan.borrowerAddress)}</div>
+            </div>
+
+            <div class="field-row">
+                <span class="field-label">जात:</span>
+                <div class="field-value" style="flex: 0.4;">&nbsp;</div>
+                <span class="field-label" style="margin-left: 8px;">(मागासवर्गीय आहे/नाही):</span>
+                <div class="field-value" style="flex: 0.3; text-align: center;">${(loan as any).isBackwardClass ? 'होय' : 'नाही'}</div>
+                <span class="field-label" style="margin-left: 8px;">कृषी/अकृषिक:</span>
+                <div class="field-value" style="flex: 0.3; text-align: center;">${(loan as any).isFarmer ? 'कृषी' : 'अकृषिक'}</div>
+            </div>
+
+            <div style="margin: 6px 0 4px 0; border: 1px solid #333; padding: 4px 5px; min-height: 40px;">
+                <div style="text-align: center; font-weight: bold; margin-bottom: 4px; font-size: 11px; border-bottom: 1px solid #999; padding-bottom: 3px;">तारणाचा पूर्ण तपशील</div>
+                <div style="font-size: 10px; line-height: 1.3; padding: 2px;">
+                    ${loan.collateralDetails || ''}
+                    ${(loan as any).weight ? ` | वजन: ${(loan as any).weight} ग्राम` : ''}
+                </div>
+            </div>
+
+            <div class="field-row">
+                <span class="field-label">अंदाजे मूल्य:</span>
+                <div class="field-value" style="flex: 0.5;">${getBlankField((loan as any).marketValue ? `₹${ReceiptGenerator.cleanDisplayAmount((loan as any).marketValue)}` : '')}</div>
+                <span class="field-label" style="margin-left: 15px;">दिलेल्या कर्जाची एकूण रक्कम:</span>
+                <div class="field-value" style="flex: 0.5; text-align: right;">${getBlankField(`₹${ReceiptGenerator.cleanDisplayAmount(loan.principalAmount || 0)}`)}</div>
+            </div>
+
+            <div class="field-row">
+                <span class="field-label">खाते क्रमांक:</span>
+                <div class="field-value" style="flex: 0.4;">${getBlankField(loan.accountNumber || loan.id)}</div>
+                <span class="field-label" style="margin-left: 15px;">कर्ज दिनांक:</span>
+                <div class="field-value" style="flex: 0.4;">${getBlankField(formatDate(loan.loanDate))}</div>
+            </div>
+
+            <div style="margin: 5px 0;">
+                <span style="font-weight: 600; font-size: 11px;">इतर अनुषंगिक तपशील:</span>
+                <div style="border-bottom: 1px solid #333; height: 18px; margin-top: 2px;"></div>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: 12px; padding: 0 5px;">
+                <div style="text-align: center; width: 45%;">
+                    <div style="border-bottom: 1px solid #333; margin-bottom: 2px; height: 14px;"></div>
+                    <span style="font-size: 10px;">कर्जदाराची सही</span>
+                </div>
+                <div style="text-align: center; width: 45%;">
+                    <div style="border-bottom: 1px solid #333; margin-bottom: 2px; height: 14px;"></div>
+                    <span style="font-size: 10px;">सावकाराची सही</span>
+                </div>
+            </div>
+        </div>
+        ` : ''}
     </div>
     
     <!-- Print button removed - now handled by parent dialog/popup controls -->
@@ -669,7 +785,7 @@ export class ReceiptGenerator {
   static openReceiptWindow(
     loan: Loan, 
     company: { name?: string; licenseNumber?: string } | null,
-    receiptType: 'combined' | 'disbursement' | 'closure' | 'blank' = 'combined',
+    receiptType: 'combined' | 'disbursement' | 'closure' | 'blank' | 'form12' | 'combined10_12' = 'combined',
     closureData?: any
   ) {
     try {
@@ -869,14 +985,16 @@ export class ReceiptGenerator {
 
         .table-cell-label {
             flex: 1;
-            padding: 4px 8px;
+            padding: 6px 8px 7px 8px;
             border-right: 1px solid #000;
+            line-height: 1.6;
         }
 
         .table-cell-value {
             width: 120px;
-            padding: 4px 8px;
+            padding: 6px 8px 7px 8px;
             text-align: right;
+            line-height: 1.6;
         }
 
         .footer {

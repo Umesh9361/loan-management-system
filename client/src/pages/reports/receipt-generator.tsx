@@ -17,7 +17,7 @@ export default function ReceiptGeneratorPage() {
   const isMobile = useIsMobile();
   const [selectedLoanId, setSelectedLoanId] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState("");
-  const [receiptType, setReceiptType] = useState<'combined' | 'disbursement' | 'closure' | 'blank'>('combined');
+  const [receiptType, setReceiptType] = useState<'combined' | 'disbursement' | 'closure' | 'blank' | 'form12' | 'combined10_12'>('combined');
 
   // Fetch loans data first
   const { data: loans = [] } = useQuery({
@@ -40,7 +40,7 @@ export default function ReceiptGeneratorPage() {
   React.useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const loanId = urlParams.get('loanId');
-    const urlType = urlParams.get('type') as 'combined' | 'disbursement' | 'closure' | 'blank' || 'combined';
+    const urlType = urlParams.get('type') as 'combined' | 'disbursement' | 'closure' | 'blank' | 'form12' | 'combined10_12' || 'combined';
     const autoGenerate = urlParams.get('autoGenerate') === 'true';
     
     if (loanId && (loans as any[]).length > 0) {
@@ -656,7 +656,11 @@ export default function ReceiptGeneratorPage() {
                               businessType: '',
                               accountNumber: '',
                               collateralDetails: '',
-                              maturityDate: null
+                              maturityDate: null,
+                              isBackwardClass: false,
+                              isFarmer: false,
+                              marketValue: null,
+                              weight: ''
                             };
                             
                             // ✅ ENHANCED VALIDATION: Double-check loan status for closure receipts
@@ -752,7 +756,7 @@ export default function ReceiptGeneratorPage() {
                 {/* ✅ RECEIPT TYPE OPTIONS - 4 Radio Buttons */}
                 <div className="mt-6 p-4 bg-gray-50 rounded-lg">
                   <Label className="text-sm font-semibold mb-3 block">पावती प्रकार निवडा</Label>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                     
                     <div className="flex items-center space-x-2">
                       <input
@@ -827,7 +831,41 @@ export default function ReceiptGeneratorPage() {
                         autoComplete="off"
                       />
                       <Label htmlFor="blank" className="text-sm font-medium cursor-pointer">
-                        मोकळी पावती - हातानेे लिहिण्यासाठी
+                        मोकळी पावती (१०+११) - हाताने लिहिण्यासाठी
+                      </Label>
+                    </div>
+
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="radio"
+                        id="combined10_12"
+                        name="receiptType"
+                        value="combined10_12"
+                        checked={receiptType === 'combined10_12'}
+                        onChange={(e) => setReceiptType(e.target.value as any)}
+                        className="h-4 w-4"
+                        data-testid="radio-combined10_12"
+                        autoComplete="off"
+                      />
+                      <Label htmlFor="combined10_12" className="text-sm font-medium cursor-pointer">
+                        नमुना नं. १० + १२ एकत्र
+                      </Label>
+                    </div>
+
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="radio"
+                        id="form12"
+                        name="receiptType"
+                        value="form12"
+                        checked={receiptType === 'form12'}
+                        onChange={(e) => setReceiptType(e.target.value as any)}
+                        className="h-4 w-4"
+                        data-testid="radio-form12"
+                        autoComplete="off"
+                      />
+                      <Label htmlFor="form12" className="text-sm font-medium cursor-pointer">
+                        फक्त नमुना नं. १२ - तारण पावती
                       </Label>
                     </div>
                     
@@ -835,7 +873,7 @@ export default function ReceiptGeneratorPage() {
                   
                   {/* ✅ PROFESSIONAL POPUP APPROACH: Helper text */}
                   <div className="mt-3 text-xs text-gray-600">
-                    {receiptType === 'combined' && "• दोन्ही पावत्या एकत्र professional popup window मध्ये उघडतील"}
+                    {receiptType === 'combined' && "• नमुना १० + ११ दोन्ही पावत्या एकत्र popup window मध्ये उघडतील"}
                     {receiptType === 'disbursement' && "• फक्त कर्ज देण्याची पावती (नमुना नं. १०) popup window मध्ये उघडेल"}
                     {receiptType === 'closure' && "• फक्त कर्ज बंद करण्याची पावती (नमुना नं. ११) मुद्दल, व्याज व एकूण रकमेसह popup मध्ये उघडेल"}
                     {!canGenerateClosureReceipt && selectedLoan && selectedLoan.status !== 'closed' && (
@@ -843,7 +881,9 @@ export default function ReceiptGeneratorPage() {
                         ⚠️ कर्ज क्लोजिंग पावती फक्त बंद केलेल्या कर्जासाठी उपलब्ध आहे। पहिले कर्ज बंद करा.
                       </div>
                     )}
-                    {receiptType === 'blank' && "• दोन्ही पावत्या मोकळ्या (बिना डेटा) popup window मध्ये उघडतील - हस्तलेखनासाठी"}
+                    {receiptType === 'blank' && "• नमुना १० + ११ मोकळ्या (बिना डेटा) popup window मध्ये उघडतील - हस्तलेखनासाठी"}
+                    {receiptType === 'combined10_12' && "• नमुना १० + १२ (तारण पावती) एकत्र popup window मध्ये उघडतील"}
+                    {receiptType === 'form12' && "• फक्त नमुना १२ तारण पावती popup window मध्ये उघडेल"}
                     <div className="mt-2 text-xs text-green-600 bg-green-50 p-2 rounded">
                       ✨ Professional Approach: Clean popup window - कोणतेही dual scroll bars नाहीत!
                     </div>
