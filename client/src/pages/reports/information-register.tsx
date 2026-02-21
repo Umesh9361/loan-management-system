@@ -7,7 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Sidebar } from "@/components/ui/sidebar";
 import { MobileNav } from "@/components/ui/mobile-nav";
 import { DateUtils } from "@/lib/date-utils";
-import { Printer, FileDown, ClipboardList, ArrowLeft } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Printer, FileDown, ClipboardList, ArrowLeft, CheckSquare } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useSafeNavigation } from "@/hooks/use-safe-navigation";
 import html2canvas from "html2canvas";
@@ -36,7 +37,10 @@ export default function InformationRegister() {
     dateTo: new Date().toISOString().split('T')[0]
   });
   const [pdfLoading, setPdfLoading] = useState(false);
+  const [demoData, setDemoData] = useState<RegisterEntry[] | null>(null);
+  const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set());
   const printRef = useRef<HTMLDivElement>(null);
+  const selectedPrintRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const { safeNavigate } = useSafeNavigation();
 
@@ -56,20 +60,122 @@ export default function InformationRegister() {
   });
 
   const handleFilter = async () => {
+    setDemoData(null);
+    setSelectedRows(new Set());
     await refetch();
   };
 
+  const generateDemoData = () => {
+    const randomNames = [
+      { name: 'रामचंद्र विठ्ठल जाधव', address: 'पुणे' },
+      { name: 'सुनीता भगवान पवार', address: 'सातारा' },
+      { name: 'गणेश दत्तात्रय शिंदे', address: 'कोल्हापूर' },
+      { name: 'प्रकाश शंकर माळी', address: 'सांगली' },
+      { name: 'लक्ष्मी नारायण कुलकर्णी', address: 'सोलापूर' },
+      { name: 'अनिल विश्वनाथ देशमुख', address: 'नाशिक' },
+      { name: 'मंगल तुकाराम गायकवाड', address: 'अहमदनगर' },
+      { name: 'विजय बाबूराव पाटील', address: 'बारामती' },
+      { name: 'सरोज दिनकर भोसले', address: 'औरंगाबाद' },
+      { name: 'दिलीप ज्ञानेश्वर कांबळे', address: 'लातूर' },
+    ];
+
+    const shuffled = [...randomNames].sort(() => Math.random() - 0.5);
+    const selected = shuffled.slice(0, 5);
+
+    const currentYear = new Date().getMonth() >= 3 ? new Date().getFullYear() : new Date().getFullYear() - 1;
+    const fyStart = new Date(currentYear, 3, 1);
+
+    const randomDate = (start: Date, end: Date) => {
+      const d = new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime()));
+      return d.toISOString().split('T')[0];
+    };
+
+    const today = new Date();
+    const loanAmounts = [50000, 75000, 100000, 25000, 150000, 30000, 60000, 80000, 40000, 120000];
+    const rates = ['2', '3', '1.5', '2.5', '1'];
+
+    const demoEntries: RegisterEntry[] = selected.map((person, i) => {
+      const loanDate = randomDate(fyStart, today);
+      const amount = loanAmounts[Math.floor(Math.random() * loanAmounts.length)];
+      const rate = rates[Math.floor(Math.random() * rates.length)];
+      return {
+        srNo: i + 1,
+        borrowerName: person.name,
+        borrowerAddress: person.address,
+        loanDate,
+        principalAmount: amount.toString(),
+        interestRate: rate,
+        interestRateType: 'monthly',
+        loanType: i % 2 === 0 ? 'तारण' : 'बिगर तारण',
+        accountNumber: `ACC-${1000 + Math.floor(Math.random() * 9000)}`,
+        status: 'active',
+        closureDate: null,
+        principalPaid: null,
+        interestPaid: null,
+        isClosed: false,
+      };
+    });
+
+    setDemoData(demoEntries);
+    setDateFilters({
+      dateFrom: `${currentYear}-04-01`,
+      dateTo: `${currentYear + 1}-03-31`,
+    });
+    toast({ title: "रँडम ५ नाव", description: "डेमो रिपोर्ट तयार झाला" });
+  };
+
+  const displayData = demoData || registerData;
+
+  const toggleRow = (srNo: number) => {
+    setSelectedRows(prev => {
+      const next = new Set(prev);
+      if (next.has(srNo)) next.delete(srNo);
+      else next.add(srNo);
+      return next;
+    });
+  };
+
+  const toggleAll = () => {
+    if (!displayData) return;
+    if (selectedRows.size === displayData.length) {
+      setSelectedRows(new Set());
+    } else {
+      setSelectedRows(new Set(displayData.map(e => e.srNo)));
+    }
+  };
+
+  const isAllSelected = displayData ? selectedRows.size === displayData.length && displayData.length > 0 : false;
+  const hasSelection = selectedRows.size > 0;
+
+  const getSelectedData = (): RegisterEntry[] => {
+    if (!displayData) return [];
+    if (!hasSelection) return displayData;
+    return displayData
+      .filter(e => selectedRows.has(e.srNo))
+      .map((e, i) => ({ ...e, srNo: i + 1 }));
+  };
+
   const handlePrint = () => {
-    if (!registerData || registerData.length === 0) {
-      toast({ title: "डेटा नाही", description: "प्रिंट करण्यासाठी आधी शोधा बटण दाबा", variant: "destructive" });
+    if (!displayData || displayData.length === 0) {
+      toast({ title: "डेटा नाही", description: "प्रिंट करण्यासाठी आधी शोधा किंवा रँडम ५ नाव बटण दाबा", variant: "destructive" });
       return;
     }
-    window.print();
+    if (hasSelection) {
+      const printContent = selectedPrintRef.current;
+      if (!printContent) return;
+      printContent.style.display = 'block';
+      setTimeout(() => {
+        window.print();
+        setTimeout(() => { printContent.style.display = 'none'; }, 500);
+      }, 100);
+    } else {
+      window.print();
+    }
   };
 
   const handleDownloadPDF = async () => {
-    if (!registerData || registerData.length === 0) {
-      toast({ title: "डेटा नाही", description: "PDF साठी आधी शोधा बटण दाबा", variant: "destructive" });
+    if (!displayData || displayData.length === 0) {
+      toast({ title: "डेटा नाही", description: "PDF साठी आधी शोधा किंवा रँडम ५ नाव बटण दाबा", variant: "destructive" });
       return;
     }
     
@@ -88,13 +194,14 @@ export default function InformationRegister() {
       wrapper.style.overflow = 'visible';
       wrapper.style.background = 'white';
 
-      const source = printRef.current;
+      const source = hasSelection ? selectedPrintRef.current : printRef.current;
       if (!source) { setPdfLoading(false); return; }
+      if (hasSelection) source.style.display = 'block';
 
       const cloned = source.cloneNode(true) as HTMLElement;
       cloned.style.width = landscapeWidthPx + 'px';
       cloned.style.minWidth = landscapeWidthPx + 'px';
-      cloned.style.padding = '20px 25px';
+      cloned.style.padding = '70px 25px 20px 25px';
       cloned.style.background = 'white';
       cloned.style.fontSize = '12px';
 
@@ -111,6 +218,10 @@ export default function InformationRegister() {
         scrollWrapper.style.border = 'none';
       }
 
+      cloned.querySelectorAll('.no-print, .ir-col-check').forEach(el => {
+        (el as HTMLElement).style.display = 'none';
+      });
+
       wrapper.appendChild(cloned);
       document.body.appendChild(wrapper);
 
@@ -126,6 +237,7 @@ export default function InformationRegister() {
       });
 
       document.body.removeChild(wrapper);
+      if (hasSelection && selectedPrintRef.current) selectedPrintRef.current.style.display = 'none';
 
       const imgData = canvas.toDataURL('image/png');
       const imgHeight = (canvas.height * 297) / canvas.width;
@@ -154,6 +266,9 @@ export default function InformationRegister() {
     if (!val) return '.......';
     const num = parseFloat(val);
     if (isNaN(num)) return '.......';
+    if (num % 1 === 0) {
+      return num.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+    }
     return num.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   };
 
@@ -210,7 +325,7 @@ export default function InformationRegister() {
       }
 
       .register-table {
-        min-width: 1050px;
+        min-width: 1080px;
         width: 100%;
         border-collapse: collapse;
         font-size: 11px;
@@ -310,11 +425,17 @@ export default function InformationRegister() {
         font-size: 11px;
         color: #333;
       }
+      .footer-right {
+        margin-right: 15%;
+      }
       @media (min-width: 1024px) {
         .register-footer {
           margin-top: 35px;
           padding: 0 20px;
           font-size: 12px;
+        }
+        .footer-right {
+          margin-right: 20%;
         }
       }
       .footer-left p, .footer-right p { margin: 2px 0; }
@@ -324,17 +445,43 @@ export default function InformationRegister() {
         min-width: 180px;
       }
 
+      .ir-col-check {
+        width: 32px !important;
+        min-width: 32px !important;
+        max-width: 32px !important;
+        text-align: center;
+        padding: 2px !important;
+      }
+      .ir-row-selected {
+        background: #eef2ff !important;
+      }
+      .ir-selected-print {
+        display: none;
+      }
+
       @media print {
         @page {
           size: A4 landscape;
-          margin: 10mm 12mm 10mm 12mm;
+          margin: 25mm 12mm 10mm 12mm;
         }
         body * { visibility: hidden; }
+        .ir-selected-print[style*="display: block"],
+        .ir-selected-print[style*="display: block"] * {
+          visibility: visible !important;
+        }
         .info-register-print, .info-register-print * { visibility: visible; }
+        .ir-selected-print[style*="display: block"] {
+          position: absolute; left: 0; top: 0; width: 100%;
+        }
         .info-register-print {
           position: absolute; left: 0; top: 0; width: 100%;
         }
-        .no-print, .ir-filter-section { display: none !important; }
+        .ir-selected-print[style*="display: block"] ~ .info-register-print,
+        .ir-selected-print[style*="display: block"] ~ .info-register-print * {
+          visibility: hidden !important;
+          display: none !important;
+        }
+        .no-print, .ir-filter-section, .ir-col-check { display: none !important; }
         .ir-table-scroll { overflow: visible; border: none; border-radius: 0; }
         .register-header { border: 2px solid #000; border-radius: 0; }
         .register-table { font-size: 11px; min-width: 100%; }
@@ -389,7 +536,7 @@ export default function InformationRegister() {
 
               <Card className="mb-4 border border-indigo-100 shadow-sm rounded-xl overflow-hidden">
                 <CardContent className="p-3 sm:p-5">
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 items-end">
+                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 sm:gap-4 items-end">
                     <div>
                       <Label htmlFor="dateFrom" className="text-xs sm:text-sm font-medium text-gray-700 mb-1 block">पासून तारीख</Label>
                       <Input
@@ -419,7 +566,16 @@ export default function InformationRegister() {
                         {isLoading ? 'लोड होत आहे...' : 'शोधा'}
                       </Button>
                     </div>
-                    <div className="flex gap-2">
+                    <div>
+                      <Button
+                        onClick={generateDemoData}
+                        variant="outline"
+                        className="w-full h-10 sm:h-9 text-sm font-medium border-amber-300 text-amber-700 bg-amber-50 hover:bg-amber-100 hover:border-amber-400 shadow-sm rounded-lg active:scale-[0.98] transition-transform"
+                      >
+                        रँडम ५ नाव
+                      </Button>
+                    </div>
+                    <div className="flex gap-2 col-span-2 sm:col-span-1">
                       <Button onClick={handlePrint} variant="outline" size="sm" className="flex-1 h-10 sm:h-9 text-xs sm:text-sm border-indigo-200 text-indigo-600 hover:bg-indigo-50">
                         <Printer className="h-3.5 w-3.5 mr-1" />
                         प्रिंट
@@ -434,7 +590,28 @@ export default function InformationRegister() {
               </Card>
             </div>
 
-            {registerData && registerData.length > 0 ? (
+            {displayData && displayData.length > 0 ? (
+              <>
+              {hasSelection && (
+                <div className="no-print mb-3 flex items-center gap-3 px-1">
+                  <div className="flex items-center gap-2 text-sm text-indigo-700 bg-indigo-50 border border-indigo-200 rounded-lg px-3 py-2">
+                    <CheckSquare className="h-4 w-4" />
+                    <span className="font-medium">{selectedRows.size} निवडलेले</span>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setSelectedRows(new Set())}
+                    className="text-xs text-gray-500 hover:text-red-500"
+                  >
+                    निवड रद्द करा
+                  </Button>
+                  <span className="text-xs text-gray-400">
+                    (निवडलेले records चे print / PDF होईल)
+                  </span>
+                </div>
+              )}
+
               <div className="info-register-print" ref={printRef}>
                 <div className="register-header">
                   <p className="register-title">
@@ -446,6 +623,9 @@ export default function InformationRegister() {
                   <table className="register-table">
                     <thead>
                       <tr>
+                        <th rowSpan={2} className="ir-col-check no-print" style={{width:'32px',minWidth:'32px'}}>
+                          <Checkbox checked={isAllSelected} onCheckedChange={toggleAll} className="border-indigo-400" />
+                        </th>
                         <th rowSpan={2} className="ir-col-sr">अ.<br/>नं.</th>
                         <th rowSpan={2} className="ir-col-name">कर्जदाराचे पूर्ण नांव व<br/>पत्ता</th>
                         <th rowSpan={2} className="ir-col-date">कर्जाची<br/>तारीख</th>
@@ -463,8 +643,15 @@ export default function InformationRegister() {
                       </tr>
                     </thead>
                     <tbody>
-                      {registerData.map((entry) => (
-                        <tr key={entry.srNo}>
+                      {displayData.map((entry) => (
+                        <tr key={entry.srNo} className={selectedRows.has(entry.srNo) ? 'ir-row-selected' : ''}>
+                          <td className="ir-td-center no-print" style={{width:'32px',minWidth:'32px'}}>
+                            <Checkbox
+                              checked={selectedRows.has(entry.srNo)}
+                              onCheckedChange={() => toggleRow(entry.srNo)}
+                              className="border-gray-400"
+                            />
+                          </td>
                           <td className="ir-td-center">{entry.srNo}</td>
                           <td className="ir-td-name">
                             <strong>{entry.borrowerName}</strong>
@@ -499,7 +686,72 @@ export default function InformationRegister() {
                   </div>
                 </div>
               </div>
-            ) : registerData && registerData.length === 0 ? (
+
+              <div ref={selectedPrintRef} className="info-register-print ir-selected-print" style={{display:'none'}}>
+                <div className="register-header">
+                  <p className="register-title">
+                    सावकाराचे नांव :- {company?.name || ''} &nbsp;&nbsp; सावकारी लायसन नंबर :- {company?.licenseNumber || ''}
+                  </p>
+                </div>
+                <div className="ir-table-scroll">
+                  <table className="register-table">
+                    <thead>
+                      <tr>
+                        <th rowSpan={2} className="ir-col-sr">अ.<br/>नं.</th>
+                        <th rowSpan={2} className="ir-col-name">कर्जदाराचे पूर्ण नांव व<br/>पत्ता</th>
+                        <th rowSpan={2} className="ir-col-date">कर्जाची<br/>तारीख</th>
+                        <th rowSpan={2} className="ir-col-amount">कर्जाची<br/>रक्कम<br/>रुपये</th>
+                        <th colSpan={3} className="ir-col-recovery-header">वसूल रक्कम रुपये</th>
+                        <th rowSpan={2} className="ir-col-rate">व्याज<br/>दर %</th>
+                        <th rowSpan={2} className="ir-col-type">तारणी की<br/>बिगर<br/>तारणी</th>
+                        <th rowSpan={2} className="ir-col-acc">खाते<br/>नं.</th>
+                        <th rowSpan={2} className="ir-col-status">तारण माल<br/>परत केला<br/>आहे का?</th>
+                      </tr>
+                      <tr>
+                        <th className="ir-col-rdate">तारीख</th>
+                        <th className="ir-col-rprincipal">मुद्दल</th>
+                        <th className="ir-col-rinterest">व्याज</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {getSelectedData().map((entry) => (
+                        <tr key={entry.srNo}>
+                          <td className="ir-td-center">{entry.srNo}</td>
+                          <td className="ir-td-name">
+                            <strong>{entry.borrowerName}</strong>
+                            {entry.borrowerAddress && (
+                              <div className="ir-address">{entry.borrowerAddress}</div>
+                            )}
+                          </td>
+                          <td className="ir-td-center">{formatDate(entry.loanDate)}</td>
+                          <td className="ir-td-right">{formatAmount(entry.principalAmount)}</td>
+                          <td className="ir-td-center">{entry.isClosed ? formatDate(entry.closureDate) : '.......'}</td>
+                          <td className="ir-td-right">{entry.isClosed ? formatAmount(entry.principalPaid) : '.......'}</td>
+                          <td className="ir-td-right">{entry.isClosed ? formatAmount(entry.interestPaid) : '.......'}</td>
+                          <td className="ir-td-center">{getInterestDisplay(entry.interestRate, entry.interestRateType)}</td>
+                          <td className="ir-td-center">{getLoanTypeLabel(entry.loanType)}</td>
+                          <td className="ir-td-center">{entry.accountNumber}</td>
+                          <td className={`ir-td-center ${entry.isClosed ? 'ir-status-closed' : 'ir-status-open'}`}>
+                            {entry.isClosed ? 'होय' : 'लागू नाही'}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <div className="register-footer">
+                  <div className="footer-left">
+                    <p>सावकाराचे सहा. निबंधक तथा उपनिबंधक</p>
+                    <p>सह. संस्था, <span className="ir-underline-space">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span></p>
+                  </div>
+                  <div className="footer-right">
+                    <p>सावकाराची सही</p>
+                  </div>
+                </div>
+              </div>
+              </>
+
+            ) : (registerData && registerData.length === 0 && !demoData) ? (
               <Card className="border border-dashed border-indigo-200 bg-indigo-50/30">
                 <CardContent className="py-12 text-center">
                   <ClipboardList className="h-12 w-12 text-indigo-300 mx-auto mb-3" />
