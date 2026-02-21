@@ -1013,29 +1013,44 @@ export class ReceiptGenerator {
     <title>वार्षिक लेखा विवरणपत्र - ${data.borrowerName}</title>
     <style>
         @page {
-            size: A5 portrait;
-            margin: 0mm 8mm;
+            size: 148mm 210mm;
+            margin: 0;
         }
-        
+
         @media print {
-            html, body {
-                width: auto !important;
-                height: auto !important;
-                margin: 0 !important;
-                padding: 0 !important;
+            * {
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
             }
-            
-            .receipt-container {
-                width: 140mm !important;
-                max-width: 140mm !important;
-                margin: 0 auto !important;
-                padding: 4mm !important;
-                box-sizing: border-box !important;
+            html {
+                width: 148mm !important;
+                height: 210mm !important;
+                margin: 0 !important;
+                padding: 0 !important;
             }
-            
-            .no-print {
+            body {
+                width: 148mm !important;
+                height: 210mm !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                background: white !important;
+            }
+            .receipt-container {
+                width: 144mm !important;
+                max-width: 144mm !important;
+                margin: 2mm auto !important;
+                padding: 0 !important;
+                box-sizing: border-box !important;
+                background: white !important;
+            }
+            .annual-receipt {
+                width: 100% !important;
+                padding: 3mm !important;
+                border: 1px solid #333 !important;
+                box-sizing: border-box !important;
+                margin-top: 3mm !important;
+            }
+            .control-panel, .no-print {
                 display: none !important;
             }
         }
@@ -1049,66 +1064,188 @@ export class ReceiptGenerator {
         body {
             font-family: 'Noto Sans Devanagari', Arial, sans-serif;
             background: white;
-            width: 148mm;
-            margin: 0 auto;
+            width: 100%;
+            height: auto;
+            margin: 0;
+            padding: 8px;
+            font-size: 10px;
+            line-height: 1.2;
+            box-sizing: border-box;
         }
 
         .receipt-container {
-            width: 140mm;
+            width: 100%;
+            max-width: 100%;
+            height: auto;
             margin: 0 auto;
-            padding: 4mm;
+            padding: 2mm;
             background: white;
+            box-sizing: border-box;
         }
 
-        .header {
+        .receipt-container.export-mode {
+            width: 148mm !important;
+            max-width: 148mm !important;
+            height: 210mm !important;
+            padding: 6mm 8mm !important;
+            box-shadow: none !important;
+        }
+
+        .receipt-container.export-mode .annual-receipt {
+            height: auto !important;
+            max-height: 190mm !important;
+            overflow: visible !important;
+            padding: 4mm 5mm !important;
+            margin-top: 4mm !important;
+        }
+
+        .receipt-container.export-mode .field-row {
+            margin: 3px 0 !important;
+            font-size: 11px !important;
+        }
+
+        .receipt-container.export-mode .field-label {
+            font-size: 11px !important;
+        }
+
+        .receipt-container.export-mode .field-value {
+            font-size: 11px !important;
+            padding-bottom: 2px !important;
+            min-height: 16px !important;
+        }
+
+        .receipt-container.export-mode .table-cell-label {
+            padding: 3px 6px !important;
+            font-size: 10px !important;
+            line-height: 1.4 !important;
+        }
+
+        .receipt-container.export-mode .table-cell-value {
+            padding: 3px 6px !important;
+            font-size: 10px !important;
+            width: 90px !important;
+            line-height: 1.4 !important;
+        }
+
+        .receipt-container.export-mode .form-number {
+            font-size: 12px !important;
+        }
+
+        .receipt-container.export-mode .receipt-title {
+            font-size: 10px !important;
+        }
+
+        .receipt-container.export-mode .company-info {
+            font-size: 9px !important;
+        }
+
+        .receipt-container.export-mode .signature-section {
+            font-size: 10px !important;
+            margin-top: 6px !important;
+        }
+
+        @media screen and (min-width: 600px) {
+            body {
+                padding: 20px;
+                font-size: 11px;
+            }
+            .receipt-container {
+                width: 144mm;
+                max-width: 144mm;
+                padding: 1mm 4mm;
+                box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            }
+        }
+
+        .annual-receipt {
+            padding: 3mm;
+            border: 1px solid #333;
+            background: white;
+            box-sizing: border-box;
+            overflow: visible;
+            margin-top: 2mm;
+        }
+
+        .receipt-header {
             text-align: center;
-            margin-bottom: 8px;
+            margin-bottom: 3px;
+            border-bottom: 1px solid #333;
+            padding-bottom: 2px;
         }
 
         .form-number {
-            font-size: 16px;
+            font-size: 11px;
             font-weight: bold;
-            margin-bottom: 4px;
+            margin-bottom: 1px;
+            line-height: 1.2;
         }
 
-        .title {
-            font-size: 14px;
+        .receipt-title {
+            font-size: 9px;
             font-weight: bold;
-            margin-bottom: 12px;
-            text-decoration: underline;
+            margin: 1px 0;
+            line-height: 1.3;
         }
 
         .field-row {
-            margin: 6px 0;
-            font-size: 11px;
-            line-height: 1.5;
+            display: flex;
+            justify-content: space-between;
+            margin: 2px 0;
+            font-size: 10px;
+            align-items: baseline;
+            line-height: 1.3;
+            padding: 0;
         }
 
         .field-label {
             font-weight: 600;
-            display: inline-block;
-            margin-bottom: 2px;
+            min-width: fit-content;
+            font-size: 10px;
+            white-space: nowrap;
         }
 
         .field-value {
-            display: inline-block;
-            margin-left: 8px;
-            border-bottom: 1px dotted #000;
-            min-width: 200px;
-            padding-bottom: 6px;
-            line-height: 1.8;
-            vertical-align: baseline;
+            border-bottom: 1px solid #333;
+            flex: 1;
+            margin-left: 4px;
+            padding: 0px 4px 1px 4px;
+            min-height: 14px;
+            font-weight: 500;
+            font-size: 10px;
+            line-height: 1.3;
+        }
+
+        .radio-row {
+            display: flex;
+            align-items: center;
+            margin: 2px 0;
+            font-size: 9px;
+            line-height: 1.2;
+            gap: 6px;
+        }
+
+        .radio-label {
+            font-weight: 600;
+            font-size: 9px;
         }
 
         .radio-option {
-            display: inline-block;
-            margin-right: 15px;
+            display: inline-flex;
+            align-items: center;
+            gap: 2px;
+            font-size: 9px;
+        }
+
+        .radio-option input[type="radio"] {
+            width: 10px;
+            height: 10px;
+            margin: 0;
         }
 
         .table-section {
-            margin: 12px 0;
+            margin: 3px 0;
             border: 1px solid #000;
-            font-size: 11px;
+            font-size: 9px;
         }
 
         .table-row {
@@ -1122,198 +1259,136 @@ export class ReceiptGenerator {
 
         .table-cell-label {
             flex: 1;
-            padding: 6px 8px 7px 8px;
+            padding: 2px 4px;
             border-right: 1px solid #000;
-            line-height: 1.6;
+            line-height: 1.3;
+            font-size: 9px;
         }
 
         .table-cell-value {
-            width: 120px;
-            padding: 6px 8px 7px 8px;
+            width: 80px;
+            padding: 2px 4px;
             text-align: right;
-            line-height: 1.6;
-        }
-
-        .footer {
-            margin-top: 20px;
-            font-size: 11px;
+            line-height: 1.3;
+            font-size: 9px;
         }
 
         .company-info {
             text-align: center;
-            margin: 4px 0;
-            font-size: 10px;
+            margin: 3px 0;
+            font-size: 8px;
             border: 1px solid #333;
-            padding: 4px;
+            padding: 2px;
             background: #f9f9f9;
             font-weight: 500;
             line-height: 1.2;
         }
 
         .signature-section {
-            text-align: right;
-            margin-top: 30px;
-            font-size: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-top: 4px;
+            font-size: 9px;
         }
 
-        .control-panel {
-            position: fixed;
-            top: 10px;
-            right: 10px;
-            z-index: 1000;
+        .date-field {
+            font-size: 9px;
         }
 
-        .print-button {
-            background: #1e40af;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 14px;
+        .signature-box {
+            text-align: center;
         }
 
-        .print-button:hover {
-            background: #1e3a8a;
-        }
-
-        @media print {
-            .control-panel {
-                display: none !important;
-            }
+        .signature-line {
+            border-bottom: 1px solid #333;
+            width: 80px;
+            height: 14px;
+            margin-bottom: 1px;
         }
     </style>
 </head>
 <body>
-    <!-- Print button removed - now handled by parent dialog/popup controls -->
-
     <div class="receipt-container">
-        <div class="header">
-            <div class="form-number">नमुना क्र १४<br/>(नियम २० पहा)</div>
-            <div class="title">वर्ष संपल्यानंतर ४५ दिवसांच्या आत सावकाराने कर्जदारास द्यावयाचे वार्षिक लेखा विवरणपत्र</div>
-        </div>
+        <div class="annual-receipt">
+            <div class="receipt-header">
+                <div class="form-number">नमुना क्र १४ (नियम २० पहा)</div>
+                <div class="receipt-title">वार्षिक लेखा विवरणपत्र</div>
+                <div style="font-size: 7px; line-height: 1.2; margin-top: 1px;">(वर्ष संपल्यानंतर ४५ दिवसांच्या आत सावकाराने कर्जदारास द्यावयाचे)</div>
+            </div>
 
-        <div class="field-row">
-            <span class="field-label">कर्जदाराचे नाव :</span>
-            <span class="field-value">${data.borrowerName || ''}</span>
-        </div>
+            <div class="field-row">
+                <span class="field-label">कर्जदाराचे नाव :</span>
+                <span class="field-value">${data.borrowerName || ''}</span>
+            </div>
 
-        <div class="field-row">
-            <span class="field-label">व्यवसाय :</span>
-            <span class="field-value">${data.occupation || ''}</span>
-        </div>
+            <div class="field-row">
+                <span class="field-label">व्यवसाय :</span>
+                <span class="field-value">${data.occupation || ''}</span>
+                <span class="field-label" style="margin-left: 8px;">पत्ता :</span>
+                <span class="field-value">${data.address || ''}</span>
+            </div>
 
-        <div class="field-row">
-            <span class="field-label">पत्ता :</span>
-            <span class="field-value">${data.address || ''}</span>
-        </div>
+            <div class="radio-row">
+                <span class="radio-label">मागासवर्गीय:</span>
+                <span class="radio-option"><input type="radio" ${data.isBackwardClass ? 'checked' : ''}> होय</span>
+                <span class="radio-option"><input type="radio" ${!data.isBackwardClass ? 'checked' : ''}> नाही</span>
+                <span style="margin-left: 10px;"></span>
+                <span class="radio-label">शेतकरी:</span>
+                <span class="radio-option"><input type="radio" ${data.isFarmer ? 'checked' : ''}> होय</span>
+                <span class="radio-option"><input type="radio" ${!data.isFarmer ? 'checked' : ''}> नाही</span>
+            </div>
 
-        <div class="field-row">
-            <span class="field-label">कर्जाकर मागासवर्गीय आहे काय?</span>
-            <span class="radio-option">
-                <input type="radio" ${data.isBackwardClass ? 'checked' : ''}> होय
-            </span>
-            <span class="radio-option">
-                <input type="radio" ${!data.isBackwardClass ? 'checked' : ''}> नाही
-            </span>
-        </div>
+            <div class="field-row">
+                <span class="field-label">खाते क्र. :</span>
+                <span class="field-value" style="max-width: 80px; flex: none;">${data.accountNumber || ''}</span>
+                <span class="field-label" style="margin-left: 8px;">कर्ज दिनांक :</span>
+                <span class="field-value" style="max-width: 80px; flex: none;">${formatDate(data.loanDate)}</span>
+                <span class="field-label" style="margin-left: 8px;">आर्थिक वर्ष :</span>
+                <span class="field-value">${data.financialYear || ''}</span>
+            </div>
 
-        <div class="field-row">
-            <span class="field-label">कर्जाकर शेतकरी प्रभागातील आहे काय?</span>
-            <span class="radio-option">
-                <input type="radio" ${data.isFarmer ? 'checked' : ''}> होय
-            </span>
-            <span class="radio-option">
-                <input type="radio" ${!data.isFarmer ? 'checked' : ''}> नाही
-            </span>
-        </div>
-
-        <div class="field-row">
-            <span class="field-label">खाते क्रमांक अथवा खात्याची क्रमांक :</span>
-            <span class="field-value">${data.accountNumber || ''}</span>
-        </div>
-
-        <div class="field-row">
-            <span class="field-label">कर्ज दिनांक :</span>
-            <span class="field-value">${formatDate(data.loanDate)}</span>
-        </div>
-
-        <div class="field-row">
-            <span class="field-label">आर्थिक वर्ष :</span>
-            <span class="field-value">${data.financialYear || ''}</span>
-        </div>
-
-        <div class="table-section">
-            <div class="table-row">
-                <div class="table-cell-label">
-                    <strong>वर्षाच्या सुरुवातीस सावकारास देय असलेली मुद्दलाची रक्कम, व्याजाची रक्कम आणि कलम २६ मध्ये विनिर्दिष्ट शुल्क :</strong>
+            <div class="table-section">
+                <div class="table-row">
+                    <div class="table-cell-label"><strong>वर्षाच्या सुरुवातीस देय मुद्दल, व्याज व कलम २६ शुल्क :</strong></div>
+                    <div class="table-cell-value">${formatAmount(data.openingTotal)}</div>
                 </div>
-                <div class="table-cell-value">
-                    ${formatAmount(data.openingTotal)}
+                <div class="table-row">
+                    <div class="table-cell-label">वर्षभरात दिलेलें एकूण कर्ज :</div>
+                    <div class="table-cell-value">${formatAmount(data.yearDisbursement)}</div>
                 </div>
-            </div>
-
-            <div class="table-row">
-                <div class="table-cell-label">वर्ष भरात दिलेलें एकूण कर्ज :</div>
-                <div class="table-cell-value">${formatAmount(data.yearDisbursement)}</div>
-            </div>
-
-            <div class="table-row">
-                <div class="table-cell-label">
-                    <strong>वर्ष भरात प्राप्त झालेली परतफेडीची रक्कम</strong>
+                <div class="table-row">
+                    <div class="table-cell-label"><strong>वर्षभरात प्राप्त परतफेड</strong> — मुद्दल :</div>
+                    <div class="table-cell-value">${formatAmount(data.yearPrincipalRepayment)}</div>
                 </div>
-                <div class="table-cell-value"></div>
-            </div>
-
-            <div class="table-row">
-                <div class="table-cell-label" style="padding-left: 20px;">मुद्दल/रुपये</div>
-                <div class="table-cell-value">${formatAmount(data.yearPrincipalRepayment)}</div>
-            </div>
-
-            <div class="table-row">
-                <div class="table-cell-label" style="padding-left: 20px;">व्याज/रुपये</div>
-                <div class="table-cell-value">${formatAmount(data.yearInterestRepayment)}</div>
-            </div>
-
-            <div class="table-row">
-                <div class="table-cell-label">
-                    <strong>वर्ष अखेरीस देय असलेली मुद्दल आणि व्याजाची रक्कम</strong>
+                <div class="table-row">
+                    <div class="table-cell-label" style="padding-left: 12px;">व्याज :</div>
+                    <div class="table-cell-value">${formatAmount(data.yearInterestRepayment)}</div>
                 </div>
-                <div class="table-cell-value"></div>
-            </div>
-
-            <div class="table-row">
-                <div class="table-cell-label" style="padding-left: 20px;">मुद्दल/रुपये</div>
-                <div class="table-cell-value"><strong>${formatAmount(data.closingPrincipal)}</strong></div>
-            </div>
-
-            <div class="table-row">
-                <div class="table-cell-label" style="padding-left: 20px;">व्याज/रुपये</div>
-                <div class="table-cell-value"><strong>${formatAmount(data.closingInterest)}</strong></div>
-            </div>
-
-            <div class="table-row" style="border-top: 2px solid #333; margin-top: 4px;">
-                <div class="table-cell-label">
-                    <strong>एकूण देय रक्कम</strong>
+                <div class="table-row">
+                    <div class="table-cell-label"><strong>वर्ष अखेरीस देय</strong> — मुद्दल :</div>
+                    <div class="table-cell-value"><strong>${formatAmount(data.closingPrincipal)}</strong></div>
                 </div>
-                <div class="table-cell-value">
-                    <strong>${formatAmount(data.closingTotal)}</strong>
+                <div class="table-row">
+                    <div class="table-cell-label" style="padding-left: 12px;">व्याज :</div>
+                    <div class="table-cell-value"><strong>${formatAmount(data.closingInterest)}</strong></div>
+                </div>
+                <div class="table-row" style="border-top: 2px solid #333;">
+                    <div class="table-cell-label"><strong>एकूण देय रक्कम</strong></div>
+                    <div class="table-cell-value"><strong>${formatAmount(data.closingTotal)}</strong></div>
                 </div>
             </div>
-        </div>
 
-        <div class="company-info">
-            सावकार: ${company?.name || ''} | परवाना क्रमांक: ${company?.licenseNumber || ''}
-        </div>
+            <div class="company-info">
+                सावकार: ${company?.name || ''} | परवाना क्रमांक: ${company?.licenseNumber || ''}
+            </div>
 
-        <div class="field-row" style="margin-top: 8px;">
-            <span class="field-label">दिनांक :</span>
-            <span class="field-value">${new Date().toLocaleDateString('en-GB')}</span>
-        </div>
-
-        <div class="signature-section">
-            <div style="border-top: 1px solid #000; display: inline-block; padding: 5px 30px;">
-                सावकाराची स्वाक्षरी
+            <div class="signature-section">
+                <div class="date-field">दिनांक : ${new Date().toLocaleDateString('en-GB')}</div>
+                <div class="signature-box">
+                    <div class="signature-line"></div>
+                    <div>सावकाराची स्वाक्षरी</div>
+                </div>
             </div>
         </div>
     </div>
