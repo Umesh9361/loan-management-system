@@ -37,7 +37,7 @@ export default function InformationRegister() {
     dateTo: new Date().toISOString().split('T')[0]
   });
   const [pdfLoading, setPdfLoading] = useState(false);
-  const [demoData, setDemoData] = useState<RegisterEntry[] | null>(null);
+  const [randomIndices, setRandomIndices] = useState<number[] | null>(null);
   const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set());
   const printRef = useRef<HTMLDivElement>(null);
   const selectedPrintRef = useRef<HTMLDivElement>(null);
@@ -60,75 +60,31 @@ export default function InformationRegister() {
   });
 
   const handleFilter = async () => {
-    setDemoData(null);
+    setRandomIndices(null);
     setSelectedRows(new Set());
     await refetch();
   };
 
-  const generateDemoData = () => {
-    const randomNames = [
-      { name: 'रामचंद्र विठ्ठल जाधव', address: 'पुणे' },
-      { name: 'सुनीता भगवान पवार', address: 'सातारा' },
-      { name: 'गणेश दत्तात्रय शिंदे', address: 'कोल्हापूर' },
-      { name: 'प्रकाश शंकर माळी', address: 'सांगली' },
-      { name: 'लक्ष्मी नारायण कुलकर्णी', address: 'सोलापूर' },
-      { name: 'अनिल विश्वनाथ देशमुख', address: 'नाशिक' },
-      { name: 'मंगल तुकाराम गायकवाड', address: 'अहमदनगर' },
-      { name: 'विजय बाबूराव पाटील', address: 'बारामती' },
-      { name: 'सरोज दिनकर भोसले', address: 'औरंगाबाद' },
-      { name: 'दिलीप ज्ञानेश्वर कांबळे', address: 'लातूर' },
-    ];
-
-    const shuffled = [...randomNames].sort(() => Math.random() - 0.5);
-    const selected = shuffled.slice(0, 5);
-
-    const currentYear = new Date().getMonth() >= 3 ? new Date().getFullYear() : new Date().getFullYear() - 1;
-    const fyStart = new Date(currentYear, 3, 1);
-
-    const randomDate = (start: Date, end: Date) => {
-      const d = new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime()));
-      return d.toISOString().split('T')[0];
-    };
-
-    const today = new Date();
-    const loanAmounts = [50000, 75000, 100000, 25000, 150000, 30000, 60000, 80000, 40000, 120000];
-    const rates = ['2', '3', '1.5', '2.5', '1'];
-
-    const demoEntries: RegisterEntry[] = selected.map((person, i) => {
-      const loanDate = randomDate(fyStart, today);
-      const amount = loanAmounts[Math.floor(Math.random() * loanAmounts.length)];
-      const rate = rates[Math.floor(Math.random() * rates.length)];
-      return {
-        srNo: i + 1,
-        borrowerName: person.name,
-        borrowerAddress: person.address,
-        loanDate,
-        principalAmount: amount.toString(),
-        interestRate: rate,
-        interestRateType: 'monthly',
-        loanType: 'तारण',
-        accountNumber: `${i + 1}`,
-        status: 'active',
-        closureDate: null,
-        principalPaid: null,
-        interestPaid: null,
-        isClosed: false,
-      };
-    });
-
-    setDemoData(demoEntries);
+  const handleRandom5 = () => {
+    if (!registerData || registerData.length === 0) {
+      toast({ title: "डेटा नाही", description: "आधी तारीख निवडून शोधा बटण दाबा", variant: "destructive" });
+      return;
+    }
+    const indices = Array.from({ length: registerData.length }, (_, i) => i);
+    const shuffled = indices.sort(() => Math.random() - 0.5);
+    const picked = shuffled.slice(0, Math.min(5, registerData.length));
+    picked.sort((a, b) => a - b);
+    setRandomIndices(picked);
     setSelectedRows(new Set());
-    setDateFilters({
-      dateFrom: `${currentYear}-04-01`,
-      dateTo: `${currentYear + 1}-03-31`,
-    });
-    toast({ title: "रँडम ५ नाव", description: "डेमो रिपोर्ट तयार झाला" });
+    toast({ title: "रँडम ५ नाव", description: `${Math.min(5, registerData.length)} records निवडले` });
     setTimeout(() => {
       printRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 100);
   };
 
-  const displayData = demoData || registerData;
+  const displayData = randomIndices && registerData
+    ? randomIndices.map((idx, i) => ({ ...registerData[idx], srNo: i + 1 }))
+    : registerData || null;
 
   const toggleRow = (srNo: number) => {
     setSelectedRows(prev => {
@@ -572,7 +528,7 @@ export default function InformationRegister() {
                     </div>
                     <div>
                       <Button
-                        onClick={generateDemoData}
+                        onClick={handleRandom5}
                         variant="outline"
                         className="w-full h-10 sm:h-9 text-sm font-medium border-amber-300 text-amber-700 bg-amber-50 hover:bg-amber-100 hover:border-amber-400 shadow-sm rounded-lg active:scale-[0.98] transition-transform"
                       >
@@ -755,7 +711,7 @@ export default function InformationRegister() {
               </div>
               </>
 
-            ) : (registerData && registerData.length === 0 && !demoData) ? (
+            ) : (registerData && registerData.length === 0) ? (
               <Card className="border border-dashed border-indigo-200 bg-indigo-50/30">
                 <CardContent className="py-12 text-center">
                   <ClipboardList className="h-12 w-12 text-indigo-300 mx-auto mb-3" />
