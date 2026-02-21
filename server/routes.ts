@@ -69,6 +69,14 @@ declare module "express-session" {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  try {
+    const { pool } = await import('./db');
+    await pool.query("UPDATE loans SET loan_type = 'तारण' WHERE loan_type IS NULL OR loan_type = 'विनातारण'");
+    console.log('Migration: loan_type updated to तारण for all existing loans');
+  } catch (e: any) {
+    console.log('Migration note:', e.message);
+  }
+
   // Enhanced session configuration for Replit environments
   const isProduction = process.env.NODE_ENV === "production";
   const isReplit = !!(process.env.REPLIT_DOMAINS || process.env.REPLIT_APP_NAME || process.env.REPL_ID);
