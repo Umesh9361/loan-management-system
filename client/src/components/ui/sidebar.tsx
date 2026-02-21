@@ -176,6 +176,12 @@ const reports = [
     icon: FileText,
     description: "सर्व खाते - रोकड, व्यक्ती, कर्ज लेजर एकत्र"
   },
+  {
+    name: "माहिती तक्ता",
+    href: "/reports/information-register",
+    icon: ClipboardList,
+    description: "सर्व कर्ज नोंदणी माहिती - कालावधीनुसार"
+  },
 
 ];
 
