@@ -747,7 +747,7 @@ export class ReceiptGenerator {
 
             <div class="field-row">
                 <span class="field-label">४. तारणाचा तपशील:</span>
-                <div class="field-value" style="flex: 1; border-bottom: none; min-height: 36px;">${isBlankType ? '' : (loan.collateralDetails ? (loan.collateralDetails + ((loan as any).weight ? ' | वजन: ' + (loan as any).weight + ' ग्राम' : '')) : '')}</div>
+                <div class="field-value" style="flex: 1; ${isBlankType ? 'border-bottom: 1px solid #333;' : 'border-bottom: none; min-height: 36px;'}">${isBlankType ? '' : (loan.collateralDetails ? (loan.collateralDetails + ((loan as any).weight ? ' | वजन: ' + (loan as any).weight + ' ग्राम' : '')) : '')}</div>
             </div>
             ${isBlankType ? '<div style="border-bottom: 1px solid #333; height: 18px; margin: 0 0 2px 0;"></div>' : ''}
 
