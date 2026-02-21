@@ -70,13 +70,64 @@ export default function InformationRegister() {
       toast({ title: "डेटा नाही", description: "आधी तारीख निवडून शोधा बटण दाबा", variant: "destructive" });
       return;
     }
-    const indices = Array.from({ length: registerData.length }, (_, i) => i);
-    const shuffled = indices.sort(() => Math.random() - 0.5);
-    const picked = shuffled.slice(0, Math.min(5, registerData.length));
+
+    const shuffle = (arr: number[]) => [...arr].sort(() => Math.random() - 0.5);
+
+    const sameYearClosedIndices: number[] = [];
+    const otherClosedIndices: number[] = [];
+    const activeIndices: number[] = [];
+
+    registerData.forEach((entry, idx) => {
+      if (entry.isClosed) {
+        if (entry.closureDate && entry.loanDate) {
+          const loanYear = entry.loanDate.substring(0, 4);
+          const closureYear = entry.closureDate.substring(0, 4);
+          if (loanYear === closureYear) {
+            sameYearClosedIndices.push(idx);
+          } else {
+            otherClosedIndices.push(idx);
+          }
+        } else {
+          otherClosedIndices.push(idx);
+        }
+      } else {
+        activeIndices.push(idx);
+      }
+    });
+
+    const picked: number[] = [];
+
+    const sameYearShuffled = shuffle(sameYearClosedIndices);
+    if (sameYearShuffled.length >= 2) {
+      picked.push(sameYearShuffled[0], sameYearShuffled[1]);
+    } else if (sameYearShuffled.length > 0) {
+      picked.push(...sameYearShuffled);
+      const otherShuffled = shuffle(otherClosedIndices);
+      const need = 2 - picked.length;
+      picked.push(...otherShuffled.slice(0, need));
+    } else {
+      const otherShuffled = shuffle(otherClosedIndices);
+      picked.push(...otherShuffled.slice(0, 2));
+    }
+
+    const activeShuffled = shuffle(activeIndices);
+    const remaining = 5 - picked.length;
+    picked.push(...activeShuffled.slice(0, remaining));
+
+    if (picked.length < 5) {
+      const allIndices = Array.from({ length: registerData.length }, (_, i) => i)
+        .filter(i => !picked.includes(i));
+      const extra = shuffle(allIndices);
+      picked.push(...extra.slice(0, 5 - picked.length));
+    }
+
     picked.sort((a, b) => a - b);
     setRandomIndices(picked);
     setSelectedRows(new Set());
-    toast({ title: "रँडम ५ नाव", description: `${Math.min(5, registerData.length)} records निवडले` });
+
+    const closedCount = picked.filter(i => registerData[i].isClosed).length;
+    const activeCount = picked.length - closedCount;
+    toast({ title: "रँडम ५ नाव", description: `${closedCount} बंद + ${activeCount} चालू records निवडले` });
     setTimeout(() => {
       printRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 100);
