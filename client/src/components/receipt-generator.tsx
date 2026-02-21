@@ -370,9 +370,11 @@ export class ReceiptGenerator {
             border: 1px solid #333;
             background: white;
             box-sizing: border-box;
-            overflow: visible;
+            overflow: hidden;
             display: flex;
             flex-direction: column;
+            width: 100%;
+            max-width: 100%;
         }
         
         @media screen and (min-width: 600px) {
@@ -527,15 +529,34 @@ export class ReceiptGenerator {
             margin: 5px 0;
             line-height: 1.4;
             font-size: 11px;
+            flex-wrap: wrap;
         }
         .form12-receipt .field-label {
             font-size: 11px;
+            white-space: normal;
         }
         .form12-receipt .field-value {
             padding: 0px 4px 5px 4px;
             min-height: 18px;
             line-height: 1.4;
             font-size: 11px;
+        }
+
+        @media screen and (max-width: 599px) {
+            .form12-receipt .field-row {
+                font-size: 10px;
+            }
+            .form12-receipt .field-label {
+                font-size: 10px;
+            }
+            .form12-receipt .field-value {
+                font-size: 10px;
+                min-height: 16px;
+                padding: 0px 2px 4px 2px;
+            }
+            .form12-receipt .form-number {
+                font-size: 11px !important;
+            }
         }
 
     </style>
@@ -727,9 +748,9 @@ export class ReceiptGenerator {
 
             <div class="field-row" style="margin: ${isBlankType ? '8px' : '4px'} 0;">
                 <span class="field-label">२. जात(मागासवर्गीय ${isBlankType ? 'आहे/नाही' : ((loan as any).isBackwardClass ? 'आहे' : 'नाही')})</span>
-                <span class="field-label" style="margin-left: 15px;">३. ${isBlankType ? 'कृषी/अकृषिक' : ((loan as any).isFarmer ? 'कृषी' : 'अकृषिक')}</span>
-                <span class="field-label" style="margin-left: 15px;">कर्ज दिनांक:</span>
-                <div class="field-value" style="flex: 0.4; min-height: ${isBlankType ? '22px' : '16px'};">${getBlankField(formatDate(loan.loanDate))}</div>
+                <span class="field-label" style="margin-left: 8px;">३. ${isBlankType ? 'कृषी/अकृषिक' : ((loan as any).isFarmer ? 'कृषी' : 'अकृषिक')}</span>
+                <span class="field-label" style="margin-left: 8px;">दिनांक:</span>
+                <div class="field-value" style="flex: 0.3; min-height: ${isBlankType ? '22px' : '16px'};">${getBlankField(formatDate(loan.loanDate))}</div>
             </div>
 
             <div style="margin: ${isBlankType ? '8px' : '4px'} 0;">
@@ -743,7 +764,7 @@ export class ReceiptGenerator {
             <div class="field-row" style="margin: ${isBlankType ? '8px' : '4px'} 0;">
                 <span class="field-label">५. अंदाजे मूल्य:</span>
                 <div class="field-value" style="flex: 0.4; min-height: ${isBlankType ? '22px' : '16px'};">${getBlankField((loan as any).marketValue ? '₹' + ReceiptGenerator.cleanDisplayAmount((loan as any).marketValue) : '')}</div>
-                <span class="field-label" style="margin-left: 15px;">६. कर्जाची रक्कम:</span>
+                <span class="field-label" style="margin-left: 8px;">६. कर्जाची रक्कम:</span>
                 <div class="field-value" style="flex: 0.4; text-align: right; min-height: ${isBlankType ? '22px' : '16px'};">${getBlankField('₹' + ReceiptGenerator.cleanDisplayAmount(loan.principalAmount || 0))}</div>
             </div>
 
