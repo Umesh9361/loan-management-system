@@ -502,7 +502,7 @@ export default function InformationRegister() {
                       <Input
                         id="dateFrom"
                         type="date"
-                        className="h-10 sm:h-9 text-sm border-gray-300 focus:border-indigo-400 focus:ring-indigo-400"
+                        className="h-11 sm:h-10 text-base min-w-[145px] border-gray-300 focus:border-indigo-400 focus:ring-indigo-400"
                         value={dateFilters.dateFrom}
                         onChange={(e) => setDateFilters(prev => ({ ...prev, dateFrom: e.target.value }))}
                       />
@@ -512,7 +512,7 @@ export default function InformationRegister() {
                       <Input
                         id="dateTo"
                         type="date"
-                        className="h-10 sm:h-9 text-sm border-gray-300 focus:border-indigo-400 focus:ring-indigo-400"
+                        className="h-11 sm:h-10 text-base min-w-[145px] border-gray-300 focus:border-indigo-400 focus:ring-indigo-400"
                         value={dateFilters.dateTo}
                         onChange={(e) => setDateFilters(prev => ({ ...prev, dateTo: e.target.value }))}
                       />
