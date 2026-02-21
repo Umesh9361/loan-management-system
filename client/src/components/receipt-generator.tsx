@@ -737,7 +737,7 @@ export class ReceiptGenerator {
                 <span class="field-label">१. कर्जदाराचे नाव व पत्ता:</span>
                 ${isBlankType 
                   ? '<div class="field-value" style="flex: 1;"></div>' 
-                  : '<span style="margin-left: 4px; font-size: 12px;">' + getDisplayData(loan.borrowerName) + ', ' + getDisplayData(loan.borrowerAddress) + '</span>'}
+                  : '<span style="margin-left: 4px; font-size: 12px; border-bottom: 1px solid #333; padding: 0 4px 2px 4px;">' + getDisplayData(loan.borrowerName) + ', ' + getDisplayData(loan.borrowerAddress) + '</span>'}
             </div>
 
             <div class="field-row">
