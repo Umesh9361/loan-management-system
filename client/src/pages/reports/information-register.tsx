@@ -379,13 +379,13 @@ export default function InformationRegister() {
         min-width: 1080px;
         width: 100%;
         border-collapse: collapse;
-        font-size: 12px;
+        font-size: 13px;
         background: #fff;
         table-layout: fixed;
       }
       @media (min-width: 1024px) {
         .register-table {
-          font-size: 13px;
+          font-size: 14px;
           min-width: 100%;
         }
       }
@@ -449,11 +449,19 @@ export default function InformationRegister() {
         text-align: left;
         line-height: 1.25;
       }
+      .ir-td-name strong {
+        font-weight: 700;
+        font-size: 13.5px;
+      }
+      @media (min-width: 1024px) {
+        .ir-td-name strong { font-size: 14.5px; }
+      }
       .ir-address {
         font-size: 9px;
         color: #666;
         margin-top: 1px;
         line-height: 1.15;
+        font-weight: 400;
       }
       @media (min-width: 1024px) {
         .ir-address { font-size: 10.5px; }
@@ -546,8 +554,9 @@ export default function InformationRegister() {
           -webkit-print-color-adjust: exact;
           print-color-adjust: exact;
         }
-        .register-table td { padding: 4px 5px; font-size: 11px; }
-        .register-table td.ir-td-center { font-size: 11px; }
+        .register-table td { padding: 4px 5px; font-size: 12px; }
+        .ir-td-name strong { font-weight: 700; font-size: 12.5px; }
+        .ir-address { font-weight: 400; }
         .register-table th, .register-table td { border: 1.5px solid #000 !important; }
         .ir-address { font-size: 9px; }
         .register-footer { margin-top: 20mm; font-size: 12px; font-weight: 700; page-break-inside: avoid; break-inside: avoid; }
