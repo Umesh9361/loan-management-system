@@ -725,10 +725,10 @@ export class ReceiptGenerator {
         ${(receiptType === 'form12' || receiptType === 'combined10_12' || receiptType === 'blank10_12') ? `
         <!-- Form 12 Receipt - नमुना क्रमांक १२ -->
         <div class="form12-receipt ${isBlankType ? 'form12-blank' : 'form12-filled'}">
-            <div class="receipt-header">
+            <div class="receipt-header" style="padding-bottom: 6px; margin-bottom: 6px;">
                 <div class="form-number">नमुना क्रमांक १२ (नियम १८ पहा)</div>
                 <div style="font-size: 10px; font-weight: normal; margin: 2px 0; text-align: center;">(तारण जंगम मालाची पावती)</div>
-                <div style="font-size: 10px; margin-top: 3px; font-weight: 500; color: #333;">
+                <div style="font-size: 10px; margin-top: 3px; padding-bottom: 4px; font-weight: 500; color: #333;">
                     सावकार: ${getDisplayData(company?.name)} | परवाना क्र.: ${getDisplayData(company?.licenseNumber)}
                 </div>
             </div>
