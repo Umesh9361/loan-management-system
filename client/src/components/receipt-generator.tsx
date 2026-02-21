@@ -371,6 +371,8 @@ export class ReceiptGenerator {
             background: white;
             box-sizing: border-box;
             overflow: visible;
+            display: flex;
+            flex-direction: column;
         }
         
         @media screen and (min-width: 600px) {
@@ -518,22 +520,22 @@ export class ReceiptGenerator {
         }
 
         .form12-receipt .receipt-header {
-            margin-bottom: 2px;
-            padding-bottom: 1px;
+            margin-bottom: 3px;
+            padding-bottom: 2px;
         }
         .form12-receipt .field-row {
-            margin: 2px 0;
-            line-height: 1.3;
-            font-size: 10px;
+            margin: 5px 0;
+            line-height: 1.4;
+            font-size: 11px;
         }
         .form12-receipt .field-label {
-            font-size: 10px;
+            font-size: 11px;
         }
         .form12-receipt .field-value {
-            padding: 0px 3px 2px 3px;
-            min-height: 14px;
-            line-height: 1.3;
-            font-size: 10px;
+            padding: 0px 4px 5px 4px;
+            min-height: 18px;
+            line-height: 1.4;
+            font-size: 11px;
         }
 
     </style>
@@ -711,18 +713,16 @@ export class ReceiptGenerator {
         <!-- Form 12 Receipt - नमुना क्रमांक १२ -->
         <div class="form12-receipt">
             <div class="receipt-header">
-                <div class="form-number" style="font-size: 11px; margin-bottom: 1px; padding: 1px 0;">नमुना क्रमांक १२ (नियम १८ पहा)</div>
-                <div style="font-size: 9px; font-weight: 500;">(तारण जंगम मालाची पावती)</div>
-                <div style="font-size: 9px; margin-top: 1px; margin-bottom: 1px; font-weight: 500; color: #333;">
+                <div class="form-number">नमुना क्रमांक १२ (नियम १८ पहा)</div>
+                <div class="receipt-title" style="font-size: 11px;">(तारण जंगम मालाची पावती)</div>
+                <div style="font-size: 10px; margin-top: 2px; margin-bottom: 2px; font-weight: 500; color: #333;">
                     सावकार: ${getDisplayData(company?.name)} | परवाना क्र.: ${getDisplayData(company?.licenseNumber)}
                 </div>
             </div>
 
             <div class="field-row">
-                <span class="field-label">१. कर्जदाराचे नाव:</span>
-                <div class="field-value">${getBlankField(loan.borrowerName)}</div>
-                <span class="field-label" style="margin-left: 15px;">पत्ता:</span>
-                <div class="field-value" style="flex: 1;">${getBlankField(loan.borrowerAddress)}</div>
+                <span class="field-label">१. कर्जदाराचे नाव व पत्ता:</span>
+                <div class="field-value" style="flex: 1;">${isBlankType ? '' : (getDisplayData(loan.borrowerName) + ', ' + getDisplayData(loan.borrowerAddress))}</div>
             </div>
 
             <div class="field-row">
@@ -732,9 +732,12 @@ export class ReceiptGenerator {
                 <div class="field-value" style="flex: 0.4;">${getBlankField(formatDate(loan.loanDate))}</div>
             </div>
 
-            <div class="field-row">
-                <span class="field-label">४. तारणाचा तपशील:</span>
-                <div class="field-value" style="flex: 1;">${getBlankField(loan.collateralDetails ? (loan.collateralDetails + ((loan as any).weight ? ' | वजन: ' + (loan as any).weight + ' ग्राम' : '')) : '')}</div>
+            <div style="margin: 5px 0;">
+                <div class="field-row" style="margin-bottom: 0;">
+                    <span class="field-label">४. तारणाचा तपशील:</span>
+                    <div class="field-value" style="flex: 1;">${isBlankType ? '' : (loan.collateralDetails ? (loan.collateralDetails + ((loan as any).weight ? ' | वजन: ' + (loan as any).weight + ' ग्राम' : '')) : '')}</div>
+                </div>
+                <div style="border-bottom: 1px solid #333; height: 18px; margin-left: 0;"></div>
             </div>
 
             <div class="field-row">
@@ -746,17 +749,17 @@ export class ReceiptGenerator {
 
             <div class="field-row">
                 <span class="field-label">७. इतर अनुषंगिक माहिती:</span>
-                <div class="field-value" style="flex: 1;">${getBlankField((loan as any).otherInfo && (loan as any).otherInfo !== '—' ? (loan as any).otherInfo : '')}</div>
+                <div class="field-value" style="flex: 1;">${isBlankType ? '' : ((loan as any).otherInfo && (loan as any).otherInfo !== '—' ? (loan as any).otherInfo : '')}</div>
             </div>
 
-            <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: 6px; padding: 0 5px;">
-                <div style="text-align: center; width: 45%;">
-                    <div style="border-bottom: 1px solid #333; margin-bottom: 1px; height: 12px;"></div>
-                    <span style="font-size: 9px;">कर्जदाराची सही</span>
+            <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: auto; padding: 0 8px;">
+                <div style="text-align: center; width: 44%;">
+                    <div style="border-bottom: 1px solid #333; margin-bottom: 3px; height: 18px;"></div>
+                    <span style="font-size: 10px;">कर्जदाराची सही</span>
                 </div>
-                <div style="text-align: center; width: 45%;">
-                    <div style="border-bottom: 1px solid #333; margin-bottom: 1px; height: 12px;"></div>
-                    <span style="font-size: 9px;">सावकाराची सही</span>
+                <div style="text-align: center; width: 44%;">
+                    <div style="border-bottom: 1px solid #333; margin-bottom: 3px; height: 18px;"></div>
+                    <span style="font-size: 10px;">सावकाराची सही</span>
                 </div>
             </div>
         </div>
