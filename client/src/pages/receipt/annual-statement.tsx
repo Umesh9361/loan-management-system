@@ -85,6 +85,7 @@ export default function AnnualStatementPage() {
   const [statementData, setStatementData] = useState<any>(null);
   const [showDesktopPreview, setShowDesktopPreview] = useState(false);
   const [receiptHTML, setReceiptHTML] = useState<string | null>(null);
+  const [isMobileFullPage, setIsMobileFullPage] = useState(false);
 
   // Fetch all loans
   const { data: loans = [] } = useQuery({
@@ -245,8 +246,9 @@ export default function AnnualStatementPage() {
       const html = ReceiptGenerator.generateAnnualStatement(data, company || null);
       setReceiptHTML(html);
       
-      // On desktop, show full-page preview
-      if (!isMobile) {
+      if (isMobile) {
+        setIsMobileFullPage(true);
+      } else {
         setShowDesktopPreview(true);
       }
     } catch (error) {
@@ -275,74 +277,55 @@ export default function AnnualStatementPage() {
     }
   };
 
-  const handleMobilePdfDownload = async () => {
-    if (!receiptHTML) {
-      alert("प्रथम विवरणपत्र तयार करा");
-      return;
+  const createOffscreenRendered = async (): Promise<{ container: HTMLElement, cleanup: () => void } | null> => {
+    if (!receiptHTML) return null;
+
+    const a5WidthPx = 560;
+    const a5HeightPx = 794;
+
+    const wrapper = document.createElement('div');
+    wrapper.style.position = 'fixed';
+    wrapper.style.left = '-9999px';
+    wrapper.style.top = '0';
+    wrapper.style.width = a5WidthPx + 'px';
+    wrapper.style.height = a5HeightPx + 'px';
+    wrapper.style.zIndex = '-9999';
+    wrapper.style.pointerEvents = 'none';
+    wrapper.style.overflow = 'visible';
+    wrapper.style.background = 'white';
+    wrapper.innerHTML = receiptHTML;
+    document.body.appendChild(wrapper);
+
+    const rc = wrapper.querySelector('.receipt-container') as HTMLElement;
+    if (rc) {
+      rc.classList.add('export-mode');
+      rc.style.width = a5WidthPx + 'px';
+      rc.style.minWidth = a5WidthPx + 'px';
+      rc.style.maxWidth = a5WidthPx + 'px';
+      rc.style.height = a5HeightPx + 'px';
+      rc.style.boxShadow = 'none';
+      rc.style.background = 'white';
+      rc.style.padding = '22px 30px';
     }
 
+    await new Promise(resolve => setTimeout(resolve, 200));
+
+    return {
+      container: rc || wrapper,
+      cleanup: () => document.body.removeChild(wrapper)
+    };
+  };
+
+  const downloadReceiptAsPDF = async () => {
     try {
+      const result = await createOffscreenRendered();
+      if (!result) { alert("पावती सापडली नाही"); return; }
+      const { container, cleanup } = result;
+
       const a5WidthPx = 560;
       const a5HeightPx = 794;
 
-      const iframe = document.createElement('iframe');
-      iframe.style.position = 'fixed';
-      iframe.style.left = '-9999px';
-      iframe.style.top = '0';
-      iframe.style.width = a5WidthPx + 'px';
-      iframe.style.height = a5HeightPx + 'px';
-      iframe.style.border = 'none';
-      iframe.style.overflow = 'hidden';
-      iframe.style.zIndex = '-9999';
-      iframe.style.pointerEvents = 'none';
-      iframe.style.opacity = '0';
-
-      document.body.appendChild(iframe);
-
-      const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
-      if (!iframeDoc) {
-        document.body.removeChild(iframe);
-        alert("PDF तयार करण्यात समस्या आली.");
-        return;
-      }
-
-      iframeDoc.open();
-      iframeDoc.write(receiptHTML);
-      iframeDoc.close();
-
-      const iframeBody = iframeDoc.body;
-      iframeBody.style.margin = '0';
-      iframeBody.style.padding = '0';
-      iframeBody.style.width = a5WidthPx + 'px';
-      iframeBody.style.background = 'white';
-
-      const receiptContainer = iframeDoc.querySelector('.receipt-container') as HTMLElement;
-      if (receiptContainer) {
-        receiptContainer.style.width = a5WidthPx + 'px';
-        receiptContainer.style.minWidth = a5WidthPx + 'px';
-        receiptContainer.style.maxWidth = a5WidthPx + 'px';
-        receiptContainer.style.minHeight = a5HeightPx + 'px';
-        receiptContainer.style.padding = '15px';
-        receiptContainer.style.boxSizing = 'border-box';
-        receiptContainer.style.background = 'white';
-      }
-
-      const controlPanel = iframeDoc.querySelector('.control-panel') as HTMLElement;
-      if (controlPanel) controlPanel.style.display = 'none';
-
-      const fieldValues = iframeDoc.querySelectorAll('.field-value');
-      fieldValues.forEach((el: Element) => {
-        const htmlEl = el as HTMLElement;
-        htmlEl.style.paddingBottom = '14px';
-        htmlEl.style.lineHeight = '2.2';
-        htmlEl.style.marginBottom = '4px';
-      });
-
-      await new Promise(resolve => setTimeout(resolve, 400));
-
-      const targetEl = receiptContainer || iframeBody;
-
-      const canvas = await html2canvas(targetEl, {
+      const canvas = await html2canvas(container, {
         scale: 4,
         useCORS: true,
         logging: false,
@@ -354,31 +337,126 @@ export default function AnnualStatementPage() {
         windowHeight: a5HeightPx,
       });
 
-      document.body.removeChild(iframe);
+      cleanup();
 
       const imgData = canvas.toDataURL('image/png');
-
       const doc = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
         format: 'a5',
-        compress: false,
+        compress: false
       });
-
-      const a5Width = 148;
-      const a5Height = 210;
-
-      doc.addImage(imgData, 'PNG', 0, 0, a5Width, a5Height);
+      doc.addImage(imgData, 'PNG', 0, 0, 148, 210);
 
       const fileName = `विवरणपत्र_नमुना१४_${selectedBorrower || 'statement'}.pdf`;
       doc.save(fileName);
     } catch (error) {
-      console.error('PDF generation error:', error);
-      const existingIframe = document.querySelector('iframe[style*="-9999px"]');
-      if (existingIframe) existingIframe.remove();
+      console.error("PDF generation error:", error);
       alert("PDF तयार करण्यात समस्या आली. कृपया पुन्हा प्रयत्न करा.");
     }
   };
+
+  const downloadReceiptAsImage = async () => {
+    try {
+      const result = await createOffscreenRendered();
+      if (!result) { alert("पावती सापडली नाही"); return; }
+      const { container, cleanup } = result;
+
+      const a5WidthPx = 560;
+      const a5HeightPx = 794;
+
+      const canvas = await html2canvas(container, {
+        scale: 4,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff',
+        imageTimeout: 0,
+        width: a5WidthPx,
+        height: a5HeightPx,
+        windowWidth: a5WidthPx,
+        windowHeight: a5HeightPx,
+      });
+
+      cleanup();
+
+      const a5ImgWidth = 874;
+      const a5ImgHeight = 1240;
+      const resizedCanvas = document.createElement('canvas');
+      resizedCanvas.width = a5ImgWidth;
+      resizedCanvas.height = a5ImgHeight;
+      const ctx = resizedCanvas.getContext('2d');
+      if (ctx) {
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, a5ImgWidth, a5ImgHeight);
+        ctx.drawImage(canvas, 0, 0, a5ImgWidth, a5ImgHeight);
+      }
+
+      const imageUrl = resizedCanvas.toDataURL('image/png');
+      const link = document.createElement('a');
+      link.href = imageUrl;
+      link.download = `विवरणपत्र_नमुना१४_${selectedBorrower || 'statement'}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error("Image generation error:", error);
+      alert("इमेज तयार करण्यात समस्या आली. कृपया पुन्हा प्रयत्न करा.");
+    }
+  };
+
+  if (isMobileFullPage && receiptHTML && isMobile) {
+    return (
+      <div className="min-h-screen bg-white" style={{ display: 'flex', flexDirection: 'column' }}>
+        <div className="bg-indigo-50 border-b px-3 py-3 print:hidden" style={{ flexShrink: 0 }}>
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2 text-indigo-700 font-semibold">
+              <FileText className="h-5 w-5" />
+              नमुना क्र. १४
+            </div>
+            <Button 
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                setIsMobileFullPage(false);
+              }}
+            >
+              <X className="mr-1 h-4 w-4" />
+              बंद करा
+            </Button>
+          </div>
+          <div className="flex gap-2">
+            <button 
+              type="button"
+              onClick={downloadReceiptAsImage}
+              className="flex-1 inline-flex items-center justify-center rounded-md text-sm font-medium h-10 px-3 bg-indigo-600 hover:bg-indigo-700 text-white active:bg-indigo-800"
+              style={{ touchAction: 'manipulation' }}
+            >
+              <Download className="mr-2 h-4 w-4" />
+              इमेज
+            </button>
+            <button 
+              type="button"
+              onClick={downloadReceiptAsPDF}
+              className="flex-1 inline-flex items-center justify-center rounded-md text-sm font-medium h-10 px-3 bg-red-600 hover:bg-red-700 text-white active:bg-red-800"
+              style={{ touchAction: 'manipulation' }}
+            >
+              <FileText className="mr-2 h-4 w-4" />
+              PDF
+            </button>
+          </div>
+        </div>
+        
+        <div 
+          id="receipt-content-14"
+          className="bg-white px-2 py-3"
+          style={{ flex: 1, overflow: 'auto' }}
+          dangerouslySetInnerHTML={{ __html: receiptHTML }}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -658,13 +736,13 @@ export default function AnnualStatementPage() {
                 )}
                 {statementData && isMobile && (
                   <Button 
-                    onClick={handleMobilePdfDownload}
+                    onClick={() => setIsMobileFullPage(true)}
                     variant="outline"
                     className="flex items-center gap-2 bg-green-50 border-green-300 text-green-700"
                     data-testid="button-pdf-download"
                   >
-                    <Download className="h-4 w-4" />
-                    PDF डाउनलोड
+                    <FileText className="h-4 w-4" />
+                    पावती पहा
                   </Button>
                 )}
               </div>
