@@ -4534,7 +4534,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const principal = parseFloat(loan.principalAmount || '0');
       const rate = parseFloat(loan.interestRate || '0');
       const rateType = loan.interestRateType || 'monthly';
-      const yearlyRate = rateType === 'monthly' ? rate * 12 : rate;
+      const yearlyRate = rateType === 'monthly' ? 12 : rate;
 
       // Get closure for this specific loan
       const closureData = await db.select()
@@ -4639,23 +4639,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Check if loan was closed before year start
       const isClosedBeforeYear = closure && new Date(closure.closureDate) < yearStart;
       
+      // Calculate THIS year's new interest (simple interest only, no compounding)
+      let thisYearInterest = 0;
+      
       if (isClosedDuringYear || isClosedBeforeYear) {
         // Loan is fully closed - year end outstanding is ZERO
         closingPrincipal = 0;
         closingInterest = 0;
-        console.log(`📊 Loan closed ${isClosedDuringYear ? 'during' : 'before'} year - year end balance = 0`);
+        
+        // If closed during this year, calculate interest from year start (or loan date) to closure date
+        if (isClosedDuringYear) {
+          const interestStartDate = loanDate > yearStart ? loanDate : yearStart;
+          const closureDateObj = new Date(closure!.closureDate);
+          const days = Math.floor((closureDateObj.getTime() - interestStartDate.getTime()) / (1000 * 60 * 60 * 24));
+          if (days > 0 && principal > 0) {
+            thisYearInterest = (principal * yearlyRate * days) / (365 * 100);
+          }
+        }
+        
+        console.log(`📊 Loan closed ${isClosedDuringYear ? 'during' : 'before'} year - year end balance = 0, thisYearInterest = ${thisYearInterest}`);
       } else {
         // Loan is still active at year end
         closingPrincipal = openingPrincipal + yearDisbursement - yearPrincipalRepayment;
         
         // Calculate interest from year start (or loan date if newer) to year end
+        // Simple interest on the principal amount (NOT compound - interest never added to principal)
         const interestStartDate = loanDate > yearStart ? loanDate : yearStart;
         const days = Math.floor((yearEnd.getTime() - interestStartDate.getTime()) / (1000 * 60 * 60 * 24));
         
         if (days > 0 && closingPrincipal > 0) {
-          closingInterest = (closingPrincipal * yearlyRate * days) / (365 * 100);
+          thisYearInterest = (closingPrincipal * yearlyRate * days) / (365 * 100);
         }
-        console.log(`📊 Loan active - calculated year end interest for ${days} days on ₹${closingPrincipal}`);
+        
+        // Closing interest = opening interest carried forward + this year's new interest - any interest repaid
+        closingInterest = openingInterest + thisYearInterest - yearInterestRepayment;
+        if (closingInterest < 0) closingInterest = 0;
+        
+        console.log(`📊 Loan active - ${days} days on ₹${closingPrincipal}: openingInterest=₹${Math.round(openingInterest)}, thisYearInterest=₹${Math.round(thisYearInterest)}, closingInterest=₹${Math.round(closingInterest)}`);
       }
 
       const statementData = {
@@ -4681,11 +4701,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Year activity
         yearDisbursement: Math.round(yearDisbursement * 100) / 100,
         yearPrincipalRepayment: Math.round(yearPrincipalRepayment * 100) / 100,
-        yearInterestRepayment: Math.round(yearInterestRepayment), // Round to whole number
+        yearInterestRepayment: Math.round(yearInterestRepayment),
+        thisYearInterest: Math.round(thisYearInterest),
+        
+        // Rate info
+        interestRate: rate,
+        interestRateType: rateType,
+        yearlyRate: yearlyRate,
         
         // Closing balance
         closingPrincipal: Math.round(closingPrincipal * 100) / 100,
-        closingInterest: Math.round(closingInterest), // Round to whole number
+        closingInterest: Math.round(closingInterest),
         closingTotal: Math.round(closingPrincipal + closingInterest)
       };
 

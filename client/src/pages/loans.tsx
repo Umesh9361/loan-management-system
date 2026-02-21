@@ -42,6 +42,8 @@ const loanSchema = z.object({
   borrowerMobile: z.string().optional(),
   borrowerAddress: z.string().optional(),
   businessType: z.string().min(1, "व्यवसाय प्रकार निवडा"),
+  isFarmer: z.boolean().default(false),
+  isBackwardClass: z.boolean().default(false),
   loanType: z.string().min(1, "कर्जाचा प्रकार निवडा"),
   accountNumber: z.string().min(1, "खाते क्रमांक आवश्यक आहे"),
   principalAmount: z.string().min(1, "कर्जाची रक्कम आवश्यक आहे"),
@@ -133,15 +135,17 @@ function Loans() {
       borrowerName: "",
       borrowerMobile: "",
       borrowerAddress: "",
-      businessType: "बिगर शेती", // Default: बिगर शेती
-      loanType: "विनातारण", // Default: विनातारण
+      businessType: "बिगर शेती",
+      isFarmer: false,
+      isBackwardClass: false,
+      loanType: "विनातारण",
       accountNumber: "",
       principalAmount: "",
       loanDate: DateUtils.getCurrentIndianDate(),
-      maturityDate: DateUtils.addMonthsToIndianDate(DateUtils.getCurrentIndianDate(), 12), // Auto: today + 12 months
+      maturityDate: DateUtils.addMonthsToIndianDate(DateUtils.getCurrentIndianDate(), 12),
       hasMaturity: false,
       maturityMonths: "",
-      interestRate: "", // User will enter
+      interestRate: "",
       interestRateType: "monthly",
       collateralDetails: "",
       weight: "",
@@ -196,6 +200,8 @@ function Loans() {
       borrowerMobile: loan.borrowerMobile || "",
       borrowerAddress: loan.borrowerAddress || "",
       businessType: loan.businessType === "शेती" ? "बिगर शेती" : (loan.businessType || "बिगर शेती"),
+      isFarmer: loan.isFarmer ?? false,
+      isBackwardClass: loan.isBackwardClass ?? false,
       loanType: loan.loanType || "gold_loan",
       accountNumber: loan.accountNumber || "",
       principalAmount: loan.principalAmount ? String(loan.principalAmount).replace('.00', '') : "",
@@ -370,6 +376,8 @@ function Loans() {
           borrowerMobile: "",
           borrowerAddress: "",
           businessType: "बिगर शेती",
+          isFarmer: false,
+          isBackwardClass: false,
           loanType: "विनातारण",
           accountNumber: "",
           principalAmount: "",
@@ -458,6 +466,8 @@ function Loans() {
           borrowerMobile: "",
           borrowerAddress: "",
           businessType: "बिगर शेती",
+          isFarmer: false,
+          isBackwardClass: false,
           loanType: "विनातारण",
           accountNumber: "",
           principalAmount: "",
@@ -1213,15 +1223,17 @@ function Loans() {
         borrowerName: "",
         borrowerMobile: "",
         borrowerAddress: "",
-        businessType: "बिगर शेती", // Default: बिगर शेती
-        loanType: "विनातारण", // Default: विनातारण
+        businessType: "बिगर शेती",
+        isFarmer: false,
+        isBackwardClass: false,
+        loanType: "विनातारण",
         accountNumber: "",
         principalAmount: "",
         loanDate: todayDate,
-        maturityDate: DateUtils.addMonthsToIndianDate(todayDate, 12), // Auto: today + 12 months
+        maturityDate: DateUtils.addMonthsToIndianDate(todayDate, 12),
         hasMaturity: false,
         maturityMonths: "",
-        interestRate: "", // User will enter
+        interestRate: "",
         interestRateType: "monthly",
         collateralDetails: "",
         weight: "",
@@ -1735,6 +1747,44 @@ function Loans() {
                         </FormItem>
                       )}
                     />
+
+                    {/* Farmer & Backward Class Checkboxes */}
+                    <div className="flex gap-6 items-center py-1">
+                      <FormField
+                        control={form.control}
+                        name="isFarmer"
+                        render={({ field }) => (
+                          <FormItem className="flex items-center gap-2 space-y-0">
+                            <FormControl>
+                              <input
+                                type="checkbox"
+                                checked={field.value}
+                                onChange={field.onChange}
+                                className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                              />
+                            </FormControl>
+                            <FormLabel className="text-sm font-medium cursor-pointer">शेतकरी</FormLabel>
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="isBackwardClass"
+                        render={({ field }) => (
+                          <FormItem className="flex items-center gap-2 space-y-0">
+                            <FormControl>
+                              <input
+                                type="checkbox"
+                                checked={field.value}
+                                onChange={field.onChange}
+                                className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                              />
+                            </FormControl>
+                            <FormLabel className="text-sm font-medium cursor-pointer">मागासवर्गीय</FormLabel>
+                          </FormItem>
+                        )}
+                      />
+                    </div>
 
                     {/* Loan Type */}
                     <FormField
@@ -2353,12 +2403,14 @@ function Loans() {
                       borrowerName: "",
                       borrowerMobile: "",
                       borrowerAddress: "",
-                      businessType: "बिगर शेती", // Default: बिगर शेती
-                      loanType: "विनातारण", // Default: विनातारण
+                      businessType: "बिगर शेती",
+                      isFarmer: false,
+                      isBackwardClass: false,
+                      loanType: "विनातारण",
                       accountNumber: "",
                       principalAmount: "",
                       loanDate: todayDate,
-                      maturityDate: DateUtils.addMonthsToIndianDate(todayDate, 12), // Auto: today + 12 months
+                      maturityDate: DateUtils.addMonthsToIndianDate(todayDate, 12),
                       hasMaturity: false,
                       maturityMonths: "",
                       interestRate: "",

@@ -2,8 +2,9 @@ import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Printer, CheckCircle, X, FileText, Download } from "lucide-react";
+import { Printer, CheckCircle, X, FileText, Download, Search } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { Sidebar } from "@/components/ui/sidebar";
 import { MobileNav } from "@/components/ui/mobile-nav";
@@ -14,9 +15,71 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { jsPDF } from "jspdf";
 import html2canvas from "html2canvas";
 
+const marathiToEnglish: Record<string, string> = {
+  'अ': 'a', 'आ': 'aa', 'इ': 'i', 'ई': 'ee', 'उ': 'u', 'ऊ': 'oo',
+  'ए': 'e', 'ऐ': 'ai', 'ओ': 'o', 'औ': 'au', 'क': 'k', 'ख': 'kh',
+  'ग': 'g', 'घ': 'gh', 'च': 'ch', 'छ': 'chh', 'ज': 'j', 'झ': 'jh',
+  'ट': 't', 'ठ': 'th', 'ड': 'd', 'ढ': 'dh', 'ण': 'n', 'त': 't',
+  'थ': 'th', 'द': 'd', 'ध': 'dh', 'न': 'n', 'प': 'p', 'फ': 'ph',
+  'ब': 'b', 'भ': 'bh', 'म': 'm', 'य': 'y', 'र': 'r', 'ल': 'l',
+  'व': 'v', 'श': 'sh', 'ष': 'sh', 'स': 's', 'ह': 'h',
+};
+
+const normalizeMarathiVowels = (text: string): string => {
+  return text
+    .replace(/ी/g, 'ि').replace(/ू/g, 'ु').replace(/ै/g, 'े')
+    .replace(/ौ/g, 'ो').replace(/ॅ/g, 'े').replace(/ॉ/g, 'ो')
+    .replace(/आ/g, 'अ').replace(/ई/g, 'इ').replace(/ऊ/g, 'उ')
+    .replace(/ऐ/g, 'ए').replace(/औ/g, 'ओ');
+};
+
+const createDualLanguageQuery = (query: string): string[] => {
+  const queries = [query.toLowerCase()];
+  const originalQuery = query.toLowerCase();
+  Object.keys(marathiToEnglish).forEach(marathi => {
+    if (originalQuery.includes(marathi)) {
+      queries.push(originalQuery.replace(new RegExp(marathi, 'g'), marathiToEnglish[marathi]));
+    }
+  });
+  return queries;
+};
+
+const matchesBorrowerName = (borrowerName: string, searchTerm: string): boolean => {
+  if (!borrowerName || !searchTerm) return false;
+  const trimmedSearch = searchTerm.trim().toLowerCase();
+  if (!trimmedSearch) return false;
+  const searchQueries = createDualLanguageQuery(trimmedSearch);
+  const nameLower = borrowerName.toLowerCase();
+  const nameNormalized = normalizeMarathiVowels(nameLower);
+  return searchQueries.some(query => {
+    const queryNormalized = normalizeMarathiVowels(query);
+    if (nameLower.includes(query)) return true;
+    if (nameNormalized.includes(queryNormalized)) return true;
+    const nameWords = nameLower.split(/\s+/);
+    const nameWordsNorm = nameNormalized.split(/\s+/);
+    const queryWordsNorm = queryNormalized.split(/\s+/);
+    if (query.split(/\s+/).length > 1) {
+      return query.split(/\s+/).every((qWord, i) => {
+        const qWordNorm = queryWordsNorm[i] || normalizeMarathiVowels(qWord);
+        return nameWords.some((nWord, j) => {
+          const nWordNorm = nameWordsNorm[j] || normalizeMarathiVowels(nWord);
+          return nWord.includes(qWord) || nWord.startsWith(qWord) || nWordNorm.includes(qWordNorm) || nWordNorm.startsWith(qWordNorm);
+        });
+      });
+    } else {
+      return nameWords.some((nWord, j) => {
+        const nWordNorm = nameWordsNorm[j] || normalizeMarathiVowels(nWord);
+        return nWord.includes(query) || nWord.startsWith(query) || nWordNorm.includes(queryNormalized) || nWordNorm.startsWith(queryNormalized) ||
+          (query.length >= 2 && nWord.length >= 2 && query.substring(0, 2) === nWord.substring(0, 2));
+      });
+    }
+  });
+};
+
 export default function AnnualStatementPage() {
   const isMobile = useIsMobile();
   const [selectedBorrower, setSelectedBorrower] = useState<string>("");
+  const [borrowerSearchQuery, setBorrowerSearchQuery] = useState<string>("");
   const [selectedYear, setSelectedYear] = useState<string>("");
   const [selectedLoan, setSelectedLoan] = useState<any>(null);
   const [statementData, setStatementData] = useState<any>(null);
@@ -397,21 +460,70 @@ export default function AnnualStatementPage() {
               </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                {/* Borrower Selection */}
+                {/* Borrower Selection with Search */}
                 <div className="space-y-2">
-                  <Label htmlFor="borrower-select">कर्जदाराचे नाव निवडा *</Label>
-                  <Select value={selectedBorrower} onValueChange={setSelectedBorrower}>
-                    <SelectTrigger id="borrower-select" data-testid="select-borrower">
+                  <Label>कर्जदाराचे नाव निवडा *</Label>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                    <Input
+                      placeholder="कर्जदार शोधा... (raju, राजू, patel, kumar...)"
+                      value={borrowerSearchQuery}
+                      onChange={(e) => {
+                        setBorrowerSearchQuery(e.target.value);
+                        if (selectedBorrower) {
+                          setSelectedBorrower("");
+                          setSelectedLoan(null);
+                          setStatementData(null);
+                        }
+                      }}
+                      className="pl-10"
+                      data-testid="search-borrower"
+                    />
+                  </div>
+                  <Select 
+                    value={selectedBorrower} 
+                    onValueChange={(val) => {
+                      setSelectedBorrower(val);
+                      setBorrowerSearchQuery(val);
+                      setSelectedLoan(null);
+                      setStatementData(null);
+                    }}
+                  >
+                    <SelectTrigger data-testid="select-borrower">
                       <SelectValue placeholder="कर्जदार निवडा..." />
                     </SelectTrigger>
-                    <SelectContent>
-                      {borrowerNames.map((name) => (
-                        <SelectItem key={name} value={name}>
-                          {name}
-                        </SelectItem>
-                      ))}
+                    <SelectContent className="max-h-60">
+                      {(() => {
+                        const filtered = borrowerSearchQuery.trim()
+                          ? borrowerNames.filter(name => matchesBorrowerName(name, borrowerSearchQuery))
+                          : borrowerNames;
+                        return filtered.length > 0 ? filtered.map((name) => (
+                          <SelectItem key={name} value={name}>
+                            {name}
+                          </SelectItem>
+                        )) : (
+                          <div className="p-2 text-sm text-gray-500 text-center">
+                            {borrowerSearchQuery.trim() ? 'कोणतेही कर्जदार सापडले नाही' : 'वरील search box मध्ये टाइप करा'}
+                          </div>
+                        );
+                      })()}
                     </SelectContent>
                   </Select>
+                  {selectedBorrower && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setSelectedBorrower("");
+                        setBorrowerSearchQuery("");
+                        setSelectedLoan(null);
+                        setStatementData(null);
+                      }}
+                      className="text-xs w-full"
+                    >
+                      निवड मिटवा
+                    </Button>
+                  )}
                 </div>
 
                 {/* Year Selection */}
