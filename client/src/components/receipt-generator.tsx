@@ -735,32 +735,44 @@ export class ReceiptGenerator {
 
             <div class="field-row">
                 <span class="field-label">१. कर्जदाराचे नाव व पत्ता:</span>
-                <div class="field-value" style="flex: 1;">${isBlankType ? '' : (getDisplayData(loan.borrowerName) + ', ' + getDisplayData(loan.borrowerAddress))}</div>
+                ${isBlankType 
+                  ? '<div class="field-value" style="flex: 1;"></div>' 
+                  : '<span style="margin-left: 4px; font-size: 12px;">' + getDisplayData(loan.borrowerName) + ', ' + getDisplayData(loan.borrowerAddress) + '</span>'}
             </div>
 
             <div class="field-row">
                 <span class="field-label">२. जात(मागासवर्गीय ${isBlankType ? 'आहे/नाही' : ((loan as any).isBackwardClass ? 'आहे' : 'नाही')})</span>
                 <span class="field-label" style="margin-left: 8px;">३. ${isBlankType ? 'कृषी/अकृषिक' : ((loan as any).isFarmer ? 'कृषी' : 'अकृषिक')}</span>
                 <span class="field-label" style="margin-left: 8px;">दिनांक:</span>
-                <div class="field-value" style="flex: 0.3;">${getBlankField(formatDate(loan.loanDate))}</div>
+                ${isBlankType 
+                  ? '<div class="field-value" style="flex: 0.3;"></div>'
+                  : '<span style="margin-left: 4px; font-size: 12px; border-bottom: 1px solid #333; padding: 0 4px 2px 4px;">' + formatDate(loan.loanDate) + '</span>'}
             </div>
 
             <div class="field-row">
                 <span class="field-label">४. तारणाचा तपशील:</span>
-                <div class="field-value" style="flex: 1; ${isBlankType ? 'border-bottom: 1px solid #333;' : 'border-bottom: none; min-height: 36px;'}">${isBlankType ? '' : (loan.collateralDetails ? (loan.collateralDetails + ((loan as any).weight ? ' | वजन: ' + (loan as any).weight + ' ग्राम' : '')) : '')}</div>
+                ${isBlankType 
+                  ? '<div class="field-value" style="flex: 1; border-bottom: 1px solid #333;"></div>'
+                  : '<span style="margin-left: 4px; font-size: 12px; min-height: 36px; display: inline-block;">' + (loan.collateralDetails ? (loan.collateralDetails + ((loan as any).weight ? ' | वजन: ' + (loan as any).weight + ' ग्राम' : '')) : '') + '</span>'}
             </div>
             ${isBlankType ? '<div style="border-bottom: 1px solid #333; height: 18px; margin: 0 0 2px 0;"></div>' : ''}
 
             <div class="field-row">
                 <span class="field-label">५. अंदाजे मूल्य:</span>
-                <div class="field-value" style="flex: 0.4;">${getBlankField((loan as any).marketValue ? '₹' + ReceiptGenerator.cleanDisplayAmount((loan as any).marketValue) : '')}</div>
+                ${isBlankType 
+                  ? '<div class="field-value" style="flex: 0.4;"></div>'
+                  : '<span style="margin-left: 4px; font-size: 12px; border-bottom: 1px solid #333; padding: 0 4px 2px 4px;">' + ((loan as any).marketValue ? '₹' + ReceiptGenerator.cleanDisplayAmount((loan as any).marketValue) : '') + '</span>'}
                 <span class="field-label" style="margin-left: 8px;">६. कर्जाची रक्कम:</span>
-                <div class="field-value" style="flex: 0.4; text-align: right;">${getBlankField('₹' + ReceiptGenerator.cleanDisplayAmount(loan.principalAmount || 0))}</div>
+                ${isBlankType 
+                  ? '<div class="field-value" style="flex: 0.4;"></div>'
+                  : '<span style="margin-left: 4px; font-size: 12px; border-bottom: 1px solid #333; padding: 0 4px 2px 4px;">' + '₹' + ReceiptGenerator.cleanDisplayAmount(loan.principalAmount || 0) + '</span>'}
             </div>
 
             <div class="field-row">
                 <span class="field-label">७. इतर अनुषंगिक माहिती:</span>
-                <div class="field-value" style="flex: 1;">${isBlankType ? '' : ((loan as any).otherInfo && (loan as any).otherInfo !== '—' ? (loan as any).otherInfo : '')}</div>
+                ${isBlankType 
+                  ? '<div class="field-value" style="flex: 1;"></div>'
+                  : '<span style="margin-left: 4px; font-size: 12px;">' + ((loan as any).otherInfo && (loan as any).otherInfo !== '—' ? (loan as any).otherInfo : '') + '</span>'}
             </div>
 
             <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: auto; padding: 0 8px; padding-bottom: 4px;">
