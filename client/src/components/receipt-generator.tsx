@@ -31,7 +31,8 @@ export class ReceiptGenerator {
     loan: Loan, 
     company: { name?: string; licenseNumber?: string } | null,
     receiptType: 'combined' | 'disbursement' | 'closure' | 'blank' | 'form12' | 'combined10_12' | 'blank10_12' = 'combined',
-    closureData?: any
+    closureData?: any,
+    includeHamipatra: boolean = false
   ): string {
     const formatDate = (date: string) => {
       return new Date(date).toLocaleDateString('en-GB');
@@ -193,6 +194,71 @@ export class ReceiptGenerator {
                 page-break-inside: avoid !important;
                 page-break-before: avoid !important;
             }
+
+            .hamipatra-page {
+                page-break-before: always !important;
+                width: 144mm !important;
+                max-width: 144mm !important;
+                margin: 2mm auto !important;
+                padding: 5mm !important;
+                border: 1px solid #333 !important;
+                box-sizing: border-box !important;
+            }
+        }
+
+        .hamipatra-page {
+            width: 144mm;
+            max-width: 144mm;
+            margin: 4mm auto;
+            padding: 5mm;
+            border: 1px solid #333;
+            font-size: 12px;
+            line-height: 1.6;
+            background: white;
+            box-sizing: border-box;
+        }
+        .hamipatra-page .hamipatra-title {
+            text-align: center;
+            font-weight: bold;
+            font-size: 14px;
+            margin-bottom: 8px;
+            border-bottom: 2px solid #333;
+            padding-bottom: 6px;
+        }
+        .hamipatra-page .hamipatra-body {
+            font-size: 12px;
+            line-height: 1.8;
+            text-align: justify;
+        }
+        .hamipatra-page .hamipatra-field {
+            border-bottom: 1px solid #333;
+            padding: 0 4px 2px 4px;
+            display: inline-block;
+            min-width: 60px;
+        }
+        .hamipatra-page .hamipatra-signatures {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+            padding: 0 4px;
+        }
+        .hamipatra-page .hamipatra-sig-block {
+            text-align: center;
+            width: 44%;
+        }
+        .hamipatra-page .hamipatra-sig-line {
+            border-bottom: 1px solid #333;
+            margin-bottom: 3px;
+            height: 24px;
+        }
+        .hamipatra-page .hamipatra-sig-label {
+            font-size: 10px;
+        }
+        .receipt-container.export-mode ~ .hamipatra-page {
+            width: 144mm !important;
+            max-width: 144mm !important;
+            margin: 2mm auto !important;
+            padding: 5mm !important;
         }
 
         * {
@@ -581,7 +647,7 @@ export class ReceiptGenerator {
             <div style="font-size: 10px; margin: 2px 0; line-height: 1.3; display: flex; justify-content: space-between; flex-wrap: wrap;">
                 <span><b>कर्ज दिनांक:</b> ${getBlankField(formatDate(loan.loanDate))}</span>
                 <span>|</span>
-                <span><b>व्याजदर:</b> ${getBlankField(`${ReceiptGenerator.cleanDisplayAmount(loan.interestRate || 0)}% वार्षिक`)}</span>
+                <span><b>व्याजदर:</b> ${getBlankField(`${(loan as any).interestRateType === 'monthly' ? '12' : ReceiptGenerator.cleanDisplayAmount(loan.interestRate || 0)}% वार्षिक`)}</span>
                 <span>|</span>
                 <span><b>मुदत:</b> ${getBlankField(loan.maturityDate ? formatDate(loan.maturityDate) : '-')}</span>
                 <span>|</span>
@@ -618,6 +684,7 @@ export class ReceiptGenerator {
             </div>
             ` : ''}
             
+            ${includeHamipatra ? `
             <!-- Undertaking / हमीपत्र - without border -->
             <div style="margin: 3px 0 2px 0; padding: 1px 2px; font-size: 10px; line-height: 1.2;">
                 <span style="font-weight: bold; font-size: 10px;">हमीपत्र:</span>
@@ -625,6 +692,7 @@ export class ReceiptGenerator {
                     मी खात्रीने सांगतो/सांगते की, वर नमूद तारण दागिना/वस्तू माझ्या स्वतःच्या मालकीची असून त्यावर कुणाचाही हक्क/संबंध नाही. सदर वस्तू चोरीची, सापडलेली अथवा बळकावलेली नाही. असे निष्पन्न झाल्यास होणाऱ्या कायदेशीर कारवाईस मी पूर्णतः जबाबदार राहील.
                 </span>
             </div>
+            ` : ''}
 
             <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: 4px; padding: 0 5px;">
                 <div style="text-align: center; width: 45%;">
@@ -773,22 +841,74 @@ export class ReceiptGenerator {
         </div>
         ` : ''}
     </div>
+
+    ${includeHamipatra && (receiptType === 'disbursement' || receiptType === 'combined' || receiptType === 'combined10_12' || receiptType === 'blank' || receiptType === 'blank10_12') ? `
+    <div class="hamipatra-page">
+        <div class="hamipatra-title">हमीपत्र</div>
+        <div class="hamipatra-body">
+            <p style="margin-bottom: 8px;">
+                मी/आम्ही खालील सही करणार, कर्जदार
+                <span class="hamipatra-field" style="min-width: 120px; font-weight: 600;">${isBlankType ? '' : getDisplayData(loan.borrowerName)}</span>
+                रा.
+                <span class="hamipatra-field" style="min-width: 100px;">${isBlankType ? '' : getDisplayData(loan.borrowerAddress)}</span>
+                यांचे/यांची हमी घेतो/घेतली आहे.
+            </p>
+            <p style="margin-bottom: 8px;">
+                सदर कर्जदार यांनी सावकार
+                <span class="hamipatra-field" style="font-weight: 600;">${getDisplayData(company?.name)}</span>
+                यांचेकडून दिनांक
+                <span class="hamipatra-field">${isBlankType ? '&nbsp;&nbsp;/&nbsp;&nbsp;/&nbsp;&nbsp;&nbsp;&nbsp;' : formatDate(loan.loanDate)}</span>
+                रोजी रुपये
+                <span class="hamipatra-field" style="font-weight: 600;">${isBlankType ? '' : '₹' + ReceiptGenerator.cleanDisplayAmount(loan.principalAmount || 0)}</span>
+                (अक्षरी रु.
+                <span class="hamipatra-field" style="min-width: 140px;">${isBlankType ? '' : ''}</span>
+                ) इतके कर्ज घेतले आहे.
+            </p>
+            <p style="margin-bottom: 8px;">
+                सदर कर्जाची परतफेड कर्जदार करू न शकल्यास मी/आम्ही सदर कर्जाची संपूर्ण रक्कम व्याजासह फेडण्यास जबाबदार राहू.
+            </p>
+            <p>
+                हे हमीपत्र मी/आम्ही स्वखुशीने व कोणत्याही दबावाशिवाय लिहून देत आहोत.
+            </p>
+        </div>
+        <div class="hamipatra-signatures">
+            <div class="hamipatra-sig-block">
+                <div class="hamipatra-sig-line"></div>
+                <div class="hamipatra-sig-label">हमीदाराची सही / अंगठा</div>
+                <div class="hamipatra-sig-line" style="margin-top: 10px;"></div>
+                <div class="hamipatra-sig-label">नाव:</div>
+                <div class="hamipatra-sig-line" style="margin-top: 10px;"></div>
+                <div class="hamipatra-sig-label">पत्ता:</div>
+            </div>
+            <div class="hamipatra-sig-block">
+                <div class="hamipatra-sig-line"></div>
+                <div class="hamipatra-sig-label">साक्षीदाराची सही</div>
+                <div class="hamipatra-sig-line" style="margin-top: 10px;"></div>
+                <div class="hamipatra-sig-label">नाव:</div>
+                <div class="hamipatra-sig-line" style="margin-top: 10px;"></div>
+                <div class="hamipatra-sig-label">पत्ता:</div>
+            </div>
+        </div>
+        <div style="margin-top: 14px; text-align: right; font-size: 11px;">
+            <span>दिनांक: </span>
+            <span class="hamipatra-field" style="min-width: 80px;">${isBlankType ? '&nbsp;&nbsp;/&nbsp;&nbsp;/&nbsp;&nbsp;&nbsp;&nbsp;' : formatDate(loan.loanDate)}</span>
+        </div>
+        <div style="margin-top: 10px; text-align: right; font-size: 11px;">
+            <span>ठिकाण: </span>
+            <span class="hamipatra-field" style="min-width: 80px;">${isBlankType ? '' : ''}</span>
+        </div>
+    </div>
+    ` : ''}
     
-    <!-- Print button removed - now handled by parent dialog/popup controls -->
-    
-    <!-- ✅ AUTO SCROLL: Scroll to print button when page loads -->
     <script>
         window.addEventListener('load', function() {
-            // Small delay to ensure content is fully rendered
             setTimeout(function() {
                 const printSection = document.getElementById('print-section');
                 if (printSection) {
-                    // Smooth scroll to print button
                     printSection.scrollIntoView({ 
                         behavior: 'smooth', 
                         block: 'center' 
                     });
-                    console.log('✅ Auto-scrolled to print section');
                 }
             }, 500);
         });
