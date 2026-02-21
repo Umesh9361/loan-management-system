@@ -106,7 +106,7 @@ export default function InformationRegister() {
         principalAmount: amount.toString(),
         interestRate: rate,
         interestRateType: 'monthly',
-        loanType: i % 2 === 0 ? 'तारण' : 'बिगर तारण',
+        loanType: 'तारण',
         accountNumber: `ACC-${1000 + Math.floor(Math.random() * 9000)}`,
         status: 'active',
         closureDate: null,
@@ -278,7 +278,7 @@ export default function InformationRegister() {
   };
 
   const getLoanTypeLabel = (type: string) => {
-    return type === 'तारण' || type === 'taran' ? 'तारणी' : 'बिगर तारणी';
+    return type || 'विनातारण';
   };
 
   const getInterestDisplay = (rate: string, rateType: string) => {
