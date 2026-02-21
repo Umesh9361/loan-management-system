@@ -370,7 +370,7 @@ export class ReceiptGenerator {
             border: 1px solid #333;
             background: white;
             box-sizing: border-box;
-            overflow: hidden;
+            overflow: visible;
             display: flex;
             flex-direction: column;
             width: 100%;
@@ -540,6 +540,9 @@ export class ReceiptGenerator {
             min-height: 18px;
             line-height: 1.4;
             font-size: 12px;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            white-space: normal;
         }
         .form12-filled .field-value {
             border-bottom: none;
