@@ -39,6 +39,7 @@ import BorrowerListReports from "@/pages/reports/borrower-list";
 import AccountSummaryReport from "@/pages/reports/account-summary";
 import OverdueReport from "@/pages/reports/overdue";
 import NoticeGeneratorPage from "@/pages/reports/notice-generator";
+import InformationRegister from "@/pages/reports/information-register";
 
 import SuperAdmin from "@/pages/super-admin";
 import SuperAdminTenants from "@/pages/super-admin-tenants";
@@ -211,6 +212,7 @@ function AppContent() {
         <Route path="/reports/borrower-list" component={BorrowerListReports} />
 
         <Route path="/reports/overdue" component={OverdueReport} />
+        <Route path="/reports/information-register" component={InformationRegister} />
         <Route path="/reports/receipt-generator" component={ReceiptGeneratorPage} />
         <Route path="/reports/notice-generator" component={NoticeGeneratorPage} />
         <Route path="/reports/receipt">{() => { window.location.replace('/reports/receipt-generator'); return null; }}</Route>
@@ -276,6 +278,7 @@ function AppContent() {
         {perms.canViewLedgerReport && <Route path="/reports/working-summary" component={WorkingSummary} />}
         {perms.canViewBorrowerListReport && <Route path="/reports/borrower-list" component={BorrowerListReports} />}
         {perms.canViewOverdueReport && <Route path="/reports/overdue" component={OverdueReport} />}
+        {perms.canViewCapitalReport && <Route path="/reports/information-register" component={InformationRegister} />}
         
         {/* Receipt routes - Only if loan closure permitted */}
           {perms.canAccessLoanClosure && <Route path="/receipt/closure/:loanId" component={ClosureReceiptPage} />}
@@ -319,6 +322,7 @@ function AppContent() {
         <Route path="/reports/working-summary" component={WorkingSummary} />
         <Route path="/reports/borrower-list" component={BorrowerListReports} />
         <Route path="/reports/overdue" component={OverdueReport} />
+        <Route path="/reports/information-register" component={InformationRegister} />
           <Route path="/receipt/closure/:loanId" component={ClosureReceiptPage} />
           <Route path="/receipt/annual-statement" component={AnnualStatementPage} />
           <Route path="/profile" component={Profile} />
