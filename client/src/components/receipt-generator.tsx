@@ -522,12 +522,12 @@ export class ReceiptGenerator {
         }
 
         .form12-receipt .receipt-header {
-            margin-bottom: 6px;
-            padding-bottom: 4px;
+            margin-bottom: 4px;
+            padding-bottom: 2px;
         }
         .form12-receipt .field-row {
-            margin: 8px 0;
-            line-height: 1.5;
+            margin: 6px 0;
+            line-height: 1.4;
             font-size: 12px;
             flex-wrap: wrap;
         }
@@ -536,10 +536,16 @@ export class ReceiptGenerator {
             white-space: normal;
         }
         .form12-receipt .field-value {
-            padding: 0px 4px 6px 4px;
-            min-height: 20px;
-            line-height: 1.5;
+            padding: 0px 4px 5px 4px;
+            min-height: 18px;
+            line-height: 1.4;
             font-size: 12px;
+        }
+        .form12-filled .field-value {
+            border-bottom: none;
+        }
+        .form12-blank .field-value {
+            border-bottom: 1px solid #333;
         }
 
     </style>
@@ -718,11 +724,10 @@ export class ReceiptGenerator {
         <div class="form12-receipt ${isBlankType ? 'form12-blank' : 'form12-filled'}">
             <div class="receipt-header">
                 <div class="form-number">नमुना क्रमांक १२ (नियम १८ पहा)</div>
-                <div class="receipt-title" style="font-size: 12px; margin: 3px 0;">(तारण जंगम मालाची पावती)</div>
-            </div>
-
-            <div style="text-align: center; font-size: 11px; margin: 6px 0; font-weight: 500; color: #333; padding: 3px 0;">
-                सावकार: ${getDisplayData(company?.name)} | परवाना क्र.: ${getDisplayData(company?.licenseNumber)}
+                <div style="font-size: 10px; font-weight: normal; margin: 2px 0; text-align: center;">(तारण जंगम मालाची पावती)</div>
+                <div style="font-size: 10px; margin-top: 3px; font-weight: 500; color: #333;">
+                    सावकार: ${getDisplayData(company?.name)} | परवाना क्र.: ${getDisplayData(company?.licenseNumber)}
+                </div>
             </div>
 
             <div class="field-row">
@@ -739,9 +744,9 @@ export class ReceiptGenerator {
 
             <div class="field-row">
                 <span class="field-label">४. तारणाचा तपशील:</span>
-                <div class="field-value" style="flex: 1;">${isBlankType ? '' : (loan.collateralDetails ? (loan.collateralDetails + ((loan as any).weight ? ' | वजन: ' + (loan as any).weight + ' ग्राम' : '')) : '')}</div>
+                <div class="field-value" style="flex: 1; ${isBlankType ? '' : 'border-bottom: none;'}">${isBlankType ? '' : (loan.collateralDetails ? (loan.collateralDetails + ((loan as any).weight ? ' | वजन: ' + (loan as any).weight + ' ग्राम' : '')) : '')}</div>
             </div>
-            <div style="border-bottom: 1px solid #333; height: 20px; margin: 0 0 4px 0;"></div>
+            ${isBlankType ? '<div style="border-bottom: 1px solid #333; height: 18px; margin: 0 0 2px 0;"></div>' : ''}
 
             <div class="field-row">
                 <span class="field-label">५. अंदाजे मूल्य:</span>
@@ -755,13 +760,13 @@ export class ReceiptGenerator {
                 <div class="field-value" style="flex: 1;">${isBlankType ? '' : ((loan as any).otherInfo && (loan as any).otherInfo !== '—' ? (loan as any).otherInfo : '')}</div>
             </div>
 
-            <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: auto; padding: 0 8px;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: auto; padding: 0 8px; padding-bottom: 4px;">
                 <div style="text-align: center; width: 44%;">
-                    <div style="border-bottom: 1px solid #333; margin-bottom: 3px; height: 20px;"></div>
+                    <div style="border-bottom: 1px solid #333; margin-bottom: 3px; height: 24px;"></div>
                     <span style="font-size: 11px;">कर्जदाराची सही</span>
                 </div>
                 <div style="text-align: center; width: 44%;">
-                    <div style="border-bottom: 1px solid #333; margin-bottom: 3px; height: 20px;"></div>
+                    <div style="border-bottom: 1px solid #333; margin-bottom: 3px; height: 24px;"></div>
                     <span style="font-size: 11px;">सावकाराची सही</span>
                 </div>
             </div>
