@@ -723,7 +723,7 @@ export class ReceiptGenerator {
         <!-- Form 12 Receipt - नमुना क्रमांक १२ -->
         <div class="form12-receipt ${isBlankType ? 'form12-blank' : 'form12-filled'}">
             <div class="receipt-header" style="padding-bottom: 6px; margin-bottom: 6px;">
-                <div class="form-number">नमुना क्रमांक १२ (नियम १८ पहा)</div>
+                <div class="form-number">नमुना क्रमांक १२ (नियम १८)</div>
                 <div style="font-size: 10px; font-weight: normal; margin: 2px 0; text-align: center;">(तारण जंगम मालाची पावती)</div>
                 <div style="font-size: 10px; margin-top: 3px; padding-bottom: 4px; font-weight: 500; color: #333;">
                     सावकार: ${getDisplayData(company?.name)} | परवाना क्र.: ${getDisplayData(company?.licenseNumber)}
@@ -739,7 +739,7 @@ export class ReceiptGenerator {
                 <span class="field-label">२. जात(मागासवर्गीय ${isBlankType ? 'आहे/नाही' : ((loan as any).isBackwardClass ? 'आहे' : 'नाही')})</span>
                 <span class="field-label" style="margin-left: 8px;">३. ${isBlankType ? 'कृषी/अकृषिक' : ((loan as any).isFarmer ? 'कृषी' : 'अकृषिक')}</span>
                 <span class="field-label" style="margin-left: 8px;">दिनांक:</span>
-                <div class="field-value" style="flex: 0.3;">${isBlankType ? '' : formatDate(loan.loanDate)}</div>
+                <div class="field-value" style="flex: none; min-width: 70px; padding: 0 4px 4px 4px;">${isBlankType ? '' : formatDate(loan.loanDate)}</div>
             </div>
 
             <div class="field-row">
