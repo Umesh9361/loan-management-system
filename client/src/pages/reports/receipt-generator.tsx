@@ -18,6 +18,8 @@ export default function ReceiptGeneratorPage() {
   const [selectedLoanId, setSelectedLoanId] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState("");
   const [receiptType, setReceiptType] = useState<'combined' | 'disbursement' | 'closure' | 'blank' | 'form12' | 'combined10_12' | 'blank10_12'>('combined');
+  const [includeHamipatra, setIncludeHamipatra] = useState(false);
+  const [showInterestRate, setShowInterestRate] = useState(true);
 
   // Fetch loans data first
   const { data: loans = [] } = useQuery({
@@ -56,7 +58,7 @@ export default function ReceiptGeneratorPage() {
         const selectedLoan = (loans as any[]).find((loan: any) => loan.id === loanId);
         if (selectedLoan && company) {
           console.log("🖨️ Auto-generating full-page receipt for mobile user");
-          const receiptHTML = ReceiptGenerator.generateLoanReceipt(selectedLoan, company as any, urlType);
+          const receiptHTML = ReceiptGenerator.generateLoanReceipt(selectedLoan, company as any, urlType, undefined, includeHamipatra, showInterestRate);
           setInlineReceiptHTML(receiptHTML);
           setShowInlinePreview(true);
           setIsMobileFullPage(true); // Mobile uses full-page view, not dialog
@@ -724,7 +726,7 @@ export default function ReceiptGeneratorPage() {
                             }
                             
                             // Generate receipt HTML and show in appropriate view
-                            const receiptHTML = ReceiptGenerator.generateLoanReceipt(loanForTemplate, company as any, receiptType, closureData);
+                            const receiptHTML = ReceiptGenerator.generateLoanReceipt(loanForTemplate, company as any, receiptType, closureData, includeHamipatra, showInterestRate);
                             setInlineReceiptHTML(receiptHTML);
                             setShowInlinePreview(true);
                             
@@ -888,6 +890,38 @@ export default function ReceiptGeneratorPage() {
                     </div>
                     
                   </div>
+
+                  {/* Additional Options */}
+                  {receiptType !== 'closure' && receiptType !== 'form12' && (
+                    <div className="mt-3 flex flex-wrap items-center gap-x-6 gap-y-2">
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          id="hamipatra"
+                          checked={includeHamipatra}
+                          onChange={(e) => setIncludeHamipatra(e.target.checked)}
+                          className="h-4 w-4"
+                          autoComplete="off"
+                        />
+                        <Label htmlFor="hamipatra" className="text-sm font-medium cursor-pointer">
+                          हमीपत्र समाविष्ट करा
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          id="showInterestRate"
+                          checked={showInterestRate}
+                          onChange={(e) => setShowInterestRate(e.target.checked)}
+                          className="h-4 w-4"
+                          autoComplete="off"
+                        />
+                        <Label htmlFor="showInterestRate" className="text-sm font-medium cursor-pointer">
+                          व्याजदर दाखवा
+                        </Label>
+                      </div>
+                    </div>
+                  )}
                   
                   {/* ✅ PROFESSIONAL POPUP APPROACH: Helper text */}
                   <div className="mt-3 text-xs text-gray-600">
