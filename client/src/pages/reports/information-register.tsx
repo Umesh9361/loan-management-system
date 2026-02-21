@@ -212,7 +212,7 @@ export default function InformationRegister() {
       const cloned = source.cloneNode(true) as HTMLElement;
       cloned.style.width = landscapeWidthPx + 'px';
       cloned.style.minWidth = landscapeWidthPx + 'px';
-      cloned.style.padding = '70px 25px 20px 25px';
+      cloned.style.padding = '50px 25px 20px 25px';
       cloned.style.background = 'white';
       cloned.style.fontSize = '12px';
 
@@ -253,7 +253,7 @@ export default function InformationRegister() {
       const imgData = canvas.toDataURL('image/png');
       const pageWidth = 297;
       const pageHeight = 210;
-      const topMargin = 25;
+      const topMargin = 20;
       const bottomMargin = 10;
       const sideMargin = 12;
       const printableWidth = pageWidth - (sideMargin * 2);
@@ -505,7 +505,7 @@ export default function InformationRegister() {
       @media print {
         @page {
           size: A4 landscape;
-          margin: 25mm 12mm 10mm 12mm;
+          margin: 20mm 12mm 10mm 12mm;
         }
         body * { visibility: hidden; }
         .ir-selected-print[style*="display: block"],
