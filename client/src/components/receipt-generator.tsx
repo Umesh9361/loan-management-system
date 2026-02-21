@@ -32,7 +32,8 @@ export class ReceiptGenerator {
     company: { name?: string; licenseNumber?: string } | null,
     receiptType: 'combined' | 'disbursement' | 'closure' | 'blank' | 'form12' | 'combined10_12' | 'blank10_12' = 'combined',
     closureData?: any,
-    includeHamipatra: boolean = false
+    includeHamipatra: boolean = false,
+    showInterestRate: boolean = true
   ): string {
     const formatDate = (date: string) => {
       return new Date(date).toLocaleDateString('en-GB');
@@ -647,7 +648,7 @@ export class ReceiptGenerator {
             <div style="font-size: 10px; margin: 2px 0; line-height: 1.3; display: flex; justify-content: space-between; flex-wrap: wrap;">
                 <span><b>कर्ज दिनांक:</b> ${getBlankField(formatDate(loan.loanDate))}</span>
                 <span>|</span>
-                <span><b>व्याजदर:</b> ${getBlankField(`${(loan as any).interestRateType === 'monthly' ? '12' : ReceiptGenerator.cleanDisplayAmount(loan.interestRate || 0)}% वार्षिक`)}</span>
+                <span><b>व्याजदर:</b> ${showInterestRate ? getBlankField(`${(loan as any).interestRateType === 'monthly' ? '12' : ReceiptGenerator.cleanDisplayAmount(loan.interestRate || 0)}% वार्षिक`) : '<span style="display: inline-block; min-width: 30px; border-bottom: 1px solid #333;">&nbsp;</span> वार्षिक'}</span>
                 <span>|</span>
                 <span><b>मुदत:</b> ${getBlankField(loan.maturityDate ? formatDate(loan.maturityDate) : '-')}</span>
                 <span>|</span>
