@@ -345,18 +345,26 @@ export default function InformationRegister() {
         text-align: center;
         margin-bottom: 10px;
         padding: 8px 14px;
-        border: 2px solid #333;
-        background: #fafbfc;
-        border-radius: 4px;
       }
       .register-title {
-        font-size: 13px;
+        font-size: 15px;
         font-weight: 700;
         margin: 0;
         color: #1a1a1a;
       }
+      .register-proprietor {
+        font-size: 12px;
+        margin: 4px 0 0 0;
+        color: #333;
+      }
+      .ir-prop-line {
+        display: inline-block;
+        min-width: 200px;
+        border-bottom: 1px solid #555;
+      }
       @media (min-width: 1024px) {
-        .register-title { font-size: 15px; }
+        .register-title { font-size: 17px; }
+        .register-proprietor { font-size: 13px; }
       }
 
       .ir-table-scroll {
@@ -371,13 +379,13 @@ export default function InformationRegister() {
         min-width: 1080px;
         width: 100%;
         border-collapse: collapse;
-        font-size: 11px;
+        font-size: 12px;
         background: #fff;
         table-layout: fixed;
       }
       @media (min-width: 1024px) {
         .register-table {
-          font-size: 12px;
+          font-size: 13px;
           min-width: 100%;
         }
       }
@@ -465,20 +473,22 @@ export default function InformationRegister() {
         justify-content: space-between;
         margin-top: 24px;
         padding: 0 12px;
-        font-size: 11px;
+        font-size: 12px;
+        font-weight: 700;
         color: #333;
       }
       .footer-right {
-        margin-right: 15%;
+        text-align: right;
+        margin-right: 5%;
       }
       @media (min-width: 1024px) {
         .register-footer {
           margin-top: 35px;
           padding: 0 20px;
-          font-size: 12px;
+          font-size: 13px;
         }
         .footer-right {
-          margin-right: 20%;
+          margin-right: 8%;
         }
       }
       .footer-left p, .footer-right p { margin: 2px 0; }
@@ -526,7 +536,9 @@ export default function InformationRegister() {
         }
         .no-print, .ir-filter-section, .ir-col-check { display: none !important; }
         .ir-table-scroll { overflow: visible; border: none; border-radius: 0; }
-        .register-header { border: 2px solid #000; border-radius: 0; }
+        .register-header { border: none; border-radius: 0; }
+        .register-title { font-size: 15px; }
+        .register-proprietor { font-size: 12px; }
         .register-table { font-size: 11px; min-width: 100%; }
         .register-table th {
           font-size: 10px; padding: 4px 5px;
@@ -535,9 +547,11 @@ export default function InformationRegister() {
           print-color-adjust: exact;
         }
         .register-table td { padding: 4px 5px; font-size: 11px; }
+        .register-table td.ir-td-center { font-size: 11px; }
         .register-table th, .register-table td { border: 1.5px solid #000 !important; }
         .ir-address { font-size: 9px; }
-        .register-footer { margin-top: 20mm; font-size: 11px; page-break-inside: avoid; break-inside: avoid; }
+        .register-footer { margin-top: 20mm; font-size: 12px; font-weight: 700; page-break-inside: avoid; break-inside: avoid; }
+        .footer-right { margin-right: 5%; }
         .register-table tbody tr:nth-child(even) { background: #f8fafc !important; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
         .register-table thead { display: table-header-group; }
         .register-table tbody tr { page-break-inside: avoid; break-inside: avoid; }
@@ -663,7 +677,10 @@ export default function InformationRegister() {
               <div className="info-register-print" ref={printRef}>
                 <div className="register-header">
                   <p className="register-title">
-                    सावकाराचे नांव :- {company?.name || ''} &nbsp;&nbsp; सावकारी लायसन नंबर :- {company?.licenseNumber || ''}
+                    सावकाराचे नांव :- {company?.name || ''} &nbsp;&nbsp;&nbsp; सावकारी लायसन नंबर :- {company?.licenseNumber || ''}
+                  </p>
+                  <p className="register-proprietor">
+                    प्रोप्रायटर :- <span className="ir-prop-line">&nbsp;</span>
                   </p>
                 </div>
 
@@ -738,7 +755,10 @@ export default function InformationRegister() {
               <div ref={selectedPrintRef} className="info-register-print ir-selected-print" style={{display:'none'}}>
                 <div className="register-header">
                   <p className="register-title">
-                    सावकाराचे नांव :- {company?.name || ''} &nbsp;&nbsp; सावकारी लायसन नंबर :- {company?.licenseNumber || ''}
+                    सावकाराचे नांव :- {company?.name || ''} &nbsp;&nbsp;&nbsp; सावकारी लायसन नंबर :- {company?.licenseNumber || ''}
+                  </p>
+                  <p className="register-proprietor">
+                    प्रोप्रायटर :- <span className="ir-prop-line">&nbsp;</span>
                   </p>
                 </div>
                 <div className="ir-table-scroll">
