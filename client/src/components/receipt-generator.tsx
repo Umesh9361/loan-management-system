@@ -30,7 +30,7 @@ export class ReceiptGenerator {
   static generateLoanReceipt(
     loan: Loan, 
     company: { name?: string; licenseNumber?: string } | null,
-    receiptType: 'combined' | 'disbursement' | 'closure' | 'blank' | 'form12' | 'combined10_12' = 'combined',
+    receiptType: 'combined' | 'disbursement' | 'closure' | 'blank' | 'form12' | 'combined10_12' | 'blank10_12' = 'combined',
     closureData?: any
   ): string {
     const formatDate = (date: string) => {
@@ -39,13 +39,14 @@ export class ReceiptGenerator {
 
     // ✅ BLANK RECEIPT LOGIC: Return empty string for blank receipts, else return actual data
     const getDisplayData = (value: any, fallback: string = '') => {
-      if (receiptType === 'blank') return '';
+      if (receiptType === 'blank' || receiptType === 'blank10_12') return '';
       return value !== null && value !== undefined ? value : fallback;
     };
 
-    // ✅ BLANK RECEIPT: Get blank field with handwriting lines - Remove double border
+    const isBlankType = receiptType === 'blank' || receiptType === 'blank10_12';
+
     const getBlankField = (value: any, fallback: string = '') => {
-      if (receiptType === 'blank') {
+      if (isBlankType) {
         return '<span style="min-width: 100px; display: inline-block; height: 18px; margin: 0 2px;">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>';
       }
       return value !== null && value !== undefined ? value : fallback;
@@ -53,7 +54,7 @@ export class ReceiptGenerator {
 
     // ✅ CLOSURE DATA: Use provided closure data for amounts in नमुना नंबर 11
     const getClosureAmount = (field: string) => {
-      if (receiptType === 'blank') return '';
+      if (isBlankType) return '';
       if (receiptType === 'closure' && closureData) {
         return closureData[field] ? `₹${ReceiptGenerator.cleanDisplayAmount(closureData[field])}` : '';
       }
@@ -62,7 +63,7 @@ export class ReceiptGenerator {
 
     // ✅ SPECIAL: Total amount with words for closure receipt only
     const getClosureTotalWithWords = () => {
-      if (receiptType === 'blank') return '';
+      if (isBlankType) return '';
       if (receiptType === 'closure' && closureData && closureData.totalAmount) {
         const amount = parseFloat(closureData.totalAmount);
         return formatCurrencyWithWordsMr(amount);
@@ -531,7 +532,7 @@ export class ReceiptGenerator {
 <body>
 
     <div class="receipt-container">
-        ${(receiptType === 'disbursement' || receiptType === 'combined' || receiptType === 'combined10_12' || receiptType === 'blank') ? `
+        ${(receiptType === 'disbursement' || receiptType === 'combined' || receiptType === 'combined10_12' || receiptType === 'blank' || receiptType === 'blank10_12') ? `
         <!-- Loan Statement Receipt (Top) - नमुना क्रमांक १० -->
         <div class="loan-receipt">
             <div class="receipt-header">
@@ -569,7 +570,7 @@ export class ReceiptGenerator {
             </div>
 
             <!-- Collateral Details Section - Always show for blank receipts -->
-            ${receiptType === 'blank' ? `
+            ${isBlankType ? `
             <div style="margin: 6px 0 4px 0; border: 1px solid #333; padding: 6px; min-height: 65px; box-sizing: border-box; overflow: hidden; position: relative;">
                 <div style="text-align: center; font-weight: bold; margin-bottom: 5px; font-size: 11px;">तारण तपशील</div>
                 
@@ -617,7 +618,7 @@ export class ReceiptGenerator {
         </div>
         ` : ''}
 
-        ${(receiptType === 'combined' || receiptType === 'combined10_12' || receiptType === 'blank') ? `
+        ${(receiptType === 'combined' || receiptType === 'combined10_12' || receiptType === 'blank' || receiptType === 'blank10_12') ? `
         <!-- Cutting Line -->
         <div class="cutting-line">
             <span class="cutting-symbol">✂</span>
@@ -697,7 +698,7 @@ export class ReceiptGenerator {
         </div>
         ` : ''}
 
-        ${(receiptType === 'form12' || receiptType === 'combined10_12') ? `
+        ${(receiptType === 'form12' || receiptType === 'combined10_12' || receiptType === 'blank10_12') ? `
         <!-- Form 12 Receipt - नमुना क्रमांक १२ -->
         <div class="form12-receipt">
             <div class="receipt-header">
@@ -721,18 +722,23 @@ export class ReceiptGenerator {
             <div class="field-row" style="margin: 6px 0;">
                 <span class="field-label" style="font-size: 11px;">३. जात:</span>
                 <div class="field-value" style="flex: 0.35; padding-bottom: 7px;">&nbsp;</div>
-                <span class="field-label" style="margin-left: 10px; font-size: 11px;">(मागासवर्गीय ${(loan as any).isBackwardClass ? 'आहे' : 'नाही'})</span>
+                <span class="field-label" style="margin-left: 10px; font-size: 11px;">(मागासवर्गीय ${isBlankType ? 'आहे / नाही' : ((loan as any).isBackwardClass ? 'आहे' : 'नाही')})</span>
                 <span class="field-label" style="margin-left: 14px; font-size: 11px;">४. कृषी / अकृषिक:</span>
-                <div class="field-value" style="flex: 0.25; text-align: center; padding-bottom: 7px;">${(loan as any).isFarmer ? 'कृषी' : 'अकृषिक'}</div>
+                <div class="field-value" style="flex: 0.25; text-align: center; padding-bottom: 7px;">${isBlankType ? '&nbsp;' : ((loan as any).isFarmer ? 'कृषी' : 'अकृषिक')}</div>
             </div>
 
             <div style="margin: 7px 0 5px 0;">
                 <span style="font-weight: 600; font-size: 11px; line-height: 1.6;">५. तारणाचा पूर्ण तपशील:</span>
                 <div style="border: 1px solid #333; padding: 6px 6px; min-height: 38px; margin-top: 3px;">
+                    ${isBlankType ? `
+                    <div style="height: 14px; border-bottom: 1px solid #ccc; margin-bottom: 3px;"></div>
+                    <div style="height: 14px; border-bottom: 1px solid #ccc;"></div>
+                    ` : `
                     <div style="font-size: 10px; line-height: 1.5; padding: 2px;">
                         ${loan.collateralDetails || ''}
-                        ${(loan as any).weight ? ` | वजन: ${(loan as any).weight} ग्राम` : ''}
+                        ${(loan as any).weight ? ' | वजन: ' + (loan as any).weight + ' ग्राम' : ''}
                     </div>
+                    `}
                 </div>
             </div>
 
@@ -796,7 +802,7 @@ export class ReceiptGenerator {
   static openReceiptWindow(
     loan: Loan, 
     company: { name?: string; licenseNumber?: string } | null,
-    receiptType: 'combined' | 'disbursement' | 'closure' | 'blank' | 'form12' | 'combined10_12' = 'combined',
+    receiptType: 'combined' | 'disbursement' | 'closure' | 'blank' | 'form12' | 'combined10_12' | 'blank10_12' = 'combined',
     closureData?: any
   ) {
     try {

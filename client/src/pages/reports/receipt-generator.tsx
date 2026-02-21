@@ -17,7 +17,7 @@ export default function ReceiptGeneratorPage() {
   const isMobile = useIsMobile();
   const [selectedLoanId, setSelectedLoanId] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState("");
-  const [receiptType, setReceiptType] = useState<'combined' | 'disbursement' | 'closure' | 'blank' | 'form12' | 'combined10_12'>('combined');
+  const [receiptType, setReceiptType] = useState<'combined' | 'disbursement' | 'closure' | 'blank' | 'form12' | 'combined10_12' | 'blank10_12'>('combined');
 
   // Fetch loans data first
   const { data: loans = [] } = useQuery({
@@ -40,7 +40,7 @@ export default function ReceiptGeneratorPage() {
   React.useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const loanId = urlParams.get('loanId');
-    const urlType = urlParams.get('type') as 'combined' | 'disbursement' | 'closure' | 'blank' | 'form12' | 'combined10_12' || 'combined';
+    const urlType = urlParams.get('type') as 'combined' | 'disbursement' | 'closure' | 'blank' | 'form12' | 'combined10_12' | 'blank10_12' || 'combined';
     const autoGenerate = urlParams.get('autoGenerate') === 'true';
     
     if (loanId && (loans as any[]).length > 0) {
@@ -640,9 +640,9 @@ export default function ReceiptGeneratorPage() {
                     <Button 
                       onClick={async () => {
                         // ✅ BLANK RECEIPT: No need for selected loan
-                        if (receiptType === 'blank' || selectedLoan) {
+                        if (receiptType === 'blank' || receiptType === 'blank10_12' || selectedLoan) {
                           try {
-                            console.log("📄 Generate button clicked for:", receiptType === 'blank' ? 'Blank Receipt' : selectedLoan.borrowerName, "Type:", receiptType);
+                            console.log("📄 Generate button clicked for:", (receiptType === 'blank' || receiptType === 'blank10_12') ? 'Blank Receipt' : selectedLoan.borrowerName, "Type:", receiptType);
                             console.log("📄 Company data:", company);
                             
                             // ✅ BLANK RECEIPT: Use dummy loan data for template structure  
@@ -744,7 +744,7 @@ export default function ReceiptGeneratorPage() {
                           }
                         }
                       }} 
-                      disabled={receiptType !== 'blank' && !selectedLoanId}
+                      disabled={receiptType !== 'blank' && receiptType !== 'blank10_12' && !selectedLoanId}
                       className="btn-professional btn-primary"
                     >
                       <FileText className="h-4 w-4 mr-2" />
@@ -838,6 +838,23 @@ export default function ReceiptGeneratorPage() {
                     <div className="flex items-center space-x-2">
                       <input
                         type="radio"
+                        id="blank10_12"
+                        name="receiptType"
+                        value="blank10_12"
+                        checked={receiptType === 'blank10_12'}
+                        onChange={(e) => setReceiptType(e.target.value as any)}
+                        className="h-4 w-4"
+                        data-testid="radio-blank10_12"
+                        autoComplete="off"
+                      />
+                      <Label htmlFor="blank10_12" className="text-sm font-medium cursor-pointer">
+                        मोकळी पावती (१०+१२) - हाताने लिहिण्यासाठी
+                      </Label>
+                    </div>
+
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="radio"
                         id="combined10_12"
                         name="receiptType"
                         value="combined10_12"
@@ -882,6 +899,7 @@ export default function ReceiptGeneratorPage() {
                       </div>
                     )}
                     {receiptType === 'blank' && "• नमुना १० + ११ मोकळ्या (बिना डेटा) popup window मध्ये उघडतील - हस्तलेखनासाठी"}
+                    {receiptType === 'blank10_12' && "• नमुना १० + १२ मोकळ्या (बिना डेटा) popup window मध्ये उघडतील - तारण पावतीसह हस्तलेखनासाठी"}
                     {receiptType === 'combined10_12' && "• नमुना १० + १२ (तारण पावती) एकत्र popup window मध्ये उघडतील"}
                     {receiptType === 'form12' && "• फक्त नमुना १२ तारण पावती popup window मध्ये उघडेल"}
                     <div className="mt-2 text-xs text-green-600 bg-green-50 p-2 rounded">
