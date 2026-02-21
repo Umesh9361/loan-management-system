@@ -107,7 +107,7 @@ export default function InformationRegister() {
         interestRate: rate,
         interestRateType: 'monthly',
         loanType: 'तारण',
-        accountNumber: `ACC-${1000 + Math.floor(Math.random() * 9000)}`,
+        accountNumber: `${i + 1}`,
         status: 'active',
         closureDate: null,
         principalPaid: null,
@@ -117,11 +117,15 @@ export default function InformationRegister() {
     });
 
     setDemoData(demoEntries);
+    setSelectedRows(new Set());
     setDateFilters({
       dateFrom: `${currentYear}-04-01`,
       dateTo: `${currentYear + 1}-03-31`,
     });
     toast({ title: "रँडम ५ नाव", description: "डेमो रिपोर्ट तयार झाला" });
+    setTimeout(() => {
+      printRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
   };
 
   const displayData = demoData || registerData;
