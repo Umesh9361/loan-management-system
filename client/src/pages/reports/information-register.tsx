@@ -251,15 +251,47 @@ export default function InformationRegister() {
       if (hasSelection && selectedPrintRef.current) selectedPrintRef.current.style.display = 'none';
 
       const imgData = canvas.toDataURL('image/png');
-      const imgHeight = (canvas.height * 297) / canvas.width;
-      
+      const pageWidth = 297;
+      const pageHeight = 210;
+      const topMargin = 25;
+      const bottomMargin = 10;
+      const sideMargin = 12;
+      const printableWidth = pageWidth - (sideMargin * 2);
+      const printableHeight = pageHeight - topMargin - bottomMargin;
+      const imgWidth = printableWidth;
+      const imgTotalHeight = (canvas.height * imgWidth) / canvas.width;
+
       const doc = new jsPDF({
         orientation: 'landscape',
         unit: 'mm',
         format: 'a4',
       });
 
-      doc.addImage(imgData, 'PNG', 0, 0, 297, imgHeight);
+      let remainingHeight = imgTotalHeight;
+      let srcY = 0;
+      let pageNum = 0;
+
+      while (remainingHeight > 0) {
+        if (pageNum > 0) doc.addPage();
+        const sliceHeight = Math.min(printableHeight, remainingHeight);
+        const srcHeightPx = (sliceHeight / imgTotalHeight) * canvas.height;
+
+        const sliceCanvas = document.createElement('canvas');
+        sliceCanvas.width = canvas.width;
+        sliceCanvas.height = Math.ceil(srcHeightPx);
+        const ctx = sliceCanvas.getContext('2d');
+        if (ctx) {
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, sliceCanvas.width, sliceCanvas.height);
+          ctx.drawImage(canvas, 0, srcY, canvas.width, srcHeightPx, 0, 0, canvas.width, srcHeightPx);
+        }
+        const sliceData = sliceCanvas.toDataURL('image/png');
+        doc.addImage(sliceData, 'PNG', sideMargin, topMargin, imgWidth, sliceHeight);
+
+        srcY += srcHeightPx;
+        remainingHeight -= sliceHeight;
+        pageNum++;
+      }
 
       const fileName = `माहिती_तक्ता_${DateUtils.formatDate(dateFilters.dateFrom)}_ते_${DateUtils.formatDate(dateFilters.dateTo)}.pdf`;
       doc.save(fileName);
@@ -505,8 +537,13 @@ export default function InformationRegister() {
         .register-table td { padding: 4px 5px; font-size: 11px; }
         .register-table th, .register-table td { border: 1.5px solid #000 !important; }
         .ir-address { font-size: 9px; }
-        .register-footer { margin-top: 20mm; font-size: 11px; }
+        .register-footer { margin-top: 20mm; font-size: 11px; page-break-inside: avoid; break-inside: avoid; }
         .register-table tbody tr:nth-child(even) { background: #f8fafc !important; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+        .register-table thead { display: table-header-group; }
+        .register-table tbody tr { page-break-inside: avoid; break-inside: avoid; }
+        .register-table { page-break-after: auto; }
+        .info-register-print { overflow: visible !important; height: auto !important; }
+        .ir-table-scroll { overflow: visible !important; max-height: none !important; height: auto !important; }
       }
     `}</style>
 
