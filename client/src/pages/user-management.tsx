@@ -1000,6 +1000,68 @@ function PermissionsList({ form, userRole = "user" }: { form: any; userRole?: st
             <h4 className="text-md font-semibold text-green-800">Master Permission Switch</h4>
             <p className="text-sm text-green-600">एकाच क्लिकमध्ये सगळी मुख्य permissions चालू करा (Reports आणि Delete वगळून)</p>
           </div>
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                form.setValue("canViewDashboard", true);
+                form.setValue("canAccessInterestCalculator", true);
+                form.setValue("canAccessCompanyRegistration", true);
+                form.setValue("canAccessGroupManagement", true);
+                form.setValue("canAccessLoanRegistration", true);
+                form.setValue("canAccessLoanClosure", true);
+                form.setValue("canManageBorrowers", true);
+                form.setValue("canAccessCashTransactions", true);
+                form.setValue("canAccessPartyManagement", true);
+                form.setValue("canAccessMobileCashbook", true);
+              }}
+              className="bg-green-600 text-white hover:bg-green-700"
+            >
+              🚀 सर्व मुख्य चालू
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                form.setValue("canViewDashboard", true);
+                form.setValue("canAccessInterestCalculator", true);
+                form.setValue("canAccessCompanyRegistration", false);
+                form.setValue("canAccessGroupManagement", false);
+                form.setValue("canAccessLoanRegistration", false);
+                form.setValue("canAccessLoanClosure", false);
+                form.setValue("canManageBorrowers", false);
+                form.setValue("canDeleteBorrowers", false);
+                form.setValue("canAccessCashTransactions", false);
+                form.setValue("canAccessPartyManagement", false);
+                form.setValue("canAccessMobileCashbook", false);
+                form.setValue("canViewReceiptGenerator", false);
+                form.setValue("canViewNoticeGenerator", false);
+                form.setValue("canViewCashBookReport", false);
+                form.setValue("canViewCapitalReport", false);
+                form.setValue("canViewLedgerReport", false);
+                form.setValue("canViewBorrowerListReport", false);
+                form.setValue("canViewOverdueReport", false);
+                form.setValue("canViewAccountSummaryReport", false);
+                form.setValue("canViewInformationRegister", false);
+              }}
+              className="bg-red-600 text-white hover:bg-red-700"
+            >
+              🔒 सगळं बंद करा
+            </Button>
+          </div>
+        </div>
+        <div className="mt-2 text-xs text-green-600">
+          <strong>चालू होणारे:</strong> कंपनी नोंदणी, गट व्यवस्थापन, कर्ज नोंदणी/बंद, कर्जदार व्यवस्थापन, रोकड व्यवहार, पार्टी व्यवस्थापन, मोबाईल कॅशबुक<br/>
+          <strong>Manual राहणारे:</strong> सर्व Reports permissions, Delete permissions (security साठी)
+        </div>
+      </div>
+      
+      {/* Permission Presets */}
+      <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+        <h4 className="text-md font-semibold text-blue-800 mb-2">Quick Presets - तयार सेटिंग्ज</h4>
+        <p className="text-sm text-blue-600 mb-3">एका क्लिकमध्ये योग्य permissions सेट करा</p>
+        <div className="flex flex-wrap gap-2">
           <Button
             type="button"
             variant="outline"
@@ -1014,21 +1076,111 @@ function PermissionsList({ form, userRole = "user" }: { form: any; userRole?: st
               form.setValue("canAccessCashTransactions", true);
               form.setValue("canAccessPartyManagement", true);
               form.setValue("canAccessMobileCashbook", true);
+              form.setValue("canViewReceiptGenerator", true);
+              form.setValue("canViewNoticeGenerator", true);
+              form.setValue("canViewCashBookReport", true);
+              form.setValue("canViewCapitalReport", true);
+              form.setValue("canViewLedgerReport", true);
+              form.setValue("canViewBorrowerListReport", true);
+              form.setValue("canViewOverdueReport", true);
+              form.setValue("canViewAccountSummaryReport", true);
+              form.setValue("canViewInformationRegister", true);
+              form.setValue("canDeleteBorrowers", false);
             }}
-            className="bg-green-600 text-white hover:bg-green-700"
+            className="bg-indigo-600 text-white hover:bg-indigo-700"
           >
-            🚀 Enable All Main Features
+            ⭐ सर्व चालू (Delete वगळून)
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => {
+              form.setValue("canViewDashboard", true);
+              form.setValue("canAccessInterestCalculator", true);
+              form.setValue("canAccessCompanyRegistration", false);
+              form.setValue("canAccessGroupManagement", false);
+              form.setValue("canAccessLoanRegistration", false);
+              form.setValue("canAccessLoanClosure", false);
+              form.setValue("canManageBorrowers", false);
+              form.setValue("canDeleteBorrowers", false);
+              form.setValue("canAccessCashTransactions", false);
+              form.setValue("canAccessPartyManagement", false);
+              form.setValue("canAccessMobileCashbook", false);
+              form.setValue("canViewReceiptGenerator", true);
+              form.setValue("canViewNoticeGenerator", true);
+              form.setValue("canViewCashBookReport", true);
+              form.setValue("canViewCapitalReport", true);
+              form.setValue("canViewLedgerReport", true);
+              form.setValue("canViewBorrowerListReport", true);
+              form.setValue("canViewOverdueReport", true);
+              form.setValue("canViewAccountSummaryReport", true);
+              form.setValue("canViewInformationRegister", true);
+            }}
+            className="bg-cyan-600 text-white hover:bg-cyan-700"
+          >
+            👁️ फक्त पहा (View Only)
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => {
+              form.setValue("canViewDashboard", true);
+              form.setValue("canAccessInterestCalculator", true);
+              form.setValue("canAccessCompanyRegistration", true);
+              form.setValue("canAccessGroupManagement", true);
+              form.setValue("canAccessLoanRegistration", true);
+              form.setValue("canAccessLoanClosure", true);
+              form.setValue("canManageBorrowers", true);
+              form.setValue("canDeleteBorrowers", false);
+              form.setValue("canAccessCashTransactions", true);
+              form.setValue("canAccessPartyManagement", true);
+              form.setValue("canAccessMobileCashbook", true);
+              form.setValue("canViewReceiptGenerator", false);
+              form.setValue("canViewNoticeGenerator", false);
+              form.setValue("canViewCashBookReport", false);
+              form.setValue("canViewCapitalReport", false);
+              form.setValue("canViewLedgerReport", false);
+              form.setValue("canViewBorrowerListReport", false);
+              form.setValue("canViewOverdueReport", false);
+              form.setValue("canViewAccountSummaryReport", false);
+              form.setValue("canViewInformationRegister", false);
+            }}
+            className="bg-amber-600 text-white hover:bg-amber-700"
+          >
+            ✏️ डेटा एंट्री (Reports वगळून)
           </Button>
         </div>
-        <div className="mt-2 text-xs text-green-600">
-          <strong>चालू होणारे:</strong> Company Registration, Group Management, Loan Registration/Closure, Borrower Management, Cash Transactions, Party Management, Mobile Cashbook<br/>
-          <strong>Manual राहणारे:</strong> सर्व Reports permissions, Delete permissions (security साठी)
+        <div className="mt-2 text-xs text-blue-600">
+          <strong>सर्व चालू:</strong> सगळं चालू (Delete वगळून) | <strong>फक्त पहा:</strong> Dashboard + सर्व Reports | <strong>डेटा एंट्री:</strong> Forms + Loan + Cash (Reports वगळून)
         </div>
       </div>
       
       {filteredCategories.map(([category, permissions]) => (
         <div key={category}>
-          <h3 className="text-lg font-semibold mb-3 text-indigo-600">{category}</h3>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-lg font-semibold text-indigo-600">{category}</h3>
+            {category.includes("अहवाल") && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  form.setValue("canViewReceiptGenerator", true);
+                  form.setValue("canViewNoticeGenerator", true);
+                  form.setValue("canViewCashBookReport", true);
+                  form.setValue("canViewCapitalReport", true);
+                  form.setValue("canViewLedgerReport", true);
+                  form.setValue("canViewBorrowerListReport", true);
+                  form.setValue("canViewOverdueReport", true);
+                  form.setValue("canViewAccountSummaryReport", true);
+                  form.setValue("canViewInformationRegister", true);
+                }}
+                className="bg-purple-600 text-white hover:bg-purple-700 text-xs"
+              >
+                📊 सर्व अहवाल चालू करा
+              </Button>
+            )}
+          </div>
           <div className="grid grid-cols-1 gap-3 bg-gray-50 p-4 rounded-lg">
             {permissions.map((permission) => {
               const { key, label } = permission;
