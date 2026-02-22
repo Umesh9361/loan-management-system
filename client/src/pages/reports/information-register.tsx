@@ -252,7 +252,7 @@ export default function InformationRegister() {
       cloned.querySelectorAll('.register-table td').forEach(el => {
         const td = el as HTMLElement;
         td.style.fontSize = '13px';
-        td.style.padding = '5px 6px';
+        td.style.padding = '5px 6px 8px 6px';
         td.style.border = '1px solid #666';
       });
       cloned.querySelectorAll('.ir-td-name strong').forEach(el => {
@@ -442,7 +442,7 @@ export default function InformationRegister() {
       .register-table th,
       .register-table td {
         border: 1px solid #999;
-        padding: 4px 5px;
+        padding: 5px 5px 7px 5px;
         vertical-align: middle;
         word-wrap: break-word;
         overflow-wrap: break-word;
@@ -451,7 +451,7 @@ export default function InformationRegister() {
         .register-table th,
         .register-table td {
           border: 1px solid #888;
-          padding: 6px 8px;
+          padding: 6px 8px 9px 8px;
         }
       }
 
@@ -604,9 +604,9 @@ export default function InformationRegister() {
           print-color-adjust: exact;
           font-weight: 700;
         }
-        .register-table td { padding: 5px 6px; font-size: 13px; }
+        .register-table td { padding: 5px 6px 8px 6px; font-size: 13px; }
         .ir-td-name strong { font-weight: 700; font-size: 13.5px; }
-        .ir-address { font-weight: 400; font-size: 10.5px; color: #444; }
+        .ir-address { font-weight: 400; font-size: 10.5px; color: #444; margin-bottom: 1px; }
         .register-table th, .register-table td { border: 1px solid #666 !important; }
         .register-footer { margin-top: 25mm; font-size: 13px; font-weight: 700; page-break-inside: avoid; break-inside: avoid; padding: 0 15px; }
         .footer-right { margin-right: 5%; }
