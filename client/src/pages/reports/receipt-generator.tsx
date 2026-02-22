@@ -867,7 +867,7 @@ export default function ReceiptGeneratorPage() {
                         autoComplete="off"
                       />
                       <Label htmlFor="combined10_12" className="text-sm font-medium cursor-pointer">
-                        नमुना नं. १० + १२ एकत्र
+                        संयुक्त पावती - दोन्ही पावत्या (१० + १२)
                       </Label>
                     </div>
 
