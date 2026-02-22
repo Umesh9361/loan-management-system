@@ -55,6 +55,8 @@ const permissionsSchema = z.object({
   canViewBorrowerListReport: z.boolean().default(false), // कर्जदार सूची
   canViewOverdueReport: z.boolean().default(false), // मुदत संपलेले अहवाल
   canViewAccountSummaryReport: z.boolean().default(false), // खाते सारांश अहवाल
+  canViewInformationRegister: z.boolean().default(false), // माहिती तक्ता
+  canViewNoticeGenerator: z.boolean().default(false), // नोटीस जनरेटर
 });
 
 type User = {
@@ -686,7 +688,8 @@ function CreateUserForm({
       canViewBorrowerListReport: false,
       canViewOverdueReport: false,
       canViewAccountSummaryReport: false,
-      canViewOtherReports: false
+      canViewInformationRegister: false,
+      canViewNoticeGenerator: false,
     }
   });
 
@@ -845,7 +848,8 @@ function PermissionsForm({
     canViewBorrowerListReport: false,
     canViewOverdueReport: false,
     canViewAccountSummaryReport: false,
-    canViewOtherReports: false,
+    canViewInformationRegister: false,
+    canViewNoticeGenerator: false,
   };
   const form = useForm<PermissionsData>({
     resolver: zodResolver(permissionsSchema),
@@ -953,12 +957,14 @@ function PermissionsList({ form, userRole = "user" }: { form: any; userRole?: st
     ],
     "अहवाल (Individual Reports)": [
       { key: "canViewReceiptGenerator", label: "पावती तयार करा" },
+      { key: "canViewNoticeGenerator", label: "नोटीस तयार करा" },
       { key: "canViewCashBookReport", label: "रोकड वही अहवाल" },
       { key: "canViewCapitalReport", label: "भांडवल अहवाल" },
       { key: "canViewLedgerReport", label: "खाते वही अहवाल" },
       { key: "canViewBorrowerListReport", label: "कर्जदार यादी अहवाल" },
       { key: "canViewOverdueReport", label: "थकबाकी अहवाल" },
       { key: "canViewAccountSummaryReport", label: "खाते सारांश अहवाल" },
+      { key: "canViewInformationRegister", label: "माहिती तक्ता अहवाल" },
     ]
   };
 
