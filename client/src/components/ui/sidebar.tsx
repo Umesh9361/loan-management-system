@@ -326,10 +326,21 @@ export function Sidebar({ className }: SidebarProps) {
             const Icon = item.icon;
             const isActive = location === item.href;
             
-            // For regular users, check permissions for annual statement link
-            if (user?.role === 'user' && item.href === '/receipt/annual-statement') {
-              // Only show annual statement if user has receipt generator permission
-              if (!perms.canViewReceiptGenerator) {
+            if (user?.role === 'user') {
+              const reportPermissionMap: Record<string, string> = {
+                '/reports/receipt-generator': 'canViewReceiptGenerator',
+                '/receipt/annual-statement': 'canViewReceiptGenerator',
+                '/reports/cashbook': 'canViewCashBookReport',
+                '/reports/capital-account': 'canViewCapitalReport',
+                '/reports/borrower-list': 'canViewBorrowerListReport',
+                '/reports/notice-generator': 'canViewNoticeGenerator',
+                '/reports/overdue': 'canViewOverdueReport',
+                '/reports/account-summary': 'canViewAccountSummaryReport',
+                '/reports/account-ledger': 'canViewLedgerReport',
+                '/reports/information-register': 'canViewInformationRegister',
+              };
+              const requiredPermission = reportPermissionMap[item.href];
+              if (requiredPermission && !(perms as any)[requiredPermission]) {
                 return null;
               }
             }
