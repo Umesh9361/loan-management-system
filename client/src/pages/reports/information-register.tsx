@@ -212,15 +212,64 @@ export default function InformationRegister() {
       const cloned = source.cloneNode(true) as HTMLElement;
       cloned.style.width = landscapeWidthPx + 'px';
       cloned.style.minWidth = landscapeWidthPx + 'px';
-      cloned.style.padding = '0px 25px 20px 25px';
+      cloned.style.padding = '0px 20px 20px 20px';
       cloned.style.background = 'white';
-      cloned.style.fontSize = '12px';
+      cloned.style.fontSize = '13px';
+
+      const header = cloned.querySelector('.register-header') as HTMLElement;
+      if (header) {
+        header.style.border = 'none';
+        header.style.borderRadius = '0';
+        header.style.padding = '6px 10px 8px';
+        header.style.marginBottom = '8px';
+      }
+      const title = cloned.querySelector('.register-title') as HTMLElement;
+      if (title) {
+        title.style.fontSize = '16px';
+        title.style.fontWeight = '800';
+        title.style.letterSpacing = '0.3px';
+      }
+      const proprietor = cloned.querySelector('.register-proprietor') as HTMLElement;
+      if (proprietor) {
+        proprietor.style.fontSize = '13px';
+        proprietor.style.marginTop = '5px';
+      }
 
       const table = cloned.querySelector('.register-table') as HTMLElement;
       if (table) {
         table.style.minWidth = '100%';
         table.style.width = '100%';
-        table.style.fontSize = '11px';
+        table.style.fontSize = '13px';
+      }
+
+      cloned.querySelectorAll('.register-table th').forEach(el => {
+        const th = el as HTMLElement;
+        th.style.fontSize = '11px';
+        th.style.padding = '5px 6px';
+        th.style.fontWeight = '700';
+        th.style.border = '1px solid #666';
+      });
+      cloned.querySelectorAll('.register-table td').forEach(el => {
+        const td = el as HTMLElement;
+        td.style.fontSize = '13px';
+        td.style.padding = '5px 6px';
+        td.style.border = '1px solid #666';
+      });
+      cloned.querySelectorAll('.ir-td-name strong').forEach(el => {
+        (el as HTMLElement).style.fontSize = '13.5px';
+      });
+      cloned.querySelectorAll('.ir-address').forEach(el => {
+        const addr = el as HTMLElement;
+        addr.style.fontSize = '10.5px';
+        addr.style.color = '#444';
+      });
+
+      const footer = cloned.querySelector('.register-footer') as HTMLElement;
+      if (footer) {
+        footer.style.marginTop = '30px';
+        footer.style.fontSize = '13px';
+        footer.style.fontWeight = '700';
+        footer.style.padding = '0 15px';
       }
 
       const scrollWrapper = cloned.querySelector('.ir-table-scroll') as HTMLElement;
@@ -239,7 +288,7 @@ export default function InformationRegister() {
       await new Promise(resolve => setTimeout(resolve, 300));
 
       const canvas = await html2canvas(wrapper, {
-        scale: 2,
+        scale: 3,
         useCORS: true,
         logging: false,
         backgroundColor: '#ffffff',
@@ -372,7 +421,7 @@ export default function InformationRegister() {
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
         border-radius: 6px;
-        border: 1.5px solid #333;
+        border: 1px solid #999;
       }
 
       .register-table {
@@ -392,7 +441,7 @@ export default function InformationRegister() {
 
       .register-table th,
       .register-table td {
-        border: 1px solid #555;
+        border: 1px solid #999;
         padding: 4px 5px;
         vertical-align: middle;
         word-wrap: break-word;
@@ -401,7 +450,7 @@ export default function InformationRegister() {
       @media (min-width: 1024px) {
         .register-table th,
         .register-table td {
-          border: 1.5px solid #444;
+          border: 1px solid #888;
           padding: 6px 8px;
         }
       }
@@ -523,7 +572,7 @@ export default function InformationRegister() {
       @media print {
         @page {
           size: A4 landscape;
-          margin: 20mm 12mm 10mm 12mm;
+          margin: 15mm 10mm 10mm 10mm;
         }
         body * { visibility: hidden; }
         .ir-selected-print[style*="display: block"],
@@ -544,22 +593,22 @@ export default function InformationRegister() {
         }
         .no-print, .ir-filter-section, .ir-col-check { display: none !important; }
         .ir-table-scroll { overflow: visible; border: none; border-radius: 0; }
-        .register-header { border: none; border-radius: 0; }
-        .register-title { font-size: 15px; }
-        .register-proprietor { font-size: 12px; }
-        .register-table { font-size: 11px; min-width: 100%; }
+        .register-header { border: none; border-radius: 0; padding: 6px 10px 8px; margin-bottom: 8px; }
+        .register-title { font-size: 16px; font-weight: 800; letter-spacing: 0.3px; }
+        .register-proprietor { font-size: 13px; margin-top: 5px; }
+        .register-table { font-size: 13px; min-width: 100%; }
         .register-table th {
-          font-size: 10px; padding: 4px 5px;
+          font-size: 11px; padding: 5px 6px;
           background: #eef2ff !important;
           -webkit-print-color-adjust: exact;
           print-color-adjust: exact;
+          font-weight: 700;
         }
-        .register-table td { padding: 4px 5px; font-size: 12px; }
-        .ir-td-name strong { font-weight: 700; font-size: 12.5px; }
-        .ir-address { font-weight: 400; }
-        .register-table th, .register-table td { border: 1.5px solid #000 !important; }
-        .ir-address { font-size: 9px; }
-        .register-footer { margin-top: 20mm; font-size: 12px; font-weight: 700; page-break-inside: avoid; break-inside: avoid; }
+        .register-table td { padding: 5px 6px; font-size: 13px; }
+        .ir-td-name strong { font-weight: 700; font-size: 13.5px; }
+        .ir-address { font-weight: 400; font-size: 10.5px; color: #444; }
+        .register-table th, .register-table td { border: 1px solid #666 !important; }
+        .register-footer { margin-top: 25mm; font-size: 13px; font-weight: 700; page-break-inside: avoid; break-inside: avoid; padding: 0 15px; }
         .footer-right { margin-right: 5%; }
         .register-table tbody tr:nth-child(even) { background: #f8fafc !important; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
         .register-table thead { display: table-header-group; }
