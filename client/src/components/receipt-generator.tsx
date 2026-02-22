@@ -635,7 +635,7 @@ export class ReceiptGenerator {
                 <span class="field-label">कर्जदाराचे नाव:</span>
                 <div class="field-value">${getBlankField(loan.borrowerName)}</div>
                 <span class="field-label" style="margin-left: 15px;">खाते क्रमांक:</span>
-                <div class="field-value short">${getBlankField(loan.accountNumber || loan.id)}</div>
+                <div class="field-value short">${showInterestRate ? getBlankField(loan.accountNumber || loan.id) : '<span style="display: inline-block; min-width: 60px; border-bottom: 1px solid #333;">&nbsp;</span>'}</div>
             </div>
 
             <div class="field-row">
@@ -737,7 +737,7 @@ export class ReceiptGenerator {
                 <span class="field-label">कर्जदाराचे नाव:</span>
                 <div class="field-value">${getBlankField(loan.borrowerName)}</div>
                 <span class="field-label" style="margin-left: 15px;">खाते क्रमांक:</span>
-                <div class="field-value short">${getBlankField(loan.accountNumber || loan.id)}</div>
+                <div class="field-value short">${showInterestRate ? getBlankField(loan.accountNumber || loan.id) : '<span style="display: inline-block; min-width: 60px; border-bottom: 1px solid #333;">&nbsp;</span>'}</div>
             </div>
 
             <div class="field-row">
