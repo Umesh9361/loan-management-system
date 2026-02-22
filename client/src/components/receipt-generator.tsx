@@ -635,7 +635,7 @@ export class ReceiptGenerator {
                 <span class="field-label">कर्जदाराचे नाव:</span>
                 <div class="field-value">${getBlankField(loan.borrowerName)}</div>
                 <span class="field-label" style="margin-left: 15px;">खाते क्रमांक:</span>
-                <div class="field-value short">${showInterestRate ? getBlankField(loan.accountNumber || loan.id) : '<span style="display: inline-block; min-width: 60px; border-bottom: 1px solid #333;">&nbsp;</span>'}</div>
+                <div class="field-value short">${showInterestRate ? getBlankField(loan.accountNumber || loan.id) : '<span style="display: inline-block; min-width: 60px;">&nbsp;</span>'}</div>
             </div>
 
             <div class="field-row">
@@ -648,7 +648,7 @@ export class ReceiptGenerator {
             <div style="font-size: 10px; margin: 2px 0; line-height: 1.3; display: flex; justify-content: space-between; flex-wrap: wrap;">
                 <span><b>कर्ज दिनांक:</b> ${getBlankField(formatDate(loan.loanDate))}</span>
                 <span>|</span>
-                <span><b>व्याजदर:</b> ${showInterestRate ? getBlankField(`${(loan as any).interestRateType === 'monthly' ? '12' : ReceiptGenerator.cleanDisplayAmount(loan.interestRate || 0)}% वार्षिक`) : '<span style="display: inline-block; min-width: 30px; border-bottom: 1px solid #333;">&nbsp;</span> वार्षिक'}</span>
+                <span><b>व्याजदर:</b> ${showInterestRate ? getBlankField(`${(loan as any).interestRateType === 'monthly' ? '12' : ReceiptGenerator.cleanDisplayAmount(loan.interestRate || 0)}% वार्षिक`) : '<span style="display: inline-block; min-width: 30px;">&nbsp;</span> वार्षिक'}</span>
                 <span>|</span>
                 <span><b>मुदत:</b> ${getBlankField(loan.maturityDate ? formatDate(loan.maturityDate) : '-')}</span>
                 <span>|</span>
@@ -737,7 +737,7 @@ export class ReceiptGenerator {
                 <span class="field-label">कर्जदाराचे नाव:</span>
                 <div class="field-value">${getBlankField(loan.borrowerName)}</div>
                 <span class="field-label" style="margin-left: 15px;">खाते क्रमांक:</span>
-                <div class="field-value short">${showInterestRate ? getBlankField(loan.accountNumber || loan.id) : '<span style="display: inline-block; min-width: 60px; border-bottom: 1px solid #333;">&nbsp;</span>'}</div>
+                <div class="field-value short">${showInterestRate ? getBlankField(loan.accountNumber || loan.id) : '<span style="display: inline-block; min-width: 60px;">&nbsp;</span>'}</div>
             </div>
 
             <div class="field-row">
