@@ -266,7 +266,7 @@ function AppContent() {
         
         {/* Reports - Permission controlled */}
         {perms.canViewReceiptGenerator && <Route path="/reports/receipt-generator" component={ReceiptGeneratorPage} />}
-        {perms.canViewReceiptGenerator && <Route path="/reports/notice-generator" component={NoticeGeneratorPage} />}
+        {perms.canViewNoticeGenerator && <Route path="/reports/notice-generator" component={NoticeGeneratorPage} />}
         {perms.canViewReceiptGenerator && <Route path="/reports/receipt">{() => { window.location.replace('/reports/receipt-generator'); return null; }}</Route>}
         {perms.canViewCashBookReport && <Route path="/reports/cashbook" component={CashBook} />}
         {perms.canViewCashBookReport && <Route path="/reports/working-cashbook" component={WorkingCashBook} />}
@@ -278,7 +278,7 @@ function AppContent() {
         {perms.canViewLedgerReport && <Route path="/reports/working-summary" component={WorkingSummary} />}
         {perms.canViewBorrowerListReport && <Route path="/reports/borrower-list" component={BorrowerListReports} />}
         {perms.canViewOverdueReport && <Route path="/reports/overdue" component={OverdueReport} />}
-        {perms.canViewCapitalReport && <Route path="/reports/information-register" component={InformationRegister} />}
+        {perms.canViewInformationRegister && <Route path="/reports/information-register" component={InformationRegister} />}
         
         {/* Receipt routes - Only if loan closure permitted */}
           {perms.canAccessLoanClosure && <Route path="/receipt/closure/:loanId" component={ClosureReceiptPage} />}
