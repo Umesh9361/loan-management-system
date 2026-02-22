@@ -396,8 +396,10 @@ export default function ReceiptGeneratorPage() {
 
     const screenWidth10 = window.innerWidth;
     const receiptNativeWidth10 = 560;
+    const isMultiReceipt = receiptType === 'combined10_12' || receiptType === 'blank10_12';
+    const receiptNativeHeight10 = isMultiReceipt ? 1200 : 794;
     const scaleFactor10 = Math.min((screenWidth10 - 16) / receiptNativeWidth10, 1);
-    const scaledHeight10 = 794 * scaleFactor10;
+    const scaledHeight10 = receiptNativeHeight10 * scaleFactor10;
 
     return (
       <div className="min-h-screen bg-gray-100">
@@ -447,7 +449,7 @@ export default function ReceiptGeneratorPage() {
         <div className="flex justify-center py-3 px-2">
           <div style={{ 
             width: receiptNativeWidth10 + 'px',
-            height: 794 + 'px',
+            height: receiptNativeHeight10 + 'px',
             transform: `scale(${scaleFactor10})`,
             transformOrigin: 'top center',
           }}>
@@ -457,7 +459,7 @@ export default function ReceiptGeneratorPage() {
             />
           </div>
         </div>
-        <div style={{ height: scaledHeight10 - 794 + 'px' }} />
+        <div style={{ height: scaledHeight10 - receiptNativeHeight10 + 'px' }} />
       </div>
     );
   }
