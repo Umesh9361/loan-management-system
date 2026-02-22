@@ -41,7 +41,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Link } from "wouter";
 import { AuthService } from "@/lib/auth";
 import { Badge } from "@/components/ui/badge";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell, Area, AreaChart, ReferenceLine, defs } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell, Area, AreaChart, ReferenceLine } from 'recharts';
 
 
 
@@ -499,7 +499,7 @@ export default function Dashboard() {
                         {(() => {
                           const summary = (monthlyProgress as any)?.summary || {};
                           const monthsInPeriod = progressPeriod === '3y' ? 36 : progressPeriod === '1y' ? 12 : 3;
-                          const avgMonthlyDisb = monthsInPeriod > 0 ? Math.round(summary.totalDisbursements / monthsInPeriod * 10) / 10 : 0;
+                          const avgMonthlyDisb = monthsInPeriod > 0 ? Math.round((summary.totalDisbursements || 0) / monthsInPeriod * 10) / 10 : 0;
                           const netGrowth = summary.netGrowth || 0;
                           const successRate = summary.successRate || 0;
                           return (
