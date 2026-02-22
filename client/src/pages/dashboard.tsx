@@ -306,9 +306,11 @@ export default function Dashboard() {
                 <div className="flex bg-gray-100 rounded-lg p-0.5 gap-0.5">
                   {[
                     { key: '1m' as const, label: 'महिना' },
-                    { key: '3m' as const, label: '3 म.' },
-                    { key: '1y' as const, label: '1 वर्ष' },
-                    { key: '3y' as const, label: '3 वर्षे' },
+                    ...(isAdmin ? [
+                      { key: '3m' as const, label: '3 म.' },
+                      { key: '1y' as const, label: '1 वर्ष' },
+                      { key: '3y' as const, label: '3 वर्षे' },
+                    ] : []),
                   ].map((opt) => (
                     <button
                       key={opt.key}
@@ -370,8 +372,10 @@ export default function Dashboard() {
                 <div className="flex bg-gray-100 rounded-lg p-1 gap-1">
                   {[
                     { key: '3m' as const, label: '3 महिने' },
-                    { key: '1y' as const, label: '1 वर्ष' },
-                    { key: '3y' as const, label: '3 वर्षे' },
+                    ...(isAdmin ? [
+                      { key: '1y' as const, label: '1 वर्ष' },
+                      { key: '3y' as const, label: '3 वर्षे' },
+                    ] : []),
                   ].map((opt) => (
                     <button
                       key={opt.key}
@@ -597,8 +601,10 @@ export default function Dashboard() {
             <div className="flex bg-gray-100 rounded-lg p-1 gap-1">
               {[
                 { key: '3m' as const, label: '3 महिने' },
-                { key: '1y' as const, label: '1 वर्ष' },
-                { key: '3y' as const, label: '3 वर्षे' },
+                ...(isAdmin ? [
+                  { key: '1y' as const, label: '1 वर्ष' },
+                  { key: '3y' as const, label: '3 वर्षे' },
+                ] : []),
               ].map((opt) => (
                 <button
                   key={opt.key}
