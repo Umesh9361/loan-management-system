@@ -394,12 +394,38 @@ export default function ReceiptGeneratorPage() {
       );
     }
 
-    const screenWidth10 = window.innerWidth;
-    const receiptNativeWidth10 = 560;
-    const isMultiReceipt = receiptType === 'combined10_12' || receiptType === 'blank10_12';
-    const receiptNativeHeight10 = isMultiReceipt ? 1200 : 794;
-    const scaleFactor10 = Math.min((screenWidth10 - 16) / receiptNativeWidth10, 1);
-    const scaledHeight10 = receiptNativeHeight10 * scaleFactor10;
+    const mobileReceiptHTML = inlineReceiptHTML ? inlineReceiptHTML.replace(
+      '</style>',
+      `
+      html, body {
+        margin: 0 !important;
+        padding: 0 !important;
+        background: white !important;
+      }
+      .receipt-container {
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 auto !important;
+        padding: 12px !important;
+        box-sizing: border-box !important;
+        box-shadow: none !important;
+        border: none !important;
+        font-size: 13px !important;
+      }
+      .receipt-container .field-label {
+        font-size: 12px !important;
+      }
+      .receipt-container .field-value {
+        font-size: 12px !important;
+      }
+      .receipt-container .receipt-header {
+        font-size: 13px !important;
+      }
+      .receipt-container .form-number {
+        font-size: 13px !important;
+      }
+      </style>`
+    ).replace(/<\/?html[^>]*>|<\/?head[^>]*>|<\/?body[^>]*>|<!DOCTYPE[^>]*>/gi, '') : '';
 
     return (
       <div className="min-h-screen bg-gray-100">
@@ -446,20 +472,11 @@ export default function ReceiptGeneratorPage() {
           </div>
         </div>
         
-        <div className="flex justify-center py-3 px-2">
-          <div style={{ 
-            width: receiptNativeWidth10 + 'px',
-            height: receiptNativeHeight10 + 'px',
-            transform: `scale(${scaleFactor10})`,
-            transformOrigin: 'top center',
-          }}>
-            <div 
-              id="receipt-content"
-              dangerouslySetInnerHTML={{ __html: inlineReceiptHTML }}
-            />
-          </div>
-        </div>
-        <div style={{ height: scaledHeight10 - receiptNativeHeight10 + 'px' }} />
+        <div 
+          className="bg-white overflow-y-auto"
+          id="receipt-content"
+          dangerouslySetInnerHTML={{ __html: mobileReceiptHTML }}
+        />
       </div>
     );
   }
