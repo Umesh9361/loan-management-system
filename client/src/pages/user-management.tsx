@@ -16,17 +16,21 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Plus, Edit, Trash2, Key, UserCheck, UserX, Shield, Activity, Home } from "lucide-react";
+import { Plus, Edit, Trash2, Key, UserCheck, UserX, Shield, Activity, Home, Eye, EyeOff } from "lucide-react";
 import { Link } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { useSafeNavigation } from "@/hooks/use-safe-navigation";
 
 const userSchema = z.object({
   username: z.string().min(1, "Username आवश्यक आहे"),
-  password: z.string().min(1, "Password आवश्यक आहे"),
+  password: z.string().min(6, "पासवर्ड किमान 6 अक्षरांचा असावा"),
+  confirmPassword: z.string().min(1, "पासवर्ड पुष्टी आवश्यक आहे"),
   fullName: z.string().min(1, "Full name आवश्यक आहे"),
   email: z.string().email("Invalid email address").optional().or(z.literal("")),
   role: z.enum(["user", "admin"], { required_error: "Role is required" })
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "पासवर्ड जुळत नाही",
+  path: ["confirmPassword"],
 });
 
 const permissionsSchema = z.object({
@@ -659,9 +663,14 @@ function CreateUserForm({
   const userForm = useForm<UserFormData>({
     resolver: zodResolver(userSchema),
     defaultValues: {
-      role: "user"
+      role: "user",
+      password: "",
+      confirmPassword: "",
     }
   });
+
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   // Watch role changes to update permission defaults
   const selectedRole = userForm.watch("role");
@@ -698,9 +707,9 @@ function CreateUserForm({
     if (!userValid) {
       return;
     }
-    const userData = userForm.getValues();
+    const { confirmPassword: _, ...userData } = userForm.getValues();
     const permissions = permissionsForm.getValues();
-    onSubmit({ userData, permissions });
+    onSubmit({ userData: userData as UserFormData, permissions });
   };
 
   return (
@@ -733,9 +742,43 @@ function CreateUserForm({
                 name="password"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Password</FormLabel>
+                    <FormLabel>पासवर्ड</FormLabel>
                     <FormControl>
-                      <Input type="password" placeholder="Enter password" {...field} />
+                      <div className="relative">
+                        <Input type={showPassword ? "text" : "password"} placeholder="पासवर्ड टाका" {...field} className="pr-10" />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1"
+                          tabIndex={-1}
+                        >
+                          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </button>
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={userForm.control}
+                name="confirmPassword"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>पासवर्ड पुष्टी करा</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <Input type={showConfirmPassword ? "text" : "password"} placeholder="पासवर्ड पुन्हा टाका" {...field} className="pr-10" />
+                        <button
+                          type="button"
+                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1"
+                          tabIndex={-1}
+                        >
+                          {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </button>
+                      </div>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -881,15 +924,19 @@ function PasswordForm({
 }) {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPwd, setShowPwd] = useState(false);
+  const [showConfirmPwd, setShowConfirmPwd] = useState(false);
+  const [error, setError] = useState("");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (password !== confirmPassword) {
-      alert("Passwords don't match");
+    setError("");
+    if (password.length < 6) {
+      setError("पासवर्ड किमान 6 अक्षरांचा असावा");
       return;
     }
-    if (password.length < 6) {
-      alert("Password must be at least 6 characters");
+    if (password !== confirmPassword) {
+      setError("पासवर्ड जुळत नाही");
       return;
     }
     onSubmit(password);
@@ -898,32 +945,58 @@ function PasswordForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-4" autoComplete="off">
       <div>
-        <label className="text-sm font-medium">New Password</label>
-        <Input
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          placeholder="Enter new password"
-          minLength={6}
-          required
-        />
+        <label className="text-sm font-medium">नवीन पासवर्ड</label>
+        <div className="relative mt-1">
+          <Input
+            type={showPwd ? "text" : "password"}
+            value={password}
+            onChange={(e) => { setPassword(e.target.value); setError(""); }}
+            placeholder="नवीन पासवर्ड टाका"
+            minLength={6}
+            required
+            className="pr-10"
+          />
+          <button
+            type="button"
+            onClick={() => setShowPwd(!showPwd)}
+            className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1"
+            tabIndex={-1}
+          >
+            {showPwd ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+          </button>
+        </div>
       </div>
 
       <div>
-        <label className="text-sm font-medium">Confirm Password</label>
-        <Input
-          type="password"
-          value={confirmPassword}
-          onChange={(e) => setConfirmPassword(e.target.value)}
-          placeholder="Confirm new password"
-          minLength={6}
-          required
-        />
+        <label className="text-sm font-medium">पासवर्ड पुष्टी करा</label>
+        <div className="relative mt-1">
+          <Input
+            type={showConfirmPwd ? "text" : "password"}
+            value={confirmPassword}
+            onChange={(e) => { setConfirmPassword(e.target.value); setError(""); }}
+            placeholder="पासवर्ड पुन्हा टाका"
+            minLength={6}
+            required
+            className="pr-10"
+          />
+          <button
+            type="button"
+            onClick={() => setShowConfirmPwd(!showConfirmPwd)}
+            className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1"
+            tabIndex={-1}
+          >
+            {showConfirmPwd ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+          </button>
+        </div>
       </div>
+
+      {error && (
+        <p className="text-sm text-red-500 font-medium">{error}</p>
+      )}
 
       <div className="flex justify-end space-x-2 pt-4 border-t">
         <Button type="submit" disabled={isLoading} className="min-w-[120px] w-full sm:w-auto">
-          {isLoading ? "Updating..." : "Update Password"}
+          {isLoading ? "अपडेट करत आहे..." : "पासवर्ड अपडेट करा"}
         </Button>
       </div>
     </form>
