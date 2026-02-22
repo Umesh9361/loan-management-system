@@ -5059,12 +5059,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         metadata: userActivityLogs.metadata,
         createdAt: userActivityLogs.createdAt,
         userName: users.username,
+        userRole: users.role,
       })
       .from(userActivityLogs)
       .leftJoin(users, eq(userActivityLogs.userId, users.id))
       .where(eq(userActivityLogs.tenantId, req.session.tenantId!))
       .orderBy(desc(userActivityLogs.createdAt))
-      .limit(500);
+      .limit(1000);
       
       res.json(allLogs);
     } catch (error) {
