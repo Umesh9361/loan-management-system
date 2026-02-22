@@ -197,139 +197,114 @@ export default function ReceiptGeneratorPage() {
     }
   }, [receiptType, canGenerateClosureReceipt]);
 
+  const createOffscreenRendered10 = async (): Promise<{ container: HTMLElement, cleanup: () => void } | null> => {
+    if (!inlineReceiptHTML) return null;
+
+    const a5WidthPx = 560;
+    const a5HeightPx = 794;
+
+    const wrapper = document.createElement('div');
+    wrapper.style.position = 'fixed';
+    wrapper.style.left = '-9999px';
+    wrapper.style.top = '0';
+    wrapper.style.width = a5WidthPx + 'px';
+    wrapper.style.height = a5HeightPx + 'px';
+    wrapper.style.zIndex = '-9999';
+    wrapper.style.pointerEvents = 'none';
+    wrapper.style.overflow = 'hidden';
+    wrapper.style.background = 'white';
+    wrapper.innerHTML = inlineReceiptHTML;
+    document.body.appendChild(wrapper);
+
+    const rc = wrapper.querySelector('.receipt-container') as HTMLElement;
+    if (rc) {
+      rc.classList.add('export-mode');
+      rc.style.width = a5WidthPx + 'px';
+      rc.style.minWidth = a5WidthPx + 'px';
+      rc.style.maxWidth = a5WidthPx + 'px';
+      rc.style.minHeight = a5HeightPx + 'px';
+      rc.style.boxShadow = 'none';
+      rc.style.background = 'white';
+    }
+
+    await new Promise(resolve => setTimeout(resolve, 200));
+
+    return {
+      container: rc || wrapper,
+      cleanup: () => document.body.removeChild(wrapper)
+    };
+  };
+
   const downloadReceiptAsPDF = async () => {
-    console.log("📥 Generating high-quality PDF for download...");
     try {
-      const receiptDiv = document.getElementById('receipt-content');
-      if (!receiptDiv) {
-        alert("पावती सापडली नाही");
-        return;
-      }
-      
-      // Add export-mode class to inner receipt-container for fixed A5 dimensions with equal receipt heights
-      const receiptContainer = receiptDiv.querySelector('.receipt-container') as HTMLElement;
-      if (!receiptContainer) {
-        alert("पावती container सापडले नाही");
-        return;
-      }
-      
-      receiptContainer.classList.add('export-mode');
-      
-      // Wait for layout to recalculate
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
+      const result = await createOffscreenRendered10();
+      if (!result) { alert("पावती सापडली नाही"); return; }
+      const { container, cleanup } = result;
+
       const { default: html2canvas } = await import('html2canvas');
-      
+
       const a5WidthPx = 560;
       const a5HeightPx = 794;
-      const origWidth = receiptContainer.style.width;
-      const origMinWidth = receiptContainer.style.minWidth;
-      const origMaxWidth = receiptContainer.style.maxWidth;
-      const origMinHeight = receiptContainer.style.minHeight;
-      receiptContainer.style.width = a5WidthPx + 'px';
-      receiptContainer.style.minWidth = a5WidthPx + 'px';
-      receiptContainer.style.maxWidth = a5WidthPx + 'px';
-      receiptContainer.style.minHeight = a5HeightPx + 'px';
 
-      const canvas = await html2canvas(receiptContainer, {
+      const canvas = await html2canvas(container, {
         scale: 4,
         useCORS: true,
         logging: false,
         backgroundColor: '#ffffff',
         imageTimeout: 0,
-        removeContainer: true,
         width: a5WidthPx,
         height: a5HeightPx,
         windowWidth: a5WidthPx,
         windowHeight: a5HeightPx,
       });
-      
-      receiptContainer.classList.remove('export-mode');
-      receiptContainer.style.width = origWidth;
-      receiptContainer.style.minWidth = origMinWidth;
-      receiptContainer.style.maxWidth = origMaxWidth;
-      receiptContainer.style.minHeight = origMinHeight;
-      
+
+      cleanup();
+
       const imgData = canvas.toDataURL('image/png');
-      
       const doc = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
         format: 'a5',
         compress: false
       });
-      
-      const a5Width = 148;
-      const a5Height = 210;
-      
-      doc.addImage(imgData, 'PNG', 0, 0, a5Width, a5Height);
-      
+      doc.addImage(imgData, 'PNG', 0, 0, 148, 210);
+
       const selectedLoan = (loans as any[]).find((l: any) => l.id === selectedLoanId);
       const fileName = selectedLoan 
         ? `पावती_${selectedLoan.borrowerName}.pdf`
         : `पावती.pdf`;
-      
       doc.save(fileName);
-      console.log("✅ High-quality PDF downloaded successfully:", fileName);
     } catch (error) {
-      console.error("🚨 PDF generation error:", error);
+      console.error("PDF generation error:", error);
       alert("PDF तयार करण्यात समस्या आली. कृपया पुन्हा प्रयत्न करा.");
     }
   };
 
   const downloadReceiptAsImage = async () => {
-    console.log("📥 Generating A5 image for direct download...");
     try {
-      const receiptDiv = document.getElementById('receipt-content');
-      if (!receiptDiv) {
-        alert("पावती सापडली नाही");
-        return;
-      }
-      
-      // Add export-mode class to inner receipt-container for fixed A5 dimensions with equal receipt heights
-      const receiptContainer = receiptDiv.querySelector('.receipt-container') as HTMLElement;
-      if (!receiptContainer) {
-        alert("पावती container सापडले नाही");
-        return;
-      }
-      
-      receiptContainer.classList.add('export-mode');
-      
-      // Wait for layout to recalculate
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
+      const result = await createOffscreenRendered10();
+      if (!result) { alert("पावती सापडली नाही"); return; }
+      const { container, cleanup } = result;
+
       const { default: html2canvas } = await import('html2canvas');
-      
+
       const a5WidthPx = 560;
       const a5HeightPx = 794;
-      const origWidth = receiptContainer.style.width;
-      const origMinWidth = receiptContainer.style.minWidth;
-      const origMaxWidth = receiptContainer.style.maxWidth;
-      const origMinHeight = receiptContainer.style.minHeight;
-      receiptContainer.style.width = a5WidthPx + 'px';
-      receiptContainer.style.minWidth = a5WidthPx + 'px';
-      receiptContainer.style.maxWidth = a5WidthPx + 'px';
-      receiptContainer.style.minHeight = a5HeightPx + 'px';
 
-      const canvas = await html2canvas(receiptContainer, {
+      const canvas = await html2canvas(container, {
         scale: 4,
         useCORS: true,
         logging: false,
         backgroundColor: '#ffffff',
         imageTimeout: 0,
-        removeContainer: true,
         width: a5WidthPx,
         height: a5HeightPx,
         windowWidth: a5WidthPx,
         windowHeight: a5HeightPx,
       });
-      
-      receiptContainer.classList.remove('export-mode');
-      receiptContainer.style.width = origWidth;
-      receiptContainer.style.minWidth = origMinWidth;
-      receiptContainer.style.maxWidth = origMaxWidth;
-      receiptContainer.style.minHeight = origMinHeight;
-      
+
+      cleanup();
+
       const a5ImgWidth = 874;
       const a5ImgHeight = 1240;
       const resizedCanvas = document.createElement('canvas');
@@ -343,23 +318,21 @@ export default function ReceiptGeneratorPage() {
         ctx.fillRect(0, 0, a5ImgWidth, a5ImgHeight);
         ctx.drawImage(canvas, 0, 0, a5ImgWidth, a5ImgHeight);
       }
-      
+
       const imageUrl = resizedCanvas.toDataURL('image/png');
       const link = document.createElement('a');
       link.href = imageUrl;
-      
+
       const selectedLoan = (loans as any[]).find((l: any) => l.id === selectedLoanId);
       link.download = selectedLoan 
         ? `पावती_${selectedLoan.borrowerName}.png`
         : `पावती.png`;
-      
+
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      
-      console.log("✅ A5 Image downloaded successfully");
     } catch (error) {
-      console.error("🚨 Image generation error:", error);
+      console.error("Image generation error:", error);
       alert("इमेज तयार करण्यात समस्या आली. कृपया पुन्हा प्रयत्न करा.");
     }
   };
@@ -421,9 +394,13 @@ export default function ReceiptGeneratorPage() {
       );
     }
 
+    const screenWidth10 = window.innerWidth;
+    const receiptNativeWidth10 = 560;
+    const scaleFactor10 = Math.min((screenWidth10 - 16) / receiptNativeWidth10, 1);
+    const scaledHeight10 = 794 * scaleFactor10;
+
     return (
-      <div className="min-h-screen bg-white">
-        {/* Sticky Header with Share/Download/Close buttons - hidden when printing */}
+      <div className="min-h-screen bg-gray-100">
         <div className="sticky top-0 z-50 bg-green-50 border-b px-3 py-3 print:hidden">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2 text-green-700 font-semibold">
@@ -467,17 +444,20 @@ export default function ReceiptGeneratorPage() {
           </div>
         </div>
         
-        {/* Receipt Content - rendered directly with id for image capture */}
-        <div 
-          id="receipt-content"
-          className="p-2 bg-white overflow-x-auto"
-          style={{ 
-            maxWidth: '100%',
-            fontSize: '11px',
-            lineHeight: '1.4'
-          }}
-          dangerouslySetInnerHTML={{ __html: inlineReceiptHTML }}
-        />
+        <div className="flex justify-center py-3 px-2">
+          <div style={{ 
+            width: receiptNativeWidth10 + 'px',
+            height: 794 + 'px',
+            transform: `scale(${scaleFactor10})`,
+            transformOrigin: 'top center',
+          }}>
+            <div 
+              id="receipt-content"
+              dangerouslySetInnerHTML={{ __html: inlineReceiptHTML }}
+            />
+          </div>
+        </div>
+        <div style={{ height: scaledHeight10 - 794 + 'px' }} />
       </div>
     );
   }
@@ -917,7 +897,7 @@ export default function ReceiptGeneratorPage() {
                           autoComplete="off"
                         />
                         <Label htmlFor="showInterestRate" className="text-sm font-medium cursor-pointer">
-                          व्याजदर दाखवा
+                          व्याजदर व खाते क्रमांक दाखवा
                         </Label>
                       </div>
                     </div>
