@@ -901,4 +901,76 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   .print\\:hidden {
     display: none !important;
   }
+
+  .bs-print-area,
+  .bs-print-area *,
+  .pl-print-area,
+  .pl-print-area * {
+    visibility: visible !important;
+  }
+
+  .bs-print-area,
+  .pl-print-area {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  @page {
+    size: A4;
+    margin: 15mm 12mm 15mm 12mm;
+  }
+
+  .bs-print-header,
+  .pl-print-header {
+    display: block !important;
+  }
+
+  .bs-table,
+  .pl-statement-table {
+    border-collapse: collapse !important;
+    width: 100% !important;
+    color: black !important;
+    background: white !important;
+  }
+
+  .bs-table th,
+  .bs-table td {
+    border: 1px solid #333 !important;
+    padding: 4px 8px !important;
+    font-size: 10pt !important;
+    color: black !important;
+    background: white !important;
+  }
+
+  .bs-table thead tr {
+    border-bottom: 2px solid black !important;
+  }
+
+  .pl-statement-table th,
+  .pl-statement-table td {
+    border-bottom: 1px solid #ccc !important;
+    padding: 5px 10px !important;
+    font-size: 10pt !important;
+    color: black !important;
+    background: white !important;
+  }
+
+  .pl-statement-table thead tr th {
+    border-bottom: 2px solid black !important;
+    font-weight: bold !important;
+  }
+
+  .bs-print-area [class*="shadow"],
+  .pl-print-area [class*="shadow"] {
+    box-shadow: none !important;
+  }
+
+  .bs-print-area [class*="rounded"],
+  .pl-print-area [class*="rounded"] {
+    border-radius: 0 !important;
+  }
 }

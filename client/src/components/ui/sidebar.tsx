@@ -83,6 +83,16 @@ const navigation = [
     href: "/calculator",
     icon: Calculator,
   },
+  {
+    name: "ताळेबंद",
+    href: "/reports/balance-sheet",
+    icon: Scale,
+  },
+  {
+    name: "नफा-तोटा पत्रक",
+    href: "/reports/profit-loss",
+    icon: TrendingUp,
+  },
 ];
 
 const adminNavigation = [
