@@ -31,7 +31,8 @@ import {
   Calendar,
   Cloud,
   ClipboardList,
-  AlertTriangle
+  AlertTriangle,
+  Scale
 } from "lucide-react";
 
 const navigation = [
@@ -145,6 +146,18 @@ const reports = [
     href: "/reports/capital-account",
     icon: FileText,
     description: "नियम १९ - कर्ज वाटप अहवाल"
+  },
+  {
+    name: "ताळेबंद (Balance Sheet)",
+    href: "/reports/balance-sheet",
+    icon: Scale,
+    description: "मालमत्ता व दायित्वे - आर्थिक वर्षनिहाय"
+  },
+  {
+    name: "नफा-तोटा पत्रक (P&L)",
+    href: "/reports/profit-loss",
+    icon: TrendingUp,
+    description: "उत्पन्न व खर्च - निव्वळ नफा/तोटा"
   },
   {
     name: "कर्जदाराची यादी",
@@ -338,6 +351,8 @@ export function Sidebar({ className }: SidebarProps) {
                 '/reports/account-summary': 'canViewAccountSummaryReport',
                 '/reports/account-ledger': 'canViewLedgerReport',
                 '/reports/information-register': 'canViewInformationRegister',
+                '/reports/balance-sheet': 'canViewCapitalReport',
+                '/reports/profit-loss': 'canViewCapitalReport',
               };
               const requiredPermission = reportPermissionMap[item.href];
               if (requiredPermission && !(perms as any)[requiredPermission]) {

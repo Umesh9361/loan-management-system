@@ -118,6 +118,8 @@ export interface IStorage {
   getJournalEntries(tenantId: string, filters?: { dateFrom?: string; dateTo?: string; sourceType?: string }): Promise<(JournalEntry & { lines: JournalEntryLine[] })[]>;
   getPartyLedger(tenantId: string, partyId: string, dateFrom?: string, dateTo?: string): Promise<any[]>;
   getTrialBalance(tenantId: string, asOfDate?: string): Promise<any[]>;
+  getBalanceSheet(tenantId: string, asOfDate: string, fyStartDate: string): Promise<any>;
+  getProfitLoss(tenantId: string, dateFrom: string, dateTo: string): Promise<any>;
   getProfessionalCashBalance(tenantId: string): Promise<{
     currentBalance: number;
     openingBalance: number;
@@ -3070,6 +3072,327 @@ export class DatabaseStorage implements IStorage {
     .where(and(...conditions))
     .groupBy(journalEntryLines.accountType, journalEntryLines.accountName)
     .orderBy(journalEntryLines.accountType, journalEntryLines.accountName);
+  }
+
+  async getBalanceSheet(tenantId: string, asOfDate: string, fyStartDate: string): Promise<any> {
+    const profitLoss = await this.getProfitLoss(tenantId, fyStartDate, asOfDate);
+
+    const activeLoanRows = await db.select({
+      totalPrincipal: sum(loans.principalAmount),
+      loanCount: count(),
+    }).from(loans).where(and(eq(loans.tenantId, tenantId), eq(loans.status, 'active'), lte(loans.loanDate, asOfDate)));
+    const totalLoanPrincipal = Number(activeLoanRows[0]?.totalPrincipal || 0);
+    const activeLoanCount = Number(activeLoanRows[0]?.loanCount || 0);
+
+    const collectedOnActiveLoans = await db.select({
+      totalCollected: sum(transactions.amount),
+    }).from(transactions)
+      .innerJoin(loans, eq(transactions.loanId, loans.id))
+      .where(and(
+        eq(loans.tenantId, tenantId),
+        eq(loans.status, 'active'),
+        eq(transactions.type, 'payment'),
+        lte(transactions.transactionDate, asOfDate)
+      ));
+    const totalCollectedOnActive = Number(collectedOnActiveLoans[0]?.totalCollected || 0);
+    const loansAndAdvances = totalLoanPrincipal - totalCollectedOnActive;
+
+    const cashInRows = await db.select({
+      total: sum(cashTransactions.amount),
+    }).from(cashTransactions).where(and(
+      eq(cashTransactions.tenantId, tenantId),
+      eq(cashTransactions.transactionType, 'cash_in'),
+      lte(cashTransactions.transactionDate, asOfDate)
+    ));
+    const cashOutRows = await db.select({
+      total: sum(cashTransactions.amount),
+    }).from(cashTransactions).where(and(
+      eq(cashTransactions.tenantId, tenantId),
+      eq(cashTransactions.transactionType, 'cash_out'),
+      lte(cashTransactions.transactionDate, asOfDate)
+    ));
+    const cashBalance = Number(cashInRows[0]?.total || 0) - Number(cashOutRows[0]?.total || 0);
+
+    const allParties = await db.select({
+      id: parties.id,
+      name: parties.name,
+      accountType: parties.accountType,
+      openingBalance: parties.openingBalance,
+      openingBalanceType: parties.openingBalanceType,
+    }).from(parties).where(eq(parties.tenantId, tenantId));
+
+    const partyTransactions = await db.select({
+      partyId: cashTransactions.partyId,
+      transactionType: cashTransactions.transactionType,
+      totalAmount: sum(cashTransactions.amount),
+    }).from(cashTransactions).where(and(
+      eq(cashTransactions.tenantId, tenantId),
+      lte(cashTransactions.transactionDate, asOfDate),
+      sql`${cashTransactions.partyId} IS NOT NULL`
+    )).groupBy(cashTransactions.partyId, cashTransactions.transactionType);
+
+    const partyBalanceMap = new Map<string, { name: string; accountType: string; balance: number }>();
+    for (const p of allParties) {
+      const ob = Number(p.openingBalance || 0);
+      const obSign = p.openingBalanceType === 'debit' ? ob : -ob;
+      partyBalanceMap.set(p.id, { name: p.name, accountType: p.accountType, balance: obSign });
+    }
+    for (const pt of partyTransactions) {
+      if (!pt.partyId) continue;
+      const existing = partyBalanceMap.get(pt.partyId);
+      if (existing) {
+        const amt = Number(pt.totalAmount || 0);
+        if (pt.transactionType === 'cash_out') {
+          existing.balance += amt;
+        } else {
+          existing.balance -= amt;
+        }
+      }
+    }
+
+    const bankAccounts: { name: string; balance: number }[] = [];
+    const fixedAssets: { name: string; balance: number }[] = [];
+    const debtors: { name: string; balance: number }[] = [];
+    const creditors: { name: string; balance: number }[] = [];
+
+    for (const [, p] of partyBalanceMap) {
+      if (p.balance === 0) continue;
+      switch (p.accountType) {
+        case 'bank':
+          bankAccounts.push({ name: p.name, balance: p.balance });
+          break;
+        case 'asset':
+          fixedAssets.push({ name: p.name, balance: p.balance });
+          break;
+        case 'customer':
+          if (p.balance > 0) debtors.push({ name: p.name, balance: p.balance });
+          else creditors.push({ name: p.name, balance: Math.abs(p.balance) });
+          break;
+        case 'supplier':
+          if (p.balance > 0) debtors.push({ name: p.name, balance: p.balance });
+          else creditors.push({ name: p.name, balance: Math.abs(p.balance) });
+          break;
+        case 'income':
+          break;
+        case 'expense':
+          break;
+        case 'liability':
+          creditors.push({ name: p.name, balance: Math.abs(p.balance) });
+          break;
+        default:
+          if (p.balance > 0) debtors.push({ name: p.name, balance: p.balance });
+          else if (p.balance < 0) creditors.push({ name: p.name, balance: Math.abs(p.balance) });
+          break;
+      }
+    }
+
+    const capitalBeforeFY_In = await db.select({
+      total: sum(cashTransactions.amount),
+    }).from(cashTransactions).where(and(
+      eq(cashTransactions.tenantId, tenantId),
+      eq(cashTransactions.category, 'capital'),
+      eq(cashTransactions.transactionType, 'cash_in'),
+      sql`${cashTransactions.transactionDate} < ${fyStartDate}`
+    ));
+    const capitalBeforeFY_Out = await db.select({
+      total: sum(cashTransactions.amount),
+    }).from(cashTransactions).where(and(
+      eq(cashTransactions.tenantId, tenantId),
+      eq(cashTransactions.category, 'capital'),
+      eq(cashTransactions.transactionType, 'cash_out'),
+      sql`${cashTransactions.transactionDate} < ${fyStartDate}`
+    ));
+    const openingCapital = Number(capitalBeforeFY_In[0]?.total || 0) - Number(capitalBeforeFY_Out[0]?.total || 0);
+
+    const capitalInFY_In = await db.select({
+      total: sum(cashTransactions.amount),
+    }).from(cashTransactions).where(and(
+      eq(cashTransactions.tenantId, tenantId),
+      eq(cashTransactions.category, 'capital'),
+      eq(cashTransactions.transactionType, 'cash_in'),
+      gte(cashTransactions.transactionDate, fyStartDate),
+      lte(cashTransactions.transactionDate, asOfDate)
+    ));
+    const capitalInFY_Out = await db.select({
+      total: sum(cashTransactions.amount),
+    }).from(cashTransactions).where(and(
+      eq(cashTransactions.tenantId, tenantId),
+      eq(cashTransactions.category, 'capital'),
+      eq(cashTransactions.transactionType, 'cash_out'),
+      gte(cashTransactions.transactionDate, fyStartDate),
+      lte(cashTransactions.transactionDate, asOfDate)
+    ));
+    const capitalAdded = Number(capitalInFY_In[0]?.total || 0);
+    const capitalWithdrawn = Number(capitalInFY_Out[0]?.total || 0);
+    const netProfit = profitLoss.netProfit;
+    const closingCapital = openingCapital + capitalAdded - capitalWithdrawn + netProfit;
+
+    const totalBankBalance = bankAccounts.reduce((s, a) => s + a.balance, 0);
+    const totalFixedAssets = fixedAssets.reduce((s, a) => s + a.balance, 0);
+    const totalDebtors = debtors.reduce((s, a) => s + a.balance, 0);
+    const totalCreditors = creditors.reduce((s, a) => s + a.balance, 0);
+
+    const totalAssets = loansAndAdvances + cashBalance + totalBankBalance + totalFixedAssets + totalDebtors;
+    const totalLiabilities = closingCapital + totalCreditors;
+    const difference = totalAssets - totalLiabilities;
+
+    return {
+      asOfDate,
+      fyStartDate,
+      assets: {
+        loansAndAdvances: { total: loansAndAdvances, loanCount: activeLoanCount, principalTotal: totalLoanPrincipal, collected: totalCollectedOnActive },
+        cashBalance,
+        bankAccounts,
+        totalBankBalance,
+        fixedAssets,
+        totalFixedAssets,
+        debtors,
+        totalDebtors,
+        totalAssets,
+      },
+      liabilities: {
+        capitalAccount: {
+          openingCapital,
+          capitalAdded,
+          capitalWithdrawn,
+          netProfit,
+          closingCapital,
+        },
+        creditors,
+        totalCreditors,
+        totalLiabilities,
+      },
+      difference,
+      isTallied: Math.abs(difference) < 0.01,
+    };
+  }
+
+  async getProfitLoss(tenantId: string, dateFrom: string, dateTo: string): Promise<any> {
+    const interestFromClosures = await db.select({
+      totalInterest: sum(loanClosures.interestPaid),
+    }).from(loanClosures)
+      .innerJoin(loans, eq(loanClosures.loanId, loans.id))
+      .where(and(
+        eq(loans.tenantId, tenantId),
+        gte(loanClosures.closureDate, dateFrom),
+        lte(loanClosures.closureDate, dateTo)
+      ));
+    const interestIncome = Number(interestFromClosures[0]?.totalInterest || 0);
+
+    const allParties = await db.select({
+      id: parties.id,
+      name: parties.name,
+      accountType: parties.accountType,
+    }).from(parties).where(and(
+      eq(parties.tenantId, tenantId),
+      or(eq(parties.accountType, 'income'), eq(parties.accountType, 'expense'))
+    ));
+
+    const incomePartyIds = allParties.filter(p => p.accountType === 'income').map(p => p.id);
+    const expensePartyIds = allParties.filter(p => p.accountType === 'expense').map(p => p.id);
+
+    const incomeItems: { name: string; amount: number }[] = [];
+    const expenseItems: { name: string; amount: number }[] = [];
+
+    if (incomePartyIds.length > 0) {
+      const incomeTransactions = await db.select({
+        partyId: cashTransactions.partyId,
+        transactionType: cashTransactions.transactionType,
+        totalAmount: sum(cashTransactions.amount),
+      }).from(cashTransactions).where(and(
+        eq(cashTransactions.tenantId, tenantId),
+        gte(cashTransactions.transactionDate, dateFrom),
+        lte(cashTransactions.transactionDate, dateTo),
+        inArray(cashTransactions.partyId, incomePartyIds)
+      )).groupBy(cashTransactions.partyId, cashTransactions.transactionType);
+
+      const incomeMap = new Map<string, number>();
+      for (const t of incomeTransactions) {
+        if (!t.partyId) continue;
+        const current = incomeMap.get(t.partyId) || 0;
+        const amt = Number(t.totalAmount || 0);
+        incomeMap.set(t.partyId, current + (t.transactionType === 'cash_in' ? amt : -amt));
+      }
+      for (const [partyId, amount] of incomeMap) {
+        const party = allParties.find(p => p.id === partyId);
+        if (party && amount > 0) incomeItems.push({ name: party.name, amount });
+      }
+    }
+
+    if (expensePartyIds.length > 0) {
+      const expenseTransactions = await db.select({
+        partyId: cashTransactions.partyId,
+        transactionType: cashTransactions.transactionType,
+        totalAmount: sum(cashTransactions.amount),
+      }).from(cashTransactions).where(and(
+        eq(cashTransactions.tenantId, tenantId),
+        gte(cashTransactions.transactionDate, dateFrom),
+        lte(cashTransactions.transactionDate, dateTo),
+        inArray(cashTransactions.partyId, expensePartyIds)
+      )).groupBy(cashTransactions.partyId, cashTransactions.transactionType);
+
+      const expenseMap = new Map<string, number>();
+      for (const t of expenseTransactions) {
+        if (!t.partyId) continue;
+        const current = expenseMap.get(t.partyId) || 0;
+        const amt = Number(t.totalAmount || 0);
+        expenseMap.set(t.partyId, current + (t.transactionType === 'cash_out' ? amt : -amt));
+      }
+      for (const [partyId, amount] of expenseMap) {
+        const party = allParties.find(p => p.id === partyId);
+        if (party && amount > 0) expenseItems.push({ name: party.name, amount });
+      }
+    }
+
+    const generalExpenses = await db.select({
+      totalAmount: sum(cashTransactions.amount),
+    }).from(cashTransactions).where(and(
+      eq(cashTransactions.tenantId, tenantId),
+      eq(cashTransactions.category, 'expense'),
+      eq(cashTransactions.transactionType, 'cash_out'),
+      gte(cashTransactions.transactionDate, dateFrom),
+      lte(cashTransactions.transactionDate, dateTo),
+      sql`${cashTransactions.partyId} IS NULL`
+    ));
+    const miscExpenses = Number(generalExpenses[0]?.totalAmount || 0);
+    if (miscExpenses > 0) {
+      expenseItems.push({ name: 'इतर खर्च', amount: miscExpenses });
+    }
+
+    const generalIncome = await db.select({
+      totalAmount: sum(cashTransactions.amount),
+    }).from(cashTransactions).where(and(
+      eq(cashTransactions.tenantId, tenantId),
+      eq(cashTransactions.category, 'income'),
+      eq(cashTransactions.transactionType, 'cash_in'),
+      gte(cashTransactions.transactionDate, dateFrom),
+      lte(cashTransactions.transactionDate, dateTo),
+      sql`${cashTransactions.partyId} IS NULL`
+    ));
+    const miscIncome = Number(generalIncome[0]?.totalAmount || 0);
+    if (miscIncome > 0) {
+      incomeItems.push({ name: 'इतर उत्पन्न', amount: miscIncome });
+    }
+
+    const totalIncome = interestIncome + incomeItems.reduce((s, i) => s + i.amount, 0);
+    const totalExpenses = expenseItems.reduce((s, i) => s + i.amount, 0);
+    const netProfit = totalIncome - totalExpenses;
+
+    return {
+      dateFrom,
+      dateTo,
+      income: {
+        interestIncome,
+        otherIncomeItems: incomeItems,
+        totalIncome,
+      },
+      expenses: {
+        items: expenseItems,
+        totalExpenses,
+      },
+      netProfit,
+      isProfit: netProfit >= 0,
+    };
   }
 
   // Get all users with company details for password reset management

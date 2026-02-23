@@ -5298,6 +5298,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/reports/balance-sheet", requireAuth, async (req, res) => {
+    try {
+      const { asOfDate, fyStartDate } = req.query;
+      const now = new Date();
+      const currentYear = now.getMonth() >= 3 ? now.getFullYear() : now.getFullYear() - 1;
+      const defaultFYStart = `${currentYear}-04-01`;
+      const defaultAsOfDate = `${currentYear + 1}-03-31`;
+
+      const result = await storage.getBalanceSheet(
+        req.session.tenantId!,
+        (asOfDate as string) || defaultAsOfDate,
+        (fyStartDate as string) || defaultFYStart
+      );
+      res.json(result);
+    } catch (error) {
+      console.error("Error generating balance sheet:", error);
+      res.status(500).json({ message: "Failed to generate balance sheet" });
+    }
+  });
+
+  app.get("/api/reports/profit-loss", requireAuth, async (req, res) => {
+    try {
+      const { dateFrom, dateTo } = req.query;
+      const now = new Date();
+      const currentYear = now.getMonth() >= 3 ? now.getFullYear() : now.getFullYear() - 1;
+      const defaultFrom = `${currentYear}-04-01`;
+      const defaultTo = `${currentYear + 1}-03-31`;
+
+      const result = await storage.getProfitLoss(
+        req.session.tenantId!,
+        (dateFrom as string) || defaultFrom,
+        (dateTo as string) || defaultTo
+      );
+      res.json(result);
+    } catch (error) {
+      console.error("Error generating profit & loss:", error);
+      res.status(500).json({ message: "Failed to generate profit & loss statement" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
