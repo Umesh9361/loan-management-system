@@ -3202,7 +3202,15 @@ export class DatabaseStorage implements IStorage {
       eq(cashTransactions.transactionType, 'cash_out'),
       sql`${cashTransactions.transactionDate} < ${fyStartDate}`
     ));
-    const openingCapital = Number(capitalBeforeFY_In[0]?.total || 0) - Number(capitalBeforeFY_Out[0]?.total || 0);
+    const capitalContributed = Number(capitalBeforeFY_In[0]?.total || 0) - Number(capitalBeforeFY_Out[0]?.total || 0);
+
+    const fyStartDateObj = new Date(fyStartDate);
+    fyStartDateObj.setDate(fyStartDateObj.getDate() - 1);
+    const dayBeforeFY = fyStartDateObj.toISOString().split('T')[0];
+    const priorPL = await this.getProfitLoss(tenantId, '1900-01-01', dayBeforeFY);
+    const accumulatedPriorProfit = priorPL.netProfit;
+
+    const openingCapital = capitalContributed + accumulatedPriorProfit;
 
     const capitalInFY_In = await db.select({
       total: sum(cashTransactions.amount),
