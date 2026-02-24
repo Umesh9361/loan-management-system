@@ -283,8 +283,8 @@ function AppContent() {
         {perms.canViewBorrowerListReport && <Route path="/reports/borrower-list" component={BorrowerListReports} />}
         {perms.canViewOverdueReport && <Route path="/reports/overdue" component={OverdueReport} />}
         {perms.canViewInformationRegister && <Route path="/reports/information-register" component={InformationRegister} />}
-        {perms.canViewCapitalReport && <Route path="/reports/balance-sheet" component={BalanceSheet} />}
-        {perms.canViewCapitalReport && <Route path="/reports/profit-loss" component={ProfitLoss} />}
+        {perms.canViewBalanceSheet && <Route path="/reports/balance-sheet" component={BalanceSheet} />}
+        {perms.canViewProfitLoss && <Route path="/reports/profit-loss" component={ProfitLoss} />}
         
         {/* Receipt routes - Only if loan closure permitted */}
           {perms.canAccessLoanClosure && <Route path="/receipt/closure/:loanId" component={ClosureReceiptPage} />}

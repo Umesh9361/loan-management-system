@@ -61,6 +61,8 @@ const permissionsSchema = z.object({
   canViewAccountSummaryReport: z.boolean().default(false), // खाते सारांश अहवाल
   canViewInformationRegister: z.boolean().default(false), // माहिती तक्ता
   canViewNoticeGenerator: z.boolean().default(false), // नोटीस जनरेटर
+  canViewBalanceSheet: z.boolean().default(false), // ताळेबंद
+  canViewProfitLoss: z.boolean().default(false), // नफा-तोटा पत्रक
 });
 
 type User = {
@@ -699,6 +701,8 @@ function CreateUserForm({
       canViewAccountSummaryReport: false,
       canViewInformationRegister: false,
       canViewNoticeGenerator: false,
+      canViewBalanceSheet: false,
+      canViewProfitLoss: false,
     }
   });
 
@@ -893,6 +897,8 @@ function PermissionsForm({
     canViewAccountSummaryReport: false,
     canViewInformationRegister: false,
     canViewNoticeGenerator: false,
+    canViewBalanceSheet: false,
+    canViewProfitLoss: false,
   };
   const form = useForm<PermissionsData>({
     resolver: zodResolver(permissionsSchema),
@@ -1038,6 +1044,8 @@ function PermissionsList({ form, userRole = "user" }: { form: any; userRole?: st
       { key: "canViewOverdueReport", label: "थकबाकी अहवाल" },
       { key: "canViewAccountSummaryReport", label: "खाते सारांश अहवाल" },
       { key: "canViewInformationRegister", label: "माहिती तक्ता अहवाल" },
+      { key: "canViewBalanceSheet", label: "ताळेबंद (Balance Sheet)" },
+      { key: "canViewProfitLoss", label: "नफा-तोटा पत्रक (P&L)" },
     ]
   };
 
@@ -1117,6 +1125,8 @@ function PermissionsList({ form, userRole = "user" }: { form: any; userRole?: st
                 form.setValue("canViewOverdueReport", false);
                 form.setValue("canViewAccountSummaryReport", false);
                 form.setValue("canViewInformationRegister", false);
+                form.setValue("canViewBalanceSheet", false);
+                form.setValue("canViewProfitLoss", false);
               }}
               className="bg-red-600 text-white hover:bg-red-700"
             >
@@ -1158,6 +1168,8 @@ function PermissionsList({ form, userRole = "user" }: { form: any; userRole?: st
               form.setValue("canViewOverdueReport", true);
               form.setValue("canViewAccountSummaryReport", true);
               form.setValue("canViewInformationRegister", true);
+              form.setValue("canViewBalanceSheet", true);
+              form.setValue("canViewProfitLoss", true);
               form.setValue("canDeleteBorrowers", false);
             }}
             className="bg-indigo-600 text-white hover:bg-indigo-700"
@@ -1188,6 +1200,8 @@ function PermissionsList({ form, userRole = "user" }: { form: any; userRole?: st
               form.setValue("canViewOverdueReport", true);
               form.setValue("canViewAccountSummaryReport", true);
               form.setValue("canViewInformationRegister", true);
+              form.setValue("canViewBalanceSheet", true);
+              form.setValue("canViewProfitLoss", true);
             }}
             className="bg-cyan-600 text-white hover:bg-cyan-700"
           >
@@ -1217,6 +1231,8 @@ function PermissionsList({ form, userRole = "user" }: { form: any; userRole?: st
               form.setValue("canViewOverdueReport", false);
               form.setValue("canViewAccountSummaryReport", false);
               form.setValue("canViewInformationRegister", false);
+              form.setValue("canViewBalanceSheet", false);
+              form.setValue("canViewProfitLoss", false);
             }}
             className="bg-amber-600 text-white hover:bg-amber-700"
           >
@@ -1247,6 +1263,8 @@ function PermissionsList({ form, userRole = "user" }: { form: any; userRole?: st
                   form.setValue("canViewOverdueReport", true);
                   form.setValue("canViewAccountSummaryReport", true);
                   form.setValue("canViewInformationRegister", true);
+                  form.setValue("canViewBalanceSheet", true);
+                  form.setValue("canViewProfitLoss", true);
                 }}
                 className="bg-purple-600 text-white hover:bg-purple-700 text-xs"
               >

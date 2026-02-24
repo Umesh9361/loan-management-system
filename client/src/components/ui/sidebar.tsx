@@ -361,8 +361,8 @@ export function Sidebar({ className }: SidebarProps) {
                 '/reports/account-summary': 'canViewAccountSummaryReport',
                 '/reports/account-ledger': 'canViewLedgerReport',
                 '/reports/information-register': 'canViewInformationRegister',
-                '/reports/balance-sheet': 'canViewCapitalReport',
-                '/reports/profit-loss': 'canViewCapitalReport',
+                '/reports/balance-sheet': 'canViewBalanceSheet',
+                '/reports/profit-loss': 'canViewProfitLoss',
               };
               const requiredPermission = reportPermissionMap[item.href];
               if (requiredPermission && !(perms as any)[requiredPermission]) {

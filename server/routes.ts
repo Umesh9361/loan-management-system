@@ -3650,9 +3650,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         canViewOverdueReport: true,
         // Date-wise, Name-wise, Closing-wise, and Maturity-wise reports removed from schema
         canViewAccountSummaryReport: true,
-        // Loan management permissions removed from schema
+        canViewInformationRegister: true,
+        canViewNoticeGenerator: true,
+        canViewBalanceSheet: true,
+        canViewProfitLoss: true,
         canManageBorrowers: true,
-        // Additional borrower permissions removed from schema
         canDeleteBorrowers: true,
         // Group management permissions removed from schema
         // Party management permissions removed from schema

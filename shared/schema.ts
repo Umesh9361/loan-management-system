@@ -57,6 +57,8 @@ export const userPermissions = pgTable("user_permissions", {
   canViewAccountSummaryReport: boolean("can_view_account_summary_report").default(false), // खाते सारांश अहवाल
   canViewInformationRegister: boolean("can_view_information_register").default(false), // माहिती तक्ता
   canViewNoticeGenerator: boolean("can_view_notice_generator").default(false), // नोटीस जनरेटर
+  canViewBalanceSheet: boolean("can_view_balance_sheet").default(false), // ताळेबंद
+  canViewProfitLoss: boolean("can_view_profit_loss").default(false), // नफा-तोटा पत्रक
   
   // Borrower Management - Only core permissions used
   canManageBorrowers: boolean("can_manage_borrowers").default(false),
