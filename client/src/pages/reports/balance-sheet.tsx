@@ -3,11 +3,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Search, Printer, CheckCircle, AlertTriangle, TrendingUp, TrendingDown, Building2, Landmark, Wallet, Users, Package, Scale, FileText, Download, X } from "lucide-react";
+import { Search, Printer, CheckCircle, AlertTriangle, TrendingUp, TrendingDown, Building2, Landmark, Wallet, Users, Package, Scale, FileText } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { Sidebar } from "@/components/ui/sidebar";
 import { MobileNav } from "@/components/ui/mobile-nav";
-import { useIsMobile } from "@/hooks/use-mobile";
 import jsPDF from "jspdf";
 
 function getDefaultFY() {
@@ -138,9 +137,7 @@ export default function BalanceSheet() {
   const fy = getDefaultFY();
   const [fyStartDate, setFyStartDate] = useState(fy.fyStartDate);
   const [asOfDate, setAsOfDate] = useState(fy.asOfDate);
-  const isMobile = useIsMobile();
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
-  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
 
   const { data: company } = useQuery<any>({ queryKey: ["/api/company"] });
 
@@ -271,47 +268,6 @@ export default function BalanceSheet() {
     setIsGeneratingPDF(false);
   };
 
-  const downloadAsImage = async () => {
-    setIsGeneratingImage(true);
-    try {
-      const result = await createOffscreenRendered();
-      if (!result) { alert("ताळेबंद डेटा सापडला नाही"); setIsGeneratingImage(false); return; }
-      const { container, cleanup } = result;
-
-      const { default: html2canvas } = await import('html2canvas');
-
-      const a4WidthPx = 794;
-      const contentHeight = container.scrollHeight;
-
-      const canvas = await html2canvas(container, {
-        scale: 4,
-        useCORS: true,
-        logging: false,
-        backgroundColor: '#ffffff',
-        imageTimeout: 0,
-        width: a4WidthPx,
-        height: contentHeight,
-        windowWidth: a4WidthPx,
-        windowHeight: contentHeight,
-      });
-
-      cleanup();
-
-      const imageUrl = canvas.toDataURL('image/png');
-      const link = document.createElement('a');
-      link.href = imageUrl;
-      const companyName = company?.name || "Company";
-      link.download = `ताळेबंद_${companyName}_${asOfDate}.png`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    } catch (error) {
-      console.error("Image generation error:", error);
-      alert("इमेज तयार करण्यात समस्या आली. कृपया पुन्हा प्रयत्न करा.");
-    }
-    setIsGeneratingImage(false);
-  };
-
   return (
     <div className="flex min-h-screen bg-gray-50">
       <div className="hidden md:block print:hidden">
@@ -366,15 +322,9 @@ export default function BalanceSheet() {
                     <FileText className="w-4 h-4 mr-1" />
                     {isGeneratingPDF ? "PDF तयार होत आहे..." : "PDF डाउनलोड"}
                   </Button>
-                  <Button onClick={downloadAsImage} size="sm" disabled={isGeneratingImage} variant="outline" className="h-9">
-                    <Download className="w-4 h-4 mr-1" />
-                    {isGeneratingImage ? "इमेज तयार होत आहे..." : "इमेज डाउनलोड"}
+                  <Button onClick={handlePrint} size="sm" variant="outline" className="h-9">
+                    <Printer className="w-4 h-4 mr-1" /> प्रिंट
                   </Button>
-                  {!isMobile && (
-                    <Button onClick={handlePrint} size="sm" variant="outline" className="h-9">
-                      <Printer className="w-4 h-4 mr-1" /> प्रिंट
-                    </Button>
-                  )}
                 </div>
               </div>
 
