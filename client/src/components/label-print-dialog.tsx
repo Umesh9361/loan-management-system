@@ -244,19 +244,19 @@ function generateLabelHtml(loan: LabelLoan, settings: LabelSettings): string {
     if (field.id === 'details') {
       const detailsText = val;
       const fontSize = field.fontSize;
-      const lineH = +(fontSize * 1.25).toFixed(1);
-      return `<div style="font-size: ${fontSize}pt; font-weight: ${field.bold ? '800' : '400'}; line-height: ${lineH}pt; word-wrap: break-word; overflow-wrap: break-word; white-space: normal; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; color: #444; width: 100%; flex-shrink: 0; flex-grow: 0; margin-top: 0;">${detailsText}</div>`;
+      const lineH = +(fontSize * 1.1).toFixed(1);
+      return `<div style="font-size: ${fontSize}pt; font-weight: ${field.bold ? '800' : '400'}; line-height: ${lineH}pt; word-wrap: break-word; overflow-wrap: break-word; white-space: normal; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; color: #444; width: 100%; flex-shrink: 0; flex-grow: 0; margin: 0; padding: 0;">${detailsText}</div>`;
     }
 
-    const lineH = +(field.fontSize * 1.3).toFixed(1);
-    const fieldMaxH = field.hasOvalBorder ? +(field.fontSize * 1.3 + 4).toFixed(1) : lineH;
-    let style = `font-size: ${field.fontSize}pt; font-weight: ${field.bold ? '800' : '400'}; line-height: ${lineH}pt; max-height: ${fieldMaxH}pt; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-shrink: 0; flex-grow: 0; max-width: 100%;`;
+    const lineH = +(field.fontSize * 1.15).toFixed(1);
+    const fieldMaxH = field.hasOvalBorder ? +(field.fontSize * 1.15 + 3).toFixed(1) : lineH;
+    let style = `font-size: ${field.fontSize}pt; font-weight: ${field.bold ? '800' : '400'}; line-height: ${lineH}pt; max-height: ${fieldMaxH}pt; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-shrink: 0; flex-grow: 0; max-width: 100%; margin: 0; padding: 0;`;
     if (field.hasOvalBorder) {
-      style += ` border: 0.6pt solid #333; border-radius: 50px; padding: 1.5pt 4pt; letter-spacing: 0.3pt; font-family: 'Arial','Helvetica',sans-serif; display: inline-block; max-width: 100%; box-sizing: border-box; margin: 0.5pt 0;`;
+      style += ` border: 0.6pt solid #333; border-radius: 50px; padding: 1pt 3pt; letter-spacing: 0.3pt; font-family: 'Arial','Helvetica',sans-serif; display: inline-block; max-width: 100%; box-sizing: border-box;`;
     }
     if (field.id === 'interestRate') style += ` text-align: center; color: #444;`;
     if (field.id === 'date') style += ` font-family: 'Arial','Helvetica',sans-serif; letter-spacing: 0.3pt;`;
-    if (field.id === 'groupBorrower') style += ` margin-top: 0.5pt;`;
+    if (field.id === 'groupBorrower') style += ` margin: 0;`;
     return `<div style="${style}">${val}</div>`;
   }
 
@@ -264,16 +264,16 @@ function generateLabelHtml(loan: LabelLoan, settings: LabelSettings): string {
     const leftVal = leftField.type === 'custom' ? (leftField.customText || "") : getFieldValue(leftField.id, loan, leftField.displayMode);
     const rightVal = rightField.type === 'custom' ? (rightField.customText || "") : getFieldValue(rightField.id, loan, rightField.displayMode);
     const rowFontSize = Math.max(leftField.fontSize, rightField.fontSize);
-    const rowLineH = +(rowFontSize * 1.3).toFixed(1);
+    const rowLineH = +(rowFontSize * 1.15).toFixed(1);
     const hasAnyOval = leftField.hasOvalBorder || rightField.hasOvalBorder;
-    const pairMaxH = hasAnyOval ? +(rowFontSize * 1.3 + 4).toFixed(1) : rowLineH;
+    const pairMaxH = hasAnyOval ? +(rowFontSize * 1.15 + 3).toFixed(1) : rowLineH;
     let leftStyle = `font-size: ${leftField.fontSize}pt; font-weight: ${leftField.bold ? '800' : '400'}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 55%;`;
     let rightStyle = `font-size: ${rightField.fontSize}pt; font-weight: ${rightField.bold ? '800' : '400'}; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 45%;`;
-    if (leftField.hasOvalBorder) leftStyle += ` border: 0.6pt solid #333; border-radius: 50px; padding: 1.5pt 4pt; letter-spacing: 0.3pt; font-family: 'Arial','Helvetica',sans-serif; display: inline-block; box-sizing: border-box;`;
-    if (rightField.hasOvalBorder) rightStyle += ` border: 0.6pt solid #333; border-radius: 50px; padding: 1.5pt 4pt; letter-spacing: 0.3pt; font-family: 'Arial','Helvetica',sans-serif; display: inline-block; box-sizing: border-box;`;
+    if (leftField.hasOvalBorder) leftStyle += ` border: 0.6pt solid #333; border-radius: 50px; padding: 1pt 3pt; letter-spacing: 0.3pt; font-family: 'Arial','Helvetica',sans-serif; display: inline-block; box-sizing: border-box;`;
+    if (rightField.hasOvalBorder) rightStyle += ` border: 0.6pt solid #333; border-radius: 50px; padding: 1pt 3pt; letter-spacing: 0.3pt; font-family: 'Arial','Helvetica',sans-serif; display: inline-block; box-sizing: border-box;`;
     if (leftField.id === 'date') leftStyle += ` font-family: 'Arial','Helvetica',sans-serif; letter-spacing: 0.3pt;`;
     if (rightField.id === 'date') rightStyle += ` font-family: 'Arial','Helvetica',sans-serif; letter-spacing: 0.3pt;`;
-    return `<div style="display:flex;justify-content:space-between;align-items:center;gap:3pt;line-height:${rowLineH}pt;max-height:${pairMaxH}pt;overflow:hidden;flex-shrink:0;flex-grow:0;width:100%;">
+    return `<div style="display:flex;justify-content:space-between;align-items:center;gap:1pt;line-height:${rowLineH}pt;max-height:${pairMaxH}pt;overflow:hidden;flex-shrink:0;flex-grow:0;width:100%;margin:0;padding:0;">
       <span style="${leftStyle}">${leftVal}</span>
       <span style="${rightStyle}">${rightVal}</span>
     </div>`;
@@ -288,17 +288,17 @@ function generateLabelHtml(loan: LabelLoan, settings: LabelSettings): string {
     const centerVal = getFieldValue(centerField.id, loan, centerField.displayMode);
     const rightVal = getFieldValue(rightField.id, loan, rightField.displayMode);
     const rowFontSize = Math.max(leftField.fontSize, centerField.fontSize, rightField.fontSize);
-    const rowLineH = +(rowFontSize * 1.3).toFixed(1);
+    const rowLineH = +(rowFontSize * 1.15).toFixed(1);
     const hasAnyOval = leftField.hasOvalBorder || centerField.hasOvalBorder || rightField.hasOvalBorder;
-    const trioMaxH = hasAnyOval ? +(rowFontSize * 1.3 + 4).toFixed(1) : rowLineH;
+    const trioMaxH = hasAnyOval ? +(rowFontSize * 1.15 + 3).toFixed(1) : rowLineH;
     let leftStyle = `font-size: ${leftField.fontSize}pt; font-weight: ${leftField.bold ? '800' : '400'}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;`;
     let centerStyle = `font-size: ${centerField.fontSize}pt; font-weight: ${centerField.bold ? '800' : '400'}; white-space: nowrap; text-align: center; color: #444;`;
     let rightStyle = `font-size: ${rightField.fontSize}pt; font-weight: ${rightField.bold ? '800' : '400'}; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;`;
-    if (leftField.hasOvalBorder) leftStyle += ` border: 0.6pt solid #333; border-radius: 50px; padding: 1.5pt 4pt; font-family: 'Arial','Helvetica',sans-serif; display: inline-block; box-sizing: border-box;`;
-    if (centerField.hasOvalBorder) centerStyle += ` border: 0.6pt solid #333; border-radius: 50px; padding: 1.5pt 4pt; font-family: 'Arial','Helvetica',sans-serif; display: inline-block; box-sizing: border-box;`;
-    if (rightField.hasOvalBorder) rightStyle += ` border: 0.6pt solid #333; border-radius: 50px; padding: 1.5pt 4pt; font-family: 'Arial','Helvetica',sans-serif; display: inline-block; box-sizing: border-box;`;
+    if (leftField.hasOvalBorder) leftStyle += ` border: 0.6pt solid #333; border-radius: 50px; padding: 1pt 3pt; font-family: 'Arial','Helvetica',sans-serif; display: inline-block; box-sizing: border-box;`;
+    if (centerField.hasOvalBorder) centerStyle += ` border: 0.6pt solid #333; border-radius: 50px; padding: 1pt 3pt; font-family: 'Arial','Helvetica',sans-serif; display: inline-block; box-sizing: border-box;`;
+    if (rightField.hasOvalBorder) rightStyle += ` border: 0.6pt solid #333; border-radius: 50px; padding: 1pt 3pt; font-family: 'Arial','Helvetica',sans-serif; display: inline-block; box-sizing: border-box;`;
     if (rightField.id === 'date') rightStyle += ` font-family: 'Arial','Helvetica',sans-serif; letter-spacing: 0.3pt;`;
-    return `<div style="display:flex;justify-content:space-between;align-items:center;gap:3pt;line-height:${rowLineH}pt;max-height:${trioMaxH}pt;overflow:hidden;flex-shrink:0;flex-grow:0;width:100%;">
+    return `<div style="display:flex;justify-content:space-between;align-items:center;gap:1pt;line-height:${rowLineH}pt;max-height:${trioMaxH}pt;overflow:hidden;flex-shrink:0;flex-grow:0;width:100%;margin:0;padding:0;">
       <span style="${leftStyle}">${leftVal}</span>
       <span style="${centerStyle}">${centerVal}</span>
       <span style="${rightStyle}">${rightVal}</span>
@@ -356,7 +356,8 @@ function generateLabelHtml(loan: LabelLoan, settings: LabelSettings): string {
         height: ${contentHeight}mm;
         display: flex;
         flex-direction: column;
-        justify-content: space-between;
+        justify-content: flex-start;
+        gap: 0.3mm;
         overflow: hidden;
       ">
         ${rendered.join('\n')}
@@ -385,9 +386,15 @@ function generatePrintPage(labelsHtml: string, settings: LabelSettings): string 
           font-family: 'Noto Sans Devanagari', 'Mangal', 'Arial Unicode MS', sans-serif;
           -webkit-print-color-adjust: exact;
           print-color-adjust: exact;
+          text-rendering: optimizeLegibility;
+          -webkit-font-smoothing: antialiased;
+          -moz-osx-font-smoothing: grayscale;
+          font-kerning: normal;
+          font-feature-settings: 'kern' 1, 'liga' 1;
         }
         .label-container {
           overflow: hidden;
+          image-rendering: -webkit-optimize-contrast;
         }
         .label-container:last-child { page-break-after: avoid; }
         @media print {
