@@ -61,6 +61,7 @@ interface LabelSettings {
   stickerSize: StickerSize;
   margins: MarginSettings;
   fields: LabelField[];
+  horizontalOffset: number;
 }
 
 interface LabelPrintDialogProps {
@@ -103,6 +104,7 @@ const DEFAULT_SETTINGS: LabelSettings = {
   stickerSize: { width: 50, height: 25, preset: "50 x 25 mm" },
   margins: { top: 1.5, bottom: 1, left: 2, right: 2 },
   fields: DEFAULT_FIELDS,
+  horizontalOffset: 0,
 };
 
 const STORAGE_KEY = "label_print_settings_v2";
@@ -168,6 +170,7 @@ function loadSettings(): LabelSettings {
             right: typeof parsed.margins.right === 'number' ? Math.max(0, Math.min(10, parsed.margins.right)) : 1,
           },
           fields: validFields,
+          horizontalOffset: typeof parsed.horizontalOffset === 'number' ? Math.max(-10, Math.min(10, parsed.horizontalOffset)) : 0,
         };
       }
     }
@@ -447,7 +450,9 @@ function generateLabelHtml(loan: LabelLoan, settings: LabelSettings): string {
 }
 
 function generatePrintPage(labelsHtml: string, settings: LabelSettings): string {
-  const { stickerSize } = settings;
+  const { stickerSize, horizontalOffset } = settings;
+  const offsetMm = horizontalOffset || 0;
+  const transformStyle = offsetMm !== 0 ? `transform: translateX(${offsetMm}mm);` : '';
   return `
     <!DOCTYPE html>
     <html>
@@ -475,6 +480,7 @@ function generatePrintPage(labelsHtml: string, settings: LabelSettings): string 
         .label-container {
           overflow: hidden;
           image-rendering: -webkit-optimize-contrast;
+          ${transformStyle}
         }
         .label-container:last-child { page-break-after: avoid; }
         @media print {
@@ -641,6 +647,7 @@ export function LabelPrintDialog({ open, onOpenChange, loans }: LabelPrintDialog
               stickerSize: parsed.stickerSize || DEFAULT_SETTINGS.stickerSize,
               margins: parsed.margins || DEFAULT_SETTINGS.margins,
               fields: validFields,
+              horizontalOffset: typeof parsed.horizontalOffset === 'number' ? parsed.horizontalOffset : 0,
             });
           }
         }
@@ -697,6 +704,13 @@ export function LabelPrintDialog({ open, onOpenChange, loans }: LabelPrintDialog
         ...prev.margins,
         [side]: Math.max(0, Math.min(10, +(prev.margins[side] + delta).toFixed(1)))
       }
+    }));
+  }, [updateSettings]);
+
+  const updateHorizontalOffset = useCallback((delta: number) => {
+    updateSettings(prev => ({
+      ...prev,
+      horizontalOffset: Math.max(-10, Math.min(10, +((prev.horizontalOffset || 0) + delta).toFixed(1)))
     }));
   }, [updateSettings]);
 
@@ -1033,6 +1047,25 @@ export function LabelPrintDialog({ open, onOpenChange, loans }: LabelPrintDialog
                           </Button>
                         </div>
                       ))}
+                    </div>
+                    <div className="pt-2 border-t border-gray-100">
+                      <div className="text-xs font-medium text-gray-700 mb-1">प्रिंट शिफ्ट (mm):</div>
+                      <div className="text-[10px] text-gray-400 mb-1.5">प्रिंटर alignment साठी लेबल डावी/उजवी सरकवा</div>
+                      <div className="flex items-center gap-1.5">
+                        <Label className="text-xs w-10 text-gray-600">आडवा</Label>
+                        <Button size="sm" variant="outline" className="h-7 w-7 p-0" onClick={() => updateHorizontalOffset(-0.5)}>
+                          <Minus className="h-3 w-3" />
+                        </Button>
+                        <span className="text-xs font-mono w-8 text-center font-medium">
+                          {(settings.horizontalOffset || 0).toFixed(1)}
+                        </span>
+                        <Button size="sm" variant="outline" className="h-7 w-7 p-0" onClick={() => updateHorizontalOffset(0.5)}>
+                          <Plus className="h-3 w-3" />
+                        </Button>
+                        <span className="text-[10px] text-gray-400 ml-1">
+                          {(settings.horizontalOffset || 0) > 0 ? '→ उजवी' : (settings.horizontalOffset || 0) < 0 ? '← डावी' : ''}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 )}
