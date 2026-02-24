@@ -278,7 +278,7 @@ export default function BalanceSheet() {
           <MobileNav />
         </div>
 
-        <div className="p-3 sm:p-6 max-w-5xl mx-auto w-full print:p-0 print:max-w-none">
+        <div className="p-3 sm:p-6 max-w-5xl md:max-w-7xl mx-auto w-full print:p-0 print:max-w-none">
           <div className="print:hidden mb-4">
             <h1 className="text-xl sm:text-2xl font-bold text-indigo-900 mb-1">ताळेबंद</h1>
             <p className="text-sm text-gray-500">Balance Sheet</p>
@@ -388,26 +388,26 @@ export default function BalanceSheet() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 print:grid-cols-2 print:gap-0">
-                  <div className="print:border-r print:border-black">
-                    <Card className="border-2 border-indigo-100 print:border-0 print:shadow-none print:rounded-none">
-                      <CardHeader className="bg-indigo-50 py-3 px-4 print:bg-white print:py-1 print:px-2">
-                        <CardTitle className="text-base font-bold text-indigo-900 flex items-center gap-2 print:text-[12pt] print:text-black print:text-center print:justify-center">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-0 print:grid-cols-2 print:gap-0">
+                  <div className="print:border-r print:border-black md:border md:border-r-0 md:border-gray-800">
+                    <Card className="border-2 border-indigo-100 md:border-0 md:shadow-none md:rounded-none print:border-0 print:shadow-none print:rounded-none">
+                      <CardHeader className="bg-indigo-50 py-3 px-4 md:bg-indigo-700 md:py-3 md:px-4 print:bg-white print:py-1 print:px-2">
+                        <CardTitle className="text-base font-bold text-indigo-900 flex items-center gap-2 md:text-white md:text-lg md:justify-center print:text-[12pt] print:text-black print:text-center print:justify-center">
                           <TrendingUp className="w-5 h-5 print:hidden" />
                           मालमत्ता (Assets)
                         </CardTitle>
                       </CardHeader>
                       <CardContent className="p-0">
-                        <table className="w-full text-sm bs-table">
+                        <table className="w-full text-sm md:text-base bs-table">
                           <thead>
-                            <tr className="border-b bg-gray-50 print:bg-white print:border-b-2 print:border-black">
-                              <th className="text-left px-3 py-2 font-semibold print:px-2 print:py-1 print:text-[10pt]">तपशील</th>
-                              <th className="text-right px-3 py-2 font-semibold print:px-2 print:py-1 print:text-[10pt] print:w-[120px]">रक्कम (₹)</th>
+                            <tr className="border-b bg-gray-50 md:bg-gray-100 md:border-b-2 md:border-gray-400 print:bg-white print:border-b-2 print:border-black">
+                              <th className="text-left px-3 py-2 font-semibold md:px-4 md:py-3 print:px-2 print:py-1 print:text-[10pt]">तपशील</th>
+                              <th className="text-right px-3 py-2 font-semibold md:px-4 md:py-3 md:w-[160px] print:px-2 print:py-1 print:text-[10pt] print:w-[120px]">रक्कम (₹)</th>
                             </tr>
                           </thead>
                           <tbody>
-                            <tr className="border-b hover:bg-indigo-50/30">
-                              <td className="px-3 py-2 print:px-2 print:py-1.5">
+                            <tr className="border-b hover:bg-indigo-50/30 md:border-b md:border-gray-200">
+                              <td className="px-3 py-2 md:px-4 md:py-3 print:px-2 print:py-1.5">
                                 <div className="flex items-center gap-2">
                                   <Landmark className="w-4 h-4 text-indigo-500 print:hidden flex-shrink-0" />
                                   <div>
@@ -416,43 +416,43 @@ export default function BalanceSheet() {
                                   </div>
                                 </div>
                               </td>
-                              <td className="text-right px-3 py-2 font-semibold print:px-2 print:py-1.5 print:text-[10pt]">{formatCurrency(balanceSheet.assets.loansAndAdvances.total)}</td>
+                              <td className="text-right px-3 py-2 font-semibold md:px-4 md:py-3 print:px-2 print:py-1.5 print:text-[10pt]">{formatCurrency(balanceSheet.assets.loansAndAdvances.total)}</td>
                             </tr>
 
-                            <tr className="border-b hover:bg-indigo-50/30">
-                              <td className="px-3 py-2 print:px-2 print:py-1.5">
+                            <tr className="border-b hover:bg-indigo-50/30 md:border-b md:border-gray-200">
+                              <td className="px-3 py-2 md:px-4 md:py-3 print:px-2 print:py-1.5">
                                 <div className="flex items-center gap-2">
                                   <Wallet className="w-4 h-4 text-green-500 print:hidden flex-shrink-0" />
                                   <span className="font-medium print:text-[10pt]">रोकड शिल्लक</span>
                                 </div>
                               </td>
-                              <td className="text-right px-3 py-2 font-semibold print:px-2 print:py-1.5 print:text-[10pt]">{formatCurrency(balanceSheet.assets.cashBalance)}</td>
+                              <td className="text-right px-3 py-2 font-semibold md:px-4 md:py-3 print:px-2 print:py-1.5 print:text-[10pt]">{formatCurrency(balanceSheet.assets.cashBalance)}</td>
                             </tr>
 
                             {balanceSheet.assets.bankAccounts.map((bank: any, i: number) => (
-                              <tr key={`bank-${i}`} className="border-b hover:bg-indigo-50/30">
-                                <td className="px-3 py-2 print:px-2 print:py-1.5">
+                              <tr key={`bank-${i}`} className="border-b hover:bg-indigo-50/30 md:border-b md:border-gray-200">
+                                <td className="px-3 py-2 md:px-4 md:py-3 print:px-2 print:py-1.5">
                                   <div className="flex items-center gap-2">
                                     <Building2 className="w-4 h-4 text-blue-500 print:hidden flex-shrink-0" />
                                     <span className="print:text-[10pt]">{bank.name}</span>
                                   </div>
                                 </td>
-                                <td className="text-right px-3 py-2 print:px-2 print:py-1.5 print:text-[10pt]">{formatCurrency(bank.balance)}</td>
+                                <td className="text-right px-3 py-2 md:px-4 md:py-3 print:px-2 print:py-1.5 print:text-[10pt]">{formatCurrency(bank.balance)}</td>
                               </tr>
                             ))}
 
                             {balanceSheet.assets.fixedAssets.length > 0 && (
                               <>
-                                <tr className="border-b bg-gray-50 print:bg-white">
-                                  <td colSpan={2} className="px-3 py-1.5 text-xs font-bold text-gray-600 uppercase tracking-wide print:text-[9pt] print:px-2 print:py-1 print:text-black">
+                                <tr className="border-b bg-gray-50 md:bg-gray-100 md:border-b md:border-gray-300 print:bg-white">
+                                  <td colSpan={2} className="px-3 py-1.5 text-xs font-bold text-gray-600 uppercase tracking-wide md:px-4 md:py-2.5 md:text-sm print:text-[9pt] print:px-2 print:py-1 print:text-black">
                                     <Package className="w-3.5 h-3.5 inline mr-1 print:hidden" />
                                     स्थिर मालमत्ता
                                   </td>
                                 </tr>
                                 {balanceSheet.assets.fixedAssets.map((asset: any, i: number) => (
-                                  <tr key={`asset-${i}`} className="border-b hover:bg-indigo-50/30">
-                                    <td className="px-3 py-2 pl-6 print:px-2 print:py-1.5 print:pl-4 print:text-[10pt]">{asset.name}</td>
-                                    <td className="text-right px-3 py-2 print:px-2 print:py-1.5 print:text-[10pt]">{formatCurrency(asset.balance)}</td>
+                                  <tr key={`asset-${i}`} className="border-b hover:bg-indigo-50/30 md:border-b md:border-gray-200">
+                                    <td className="px-3 py-2 pl-6 md:px-4 md:py-3 md:pl-8 print:px-2 print:py-1.5 print:pl-4 print:text-[10pt]">{asset.name}</td>
+                                    <td className="text-right px-3 py-2 md:px-4 md:py-3 print:px-2 print:py-1.5 print:text-[10pt]">{formatCurrency(asset.balance)}</td>
                                   </tr>
                                 ))}
                               </>
@@ -460,24 +460,24 @@ export default function BalanceSheet() {
 
                             {balanceSheet.assets.debtors.length > 0 && (
                               <>
-                                <tr className="border-b bg-gray-50 print:bg-white">
-                                  <td colSpan={2} className="px-3 py-1.5 text-xs font-bold text-gray-600 uppercase tracking-wide print:text-[9pt] print:px-2 print:py-1 print:text-black">
+                                <tr className="border-b bg-gray-50 md:bg-gray-100 md:border-b md:border-gray-300 print:bg-white">
+                                  <td colSpan={2} className="px-3 py-1.5 text-xs font-bold text-gray-600 uppercase tracking-wide md:px-4 md:py-2.5 md:text-sm print:text-[9pt] print:px-2 print:py-1 print:text-black">
                                     <Users className="w-3.5 h-3.5 inline mr-1 print:hidden" />
                                     देणेदार (Debtors)
                                   </td>
                                 </tr>
                                 {balanceSheet.assets.debtors.map((d: any, i: number) => (
-                                  <tr key={`debtor-${i}`} className="border-b hover:bg-indigo-50/30">
-                                    <td className="px-3 py-2 pl-6 print:px-2 print:py-1.5 print:pl-4 print:text-[10pt]">{d.name}</td>
-                                    <td className="text-right px-3 py-2 print:px-2 print:py-1.5 print:text-[10pt]">{formatCurrency(d.balance)}</td>
+                                  <tr key={`debtor-${i}`} className="border-b hover:bg-indigo-50/30 md:border-b md:border-gray-200">
+                                    <td className="px-3 py-2 pl-6 md:px-4 md:py-3 md:pl-8 print:px-2 print:py-1.5 print:pl-4 print:text-[10pt]">{d.name}</td>
+                                    <td className="text-right px-3 py-2 md:px-4 md:py-3 print:px-2 print:py-1.5 print:text-[10pt]">{formatCurrency(d.balance)}</td>
                                   </tr>
                                 ))}
                               </>
                             )}
 
-                            <tr className="border-t-2 border-indigo-300 bg-indigo-50 font-bold print:bg-white print:border-t-2 print:border-black">
-                              <td className="px-3 py-2.5 print:px-2 print:py-2 print:text-[11pt] print:font-bold">एकूण मालमत्ता</td>
-                              <td className="text-right px-3 py-2.5 text-indigo-700 print:text-black print:px-2 print:py-2 print:text-[11pt] print:font-bold">{formatCurrency(balanceSheet.assets.totalAssets)}</td>
+                            <tr className="border-t-2 border-indigo-300 bg-indigo-50 font-bold md:border-t-2 md:border-indigo-600 md:bg-indigo-50 print:bg-white print:border-t-2 print:border-black">
+                              <td className="px-3 py-2.5 md:px-4 md:py-3 md:text-base print:px-2 print:py-2 print:text-[11pt] print:font-bold">एकूण मालमत्ता</td>
+                              <td className="text-right px-3 py-2.5 text-indigo-700 md:px-4 md:py-3 md:text-base print:text-black print:px-2 print:py-2 print:text-[11pt] print:font-bold">{formatCurrency(balanceSheet.assets.totalAssets)}</td>
                             </tr>
                           </tbody>
                         </table>
@@ -485,80 +485,80 @@ export default function BalanceSheet() {
                     </Card>
                   </div>
 
-                  <div>
-                    <Card className="border-2 border-rose-100 print:border-0 print:shadow-none print:rounded-none">
-                      <CardHeader className="bg-rose-50 py-3 px-4 print:bg-white print:py-1 print:px-2">
-                        <CardTitle className="text-base font-bold text-rose-900 flex items-center gap-2 print:text-[12pt] print:text-black print:text-center print:justify-center">
+                  <div className="md:border md:border-l-0 md:border-gray-800">
+                    <Card className="border-2 border-rose-100 md:border-0 md:shadow-none md:rounded-none print:border-0 print:shadow-none print:rounded-none">
+                      <CardHeader className="bg-rose-50 py-3 px-4 md:bg-rose-700 md:py-3 md:px-4 print:bg-white print:py-1 print:px-2">
+                        <CardTitle className="text-base font-bold text-rose-900 flex items-center gap-2 md:text-white md:text-lg md:justify-center print:text-[12pt] print:text-black print:text-center print:justify-center">
                           <TrendingDown className="w-5 h-5 print:hidden" />
                           दायित्वे व भांडवल
                         </CardTitle>
                       </CardHeader>
                       <CardContent className="p-0">
-                        <table className="w-full text-sm bs-table">
+                        <table className="w-full text-sm md:text-base bs-table">
                           <thead>
-                            <tr className="border-b bg-gray-50 print:bg-white print:border-b-2 print:border-black">
-                              <th className="text-left px-3 py-2 font-semibold print:px-2 print:py-1 print:text-[10pt]">तपशील</th>
-                              <th className="text-right px-3 py-2 font-semibold print:px-2 print:py-1 print:text-[10pt] print:w-[120px]">रक्कम (₹)</th>
+                            <tr className="border-b bg-gray-50 md:bg-gray-100 md:border-b-2 md:border-gray-400 print:bg-white print:border-b-2 print:border-black">
+                              <th className="text-left px-3 py-2 font-semibold md:px-4 md:py-3 print:px-2 print:py-1 print:text-[10pt]">तपशील</th>
+                              <th className="text-right px-3 py-2 font-semibold md:px-4 md:py-3 md:w-[160px] print:px-2 print:py-1 print:text-[10pt] print:w-[120px]">रक्कम (₹)</th>
                             </tr>
                           </thead>
                           <tbody>
-                            <tr className="border-b bg-gray-50 print:bg-white">
-                              <td colSpan={2} className="px-3 py-1.5 text-xs font-bold text-gray-600 uppercase tracking-wide print:text-[9pt] print:px-2 print:py-1 print:text-black">
+                            <tr className="border-b bg-gray-50 md:bg-gray-100 md:border-b md:border-gray-300 print:bg-white">
+                              <td colSpan={2} className="px-3 py-1.5 text-xs font-bold text-gray-600 uppercase tracking-wide md:px-4 md:py-2.5 md:text-sm print:text-[9pt] print:px-2 print:py-1 print:text-black">
                                 <Scale className="w-3.5 h-3.5 inline mr-1 print:hidden" />
                                 भांडवल खाते
                               </td>
                             </tr>
-                            <tr className="border-b hover:bg-rose-50/30">
-                              <td className="px-3 py-1.5 pl-6 text-gray-700 print:px-2 print:py-1 print:pl-4 print:text-[10pt]">प्रारंभिक भांडवल</td>
-                              <td className="text-right px-3 py-1.5 print:px-2 print:py-1 print:text-[10pt]">{formatCurrency(balanceSheet.liabilities.capitalAccount.openingCapital)}</td>
+                            <tr className="border-b hover:bg-rose-50/30 md:border-b md:border-gray-200">
+                              <td className="px-3 py-1.5 pl-6 text-gray-700 md:px-4 md:py-3 md:pl-8 print:px-2 print:py-1 print:pl-4 print:text-[10pt]">प्रारंभिक भांडवल</td>
+                              <td className="text-right px-3 py-1.5 md:px-4 md:py-3 print:px-2 print:py-1 print:text-[10pt]">{formatCurrency(balanceSheet.liabilities.capitalAccount.openingCapital)}</td>
                             </tr>
                             {balanceSheet.liabilities.capitalAccount.capitalAdded > 0 && (
-                              <tr className="border-b hover:bg-rose-50/30">
-                                <td className="px-3 py-1.5 pl-6 text-green-700 print:px-2 print:py-1 print:pl-4 print:text-[10pt] print:text-black">(+) भांडवल जमा</td>
-                                <td className="text-right px-3 py-1.5 text-green-600 print:text-black print:px-2 print:py-1 print:text-[10pt]">{formatCurrency(balanceSheet.liabilities.capitalAccount.capitalAdded)}</td>
+                              <tr className="border-b hover:bg-rose-50/30 md:border-b md:border-gray-200">
+                                <td className="px-3 py-1.5 pl-6 text-green-700 md:px-4 md:py-3 md:pl-8 print:px-2 print:py-1 print:pl-4 print:text-[10pt] print:text-black">(+) भांडवल जमा</td>
+                                <td className="text-right px-3 py-1.5 text-green-600 md:px-4 md:py-3 print:text-black print:px-2 print:py-1 print:text-[10pt]">{formatCurrency(balanceSheet.liabilities.capitalAccount.capitalAdded)}</td>
                               </tr>
                             )}
                             {balanceSheet.liabilities.capitalAccount.capitalWithdrawn > 0 && (
-                              <tr className="border-b hover:bg-rose-50/30">
-                                <td className="px-3 py-1.5 pl-6 text-red-700 print:px-2 print:py-1 print:pl-4 print:text-[10pt] print:text-black">(-) भांडवल काढणे</td>
-                                <td className="text-right px-3 py-1.5 text-red-600 print:text-black print:px-2 print:py-1 print:text-[10pt]">{formatCurrency(balanceSheet.liabilities.capitalAccount.capitalWithdrawn)}</td>
+                              <tr className="border-b hover:bg-rose-50/30 md:border-b md:border-gray-200">
+                                <td className="px-3 py-1.5 pl-6 text-red-700 md:px-4 md:py-3 md:pl-8 print:px-2 print:py-1 print:pl-4 print:text-[10pt] print:text-black">(-) भांडवल काढणे</td>
+                                <td className="text-right px-3 py-1.5 text-red-600 md:px-4 md:py-3 print:text-black print:px-2 print:py-1 print:text-[10pt]">{formatCurrency(balanceSheet.liabilities.capitalAccount.capitalWithdrawn)}</td>
                               </tr>
                             )}
-                            <tr className="border-b hover:bg-rose-50/30">
-                              <td className="px-3 py-1.5 pl-6 print:px-2 print:py-1 print:pl-4 print:text-[10pt]">
+                            <tr className="border-b hover:bg-rose-50/30 md:border-b md:border-gray-200">
+                              <td className="px-3 py-1.5 pl-6 md:px-4 md:py-3 md:pl-8 print:px-2 print:py-1 print:pl-4 print:text-[10pt]">
                                 {balanceSheet.liabilities.capitalAccount.netProfit >= 0 ? (
                                   <span className="text-green-700 print:text-black">(+) निव्वळ नफा</span>
                                 ) : (
                                   <span className="text-red-700 print:text-black">(-) निव्वळ तोटा</span>
                                 )}
                               </td>
-                              <td className="text-right px-3 py-1.5 print:px-2 print:py-1 print:text-[10pt]">{formatCurrency(balanceSheet.liabilities.capitalAccount.netProfit)}</td>
+                              <td className="text-right px-3 py-1.5 md:px-4 md:py-3 print:px-2 print:py-1 print:text-[10pt]">{formatCurrency(balanceSheet.liabilities.capitalAccount.netProfit)}</td>
                             </tr>
-                            <tr className="border-b border-indigo-200 bg-indigo-50/50 font-semibold print:bg-white print:border-b-2 print:border-gray-400">
-                              <td className="px-3 py-2 pl-6 print:px-2 print:py-1.5 print:pl-4 print:text-[10pt] print:font-bold">अंतिम भांडवल</td>
-                              <td className="text-right px-3 py-2 print:px-2 print:py-1.5 print:text-[10pt] print:font-bold">{formatCurrency(balanceSheet.liabilities.capitalAccount.closingCapital)}</td>
+                            <tr className="border-b border-indigo-200 bg-indigo-50/50 font-semibold md:border-b-2 md:border-gray-400 md:bg-indigo-50 print:bg-white print:border-b-2 print:border-gray-400">
+                              <td className="px-3 py-2 pl-6 md:px-4 md:py-3 md:pl-8 print:px-2 print:py-1.5 print:pl-4 print:text-[10pt] print:font-bold">अंतिम भांडवल</td>
+                              <td className="text-right px-3 py-2 md:px-4 md:py-3 print:px-2 print:py-1.5 print:text-[10pt] print:font-bold">{formatCurrency(balanceSheet.liabilities.capitalAccount.closingCapital)}</td>
                             </tr>
 
                             {balanceSheet.liabilities.creditors.length > 0 && (
                               <>
-                                <tr className="border-b bg-gray-50 print:bg-white">
-                                  <td colSpan={2} className="px-3 py-1.5 text-xs font-bold text-gray-600 uppercase tracking-wide print:text-[9pt] print:px-2 print:py-1 print:text-black">
+                                <tr className="border-b bg-gray-50 md:bg-gray-100 md:border-b md:border-gray-300 print:bg-white">
+                                  <td colSpan={2} className="px-3 py-1.5 text-xs font-bold text-gray-600 uppercase tracking-wide md:px-4 md:py-2.5 md:text-sm print:text-[9pt] print:px-2 print:py-1 print:text-black">
                                     <Users className="w-3.5 h-3.5 inline mr-1 print:hidden" />
                                     धनको (Creditors)
                                   </td>
                                 </tr>
                                 {balanceSheet.liabilities.creditors.map((c: any, i: number) => (
-                                  <tr key={`cred-${i}`} className="border-b hover:bg-rose-50/30">
-                                    <td className="px-3 py-2 pl-6 print:px-2 print:py-1.5 print:pl-4 print:text-[10pt]">{c.name}</td>
-                                    <td className="text-right px-3 py-2 print:px-2 print:py-1.5 print:text-[10pt]">{formatCurrency(c.balance)}</td>
+                                  <tr key={`cred-${i}`} className="border-b hover:bg-rose-50/30 md:border-b md:border-gray-200">
+                                    <td className="px-3 py-2 pl-6 md:px-4 md:py-3 md:pl-8 print:px-2 print:py-1.5 print:pl-4 print:text-[10pt]">{c.name}</td>
+                                    <td className="text-right px-3 py-2 md:px-4 md:py-3 print:px-2 print:py-1.5 print:text-[10pt]">{formatCurrency(c.balance)}</td>
                                   </tr>
                                 ))}
                               </>
                             )}
 
-                            <tr className="border-t-2 border-rose-300 bg-rose-50 font-bold print:bg-white print:border-t-2 print:border-black">
-                              <td className="px-3 py-2.5 print:px-2 print:py-2 print:text-[11pt] print:font-bold">एकूण दायित्वे व भांडवल</td>
-                              <td className="text-right px-3 py-2.5 text-rose-700 print:text-black print:px-2 print:py-2 print:text-[11pt] print:font-bold">{formatCurrency(balanceSheet.liabilities.totalLiabilities)}</td>
+                            <tr className="border-t-2 border-rose-300 bg-rose-50 font-bold md:border-t-2 md:border-rose-600 md:bg-rose-50 print:bg-white print:border-t-2 print:border-black">
+                              <td className="px-3 py-2.5 md:px-4 md:py-3 md:text-base print:px-2 print:py-2 print:text-[11pt] print:font-bold">एकूण दायित्वे व भांडवल</td>
+                              <td className="text-right px-3 py-2.5 text-rose-700 md:px-4 md:py-3 md:text-base print:text-black print:px-2 print:py-2 print:text-[11pt] print:font-bold">{formatCurrency(balanceSheet.liabilities.totalLiabilities)}</td>
                             </tr>
                           </tbody>
                         </table>

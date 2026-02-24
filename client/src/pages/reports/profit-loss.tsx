@@ -256,7 +256,7 @@ export default function ProfitLoss() {
           <MobileNav />
         </div>
 
-        <div className="p-3 sm:p-6 max-w-4xl mx-auto w-full print:p-0 print:max-w-none">
+        <div className="p-3 sm:p-6 max-w-4xl md:max-w-6xl mx-auto w-full print:p-0 print:max-w-none">
           <div className="print:hidden mb-4">
             <h1 className="text-xl sm:text-2xl font-bold text-indigo-900 mb-1">नफा-तोटा पत्रक</h1>
             <p className="text-sm text-gray-500">Profit & Loss Statement</p>
@@ -347,48 +347,48 @@ export default function ProfitLoss() {
                   </div>
                 </div>
 
-                <table className="w-full text-sm border-collapse pl-statement-table print:text-[10pt]">
+                <table className="w-full text-sm md:text-base border-collapse pl-statement-table md:border md:border-gray-800 print:text-[10pt]">
                   <thead>
-                    <tr className="bg-gray-100 print:bg-white border-b-2 border-black">
-                      <th className="text-left px-4 py-2.5 font-bold text-gray-800 print:text-[11pt] print:px-3 print:py-2" colSpan={2}>तपशील (Particulars)</th>
-                      <th className="text-right px-4 py-2.5 font-bold text-gray-800 w-[140px] print:text-[11pt] print:px-3 print:py-2 print:w-[130px]">रक्कम (₹)</th>
+                    <tr className="bg-gray-100 md:bg-indigo-700 print:bg-white border-b-2 border-black">
+                      <th className="text-left px-4 py-2.5 font-bold text-gray-800 md:text-white md:px-5 md:py-3.5 md:text-lg print:text-[11pt] print:text-black print:px-3 print:py-2" colSpan={2}>तपशील (Particulars)</th>
+                      <th className="text-right px-4 py-2.5 font-bold text-gray-800 w-[140px] md:text-white md:px-5 md:py-3.5 md:text-lg md:w-[200px] print:text-[11pt] print:text-black print:px-3 print:py-2 print:w-[130px]">रक्कम (₹)</th>
                     </tr>
                   </thead>
                   <tbody>
-                    <tr className="bg-green-50 print:bg-white border-b-2 border-green-300 print:border-black">
-                      <td colSpan={3} className="px-4 py-2.5 font-bold text-green-800 print:text-black print:text-[11pt] print:px-3 print:py-2">
+                    <tr className="bg-green-50 print:bg-white border-b-2 border-green-300 md:border-green-400 print:border-black">
+                      <td colSpan={3} className="px-4 py-2.5 font-bold text-green-800 md:px-5 md:py-3 md:text-base print:text-black print:text-[11pt] print:px-3 print:py-2">
                         <DollarSign className="w-4 h-4 inline mr-2 print:hidden" />
                         उत्पन्न (Income)
                       </td>
                     </tr>
 
-                    <tr className="border-b hover:bg-green-50/30">
-                      <td className="w-6 print:w-4"></td>
-                      <td className="px-4 py-2.5 print:px-3 print:py-2">
+                    <tr className="border-b hover:bg-green-50/30 md:border-b md:border-gray-200">
+                      <td className="w-6 md:w-8 print:w-4"></td>
+                      <td className="px-4 py-2.5 md:px-5 md:py-3 print:px-3 print:py-2">
                         <Receipt className="w-4 h-4 inline mr-2 text-green-500 print:hidden" />
                         <span className="font-medium">व्याज उत्पन्न (Interest Income)</span>
                       </td>
-                      <td className="text-right px-4 py-2.5 font-semibold print:px-3 print:py-2">{formatCurrency(plData.income.interestIncome)}</td>
+                      <td className="text-right px-4 py-2.5 font-semibold md:px-5 md:py-3 print:px-3 print:py-2">{formatCurrency(plData.income.interestIncome)}</td>
                     </tr>
 
                     {plData.income.otherIncomeItems.map((item: any, i: number) => (
-                      <tr key={`income-${i}`} className="border-b hover:bg-green-50/30">
-                        <td className="w-6 print:w-4"></td>
-                        <td className="px-4 py-2.5 print:px-3 print:py-2">{item.name}</td>
-                        <td className="text-right px-4 py-2.5 print:px-3 print:py-2">{formatCurrency(item.amount)}</td>
+                      <tr key={`income-${i}`} className="border-b hover:bg-green-50/30 md:border-b md:border-gray-200">
+                        <td className="w-6 md:w-8 print:w-4"></td>
+                        <td className="px-4 py-2.5 md:px-5 md:py-3 print:px-3 print:py-2">{item.name}</td>
+                        <td className="text-right px-4 py-2.5 md:px-5 md:py-3 print:px-3 print:py-2">{formatCurrency(item.amount)}</td>
                       </tr>
                     ))}
 
-                    <tr className="border-t-2 border-green-400 bg-green-100 font-bold print:bg-white print:border-t-2 print:border-black">
+                    <tr className="border-t-2 border-green-400 bg-green-100 font-bold md:border-t-2 md:border-green-500 print:bg-white print:border-t-2 print:border-black">
                       <td></td>
-                      <td className="px-4 py-2.5 print:px-3 print:py-2 print:text-[11pt]">एकूण उत्पन्न (A)</td>
-                      <td className="text-right px-4 py-2.5 text-green-700 print:text-black print:px-3 print:py-2 print:text-[11pt]">{formatCurrency(plData.income.totalIncome)}</td>
+                      <td className="px-4 py-2.5 md:px-5 md:py-3 md:text-base print:px-3 print:py-2 print:text-[11pt]">एकूण उत्पन्न (A)</td>
+                      <td className="text-right px-4 py-2.5 text-green-700 md:px-5 md:py-3 md:text-base print:text-black print:px-3 print:py-2 print:text-[11pt]">{formatCurrency(plData.income.totalIncome)}</td>
                     </tr>
 
-                    <tr className="h-2 print:h-1"><td colSpan={3}></td></tr>
+                    <tr className="h-2 md:h-3 print:h-1"><td colSpan={3}></td></tr>
 
-                    <tr className="bg-red-50 print:bg-white border-b-2 border-red-300 print:border-black">
-                      <td colSpan={3} className="px-4 py-2.5 font-bold text-red-800 print:text-black print:text-[11pt] print:px-3 print:py-2">
+                    <tr className="bg-red-50 print:bg-white border-b-2 border-red-300 md:border-red-400 print:border-black">
+                      <td colSpan={3} className="px-4 py-2.5 font-bold text-red-800 md:px-5 md:py-3 md:text-base print:text-black print:text-[11pt] print:px-3 print:py-2">
                         <Receipt className="w-4 h-4 inline mr-2 print:hidden" />
                         खर्च (Expenses)
                       </td>
@@ -397,37 +397,37 @@ export default function ProfitLoss() {
                     {plData.expenses.items.length === 0 ? (
                       <tr className="border-b">
                         <td></td>
-                        <td colSpan={2} className="px-4 py-4 text-center text-gray-400 print:text-gray-600 print:py-2">या कालावधीत खर्च नाही</td>
+                        <td colSpan={2} className="px-4 py-4 text-center text-gray-400 md:px-5 md:py-5 print:text-gray-600 print:py-2">या कालावधीत खर्च नाही</td>
                       </tr>
                     ) : (
                       plData.expenses.items.map((item: any, i: number) => (
-                        <tr key={`expense-${i}`} className="border-b hover:bg-red-50/30">
-                          <td className="w-6 print:w-4"></td>
-                          <td className="px-4 py-2.5 print:px-3 print:py-2">{item.name}</td>
-                          <td className="text-right px-4 py-2.5 print:px-3 print:py-2">{formatCurrency(item.amount)}</td>
+                        <tr key={`expense-${i}`} className="border-b hover:bg-red-50/30 md:border-b md:border-gray-200">
+                          <td className="w-6 md:w-8 print:w-4"></td>
+                          <td className="px-4 py-2.5 md:px-5 md:py-3 print:px-3 print:py-2">{item.name}</td>
+                          <td className="text-right px-4 py-2.5 md:px-5 md:py-3 print:px-3 print:py-2">{formatCurrency(item.amount)}</td>
                         </tr>
                       ))
                     )}
 
-                    <tr className="border-t-2 border-red-400 bg-red-100 font-bold print:bg-white print:border-t-2 print:border-black">
+                    <tr className="border-t-2 border-red-400 bg-red-100 font-bold md:border-t-2 md:border-red-500 print:bg-white print:border-t-2 print:border-black">
                       <td></td>
-                      <td className="px-4 py-2.5 print:px-3 print:py-2 print:text-[11pt]">एकूण खर्च (B)</td>
-                      <td className="text-right px-4 py-2.5 text-red-700 print:text-black print:px-3 print:py-2 print:text-[11pt]">{formatCurrency(plData.expenses.totalExpenses)}</td>
+                      <td className="px-4 py-2.5 md:px-5 md:py-3 md:text-base print:px-3 print:py-2 print:text-[11pt]">एकूण खर्च (B)</td>
+                      <td className="text-right px-4 py-2.5 text-red-700 md:px-5 md:py-3 md:text-base print:text-black print:px-3 print:py-2 print:text-[11pt]">{formatCurrency(plData.expenses.totalExpenses)}</td>
                     </tr>
 
-                    <tr className="h-2 print:h-1"><td colSpan={3}></td></tr>
+                    <tr className="h-2 md:h-3 print:h-1"><td colSpan={3}></td></tr>
 
                     <tr className={`border-t-[3px] border-b-[3px] ${plData.isProfit ? 'border-green-500 bg-green-50' : 'border-red-500 bg-red-50'} print:bg-white print:border-black`}>
                       <td></td>
-                      <td className="px-4 py-3 print:px-3 print:py-2.5">
-                        <span className="text-lg font-bold print:text-[12pt]">
+                      <td className="px-4 py-3 md:px-5 md:py-4 print:px-3 print:py-2.5">
+                        <span className="text-lg font-bold md:text-xl print:text-[12pt]">
                           {plData.isProfit ? "निव्वळ नफा (A - B)" : "निव्वळ तोटा (B - A)"}
                         </span>
-                        <div className="text-xs text-gray-500 print:text-[8pt] mt-0.5">
+                        <div className="text-xs text-gray-500 md:text-sm print:text-[8pt] mt-0.5">
                           ₹ {formatCurrency(plData.income.totalIncome)} - ₹ {formatCurrency(plData.expenses.totalExpenses)}
                         </div>
                       </td>
-                      <td className={`text-right px-4 py-3 text-xl font-bold ${plData.isProfit ? 'text-green-700' : 'text-red-700'} print:text-black print:text-[13pt] print:px-3 print:py-2.5`}>
+                      <td className={`text-right px-4 py-3 text-xl font-bold md:px-5 md:py-4 md:text-2xl ${plData.isProfit ? 'text-green-700' : 'text-red-700'} print:text-black print:text-[13pt] print:px-3 print:py-2.5`}>
                         {formatCurrency(plData.netProfit)}
                       </td>
                     </tr>
