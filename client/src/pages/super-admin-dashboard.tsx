@@ -368,12 +368,12 @@ export default function SuperAdminDashboard() {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">एकूण टेनंट</CardTitle>
+                  <CardTitle className="text-sm md:text-base font-medium">एकूण टेनंट</CardTitle>
                   <Building className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{totalTenants}</div>
-                  <p className="text-xs text-muted-foreground">
+                <CardContent className="md:p-6">
+                  <div className="text-2xl md:text-3xl font-bold">{totalTenants}</div>
+                  <p className="text-xs md:text-sm text-muted-foreground">
                     सक्रिय कंपन्या
                   </p>
                 </CardContent>
@@ -381,12 +381,12 @@ export default function SuperAdminDashboard() {
 
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">एकूण वापरकर्ते</CardTitle>
+                  <CardTitle className="text-sm md:text-base font-medium">एकूण वापरकर्ते</CardTitle>
                   <Users className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{totalUsers}</div>
-                  <p className="text-xs text-muted-foreground">
+                <CardContent className="md:p-6">
+                  <div className="text-2xl md:text-3xl font-bold">{totalUsers}</div>
+                  <p className="text-xs md:text-sm text-muted-foreground">
                     सर्व टेनंट मधील
                   </p>
                 </CardContent>
@@ -394,12 +394,12 @@ export default function SuperAdminDashboard() {
 
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">सक्रिय वापरकर्ते</CardTitle>
+                  <CardTitle className="text-sm md:text-base font-medium">सक्रिय वापरकर्ते</CardTitle>
                   <Activity className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{activeUsers}</div>
-                  <p className="text-xs text-muted-foreground">
+                <CardContent className="md:p-6">
+                  <div className="text-2xl md:text-3xl font-bold">{activeUsers}</div>
+                  <p className="text-xs md:text-sm text-muted-foreground">
                     चालू असलेले
                   </p>
                 </CardContent>
@@ -407,12 +407,12 @@ export default function SuperAdminDashboard() {
 
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">निष्क्रिय टेनंट</CardTitle>
+                  <CardTitle className="text-sm md:text-base font-medium">निष्क्रिय टेनंट</CardTitle>
                   <AlertTriangle className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-red-600">{inactiveTenants}</div>
-                  <p className="text-xs text-muted-foreground">
+                <CardContent className="md:p-6">
+                  <div className="text-2xl md:text-3xl font-bold text-red-600">{inactiveTenants}</div>
+                  <p className="text-xs md:text-sm text-muted-foreground">
                     7+ दिवस निष्क्रिय
                   </p>
                 </CardContent>
@@ -437,7 +437,7 @@ export default function SuperAdminDashboard() {
                   <div className="space-y-4">
                     {filteredStorageAnalytics.length > 0 ? (
                       filteredStorageAnalytics.map((tenant: any) => (
-                        <div key={tenant.tenantId} className="border rounded-lg p-4 bg-gray-50">
+                        <div key={tenant.tenantId} className="border rounded-lg p-4 md:p-6 bg-gray-50">
                           <div className="flex items-center justify-between mb-3">
                             <div>
                               <h3 className="font-semibold text-lg">{tenant.companyName}</h3>
@@ -450,25 +450,25 @@ export default function SuperAdminDashboard() {
                           </div>
                           
                           <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
-                            <div className="text-center p-2 bg-white rounded">
-                              <p className="font-medium text-gray-700">{tenant.recordCounts.users}</p>
-                              <p className="text-gray-500">वापरकर्ते</p>
+                            <div className="text-center p-2 md:p-3 bg-white rounded">
+                              <p className="font-medium text-gray-700 md:text-base">{tenant.recordCounts.users}</p>
+                              <p className="text-gray-500 md:text-sm">वापरकर्ते</p>
                             </div>
-                            <div className="text-center p-2 bg-white rounded">
-                              <p className="font-medium text-gray-700">{tenant.recordCounts.borrowers}</p>
-                              <p className="text-gray-500">कर्जदार</p>
+                            <div className="text-center p-2 md:p-3 bg-white rounded">
+                              <p className="font-medium text-gray-700 md:text-base">{tenant.recordCounts.borrowers}</p>
+                              <p className="text-gray-500 md:text-sm">कर्जदार</p>
                             </div>
-                            <div className="text-center p-2 bg-white rounded">
-                              <p className="font-medium text-gray-700">{tenant.recordCounts.loans}</p>
-                              <p className="text-gray-500">कर्जे</p>
+                            <div className="text-center p-2 md:p-3 bg-white rounded">
+                              <p className="font-medium text-gray-700 md:text-base">{tenant.recordCounts.loans}</p>
+                              <p className="text-gray-500 md:text-sm">कर्जे</p>
                             </div>
-                            <div className="text-center p-2 bg-white rounded">
-                              <p className="font-medium text-gray-700">{tenant.recordCounts.transactions}</p>
-                              <p className="text-gray-500">व्यवहार</p>
+                            <div className="text-center p-2 md:p-3 bg-white rounded">
+                              <p className="font-medium text-gray-700 md:text-base">{tenant.recordCounts.transactions}</p>
+                              <p className="text-gray-500 md:text-sm">व्यवहार</p>
                             </div>
-                            <div className="text-center p-2 bg-white rounded">
-                              <p className="font-medium text-gray-700">{tenant.recordCounts.cashTransactions}</p>
-                              <p className="text-gray-500">रोकड व्यवहार</p>
+                            <div className="text-center p-2 md:p-3 bg-white rounded">
+                              <p className="font-medium text-gray-700 md:text-base">{tenant.recordCounts.cashTransactions}</p>
+                              <p className="text-gray-500 md:text-sm">रोकड व्यवहार</p>
                             </div>
                           </div>
                           

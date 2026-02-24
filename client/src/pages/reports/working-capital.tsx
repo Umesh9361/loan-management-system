@@ -256,9 +256,9 @@ export default function WorkingCapital() {
         {/* Screen Controls */}
         <Card className="print:hidden mb-6">
           <CardHeader>
-            <CardTitle className="text-xl">भांडवल खाते अहवाल</CardTitle>
+            <CardTitle className="text-xl md:text-2xl">भांडवल खाते अहवाल</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 md:space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
               <div>
                 <Label htmlFor="dateFrom">सुरुवातीची तारीख</Label>
@@ -298,7 +298,7 @@ export default function WorkingCapital() {
         {/* Capital Account Report */}
         <Card className="print:shadow-none print:border-none">
           <CardHeader className="text-center print:pb-2">
-            <CardTitle className="text-xl print:mb-1">{(company as any)?.name || 'कंपनीचे नाव'}</CardTitle>
+            <CardTitle className="text-xl md:text-2xl print:mb-1">{(company as any)?.name || 'कंपनीचे नाव'}</CardTitle>
             <p className="text-gray-600 print:mb-1">भांडवल खाते अहवाल (नमुना क्रमांक १३)</p>
             <p className="text-sm text-gray-500 print:mb-2">
               कालावधी: {new Date(dateFilters.dateFrom).toLocaleDateString('en-GB')} ते {new Date(dateFilters.dateTo).toLocaleDateString('en-GB')}
@@ -321,12 +321,12 @@ export default function WorkingCapital() {
                 {/* Headers */}
                 <thead>
                   <tr className="bg-indigo-500 text-white">
-                    <th className="text-center py-3 px-2 border-r border-white font-bold text-xs">दिनांक</th>
-                    <th className="text-center py-3 px-2 border-r border-white font-bold text-xs">कर्ज संख्या</th>
-                    <th className="text-center py-3 px-2 border-r border-white font-bold text-xs">कर्जाच्या रकमेची एकूण परतफेड</th>
-                    <th className="text-center py-3 px-2 border-r border-white font-bold text-xs">रोकड वहीतील पान क्रमांक</th>
-                    <th className="text-center py-3 px-2 border-r border-white font-bold text-xs">कर्ज वाटपाची एकूण रक्कम</th>
-                    <th className="text-center py-3 px-2 font-bold text-xs">व्यवसायात अडकलेली निव्वळ जिल्हक रक्कम</th>
+                    <th className="text-center py-3 px-2 border-r border-white font-bold text-xs md:text-sm md:py-4 md:px-3">दिनांक</th>
+                    <th className="text-center py-3 px-2 border-r border-white font-bold text-xs md:text-sm md:py-4 md:px-3">कर्ज संख्या</th>
+                    <th className="text-center py-3 px-2 border-r border-white font-bold text-xs md:text-sm md:py-4 md:px-3">कर्जाच्या रकमेची एकूण परतफेड</th>
+                    <th className="text-center py-3 px-2 border-r border-white font-bold text-xs md:text-sm md:py-4 md:px-3">रोकड वहीतील पान क्रमांक</th>
+                    <th className="text-center py-3 px-2 border-r border-white font-bold text-xs md:text-sm md:py-4 md:px-3">कर्ज वाटपाची एकूण रक्कम</th>
+                    <th className="text-center py-3 px-2 font-bold text-xs md:text-sm md:py-4 md:px-3">व्यवसायात अडकलेली निव्वळ जिल्हक रक्कम</th>
                   </tr>
                 </thead>
                 
@@ -335,29 +335,29 @@ export default function WorkingCapital() {
                     <>
                       {filteredData.entries.map((entry: any, index: number) => (
                         <tr key={index} className="border-t border-gray-200">
-                          <td className="p-2 text-xs font-medium border-r border-gray-300 text-center text-indigo-600">
+                          <td className="p-2 md:p-3 text-xs md:text-sm font-medium border-r border-gray-300 text-center text-indigo-600">
                             {entry.date}
                           </td>
-                          <td className="p-2 text-xs font-medium border-r border-gray-300 text-center">
+                          <td className="p-2 md:p-3 text-xs md:text-sm font-medium border-r border-gray-300 text-center">
                             {entry.type === 'daily' && entry.loanNumbers ? 
                               entry.loanNumbers.join(', ') : 
                               '-'
                             }
                           </td>
-                          <td className="p-2 text-xs text-right font-medium border-r border-gray-300">
+                          <td className="p-2 md:p-3 text-xs md:text-sm text-right font-medium border-r border-gray-300">
                             {entry.totalRepaid > 0 ? (
                               <span className="text-red-600">₹{formatAmount(entry.totalRepaid)}</span>
                             ) : '-'}
                           </td>
-                          <td className="p-2 text-xs border-r border-gray-300 text-center">
+                          <td className="p-2 md:p-3 text-xs md:text-sm border-r border-gray-300 text-center">
                             {entry.pageNumber ? `पान-${entry.pageNumber}` : 'पान-1'}
                           </td>
-                          <td className="p-2 text-xs text-right font-medium border-r border-gray-300">
+                          <td className="p-2 md:p-3 text-xs md:text-sm text-right font-medium border-r border-gray-300">
                             {entry.totalDisbursed > 0 ? (
                               <span className="text-red-600">₹{formatAmount(entry.totalDisbursed)}</span>
                             ) : '-'}
                           </td>
-                          <td className="p-2 text-xs text-right font-medium">
+                          <td className="p-2 md:p-3 text-xs md:text-sm text-right font-medium">
                             <span className="text-red-600">₹{formatAmount(Math.abs(entry.balance))}</span>
                           </td>
                         </tr>
@@ -381,9 +381,9 @@ export default function WorkingCapital() {
             {/* Closing Balance Summary - Screen Only */}
             {filteredData && (
               <div className="mt-6 flex justify-center print:hidden">
-                <div className="p-4 border-2 rounded-lg border-indigo-500 bg-indigo-50">
+                <div className="p-4 md:p-6 border-2 rounded-lg border-indigo-500 bg-indigo-50">
                   <div className="text-center">
-                    <p className="text-sm font-medium text-gray-600">शेवटची भांडवल शिल्लक</p>
+                    <p className="text-sm md:text-base font-medium text-gray-600">शेवटची भांडवल शिल्लक</p>
                     <p className="text-2xl font-bold text-indigo-600">
                       ₹{formatAmount(Math.abs(filteredData.closingBalance))}
                     </p>

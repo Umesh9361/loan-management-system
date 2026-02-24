@@ -635,7 +635,7 @@ function DataManagementPage() {
   return (
     <>
       <style>{`.no-scrollbar::-webkit-scrollbar { display: none; } .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }`}</style>
-      <div className="container mx-auto p-4 max-w-6xl">
+      <div className="container mx-auto p-4 max-w-6xl md:max-w-7xl">
         <div className="mb-6">
           <div className="flex items-center gap-3 mb-2">
             <div className="p-2.5 bg-gradient-to-br from-indigo-500 to-indigo-700 rounded-xl shadow-md">

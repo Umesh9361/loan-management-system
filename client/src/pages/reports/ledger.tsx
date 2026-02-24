@@ -144,13 +144,13 @@ export default function Ledger() {
         <main className="flex-1 w-full lg:pl-72 pb-16 lg:pb-0">
           <div className="px-4 sm:px-6 lg:px-8 py-6">
             <div className="mb-6">
-              <h1 className="text-2xl font-semibold text-gray-900">खातेवही - व्यक्तिगत विवरण</h1>
+              <h1 className="text-2xl md:text-3xl font-semibold text-gray-900">खातेवही - व्यक्तिगत विवरण</h1>
               <p className="text-gray-600">व्यक्तीगत कर्ज खात्याचे संपूर्ण विवरण</p>
             </div>
 
             {/* Loan Selection */}
             <Card className="mb-6">
-              <CardContent className="pt-6">
+              <CardContent className="pt-6 md:pt-8">
                 <div className="flex flex-wrap items-end gap-4">
                   <div className="flex-1 min-w-64">
                     <Label>कर्ज निवडा</Label>
@@ -246,33 +246,33 @@ export default function Ledger() {
                       <Table>
                         <TableHeader>
                           <TableRow>
-                            <TableHead>तारीख</TableHead>
-                            <TableHead>तपशील</TableHead>
-                            <TableHead className="text-center">डेबिट</TableHead>
-                            <TableHead className="text-center">क्रेडिट</TableHead>
-                            <TableHead className="text-center">शिल्लक</TableHead>
+                            <TableHead className="md:text-base md:py-3">तारीख</TableHead>
+                            <TableHead className="md:text-base md:py-3">तपशील</TableHead>
+                            <TableHead className="text-center md:text-base md:py-3">डेबिट</TableHead>
+                            <TableHead className="text-center md:text-base md:py-3">क्रेडिट</TableHead>
+                            <TableHead className="text-center md:text-base md:py-3">शिल्लक</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
                           {ledgerRows.map((row, index) => (
                             <TableRow key={index}>
-                              <TableCell className="font-inter">
+                              <TableCell className="font-inter md:text-base md:py-3">
                                 {new Date(row.date).toLocaleDateString('hi-IN')}
                               </TableCell>
-                              <TableCell>{row.description}</TableCell>
-                              <TableCell className="text-center font-inter">
+                              <TableCell className="md:text-base md:py-3">{row.description}</TableCell>
+                              <TableCell className="text-center font-inter md:text-base md:py-3">
                                 {row.debit !== null 
                                   ? `₹ ${LoanCalculations.formatAmount(row.debit)}` 
                                   : "-"
                                 }
                               </TableCell>
-                              <TableCell className="text-center font-inter">
+                              <TableCell className="text-center font-inter md:text-base md:py-3">
                                 {row.credit !== null 
                                   ? `₹ ${LoanCalculations.formatAmount(row.credit)}` 
                                   : "-"
                                 }
                               </TableCell>
-                              <TableCell className="text-center font-medium font-inter">
+                              <TableCell className="text-center font-medium font-inter md:text-base md:py-3">
                                 ₹ {LoanCalculations.formatAmount(row.balance)}
                               </TableCell>
                             </TableRow>
@@ -282,7 +282,7 @@ export default function Ledger() {
                     </div>
 
                     {/* Summary */}
-                    <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-gray-50 rounded-lg">
+                    <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4 p-4 md:p-6 bg-gray-50 rounded-lg">
                       <div className="text-center">
                         <Label className="text-sm font-medium text-gray-600">मुद्दल रक्कम</Label>
                         <p className="text-lg font-bold font-inter">

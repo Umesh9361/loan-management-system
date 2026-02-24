@@ -412,65 +412,65 @@ export default function AccountSummaryReport() {
     <>
       {/* Desktop Table */}
       <div className="hidden sm:block overflow-x-auto">
-        <table className="w-full border-collapse border border-black text-sm">
+        <table className="w-full border-collapse border border-black text-sm md:text-base">
           <thead>
             <tr>
               {showRank && (
-                <th rowSpan={2} className="border border-black p-2 bg-gray-100 text-center font-bold w-12">#</th>
+                <th rowSpan={2} className="border border-black p-2 md:p-3 bg-gray-100 text-center font-bold w-12">#</th>
               )}
-              <th rowSpan={2} className="border border-black p-2 bg-gray-100 text-left font-bold w-1/5">
+              <th rowSpan={2} className="border border-black p-2 md:p-3 bg-gray-100 text-left font-bold w-1/5">
                 {nameLabel}
               </th>
-              <th colSpan={3} className="border border-black p-2 bg-gray-100 text-center font-bold">
+              <th colSpan={3} className="border border-black p-2 md:p-3 bg-gray-100 text-center font-bold">
                 कर्ज वाटप
               </th>
-              <th rowSpan={2} className="border border-black p-2 bg-gray-100 text-center font-bold">
+              <th rowSpan={2} className="border border-black p-2 md:p-3 bg-gray-100 text-center font-bold">
                 एकूण वाटप (₹)
               </th>
-              <th rowSpan={2} className="border border-black p-2 bg-gray-100 text-center font-bold">
+              <th rowSpan={2} className="border border-black p-2 md:p-3 bg-gray-100 text-center font-bold">
                 बंद रक्कम (₹)
               </th>
-              <th rowSpan={2} className="border border-black p-2 bg-gray-100 text-center font-bold">
+              <th rowSpan={2} className="border border-black p-2 md:p-3 bg-gray-100 text-center font-bold">
                 सक्रिय शिल्लक (₹)
               </th>
-              <th rowSpan={2} className="border border-black p-2 bg-gray-100 text-center font-bold">
+              <th rowSpan={2} className="border border-black p-2 md:p-3 bg-gray-100 text-center font-bold">
                 एकूण व्याज (₹)
               </th>
             </tr>
             <tr>
-              <th className="border border-black p-2 bg-gray-100 text-center font-bold">एकूण</th>
-              <th className="border border-black p-2 bg-gray-100 text-center font-bold">सक्रिय</th>
-              <th className="border border-black p-2 bg-gray-100 text-center font-bold">बंद</th>
+              <th className="border border-black p-2 md:p-3 bg-gray-100 text-center font-bold">एकूण</th>
+              <th className="border border-black p-2 md:p-3 bg-gray-100 text-center font-bold">सक्रिय</th>
+              <th className="border border-black p-2 md:p-3 bg-gray-100 text-center font-bold">बंद</th>
             </tr>
           </thead>
           <tbody>
             {data.map((row, index) => (
               <tr key={index} className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}>
                 {showRank && (
-                  <td className="border border-black p-2 text-center font-semibold text-indigo-600">{index + 1}</td>
+                  <td className="border border-black p-2 md:p-3 text-center font-semibold text-indigo-600">{index + 1}</td>
                 )}
-                <td className="border border-black p-2 text-left font-semibold">{row.name}</td>
-                <td className="border border-black p-2 text-center">{row.totalLoans}</td>
-                <td className="border border-black p-2 text-center">{row.activeLoans}</td>
-                <td className="border border-black p-2 text-center">{row.closedLoans}</td>
-                <td className="border border-black p-2 text-right">{formatCurrency(row.totalAmount).replace('₹', '')}</td>
-                <td className="border border-black p-2 text-right">{formatCurrency(row.closedAmount).replace('₹', '')}</td>
-                <td className="border border-black p-2 text-right">{formatCurrency(row.activeBalance).replace('₹', '')}</td>
-                <td className="border border-black p-2 text-right">{formatCurrency(row.totalInterest).replace('₹', '')}</td>
+                <td className="border border-black p-2 md:p-3 text-left font-semibold">{row.name}</td>
+                <td className="border border-black p-2 md:p-3 text-center">{row.totalLoans}</td>
+                <td className="border border-black p-2 md:p-3 text-center">{row.activeLoans}</td>
+                <td className="border border-black p-2 md:p-3 text-center">{row.closedLoans}</td>
+                <td className="border border-black p-2 md:p-3 text-right">{formatCurrency(row.totalAmount).replace('₹', '')}</td>
+                <td className="border border-black p-2 md:p-3 text-right">{formatCurrency(row.closedAmount).replace('₹', '')}</td>
+                <td className="border border-black p-2 md:p-3 text-right">{formatCurrency(row.activeBalance).replace('₹', '')}</td>
+                <td className="border border-black p-2 md:p-3 text-right">{formatCurrency(row.totalInterest).replace('₹', '')}</td>
               </tr>
             ))}
             <tr className="bg-indigo-100 border-t-2 border-black font-bold">
               {showRank && (
-                <td className="border border-black p-2 text-center font-bold">-</td>
+                <td className="border border-black p-2 md:p-3 text-center font-bold">-</td>
               )}
-              <td className="border border-black p-2 text-left font-bold">एकूण योग</td>
-              <td className="border border-black p-2 text-center font-bold">{grandTotals.totalLoans}</td>
-              <td className="border border-black p-2 text-center font-bold">{grandTotals.activeLoans}</td>
-              <td className="border border-black p-2 text-center font-bold">{grandTotals.closedLoans}</td>
-              <td className="border border-black p-2 text-right font-bold">{formatCurrency(grandTotals.totalAmount).replace('₹', '')}</td>
-              <td className="border border-black p-2 text-right font-bold">{formatCurrency(grandTotals.closedAmount).replace('₹', '')}</td>
-              <td className="border border-black p-2 text-right font-bold">{formatCurrency(grandTotals.activeBalance).replace('₹', '')}</td>
-              <td className="border border-black p-2 text-right font-bold">{formatCurrency(grandTotals.totalInterest).replace('₹', '')}</td>
+              <td className="border border-black p-2 md:p-3 text-left font-bold">एकूण योग</td>
+              <td className="border border-black p-2 md:p-3 text-center font-bold">{grandTotals.totalLoans}</td>
+              <td className="border border-black p-2 md:p-3 text-center font-bold">{grandTotals.activeLoans}</td>
+              <td className="border border-black p-2 md:p-3 text-center font-bold">{grandTotals.closedLoans}</td>
+              <td className="border border-black p-2 md:p-3 text-right font-bold">{formatCurrency(grandTotals.totalAmount).replace('₹', '')}</td>
+              <td className="border border-black p-2 md:p-3 text-right font-bold">{formatCurrency(grandTotals.closedAmount).replace('₹', '')}</td>
+              <td className="border border-black p-2 md:p-3 text-right font-bold">{formatCurrency(grandTotals.activeBalance).replace('₹', '')}</td>
+              <td className="border border-black p-2 md:p-3 text-right font-bold">{formatCurrency(grandTotals.totalInterest).replace('₹', '')}</td>
             </tr>
           </tbody>
         </table>

@@ -161,7 +161,7 @@ export default function Company() {
         <main className="flex-1 w-full lg:pl-72 pb-16 lg:pb-0">
           <div className="px-4 sm:px-6 lg:px-8 py-6">
             <div className="mb-6">
-              <h1 className="text-2xl font-semibold text-gray-900">कंपनी नोंदणी</h1>
+              <h1 className="text-2xl md:text-3xl font-semibold text-gray-900">कंपनी नोंदणी</h1>
               <p className="text-gray-600">आपल्या कंपनीची माहिती व्यवस्थापित करा</p>
             </div>
 
@@ -179,7 +179,7 @@ export default function Company() {
                     <Button onClick={() => setIsEditing(true)}>कंपनी नोंदणी करा</Button>
                   </div>
                 ) : isEditing ? (
-                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6" autoComplete="off">
+                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 md:space-y-8" autoComplete="off">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div>
                         <Label htmlFor="name">कंपनीचे नाव *</Label>
@@ -260,11 +260,11 @@ export default function Company() {
                     </div>
                   </form>
                 ) : (
-                  <div className="space-y-6">
+                  <div className="space-y-6 md:space-y-8">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div>
-                        <Label className="text-sm font-medium text-gray-500">कंपनीचे नाव</Label>
-                        <p className="text-lg font-medium text-gray-900">{company?.name}</p>
+                        <Label className="text-sm md:text-base font-medium text-gray-500">कंपनीचे नाव</Label>
+                        <p className="text-lg md:text-xl font-medium text-gray-900">{company?.name}</p>
                       </div>
 
                       {company?.licenseNumber && (

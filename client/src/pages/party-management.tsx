@@ -289,13 +289,13 @@ export default function PartyManagement() {
                   <div className="overflow-x-auto">
                     <Table>
                       <TableHeader>
-                        <TableRow>
-                          <TableHead>नाव</TableHead>
-                          <TableHead className="hidden sm:table-cell">खाते प्रकार</TableHead>
-                          <TableHead className="hidden md:table-cell">मोबाईल</TableHead>
-                          <TableHead className="hidden lg:table-cell">पत्ता</TableHead>
-                          <TableHead className="hidden xl:table-cell">Opening Balance</TableHead>
-                          <TableHead>क्रिया</TableHead>
+                        <TableRow className="md:bg-indigo-700">
+                          <TableHead className="md:text-white md:py-3">नाव</TableHead>
+                          <TableHead className="hidden sm:table-cell md:text-white md:py-3">खाते प्रकार</TableHead>
+                          <TableHead className="hidden md:table-cell md:text-white md:py-3">मोबाईल</TableHead>
+                          <TableHead className="hidden lg:table-cell md:text-white md:py-3">पत्ता</TableHead>
+                          <TableHead className="hidden xl:table-cell md:text-white md:py-3">Opening Balance</TableHead>
+                          <TableHead className="md:text-white md:py-3">क्रिया</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -308,8 +308,8 @@ export default function PartyManagement() {
                         ) : (
                           filteredParties.map((party: any) => (
                             <TableRow key={party.id}>
-                              <TableCell>
-                                <div className="font-medium">{party.name}</div>
+                              <TableCell className="md:px-4 md:py-3">
+                                <div className="font-medium md:text-base">{party.name}</div>
                                 <div className="sm:hidden text-xs text-gray-500 mt-1 space-y-1">
                                   {party.mobile && (
                                     <div className="flex items-center gap-1">
@@ -325,18 +325,18 @@ export default function PartyManagement() {
                                   )}
                                 </div>
                               </TableCell>
-                              <TableCell className="hidden sm:table-cell">
+                              <TableCell className="hidden sm:table-cell md:px-4 md:py-3">
                                 <Badge variant="outline" className="capitalize">
                                   {getAccountTypeLabel(party.accountType || "supplier")}
                                 </Badge>
                               </TableCell>
-                              <TableCell className="hidden md:table-cell">
+                              <TableCell className="hidden md:table-cell md:px-4 md:py-3 md:text-base">
                                 {party.mobile || "-"}
                               </TableCell>
-                              <TableCell className="hidden lg:table-cell">
+                              <TableCell className="hidden lg:table-cell md:px-4 md:py-3 md:text-base">
                                 {party.address || "-"}
                               </TableCell>
-                              <TableCell className="hidden xl:table-cell">
+                              <TableCell className="hidden xl:table-cell md:px-4 md:py-3">
                                 {party.openingBalance ? (
                                   <Badge variant={party.openingBalanceType === 'credit' ? 'default' : 'secondary'}>
                                     {party.openingBalanceType === 'credit' ? 'Credit' : 'Debit'}: ₹{Number(party.openingBalance).toLocaleString('en-IN')}
@@ -345,7 +345,7 @@ export default function PartyManagement() {
                                   <span className="text-gray-400">-</span>
                                 )}
                               </TableCell>
-                              <TableCell>
+                              <TableCell className="md:px-4 md:py-3">
                                 <div className="flex space-x-2">
                                   <Button
                                     variant="ghost"

@@ -1272,12 +1272,12 @@ export default function AccountLedger() {
               {/* Statement Display */}
               {statementData && (
                 <Card className="ledger-card print-area">
-                  <CardContent className="p-6">
+                  <CardContent className="p-6 md:p-8">
                     {/* Statement Header */}
                     <div className="ledger-header space-y-2">
-                      <h2 className="text-xl font-bold print:hidden">{company?.name || 'कंपनी नाव'}</h2>
-                      <p className="text-sm text-gray-600 print:hidden">{company?.address}</p>
-                      <h3 className="text-lg font-semibold mt-4">
+                      <h2 className="text-xl md:text-2xl font-bold print:hidden">{company?.name || 'कंपनी नाव'}</h2>
+                      <p className="text-sm md:text-base text-gray-600 print:hidden">{company?.address}</p>
+                      <h3 className="text-lg md:text-xl font-semibold mt-4">
                         {statementData.account.type === 'individual_loan' 
                           ? statementData.account.formattedType || 'नमुना क्रमांक आठ (नियम 18 पहा)'
                           : 'खाते लेजर'
@@ -1397,14 +1397,14 @@ export default function AccountLedger() {
 
                     {/* Statement Table */}
                     <div className="overflow-x-auto">
-                      <Table className="ledger-table">
+                      <Table className="ledger-table md:text-base">
                         <TableHeader>
                           <TableRow>
-                            <TableHead className="border text-center">दिनांक</TableHead>
-                            <TableHead className="border text-center">तपशील</TableHead>
-                            <TableHead className="border text-center">नावे (Dr.)</TableHead>
-                            <TableHead className="border text-center">जमा (Cr.)</TableHead>
-                            <TableHead className="border text-center">शिल्लक</TableHead>
+                            <TableHead className="border text-center md:py-3">दिनांक</TableHead>
+                            <TableHead className="border text-center md:py-3">तपशील</TableHead>
+                            <TableHead className="border text-center md:py-3">नावे (Dr.)</TableHead>
+                            <TableHead className="border text-center md:py-3">जमा (Cr.)</TableHead>
+                            <TableHead className="border text-center md:py-3">शिल्लक</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>

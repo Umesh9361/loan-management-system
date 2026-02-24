@@ -18,7 +18,7 @@ export default function CashDashboard() {
   });
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="container mx-auto p-6 md:max-w-7xl space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">कैश डैशबोर्ड</h1>
         <Link href="/cash-transactions">
@@ -29,10 +29,10 @@ export default function CashDashboard() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">वर्तमान शेष</CardTitle>
+            <CardTitle className="text-sm md:text-base font-medium">वर्तमान शेष</CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -47,7 +47,7 @@ export default function CashDashboard() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">आज की गतिविधि</CardTitle>
+            <CardTitle className="text-sm md:text-base font-medium">आज की गतिविधि</CardTitle>
             <Activity className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -65,7 +65,7 @@ export default function CashDashboard() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">नकद आवक</CardTitle>
+            <CardTitle className="text-sm md:text-base font-medium">नकद आवक</CardTitle>
             <TrendingUp className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
@@ -80,7 +80,7 @@ export default function CashDashboard() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">नकद जावक</CardTitle>
+            <CardTitle className="text-sm md:text-base font-medium">नकद जावक</CardTitle>
             <TrendingDown className="h-4 w-4 text-red-600" />
           </CardHeader>
           <CardContent>
@@ -103,10 +103,10 @@ export default function CashDashboard() {
           {recentTransactions && recentTransactions.length > 0 ? (
             <div className="space-y-3">
               {recentTransactions.slice(0, 5).map((transaction: any) => (
-                <div key={transaction.id} className="flex items-center justify-between p-3 border rounded-lg">
+                <div key={transaction.id} className="flex items-center justify-between p-3 md:p-4 border rounded-lg">
                   <div>
                     <p className="font-medium">{transaction.narration}</p>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-sm md:text-base text-muted-foreground">
                       {new Date(transaction.date).toLocaleDateString('hi-IN')}
                     </p>
                   </div>

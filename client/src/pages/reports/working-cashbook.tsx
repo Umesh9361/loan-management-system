@@ -363,9 +363,9 @@ export default function WorkingCashBook() {
         {/* Screen Controls */}
         <Card className="print:hidden mb-6">
           <CardHeader>
-            <CardTitle className="text-xl">फिल्टर आणि ऑप्शन्स</CardTitle>
+            <CardTitle className="text-xl md:text-2xl">फिल्टर आणि ऑप्शन्स</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 md:space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
               <div>
                 <Label htmlFor="dateFrom">सुरुवातीची तारीख</Label>
@@ -419,7 +419,7 @@ export default function WorkingCashBook() {
         {/* T-Format Cash Book */}
         <Card className="print:shadow-none print:border-none">
           <CardHeader className="text-center print:pb-2">
-            <CardTitle className="text-xl print:mb-1">{(company as any)?.name || 'कंपनीचे नाव'}</CardTitle>
+            <CardTitle className="text-xl md:text-2xl print:mb-1">{(company as any)?.name || 'कंपनीचे नाव'}</CardTitle>
             <p className="text-gray-600 print:mb-1">रोकड वही अहवाल (नमुना क्रमांक ७)</p>
             <p className="text-sm text-gray-500 print:mb-2">
               कालावधी: {new Date(dateFilters.dateFrom).toLocaleDateString('en-GB')} ते {new Date(dateFilters.dateTo).toLocaleDateString('en-GB')}
@@ -438,8 +438,8 @@ export default function WorkingCashBook() {
                 {/* Headers */}
                 <thead>
                   <tr>
-                    <th className="bg-gray-100 text-center py-4 border-r-2 border-gray-800 font-bold text-lg">नावे</th>
-                    <th className="bg-gray-100 text-center py-4 font-bold text-lg">जमा</th>
+                    <th className="bg-gray-100 text-center py-4 border-r-2 border-gray-800 font-bold text-lg md:text-xl md:py-5">नावे</th>
+                    <th className="bg-gray-100 text-center py-4 font-bold text-lg md:text-xl md:py-5">जमा</th>
                   </tr>
                 </thead>
                 
@@ -452,11 +452,11 @@ export default function WorkingCashBook() {
                         <tbody>
                           {filteredData?.debitEntries?.map((entry: any, index: number) => (
                             <tr key={index} className={`border-b border-gray-300 ${entry.isOpening ? 'bg-yellow-50' : entry.isClosing ? 'bg-green-50' : ''}`}>
-                              <td className="px-3 py-2 text-xs">
+                              <td className="px-3 py-2 md:px-4 md:py-3 text-xs md:text-sm">
                                 {new Date(entry.date).toLocaleDateString('en-GB')}
                               </td>
-                              <td className="px-3 py-2 text-sm">{entry.description}</td>
-                              <td className="px-3 py-2 text-right font-mono text-sm">
+                              <td className="px-3 py-2 md:px-4 md:py-3 text-sm md:text-base">{entry.description}</td>
+                              <td className="px-3 py-2 md:px-4 md:py-3 text-right font-mono text-sm md:text-base">
                                 ₹{formatAmount(entry.amount)}
                               </td>
                             </tr>
@@ -471,11 +471,11 @@ export default function WorkingCashBook() {
                         <tbody>
                           {filteredData?.creditEntries?.map((entry: any, index: number) => (
                             <tr key={index} className={`border-b border-gray-300 ${entry.isOpening ? 'bg-yellow-50' : entry.isClosing ? 'bg-green-50' : ''}`}>
-                              <td className="px-3 py-2 text-xs">
+                              <td className="px-3 py-2 md:px-4 md:py-3 text-xs md:text-sm">
                                 {new Date(entry.date).toLocaleDateString('en-GB')}
                               </td>
-                              <td className="px-3 py-2 text-sm">{entry.description}</td>
-                              <td className="px-3 py-2 text-right font-mono text-sm">
+                              <td className="px-3 py-2 md:px-4 md:py-3 text-sm md:text-base">{entry.description}</td>
+                              <td className="px-3 py-2 md:px-4 md:py-3 text-right font-mono text-sm md:text-base">
                                 ₹{formatAmount(entry.amount)}
                               </td>
                             </tr>
@@ -487,10 +487,10 @@ export default function WorkingCashBook() {
                   
                   {/* Totals Row */}
                   <tr className="bg-gray-100 font-bold">
-                    <td className="text-center py-3 border-r-2 border-gray-800 text-lg">
+                    <td className="text-center py-3 border-r-2 border-gray-800 text-lg md:text-xl md:py-4">
                       एकूण: ₹{filteredData ? formatAmount(filteredData.debitTotal) : '0'}
                     </td>
-                    <td className="text-center py-3 text-lg">
+                    <td className="text-center py-3 text-lg md:text-xl md:py-4">
                       एकूण: ₹{filteredData ? formatAmount(filteredData.creditTotal) : '0'}
                     </td>
                   </tr>
@@ -501,7 +501,7 @@ export default function WorkingCashBook() {
             {/* Balance Summary */}
             {filteredData && (
               <div className="mt-4 print:mt-2 grid grid-cols-1 md:grid-cols-3 gap-4 print:gap-2">
-                <div className="bg-indigo-50 border border-indigo-200 rounded p-3 print:p-2">
+                <div className="bg-indigo-50 border border-indigo-200 rounded p-3 md:p-5 print:p-2">
                   <h4 className="font-semibold text-indigo-800 mb-1">सुरुवातीची शिल्लक</h4>
                   <p className="text-lg font-mono text-indigo-900">
                     ₹{formatAmount(Math.abs(filteredData.openingBalance))} 
@@ -509,7 +509,7 @@ export default function WorkingCashBook() {
                   </p>
                 </div>
                 
-                <div className="bg-green-50 border border-green-200 rounded p-3 print:p-2">
+                <div className="bg-green-50 border border-green-200 rounded p-3 md:p-5 print:p-2">
                   <h4 className="font-semibold text-green-800 mb-1">शेवटची शिल्लक</h4>
                   <p className="text-lg font-mono text-green-900">
                     ₹{formatAmount(Math.abs(filteredData.closingBalance))} 
@@ -517,7 +517,7 @@ export default function WorkingCashBook() {
                   </p>
                 </div>
                 
-                <div className="bg-gray-50 border border-gray-200 rounded p-3 print:p-2">
+                <div className="bg-gray-50 border border-gray-200 rounded p-3 md:p-5 print:p-2">
                   <h4 className="font-semibold text-gray-800 mb-1">व्यवहारांची संख्या</h4>
                   <p className="text-lg font-mono text-gray-900">
                     {filteredData.filteredTransactionsCount}

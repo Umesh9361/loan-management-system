@@ -557,14 +557,14 @@ export default function CapitalAccountReport() {
             
             {/* Header */}
             <div className="mb-6">
-              <h1 className="text-2xl font-semibold text-foreground heading-professional">भांडवल खाते</h1>
+              <h1 className="text-2xl md:text-3xl font-semibold text-foreground heading-professional">भांडवल खाते</h1>
               <p className="text-muted-foreground">नमुना क्रमांक १३ (नियम १९ पहा) - कर्ज वाटप अहवाल</p>
             </div>
 
             {/* Date Filter */}
             <Card className="mb-6 card-professional">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
+                <CardTitle className="flex items-center gap-2 md:text-xl">
                   <Calendar className="h-5 w-5" />
                   तारीख निवडा
                 </CardTitle>

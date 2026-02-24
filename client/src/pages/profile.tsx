@@ -147,40 +147,40 @@ export default function Profile() {
                     वापरकर्ता माहिती
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-4 md:space-y-5">
                   <div>
-                    <Label className="text-sm font-medium text-gray-700">वापरकर्ता नाव</Label>
-                    <div className="mt-1 px-3 py-2 bg-gray-50 border border-gray-200 rounded-md">
+                    <Label className="text-sm md:text-base font-medium text-gray-700">वापरकर्ता नाव</Label>
+                    <div className="mt-1 px-3 py-2 md:px-4 md:py-3 bg-gray-50 border border-gray-200 rounded-md">
                       {user?.username}
                     </div>
                   </div>
                   
                   <div>
-                    <Label className="text-sm font-medium text-gray-700">भूमिका</Label>
-                    <div className="mt-1 px-3 py-2 bg-gray-50 border border-gray-200 rounded-md flex items-center">
+                    <Label className="text-sm md:text-base font-medium text-gray-700">भूमिका</Label>
+                    <div className="mt-1 px-3 py-2 md:px-4 md:py-3 bg-gray-50 border border-gray-200 rounded-md flex items-center">
                       <Shield className="mr-2 h-4 w-4 text-indigo-600" />
                       {user?.role === 'admin' ? 'प्रशासक' : 'क्लर्क'}
                     </div>
                   </div>
                   
                   <div>
-                    <Label className="text-sm font-medium text-gray-700">टेनंट आयडी</Label>
-                    <div className="mt-1 px-3 py-2 bg-gray-50 border border-gray-200 rounded-md">
+                    <Label className="text-sm md:text-base font-medium text-gray-700">टेनंट आयडी</Label>
+                    <div className="mt-1 px-3 py-2 md:px-4 md:py-3 bg-gray-50 border border-gray-200 rounded-md">
                       {user?.tenantId}
                     </div>
                   </div>
                   
                   <div>
-                    <Label className="text-sm font-medium text-gray-700">खाते स्थिती</Label>
-                    <div className="mt-1 px-3 py-2 bg-green-50 border border-green-200 rounded-md text-green-800">
+                    <Label className="text-sm md:text-base font-medium text-gray-700">खाते स्थिती</Label>
+                    <div className="mt-1 px-3 py-2 md:px-4 md:py-3 bg-green-50 border border-green-200 rounded-md text-green-800">
                       {(user as any)?.isActive ? 'सक्रिय' : 'निष्क्रिय'}
                     </div>
                   </div>
                   
                   {(user as any)?.createdAt && (
                     <div>
-                      <Label className="text-sm font-medium text-gray-700">सदस्यता दिनांक</Label>
-                      <div className="mt-1 px-3 py-2 bg-gray-50 border border-gray-200 rounded-md">
+                      <Label className="text-sm md:text-base font-medium text-gray-700">सदस्यता दिनांक</Label>
+                      <div className="mt-1 px-3 py-2 md:px-4 md:py-3 bg-gray-50 border border-gray-200 rounded-md">
                         {new Date((user as any).createdAt).toLocaleDateString('hi-IN')}
                       </div>
                     </div>
@@ -196,38 +196,38 @@ export default function Profile() {
                     कंपनी माहिती
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-4 md:space-y-5">
                   <div>
-                    <Label className="text-sm font-medium text-gray-700">कंपनी नाव</Label>
-                    <div className="mt-1 px-3 py-2 bg-gray-50 border border-gray-200 rounded-md">
+                    <Label className="text-sm md:text-base font-medium text-gray-700">कंपनी नाव</Label>
+                    <div className="mt-1 px-3 py-2 md:px-4 md:py-3 bg-gray-50 border border-gray-200 rounded-md">
                       {(company as any)?.name || 'कंपनी नोंदणी करा'}
                     </div>
                   </div>
                   
                   <div>
-                    <Label className="text-sm font-medium text-gray-700">परवाना क्रमांक</Label>
-                    <div className="mt-1 px-3 py-2 bg-gray-50 border border-gray-200 rounded-md">
+                    <Label className="text-sm md:text-base font-medium text-gray-700">परवाना क्रमांक</Label>
+                    <div className="mt-1 px-3 py-2 md:px-4 md:py-3 bg-gray-50 border border-gray-200 rounded-md">
                       {(company as any)?.licenseNumber || 'N/A'}
                     </div>
                   </div>
                   
                   <div>
-                    <Label className="text-sm font-medium text-gray-700">पत्ता</Label>
-                    <div className="mt-1 px-3 py-2 bg-gray-50 border border-gray-200 rounded-md">
+                    <Label className="text-sm md:text-base font-medium text-gray-700">पत्ता</Label>
+                    <div className="mt-1 px-3 py-2 md:px-4 md:py-3 bg-gray-50 border border-gray-200 rounded-md">
                       {(company as any)?.address || 'N/A'}
                     </div>
                   </div>
                   
                   <div>
-                    <Label className="text-sm font-medium text-gray-700">संपर्क क्रमांक</Label>
-                    <div className="mt-1 px-3 py-2 bg-gray-50 border border-gray-200 rounded-md">
+                    <Label className="text-sm md:text-base font-medium text-gray-700">संपर्क क्रमांक</Label>
+                    <div className="mt-1 px-3 py-2 md:px-4 md:py-3 bg-gray-50 border border-gray-200 rounded-md">
                       {(company as any)?.contactNumber || 'N/A'}
                     </div>
                   </div>
                   
                   <div>
-                    <Label className="text-sm font-medium text-gray-700">ईमेल</Label>
-                    <div className="mt-1 px-3 py-2 bg-gray-50 border border-gray-200 rounded-md">
+                    <Label className="text-sm md:text-base font-medium text-gray-700">ईमेल</Label>
+                    <div className="mt-1 px-3 py-2 md:px-4 md:py-3 bg-gray-50 border border-gray-200 rounded-md">
                       {(company as any)?.email || 'N/A'}
                     </div>
                   </div>
@@ -268,7 +268,7 @@ export default function Profile() {
                       </Button>
                     </div>
                   ) : (
-                    <form onSubmit={passwordForm.handleSubmit(handlePasswordChange)} className="space-y-4 max-w-md mx-auto" autoComplete="off">
+                    <form onSubmit={passwordForm.handleSubmit(handlePasswordChange)} className="space-y-4 max-w-md md:max-w-lg mx-auto" autoComplete="off">
                       <div>
                         <Label>सध्याचा पासवर्ड</Label>
                         <Input 

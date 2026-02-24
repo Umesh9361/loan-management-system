@@ -345,11 +345,11 @@ export default function UserManagement() {
   }
 
   return (
-    <div className="container mx-auto p-4 sm:p-6 space-y-4 sm:space-y-6">
+    <div className="container mx-auto p-4 sm:p-6 md:max-w-7xl space-y-4 sm:space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold">User Management</h1>
-          <p className="text-sm sm:text-base text-muted-foreground">Manage users, permissions, and access control</p>
+          <p className="text-sm sm:text-base md:text-lg text-muted-foreground">Manage users, permissions, and access control</p>
         </div>
         
         <div className="flex flex-wrap items-center gap-2">
@@ -421,7 +421,7 @@ export default function UserManagement() {
 
       <div className="grid gap-4">
         {users.map((user) => (
-          <Card key={user.id} className="p-4">
+          <Card key={user.id} className="p-4 md:p-6">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
               <div className="flex items-center space-x-4">
                 <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">

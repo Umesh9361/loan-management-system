@@ -302,7 +302,7 @@ export default function Dashboard() {
 
             <div className="mb-8">
               <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
-                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">कामगिरी सारांश</h3>
+                <h3 className="text-sm md:text-base font-semibold text-gray-500 uppercase tracking-wide">कामगिरी सारांश</h3>
                 <div className="flex bg-gray-100 rounded-lg p-0.5 gap-0.5">
                   {[
                     { key: '1m' as const, label: 'महिना' },
@@ -334,7 +334,7 @@ export default function Dashboard() {
                     : ((card.numericValue || 0) >= (card.numericPrev || 0));
                   
                   return (
-                    <div key={card.title} className={`bg-white border border-gray-100 border-l-4 ${card.borderColor} rounded-xl p-3 sm:p-4 shadow-sm hover:shadow-md transition-all`}>
+                    <div key={card.title} className={`bg-white border border-gray-100 border-l-4 ${card.borderColor} rounded-xl p-3 sm:p-4 md:p-5 shadow-sm hover:shadow-md transition-all`}>
                       <div className="flex items-center justify-between mb-2 sm:mb-3">
                         <div className={`h-8 w-8 sm:h-10 sm:w-10 ${card.iconBg} rounded-lg flex items-center justify-center`}>
                           <Icon className={`h-4 w-4 sm:h-5 sm:w-5 ${card.iconColor}`} />
@@ -467,38 +467,38 @@ export default function Dashboard() {
                     </h4>
                     
                     <div className="grid grid-cols-2 gap-2 sm:gap-3 mb-3 sm:mb-4">
-                      <div className="bg-indigo-50 border border-indigo-100 rounded-lg p-2.5 sm:p-4 text-center">
+                      <div className="bg-indigo-50 border border-indigo-100 rounded-lg p-2.5 sm:p-4 md:p-5 text-center">
                         <div className="text-lg sm:text-2xl font-bold text-indigo-700">
                           {(monthlyProgress as any)?.summary?.totalDisbursements || 0}
                         </div>
-                        <div className="text-xs sm:text-sm font-medium text-indigo-600">एकूण कर्ज वाटप</div>
+                        <div className="text-xs sm:text-sm md:text-base font-medium text-indigo-600">एकूण कर्ज वाटप</div>
                         <div className="text-[10px] sm:text-xs text-indigo-400 mt-0.5">{progressPeriod === '3m' ? '3 महिन्यांमध्ये' : progressPeriod === '1y' ? '1 वर्षामध्ये' : '3 वर्षांमध्ये'}</div>
                       </div>
-                      <div className="bg-teal-50 border border-teal-100 rounded-lg p-2.5 sm:p-4 text-center">
+                      <div className="bg-teal-50 border border-teal-100 rounded-lg p-2.5 sm:p-4 md:p-5 text-center">
                         <div className="text-lg sm:text-2xl font-bold text-teal-700">
                           {(monthlyProgress as any)?.summary?.totalClosures || 0}
                         </div>
-                        <div className="text-xs sm:text-sm font-medium text-teal-600">एकूण कर्ज बंद</div>
+                        <div className="text-xs sm:text-sm md:text-base font-medium text-teal-600">एकूण कर्ज बंद</div>
                         <div className="text-[10px] sm:text-xs text-teal-400 mt-0.5">{progressPeriod === '3m' ? '3 महिन्यांमध्ये' : progressPeriod === '1y' ? '1 वर्षामध्ये' : '3 वर्षांमध्ये'}</div>
                       </div>
-                      <div className="bg-indigo-50 border border-indigo-100 rounded-lg p-2.5 sm:p-4 text-center">
+                      <div className="bg-indigo-50 border border-indigo-100 rounded-lg p-2.5 sm:p-4 md:p-5 text-center">
                         <div className="text-sm sm:text-xl font-bold text-indigo-700">
                           ₹{formatCompact((monthlyProgress as any)?.summary?.totalAmount || 0)}
                         </div>
-                        <div className="text-xs sm:text-sm font-medium text-indigo-600">एकूण व्यवहार</div>
+                        <div className="text-xs sm:text-sm md:text-base font-medium text-indigo-600">एकूण व्यवहार</div>
                         <div className="text-[10px] sm:text-xs text-indigo-400 mt-0.5">वास्तविक रक्कम</div>
                       </div>
-                      <div className="bg-emerald-50 border border-emerald-100 rounded-lg p-2.5 sm:p-4 text-center">
+                      <div className="bg-emerald-50 border border-emerald-100 rounded-lg p-2.5 sm:p-4 md:p-5 text-center">
                         <div className="text-lg sm:text-2xl font-bold text-emerald-700">
                           {(monthlyProgress as any)?.summary?.successRate || 0}%
                         </div>
-                        <div className="text-xs sm:text-sm font-medium text-emerald-600">यशस्वी दर</div>
+                        <div className="text-xs sm:text-sm md:text-base font-medium text-emerald-600">यशस्वी दर</div>
                         <div className="text-[10px] sm:text-xs text-emerald-400 mt-0.5">कर्ज वसुली</div>
                       </div>
                     </div>
 
-                    <div className="bg-white border border-gray-100 rounded-lg p-3 sm:p-4">
-                      <h5 className="font-semibold text-gray-700 mb-2 sm:mb-3 text-center text-xs sm:text-sm">वाढीचे निर्देशक</h5>
+                    <div className="bg-white border border-gray-100 rounded-lg p-3 sm:p-4 md:p-5">
+                      <h5 className="font-semibold text-gray-700 mb-2 sm:mb-3 text-center text-xs sm:text-sm md:text-base">वाढीचे निर्देशक</h5>
                       <div className="space-y-2">
                         {(() => {
                           const summary = (monthlyProgress as any)?.summary || {};

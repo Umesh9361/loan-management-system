@@ -1381,7 +1381,7 @@ export default function Closure() {
         </aside>
 
         <main className="flex-1 w-full lg:pl-72 pb-16 lg:pb-0">
-          <div className="px-4 sm:px-6 lg:px-8 py-6">
+          <div className="px-4 sm:px-6 lg:px-8 py-6 md:max-w-7xl md:mx-auto">
             <div className="mb-6">
               <div className="flex items-center gap-4 mb-4">
                 <Link href="/">
@@ -1419,9 +1419,9 @@ export default function Closure() {
               <TabsContent value="closure" className="mt-0">
             <Card className="shadow-2xl bg-gradient-to-br from-indigo-50 via-indigo-50 to-purple-50 border-2 border-indigo-200">
               
-              <CardContent className="p-6 bg-white rounded-lg">
+              <CardContent className="p-6 md:p-8 bg-white rounded-lg">
                 <Form {...form}>
-                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6" autoComplete="off">
+                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 md:space-y-8" autoComplete="off">
                     
                     {/* Enhanced Loan Search - Only show if not from URL */}
                     {!hideSearch && (
@@ -1535,7 +1535,7 @@ export default function Closure() {
                           </CardTitle>
                         </CardHeader>
                         <CardContent>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm md:text-base">
                             <div>
                               <span className="font-medium">कर्जदाराचे नाव:</span> {selectedLoan.borrowerName}
                             </div>

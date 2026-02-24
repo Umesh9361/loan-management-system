@@ -748,13 +748,13 @@ export default function NoticeGeneratorPage() {
 
             <Card className="mb-6 card-professional">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 heading-professional">
+                <CardTitle className="flex items-center gap-2 heading-professional md:text-xl">
                   <AlertTriangle className="h-5 w-5" />
                   कर्जदार निवडा
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+              <CardContent className="md:p-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 items-end">
                   <div>
                     <Label className="text-sm font-semibold">
                       कर्जदाराचे नाव निवडा
@@ -814,8 +814,8 @@ export default function NoticeGeneratorPage() {
                       )}
                     </div>
                   </div>
-                  <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-                    <Label className="text-sm font-semibold mb-3 block">नोटीस प्रकार निवडा</Label>
+                  <div className="mt-4 p-4 md:p-6 bg-gray-50 rounded-lg">
+                    <Label className="text-sm md:text-base font-semibold mb-3 block">नोटीस प्रकार निवडा</Label>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       <div className="flex items-center space-x-2">
                         <input

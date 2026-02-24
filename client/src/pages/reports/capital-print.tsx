@@ -113,9 +113,9 @@ export default function CapitalPrint() {
         {/* Screen Controls */}
         <Card className="print:hidden mb-6">
           <CardHeader>
-            <CardTitle className="text-xl">भांडवल खाते अहवाल</CardTitle>
+            <CardTitle className="text-xl md:text-2xl">भांडवल खाते अहवाल</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 md:space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
               <div>
                 <Label htmlFor="dateFrom">सुरुवातीची तारीख</Label>
@@ -177,11 +177,11 @@ export default function CapitalPrint() {
                 {/* Headers */}
                 <thead>
                   <tr className="bg-gray-100">
-                    <th className="text-center py-3 border-r border-gray-800 font-bold text-sm">तारीख</th>
-                    <th className="text-center py-3 border-r border-gray-800 font-bold text-sm">तपशील</th>
-                    <th className="text-center py-3 border-r border-gray-800 font-bold text-sm">जमा</th>
-                    <th className="text-center py-3 border-r border-gray-800 font-bold text-sm">नावे</th>
-                    <th className="text-center py-3 font-bold text-sm">शिल्लक</th>
+                    <th className="text-center py-3 border-r border-gray-800 font-bold text-sm md:text-base md:py-4">तारीख</th>
+                    <th className="text-center py-3 border-r border-gray-800 font-bold text-sm md:text-base md:py-4">तपशील</th>
+                    <th className="text-center py-3 border-r border-gray-800 font-bold text-sm md:text-base md:py-4">जमा</th>
+                    <th className="text-center py-3 border-r border-gray-800 font-bold text-sm md:text-base md:py-4">नावे</th>
+                    <th className="text-center py-3 font-bold text-sm md:text-base md:py-4">शिल्लक</th>
                   </tr>
                 </thead>
                 
@@ -190,22 +190,22 @@ export default function CapitalPrint() {
                     <>
                       {filteredData.entries.map((entry: any, index: number) => (
                         <tr key={index} className="border-t border-gray-200">
-                          <td className="p-3 text-sm font-medium border-r border-gray-300 text-center">
+                          <td className="p-3 md:p-4 text-sm md:text-base font-medium border-r border-gray-300 text-center">
                             {new Date(entry.date).toLocaleDateString('en-GB')}
                           </td>
-                          <td className="p-3 text-sm border-r border-gray-300">
+                          <td className="p-3 md:p-4 text-sm md:text-base border-r border-gray-300">
                             {entry.description}
                             {entry.groupName && (
                               <div className="text-sm text-gray-500 mt-1">{entry.groupName}</div>
                             )}
                           </td>
-                          <td className="p-3 text-sm text-right font-medium border-r border-gray-300">
+                          <td className="p-3 md:p-4 text-sm md:text-base text-right font-medium border-r border-gray-300">
                             {entry.type === 'credit' ? `₹${formatAmount(entry.amount)}` : '-'}
                           </td>
-                          <td className="p-3 text-sm text-right font-medium border-r border-gray-300">
+                          <td className="p-3 md:p-4 text-sm md:text-base text-right font-medium border-r border-gray-300">
                             {entry.type === 'debit' ? `₹${formatAmount(entry.amount)}` : '-'}
                           </td>
-                          <td className="p-3 text-sm text-right font-medium">
+                          <td className="p-3 md:p-4 text-sm md:text-base text-right font-medium">
                             ₹{formatAmount(Math.abs(entry.balance))} {entry.balance >= 0 ? '(जमा)' : '(नावे)'}
                           </td>
                         </tr>
@@ -213,13 +213,13 @@ export default function CapitalPrint() {
                       
                       {/* Closing Balance Row */}
                       <tr className="border-t-2 border-gray-800 bg-indigo-50">
-                        <td className="p-3 font-bold border-r border-gray-300 text-center text-sm">
+                        <td className="p-3 md:p-4 font-bold border-r border-gray-300 text-center text-sm md:text-base">
                           {new Date(dateFilters.dateTo).toLocaleDateString('en-GB')}
                         </td>
-                        <td className="p-3 font-bold border-r border-gray-300 text-sm">शेवटची शिल्लक</td>
-                        <td className="p-3 border-r border-gray-300"></td>
-                        <td className="p-3 border-r border-gray-300"></td>
-                        <td className="p-3 text-right font-bold text-indigo-600 text-sm">
+                        <td className="p-3 md:p-4 font-bold border-r border-gray-300 text-sm md:text-base">शेवटची शिल्लक</td>
+                        <td className="p-3 md:p-4 border-r border-gray-300"></td>
+                        <td className="p-3 md:p-4 border-r border-gray-300"></td>
+                        <td className="p-3 md:p-4 text-right font-bold text-indigo-600 text-sm md:text-base">
                           ₹{formatAmount(Math.abs(filteredData.closingBalance))} {filteredData.closingBalance >= 0 ? '(जमा)' : '(नावे)'}
                         </td>
                       </tr>
@@ -241,9 +241,9 @@ export default function CapitalPrint() {
             {/* Closing Balance Summary - Screen Only */}
             {filteredData && (
               <div className="mt-6 flex justify-center print:hidden">
-                <div className="p-4 border-2 rounded-lg border-indigo-500 bg-indigo-50">
+                <div className="p-4 md:p-6 border-2 rounded-lg border-indigo-500 bg-indigo-50">
                   <div className="text-center">
-                    <p className="text-sm font-medium text-gray-600">शेवटची भांडवल शिल्लक</p>
+                    <p className="text-sm md:text-base font-medium text-gray-600">शेवटची भांडवल शिल्लक</p>
                     <p className="text-2xl font-bold text-indigo-600">
                       ₹{formatAmount(Math.abs(filteredData.closingBalance))}
                     </p>

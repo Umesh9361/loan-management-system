@@ -529,10 +529,10 @@ export default function AnnualStatementPage() {
 
             <Card>
               <CardHeader>
-                <CardTitle className="text-2xl">
+                <CardTitle className="text-2xl md:text-3xl">
                   वार्षिक लेखा विवरणपत्र - नमुना क्रमांक १४
                 </CardTitle>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm md:text-base text-gray-600">
                   वर्ष संपल्यानंतर ४५ दिवसांच्या आत सावकाराने कर्जदारास द्यावयाचे वार्षिक लेखा विवरणपत्र
                 </p>
               </CardHeader>
@@ -540,7 +540,7 @@ export default function AnnualStatementPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                 {/* Borrower Selection with Search */}
                 <div className="space-y-2">
-                  <Label>कर्जदाराचे नाव निवडा *</Label>
+                  <Label className="md:text-base">कर्जदाराचे नाव निवडा *</Label>
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                     <Input
@@ -606,7 +606,7 @@ export default function AnnualStatementPage() {
 
                 {/* Year Selection */}
                 <div className="space-y-2">
-                  <Label htmlFor="year-select">आर्थिक वर्ष निवडा *</Label>
+                  <Label htmlFor="year-select" className="md:text-base">आर्थिक वर्ष निवडा *</Label>
                   <Select value={selectedYear} onValueChange={setSelectedYear}>
                     <SelectTrigger id="year-select" data-testid="select-year">
                       <SelectValue placeholder="वर्ष निवडा..." />
@@ -625,7 +625,7 @@ export default function AnnualStatementPage() {
               {/* Multi-Loan Selection */}
               {filteredLoans.length > 1 && (
                 <div className="mb-6 space-y-2">
-                  <Label className="text-base font-semibold">कर्ज निवडा * ({filteredLoans.length} कर्जे आढळली - निवडलेल्या वर्षापर्यंतची)</Label>
+                  <Label className="text-base md:text-lg font-semibold">कर्ज निवडा * ({filteredLoans.length} कर्जे आढळली - निवडलेल्या वर्षापर्यंतची)</Label>
                   <Card className="border-2 border-indigo-300 max-h-64 overflow-y-auto">
                     <CardContent className="p-0">
                       {filteredLoans.map((loan: any) => (
@@ -750,7 +750,7 @@ export default function AnnualStatementPage() {
               {/* Display Statement Data */}
               {statementData && (
                 <div className="mt-8 border-t pt-6">
-                  <h3 className="text-lg font-semibold mb-4">विवरणपत्र माहिती</h3>
+                  <h3 className="text-lg md:text-xl font-semibold mb-4">विवरणपत्र माहिती</h3>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                     <div>
@@ -772,42 +772,42 @@ export default function AnnualStatementPage() {
                   </div>
 
                   <div className="mt-6">
-                    <h4 className="font-semibold mb-2">आर्थिक तपशील (₹):</h4>
-                    <table className="w-full text-sm border">
+                    <h4 className="font-semibold md:text-lg mb-2">आर्थिक तपशील (₹):</h4>
+                    <table className="w-full text-sm md:text-base border">
                       <tbody>
                         <tr className="border-b">
-                          <td className="p-2">वर्षाच्या सुरुवातीस देय (मूळ + व्याज)</td>
-                          <td className="p-2 text-right font-medium">
+                          <td className="p-2 md:px-4 md:py-3">वर्षाच्या सुरुवातीस देय (मूळ + व्याज)</td>
+                          <td className="p-2 md:px-4 md:py-3 text-right font-medium">
                             ₹{Math.round(statementData.openingTotal || 0).toLocaleString('en-IN')}
                           </td>
                         </tr>
                         <tr className="border-b">
-                          <td className="p-2">वर्ष भरात दिलेलें एकूण कर्ज</td>
-                          <td className="p-2 text-right font-medium">
+                          <td className="p-2 md:px-4 md:py-3">वर्ष भरात दिलेलें एकूण कर्ज</td>
+                          <td className="p-2 md:px-4 md:py-3 text-right font-medium">
                             ₹{Math.round(statementData.yearDisbursement || 0).toLocaleString('en-IN')}
                           </td>
                         </tr>
                         <tr className="border-b">
-                          <td className="p-2">वर्ष भरात प्राप्त परतफेड (मूळ)</td>
-                          <td className="p-2 text-right font-medium">
+                          <td className="p-2 md:px-4 md:py-3">वर्ष भरात प्राप्त परतफेड (मूळ)</td>
+                          <td className="p-2 md:px-4 md:py-3 text-right font-medium">
                             ₹{Math.round(statementData.yearPrincipalRepayment || 0).toLocaleString('en-IN')}
                           </td>
                         </tr>
                         <tr className="border-b">
-                          <td className="p-2">वर्ष भरात प्राप्त परतफेड (व्याज)</td>
-                          <td className="p-2 text-right font-medium">
+                          <td className="p-2 md:px-4 md:py-3">वर्ष भरात प्राप्त परतफेड (व्याज)</td>
+                          <td className="p-2 md:px-4 md:py-3 text-right font-medium">
                             ₹{Math.round(statementData.yearInterestRepayment || 0).toLocaleString('en-IN')}
                           </td>
                         </tr>
                         <tr className="border-b bg-gray-50">
-                          <td className="p-2 font-semibold">वर्ष अखेरीस देय (मूळ)</td>
-                          <td className="p-2 text-right font-semibold">
+                          <td className="p-2 md:px-4 md:py-3 font-semibold">वर्ष अखेरीस देय (मूळ)</td>
+                          <td className="p-2 md:px-4 md:py-3 text-right font-semibold">
                             ₹{Math.round(statementData.closingPrincipal || 0).toLocaleString('en-IN')}
                           </td>
                         </tr>
                         <tr className="bg-gray-50">
-                          <td className="p-2 font-semibold">वर्ष अखेरीस देय (व्याज)</td>
-                          <td className="p-2 text-right font-semibold">
+                          <td className="p-2 md:px-4 md:py-3 font-semibold">वर्ष अखेरीस देय (व्याज)</td>
+                          <td className="p-2 md:px-4 md:py-3 text-right font-semibold">
                             ₹{Math.round(statementData.closingInterest || 0).toLocaleString('en-IN')}
                           </td>
                         </tr>

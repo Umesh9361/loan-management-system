@@ -403,23 +403,23 @@ export default function CashTransactions() {
                     <div className="overflow-x-auto">
                       <Table>
                         <TableHeader>
-                          <TableRow>
-                            <TableHead>दिनांक</TableHead>
-                            <TableHead>प्रकार</TableHead>
-                            <TableHead>व्यक्ती</TableHead>
-                            <TableHead>तपशील</TableHead>
-                            <TableHead className="min-w-[120px] !important text-center font-bold">रक्कम</TableHead>
-                            <TableHead>नोट्स</TableHead>
-                            <TableHead>कृती</TableHead>
+                          <TableRow className="md:bg-indigo-700">
+                            <TableHead className="md:text-white md:py-3">दिनांक</TableHead>
+                            <TableHead className="md:text-white md:py-3">प्रकार</TableHead>
+                            <TableHead className="md:text-white md:py-3">व्यक्ती</TableHead>
+                            <TableHead className="md:text-white md:py-3">तपशील</TableHead>
+                            <TableHead className="min-w-[120px] !important text-center font-bold md:text-white md:py-3">रक्कम</TableHead>
+                            <TableHead className="md:text-white md:py-3">नोट्स</TableHead>
+                            <TableHead className="md:text-white md:py-3">कृती</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
                           {transactionsList.map((transaction: any) => (
                             <TableRow key={transaction.id}>
-                              <TableCell>
+                              <TableCell className="md:px-4 md:py-3 md:text-base">
                                 {DateUtils.isoToIndianDate(transaction.transactionDate)}
                               </TableCell>
-                              <TableCell>
+                              <TableCell className="md:px-4 md:py-3">
                                 <Badge 
                                   variant={transaction.transactionType === 'cash_in' ? 'default' : 'destructive'}
                                   className={transaction.transactionType === 'cash_in' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}
@@ -427,8 +427,8 @@ export default function CashTransactions() {
                                   {transaction.transactionType === 'cash_in' ? 'पैसे आले' : 'पैसे दिले'}
                                 </Badge>
                               </TableCell>
-                              <TableCell>{transaction.party?.name || 'रोकड'}</TableCell>
-                              <TableCell>
+                              <TableCell className="md:px-4 md:py-3 md:text-base">{transaction.party?.name || 'रोकड'}</TableCell>
+                              <TableCell className="md:px-4 md:py-3 md:text-base">
                                 {transaction.category === 'capital' && 'भांडवल'}
                                 {transaction.category === 'income' && 'उत्पन्न'}
                                 {transaction.category === 'expense' && 'खर्च'}
@@ -445,10 +445,10 @@ export default function CashTransactions() {
                                   Amount: {transaction.amount}
                                 </span>
                               </TableCell>
-                              <TableCell className="max-w-xs truncate">
+                              <TableCell className="max-w-xs truncate md:px-4 md:py-3 md:text-base">
                                 {transaction.narration}
                               </TableCell>
-                              <TableCell>
+                              <TableCell className="md:px-4 md:py-3">
                                 <div className="flex space-x-2">
                                   <Button
                                     variant="ghost"

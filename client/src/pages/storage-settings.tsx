@@ -139,7 +139,7 @@ export default function StorageSettings() {
         </aside>
         <main className="flex-1 w-full lg:pl-72 pb-16 lg:pb-0">
           <div className="p-4 lg:p-8">
-            <div className="max-w-4xl mx-auto">
+            <div className="max-w-4xl md:max-w-6xl mx-auto">
               <div className="mb-6">
                 <Link href={isSuperAdmin ? "/super-admin-home" : "/dashboard"}>
                   <Button variant="ghost" size="sm" className="mb-2">

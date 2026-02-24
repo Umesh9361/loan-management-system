@@ -152,9 +152,9 @@ export default function WorkingSummary() {
         {/* Screen Controls */}
         <Card className="print:hidden mb-6">
           <CardHeader>
-            <CardTitle className="text-xl">खाते सारांश अहवाल</CardTitle>
+            <CardTitle className="text-xl md:text-2xl">खाते सारांश अहवाल</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 md:space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
               <div>
                 <Label htmlFor="dateFrom">सुरुवातीची तारीख</Label>
@@ -194,7 +194,7 @@ export default function WorkingSummary() {
         {/* Account Summary Report */}
         <Card className="print:shadow-none print:border-none">
           <CardHeader className="text-center print:pb-2">
-            <CardTitle className="text-xl print:mb-1">{(company as any)?.name || 'कंपनीचे नाव'}</CardTitle>
+            <CardTitle className="text-xl md:text-2xl print:mb-1">{(company as any)?.name || 'कंपनीचे नाव'}</CardTitle>
             <p className="text-gray-600 print:mb-1">खाते सारांश अहवाल</p>
             <p className="text-sm text-gray-500 print:mb-2">
               कालावधी: {new Date(dateFilters.dateFrom).toLocaleDateString('en-GB')} ते {new Date(dateFilters.dateTo).toLocaleDateString('en-GB')}
@@ -219,14 +219,14 @@ export default function WorkingSummary() {
                 {/* Headers */}
                 <thead>
                   <tr className="bg-gray-100">
-                    <th className="text-center py-3 border-r border-gray-800 font-bold text-sm">ग्रुप नाव</th>
-                    <th className="text-center py-3 border-r border-gray-800 font-bold text-sm">एकूण कर्ज</th>
-                    <th className="text-center py-3 border-r border-gray-800 font-bold text-sm">चालू कर्ज</th>
-                    <th className="text-center py-3 border-r border-gray-800 font-bold text-sm">बंद कर्ज</th>
-                    <th className="text-center py-3 border-r border-gray-800 font-bold text-sm">एकूण रक्कम</th>
-                    <th className="text-center py-3 border-r border-gray-800 font-bold text-sm">बंद रक्कम</th>
-                    <th className="text-center py-3 border-r border-gray-800 font-bold text-sm">चालू शिल्लक</th>
-                    <th className="text-center py-3 font-bold text-sm">एकूण व्याज</th>
+                    <th className="text-center py-3 border-r border-gray-800 font-bold text-sm md:text-base md:py-4">ग्रुप नाव</th>
+                    <th className="text-center py-3 border-r border-gray-800 font-bold text-sm md:text-base md:py-4">एकूण कर्ज</th>
+                    <th className="text-center py-3 border-r border-gray-800 font-bold text-sm md:text-base md:py-4">चालू कर्ज</th>
+                    <th className="text-center py-3 border-r border-gray-800 font-bold text-sm md:text-base md:py-4">बंद कर्ज</th>
+                    <th className="text-center py-3 border-r border-gray-800 font-bold text-sm md:text-base md:py-4">एकूण रक्कम</th>
+                    <th className="text-center py-3 border-r border-gray-800 font-bold text-sm md:text-base md:py-4">बंद रक्कम</th>
+                    <th className="text-center py-3 border-r border-gray-800 font-bold text-sm md:text-base md:py-4">चालू शिल्लक</th>
+                    <th className="text-center py-3 font-bold text-sm md:text-base md:py-4">एकूण व्याज</th>
                   </tr>
                 </thead>
                 
@@ -235,28 +235,28 @@ export default function WorkingSummary() {
                     <>
                       {filteredData.groupSummary.map((group: any, index: number) => (
                         <tr key={index} className="border-t border-gray-200">
-                          <td className="p-3 text-sm font-medium border-r border-gray-300">
+                          <td className="p-3 md:p-4 text-sm md:text-base font-medium border-r border-gray-300">
                             {group.groupName}
                           </td>
-                          <td className="p-3 text-sm text-center font-medium border-r border-gray-300">
+                          <td className="p-3 md:p-4 text-sm md:text-base text-center font-medium border-r border-gray-300">
                             {group.totalLoans}
                           </td>
-                          <td className="p-3 text-sm text-center font-medium border-r border-gray-300">
+                          <td className="p-3 md:p-4 text-sm md:text-base text-center font-medium border-r border-gray-300">
                             {group.activeLoans}
                           </td>
-                          <td className="p-3 text-sm text-center font-medium border-r border-gray-300">
+                          <td className="p-3 md:p-4 text-sm md:text-base text-center font-medium border-r border-gray-300">
                             {group.closedLoans}
                           </td>
-                          <td className="p-3 text-sm text-right font-medium border-r border-gray-300">
+                          <td className="p-3 md:p-4 text-sm md:text-base text-right font-medium border-r border-gray-300">
                             ₹{formatAmount(group.totalAmount)}
                           </td>
-                          <td className="p-3 text-sm text-right font-medium border-r border-gray-300">
+                          <td className="p-3 md:p-4 text-sm md:text-base text-right font-medium border-r border-gray-300">
                             ₹{formatAmount(group.closedAmount)}
                           </td>
-                          <td className="p-3 text-sm text-right font-medium border-r border-gray-300">
+                          <td className="p-3 md:p-4 text-sm md:text-base text-right font-medium border-r border-gray-300">
                             ₹{formatAmount(group.activeBalance)}
                           </td>
-                          <td className="p-3 text-sm text-right font-medium">
+                          <td className="p-3 md:p-4 text-sm md:text-base text-right font-medium">
                             ₹{formatAmount(group.totalInterest)}
                           </td>
                         </tr>
@@ -264,26 +264,26 @@ export default function WorkingSummary() {
                       
                       {/* Total Row */}
                       <tr className="border-t-2 border-gray-800 bg-indigo-50">
-                        <td className="p-3 font-bold border-r border-gray-300 text-sm">एकूण</td>
-                        <td className="p-3 text-center font-bold border-r border-gray-300 text-sm">
+                        <td className="p-3 md:p-4 font-bold border-r border-gray-300 text-sm md:text-base">एकूण</td>
+                        <td className="p-3 md:p-4 text-center font-bold border-r border-gray-300 text-sm md:text-base">
                           {filteredData.totals.totalLoans}
                         </td>
-                        <td className="p-3 text-center font-bold border-r border-gray-300 text-sm">
+                        <td className="p-3 md:p-4 text-center font-bold border-r border-gray-300 text-sm md:text-base">
                           {filteredData.totals.activeLoans}
                         </td>
-                        <td className="p-3 text-center font-bold border-r border-gray-300 text-sm">
+                        <td className="p-3 md:p-4 text-center font-bold border-r border-gray-300 text-sm md:text-base">
                           {filteredData.totals.closedLoans}
                         </td>
-                        <td className="p-3 text-right font-bold border-r border-gray-300 text-indigo-600 text-sm">
+                        <td className="p-3 md:p-4 text-right font-bold border-r border-gray-300 text-indigo-600 text-sm md:text-base">
                           ₹{formatAmount(filteredData.totals.totalAmount)}
                         </td>
-                        <td className="p-3 text-right font-bold border-r border-gray-300 text-indigo-600 text-sm">
+                        <td className="p-3 md:p-4 text-right font-bold border-r border-gray-300 text-indigo-600 text-sm md:text-base">
                           ₹{formatAmount(filteredData.totals.closedAmount)}
                         </td>
-                        <td className="p-3 text-right font-bold border-r border-gray-300 text-indigo-600 text-sm">
+                        <td className="p-3 md:p-4 text-right font-bold border-r border-gray-300 text-indigo-600 text-sm md:text-base">
                           ₹{formatAmount(filteredData.totals.activeBalance)}
                         </td>
-                        <td className="p-3 text-right font-bold text-indigo-600 text-sm">
+                        <td className="p-3 md:p-4 text-right font-bold text-indigo-600 text-sm md:text-base">
                           ₹{formatAmount(filteredData.totals.totalInterest)}
                         </td>
                       </tr>
@@ -305,9 +305,9 @@ export default function WorkingSummary() {
             {/* Summary Statistics - Screen Only */}
             {filteredData && (
               <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4 print:hidden">
-                <div className="p-4 border-2 rounded-lg border-indigo-500 bg-indigo-50">
+                <div className="p-4 md:p-6 border-2 rounded-lg border-indigo-500 bg-indigo-50">
                   <div className="text-center">
-                    <p className="text-sm font-medium text-gray-600">एकूण चालू कर्ज</p>
+                    <p className="text-sm md:text-base font-medium text-gray-600">एकूण चालू कर्ज</p>
                     <p className="text-2xl font-bold text-indigo-600">
                       {filteredData.totals.activeLoans}
                     </p>
@@ -316,9 +316,9 @@ export default function WorkingSummary() {
                     </p>
                   </div>
                 </div>
-                <div className="p-4 border-2 rounded-lg border-green-500 bg-green-50">
+                <div className="p-4 md:p-6 border-2 rounded-lg border-green-500 bg-green-50">
                   <div className="text-center">
-                    <p className="text-sm font-medium text-gray-600">एकूण बंद कर्ज</p>
+                    <p className="text-sm md:text-base font-medium text-gray-600">एकूण बंद कर्ज</p>
                     <p className="text-2xl font-bold text-green-600">
                       {filteredData.totals.closedLoans}
                     </p>
@@ -327,9 +327,9 @@ export default function WorkingSummary() {
                     </p>
                   </div>
                 </div>
-                <div className="p-4 border-2 rounded-lg border-purple-500 bg-purple-50">
+                <div className="p-4 md:p-6 border-2 rounded-lg border-purple-500 bg-purple-50">
                   <div className="text-center">
-                    <p className="text-sm font-medium text-gray-600">एकूण व्याज</p>
+                    <p className="text-sm md:text-base font-medium text-gray-600">एकूण व्याज</p>
                     <p className="text-2xl font-bold text-purple-600">
                       ₹{formatAmount(filteredData.totals.totalInterest)}
                     </p>

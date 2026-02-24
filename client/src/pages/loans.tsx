@@ -1337,7 +1337,7 @@ function Loans() {
         </aside>
 
         <main className="flex-1 w-full lg:pl-72 pb-16 lg:pb-0">
-          <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
+          <div className="p-3 sm:p-6 md:p-8 space-y-4 sm:space-y-6">
       {/* Header with Title and New Loan Button */}
       <div className="flex justify-between items-center">
         <div>
@@ -2807,16 +2807,16 @@ function Loans() {
                           }
                         </button>
                       </TableHead>
-                      <TableHead className="font-semibold text-gray-700 py-4">खाते नंबर</TableHead>
-                      <TableHead className="font-semibold text-gray-700 py-4">नाव</TableHead>
-                      <TableHead className="font-semibold text-gray-700 py-4">मोबाइल</TableHead>
-                      <TableHead className="font-semibold text-gray-700 py-4">वस्तु</TableHead>
-                      <TableHead className="font-semibold text-gray-700 py-4">वजन</TableHead>
-                      <TableHead className="font-semibold text-gray-700 py-4">व्याज%</TableHead>
-                      <TableHead className="font-semibold text-gray-700 py-4 min-w-[120px]">रक्कम</TableHead>
-                      <TableHead className="font-semibold text-gray-700 py-4">तारीख</TableHead>
-                      <TableHead className="font-semibold text-gray-700 py-4">स्थिती</TableHead>
-                      <TableHead className="font-semibold text-gray-700 py-4">कृती</TableHead>
+                      <TableHead className="font-semibold text-gray-700 py-4 md:text-base">खाते नंबर</TableHead>
+                      <TableHead className="font-semibold text-gray-700 py-4 md:text-base">नाव</TableHead>
+                      <TableHead className="font-semibold text-gray-700 py-4 md:text-base">मोबाइल</TableHead>
+                      <TableHead className="font-semibold text-gray-700 py-4 md:text-base">वस्तु</TableHead>
+                      <TableHead className="font-semibold text-gray-700 py-4 md:text-base">वजन</TableHead>
+                      <TableHead className="font-semibold text-gray-700 py-4 md:text-base">व्याज%</TableHead>
+                      <TableHead className="font-semibold text-gray-700 py-4 md:text-base min-w-[120px]">रक्कम</TableHead>
+                      <TableHead className="font-semibold text-gray-700 py-4 md:text-base">तारीख</TableHead>
+                      <TableHead className="font-semibold text-gray-700 py-4 md:text-base">स्थिती</TableHead>
+                      <TableHead className="font-semibold text-gray-700 py-4 md:text-base">कृती</TableHead>
                     </TableRow>
                   </TableHeader>
                 <TableBody>
@@ -2851,24 +2851,24 @@ function Loans() {
                           }
                         </button>
                       </TableCell>
-                      <TableCell className="font-bold text-base font-inter">
+                      <TableCell className="font-bold text-base font-inter md:py-3">
                         {loan.accountNumber || "—"}
                       </TableCell>
-                      <TableCell className="font-noto">{loan.borrowerName}</TableCell>
-                      <TableCell className="font-inter">{loan.borrowerMobile || "—"}</TableCell>
-                      <TableCell className="font-noto max-w-48 whitespace-normal break-words" title={loan.collateralDetails}>
+                      <TableCell className="font-noto md:text-base md:py-3">{loan.borrowerName}</TableCell>
+                      <TableCell className="font-inter md:text-base md:py-3">{loan.borrowerMobile || "—"}</TableCell>
+                      <TableCell className="font-noto max-w-48 whitespace-normal break-words md:text-base md:py-3" title={loan.collateralDetails}>
                         {loan.collateralDetails || "—"}
                       </TableCell>
-                      <TableCell className="font-inter text-sm">
+                      <TableCell className="font-inter text-sm md:text-base md:py-3">
                         {loan.weight || "—"}
                       </TableCell>
-                      <TableCell className="font-inter text-sm">
+                      <TableCell className="font-inter text-sm md:text-base md:py-3">
                         {loan.interestRate ? `${loan.interestRate}%` : "—"}
                       </TableCell>
-                      <TableCell className="font-inter min-w-[120px] whitespace-nowrap">
+                      <TableCell className="font-inter min-w-[120px] whitespace-nowrap md:text-base md:py-3">
                         ₹ {LoanCalculations.formatAmount(Number(loan.principalAmount))}
                       </TableCell>
-                      <TableCell className="font-inter text-sm">
+                      <TableCell className="font-inter text-sm md:text-base md:py-3">
                         {DateUtils.isoToIndianDate(loan.loanDate)}
                         {loan.status === 'closed' && loan.closureDate && (
                           <div className="text-xs text-red-700 mt-1">

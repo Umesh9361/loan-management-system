@@ -319,7 +319,7 @@ export default function InterestCalculator() {
                   </Button>
                 </Link>
               </div>
-              <h1 className="text-2xl font-semibold text-foreground heading-professional flex items-center gap-2">
+              <h1 className="text-2xl md:text-3xl font-semibold text-foreground heading-professional flex items-center gap-2">
                 <Calculator className="h-6 w-6" />
                 व्याज कॅल्क्युलेटर
               </h1>
@@ -337,7 +337,7 @@ export default function InterestCalculator() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                   <div>
                     <Label htmlFor="principal">मूळ रक्कम (₹)</Label>
                     <Input
@@ -397,7 +397,7 @@ export default function InterestCalculator() {
                 </div>
 
                 {/* Simple/Advanced Toggle */}
-                <div className="mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <div className="mt-6 p-4 md:p-6 bg-gray-50 rounded-lg border border-gray-200">
                   <div className="flex items-center justify-between mb-4">
                     <Label className="text-base font-medium">गणना पद्धत</Label>
                     <div className="flex items-center space-x-3">

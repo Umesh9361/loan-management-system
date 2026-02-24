@@ -638,7 +638,7 @@ export default function InformationRegister() {
                       <ClipboardList className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
                     </div>
                     <div>
-                      <h1 className="text-lg sm:text-2xl font-bold text-gray-900 mb-0.5">माहिती तक्ता</h1>
+                      <h1 className="text-lg sm:text-2xl md:text-3xl font-bold text-gray-900 mb-0.5">माहिती तक्ता</h1>
                       <p className="text-xs sm:text-sm text-gray-500">सर्व कर्ज नोंदणी माहिती - कालावधीनुसार</p>
                     </div>
                   </div>
@@ -655,7 +655,7 @@ export default function InformationRegister() {
               </div>
 
               <Card className="mb-4 border border-indigo-100 shadow-sm rounded-xl overflow-hidden">
-                <CardContent className="p-3 sm:p-5">
+                <CardContent className="p-3 sm:p-5 md:p-6">
                   <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 sm:gap-4 items-end">
                     <div>
                       <Label htmlFor="dateFrom" className="text-xs sm:text-sm font-medium text-gray-700 mb-1 block">पासून तारीख</Label>

@@ -67,10 +67,10 @@ export default function CapitalReport() {
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         <main className="flex-1 overflow-auto">
-          <div className="p-6">
+          <div className="p-6 md:p-8">
             <Card>
               <CardHeader>
-                <CardTitle className="text-2xl font-bold text-center">
+                <CardTitle className="text-2xl md:text-3xl font-bold text-center">
                   कॅपिटल रिपोर्ट / Capital Report
                 </CardTitle>
                 <div className="text-center text-lg font-semibold text-gray-700">
@@ -79,7 +79,7 @@ export default function CapitalReport() {
               </CardHeader>
               <CardContent>
                 {/* Date Filters */}
-                <div className="mb-6 space-y-4 bg-gray-50 p-4 rounded-lg">
+                <div className="mb-6 space-y-4 bg-gray-50 p-4 md:p-6 rounded-lg">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                       <Label htmlFor="dateFrom">पासून तारीख</Label>
@@ -128,7 +128,7 @@ export default function CapitalReport() {
                   <div className="print-content">
                     <div className="space-y-4">
                       <div className="text-center">
-                        <h3 className="text-xl font-bold">कॅपिटल रिपोर्ट</h3>
+                        <h3 className="text-xl md:text-2xl font-bold">कॅपिटल रिपोर्ट</h3>
                         <p className="text-gray-600">
                           कालावधी: {DateUtils.formatDate(dateFilters.dateFrom)} ते {DateUtils.formatDate(dateFilters.dateTo)}
                         </p>
@@ -137,26 +137,26 @@ export default function CapitalReport() {
                       <Table>
                         <TableHeader>
                           <TableRow>
-                            <TableHead>तपशील</TableHead>
-                            <TableHead className="text-right">रक्कम</TableHead>
+                            <TableHead className="md:text-base md:py-3">तपशील</TableHead>
+                            <TableHead className="text-right md:text-base md:py-3">रक्कम</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
                           <TableRow>
-                            <TableCell>प्रारंभिक शिल्लक</TableCell>
-                            <TableCell className="text-right">₹{(capitalData?.openingBalance || 0).toLocaleString('en-IN')}</TableCell>
+                            <TableCell className="md:text-base md:py-3">प्रारंभिक शिल्लक</TableCell>
+                            <TableCell className="text-right md:text-base md:py-3">₹{(capitalData?.openingBalance || 0).toLocaleString('en-IN')}</TableCell>
                           </TableRow>
                           <TableRow>
-                            <TableCell>कर्ज वाटप</TableCell>
-                            <TableCell className="text-right">₹{(capitalData?.totalDisbursement || 0).toLocaleString('en-IN')}</TableCell>
+                            <TableCell className="md:text-base md:py-3">कर्ज वाटप</TableCell>
+                            <TableCell className="text-right md:text-base md:py-3">₹{(capitalData?.totalDisbursement || 0).toLocaleString('en-IN')}</TableCell>
                           </TableRow>
                           <TableRow>
-                            <TableCell>कर्ज संकलन</TableCell>
-                            <TableCell className="text-right">₹{(capitalData?.totalCollection || 0).toLocaleString('en-IN')}</TableCell>
+                            <TableCell className="md:text-base md:py-3">कर्ज संकलन</TableCell>
+                            <TableCell className="text-right md:text-base md:py-3">₹{(capitalData?.totalCollection || 0).toLocaleString('en-IN')}</TableCell>
                           </TableRow>
                           <TableRow className="font-bold">
-                            <TableCell>अंतिम शिल्लक</TableCell>
-                            <TableCell className="text-right">₹{(capitalData?.closingBalance || 0).toLocaleString('en-IN')}</TableCell>
+                            <TableCell className="md:text-base md:py-3">अंतिम शिल्लक</TableCell>
+                            <TableCell className="text-right md:text-base md:py-3">₹{(capitalData?.closingBalance || 0).toLocaleString('en-IN')}</TableCell>
                           </TableRow>
                         </TableBody>
                       </Table>

@@ -1097,18 +1097,18 @@ export default function OverdueReport() {
 
         {reportGenerated && (
           <div ref={reportSectionRef} className="bg-white shadow-lg print:shadow-none print-content">
-            <div className="p-4 border-b-2 border-gray-200 print:hidden">
+            <div className="p-4 md:p-6 border-b-2 border-gray-200 print:hidden">
               <div className="text-center">
-                <h1 className="text-lg sm:text-2xl font-bold text-gray-800 mb-2">
+                <h1 className="text-lg sm:text-2xl md:text-3xl font-bold text-gray-800 mb-2">
                   {filters.projectionMode === 'current' ? 'मुदत वाढलेल्या कर्जांचा तपशील' : 'भविष्यातील नुकसान अंदाज रिपोर्ट'}
                 </h1>
-                <h2 className="text-sm sm:text-lg font-semibold text-gray-600 mb-4">
+                <h2 className="text-sm sm:text-lg md:text-xl font-semibold text-gray-600 mb-4">
                   {filters.projectionMode === 'current' ? 'Current Loss Analysis Report' : 
                     `Future Loss Projection - ${filters.futureProjectionPeriod === '1month' ? 'Next Month' : filters.futureProjectionPeriod === '3months' ? 'Next 3 Months' : filters.futureProjectionPeriod === '6months' ? 'Next 6 Months' : 'Next Year'}`
                   }
                 </h2>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm mt-6 max-w-2xl mx-auto">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm md:text-base mt-6 max-w-2xl md:max-w-7xl mx-auto">
                   <div className="text-left">
                     <p><strong>Report Date:</strong> {formatDate(new Date().toISOString())}</p>
                     <p><strong>Analysis Type:</strong> {filters.projectionMode === 'current' ? 'आजच्या दिनांकापर्यंत' : `${filters.futureProjectionPeriod === '1month' ? 'पुढच्या महिन्यात' : filters.futureProjectionPeriod === '3months' ? 'पुढच्या तीन महिन्यात' : filters.futureProjectionPeriod === '6months' ? 'पुढच्या सहा महिन्यात' : 'पुढच्या वर्षभरात'}`}</p>
@@ -1125,7 +1125,7 @@ export default function OverdueReport() {
                 </div>
                 
                 <div className="mt-6 pt-4 border-t border-gray-300">
-                  <p className="text-sm sm:text-base font-semibold text-gray-700">
+                  <p className="text-sm sm:text-base md:text-lg font-semibold text-gray-700">
                     Total Loans: {totalLoans} {viewMode === "default" && `(सुरक्षित वगळले: ${filteredOutCount})`} | Total Loss: {formatCurrency(totalLoss)} | Average Loss: {formatCurrency(averageLoss)}
                   </p>
                   <div className="flex flex-wrap gap-2 justify-center mt-3">

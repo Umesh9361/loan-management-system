@@ -148,7 +148,7 @@ export default function SuperAdminTenants() {
               <div className="space-y-6">
                 <Card>
                   <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
+                    <CardTitle className="flex items-center gap-2 md:text-xl">
                       <TrendingUp className="h-5 w-5" />
                       टेनंट आकडेवारी आणि व्यवस्थापन
                     </CardTitle>
@@ -374,8 +374,8 @@ export default function SuperAdminTenants() {
                   <CardHeader>
                     <CardTitle>निष्क्रिय टेनंट मापदंड</CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div className="text-sm text-muted-foreground">
+                  <CardContent className="space-y-3 md:p-6">
+                    <div className="text-sm md:text-base text-muted-foreground">
                       <p><strong>निष्क्रिय टेनंट म्हणजे:</strong></p>
                       <ul className="list-disc list-inside space-y-1 mt-2">
                         <li>कोणताही डेटा एन्ट्री नाही (कर्जे, गट, कर्जदार, रोकड व्यवहार)</li>

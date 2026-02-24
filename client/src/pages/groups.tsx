@@ -204,8 +204,8 @@ export default function Groups() {
             <div className="mb-6">
               <div className="flex justify-between items-center mb-4">
                 <div>
-                  <h1 className="text-2xl font-semibold text-gray-900">ग्रुप व्यवस्थापन</h1>
-                  <p className="text-gray-600">कर्जदारांचे ग्रुप तयार करा आणि व्यवस्थापित करा</p>
+                  <h1 className="text-2xl md:text-3xl font-semibold text-gray-900">ग्रुप व्यवस्थापन</h1>
+                  <p className="text-gray-600 md:text-lg">कर्जदारांचे ग्रुप तयार करा आणि व्यवस्थापित करा</p>
                 </div>
                 
                 <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -308,15 +308,15 @@ export default function Groups() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredAndSortedGroups.map((group: any) => (
                 <Card key={group.id} className="hover:shadow-lg transition-shadow">
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-lg font-medium font-noto">{group.name}</CardTitle>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 md:pb-3">
+                    <CardTitle className="text-lg md:text-xl font-medium font-noto">{group.name}</CardTitle>
                     <div className="h-8 w-8 bg-primary/10 rounded-full flex items-center justify-center">
                       <Users className="h-4 w-4 text-primary" />
                     </div>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="md:p-6">
                     {group.description && (
-                      <p className="text-gray-600 text-sm mb-4 font-noto">{group.description}</p>
+                      <p className="text-gray-600 text-sm md:text-base mb-4 font-noto">{group.description}</p>
                     )}
                     
                     <div className="flex items-center justify-between">

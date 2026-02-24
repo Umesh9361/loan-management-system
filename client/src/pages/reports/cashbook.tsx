@@ -767,13 +767,13 @@ function CashBookReport() {
             <div className="px-4 sm:px-6 lg:px-8 py-6">
               {/* Header */}
               <div className="mb-6">
-                <h1 className="text-2xl font-semibold text-foreground heading-professional">रोकड वही</h1>
+                <h1 className="text-2xl md:text-3xl font-semibold text-foreground heading-professional">रोकड वही</h1>
                 <p className="text-muted-foreground">नमुना क्र. ७ (नियम १८ पहा) - दैनंदिन रोकड व्यवहाराची नोंद</p>
               </div>
 
               {/* Filters Card */}
               <Card className="mb-6">
-                <CardContent className="p-6">
+                <CardContent className="p-6 md:p-8">
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <div>
                       <Label htmlFor="dateFrom">पासून दिनांक</Label>
@@ -867,29 +867,29 @@ function CashBookReport() {
                       <Table className="professional-vertical-table">
                         <TableHeader>
                           <TableRow>
-                            <TableHead className="w-16 sm:w-24 text-center border border-indigo-300 bg-indigo-50 text-xs sm:text-sm px-1 sm:px-3">तारीख</TableHead>
-                            <TableHead className="text-center border border-indigo-300 bg-indigo-50 text-xs sm:text-sm px-1 sm:px-3">तपशील</TableHead>
-                            <TableHead className="w-16 sm:w-28 text-center border border-indigo-300 bg-indigo-50 text-xs sm:text-sm px-1 sm:px-3">जमा</TableHead>
-                            <TableHead className="w-16 sm:w-28 text-center border border-indigo-300 bg-indigo-50 text-xs sm:text-sm px-1 sm:px-3">नावे</TableHead>
-                            <TableHead className="w-20 sm:w-32 text-center border border-indigo-300 bg-indigo-50 text-xs sm:text-sm px-1 sm:px-3">शिल्लक</TableHead>
+                            <TableHead className="w-16 sm:w-24 text-center border border-indigo-300 bg-indigo-50 text-xs sm:text-sm md:text-base px-1 sm:px-3 md:px-4 md:py-3">तारीख</TableHead>
+                            <TableHead className="text-center border border-indigo-300 bg-indigo-50 text-xs sm:text-sm md:text-base px-1 sm:px-3 md:px-4 md:py-3">तपशील</TableHead>
+                            <TableHead className="w-16 sm:w-28 text-center border border-indigo-300 bg-indigo-50 text-xs sm:text-sm md:text-base px-1 sm:px-3 md:px-4 md:py-3">जमा</TableHead>
+                            <TableHead className="w-16 sm:w-28 text-center border border-indigo-300 bg-indigo-50 text-xs sm:text-sm md:text-base px-1 sm:px-3 md:px-4 md:py-3">नावे</TableHead>
+                            <TableHead className="w-20 sm:w-32 text-center border border-indigo-300 bg-indigo-50 text-xs sm:text-sm md:text-base px-1 sm:px-3 md:px-4 md:py-3">शिल्लक</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
                           {finalTransactions.map((row: any, index: number) => (
                             <TableRow key={index} className={row.isOpeningBalance ? "bg-yellow-50" : ""}>
-                              <TableCell className="text-center text-xs sm:text-sm border border-indigo-200 px-1 sm:px-3 py-1.5 sm:py-2">
+                              <TableCell className="text-center text-xs sm:text-sm md:text-base border border-indigo-200 px-1 sm:px-3 md:px-4 py-1.5 sm:py-2 md:py-3">
                                 {DateUtils.isoToIndianDate(row.date).replace(/20(\d{2})/g, '$1')}
                               </TableCell>
-                              <TableCell className="text-left text-xs sm:text-sm border border-indigo-200 px-1 sm:px-3 py-1.5 sm:py-2">
+                              <TableCell className="text-left text-xs sm:text-sm md:text-base border border-indigo-200 px-1 sm:px-3 md:px-4 py-1.5 sm:py-2 md:py-3">
                                 {row.description}
                               </TableCell>
-                              <TableCell className="text-right text-xs sm:text-sm border border-indigo-200 px-1 sm:px-3 py-1.5 sm:py-2">
+                              <TableCell className="text-right text-xs sm:text-sm md:text-base border border-indigo-200 px-1 sm:px-3 md:px-4 py-1.5 sm:py-2 md:py-3">
                                 {row.credit ? `${LoanCalculations.formatAmount(row.credit)}` : "-"}
                               </TableCell>
-                              <TableCell className="text-right text-xs sm:text-sm border border-indigo-200 px-1 sm:px-3 py-1.5 sm:py-2">
+                              <TableCell className="text-right text-xs sm:text-sm md:text-base border border-indigo-200 px-1 sm:px-3 md:px-4 py-1.5 sm:py-2 md:py-3">
                                 {row.debit ? `${LoanCalculations.formatAmount(row.debit)}` : "-"}
                               </TableCell>
-                              <TableCell className="text-right text-xs sm:text-sm border border-indigo-200 px-1 sm:px-3 py-1.5 sm:py-2 font-semibold">
+                              <TableCell className="text-right text-xs sm:text-sm md:text-base border border-indigo-200 px-1 sm:px-3 md:px-4 py-1.5 sm:py-2 md:py-3 font-semibold">
                                 {LoanCalculations.formatAmount(row.balance)}
                               </TableCell>
                             </TableRow>
@@ -898,7 +898,7 @@ function CashBookReport() {
                       </Table>
                       
                       {/* Summary Stats */}
-                      <div className="mt-4 sm:mt-6 bg-indigo-50 p-3 sm:p-4 rounded-lg">
+                      <div className="mt-4 sm:mt-6 bg-indigo-50 p-3 sm:p-4 md:p-6 rounded-lg">
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4 text-center">
                           <div>
                             <p className="text-xs sm:text-sm text-gray-600">प्रारंभिक शिल्लक</p>
@@ -929,11 +929,11 @@ function CashBookReport() {
                     <div className="professional-t-format border border-gray-300 overflow-hidden">
                       {/* Main Header */}
                       <div className="flex border-b-4 border-black">
-                        <div className="w-1/2 border-r-2 border-black text-center py-2 sm:py-3 bg-indigo-100">
-                          <h3 className="font-bold text-sm sm:text-lg">जमा <span className="text-xs sm:text-sm font-normal">(Credit)</span></h3>
+                        <div className="w-1/2 border-r-2 border-black text-center py-2 sm:py-3 md:py-4 bg-indigo-100">
+                          <h3 className="font-bold text-sm sm:text-lg md:text-xl">जमा <span className="text-xs sm:text-sm md:text-base font-normal">(Credit)</span></h3>
                         </div>
-                        <div className="w-1/2 text-center py-2 sm:py-3 bg-red-100">
-                          <h3 className="font-bold text-sm sm:text-lg">नावे <span className="text-xs sm:text-sm font-normal">(Debit)</span></h3>
+                        <div className="w-1/2 text-center py-2 sm:py-3 md:py-4 bg-red-100">
+                          <h3 className="font-bold text-sm sm:text-lg md:text-xl">नावे <span className="text-xs sm:text-sm md:text-base font-normal">(Debit)</span></h3>
                         </div>
                       </div>
                       
@@ -941,7 +941,7 @@ function CashBookReport() {
                       <div className="flex border-b-2 border-black">
                         {/* Left Sub Header */}
                         <div className="w-1/2 border-r-2 border-black">
-                          <div className="flex text-center font-semibold text-xs sm:text-sm py-1.5 sm:py-2">
+                          <div className="flex text-center font-semibold text-xs sm:text-sm md:text-base py-1.5 sm:py-2 md:py-3">
                             <div className="w-12 sm:w-16 border-r border-gray-300">दिनांक</div>
                             <div className="flex-1 border-r border-gray-300">तपशील</div>
                             <div className="w-16 sm:w-24">रक्कम</div>
@@ -949,7 +949,7 @@ function CashBookReport() {
                         </div>
                         {/* Right Sub Header */}
                         <div className="w-1/2">
-                          <div className="flex text-center font-semibold text-xs sm:text-sm py-1.5 sm:py-2">
+                          <div className="flex text-center font-semibold text-xs sm:text-sm md:text-base py-1.5 sm:py-2 md:py-3">
                             <div className="w-12 sm:w-16 border-r border-gray-300">दिनांक</div>
                             <div className="flex-1 border-r border-gray-300">तपशील</div>
                             <div className="w-16 sm:w-24">रक्कम</div>

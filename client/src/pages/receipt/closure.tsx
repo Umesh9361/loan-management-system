@@ -29,7 +29,7 @@ export default function ClosureReceiptPage() {
 
   return (
     <div className="min-h-screen bg-white p-8">
-      <div className="max-w-3xl mx-auto">
+      <div className="max-w-3xl md:max-w-5xl mx-auto">
         {/* Print Button - Hidden during print */}
         <div className="no-print mb-4 flex justify-end">
           <Button onClick={handlePrint} className="flex items-center gap-2">
@@ -39,10 +39,10 @@ export default function ClosureReceiptPage() {
         </div>
 
         {/* Receipt Content */}
-        <Card className="border-2 border-gray-300 p-8">
+        <Card className="border-2 border-gray-300 p-8 md:p-10">
           <div className="text-center mb-6">
-            <h1 className="text-2xl font-bold">कर्ज बंद पावती</h1>
-            <h2 className="text-xl">LOAN CLOSURE RECEIPT</h2>
+            <h1 className="text-2xl md:text-3xl font-bold">कर्ज बंद पावती</h1>
+            <h2 className="text-xl md:text-2xl">LOAN CLOSURE RECEIPT</h2>
             <p className="text-gray-600 mt-2">Company Name Here</p>
           </div>
 
@@ -60,7 +60,7 @@ export default function ClosureReceiptPage() {
           </div>
 
           <div className="border-t border-b py-4 mb-4">
-            <h3 className="font-semibold mb-3">कर्जदार माहिती / Borrower Details:</h3>
+            <h3 className="font-semibold md:text-lg mb-3">कर्जदार माहिती / Borrower Details:</h3>
             <div className="grid grid-cols-2 gap-2">
               <p>नाव / Name:</p>
               <p className="font-medium">{loan.borrowerName}</p>
@@ -77,37 +77,37 @@ export default function ClosureReceiptPage() {
           </div>
 
           <div className="mb-4">
-            <h3 className="font-semibold mb-3">कर्ज बंद तपशील / Closure Details:</h3>
+            <h3 className="font-semibold md:text-lg mb-3">कर्ज बंद तपशील / Closure Details:</h3>
             <table className="w-full">
               <tbody>
                 <tr className="border-b">
-                  <td className="py-2">मुद्दल रक्कम / Principal Amount</td>
-                  <td className="text-right font-medium">
+                  <td className="py-2 md:py-3 md:text-base">मुद्दल रक्कम / Principal Amount</td>
+                  <td className="text-right font-medium md:text-base">
                     ₹{closureDetails.principalAmount.toLocaleString('en-IN')}
                   </td>
                 </tr>
                 <tr className="border-b">
-                  <td className="py-2">व्याज रक्कम / Interest Amount</td>
-                  <td className="text-right font-medium">
+                  <td className="py-2 md:py-3 md:text-base">व्याज रक्कम / Interest Amount</td>
+                  <td className="text-right font-medium md:text-base">
                     ₹{closureDetails.interestAmount.toLocaleString('en-IN')}
                   </td>
                 </tr>
                 <tr className="border-b font-semibold">
-                  <td className="py-2">एकूण रक्कम / Total Amount</td>
-                  <td className="text-right">
+                  <td className="py-2 md:py-3 md:text-base">एकूण रक्कम / Total Amount</td>
+                  <td className="text-right md:text-base">
                     ₹{closureDetails.totalAmount.toLocaleString('en-IN')}
                   </td>
                 </tr>
                 <tr className="border-b">
-                  <td className="py-2">प्राप्त रक्कम / Received Amount</td>
-                  <td className="text-right font-medium">
+                  <td className="py-2 md:py-3 md:text-base">प्राप्त रक्कम / Received Amount</td>
+                  <td className="text-right font-medium md:text-base">
                     ₹{closureDetails.actualPaid.toLocaleString('en-IN')}
                   </td>
                 </tr>
                 {closureDetails.balanceRefund > 0 && (
                   <tr className="border-b">
-                    <td className="py-2">परतावा रक्कम / Refund Amount</td>
-                    <td className="text-right font-medium text-green-600">
+                    <td className="py-2 md:py-3 md:text-base">परतावा रक्कम / Refund Amount</td>
+                    <td className="text-right font-medium text-green-600 md:text-base">
                       ₹{closureDetails.balanceRefund.toLocaleString('en-IN')}
                     </td>
                   </tr>

@@ -367,7 +367,7 @@ export default function BorrowerLedger() {
         {/* Header with ESC navigation hint */}
         <div className="mb-6 flex justify-between items-center">
           <div>
-            <h1 className="text-2xl font-bold text-gray-800 mb-2">वैयक्तिक खाते वही</h1>
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-800 mb-2">वैयक्तिक खाते वही</h1>
             <p className="text-gray-600">कर्जदाराचे संपूर्ण खाते विवरण (नमुना क्रमांक ८ - नियम १८ पहा)</p>
           </div>
           <div className="text-right">
@@ -387,7 +387,7 @@ export default function BorrowerLedger() {
         {/* Search Filters */}
         <Card className="mb-6">
           <CardHeader>
-            <CardTitle className="text-lg font-semibold text-gray-700">शोध निकष</CardTitle>
+            <CardTitle className="text-lg md:text-xl font-semibold text-gray-700">शोध निकष</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
@@ -496,15 +496,15 @@ export default function BorrowerLedger() {
             
             {ledgerData ? (
               <div className="overflow-x-auto">
-                <table className="w-full border-collapse border-2 border-gray-800">
+                <table className="w-full border-collapse border-2 border-gray-800 md:text-base">
                   <thead>
                     <tr className="bg-gray-100">
-                      <th className="border-2 border-gray-800 px-3 py-2 text-center font-bold">अ.क्र.</th>
-                      <th className="border-2 border-gray-800 px-3 py-2 text-center font-bold">दिनांक</th>
-                      <th className="border-2 border-gray-800 px-3 py-2 text-center font-bold">तपशील</th>
-                      <th className="border-2 border-gray-800 px-3 py-2 text-center font-bold">नावे (₹)</th>
-                      <th className="border-2 border-gray-800 px-3 py-2 text-center font-bold">जमा (₹)</th>
-                      <th className="border-2 border-gray-800 px-3 py-2 text-center font-bold">शिल्लक (₹)</th>
+                      <th className="border-2 border-gray-800 px-3 py-2 md:px-4 md:py-3 text-center font-bold">अ.क्र.</th>
+                      <th className="border-2 border-gray-800 px-3 py-2 md:px-4 md:py-3 text-center font-bold">दिनांक</th>
+                      <th className="border-2 border-gray-800 px-3 py-2 md:px-4 md:py-3 text-center font-bold">तपशील</th>
+                      <th className="border-2 border-gray-800 px-3 py-2 md:px-4 md:py-3 text-center font-bold">नावे (₹)</th>
+                      <th className="border-2 border-gray-800 px-3 py-2 md:px-4 md:py-3 text-center font-bold">जमा (₹)</th>
+                      <th className="border-2 border-gray-800 px-3 py-2 md:px-4 md:py-3 text-center font-bold">शिल्लक (₹)</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -512,18 +512,18 @@ export default function BorrowerLedger() {
                       <>
                         {ledgerData.entries.map((entry: any, index: number) => (
                           <tr key={index} className="hover:bg-gray-50">
-                            <td className="border border-gray-300 px-3 py-2 text-center font-medium">{index + 1}</td>
-                            <td className="border border-gray-300 px-3 py-2 text-center">
+                            <td className="border border-gray-300 px-3 py-2 md:px-4 md:py-3 text-center font-medium">{index + 1}</td>
+                            <td className="border border-gray-300 px-3 py-2 md:px-4 md:py-3 text-center">
                               {new Date(entry.date).toLocaleDateString('en-GB')}
                             </td>
-                            <td className="border border-gray-300 px-3 py-2">{entry.description}</td>
-                            <td className="border border-gray-300 px-3 py-2 text-right">
+                            <td className="border border-gray-300 px-3 py-2 md:px-4 md:py-3">{entry.description}</td>
+                            <td className="border border-gray-300 px-3 py-2 md:px-4 md:py-3 text-right">
                               {entry.debit > 0 ? `₹${formatAmount(entry.debit)}` : '-'}
                             </td>
-                            <td className="border border-gray-300 px-3 py-2 text-right">
+                            <td className="border border-gray-300 px-3 py-2 md:px-4 md:py-3 text-right">
                               {entry.credit > 0 ? `₹${formatAmount(entry.credit)}` : '-'}
                             </td>
-                            <td className="border border-gray-300 px-3 py-2 text-right font-bold">
+                            <td className="border border-gray-300 px-3 py-2 md:px-4 md:py-3 text-right font-bold">
                               ₹{formatAmount(entry.balance)}
                             </td>
                           </tr>
@@ -531,14 +531,14 @@ export default function BorrowerLedger() {
                         
                         {/* Total Row */}
                         <tr className="bg-gray-100 border-t-2 border-gray-800">
-                          <td colSpan={3} className="border-2 border-gray-800 px-3 py-2 text-center font-bold">एकूण</td>
-                          <td className="border-2 border-gray-800 px-3 py-2 text-right font-bold">
+                          <td colSpan={3} className="border-2 border-gray-800 px-3 py-2 md:px-4 md:py-3 text-center font-bold">एकूण</td>
+                          <td className="border-2 border-gray-800 px-3 py-2 md:px-4 md:py-3 text-right font-bold">
                             ₹{formatAmount(ledgerData.totalDebit)}
                           </td>
-                          <td className="border-2 border-gray-800 px-3 py-2 text-right font-bold">
+                          <td className="border-2 border-gray-800 px-3 py-2 md:px-4 md:py-3 text-right font-bold">
                             ₹{formatAmount(ledgerData.totalCredit)}
                           </td>
-                          <td className="border-2 border-gray-800 px-3 py-2 text-right font-bold">
+                          <td className="border-2 border-gray-800 px-3 py-2 md:px-4 md:py-3 text-right font-bold">
                             ₹{formatAmount(ledgerData.finalBalance)}
                           </td>
                         </tr>

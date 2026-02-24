@@ -3560,7 +3560,7 @@ export default function BorrowerListReports() {
                 <Users className="h-6 w-6 text-white" />
               </div>
               <div>
-                <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-0.5">कर्जदाराची यादी</h1>
+                <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 mb-0.5">कर्जदाराची यादी</h1>
                 <p className="text-xs sm:text-sm text-gray-500">विविध प्रकारचे कर्जदार अहवाल तयार करा</p>
               </div>
             </div>
@@ -4158,7 +4158,7 @@ export default function BorrowerListReports() {
         
         {/* Data Display Section with Pagination */}
         {totalItems > 0 ? (
-          <Card className="mt-6 p-3 sm:p-6 border-2 border-indigo-100 shadow-sm rounded-xl">
+          <Card className="mt-6 p-3 sm:p-6 md:p-8 border-2 border-indigo-100 shadow-sm rounded-xl">
             {/* Pagination Info */}
             <div className="mb-3 flex justify-between items-center">
               <div className="text-xs sm:text-sm text-indigo-700 font-medium bg-indigo-50 px-3 py-1.5 rounded-lg">
@@ -4174,13 +4174,13 @@ export default function BorrowerListReports() {
               <table className="w-full border-collapse min-w-[700px] sm:min-w-0">
                 <thead>
                   <tr className="bg-gradient-to-r from-indigo-600 to-indigo-700">
-                    <th className="border border-indigo-500 p-2 text-center text-xs sm:text-sm font-semibold text-white">अ.क्र.</th>
-                    <th className="border border-indigo-500 p-2 text-center text-xs sm:text-sm font-semibold text-white">तारीख</th>
-                    <th className="border border-indigo-500 p-2 text-right text-xs sm:text-sm font-semibold text-white">रक्कम</th>
-                    <th className="border border-indigo-500 p-2 text-left text-xs sm:text-sm font-semibold text-white">नाव</th>
-                    <th className="border border-indigo-500 p-2 text-center text-xs sm:text-sm font-semibold text-white">खाते नं</th>
-                    <th className="border border-indigo-500 p-2 text-left text-xs sm:text-sm font-semibold text-white">तपशील</th>
-                    <th className="border border-indigo-500 p-2 text-center text-xs sm:text-sm font-semibold text-white">वजन</th>
+                    <th className="border border-indigo-500 p-2 md:p-3 text-center text-xs sm:text-sm md:text-base font-semibold text-white">अ.क्र.</th>
+                    <th className="border border-indigo-500 p-2 md:p-3 text-center text-xs sm:text-sm md:text-base font-semibold text-white">तारीख</th>
+                    <th className="border border-indigo-500 p-2 md:p-3 text-right text-xs sm:text-sm md:text-base font-semibold text-white">रक्कम</th>
+                    <th className="border border-indigo-500 p-2 md:p-3 text-left text-xs sm:text-sm md:text-base font-semibold text-white">नाव</th>
+                    <th className="border border-indigo-500 p-2 md:p-3 text-center text-xs sm:text-sm md:text-base font-semibold text-white">खाते नं</th>
+                    <th className="border border-indigo-500 p-2 md:p-3 text-left text-xs sm:text-sm md:text-base font-semibold text-white">तपशील</th>
+                    <th className="border border-indigo-500 p-2 md:p-3 text-center text-xs sm:text-sm md:text-base font-semibold text-white">वजन</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -4195,21 +4195,21 @@ export default function BorrowerListReports() {
                         key={loan.id} 
                         className={`${isClosedLoan ? 'bg-red-50 text-red-800' : index % 2 === 0 ? 'bg-white' : 'bg-indigo-50/30'} hover:bg-indigo-50`}
                       >
-                        <td className="border border-indigo-100 p-1.5 sm:p-2 text-center text-xs sm:text-sm">{globalIndex}</td>
-                        <td className="border border-indigo-100 p-1.5 sm:p-2 text-center text-xs sm:text-sm whitespace-nowrap">{shortDate}</td>
-                        <td className="border border-indigo-100 p-1.5 sm:p-2 text-right text-xs sm:text-sm font-medium whitespace-nowrap">{Math.round(loan.principalAmount).toLocaleString('en-IN')}</td>
-                        <td className="border border-indigo-100 p-1.5 sm:p-2 text-xs sm:text-sm">
+                        <td className="border border-indigo-100 p-1.5 sm:p-2 md:p-3 text-center text-xs sm:text-sm md:text-base">{globalIndex}</td>
+                        <td className="border border-indigo-100 p-1.5 sm:p-2 md:p-3 text-center text-xs sm:text-sm md:text-base whitespace-nowrap">{shortDate}</td>
+                        <td className="border border-indigo-100 p-1.5 sm:p-2 md:p-3 text-right text-xs sm:text-sm md:text-base font-medium whitespace-nowrap">{Math.round(loan.principalAmount).toLocaleString('en-IN')}</td>
+                        <td className="border border-indigo-100 p-1.5 sm:p-2 md:p-3 text-xs sm:text-sm md:text-base">
                           <span className="sm:hidden">{loan.borrowerName.length > 20 ? loan.borrowerName.substring(0, 20) + '...' : loan.borrowerName}</span>
                           <span className="hidden sm:inline">{loan.borrowerName}</span>
                           {isClosedLoan && <span className="text-red-600 ml-1">(बंद)</span>}
                         </td>
-                        <td className="border border-indigo-100 p-1.5 sm:p-2 text-center text-xs sm:text-sm">
+                        <td className="border border-indigo-100 p-1.5 sm:p-2 md:p-3 text-center text-xs sm:text-sm md:text-base">
                           {(loan.accountNumber || loan.id.slice(0, 5)).toString().substring(0, 7)}
                         </td>
-                        <td className="border border-indigo-100 p-1.5 sm:p-2 text-xs sm:text-sm">
+                        <td className="border border-indigo-100 p-1.5 sm:p-2 md:p-3 text-xs sm:text-sm md:text-base">
                           {loan.itemDescription || loan.collateralDetails || 'सोन्याचे दागिने'}
                         </td>
-                        <td className="border border-indigo-100 p-1.5 sm:p-2 text-center text-xs sm:text-sm">
+                        <td className="border border-indigo-100 p-1.5 sm:p-2 md:p-3 text-center text-xs sm:text-sm md:text-base">
                           {loan.weight || '10'}
                         </td>
                       </tr>

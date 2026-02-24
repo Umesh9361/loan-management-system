@@ -218,20 +218,20 @@ export default function SuperAdminHome() {
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="text-center p-4 bg-green-50 rounded-lg">
+                    <div className="text-center p-4 md:p-6 bg-green-50 rounded-lg">
                       <Globe className="h-8 w-8 text-green-600 mx-auto mb-2" />
-                      <h3 className="font-semibold text-green-800 font-noto">सिस्टम ऑनलाइन</h3>
-                      <p className="text-sm text-green-600">सर्व सेवा कार्यरत</p>
+                      <h3 className="font-semibold md:text-lg text-green-800 font-noto">सिस्टम ऑनलाइन</h3>
+                      <p className="text-sm md:text-base text-green-600">सर्व सेवा कार्यरत</p>
                     </div>
-                    <div className="text-center p-4 bg-indigo-50 rounded-lg">
+                    <div className="text-center p-4 md:p-6 bg-indigo-50 rounded-lg">
                       <Shield className="h-8 w-8 text-indigo-600 mx-auto mb-2" />
-                      <h3 className="font-semibold text-indigo-800 font-noto">सुरक्षा सक्रिय</h3>
-                      <p className="text-sm text-indigo-600">सर्व कनेक्शन सुरक्षित</p>
+                      <h3 className="font-semibold md:text-lg text-indigo-800 font-noto">सुरक्षा सक्रिय</h3>
+                      <p className="text-sm md:text-base text-indigo-600">सर्व कनेक्शन सुरक्षित</p>
                     </div>
-                    <div className="text-center p-4 bg-purple-50 rounded-lg">
+                    <div className="text-center p-4 md:p-6 bg-purple-50 rounded-lg">
                       <UserCheck className="h-8 w-8 text-purple-600 mx-auto mb-2" />
-                      <h3 className="font-semibold text-purple-800 font-noto">एडमिन मोड</h3>
-                      <p className="text-sm text-purple-600">पूर्ण अधिकार सक्रिय</p>
+                      <h3 className="font-semibold md:text-lg text-purple-800 font-noto">एडमिन मोड</h3>
+                      <p className="text-sm md:text-base text-purple-600">पूर्ण अधिकार सक्रिय</p>
                     </div>
                   </div>
                 </CardContent>

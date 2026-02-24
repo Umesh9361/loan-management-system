@@ -523,14 +523,14 @@ export default function SuperAdminTenantManagement() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                <div className="grid gap-4 md:grid-cols-2 md:gap-6 lg:grid-cols-3">
                   {adminUsers.map((admin) => (
                     <Card key={admin.id} className={`border ${admin.isTemporaryDisabled ? 'border-red-300 bg-red-50' : 'border-gray-200'}`}>
-                      <CardContent className="p-4">
+                      <CardContent className="p-4 md:p-5">
                         <div className="space-y-3">
                           <div>
-                            <p className="font-medium">{admin.fullName || admin.username}</p>
-                            <p className="text-sm text-gray-600">{admin.companyName}</p>
+                            <p className="font-medium md:text-base">{admin.fullName || admin.username}</p>
+                            <p className="text-sm md:text-base text-gray-600">{admin.companyName}</p>
                             <Badge variant="outline" className="text-xs mt-1">
                               {admin.tenantId}
                             </Badge>
@@ -710,51 +710,51 @@ export default function SuperAdminTenantManagement() {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">एकूण टेनंट</CardTitle>
+                  <CardTitle className="text-sm md:text-base font-medium">एकूण टेनंट</CardTitle>
                   <Building className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{tenants.length}</div>
-                  <p className="text-xs text-muted-foreground">सक्रिय कंपन्या</p>
+                <CardContent className="md:p-6">
+                  <div className="text-2xl md:text-3xl font-bold">{tenants.length}</div>
+                  <p className="text-xs md:text-sm text-muted-foreground">सक्रिय कंपन्या</p>
                 </CardContent>
               </Card>
 
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">सक्रिय टेनंट</CardTitle>
+                  <CardTitle className="text-sm md:text-base font-medium">सक्रिय टेनंट</CardTitle>
                   <Activity className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-green-600">
+                <CardContent className="md:p-6">
+                  <div className="text-2xl md:text-3xl font-bold text-green-600">
                     {tenants.filter(t => !t.isInactive).length}
                   </div>
-                  <p className="text-xs text-muted-foreground">चालू असलेले</p>
+                  <p className="text-xs md:text-sm text-muted-foreground">चालू असलेले</p>
                 </CardContent>
               </Card>
 
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">निष्क्रिय टेनंट</CardTitle>
+                  <CardTitle className="text-sm md:text-base font-medium">निष्क्रिय टेनंट</CardTitle>
                   <AlertTriangle className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-red-600">
+                <CardContent className="md:p-6">
+                  <div className="text-2xl md:text-3xl font-bold text-red-600">
                     {tenants.filter(t => t.isInactive).length}
                   </div>
-                  <p className="text-xs text-muted-foreground">30+ दिवस निष्क्रिय</p>
+                  <p className="text-xs md:text-sm text-muted-foreground">30+ दिवस निष्क्रिय</p>
                 </CardContent>
               </Card>
 
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">एकूण वापरकर्ते</CardTitle>
+                  <CardTitle className="text-sm md:text-base font-medium">एकूण वापरकर्ते</CardTitle>
                   <Users className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">
+                <CardContent className="md:p-6">
+                  <div className="text-2xl md:text-3xl font-bold">
                     {tenants.reduce((sum, t) => sum + t.userCount, 0)}
                   </div>
-                  <p className="text-xs text-muted-foreground">सर्व टेनंट मधील</p>
+                  <p className="text-xs md:text-sm text-muted-foreground">सर्व टेनंट मधील</p>
                 </CardContent>
               </Card>
             </div>

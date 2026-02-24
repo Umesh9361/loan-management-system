@@ -201,7 +201,7 @@ export default function CashbookLedger() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+        <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">
           रोकड वही (नमुना क्रमांक ७)
         </h1>
         <div className="flex space-x-2">
@@ -219,7 +219,7 @@ export default function CashbookLedger() {
       {/* Date Filter */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center">
+          <CardTitle className="flex items-center md:text-xl">
             <Calendar className="h-5 w-5 mr-2" />
             दिनांक निवडा
           </CardTitle>
@@ -248,10 +248,10 @@ export default function CashbookLedger() {
 
       {/* Cashbook Report */}
       <Card className="overflow-hidden">
-        <div ref={printRef} className="bg-white p-8">
+        <div ref={printRef} className="bg-white p-8 md:p-10">
           {/* Header */}
           <div className="text-center mb-6">
-            <h2 className="text-xl font-bold">नमुना क्रमांक ७</h2>
+            <h2 className="text-xl md:text-2xl font-bold">नमुना क्रमांक ७</h2>
             <p className="text-sm text-gray-600">(नियम १८ पहा - रोकड वही)</p>
             <p className="text-sm mt-2 font-semibold">
               👉 दिनांक: {new Date(dateFrom).toLocaleDateString('en-GB')} ते {new Date(dateTo).toLocaleDateString('en-GB')} 👈
@@ -269,45 +269,45 @@ export default function CashbookLedger() {
               <Table className="border-2 border-gray-800">
                 <TableHeader>
                   <TableRow className="bg-gray-100 border-b-2 border-gray-800">
-                    <TableHead className="border-r border-gray-600 text-center font-bold text-black">दिनांक</TableHead>
-                    <TableHead className="border-r border-gray-600 text-center font-bold text-black">तपशील (जमा बाजू)</TableHead>
-                    <TableHead className="border-r border-gray-600 text-center font-bold text-black">रक्कम ₹</TableHead>
-                    <TableHead className="border-r border-gray-600 text-center font-bold text-black">तपशील (नावे बाजू)</TableHead>
-                    <TableHead className="text-center font-bold text-black">रक्कम ₹</TableHead>
+                    <TableHead className="border-r border-gray-600 text-center font-bold text-black md:text-base md:py-3">दिनांक</TableHead>
+                    <TableHead className="border-r border-gray-600 text-center font-bold text-black md:text-base md:py-3">तपशील (जमा बाजू)</TableHead>
+                    <TableHead className="border-r border-gray-600 text-center font-bold text-black md:text-base md:py-3">रक्कम ₹</TableHead>
+                    <TableHead className="border-r border-gray-600 text-center font-bold text-black md:text-base md:py-3">तपशील (नावे बाजू)</TableHead>
+                    <TableHead className="text-center font-bold text-black md:text-base md:py-3">रक्कम ₹</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {/* Opening Balance */}
                   <TableRow className="border-b border-gray-400">
-                    <TableCell className="border-r border-gray-400 text-center">
+                    <TableCell className="border-r border-gray-400 text-center md:text-base md:py-3">
                       {new Date(dateFrom).toLocaleDateString('en-GB')}
                     </TableCell>
-                    <TableCell className="border-r border-gray-400">
+                    <TableCell className="border-r border-gray-400 md:text-base md:py-3">
                       उघडत शिल्लक (Opening Balance)
                     </TableCell>
-                    <TableCell className="border-r border-gray-400 text-right font-semibold">
+                    <TableCell className="border-r border-gray-400 text-right font-semibold md:text-base md:py-3">
                       {openingBalance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                     </TableCell>
-                    <TableCell className="border-r border-gray-400"></TableCell>
-                    <TableCell className="text-right"></TableCell>
+                    <TableCell className="border-r border-gray-400 md:py-3"></TableCell>
+                    <TableCell className="text-right md:py-3"></TableCell>
                   </TableRow>
 
                   {/* Transactions */}
                   {processedEntries.map((entry, index) => (
                     <TableRow key={index} className="border-b border-gray-400">
-                      <TableCell className="border-r border-gray-400 text-center">
+                      <TableCell className="border-r border-gray-400 text-center md:text-base md:py-3">
                         {entry.date}
                       </TableCell>
-                      <TableCell className="border-r border-gray-400">
+                      <TableCell className="border-r border-gray-400 md:text-base md:py-3">
                         {entry.creditNarration}
                       </TableCell>
-                      <TableCell className="border-r border-gray-400 text-right">
+                      <TableCell className="border-r border-gray-400 text-right md:text-base md:py-3">
                         {entry.creditAmount ? entry.creditAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 }) : ''}
                       </TableCell>
-                      <TableCell className="border-r border-gray-400">
+                      <TableCell className="border-r border-gray-400 md:text-base md:py-3">
                         {entry.debitNarration}
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-right md:text-base md:py-3">
                         {entry.debitAmount ? entry.debitAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 }) : ''}
                       </TableCell>
                     </TableRow>
@@ -315,24 +315,24 @@ export default function CashbookLedger() {
 
                   {/* Totals */}
                   <TableRow className="border-t-2 border-gray-800 bg-gray-100">
-                    <TableCell className="border-r border-gray-600"></TableCell>
-                    <TableCell className="border-r border-gray-600 font-bold">
+                    <TableCell className="border-r border-gray-600 md:py-3"></TableCell>
+                    <TableCell className="border-r border-gray-600 font-bold md:text-base md:py-3">
                       एकूण जमा:
                     </TableCell>
-                    <TableCell className="border-r border-gray-600 text-right font-bold">
+                    <TableCell className="border-r border-gray-600 text-right font-bold md:text-base md:py-3">
                       ₹{totalCredit.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                     </TableCell>
-                    <TableCell className="border-r border-gray-600 font-bold">
+                    <TableCell className="border-r border-gray-600 font-bold md:text-base md:py-3">
                       एकूण नावे:
                     </TableCell>
-                    <TableCell className="text-right font-bold">
+                    <TableCell className="text-right font-bold md:text-base md:py-3">
                       ₹{totalDebit.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                     </TableCell>
                   </TableRow>
 
                   {/* Closing Balance */}
                   <TableRow className="bg-indigo-50 border-t-2 border-gray-800">
-                    <TableCell colSpan={5} className="text-center py-4">
+                    <TableCell colSpan={5} className="text-center py-4 md:py-5">
                       <span className="text-lg font-bold">
                         🔻 क्लोजिंग बॅलन्स: ₹{closingBalance.toLocaleString('en-IN', { minimumFractionDigits: 2 })} 🔻
                       </span>

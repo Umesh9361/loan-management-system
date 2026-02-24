@@ -159,7 +159,7 @@ export default function PartyStatement() {
                       रोकड व्यवहार
                     </Button>
                   </Link>
-                  <h1 className="text-2xl font-bold text-foreground heading-professional font-noto">
+                  <h1 className="text-2xl md:text-3xl font-bold text-foreground heading-professional font-noto">
                     व्यक्ती खाते विवरण
                   </h1>
                 </div>
@@ -254,12 +254,12 @@ export default function PartyStatement() {
               {/* Statement Display */}
               {statementData && (
                 <Card className="statement-card">
-                  <CardContent className="p-6">
+                  <CardContent className="p-6 md:p-8">
                     {/* Statement Header */}
                     <div className="text-center mb-6 space-y-2">
-                      <h2 className="text-xl font-bold">{company?.name || 'कंपनी नाव'}</h2>
+                      <h2 className="text-xl md:text-2xl font-bold">{company?.name || 'कंपनी नाव'}</h2>
                       <p className="text-sm text-gray-600">{company?.address}</p>
-                      <h3 className="text-lg font-semibold mt-4">व्यक्ती खाते विवरण</h3>
+                      <h3 className="text-lg md:text-xl font-semibold mt-4">व्यक्ती खाते विवरण</h3>
                       <div className="text-sm text-gray-600">
                         <p><strong>व्यक्ती:</strong> {statementData.party.name}</p>
                         {statementData.party.mobile && <p><strong>मोबाईल:</strong> {statementData.party.mobile}</p>}
@@ -272,29 +272,29 @@ export default function PartyStatement() {
                       <Table className="statement-table">
                         <TableHeader>
                           <TableRow>
-                            <TableHead className="border text-center">दिनांक</TableHead>
-                            <TableHead className="border text-center">तपशील</TableHead>
-                            <TableHead className="border text-center">जमा (Cr.)</TableHead>
-                            <TableHead className="border text-center">नावे (Dr.)</TableHead>
-                            <TableHead className="border text-center">शिल्लक</TableHead>
+                            <TableHead className="border text-center md:text-base md:py-3">दिनांक</TableHead>
+                            <TableHead className="border text-center md:text-base md:py-3">तपशील</TableHead>
+                            <TableHead className="border text-center md:text-base md:py-3">जमा (Cr.)</TableHead>
+                            <TableHead className="border text-center md:text-base md:py-3">नावे (Dr.)</TableHead>
+                            <TableHead className="border text-center md:text-base md:py-3">शिल्लक</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
                           {statementData.entries.map((entry: any, index: number) => (
                             <TableRow key={index}>
-                              <TableCell className="border text-center">
+                              <TableCell className="border text-center md:text-base md:py-3">
                                 {DateUtils.isoToIndianDate(entry.date)}
                               </TableCell>
-                              <TableCell className="border">
+                              <TableCell className="border md:text-base md:py-3">
                                 {entry.description}
                               </TableCell>
-                              <TableCell className="border text-right">
+                              <TableCell className="border text-right md:text-base md:py-3">
                                 {entry.credit > 0 && `₹${entry.credit.toLocaleString('en-IN')}`}
                               </TableCell>
-                              <TableCell className="border text-right">
+                              <TableCell className="border text-right md:text-base md:py-3">
                                 {entry.debit > 0 && `₹${entry.debit.toLocaleString('en-IN')}`}
                               </TableCell>
-                              <TableCell className="border text-right">
+                              <TableCell className="border text-right md:text-base md:py-3">
                                 <span className={entry.balance >= 0 ? 'text-green-600' : 'text-red-600'}>
                                   ₹{Math.abs(entry.balance).toLocaleString('en-IN')}
                                   {entry.balance >= 0 ? ' (Cr.)' : ' (Dr.)'}
@@ -304,14 +304,14 @@ export default function PartyStatement() {
                           ))}
                           {/* Summary Row */}
                           <TableRow className="bg-gray-50 font-semibold">
-                            <TableCell className="border text-center" colSpan={2}>एकूण</TableCell>
-                            <TableCell className="border text-right">
+                            <TableCell className="border text-center md:text-base md:py-3" colSpan={2}>एकूण</TableCell>
+                            <TableCell className="border text-right md:text-base md:py-3">
                               ₹{statementData.totalCredit.toLocaleString('en-IN')}
                             </TableCell>
-                            <TableCell className="border text-right">
+                            <TableCell className="border text-right md:text-base md:py-3">
                               ₹{statementData.totalDebit.toLocaleString('en-IN')}
                             </TableCell>
-                            <TableCell className="border text-right">
+                            <TableCell className="border text-right md:text-base md:py-3">
                               <span className={statementData.finalBalance >= 0 ? 'text-green-600' : 'text-red-600'}>
                                 ₹{Math.abs(statementData.finalBalance).toLocaleString('en-IN')}
                                 {statementData.finalBalance >= 0 ? ' (Cr.)' : ' (Dr.)'}
