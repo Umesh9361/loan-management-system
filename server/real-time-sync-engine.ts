@@ -5,9 +5,10 @@
  */
 
 import { db } from "./db";
-import { loans, cashTransactions } from "@shared/schema";
+import { loans, cashTransactions, loanClosures, groups } from "@shared/schema";
 import { eq, and, sql } from "drizzle-orm";
 import { storage } from "./storage";
+import { NarrationEngine } from "./narration-engine";
 
 export interface LoanSyncOperation {
   type: 'CREATE' | 'UPDATE' | 'DELETE' | 'CLOSE' | 'REOPEN';
@@ -380,4 +381,115 @@ export function getRealTimeSyncEngine(): RealTimeSyncEngine {
 export async function triggerLoanSync(operation: LoanSyncOperation): Promise<SyncResult> {
   const engine = getRealTimeSyncEngine();
   return await engine.syncLoanOperation(operation);
+}
+
+/**
+ * REPAIR FUNCTION: Backfill missing closure cash_in entries
+ * Finds all loan closures that don't have a matching cash_in in cash_transactions
+ * and creates them. Also backfills missing disbursement cash_out entries.
+ * Run on server startup to ensure data integrity.
+ */
+export async function repairMissingCashEntries(): Promise<{ closuresRepaired: number; disbursementsRepaired: number }> {
+  let closuresRepaired = 0;
+  let disbursementsRepaired = 0;
+
+  try {
+    const allClosures = await db.select({
+      closureId: loanClosures.id,
+      loanId: loanClosures.loanId,
+      tenantId: loanClosures.tenantId,
+      totalAmount: loanClosures.totalAmount,
+      interestPaid: loanClosures.interestPaid,
+      closureDate: loanClosures.closureDate,
+      accountNumber: loans.accountNumber,
+      borrowerName: loans.borrowerName,
+      principalAmount: loans.principalAmount,
+      groupId: loans.groupId,
+      loanDate: loans.loanDate,
+    }).from(loanClosures)
+      .innerJoin(loans, eq(loanClosures.loanId, loans.id));
+
+    for (const closure of allClosures) {
+      const tenantId = closure.tenantId;
+      const accountNumber = closure.accountNumber;
+
+      const existingClosureCashIn = await db.select({ id: cashTransactions.id })
+        .from(cashTransactions)
+        .where(and(
+          eq(cashTransactions.tenantId, tenantId),
+          eq(cashTransactions.transactionType, 'cash_in'),
+          eq(cashTransactions.category, 'loan_repayment'),
+          sql`${cashTransactions.narration} LIKE ${`%खाते क्र. ${accountNumber}%`}`,
+          sql`ABS(${cashTransactions.amount} - ${Number(closure.totalAmount)}) < 0.01`
+        ));
+
+      if (existingClosureCashIn.length === 0) {
+        let groupName = '';
+        if (closure.groupId) {
+          const [grp] = await db.select({ name: groups.name }).from(groups).where(eq(groups.id, closure.groupId));
+          groupName = grp?.name || '';
+        }
+        const narration = NarrationEngine.createLoanClosureNarration(
+          accountNumber, closure.borrowerName,
+          Number(closure.totalAmount), Number(closure.interestPaid), groupName
+        );
+
+        await storage.createCashTransaction({
+          tenantId,
+          transactionDate: closure.closureDate,
+          transactionType: 'cash_in',
+          amount: Number(closure.totalAmount),
+          category: 'loan_repayment',
+          narration,
+          isSystemGenerated: true
+        });
+        closuresRepaired++;
+        console.log(`🔧 REPAIR: Created missing closure cash_in for account ${accountNumber} - ₹${closure.totalAmount}`);
+      }
+
+      const existingDisbursement = await db.select({ id: cashTransactions.id })
+        .from(cashTransactions)
+        .where(and(
+          eq(cashTransactions.tenantId, tenantId),
+          eq(cashTransactions.transactionType, 'cash_out'),
+          eq(cashTransactions.category, 'loan_disbursement'),
+          sql`${cashTransactions.narration} LIKE ${`%खाते क्र. ${accountNumber}%`}`,
+          sql`ABS(${cashTransactions.amount} - ${Number(closure.principalAmount)}) < 0.01`
+        ));
+
+      if (existingDisbursement.length === 0) {
+        let groupName = '';
+        if (closure.groupId) {
+          const [grp] = await db.select({ name: groups.name }).from(groups).where(eq(groups.id, closure.groupId));
+          groupName = grp?.name || '';
+        }
+        const narration = NarrationEngine.createLoanDisbursementNarration(
+          accountNumber, closure.borrowerName,
+          Number(closure.principalAmount), groupName
+        );
+
+        await storage.createCashTransaction({
+          tenantId,
+          transactionDate: closure.loanDate,
+          transactionType: 'cash_out',
+          amount: Number(closure.principalAmount),
+          category: 'loan_disbursement',
+          narration,
+          isSystemGenerated: true
+        });
+        disbursementsRepaired++;
+        console.log(`🔧 REPAIR: Created missing disbursement cash_out for account ${accountNumber} - ₹${closure.principalAmount}`);
+      }
+    }
+
+    if (closuresRepaired > 0 || disbursementsRepaired > 0) {
+      console.log(`🔧 CASH ENTRY REPAIR COMPLETE: ${closuresRepaired} closures, ${disbursementsRepaired} disbursements backfilled`);
+    } else {
+      console.log(`✅ CASH ENTRY CHECK: All loan cash entries are in sync`);
+    }
+  } catch (error) {
+    console.error('❌ REPAIR ERROR:', error);
+  }
+
+  return { closuresRepaired, disbursementsRepaired };
 }

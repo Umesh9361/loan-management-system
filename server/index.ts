@@ -3,6 +3,7 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { initializeDatabase } from "./init-db";
 import { LoginHealthMonitor } from "./login-health-monitor";
+import { repairMissingCashEntries } from "./real-time-sync-engine";
 import { db } from "./db";
 import { notificationWarnings } from "@shared/schema";
 import { lt } from "drizzle-orm";
@@ -133,6 +134,8 @@ app.use((req, res, next) => {
     
     // Run login health check after database initialization
     await LoginHealthMonitor.autoRepairCredentials();
+    
+    await repairMissingCashEntries();
     
     await cleanupOldNotifications();
     setInterval(cleanupOldNotifications, 24 * 60 * 60 * 1000);

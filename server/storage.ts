@@ -2523,9 +2523,8 @@ export class DatabaseStorage implements IStorage {
     let deletedCashEntries = 0;
 
     await db.transaction(async (tx) => {
-      // Get closed loans before the specified date
-      const closedLoans = await tx
-        .select({ id: loans.id })
+      const closedLoansList = await tx
+        .select({ id: loans.id, accountNumber: loans.accountNumber })
         .from(loans)
         .where(
           and(
@@ -2535,26 +2534,26 @@ export class DatabaseStorage implements IStorage {
           )
         );
 
-      if (closedLoans.length === 0) {
+      if (closedLoansList.length === 0) {
         return;
       }
 
-      const loanIds = closedLoans.map(loan => loan.id);
-      
-      // Delete cash transactions related to these loans
-      const deletedCashResult = await tx
-        .delete(cashTransactions)
-        .where(
-          and(
-            eq(cashTransactions.tenantId, tenantId),
-            sql`${cashTransactions.narration} LIKE ANY(${loanIds.map(id => `%${id}%`)})`
+      const loanIds = closedLoansList.map(loan => loan.id);
+      const accountNumbers = closedLoansList.map(loan => loan.accountNumber);
+
+      for (const accNum of accountNumbers) {
+        const deletedCashResult = await tx
+          .delete(cashTransactions)
+          .where(
+            and(
+              eq(cashTransactions.tenantId, tenantId),
+              sql`${cashTransactions.narration} LIKE ${`%खाते क्र. ${accNum}%`}`
+            )
           )
-        )
-        .returning({ id: cashTransactions.id });
+          .returning({ id: cashTransactions.id });
+        deletedCashEntries += deletedCashResult.length;
+      }
 
-      deletedCashEntries = deletedCashResult.length;
-
-      // Delete loan closures
       await tx
         .delete(loanClosures)
         .where(
@@ -2564,7 +2563,6 @@ export class DatabaseStorage implements IStorage {
           )
         );
 
-      // Delete transactions
       const deletedTransResult = await tx
         .delete(transactions)
         .where(
@@ -2577,7 +2575,6 @@ export class DatabaseStorage implements IStorage {
 
       deletedTransactions = deletedTransResult.length;
 
-      // Delete loans
       const deletedLoanResult = await tx
         .delete(loans)
         .where(
