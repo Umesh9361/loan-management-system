@@ -521,19 +521,31 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteLoan(id: string, tenantId: string): Promise<boolean> {
-    // Get loan details before deletion for cash transaction cleanup
     const [loanToDelete] = await db
       .select()
       .from(loans)
       .where(and(eq(loans.id, id), eq(loans.tenantId, tenantId)));
 
     if (loanToDelete) {
-      // Delete related cash transactions (loan disbursement/closure)
       await db
         .delete(cashTransactions)
         .where(and(
           eq(cashTransactions.tenantId, tenantId),
-          sql`${cashTransactions.narration} LIKE ${`%${loanToDelete.loanNumber}%`}`
+          sql`${cashTransactions.narration} LIKE ${`%खाते क्र. ${loanToDelete.accountNumber}%`}`
+        ));
+
+      await db
+        .delete(loanClosures)
+        .where(and(
+          eq(loanClosures.tenantId, tenantId),
+          eq(loanClosures.loanId, id)
+        ));
+
+      await db
+        .delete(transactions)
+        .where(and(
+          eq(transactions.tenantId, tenantId),
+          eq(transactions.loanId, id)
         ));
     }
 
@@ -3171,6 +3183,7 @@ export class DatabaseStorage implements IStorage {
           bankAccounts.push({ name: p.name, balance: p.balance });
           break;
         case 'asset':
+        case 'current_asset':
           fixedAssets.push({ name: p.name, balance: p.balance });
           break;
         case 'customer':
@@ -3186,7 +3199,10 @@ export class DatabaseStorage implements IStorage {
         case 'expense':
           break;
         case 'liability':
-          creditors.push({ name: p.name, balance: Math.abs(p.balance) });
+        case 'current_liability':
+        case 'long_term_liability':
+          if (p.balance > 0) debtors.push({ name: p.name, balance: p.balance });
+          else creditors.push({ name: p.name, balance: Math.abs(p.balance) });
           break;
         default:
           if (p.balance > 0) debtors.push({ name: p.name, balance: p.balance });

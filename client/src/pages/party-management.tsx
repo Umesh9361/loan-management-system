@@ -32,7 +32,7 @@ const partySchema = z.object({
   name: z.string().min(1, "नाव आवश्यक आहे"),
   mobile: z.string().optional(),
   address: z.string().optional(),
-  accountType: z.enum(["supplier", "customer", "employee", "asset", "liability", "income", "expense", "bank"]).default("supplier"),
+  accountType: z.enum(["supplier", "customer", "employee", "asset", "current_asset", "liability", "current_liability", "long_term_liability", "income", "expense", "bank"]).default("supplier"),
   openingBalance: z.union([z.string(), z.number()]).optional().transform(val => {
     if (val === "" || val === undefined || val === null) return 0;
     return typeof val === "string" ? Number(val) || 0 : val;
@@ -48,8 +48,11 @@ const getAccountTypeLabel = (type: string) => {
     supplier: "पुरवठादार",
     customer: "ग्राहक", 
     employee: "कर्मचारी",
-    asset: "मालमत्ता",
+    asset: "स्थिर मालमत्ता",
+    current_asset: "चालू मालमत्ता",
     liability: "देणे",
+    current_liability: "चालू देयता",
+    long_term_liability: "दीर्घकालीन देयता",
     income: "आय",
     expense: "खर्च",
     bank: "बँक",
@@ -470,11 +473,14 @@ function PartyForm({
                   <SelectItem value="supplier">पुरवठादार (Supplier)</SelectItem>
                   <SelectItem value="customer">ग्राहक (Customer)</SelectItem>
                   <SelectItem value="employee">कर्मचारी (Employee)</SelectItem>
-                  <SelectItem value="asset">मालमत्ता (Asset)</SelectItem>
+                  <SelectItem value="bank">बँक (Bank)</SelectItem>
+                  <SelectItem value="asset">स्थिर मालमत्ता (Fixed Asset)</SelectItem>
+                  <SelectItem value="current_asset">चालू मालमत्ता (Current Asset)</SelectItem>
                   <SelectItem value="liability">देणे (Liability)</SelectItem>
+                  <SelectItem value="current_liability">चालू देयता (Current Liability)</SelectItem>
+                  <SelectItem value="long_term_liability">दीर्घकालीन देयता (Long-term Liability)</SelectItem>
                   <SelectItem value="income">आय (Income)</SelectItem>
                   <SelectItem value="expense">खर्च (Expense)</SelectItem>
-                  <SelectItem value="bank">बँक (Bank)</SelectItem>
                 </SelectContent>
               </Select>
               <FormMessage />

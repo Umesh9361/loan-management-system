@@ -395,7 +395,7 @@ export const parties = pgTable("parties", {
   mobile: varchar("mobile", { length: 15 }),
   address: text("address"),
   // Account type classification
-  accountType: varchar("account_type", { length: 30 }).notNull().default("supplier"), // supplier, customer, employee, asset, liability, income, expense, bank
+  accountType: varchar("account_type", { length: 30 }).notNull().default("supplier"), // supplier, customer, employee, asset, current_asset, liability, current_liability, long_term_liability, income, expense, bank
   // Opening balance fields for proper accounting
   openingBalance: decimal("opening_balance", { precision: 12, scale: 2 }).notNull().default("0"),
   openingBalanceType: varchar("opening_balance_type", { length: 10 }).notNull().default("credit"), // "debit" or "credit"
@@ -578,7 +578,7 @@ export const insertPartySchema = createInsertSchema(parties).omit({
   name: z.string().min(1, "नाव आवश्यक आहे").max(100, "नाव खूप मोठे आहे"),
   mobile: z.string().optional().nullable(),
   address: z.string().optional().nullable(),
-  accountType: z.enum(["supplier", "customer", "employee", "asset", "liability", "income", "expense", "bank"]).default("supplier"),
+  accountType: z.enum(["supplier", "customer", "employee", "asset", "current_asset", "liability", "current_liability", "long_term_liability", "income", "expense", "bank"]).default("supplier"),
   openingBalance: z.union([z.string(), z.number()]).optional().transform(val => val ? Number(val) : 0),
   openingBalanceType: z.enum(["debit", "credit"]).default("credit"),
   openingBalanceDate: z.string().optional().nullable(),
