@@ -224,6 +224,19 @@ function getFieldValue(fieldId: string, loan: LabelLoan, displayMode?: string): 
   }
 }
 
+function ptToMm(pt: number): number {
+  return pt * 0.3528;
+}
+
+function getFieldHeightMm(field: LabelField, isPaired: boolean, partnerField?: LabelField): number {
+  if (field.id === 'details') return 0;
+  const fs = isPaired && partnerField ? Math.max(field.fontSize, partnerField.fontSize) : field.fontSize;
+  const lineH = fs * 1.15;
+  const hasOval = field.hasOvalBorder || (partnerField?.hasOvalBorder);
+  const heightPt = hasOval ? lineH + 3 : lineH;
+  return ptToMm(heightPt);
+}
+
 function generateLabelHtml(loan: LabelLoan, settings: LabelSettings): string {
   const { stickerSize, margins, fields } = settings;
   const contentWidth = Math.max(5, stickerSize.width - margins.left - margins.right);
@@ -234,46 +247,100 @@ function generateLabelHtml(loan: LabelLoan, settings: LabelSettings): string {
   const safeMarginRight = Math.min(margins.right, stickerSize.width / 2);
 
   const enabledFields = fields.filter(f => f.enabled);
+  const gapMm = 0.3;
+
+  const detailsField = enabledFields.find(f => f.id === 'details');
+  let fixedHeightMm = 0;
+  let renderedRowCount = 0;
+
+  const trioWeight = enabledFields.find(f => f.id === 'weight' && f.enabled);
+  const trioRate = enabledFields.find(f => f.id === 'interestRate' && f.enabled);
+  const trioDate = enabledFields.find(f => f.id === 'date' && f.enabled);
+  const hasTrio = !!(trioWeight && trioRate && trioDate);
+
+  const tempProcessed = new Set<string>();
+  if (hasTrio) { ['weight', 'interestRate', 'date'].forEach(id => tempProcessed.add(id)); }
+
+  for (let i = 0; i < enabledFields.length; i++) {
+    const field = enabledFields[i];
+    if (tempProcessed.has(field.id)) continue;
+    if (field.id === 'details') { tempProcessed.add(field.id); continue; }
+    const next1 = enabledFields[i + 1];
+    if (field.type === 'pair' && field.pairedWith && next1 && !tempProcessed.has(next1.id) &&
+        ((field.pairedWith === next1.id) || (next1.pairedWith === field.id))) {
+      fixedHeightMm += getFieldHeightMm(field, true, next1);
+      tempProcessed.add(field.id);
+      tempProcessed.add(next1.id);
+      renderedRowCount++;
+      i++;
+    } else {
+      fixedHeightMm += getFieldHeightMm(field, false);
+      tempProcessed.add(field.id);
+      renderedRowCount++;
+    }
+  }
+
+  if (hasTrio) {
+    const trioFs = Math.max(trioWeight!.fontSize, trioRate!.fontSize, trioDate!.fontSize);
+    const trioLineH = trioFs * 1.15;
+    const trioHasOval = trioWeight!.hasOvalBorder || trioRate!.hasOvalBorder || trioDate!.hasOvalBorder;
+    fixedHeightMm += ptToMm(trioHasOval ? trioLineH + 3 : trioLineH);
+    renderedRowCount++;
+  }
+
+  const detailsIsRow = detailsField ? 1 : 0;
+  const totalRows = renderedRowCount + detailsIsRow;
+  const totalGapMm = totalRows > 1 ? (totalRows - 1) * gapMm : 0;
+  const availableForDetailsMm = Math.max(0, contentHeight - fixedHeightMm - totalGapMm);
+
+  let dynamicLineClamp = 1;
+  if (detailsField && availableForDetailsMm > 0) {
+    const detailsLineHPt = detailsField.fontSize * 1.1;
+    const detailsLineHMm = ptToMm(detailsLineHPt);
+    if (detailsLineHMm > 0) {
+      dynamicLineClamp = Math.max(1, Math.floor(availableForDetailsMm / detailsLineHMm));
+    }
+  }
 
   const rendered: string[] = [];
   const processedIds = new Set<string>();
 
-  function renderSingleField(field: LabelField): string {
+  function renderSingleField(field: LabelField, isLastRow: boolean): string {
     const val = field.type === 'custom' ? (field.customText || "") : getFieldValue(field.id, loan, field.displayMode);
+    const marginTopAuto = isLastRow ? 'margin-top: auto;' : 'margin: 0;';
 
     if (field.id === 'details') {
-      const detailsText = val;
       const fontSize = field.fontSize;
       const lineH = +(fontSize * 1.1).toFixed(1);
-      return `<div style="font-size: ${fontSize}pt; font-weight: ${field.bold ? '800' : '400'}; line-height: ${lineH}pt; word-wrap: break-word; overflow-wrap: break-word; white-space: normal; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; color: #444; width: 100%; flex-shrink: 0; flex-grow: 0; margin: 0; padding: 0;">${detailsText}</div>`;
+      return `<div style="font-size: ${fontSize}pt; font-weight: ${field.bold ? '800' : '400'}; line-height: ${lineH}pt; word-wrap: break-word; overflow-wrap: break-word; white-space: normal; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: ${dynamicLineClamp}; -webkit-box-orient: vertical; color: #444; width: 100%; flex-shrink: 1; flex-grow: 1; ${marginTopAuto} padding: 0;">${val}</div>`;
     }
 
     const lineH = +(field.fontSize * 1.15).toFixed(1);
     const fieldMaxH = field.hasOvalBorder ? +(field.fontSize * 1.15 + 3).toFixed(1) : lineH;
-    let style = `font-size: ${field.fontSize}pt; font-weight: ${field.bold ? '800' : '400'}; line-height: ${lineH}pt; max-height: ${fieldMaxH}pt; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-shrink: 0; flex-grow: 0; max-width: 100%; margin: 0; padding: 0;`;
+    let style = `font-size: ${field.fontSize}pt; font-weight: ${field.bold ? '800' : '400'}; line-height: ${lineH}pt; max-height: ${fieldMaxH}pt; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-shrink: 0; flex-grow: 0; max-width: 100%; ${marginTopAuto} padding: 0;`;
     if (field.hasOvalBorder) {
       style += ` border: 0.6pt solid #333; border-radius: 50px; padding: 1pt 3pt; letter-spacing: 0.3pt; font-family: 'Arial','Helvetica',sans-serif; display: inline-block; max-width: 100%; box-sizing: border-box;`;
     }
     if (field.id === 'interestRate') style += ` text-align: center; color: #444;`;
     if (field.id === 'date') style += ` font-family: 'Arial','Helvetica',sans-serif; letter-spacing: 0.3pt;`;
-    if (field.id === 'groupBorrower') style += ` margin: 0;`;
     return `<div style="${style}">${val}</div>`;
   }
 
-  function renderPairRow(leftField: LabelField, rightField: LabelField): string {
+  function renderPairRow(leftField: LabelField, rightField: LabelField, isLastRow: boolean): string {
     const leftVal = leftField.type === 'custom' ? (leftField.customText || "") : getFieldValue(leftField.id, loan, leftField.displayMode);
     const rightVal = rightField.type === 'custom' ? (rightField.customText || "") : getFieldValue(rightField.id, loan, rightField.displayMode);
     const rowFontSize = Math.max(leftField.fontSize, rightField.fontSize);
     const rowLineH = +(rowFontSize * 1.15).toFixed(1);
     const hasAnyOval = leftField.hasOvalBorder || rightField.hasOvalBorder;
     const pairMaxH = hasAnyOval ? +(rowFontSize * 1.15 + 3).toFixed(1) : rowLineH;
+    const marginTopAuto = isLastRow ? 'margin-top:auto;' : 'margin:0;';
     let leftStyle = `font-size: ${leftField.fontSize}pt; font-weight: ${leftField.bold ? '800' : '400'}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 55%;`;
     let rightStyle = `font-size: ${rightField.fontSize}pt; font-weight: ${rightField.bold ? '800' : '400'}; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 45%;`;
     if (leftField.hasOvalBorder) leftStyle += ` border: 0.6pt solid #333; border-radius: 50px; padding: 1pt 3pt; letter-spacing: 0.3pt; font-family: 'Arial','Helvetica',sans-serif; display: inline-block; box-sizing: border-box;`;
     if (rightField.hasOvalBorder) rightStyle += ` border: 0.6pt solid #333; border-radius: 50px; padding: 1pt 3pt; letter-spacing: 0.3pt; font-family: 'Arial','Helvetica',sans-serif; display: inline-block; box-sizing: border-box;`;
     if (leftField.id === 'date') leftStyle += ` font-family: 'Arial','Helvetica',sans-serif; letter-spacing: 0.3pt;`;
     if (rightField.id === 'date') rightStyle += ` font-family: 'Arial','Helvetica',sans-serif; letter-spacing: 0.3pt;`;
-    return `<div style="display:flex;justify-content:space-between;align-items:center;gap:1pt;line-height:${rowLineH}pt;max-height:${pairMaxH}pt;overflow:hidden;flex-shrink:0;flex-grow:0;width:100%;margin:0;padding:0;">
+    return `<div style="display:flex;justify-content:space-between;align-items:center;gap:1pt;line-height:${rowLineH}pt;max-height:${pairMaxH}pt;overflow:hidden;flex-shrink:0;flex-grow:0;width:100%;${marginTopAuto}padding:0;">
       <span style="${leftStyle}">${leftVal}</span>
       <span style="${rightStyle}">${rightVal}</span>
     </div>`;
@@ -283,7 +350,7 @@ function generateLabelHtml(loan: LabelLoan, settings: LabelSettings): string {
     return (a.pairedWith === b.id) || (b.pairedWith === a.id);
   }
 
-  function renderTrioRow(leftField: LabelField, centerField: LabelField, rightField: LabelField): string {
+  function renderTrioRow(leftField: LabelField, centerField: LabelField, rightField: LabelField, isLastRow: boolean): string {
     const leftVal = getFieldValue(leftField.id, loan, leftField.displayMode);
     const centerVal = getFieldValue(centerField.id, loan, centerField.displayMode);
     const rightVal = getFieldValue(rightField.id, loan, rightField.displayMode);
@@ -291,6 +358,7 @@ function generateLabelHtml(loan: LabelLoan, settings: LabelSettings): string {
     const rowLineH = +(rowFontSize * 1.15).toFixed(1);
     const hasAnyOval = leftField.hasOvalBorder || centerField.hasOvalBorder || rightField.hasOvalBorder;
     const trioMaxH = hasAnyOval ? +(rowFontSize * 1.15 + 3).toFixed(1) : rowLineH;
+    const marginTopAuto = isLastRow ? 'margin-top:auto;' : 'margin:0;';
     let leftStyle = `font-size: ${leftField.fontSize}pt; font-weight: ${leftField.bold ? '800' : '400'}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;`;
     let centerStyle = `font-size: ${centerField.fontSize}pt; font-weight: ${centerField.bold ? '800' : '400'}; white-space: nowrap; text-align: center; color: #444;`;
     let rightStyle = `font-size: ${rightField.fontSize}pt; font-weight: ${rightField.bold ? '800' : '400'}; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;`;
@@ -298,22 +366,23 @@ function generateLabelHtml(loan: LabelLoan, settings: LabelSettings): string {
     if (centerField.hasOvalBorder) centerStyle += ` border: 0.6pt solid #333; border-radius: 50px; padding: 1pt 3pt; font-family: 'Arial','Helvetica',sans-serif; display: inline-block; box-sizing: border-box;`;
     if (rightField.hasOvalBorder) rightStyle += ` border: 0.6pt solid #333; border-radius: 50px; padding: 1pt 3pt; font-family: 'Arial','Helvetica',sans-serif; display: inline-block; box-sizing: border-box;`;
     if (rightField.id === 'date') rightStyle += ` font-family: 'Arial','Helvetica',sans-serif; letter-spacing: 0.3pt;`;
-    return `<div style="display:flex;justify-content:space-between;align-items:center;gap:1pt;line-height:${rowLineH}pt;max-height:${trioMaxH}pt;overflow:hidden;flex-shrink:0;flex-grow:0;width:100%;margin:0;padding:0;">
+    return `<div style="display:flex;justify-content:space-between;align-items:center;gap:1pt;line-height:${rowLineH}pt;max-height:${trioMaxH}pt;overflow:hidden;flex-shrink:0;flex-grow:0;width:100%;${marginTopAuto}padding:0;">
       <span style="${leftStyle}">${leftVal}</span>
       <span style="${centerStyle}">${centerVal}</span>
       <span style="${rightStyle}">${rightVal}</span>
     </div>`;
   }
 
-  const trioWeight = enabledFields.find(f => f.id === 'weight' && f.enabled);
-  const trioRate = enabledFields.find(f => f.id === 'interestRate' && f.enabled);
-  const trioDate = enabledFields.find(f => f.id === 'date' && f.enabled);
-  const hasTrio = !!(trioWeight && trioRate && trioDate);
   if (hasTrio) {
     processedIds.add('weight');
     processedIds.add('interestRate');
     processedIds.add('date');
   }
+
+  type RenderPlan = 
+    | { type: 'single'; field: LabelField }
+    | { type: 'pair'; left: LabelField; right: LabelField };
+  const renderPlan: RenderPlan[] = [];
 
   for (let i = 0; i < enabledFields.length; i++) {
     const field = enabledFields[i];
@@ -325,20 +394,31 @@ function generateLabelHtml(loan: LabelLoan, settings: LabelSettings): string {
       if (next1 && !processedIds.has(next1.id) && arePairPartners(field, next1)) {
         processedIds.add(field.id);
         processedIds.add(next1.id);
-        rendered.push(renderPairRow(field, next1));
+        renderPlan.push({ type: 'pair', left: field, right: next1 });
         i += 1;
       } else {
         processedIds.add(field.id);
-        rendered.push(renderSingleField(field));
+        renderPlan.push({ type: 'single', field });
       }
     } else {
       processedIds.add(field.id);
-      rendered.push(renderSingleField(field));
+      renderPlan.push({ type: 'single', field });
+    }
+  }
+
+  const lastNonTrioIdx = renderPlan.length - 1;
+  for (let idx = 0; idx < renderPlan.length; idx++) {
+    const isLast = !hasTrio && idx === lastNonTrioIdx;
+    const plan = renderPlan[idx];
+    if (plan.type === 'pair') {
+      rendered.push(renderPairRow(plan.left, plan.right, isLast));
+    } else {
+      rendered.push(renderSingleField(plan.field, isLast));
     }
   }
 
   if (hasTrio) {
-    rendered.push(renderTrioRow(trioWeight!, trioRate!, trioDate!));
+    rendered.push(renderTrioRow(trioWeight!, trioRate!, trioDate!, true));
   }
 
   return `
