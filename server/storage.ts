@@ -3097,6 +3097,17 @@ export class DatabaseStorage implements IStorage {
     const totalCollectedOnActive = Number(collectedOnActiveLoans[0]?.totalCollected || 0);
     const loansAndAdvances = totalLoanPrincipal - totalCollectedOnActive;
 
+    const allLoanPayments = await db.select({
+      totalPayments: sum(transactions.amount),
+    }).from(transactions)
+      .innerJoin(loans, eq(transactions.loanId, loans.id))
+      .where(and(
+        eq(loans.tenantId, tenantId),
+        eq(transactions.type, 'payment'),
+        lte(transactions.transactionDate, asOfDate)
+      ));
+    const totalAllLoanPayments = Number(allLoanPayments[0]?.totalPayments || 0);
+
     const cashInRows = await db.select({
       total: sum(cashTransactions.amount),
     }).from(cashTransactions).where(and(
@@ -3111,7 +3122,8 @@ export class DatabaseStorage implements IStorage {
       eq(cashTransactions.transactionType, 'cash_out'),
       lte(cashTransactions.transactionDate, asOfDate)
     ));
-    const cashBalance = Number(cashInRows[0]?.total || 0) - Number(cashOutRows[0]?.total || 0);
+    const cashBookBalance = Number(cashInRows[0]?.total || 0) - Number(cashOutRows[0]?.total || 0);
+    const cashBalance = cashBookBalance + totalAllLoanPayments;
 
     const allParties = await db.select({
       id: parties.id,
