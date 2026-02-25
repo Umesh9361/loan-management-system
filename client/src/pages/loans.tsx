@@ -3537,91 +3537,52 @@ function Loans() {
         </main>
       </div>
 
-      {dateWarningDialog.open && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className={`bg-white rounded-xl shadow-2xl w-[90%] max-w-md mx-4 border-t-4 ${
-            dateWarningDialog.severity === 'critical' ? 'border-red-500' : 'border-amber-500'
-          }`}>
-            <div className={`p-4 flex items-start gap-3 ${
-              dateWarningDialog.severity === 'critical' ? 'bg-red-50' : 'bg-amber-50'
-            } rounded-t-lg`}>
-              <div className={`p-2 rounded-full shrink-0 ${
-                dateWarningDialog.severity === 'critical' ? 'bg-red-100 text-red-600' : 'bg-amber-100 text-amber-600'
-              }`}>
-                <AlertTriangle className="h-5 w-5" />
-              </div>
-              <div>
-                <h3 className={`font-bold text-sm ${
-                  dateWarningDialog.severity === 'critical' ? 'text-red-800' : 'text-amber-800'
-                }`}>
-                  {dateWarningDialog.title}
-                </h3>
-                <p className="text-xs text-gray-700 mt-1 leading-relaxed">
-                  {dateWarningDialog.message}
-                </p>
-              </div>
+      <Dialog open={dateWarningDialog.open} onOpenChange={(open) => { if (!open) handleDateWarningCancel(); }}>
+        <DialogContent className={`w-[90%] max-w-md p-0 border-t-4 ${dateWarningDialog.severity === 'critical' ? 'border-red-500' : 'border-amber-500'}`}>
+          <div className={`p-4 flex items-start gap-3 ${dateWarningDialog.severity === 'critical' ? 'bg-red-50' : 'bg-amber-50'} rounded-t-lg`}>
+            <div className={`p-2 rounded-full shrink-0 ${dateWarningDialog.severity === 'critical' ? 'bg-red-100 text-red-600' : 'bg-amber-100 text-amber-600'}`}>
+              <AlertTriangle className="h-5 w-5" />
             </div>
-            <div className="p-4 flex gap-2 justify-end bg-gray-50 rounded-b-xl">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleDateWarningCancel}
-                className="text-sm"
-              >
-                रद्द करा
-              </Button>
-              <Button
-                size="sm"
-                onClick={handleDateWarningConfirm}
-                className={`text-sm text-white ${
-                  dateWarningDialog.severity === 'critical'
-                    ? 'bg-red-600 hover:bg-red-700'
-                    : 'bg-amber-600 hover:bg-amber-700'
-                }`}
-              >
-                तरीही सेव करा
-              </Button>
+            <div>
+              <h3 className={`font-bold text-sm ${dateWarningDialog.severity === 'critical' ? 'text-red-800' : 'text-amber-800'}`}>
+                {dateWarningDialog.title}
+              </h3>
+              <p className="text-xs text-gray-700 mt-1 leading-relaxed">{dateWarningDialog.message}</p>
             </div>
           </div>
-        </div>
-      )}
+          <div className="p-4 flex gap-2 justify-end bg-gray-50 rounded-b-xl">
+            <Button variant="outline" size="sm" onClick={handleDateWarningCancel} className="text-sm">
+              रद्द करा
+            </Button>
+            <Button size="sm" onClick={handleDateWarningConfirm}
+              className={`text-sm text-white ${dateWarningDialog.severity === 'critical' ? 'bg-red-600 hover:bg-red-700' : 'bg-amber-600 hover:bg-amber-700'}`}>
+              तरीही सेव करा
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
-      {duplicateWarningDialog.open && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="bg-white rounded-xl shadow-2xl w-[90%] max-w-md mx-4 border-t-4 border-orange-500">
-            <div className="p-4 flex items-start gap-3 bg-orange-50 rounded-t-lg">
-              <div className="p-2 rounded-full shrink-0 bg-orange-100 text-orange-600">
-                <AlertTriangle className="h-5 w-5" />
-              </div>
-              <div>
-                <h3 className="font-bold text-sm text-orange-800">
-                  {duplicateWarningDialog.title}
-                </h3>
-                <p className="text-xs text-gray-700 mt-1 leading-relaxed">
-                  {duplicateWarningDialog.message}
-                </p>
-              </div>
+      <Dialog open={duplicateWarningDialog.open} onOpenChange={(open) => { if (!open) handleDuplicateWarningCancel(); }}>
+        <DialogContent className="w-[90%] max-w-md p-0 border-t-4 border-orange-500">
+          <div className="p-4 flex items-start gap-3 bg-orange-50 rounded-t-lg">
+            <div className="p-2 rounded-full shrink-0 bg-orange-100 text-orange-600">
+              <AlertTriangle className="h-5 w-5" />
             </div>
-            <div className="p-4 flex gap-2 justify-end bg-gray-50 rounded-b-xl">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleDuplicateWarningCancel}
-                className="text-sm"
-              >
-                रद्द करा (तपासतो)
-              </Button>
-              <Button
-                size="sm"
-                onClick={handleDuplicateWarningConfirm}
-                className="text-sm text-white bg-orange-600 hover:bg-orange-700"
-              >
-                होय, नवीन कर्ज नोंद करा
-              </Button>
+            <div>
+              <h3 className="font-bold text-sm text-orange-800">{duplicateWarningDialog.title}</h3>
+              <p className="text-xs text-gray-700 mt-1 leading-relaxed">{duplicateWarningDialog.message}</p>
             </div>
           </div>
-        </div>
-      )}
+          <div className="p-4 flex gap-2 justify-end bg-gray-50 rounded-b-xl">
+            <Button variant="outline" size="sm" onClick={handleDuplicateWarningCancel} className="text-sm">
+              रद्द करा (तपासतो)
+            </Button>
+            <Button size="sm" onClick={handleDuplicateWarningConfirm} className="text-sm text-white bg-orange-600 hover:bg-orange-700">
+              होय, नवीन कर्ज नोंद करा
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <LabelPrintDialog
         open={labelPrintDialogOpen}
