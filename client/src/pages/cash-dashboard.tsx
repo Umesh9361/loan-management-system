@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { TrendingUp, TrendingDown, DollarSign, Activity } from "lucide-react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
+import { displayNarration } from "@/lib/utils";
 
 export default function CashDashboard() {
   // Fetch cash balance
@@ -105,7 +106,7 @@ export default function CashDashboard() {
               {recentTransactions.slice(0, 5).map((transaction: any) => (
                 <div key={transaction.id} className="flex items-center justify-between p-3 md:p-4 border rounded-lg">
                   <div>
-                    <p className="font-medium">{transaction.narration}</p>
+                    <p className="font-medium">{displayNarration(transaction.narration)}</p>
                     <p className="text-sm md:text-base text-muted-foreground">
                       {new Date(transaction.date).toLocaleDateString('hi-IN')}
                     </p>
