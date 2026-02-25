@@ -108,12 +108,19 @@ export class RealTimeSyncEngine {
     // Fallback: narration-based check for backward compatibility
     const existingDisbursement = await this.findDisbursementTransaction(tenantId, newData.accountNumber, newData.principalAmount, newData.loanDate);
     if (existingDisbursement) {
-      // Backfill loanId if missing
-      if (loanId && !existingDisbursement.loanId) {
-        await storage.updateCashTransaction(existingDisbursement.id, tenantId, { loanId });
+      // SAFETY CHECK: If this entry belongs to a DIFFERENT loan (has a different loanId),
+      // do NOT treat it as "already exists" — create a fresh entry for this loan instead.
+      // This prevents corruption when two loans share the same account number + amount.
+      if (existingDisbursement.loanId && loanId && existingDisbursement.loanId !== loanId) {
+        // Entry belongs to another loan — fall through to create a new one
+      } else {
+        // Backfill loanId only if entry is truly orphaned (no loanId at all)
+        if (loanId && !existingDisbursement.loanId) {
+          await storage.updateCashTransaction(existingDisbursement.id, tenantId, { loanId });
+        }
+        result.operationsPerformed.push('SKIP_EXISTING_DISBURSEMENT');
+        return;
       }
-      result.operationsPerformed.push('SKIP_EXISTING_DISBURSEMENT');
-      return;
     }
 
     // Create disbursement cash transaction with loanId for reliable future lookups
@@ -176,7 +183,20 @@ export class RealTimeSyncEngine {
     // Priority 0: Find by loanId — 100% reliable for entries created after this fix
     let disbursementTransaction: any = null;
     if (loanId) {
-      disbursementTransaction = await this.findDisbursementByLoanId(tenantId, loanId);
+      const byLoanId = await this.findDisbursementByLoanId(tenantId, loanId);
+      if (byLoanId) {
+        // SANITY CHECK: date on the found entry should be reasonably close to loan's old date.
+        // If dates are > 180 days apart, this entry was likely corrupted (loanId overwritten).
+        // In that case, fall back to narration-based search which uses date as Priority 1.
+        const foundDate = new Date(byLoanId.transactionDate);
+        const expectedDate = new Date(oldData.loanDate);
+        const daysDiff = Math.abs((foundDate.getTime() - expectedDate.getTime()) / 86400000);
+        if (daysDiff <= 180) {
+          disbursementTransaction = byLoanId;
+        } else {
+          console.log(`⚠️ SYNC: loanId entry date mismatch (${daysDiff} days) — falling back to narration search`);
+        }
+      }
     }
 
     // Fallback: narration-based search for old entries (no loanId stored yet)
@@ -194,7 +214,7 @@ export class RealTimeSyncEngine {
       return;
     }
 
-    // Backfill loanId on found entry if missing (one-time migration as entries are edited)
+    // Backfill loanId only if entry is truly orphaned (no loanId) AND belongs to this loan
     if (loanId && !disbursementTransaction.loanId) {
       await storage.updateCashTransaction(disbursementTransaction.id, tenantId, { loanId } as any);
     }
