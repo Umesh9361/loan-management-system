@@ -1045,25 +1045,30 @@ export class DataManagementService {
       }
 
       // SAFE duplicate cleanup: only delete when we know EXACTLY which entry to keep
-      // Safety rule: keepEntryId must be set (= cash amount exactly matches loan amount)
-      // If keepEntryId is missing (no exact match) → skip that loan, let sync engine handle it via loan edit/save
+      // Safety rule: keepEntryId must be set (= cash amount matches loan amount within ₹1)
       let skippedDuplicates = 0;
       for (const dup of diagnostic.duplicates) {
         const keepId = (dup as any).keepEntryId;
+        console.log(`🔍 CASH-FIX DUPLICATE: account ${dup.accountNumber}, loan=₹${dup.principalAmount}, entries=[${dup.cashEntryAmounts.join(',')}], keepId=${keepId || 'NONE'}`);
         if (!keepId) {
-          // No entry matches loan amount exactly — too risky to auto-delete
           skippedDuplicates++;
-          console.log(`⚠️ CASH-FIX: Skipping duplicate for account ${dup.accountNumber} — no exact amount match, manual edit required`);
+          console.log(`⚠️ CASH-FIX: Skipping account ${dup.accountNumber} — no amount match within ₹1. Loan=₹${dup.principalAmount}, entries=[${dup.cashEntryAmounts.join(',')}]`);
           continue;
         }
         const toDelete = dup.cashEntryIds.filter((id: string) => id !== keepId);
+        console.log(`🗑️ CASH-FIX: Will delete ${toDelete.length} entries for account ${dup.accountNumber}, keeping ${keepId}`);
         for (const deleteId of toDelete) {
-          await db.delete(cashTransactions).where(and(
-            eq(cashTransactions.id, deleteId),
-            eq(cashTransactions.tenantId, tenantId)
-          ));
-          duplicatesRemoved++;
-          console.log(`✅ CASH-FIX: Deleted duplicate entry ${deleteId} for account ${dup.accountNumber} (kept: ${keepId})`);
+          try {
+            const deleted = await storage.deleteCashTransaction(deleteId, tenantId);
+            if (deleted) {
+              duplicatesRemoved++;
+              console.log(`✅ CASH-FIX: Deleted duplicate ${deleteId} for account ${dup.accountNumber}`);
+            } else {
+              console.log(`⚠️ CASH-FIX: Delete returned false for ${deleteId} (account ${dup.accountNumber}) — entry may not exist or wrong tenant`);
+            }
+          } catch (delErr) {
+            console.error(`❌ CASH-FIX: Delete failed for ${deleteId} (account ${dup.accountNumber}):`, delErr);
+          }
         }
       }
 
