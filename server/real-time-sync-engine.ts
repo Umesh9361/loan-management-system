@@ -175,7 +175,7 @@ export class RealTimeSyncEngine {
       return;
     }
 
-    // Prepare update data
+    // Prepare update data — only update amount and/or date, NEVER change original narration
     const updateData: any = {};
 
     if (Number(oldData.principalAmount) !== Number(newData.principalAmount)) {
@@ -188,18 +188,14 @@ export class RealTimeSyncEngine {
       result.operationsPerformed.push(`UPDATE_DATE_${oldData.loanDate}_TO_${newData.loanDate}`);
     }
 
-    // Always standardize narration to "कर्ज वितरण" format (replaces "कर्ज वाटप", "कर्ज रकम अपडेट", etc.)
-    const groupName = await this.getGroupName(tenantId, newData.groupId);
-    updateData.narration = NarrationEngine.createLoanDisbursementNarration(
-      newData.accountNumber,
-      newData.borrowerName,
-      Number(newData.principalAmount),
-      groupName
-    );
+    // NOTE: narration is intentionally NOT updated — original narration is preserved as-is
+    // Only amount and date are synced when a loan is edited
 
-    await storage.updateCashTransaction(disbursementTransaction.id, tenantId, updateData);
-    result.cashTransactionsAffected += 1;
-    result.operationsPerformed.push('UPDATED_DISBURSEMENT_NARRATION');
+    if (Object.keys(updateData).length > 0) {
+      await storage.updateCashTransaction(disbursementTransaction.id, tenantId, updateData);
+      result.cashTransactionsAffected += 1;
+      result.operationsPerformed.push('UPDATED_DISBURSEMENT_AMOUNT_DATE');
+    }
 
     // Clean up any OTHER disbursement entries for the same account (old duplicates)
     const allEntries = await this.findAllDisbursementTransactions(tenantId, newData.accountNumber);
