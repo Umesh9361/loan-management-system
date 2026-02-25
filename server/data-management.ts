@@ -893,24 +893,27 @@ export class DataManagementService {
       const mismatches: any[] = [];
       const duplicates: any[] = [];
 
+      // Load ALL disbursement entries ONCE for this tenant (avoid N+1 queries)
+      const allDisbursements = await db.select()
+        .from(cashTransactions)
+        .where(and(
+          eq(cashTransactions.tenantId, tenantId),
+          eq(cashTransactions.transactionType, 'cash_out'),
+          eq(cashTransactions.category, 'loan_disbursement')
+        ));
+
       for (const loan of loansData) {
         const accountNum = loan.accountNumber || '';
         const loanAmount = Number(loan.principalAmount) || 0;
 
-        const allEntries = await db.select()
-          .from(cashTransactions)
-          .where(and(
-            eq(cashTransactions.tenantId, tenantId),
-            eq(cashTransactions.transactionType, 'cash_out'),
-            eq(cashTransactions.category, 'loan_disbursement'),
-            or(
-              sql`${cashTransactions.narration} LIKE ${'%खाते क्र. ' + accountNum + ' %'}`,
-              sql`${cashTransactions.narration} LIKE ${'%खाते क्र. ' + accountNum + '-%'}`,
-              sql`${cashTransactions.narration} LIKE ${'%खाते क्र.' + accountNum + ' %'}`,
-              sql`${cashTransactions.narration} LIKE ${'%खाते क्र.' + accountNum + '-%'}`,
-              sql`${cashTransactions.narration} = ${'कर्ज वितरण - खाते क्र. ' + accountNum}`
-            )
-          ));
+        // Use JavaScript regex for EXACT account number boundary matching
+        // "461" matches "खाते क्र. 461 " or "खाते क्र. 461-" but NOT "खाते क्र. 4610"
+        const escapedNum = accountNum.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const accountPattern = new RegExp('खाते क्र\\.[ ]?' + escapedNum + '([^0-9]|$)');
+
+        const allEntries = allDisbursements.filter(e =>
+          e.narration && accountPattern.test(e.narration)
+        );
 
         if (allEntries.length === 0) {
           missingLoans.push({
@@ -1022,46 +1025,33 @@ export class DataManagementService {
       }
 
       for (const mismatch of diagnostic.mismatches) {
+        // Fix amount AND standardize narration to "कर्ज वितरण" format
+        const standardNarration = `कर्ज वितरण - खाते क्र. ${mismatch.accountNumber} ${mismatch.borrowerName} - मुद्दल: ₹${mismatch.principalAmount}`;
         await db.update(cashTransactions)
-          .set({ amount: mismatch.principalAmount.toString(), updatedAt: new Date() } as any)
+          .set({
+            amount: mismatch.principalAmount.toString(),
+            narration: standardNarration,
+            updatedAt: new Date()
+          } as any)
           .where(and(
             eq(cashTransactions.id, mismatch.cashEntryId),
             eq(cashTransactions.tenantId, tenantId)
           ));
         updated++;
-        console.log(`✅ CASH-FIX: Updated amount for account ${mismatch.accountNumber}: ₹${mismatch.cashEntryAmount} → ₹${mismatch.principalAmount}`);
+        console.log(`✅ CASH-FIX: Updated amount+narration for account ${mismatch.accountNumber}: ₹${mismatch.cashEntryAmount} → ₹${mismatch.principalAmount}`);
       }
 
-      for (const dup of diagnostic.duplicates) {
-        const keepId = (dup as any).keepEntryId;
-        const toDelete = keepId
-          ? dup.cashEntryIds.filter((id: string) => id !== keepId)
-          : dup.cashEntryIds.slice(1);
-        for (const deleteId of toDelete) {
-          await db.delete(cashTransactions).where(and(
-            eq(cashTransactions.id, deleteId),
-            eq(cashTransactions.tenantId, tenantId)
-          ));
-          duplicatesRemoved++;
-          console.log(`✅ CASH-FIX: Deleted duplicate cash entry ${deleteId} for account ${dup.accountNumber}`);
-        }
-        if (!keepId) {
-          await db.update(cashTransactions)
-            .set({ amount: dup.principalAmount.toString(), updatedAt: new Date() } as any)
-            .where(and(
-              eq(cashTransactions.id, dup.cashEntryIds[0]),
-              eq(cashTransactions.tenantId, tenantId)
-            ));
-          updated++;
-        }
-      }
+      // SAFE: Do NOT auto-delete duplicates — only user-initiated loan edit (Save) will clean them up
+      // duplicatesRemoved remains 0
+      // Reason: Auto-deletion caused ₹26,000 real data loss when false positives were deleted
+      console.log(`ℹ️ CASH-FIX: ${diagnostic.duplicates.length} duplicates SKIPPED (safe mode — use loan edit/save to auto-clean)`);
 
-      const fixedCount = created + updated + duplicatesRemoved;
+      const fixedCount = created + updated;
       return {
         success: true,
         fixedCount,
         totalFixedAmount: diagnostic.loans.reduce((s, l) => s + l.principalAmount, 0),
-        message: `दुरुस्ती यशस्वी: ${created} नव्या नोंदी, ${updated} रक्कम दुरुस्त, ${duplicatesRemoved} डुप्लिकेट हटवल्या`,
+        message: `दुरुस्ती यशस्वी: ${created} नव्या नोंदी, ${updated} रक्कम दुरुस्त. ${duplicatesRemoved} डुप्लिकेट सुरक्षितपणे वगळले (कर्ज Edit → Save केल्यावर आपोआप हटतात).`,
         details: { created, updated, duplicatesRemoved }
       };
     } catch (error) {
