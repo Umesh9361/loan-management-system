@@ -1,4 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
+import { Sidebar } from "@/components/ui/sidebar";
+import { MobileNav } from "@/components/ui/mobile-nav";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -793,9 +795,15 @@ function DataManagementPage() {
   };
 
   return (
-    <>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-indigo-50 to-white">
+      <MobileNav />
       <style>{`.no-scrollbar::-webkit-scrollbar { display: none; } .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }`}</style>
-      <div className="container mx-auto p-4 max-w-6xl md:max-w-7xl">
+      <div className="lg:flex">
+        <aside className="hidden lg:block lg:w-72 lg:fixed lg:inset-y-0 lg:h-screen">
+          <Sidebar />
+        </aside>
+        <main className="flex-1 w-full lg:pl-72 pb-16 lg:pb-0">
+      <div className="p-3 sm:p-6 md:p-8 max-w-6xl md:max-w-7xl mx-auto">
         <div className="mb-6">
           <div className="flex items-center gap-3 mb-2">
             <div className="p-2.5 bg-gradient-to-br from-indigo-500 to-indigo-700 rounded-xl shadow-md">
@@ -1707,7 +1715,9 @@ function DataManagementPage() {
           </TabsContent>
         </Tabs>
       </div>
-    </>
+        </main>
+      </div>
+    </div>
   );
 }
 
