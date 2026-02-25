@@ -39,7 +39,7 @@ interface ReconciliationResult {
   totalMissingAmount: number;
   loans: Array<{ id: number; accountNumber: string; borrowerName: string; groupName: string; loanDate: string; principalAmount: number }>;
   mismatches: Array<{ id: number; accountNumber: string; borrowerName: string; groupName: string; loanDate: string; principalAmount: number; cashEntryId: string; cashEntryAmount: number }>;
-  duplicates: Array<{ id: number; accountNumber: string; borrowerName: string; loanDate: string; principalAmount: number; cashEntryIds: string[]; cashEntryAmounts: number[]; keepEntryId?: string }>;
+  duplicates: Array<{ id: number; accountNumber: string; borrowerName: string; loanDate: string; principalAmount: number; cashEntryIds: string[]; cashEntryAmounts: number[]; keepEntryId?: string; keepEntryIds?: string[] }>;
   summary: { missingCount: number; mismatchCount: number; duplicateCount: number; totalDiscrepancy: number };
 }
 
@@ -53,6 +53,8 @@ function CashReconciliationTab({ queryClient }: { queryClient: any }) {
     enabled: checked,
     retry: false
   });
+
+  const [deletingEntryId, setDeletingEntryId] = useState<string | null>(null);
 
   const fixMutation = useMutation({
     mutationFn: async () => {
@@ -68,6 +70,23 @@ function CashReconciliationTab({ queryClient }: { queryClient: any }) {
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"], refetchType: 'all' });
       recheckEntries();
     }
+  });
+
+  const deleteEntryMutation = useMutation({
+    mutationFn: async (entryId: string) => {
+      setDeletingEntryId(entryId);
+      const response = await apiRequest(`/api/cash-transactions/${entryId}`, "DELETE");
+      return response;
+    },
+    onSuccess: async () => {
+      setDeletingEntryId(null);
+      await queryClient.invalidateQueries({ queryKey: ["/api/cash-transactions"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["/api/cash-balance"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["/api/mobile-cashbook"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"], refetchType: 'all' });
+      recheckEntries();
+    },
+    onError: () => setDeletingEntryId(null)
   });
 
   const fmt = (amount: number) =>
@@ -187,24 +206,51 @@ function CashReconciliationTab({ queryClient }: { queryClient: any }) {
             {recoData.duplicates?.length > 0 && (
               <div className="space-y-2">
                 <h4 className="font-semibold text-yellow-700 text-sm">🟡 डुप्लिकेट रोकड नोंदी ({recoData.duplicates.length}) — एकाच कर्जासाठी अनेक entries</h4>
-                <div className="bg-yellow-50 border border-yellow-300 rounded-xl p-3 text-xs text-yellow-800 space-y-1">
-                  <p className="font-semibold">ℹ️ डुप्लिकेट स्वयंचलित हटवल्या जाणार नाहीत (सुरक्षित पद्धत)</p>
-                  <p>कर्ज फॉर्ममधून त्या कर्जाची रक्कम Edit करा → Save करा — डुप्लिकेट आपोआप हटेल आणि एकच योग्य नोंद राहील.</p>
-                </div>
-                <div className="rounded-xl border-2 border-yellow-200 overflow-hidden">
-                  <div className="bg-yellow-600 text-white px-3 py-2 grid grid-cols-4 gap-2 text-xs font-semibold">
-                    <span>खाते क्र.</span><span>कर्जदार</span><span>कर्ज रक्कम</span><span className="text-right">रोकड entries</span>
-                  </div>
-                  <div className="max-h-48 overflow-y-auto divide-y divide-yellow-50">
-                    {recoData.duplicates.map((d) => (
-                      <div key={d.id} className="grid grid-cols-4 gap-2 px-3 py-2 text-xs hover:bg-yellow-50">
-                        <span className="font-medium text-yellow-700">{d.accountNumber || '-'}</span>
-                        <span>{d.borrowerName}</span>
-                        <span className="text-green-700 font-semibold">{fmt(d.principalAmount)}</span>
-                        <span className="text-right text-red-600">{d.cashEntryAmounts.map(a => fmt(a)).join(', ')}</span>
+                <div className="space-y-3">
+                  {recoData.duplicates.map((d) => {
+                    const keepIds = d.keepEntryIds || (d.keepEntryId ? [d.keepEntryId] : []);
+                    const orphanEntries = d.cashEntryIds
+                      .map((id, i) => ({ id, amount: d.cashEntryAmounts[i] }))
+                      .filter(e => !keepIds.includes(e.id));
+                    const keptEntries = d.cashEntryIds
+                      .map((id, i) => ({ id, amount: d.cashEntryAmounts[i] }))
+                      .filter(e => keepIds.includes(e.id));
+                    return (
+                      <div key={d.id} className="border-2 border-yellow-300 rounded-xl overflow-hidden">
+                        <div className="bg-yellow-100 px-3 py-2 flex items-center justify-between">
+                          <span className="font-semibold text-yellow-800 text-sm">खाते क्र. {d.accountNumber || '-'} — {d.borrowerName}</span>
+                          <span className="text-xs text-yellow-700">कर्ज: {fmt(d.principalAmount)}</span>
+                        </div>
+                        <div className="divide-y divide-yellow-100">
+                          {keptEntries.map(e => (
+                            <div key={e.id} className="px-3 py-2 flex items-center justify-between bg-green-50">
+                              <span className="text-xs text-green-700 font-medium">✅ {fmt(e.amount)} — योग्य नोंद (ठेवणार)</span>
+                            </div>
+                          ))}
+                          {orphanEntries.map(e => (
+                            <div key={e.id} className="px-3 py-2 flex items-center justify-between bg-red-50">
+                              <span className="text-xs text-red-700 font-medium">⚠️ {fmt(e.amount)} — अनावश्यक नोंद</span>
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                className="h-7 px-3 text-xs"
+                                disabled={deletingEntryId === e.id}
+                                onClick={() => deleteEntryMutation.mutate(e.id)}
+                              >
+                                <Trash2 className="h-3 w-3 mr-1" />
+                                {deletingEntryId === e.id ? 'हटवत आहे...' : 'हटवा'}
+                              </Button>
+                            </div>
+                          ))}
+                          {orphanEntries.length === 0 && (
+                            <div className="px-3 py-2 text-xs text-gray-500 italic">
+                              सर्व entries matched — कर्ज Edit → Save करून sync करा
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    ))}
-                  </div>
+                    );
+                  })}
                 </div>
               </div>
             )}
