@@ -361,18 +361,23 @@ export class RealTimeSyncEngine {
 
   /**
    * Find disbursement entry by loanId — 100% reliable, no narration parsing
-   * Returns null if not found or loanId column not yet set on this entry
+   * Returns null if not found, loanId column missing (old DB), or any error
    */
   private async findDisbursementByLoanId(tenantId: string, loanId: string): Promise<any> {
-    const [row] = await db.select()
-      .from(cashTransactions)
-      .where(and(
-        eq(cashTransactions.tenantId, tenantId),
-        eq(cashTransactions.loanId, loanId),
-        eq(cashTransactions.category, 'loan_disbursement'),
-        eq(cashTransactions.transactionType, 'cash_out')
-      ));
-    return row || null;
+    try {
+      const [row] = await db.select()
+        .from(cashTransactions)
+        .where(and(
+          eq(cashTransactions.tenantId, tenantId),
+          eq(cashTransactions.loanId, loanId),
+          eq(cashTransactions.category, 'loan_disbursement'),
+          eq(cashTransactions.transactionType, 'cash_out')
+        ));
+      return row || null;
+    } catch {
+      // Column may not exist yet on older DB (Railway production) — fall back to narration search
+      return null;
+    }
   }
 
   private async findDisbursementTransaction(tenantId: string, accountNumber: string, amount: number, date: string): Promise<any> {
@@ -548,14 +553,17 @@ export async function repairMissingCashEntries(): Promise<{ closuresRepaired: nu
         console.log(`🔧 REPAIR: Created missing closure cash_in for account ${accountNumber} - ₹${closure.totalAmount}`);
       }
 
-      // Check by loanId first (reliable), then fallback to narration LIKE (old entries)
-      const existingByLoanId = await db.select({ id: cashTransactions.id })
-        .from(cashTransactions)
-        .where(and(
-          eq(cashTransactions.tenantId, tenantId),
-          eq(cashTransactions.loanId, closure.id),
-          eq(cashTransactions.category, 'loan_disbursement')
-        ));
+      // Check by loanId first (reliable), then fallback to narration LIKE (old entries / DB without column)
+      let existingByLoanId: any[] = [];
+      try {
+        existingByLoanId = await db.select({ id: cashTransactions.id })
+          .from(cashTransactions)
+          .where(and(
+            eq(cashTransactions.tenantId, tenantId),
+            eq(cashTransactions.loanId, closure.id),
+            eq(cashTransactions.category, 'loan_disbursement')
+          ));
+      } catch { /* loan_id column may not exist yet on production DB */ }
 
       const existingDisbursement = existingByLoanId.length > 0 ? existingByLoanId : await db.select({ id: cashTransactions.id })
         .from(cashTransactions)
@@ -585,8 +593,7 @@ export async function repairMissingCashEntries(): Promise<{ closuresRepaired: nu
           amount: Number(closure.principalAmount),
           category: 'loan_disbursement',
           narration,
-          isSystemGenerated: true,
-          loanId: closure.id
+          isSystemGenerated: true
         } as any);
         disbursementsRepaired++;
         console.log(`🔧 REPAIR: Created missing disbursement cash_out for account ${accountNumber} - ₹${closure.principalAmount}`);
