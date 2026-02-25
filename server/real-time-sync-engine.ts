@@ -242,19 +242,21 @@ export class RealTimeSyncEngine {
     }
 
     // Clean up TRUE DUPLICATES of THIS loan only.
-    // With loanId available: delete entries with same loanId (except the one we just updated).
-    // Without loanId (old entries): delete entries with same account + OLD amount (old logic, safe).
+    // With loanId: compare loanIds — definitive.
+    // Without loanId (old entries): must match BOTH amount AND date to be safe for multi-loan accounts.
     const allEntries = await this.findAllDisbursementTransactions(tenantId, newData.accountNumber);
     for (const extra of allEntries) {
       if (extra.id === disbursementTransaction.id) continue; // skip the one we just updated
 
       let isDuplicate = false;
       if (loanId && extra.loanId) {
-        // Both have loanId — definitive comparison
+        // Both have loanId — definitive comparison, no date check needed
         isDuplicate = extra.loanId === loanId;
       } else {
-        // Old entries without loanId — use amount match as proxy
-        isDuplicate = Math.abs(Number(extra.amount) - Number(oldData.principalAmount)) < 0.01;
+        // Old entries without loanId: require BOTH amount AND date match to avoid deleting another loan's entry
+        const amountMatch = Math.abs(Number(extra.amount) - Number(oldData.principalAmount)) < 0.01;
+        const dateMatch = extra.transactionDate === oldData.loanDate;
+        isDuplicate = amountMatch && dateMatch;
       }
 
       if (isDuplicate) {
@@ -274,34 +276,37 @@ export class RealTimeSyncEngine {
     
     if (!oldData) return;
 
-    // Step 1: Delete by loanId (reliable — only THIS loan's entries, no collateral damage to same-account loans)
+    // Step 1: Delete by loanId — but ONLY entries whose date is reasonably close to the loan date.
+    // This prevents deleting another loan's entry if its loanId was corrupted to this loan's id.
     if (loanId) {
       try {
-        const byLoanId = await db.select({ id: cashTransactions.id })
+        const byLoanId = await db.select()
           .from(cashTransactions)
           .where(and(
             eq(cashTransactions.tenantId, tenantId),
             eq(cashTransactions.loanId, loanId)
           ));
+
+        let deletedAny = false;
         for (const t of byLoanId) {
-          await storage.deleteCashTransaction(t.id, tenantId);
-          result.cashTransactionsAffected += 1;
-          result.operationsPerformed.push('DELETE_TRANSACTION_BY_LOANID');
+          // Date sanity: only delete if entry date is within 180 days of loan date (prevents corrupt loanId matches)
+          const entryDate = new Date(t.transactionDate);
+          const loanDate = new Date(oldData.loanDate);
+          const daysDiff = Math.abs((entryDate.getTime() - loanDate.getTime()) / 86400000);
+          if (daysDiff <= 180) {
+            await storage.deleteCashTransaction(t.id, tenantId);
+            result.cashTransactionsAffected += 1;
+            result.operationsPerformed.push('DELETE_TRANSACTION_BY_LOANID');
+            deletedAny = true;
+          } else {
+            console.log(`⚠️ DELETE: Skipping entry ${t.id} — date too far (${daysDiff} days) from loan date, likely corrupt loanId`);
+          }
         }
-        if (byLoanId.length > 0) return; // loanId-based deletion succeeded — done
+        if (deletedAny) return; // loanId-based deletion succeeded — done
       } catch { /* loan_id column may not exist — fall through to narration-based */ }
     }
 
-    // Step 2: Fallback — find only the disbursement entry matching exact amount+date (safe for multi-loan accounts)
-    const disburse = await this.findDisbursementByLoanId(tenantId, loanId || '');
-    if (disburse) {
-      await storage.deleteCashTransaction(disburse.id, tenantId);
-      result.cashTransactionsAffected += 1;
-      result.operationsPerformed.push('DELETE_DISBURSEMENT_BY_LOANID');
-      return;
-    }
-
-    // Step 3: Last resort narration match — only exact amount+date (not ALL entries for same account)
+    // Step 2: Narration fallback — exact amount + date (safe for multi-loan accounts)
     const allTx = await storage.getCashTransactions(tenantId);
     const pattern = this.buildAccountPattern(oldData.accountNumber);
     const matchedDisbursement = allTx.find((ct: any) =>
