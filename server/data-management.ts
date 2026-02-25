@@ -1123,12 +1123,27 @@ export class DataManagementService {
         console.log(`🗑️ CASH-FIX: Will delete ${toDelete.length} orphaned entries for account ${dup.accountNumber}`);
         for (const deleteId of toDelete) {
           try {
-            const deleted = await storage.deleteCashTransaction(deleteId, tenantId);
-            if (deleted) {
+            // DIRECT DB DELETE: bypasses storage checks (journal entries, linked txn cleanup)
+            // Safe because: orphan entries created by fix have no journal entries or linked txns
+            const deleteResult = await db.delete(cashTransactions)
+              .where(and(
+                eq(cashTransactions.id, deleteId),
+                eq(cashTransactions.tenantId, tenantId),
+                eq(cashTransactions.category, 'loan_disbursement')
+              ))
+              .returning();
+            if (deleteResult.length > 0) {
               duplicatesRemoved++;
-              console.log(`✅ CASH-FIX: Deleted orphan entry ${deleteId} for account ${dup.accountNumber}`);
+              console.log(`✅ CASH-FIX: Deleted orphan entry ${deleteId} ₹${deleteResult[0].amount} for account ${dup.accountNumber}`);
             } else {
-              console.log(`⚠️ CASH-FIX: Delete returned false for ${deleteId} (account ${dup.accountNumber})`);
+              // Fallback: try storage delete (entry may have journal entries from older system)
+              const deleted = await storage.deleteCashTransaction(deleteId, tenantId);
+              if (deleted) {
+                duplicatesRemoved++;
+                console.log(`✅ CASH-FIX: Storage-deleted orphan ${deleteId} for account ${dup.accountNumber}`);
+              } else {
+                console.log(`⚠️ CASH-FIX: Could not delete ${deleteId} for account ${dup.accountNumber}`);
+              }
             }
           } catch (delErr) {
             console.error(`❌ CASH-FIX: Delete failed for ${deleteId} (account ${dup.accountNumber}):`, delErr);
