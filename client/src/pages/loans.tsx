@@ -89,6 +89,14 @@ function Loans() {
     severity: string;
     formData: LoanFormData | null;
   }>({ open: false, title: '', message: '', severity: '', formData: null });
+
+  // Duplicate loan warning state
+  const [duplicateWarningDialog, setDuplicateWarningDialog] = useState<{
+    open: boolean;
+    title: string;
+    message: string;
+    formData: LoanFormData | null;
+  }>({ open: false, title: '', message: '', formData: null });
   
   // Scroll position restore after edit/delete
   const savedScrollPositionRef = useRef<number | null>(null);
@@ -320,6 +328,9 @@ function Loans() {
       if (data.dateWarningConfirmed) {
         apiData.dateWarningConfirmed = true;
       }
+      if ((data as any).duplicateWarningConfirmed) {
+        apiData.duplicateWarningConfirmed = true;
+      }
       
       if (editingLoan) {
         const response = await apiRequest(`/api/loans/${editingLoan.id}`, "PUT", apiData);
@@ -337,11 +348,21 @@ function Loans() {
           });
           return { __dateWarning: true };
         }
+        if (result.duplicateWarning) {
+          setDuplicateWarningDialog({
+            open: true,
+            title: result.warningTitle,
+            message: result.warningMessage,
+            formData: data
+          });
+          return { __duplicateWarning: true };
+        }
         return result;
       }
     },
     onSuccess: async (newLoan) => {
       if (newLoan?.__dateWarning) return;
+      if (newLoan?.__duplicateWarning) return;
       
       await queryClient.invalidateQueries({ queryKey: ["/api/loans"], refetchType: 'all' });
       queryClient.invalidateQueries({ queryKey: ["/api/borrowers/autocomplete"], refetchType: 'all' });
@@ -523,6 +544,17 @@ function Loans() {
 
   const handleDateWarningCancel = () => {
     setDateWarningDialog({ open: false, title: '', message: '', severity: '', formData: null });
+  };
+
+  const handleDuplicateWarningConfirm = () => {
+    if (duplicateWarningDialog.formData) {
+      createLoanMutation.mutate({ ...duplicateWarningDialog.formData, duplicateWarningConfirmed: true } as any);
+      setDuplicateWarningDialog({ open: false, title: '', message: '', formData: null });
+    }
+  };
+
+  const handleDuplicateWarningCancel = () => {
+    setDuplicateWarningDialog({ open: false, title: '', message: '', formData: null });
   };
 
   // Keyboard shortcut handler for Ctrl+S
@@ -3548,6 +3580,43 @@ function Loans() {
                 }`}
               >
                 तरीही सेव करा
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {duplicateWarningDialog.open && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-white rounded-xl shadow-2xl w-[90%] max-w-md mx-4 border-t-4 border-orange-500">
+            <div className="p-4 flex items-start gap-3 bg-orange-50 rounded-t-lg">
+              <div className="p-2 rounded-full shrink-0 bg-orange-100 text-orange-600">
+                <AlertTriangle className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="font-bold text-sm text-orange-800">
+                  {duplicateWarningDialog.title}
+                </h3>
+                <p className="text-xs text-gray-700 mt-1 leading-relaxed">
+                  {duplicateWarningDialog.message}
+                </p>
+              </div>
+            </div>
+            <div className="p-4 flex gap-2 justify-end bg-gray-50 rounded-b-xl">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleDuplicateWarningCancel}
+                className="text-sm"
+              >
+                रद्द करा (तपासतो)
+              </Button>
+              <Button
+                size="sm"
+                onClick={handleDuplicateWarningConfirm}
+                className="text-sm text-white bg-orange-600 hover:bg-orange-700"
+              >
+                होय, नवीन कर्ज नोंद करा
               </Button>
             </div>
           </div>
