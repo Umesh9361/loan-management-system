@@ -116,17 +116,17 @@ export class RealTimeSyncEngine {
   // Replace for the earlier 180-day arbitrary range check.
   // ─────────────────────────────────────────────────────────────────────────
   private verifyEntryBelongsToLoan(entry: any, loanDate: string): boolean {
-    const narration: string = entry?.narration || '';
-    if (!narration.includes(' | ')) {
-      // Old format — trust loanId unconditionally
-      return true;
-    }
-    const d = new Date(String(loanDate) + 'T00:00:00Z');
-    if (isNaN(d.getTime())) return true; // Can't parse → don't block
-    const dd = String(d.getUTCDate()).padStart(2, '0');
-    const mm = String(d.getUTCMonth() + 1).padStart(2, '0');
-    const yyyy = d.getUTCFullYear();
-    return narration.includes(`${dd}/${mm}/${yyyy}`);
+    // Compare entry's transactionDate with the loan's current date.
+    // transactionDate is always kept in sync with loanDate by updateDisbursementTransaction.
+    // This is more reliable than narration date (narration is never updated after creation).
+    //
+    // If corrupt loanId: entry belongs to a different loan → its transactionDate ≠ this loan's date → false ✅
+    // If correct loanId: transactionDate was synced on every date update → matches ✅
+    //
+    // Edge case: transactionDate unavailable → trust loanId (can't verify, don't block)
+    const entryDate = entry?.transactionDate;
+    if (!entryDate || !loanDate) return true;
+    return String(entryDate) === String(loanDate);
   }
 
   // ─────────────────────────────────────────────────────────────────────────
