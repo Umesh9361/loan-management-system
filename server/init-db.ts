@@ -62,6 +62,14 @@ export async function initializeDatabase() {
         console.warn("⚠️  Subscription migration warning (non-fatal):", migrationError instanceof Error ? migrationError.message : migrationError);
       }
 
+      // 6d. AUTO-MIGRATION: loan_id column in cash_transactions (links system entries to their source loan)
+      try {
+        await db.execute(sql`ALTER TABLE cash_transactions ADD COLUMN IF NOT EXISTS loan_id TEXT`);
+        console.log("✅ Schema migration: cash_transactions.loan_id column verified");
+      } catch (migrationError) {
+        console.warn("⚠️  loan_id migration warning (non-fatal):", migrationError instanceof Error ? migrationError.message : migrationError);
+      }
+
       // 6c. AUTO-MIGRATION: Data entry mode and notification warnings
       try {
         await db.execute(sql`ALTER TABLE companies ADD COLUMN IF NOT EXISTS data_entry_mode BOOLEAN NOT NULL DEFAULT false`);
