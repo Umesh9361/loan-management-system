@@ -250,23 +250,52 @@ export class RealTimeSyncEngine {
    * Handle loan deletion - remove all related cash transactions
    */
   private async handleLoanDeletion(operation: LoanSyncOperation, result: SyncResult): Promise<void> {
-    const { tenantId, oldData } = operation;
+    const { tenantId, loanId, oldData } = operation;
     
-    if (!oldData) {
-      // console.log('🚫 SYNC: No old data provided for deletion');
+    if (!oldData) return;
+
+    // Step 1: Delete by loanId (reliable — only THIS loan's entries, no collateral damage to same-account loans)
+    if (loanId) {
+      try {
+        const byLoanId = await db.select({ id: cashTransactions.id })
+          .from(cashTransactions)
+          .where(and(
+            eq(cashTransactions.tenantId, tenantId),
+            eq(cashTransactions.loanId, loanId)
+          ));
+        for (const t of byLoanId) {
+          await storage.deleteCashTransaction(t.id, tenantId);
+          result.cashTransactionsAffected += 1;
+          result.operationsPerformed.push('DELETE_TRANSACTION_BY_LOANID');
+        }
+        if (byLoanId.length > 0) return; // loanId-based deletion succeeded — done
+      } catch { /* loan_id column may not exist — fall through to narration-based */ }
+    }
+
+    // Step 2: Fallback — find only the disbursement entry matching exact amount+date (safe for multi-loan accounts)
+    const disburse = await this.findDisbursementByLoanId(tenantId, loanId || '');
+    if (disburse) {
+      await storage.deleteCashTransaction(disburse.id, tenantId);
+      result.cashTransactionsAffected += 1;
+      result.operationsPerformed.push('DELETE_DISBURSEMENT_BY_LOANID');
       return;
     }
 
-    // Find and delete all related cash transactions
-    const relatedTransactions = await this.findAllRelatedTransactions(tenantId, oldData.accountNumber, oldData.borrowerName);
-    
-    for (const transaction of relatedTransactions) {
-      await storage.deleteCashTransaction(transaction.id, tenantId);
+    // Step 3: Last resort narration match — only exact amount+date (not ALL entries for same account)
+    const allTx = await storage.getCashTransactions(tenantId);
+    const pattern = this.buildAccountPattern(oldData.accountNumber);
+    const matchedDisbursement = allTx.find((ct: any) =>
+      ct.category === 'loan_disbursement' &&
+      ct.transactionType === 'cash_out' &&
+      ct.narration && pattern.test(ct.narration) &&
+      Math.abs(Number(ct.amount) - Number(oldData.principalAmount)) < 0.01 &&
+      ct.transactionDate === oldData.loanDate
+    );
+    if (matchedDisbursement) {
+      await storage.deleteCashTransaction(matchedDisbursement.id, tenantId);
       result.cashTransactionsAffected += 1;
-      result.operationsPerformed.push(`DELETE_TRANSACTION_${transaction.category}`);
+      result.operationsPerformed.push('DELETE_DISBURSEMENT_NARRATION_FALLBACK');
     }
-
-    // console.log(`🗑️ SYNC: Deleted ${relatedTransactions.length} related cash transactions`);
   }
 
   /**
