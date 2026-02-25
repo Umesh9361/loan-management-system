@@ -14,6 +14,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { DateUtils } from "@/lib/date-utils";
+import { displayNarration } from "@/lib/utils";
 import { MobileNav } from "@/components/ui/mobile-nav";
 import PartySelector from "@/components/party-selector";
 import { useRealTimeSync } from "@/hooks/use-real-time-sync";
@@ -608,7 +609,7 @@ function MobileCashbook() {
       if (window.confirm(
         `हा व्यवहार हटवायचा आहे का?\n` +
         `${typeText} - ${amountText}\n\n` +
-        `तपशील: ${transaction.narration}`
+        `तपशील: ${displayNarration(transaction.narration)}`
       )) {
         deleteMutation.mutate(transaction.id);
       }
@@ -1290,7 +1291,7 @@ function MobileCashbook() {
                             )}
                           </div>
                           <div className="text-xs text-gray-500 leading-tight break-words">
-                            {transaction.narration}
+                            {displayNarration(transaction.narration)}
                             {transaction.displayCollateral && transaction.displayCollateral !== "तपशील उपलब्ध नाही" && (
                               <div className="mt-1 text-xs text-green-700 bg-green-50 px-2 py-0.5 rounded border border-green-200">
                                 वस्तू: {transaction.displayCollateral}
@@ -1364,7 +1365,7 @@ function MobileCashbook() {
                         </div>
                       </div>
                       {entry.narration && (
-                        <div className="text-xs text-gray-500 mt-1">{entry.narration}</div>
+                        <div className="text-xs text-gray-500 mt-1">{displayNarration(entry.narration)}</div>
                       )}
                     </div>
                     
