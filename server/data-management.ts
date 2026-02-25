@@ -911,6 +911,10 @@ export class DataManagementService {
         loansByAccount.get(acct)!.push(loan);
       }
 
+      // Global set of entry IDs already claimed by an account-number group
+      // Used to find unclaimed entries for loans with empty account numbers
+      const globalUsedEntryIds = new Set<string>();
+
       for (const [accountNum, accountLoans] of loansByAccount) {
         if (!accountNum) continue;
 
@@ -984,6 +988,7 @@ export class DataManagementService {
             });
           } else {
             usedEntryIds.add(matchingEntry.id);
+            globalUsedEntryIds.add(matchingEntry.id); // track globally for empty-account loans
             // Check if matched entry has wrong amount
             if (Math.abs(Number(matchingEntry.amount) - loanAmount) > 0.01) {
               mismatches.push({
@@ -1015,6 +1020,35 @@ export class DataManagementService {
             cashEntryAmounts: allEntries.map(e => Number(e.amount)),
             keepEntryIds: [...usedEntryIds],
             keepEntryId: usedEntryIds.size === 1 ? [...usedEntryIds][0] : undefined
+          });
+        }
+      }
+
+      // HANDLE LOANS WITH EMPTY ACCOUNT NUMBERS
+      // These loans are counted in "loans outstanding" (balance sheet) but skipped in account-based matching above.
+      // They cause balance sheet to show Cash > Loans when their cashbook entries are missing.
+      // Strategy: match against unclaimed disbursement entries (not yet claimed by any account-number group) by amount.
+      const emptyAccountLoans = loansByAccount.get('') || [];
+      for (const loan of emptyAccountLoans) {
+        const loanAmount = Number(loan.principalAmount) || 0;
+        if (!loanAmount) continue;
+        // Find unclaimed entries matching this loan's amount
+        const unclaimedMatch = allDisbursements.find(e =>
+          !globalUsedEntryIds.has(e.id) &&
+          Math.abs(Number(e.amount) - loanAmount) < 0.01
+        );
+        if (unclaimedMatch) {
+          globalUsedEntryIds.add(unclaimedMatch.id); // claim it
+          // HEALTHY — entry exists, no action needed
+        } else {
+          // No matching entry found → MISSING (causes balance sheet discrepancy)
+          missingLoans.push({
+            id: loan.id,
+            accountNumber: '',
+            borrowerName: loan.borrowerName || '',
+            groupName: loan.groupName || '',
+            loanDate: loan.loanDate || '',
+            principalAmount: loanAmount
           });
         }
       }
