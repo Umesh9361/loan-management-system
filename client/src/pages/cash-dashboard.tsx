@@ -4,6 +4,8 @@ import { TrendingUp, TrendingDown, DollarSign, Activity } from "lucide-react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { displayNarration } from "@/lib/utils";
+import { Sidebar } from "@/components/ui/sidebar";
+import { MobileNav } from "@/components/ui/mobile-nav";
 
 export default function CashDashboard() {
   // Fetch cash balance
@@ -19,7 +21,14 @@ export default function CashDashboard() {
   });
 
   return (
-    <div className="container mx-auto p-6 md:max-w-7xl space-y-6">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-indigo-50 to-white">
+      <MobileNav />
+      <div className="lg:flex">
+        <aside className="hidden lg:block lg:w-72 lg:fixed lg:inset-y-0 lg:h-screen">
+          <Sidebar />
+        </aside>
+        <main className="flex-1 w-full lg:pl-72 pb-16 lg:pb-0">
+      <div className="p-3 sm:p-6 md:p-8 md:max-w-7xl mx-auto space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">कैश डैशबोर्ड</h1>
         <Link href="/cash-transactions">
@@ -124,6 +133,9 @@ export default function CashDashboard() {
           )}
         </CardContent>
       </Card>
+    </div>
+        </main>
+      </div>
     </div>
   );
 }
