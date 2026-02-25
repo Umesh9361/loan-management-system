@@ -902,72 +902,90 @@ export class DataManagementService {
           eq(cashTransactions.category, 'loan_disbursement')
         ));
 
+      // GROUP loans by account number — critical for handling multiple loans sharing same account
+      // Per-loan processing caused INFINITE CYCLE: each loan deleted the other's entry then recreated it
+      const loansByAccount = new Map<string, typeof loansData>();
       for (const loan of loansData) {
-        const accountNum = loan.accountNumber || '';
-        const loanAmount = Number(loan.principalAmount) || 0;
+        const acct = loan.accountNumber || '';
+        if (!loansByAccount.has(acct)) loansByAccount.set(acct, []);
+        loansByAccount.get(acct)!.push(loan);
+      }
 
-        // Use JavaScript regex for EXACT account number boundary matching
-        // "461" matches "खाते क्र. 461 " or "खाते क्र. 461-" but NOT "खाते क्र. 4610"
+      for (const [accountNum, accountLoans] of loansByAccount) {
+        if (!accountNum) continue;
+
+        // Find all disbursement entries for this account number (exact boundary match)
         const escapedNum = accountNum.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         const accountPattern = new RegExp('खाते क्र\\.[ ]?' + escapedNum + '([^0-9]|$)');
-
         const allEntries = allDisbursements.filter(e =>
           e.narration && accountPattern.test(e.narration)
         );
 
-        if (allEntries.length === 0) {
-          missingLoans.push({
-            id: loan.id,
-            accountNumber: accountNum,
-            borrowerName: loan.borrowerName || '',
-            groupName: loan.groupName || '',
-            loanDate: loan.loanDate || '',
-            principalAmount: loanAmount
-          });
-        } else if (allEntries.length === 1) {
-          const entryAmount = Number(allEntries[0].amount) || 0;
-          if (Math.abs(entryAmount - loanAmount) > 0.01) {
-            mismatches.push({
+        // Greedily match each loan to its best available cash entry (no entry reused)
+        // Loans with exact matches get priority so they claim their entry first
+        const usedEntryIds = new Set<string>();
+        const sortedLoans = [...accountLoans].sort((a, b) => {
+          const amtA = Number(a.principalAmount);
+          const amtB = Number(b.principalAmount);
+          const exactA = allEntries.some(e => Math.abs(Number(e.amount) - amtA) < 0.01);
+          const exactB = allEntries.some(e => Math.abs(Number(e.amount) - amtB) < 0.01);
+          if (exactA && !exactB) return -1;
+          if (!exactA && exactB) return 1;
+          return 0;
+        });
+
+        for (const loan of sortedLoans) {
+          const loanAmount = Number(loan.principalAmount) || 0;
+          const available = allEntries.filter(e => !usedEntryIds.has(e.id));
+
+          // Find best match: exact (< ₹0.01) first, then within ₹1 for decimal precision issues
+          const matchingEntry = available.find(e => Math.abs(Number(e.amount) - loanAmount) < 0.01)
+            || available.find(e => Math.abs(Number(e.amount) - loanAmount) < 1.0);
+
+          if (!matchingEntry) {
+            // This loan has no matching cash entry → MISSING
+            missingLoans.push({
               id: loan.id,
               accountNumber: accountNum,
               borrowerName: loan.borrowerName || '',
               groupName: loan.groupName || '',
               loanDate: loan.loanDate || '',
-              principalAmount: loanAmount,
-              cashEntryId: allEntries[0].id,
-              cashEntryAmount: entryAmount
-            });
-          }
-        } else {
-          // Use ₹1 tolerance to handle decimal precision differences in DB storage
-          // e.g., loan ₹12,000 vs cash entry ₹12,000.50 would fail with 0.01 tolerance
-          const matchingEntry = allEntries.find(e => Math.abs(Number(e.amount) - loanAmount) < 0.01)
-            || allEntries.find(e => Math.abs(Number(e.amount) - loanAmount) < 1.0);
-          if (!matchingEntry) {
-            duplicates.push({
-              id: loan.id,
-              accountNumber: accountNum,
-              borrowerName: loan.borrowerName || '',
-              loanDate: loan.loanDate || '',
-              principalAmount: loanAmount,
-              cashEntryIds: allEntries.map(e => e.id),
-              cashEntryAmounts: allEntries.map(e => Number(e.amount))
+              principalAmount: loanAmount
             });
           } else {
-            const extraIds = allEntries.filter(e => e.id !== matchingEntry.id).map(e => e.id);
-            if (extraIds.length > 0) {
-              duplicates.push({
+            usedEntryIds.add(matchingEntry.id);
+            // Check if matched entry has wrong amount
+            if (Math.abs(Number(matchingEntry.amount) - loanAmount) > 0.01) {
+              mismatches.push({
                 id: loan.id,
                 accountNumber: accountNum,
                 borrowerName: loan.borrowerName || '',
+                groupName: loan.groupName || '',
                 loanDate: loan.loanDate || '',
                 principalAmount: loanAmount,
-                cashEntryIds: allEntries.map(e => e.id),
-                cashEntryAmounts: allEntries.map(e => Number(e.amount)),
-                keepEntryId: matchingEntry.id
+                cashEntryId: matchingEntry.id,
+                cashEntryAmount: Number(matchingEntry.amount)
               });
             }
+            // else: exact match → HEALTHY, no action needed
           }
+        }
+
+        // Entries not matched to any loan = TRUE orphan duplicates (safe to delete)
+        const unusedEntries = allEntries.filter(e => !usedEntryIds.has(e.id));
+        if (unusedEntries.length > 0) {
+          const repLoan = accountLoans[0];
+          duplicates.push({
+            id: repLoan.id,
+            accountNumber: accountNum,
+            borrowerName: accountLoans.map(l => l.borrowerName || '').join(' / '),
+            loanDate: repLoan.loanDate || '',
+            principalAmount: Number(repLoan.principalAmount) || 0,
+            cashEntryIds: allEntries.map(e => e.id),
+            cashEntryAmounts: allEntries.map(e => Number(e.amount)),
+            keepEntryIds: [...usedEntryIds],
+            keepEntryId: usedEntryIds.size === 1 ? [...usedEntryIds][0] : undefined
+          });
         }
       }
 
@@ -1044,27 +1062,29 @@ export class DataManagementService {
         console.log(`✅ CASH-FIX: Updated amount+narration for account ${mismatch.accountNumber}: ₹${mismatch.cashEntryAmount} → ₹${mismatch.principalAmount}`);
       }
 
-      // SAFE duplicate cleanup: only delete when we know EXACTLY which entry to keep
-      // Safety rule: keepEntryId must be set (= cash amount matches loan amount within ₹1)
+      // SAFE duplicate cleanup — uses keepEntryIds (array) from group-based algorithm
+      // Only truly orphaned entries (not matched to any loan) are deleted
       let skippedDuplicates = 0;
       for (const dup of diagnostic.duplicates) {
-        const keepId = (dup as any).keepEntryId;
-        console.log(`🔍 CASH-FIX DUPLICATE: account ${dup.accountNumber}, loan=₹${dup.principalAmount}, entries=[${dup.cashEntryAmounts.join(',')}], keepId=${keepId || 'NONE'}`);
-        if (!keepId) {
+        // Support both keepEntryIds (array, new) and keepEntryId (single, backward compat)
+        const keepIds: string[] = (dup as any).keepEntryIds ||
+          ((dup as any).keepEntryId ? [(dup as any).keepEntryId] : []);
+        console.log(`🔍 CASH-FIX DUPLICATE: account ${dup.accountNumber}, entries=[${dup.cashEntryAmounts.join(',')}], keepIds=[${keepIds.join(',')}]`);
+        if (keepIds.length === 0) {
           skippedDuplicates++;
-          console.log(`⚠️ CASH-FIX: Skipping account ${dup.accountNumber} — no amount match within ₹1. Loan=₹${dup.principalAmount}, entries=[${dup.cashEntryAmounts.join(',')}]`);
+          console.log(`⚠️ CASH-FIX: Skipping account ${dup.accountNumber} — no entries matched to any loan`);
           continue;
         }
-        const toDelete = dup.cashEntryIds.filter((id: string) => id !== keepId);
-        console.log(`🗑️ CASH-FIX: Will delete ${toDelete.length} entries for account ${dup.accountNumber}, keeping ${keepId}`);
+        const toDelete = dup.cashEntryIds.filter((id: string) => !keepIds.includes(id));
+        console.log(`🗑️ CASH-FIX: Will delete ${toDelete.length} orphaned entries for account ${dup.accountNumber}`);
         for (const deleteId of toDelete) {
           try {
             const deleted = await storage.deleteCashTransaction(deleteId, tenantId);
             if (deleted) {
               duplicatesRemoved++;
-              console.log(`✅ CASH-FIX: Deleted duplicate ${deleteId} for account ${dup.accountNumber}`);
+              console.log(`✅ CASH-FIX: Deleted orphan entry ${deleteId} for account ${dup.accountNumber}`);
             } else {
-              console.log(`⚠️ CASH-FIX: Delete returned false for ${deleteId} (account ${dup.accountNumber}) — entry may not exist or wrong tenant`);
+              console.log(`⚠️ CASH-FIX: Delete returned false for ${deleteId} (account ${dup.accountNumber})`);
             }
           } catch (delErr) {
             console.error(`❌ CASH-FIX: Delete failed for ${deleteId} (account ${dup.accountNumber}):`, delErr);
