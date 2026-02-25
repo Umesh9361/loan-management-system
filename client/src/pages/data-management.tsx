@@ -55,6 +55,24 @@ function CashReconciliationTab({ queryClient }: { queryClient: any }) {
   });
 
   const [deletingEntryId, setDeletingEntryId] = useState<string | null>(null);
+  const [confirmRebuild, setConfirmRebuild] = useState(false);
+  const [rebuildResult, setRebuildResult] = useState<{ message: string; deleted: number; created: number } | null>(null);
+
+  const rebuildMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("/api/data-management/rebuild-disbursement-entries", "POST");
+      return await response.json();
+    },
+    onSuccess: async (data: any) => {
+      setRebuildResult(data);
+      setConfirmRebuild(false);
+      await queryClient.invalidateQueries({ queryKey: ["/api/cash-transactions"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["/api/cash-balance"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["/api/mobile-cashbook"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"], refetchType: 'all' });
+      recheckEntries();
+    }
+  });
 
   const fixMutation = useMutation({
     mutationFn: async () => {
@@ -294,6 +312,51 @@ function CashReconciliationTab({ queryClient }: { queryClient: any }) {
                 </div>
               )
             )}
+
+            <div className="border-t border-gray-200 pt-3 mt-2 space-y-2">
+              <p className="text-xs text-gray-500 font-medium">⚡ Advanced — कर्ज वितरण Entries Rebuild</p>
+              {!confirmRebuild ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="border-orange-400 text-orange-700 hover:bg-orange-50 text-xs"
+                  onClick={() => setConfirmRebuild(true)}
+                >
+                  <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
+                  सर्व Entries Delete करून Rebuild करा
+                </Button>
+              ) : (
+                <div className="p-3 bg-orange-50 rounded-xl border-2 border-orange-300 space-y-2">
+                  <p className="text-orange-800 text-xs font-semibold">⚠️ खात्री करा:</p>
+                  <ul className="text-orange-700 text-xs space-y-1 list-disc list-inside">
+                    <li>सर्व जुन्या <strong>loan_disbursement</strong> entries DELETE होतील</li>
+                    <li>प्रत्येक कर्जासाठी DB वरून fresh entry तयार होईल</li>
+                    <li>Opening balance, expenses, loan repayment entries <strong>safe</strong> आहेत</li>
+                  </ul>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      className="bg-orange-600 hover:bg-orange-700 text-white text-xs h-7"
+                      onClick={() => rebuildMutation.mutate()}
+                      disabled={rebuildMutation.isPending}
+                    >
+                      {rebuildMutation.isPending ? <><RefreshCw className="h-3 w-3 mr-1 animate-spin" />Rebuild करत आहे...</> : <>✅ होय, Rebuild करा</>}
+                    </Button>
+                    <Button variant="outline" size="sm" className="text-xs h-7" onClick={() => setConfirmRebuild(false)} disabled={rebuildMutation.isPending}>रद्द करा</Button>
+                  </div>
+                </div>
+              )}
+              {rebuildResult && (
+                <Alert className="border-orange-300 bg-orange-50">
+                  <CheckCircle className="h-4 w-4 text-orange-600" />
+                  <AlertTitle className="text-orange-700 text-sm">Rebuild यशस्वी!</AlertTitle>
+                  <AlertDescription className="text-orange-600 text-xs">
+                    {rebuildResult.message}
+                    <span className="block mt-1">हटवल्या: {rebuildResult.deleted} | नव्या: {rebuildResult.created}</span>
+                  </AlertDescription>
+                </Alert>
+              )}
+            </div>
 
             <Button variant="outline" size="sm" onClick={() => recheckEntries()} disabled={isChecking}>
               <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
