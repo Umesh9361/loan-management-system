@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { Sidebar } from "@/components/ui/sidebar";
+import { MobileNav } from "@/components/ui/mobile-nav";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { apiRequest } from "@/lib/queryClient";
@@ -345,7 +347,14 @@ export default function UserManagement() {
   }
 
   return (
-    <div className="container mx-auto p-4 sm:p-6 md:max-w-7xl space-y-4 sm:space-y-6">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-indigo-50 to-white">
+      <MobileNav />
+      <div className="lg:flex">
+        <aside className="hidden lg:block lg:w-72 lg:fixed lg:inset-y-0 lg:h-screen">
+          <Sidebar />
+        </aside>
+        <main className="flex-1 w-full lg:pl-72 pb-16 lg:pb-0">
+      <div className="p-3 sm:p-6 md:p-8 md:max-w-7xl mx-auto space-y-4 sm:space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold">User Management</h1>
@@ -650,6 +659,9 @@ export default function UserManagement() {
       </Dialog>
 
 
+    </div>
+        </main>
+      </div>
     </div>
   );
 }
