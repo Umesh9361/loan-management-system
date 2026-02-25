@@ -1446,7 +1446,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           loanData.accountNumber,
           loanData.borrowerName,
           Number(loanData.principalAmount),
-          groupName
+          groupName,
+          loanData.loanType,
+          loanData.collateralDetails,
+          loanData.weight,
+          loanData.loanDate
         );
 
         // CRITICAL FIX: Use storage layer for proper duplicate prevention
