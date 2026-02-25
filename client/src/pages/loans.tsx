@@ -291,8 +291,14 @@ function Loans() {
 
   const handleDelete = (loanId: string) => {
     if (confirm("हे कर्ज पूर्णपणे डिलीट करायचे काय? ही क्रिया रद्द करता येणार नाही.")) {
-      savedScrollPositionRef.current = window.scrollY;
+      const scrollY = window.scrollY;
       deleteLoanMutation.mutate(loanId);
+      // Restore scroll after optimistic update reflows DOM (2 frames: render + paint)
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          window.scrollTo({ top: scrollY, behavior: 'instant' });
+        });
+      });
     }
   };
 
