@@ -1648,6 +1648,89 @@ export class DataManagementService {
       };
     }
   }
+
+  /**
+   * REBUILD DISBURSEMENT ENTRIES — Clean-slate reset
+   * 1. Delete ALL loan_disbursement cashTransactions for this tenant
+   * 2. Recreate one fresh entry per loan (active + closed) from loans DB
+   * Safe: only touches loan_disbursement entries, leaves all other cashbook entries intact
+   */
+  async rebuildDisbursementEntries(tenantId: string): Promise<{
+    success: boolean;
+    deleted: number;
+    created: number;
+    message: string;
+  }> {
+    try {
+      // STEP 1: Delete ALL existing loan_disbursement entries for this tenant
+      const deleteResult = await db.delete(cashTransactions)
+        .where(and(
+          eq(cashTransactions.tenantId, tenantId),
+          eq(cashTransactions.category, 'loan_disbursement')
+        ))
+        .returning({ id: cashTransactions.id });
+      const deleted = deleteResult.length;
+      console.log(`🗑️ REBUILD: Deleted ${deleted} old loan_disbursement entries for tenant ${tenantId}`);
+
+      // STEP 2: Fetch ALL loans (active + closed) with group names
+      const allLoans = await db.select({
+        id: loans.id,
+        accountNumber: loans.accountNumber,
+        borrowerName: loans.borrowerName,
+        principalAmount: loans.principalAmount,
+        loanDate: loans.loanDate,
+        groupName: groups.name
+      })
+        .from(loans)
+        .leftJoin(groups, eq(loans.groupId, groups.id))
+        .where(eq(loans.tenantId, tenantId));
+
+      console.log(`📋 REBUILD: Found ${allLoans.length} loans to recreate entries for`);
+
+      // STEP 3: Create one fresh entry per loan
+      let created = 0;
+      for (const loan of allLoans) {
+        try {
+          const narration = NarrationEngine.createLoanDisbursementNarration(
+            loan.accountNumber || '',
+            loan.borrowerName || '',
+            Number(loan.principalAmount) || 0,
+            loan.groupName || ''
+          );
+          await db.insert(cashTransactions).values({
+            tenantId,
+            transactionDate: loan.loanDate as any,
+            transactionType: 'cash_out',
+            amount: loan.principalAmount.toString() as any,
+            narration,
+            category: 'loan_disbursement',
+            isSystemGenerated: true,
+            createdAt: new Date(),
+            updatedAt: new Date()
+          } as any);
+          created++;
+        } catch (insertErr) {
+          console.error(`❌ REBUILD: Failed to create entry for loan ${loan.accountNumber}:`, insertErr);
+        }
+      }
+
+      console.log(`✅ REBUILD: Created ${created} fresh loan_disbursement entries`);
+      return {
+        success: true,
+        deleted,
+        created,
+        message: `${deleted} जुन्या entries हटवल्या, ${created} नव्या entries तयार झाल्या`
+      };
+    } catch (error) {
+      console.error("Rebuild disbursement entries error:", error);
+      return {
+        success: false,
+        deleted: 0,
+        created: 0,
+        message: "Rebuild अयशस्वी: " + (error as Error).message
+      };
+    }
+  }
 }
 
 export const dataManagementService = new DataManagementService();
