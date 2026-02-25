@@ -1304,23 +1304,13 @@ function Loans() {
     }
   }, [isDialogOpen, editingLoan, form]);
 
-  // Scroll position restore after edit/delete - reliable multi-attempt restore
+  // Scroll position restore after edit - activate scroll lock when dialog closes
   useEffect(() => {
     if (!isDialogOpen && savedScrollPositionRef.current !== null) {
       const targetScroll = savedScrollPositionRef.current;
-      let attempts = 0;
-      const maxAttempts = 10;
-      const tryRestore = () => {
-        attempts++;
-        window.scrollTo(0, targetScroll);
-        if (attempts < maxAttempts && Math.abs(window.scrollY - targetScroll) > 50) {
-          requestAnimationFrame(tryRestore);
-        } else {
-          savedScrollPositionRef.current = null;
-        }
-      };
-      const timer = setTimeout(tryRestore, 300);
-      return () => clearTimeout(timer);
+      savedScrollPositionRef.current = null;
+      // Activate scroll lock for 1.5 seconds - covers dialog close + server refetch renders
+      scrollLockRef.current = { targetY: targetScroll, until: Date.now() + 1500 };
     }
   }, [isDialogOpen, loans]);
 
