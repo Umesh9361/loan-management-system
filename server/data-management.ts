@@ -915,8 +915,13 @@ export class DataManagementService {
         if (!accountNum) continue;
 
         // Find all disbursement entries for this account number (exact boundary match)
+        // Spaces in account numbers (e.g. "232 A") are made optional to match "232A" format too
         const escapedNum = accountNum.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        const accountPattern = new RegExp('खाते क्र\\.[ ]?' + escapedNum + '([^0-9]|$)');
+        const flexibleNum = escapedNum.replace(/\s+/g, '\\s*');
+        // Boundary: accounts ending in letter need stricter boundary to avoid "232AB" matching "232A"
+        const lastChar = accountNum.trim().slice(-1);
+        const boundary = /[a-zA-Z]/.test(lastChar) ? '([^0-9a-zA-Z]|$)' : '([^0-9]|$)';
+        const accountPattern = new RegExp('खाते क्र\\.[ ]?' + flexibleNum + boundary);
         const allEntries = allDisbursements.filter(e =>
           e.narration && accountPattern.test(e.narration)
         );
@@ -1032,17 +1037,31 @@ export class DataManagementService {
       let duplicatesRemoved = 0;
 
       for (const loan of diagnostic.loans) {
-        await storage.createCashTransaction({
-          tenantId,
-          transactionDate: loan.loanDate,
-          transactionType: 'cash_out',
-          amount: loan.principalAmount,
-          narration: `कर्ज वाटप - खाते क्र. ${loan.accountNumber} - ${loan.borrowerName}${loan.groupName ? ' - ' + loan.groupName : ''}`,
-          category: 'loan_disbursement',
-          isSystemGenerated: true
-        } as any);
-        created++;
-        console.log(`✅ CASH-FIX: Created missing entry for account ${loan.accountNumber} - ₹${loan.principalAmount}`);
+        try {
+          // DIRECT DB INSERT: bypasses all duplicate-prevention in storage.createCashTransaction
+          // The diagnostic has already confirmed this loan has NO cashbook entry — safe to create directly
+          const narration = NarrationEngine.createLoanDisbursementNarration(
+            loan.accountNumber,
+            loan.borrowerName,
+            loan.principalAmount,
+            loan.groupName || ''
+          );
+          await db.insert(cashTransactions).values({
+            tenantId,
+            transactionDate: loan.loanDate as any,
+            transactionType: 'cash_out',
+            amount: loan.principalAmount.toString() as any,
+            narration,
+            category: 'loan_disbursement',
+            isSystemGenerated: true,
+            createdAt: new Date(),
+            updatedAt: new Date()
+          } as any);
+          created++;
+          console.log(`✅ CASH-FIX: Created entry for account ${loan.accountNumber} ₹${loan.principalAmount} on ${loan.loanDate}`);
+        } catch (createErr) {
+          console.error(`❌ CASH-FIX: Failed to create entry for account ${loan.accountNumber}:`, createErr);
+        }
       }
 
       for (const mismatch of diagnostic.mismatches) {
