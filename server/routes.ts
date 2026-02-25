@@ -1243,6 +1243,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         maturityDate: req.body.maturityDate ? convertIndianDateToISO(req.body.maturityDate) : req.body.maturityDate,
       };
       delete processedBody.dateWarningConfirmed;
+      delete processedBody.duplicateWarningConfirmed;
       
       const loanData = insertLoanSchema.parse({
         ...processedBody,
@@ -1327,6 +1328,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
+      // DUPLICATE LOAN CHECK: borrowerName + principalAmount + loanDate + weight सगळे same = duplicate
+      const duplicateWarningConfirmed = req.body.duplicateWarningConfirmed === true;
+      if (!duplicateWarningConfirmed && !editingLoan) {
+        try {
+          const dupLoans = await db.select({
+            id: loans.id,
+            accountNumber: loans.accountNumber,
+            borrowerName: loans.borrowerName,
+            weight: loans.weight,
+            collateralDetails: loans.collateralDetails,
+          })
+          .from(loans)
+          .where(and(
+            eq(loans.tenantId, req.session.tenantId!),
+            sql`LOWER(TRIM(${loans.borrowerName})) = LOWER(TRIM(${loanData.borrowerName}))`,
+            sql`ABS(CAST(${loans.principalAmount} AS DECIMAL) - ${Number(loanData.principalAmount)}) < 0.01`,
+            eq(loans.loanDate, loanData.loanDate)
+          ))
+          .limit(3);
+
+          if (dupLoans.length > 0) {
+            const dup = dupLoans[0];
+            const weightInfo = dup.weight ? ` | वजन: ${dup.weight}` : '';
+            const itemInfo = dup.collateralDetails ? ` | वस्तू: ${dup.collateralDetails.substring(0, 30)}` : '';
+            const fmtDate = loanData.loanDate.split('-').reverse().join('/');
+            return res.status(200).json({
+              duplicateWarning: true,
+              warningTitle: `⚠️ सारखी कर्ज नोंद आढळली`,
+              warningMessage: `${loanData.borrowerName} यांची ₹${Number(loanData.principalAmount).toLocaleString('en-IN')} रक्कमेची नोंद ${fmtDate} तारखेला आधीच आहे (खाते क्र. ${dup.accountNumber}${weightInfo}${itemInfo}). चुकून परत नोंद होत नाहीये ना?`,
+            });
+          }
+        } catch (dupCheckErr) {
+          console.error('Duplicate loan check error (proceeding):', dupCheckErr);
+        }
+      }
+
       // Note: Borrower management has been removed. Loan creation now relies only on provided borrower information stored in the loan record.
       
       const loan = await storage.createLoan(loanData);
