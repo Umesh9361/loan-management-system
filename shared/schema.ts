@@ -420,6 +420,7 @@ export const cashTransactions = pgTable("cash_transactions", {
   toAccount: varchar("to_account", { length: 50 }), // Cash or Party ID (nullable for simple entries)  
   linkedTransactionId: uuid("linked_transaction_id"), // Will be set up after table creation
   isSystemGenerated: boolean("is_system_generated").default(false),
+  loanId: text("loan_id"), // Links system-generated entries to their source loan (nullable for user entries & old entries)
   createdAt: timestamp("created_at").notNull().default(sql`now()`),
   updatedAt: timestamp("updated_at").notNull().default(sql`now()`),
 });
@@ -600,6 +601,7 @@ export const insertCashTransactionSchema = createInsertSchema(cashTransactions).
   toAccount: z.string().optional().nullable(),
   linkedTransactionId: z.string().optional().nullable(),
   narration: z.string().optional().nullable(),
+  loanId: z.string().optional().nullable(),
 });
 
 export const insertJournalEntrySchema = createInsertSchema(journalEntries).omit({
