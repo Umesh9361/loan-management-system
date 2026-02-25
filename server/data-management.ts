@@ -888,6 +888,40 @@ export class DataManagementService {
     summary: { missingCount: number; mismatchCount: number; duplicateCount: number; totalDiscrepancy: number };
   }> {
     try {
+      // ─── STEP 0: ACTUAL BALANCE CHECK ──────────────────────────────────────
+      // If SUM(cashbook disbursements) = SUM(all loan principals), everything is in sync.
+      // Skip the slow narration-based algorithm and return All Clear immediately.
+      // This is the "source of truth" — matches what Balance Sheet shows.
+      const [cashSumRow] = await db.select({
+        total: sql<string>`COALESCE(SUM(${cashTransactions.amount}), 0)`
+      }).from(cashTransactions).where(and(
+        eq(cashTransactions.tenantId, tenantId),
+        eq(cashTransactions.transactionType, 'cash_out'),
+        eq(cashTransactions.category, 'loan_disbursement')
+      ));
+      const [loanSumRow] = await db.select({
+        total: sql<string>`COALESCE(SUM(${loans.principalAmount}), 0)`
+      }).from(loans).where(eq(loans.tenantId, tenantId));
+
+      const cashTotal = Number(cashSumRow?.total || 0);
+      const loanTotal = Number(loanSumRow?.total || 0);
+      const actualDiff = Math.abs(cashTotal - loanTotal);
+
+      if (actualDiff < 1) {
+        // Totals match within ₹1 tolerance → All Clear (same as what Balance Sheet shows)
+        return {
+          success: true,
+          missingCount: 0,
+          totalMissingAmount: 0,
+          loans: [],
+          mismatches: [],
+          duplicates: [],
+          summary: { missingCount: 0, mismatchCount: 0, duplicateCount: 0, totalDiscrepancy: 0 }
+        };
+      }
+      // ────────────────────────────────────────────────────────────────────────
+      // Totals differ → run full narration-based diagnostic to find which loans/entries cause the gap
+
       const loansData = await db.select().from(loans).where(eq(loans.tenantId, tenantId));
       const missingLoans: any[] = [];
       const mismatches: any[] = [];
