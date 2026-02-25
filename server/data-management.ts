@@ -1158,7 +1158,11 @@ export class DataManagementService {
             loan.accountNumber,
             loan.borrowerName,
             loan.principalAmount,
-            loan.groupName || ''
+            loan.groupName || '',
+            (loan as any).loanType,
+            (loan as any).collateralDetails,
+            (loan as any).weight,
+            loan.loanDate
           );
           await db.insert(cashTransactions).values({
             tenantId,
@@ -1181,7 +1185,16 @@ export class DataManagementService {
 
       for (const mismatch of diagnostic.mismatches) {
         // Fix amount AND standardize narration to "कर्ज वितरण" format
-        const standardNarration = `कर्ज वितरण - खाते क्र. ${mismatch.accountNumber} ${mismatch.borrowerName} - मुद्दल: ₹${mismatch.principalAmount}`;
+        const standardNarration = NarrationEngine.createLoanDisbursementNarration(
+          mismatch.accountNumber,
+          mismatch.borrowerName,
+          mismatch.principalAmount,
+          (mismatch as any).groupName || '',
+          (mismatch as any).loanType,
+          (mismatch as any).collateralDetails,
+          (mismatch as any).weight,
+          (mismatch as any).loanDate
+        );
         await db.update(cashTransactions)
           .set({
             amount: mismatch.principalAmount.toString(),
@@ -1748,10 +1761,14 @@ export class DataManagementService {
       for (const loan of allLoans) {
         try {
           const narration = NarrationEngine.createLoanDisbursementNarration(
-            (loan.accountNumber || '').trim(),  // trim so '602 ' becomes '602' — consistent with diagnostic grouping
+            (loan.accountNumber || '').trim(),
             loan.borrowerName || '',
             Number(loan.principalAmount) || 0,
-            loan.groupName || ''
+            loan.groupName || '',
+            (loan as any).loanType,
+            (loan as any).collateralDetails,
+            (loan as any).weight,
+            loan.loanDate
           );
           await db.insert(cashTransactions).values({
             tenantId,
