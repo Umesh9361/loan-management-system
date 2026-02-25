@@ -918,9 +918,15 @@ export class DataManagementService {
         // Spaces in account numbers (e.g. "232 A") are made optional to match "232A" format too
         const escapedNum = accountNum.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         const flexibleNum = escapedNum.replace(/\s+/g, '\\s*');
-        // Boundary: accounts ending in letter need stricter boundary to avoid "232AB" matching "232A"
+        // Boundary logic — prevents cross-account false matches:
+        // - Account ending in LETTER (e.g. "232 A"): strict boundary, no alphanumeric after
+        // - Account ending in DIGIT (e.g. "232"): negative lookahead prevents matching "232 A" or "232B"
+        //   Space alone is NOT enough boundary — "232 A..." has space but "A" is a letter suffix
+        //   Negative lookahead (?!\s*[a-zA-Z]) blocks "232 A" and "232A" (Latin letters only — Marathi script is safe)
         const lastChar = accountNum.trim().slice(-1);
-        const boundary = /[a-zA-Z]/.test(lastChar) ? '([^0-9a-zA-Z]|$)' : '([^0-9]|$)';
+        const boundary = /[a-zA-Z]/.test(lastChar)
+          ? '([^0-9a-zA-Z]|$)'
+          : '(?!\\s*[a-zA-Z])([^0-9]|$)';
         const accountPattern = new RegExp('खाते क्र\\.[ ]?' + flexibleNum + boundary);
         const allEntries = allDisbursements.filter(e =>
           e.narration && accountPattern.test(e.narration)
