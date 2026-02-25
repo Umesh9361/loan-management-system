@@ -1741,13 +1741,16 @@ export class DataManagementService {
       const deleted = deleteResult.length;
       console.log(`🗑️ REBUILD: Deleted ${deleted} old loan_disbursement entries for tenant ${tenantId}`);
 
-      // STEP 2: Fetch ALL loans (active + closed) with group names
+      // STEP 2: Fetch ALL loans (active + closed) with group names + collateral details
       const allLoans = await db.select({
         id: loans.id,
         accountNumber: loans.accountNumber,
         borrowerName: loans.borrowerName,
         principalAmount: loans.principalAmount,
         loanDate: loans.loanDate,
+        loanType: loans.loanType,
+        collateralDetails: loans.collateralDetails,
+        weight: loans.weight,
         groupName: groups.name
       })
         .from(loans)
@@ -1765,9 +1768,9 @@ export class DataManagementService {
             loan.borrowerName || '',
             Number(loan.principalAmount) || 0,
             loan.groupName || '',
-            (loan as any).loanType,
-            (loan as any).collateralDetails,
-            (loan as any).weight,
+            loan.loanType || undefined,
+            loan.collateralDetails || undefined,
+            loan.weight || undefined,
             loan.loanDate
           );
           await db.insert(cashTransactions).values({
