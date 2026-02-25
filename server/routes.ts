@@ -1515,94 +1515,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await storage.logUserActivity({ userId: req.session.userId!, tenantId: req.session.tenantId!, activityType: 'update_loan', description: `कर्ज अपडेट: खाते क्र. ${loan.accountNumber} - ${loan.borrowerName}`, metadata: JSON.stringify({ loanId: id, accountNumber: loan.accountNumber, borrowerName: loan.borrowerName, groupId: loan.groupId, principalAmount: loan.principalAmount, changedFields }) });
       } catch(e) { console.error('Audit log error:', e); }
 
-      // CRITICAL FIX: Update corresponding cash transaction when loan amount or date changes
-      if (oldLoan && (loanData.principalAmount !== undefined || loanData.loanDate !== undefined || loanData.borrowerName !== undefined)) {
-        try {
-          const allCashTx = await storage.getCashTransactions(req.session.tenantId!);
-          const accountNumStr = String(oldLoan.accountNumber || '');
+      // Cash sync is handled entirely by triggerLoanSync(UPDATE) above (real-time-sync-engine.ts)
+      // That engine: finds entry by regex account match, updates amount/date only, deletes duplicates
 
-          // Find disbursement transaction by account number in narration (handles all narration formats:
-          // "कर्ज वितरण", "कर्ज वाटप", "कर्ज दिले", etc.) — match by 'खाते क्र. X' or category
-          const matchingTx = allCashTx.filter((ct: any) =>
-            ct.transactionType === 'cash_out' &&
-            ct.category === 'loan_disbursement' &&
-            ct.narration &&
-            (ct.narration.includes('खाते क्र. ' + accountNumStr) ||
-             ct.narration.includes('खाते क्र.' + accountNumStr) ||
-             ct.narration.includes(accountNumStr))
-          );
-
-          // If multiple entries (duplicates), keep the one closest to the loan amount
-          const disbursementTransaction = matchingTx.length > 1
-            ? matchingTx.reduce((best: any, cur: any) =>
-                Math.abs(Number(cur.amount) - Number(oldLoan.principalAmount)) <
-                Math.abs(Number(best.amount) - Number(oldLoan.principalAmount)) ? cur : best
-              )
-            : matchingTx[0];
-          
-          if (disbursementTransaction) {
-            const updateData: any = {};
-            
-            if (loanData.principalAmount !== undefined && Number(loanData.principalAmount) !== Number(oldLoan.principalAmount)) {
-              updateData.amount = Number(loanData.principalAmount);
-              console.log(`💰 SYNC: Updating disbursement amount from ₹${oldLoan.principalAmount} to ₹${loanData.principalAmount}`);
-            }
-            
-            if (loanData.loanDate && loanData.loanDate !== oldLoan.loanDate) {
-              updateData.transactionDate = loanData.loanDate;
-              console.log(`📅 SYNC: Updating disbursement date from ${oldLoan.loanDate} to ${loanData.loanDate}`);
-            }
-            
-            if (Object.keys(updateData).length > 0) {
-              const groups = await storage.getGroups(req.session.tenantId!);
-              const group = groups.find((g: any) => g.id === loan.groupId);
-              const groupName = group?.name || '';
-              
-              updateData.narration = NarrationEngine.createLoanDisbursementNarration(
-                loan.accountNumber,
-                loan.borrowerName.substring(0, 4),
-                Number(loan.principalAmount),
-                groupName.substring(0, 10)
-              );
-              
-              await storage.updateCashTransaction(disbursementTransaction.id, req.session.tenantId!, updateData);
-              console.log(`✅ CASH SYNC: Disbursement updated for account ${accountNumStr} — amount: ₹${updateData.amount || 'unchanged'}`);
-
-              // Delete any extra duplicate disbursement entries for this account
-              if (matchingTx.length > 1) {
-                for (const extraTx of matchingTx) {
-                  if (extraTx.id !== disbursementTransaction.id) {
-                    await storage.deleteCashTransaction(extraTx.id, req.session.tenantId!);
-                    console.log(`🗑️ CASH SYNC: Deleted duplicate disbursement entry ${extraTx.id} for account ${accountNumStr}`);
-                  }
-                }
-              }
-            }
-          } else {
-            console.log(`⚠️ SYNC WARNING: No disbursement transaction found for account ${accountNumStr} — creating one`);
-            // Create missing disbursement transaction
-            if (loanData.principalAmount !== undefined || oldLoan.principalAmount) {
-              await storage.createCashTransaction({
-                tenantId: req.session.tenantId!,
-                transactionDate: loan.loanDate || oldLoan.loanDate,
-                transactionType: 'cash_out',
-                amount: Number(loan.principalAmount || oldLoan.principalAmount),
-                narration: NarrationEngine.createLoanDisbursementNarration(
-                  loan.accountNumber, loan.borrowerName.substring(0, 4),
-                  Number(loan.principalAmount), ''
-                ),
-                category: 'loan_disbursement',
-                isSystemGenerated: true
-              } as any);
-              console.log(`✅ CASH SYNC: Created missing disbursement for account ${accountNumStr}`);
-            }
-          }
-        } catch (syncError) {
-          console.error('❌ SYNC ERROR: Failed to update cash transaction:', syncError);
-          // Don't fail the loan update if cash sync fails
-        }
-      }
-      
       // If loan status changed from active to closed, handle cash transactions
       if (oldLoan && oldLoan.status === 'active' && loanData.status === 'closed') {
         // Check if there's a closure record, if not create cash transaction
