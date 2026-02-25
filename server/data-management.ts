@@ -1784,6 +1784,36 @@ export class DataManagementService {
       };
     }
   }
+
+  /**
+   * Simple SUM balance check — the definitive, false-positive-free check.
+   * Compares: SUM(cashbook loan_disbursement cash_out) vs SUM(all loans.principalAmount)
+   * If diff < ₹1 → allClear = true. No narration matching, no complex algorithm.
+   */
+  async getBalanceCheck(tenantId: string): Promise<{
+    cashTotal: number;
+    loanTotal: number;
+    diff: number;
+    allClear: boolean;
+  }> {
+    const [cashRow] = await db.select({
+      total: sql<string>`COALESCE(SUM(${cashTransactions.amount}), 0)`
+    }).from(cashTransactions).where(and(
+      eq(cashTransactions.tenantId, tenantId),
+      eq(cashTransactions.transactionType, 'cash_out'),
+      eq(cashTransactions.category, 'loan_disbursement')
+    ));
+
+    const [loanRow] = await db.select({
+      total: sql<string>`COALESCE(SUM(${loans.principalAmount}), 0)`
+    }).from(loans).where(eq(loans.tenantId, tenantId));
+
+    const cashTotal = Number(cashRow?.total || 0);
+    const loanTotal = Number(loanRow?.total || 0);
+    const diff = Math.abs(cashTotal - loanTotal);
+
+    return { cashTotal, loanTotal, diff, allClear: diff < 1 };
+  }
 }
 
 export const dataManagementService = new DataManagementService();
