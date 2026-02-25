@@ -1006,22 +1006,10 @@ export class DataManagementService {
           }
         }
 
-        // Entries not matched to any loan = TRUE orphan duplicates (safe to delete)
-        const unusedEntries = allEntries.filter(e => !usedEntryIds.has(e.id));
-        if (unusedEntries.length > 0) {
-          const repLoan = accountLoans[0];
-          duplicates.push({
-            id: repLoan.id,
-            accountNumber: accountNum,
-            borrowerName: accountLoans.map(l => l.borrowerName || '').join(' / '),
-            loanDate: repLoan.loanDate || '',
-            principalAmount: Number(repLoan.principalAmount) || 0,
-            cashEntryIds: allEntries.map(e => e.id),
-            cashEntryAmounts: allEntries.map(e => Number(e.amount)),
-            keepEntryIds: [...usedEntryIds],
-            keepEntryId: usedEntryIds.size === 1 ? [...usedEntryIds][0] : undefined
-          });
-        }
+        // NOTE: Entries not matched to any loan are NOT flagged as duplicates.
+        // Same account number can have multiple valid loans across different years.
+        // "Duplicate" means narration+date+amount are IDENTICAL — not "no matching loan".
+        // Extra unclaimed entries here are valid historical disbursements for older/closed loans.
       }
 
       // HANDLE LOANS WITH EMPTY ACCOUNT NUMBERS
@@ -1053,11 +1041,42 @@ export class DataManagementService {
         }
       }
 
+      // TRUE DUPLICATE DETECTION: narration + date + amount all match → accidentally created twice
+      // This is the only valid definition of "duplicate" per business rules.
+      // Same account number with different years/amounts = VALID separate loans, NOT duplicates.
+      const seenKeys = new Map<string, typeof allDisbursements[0]>();
+      for (const entry of allDisbursements) {
+        const key = `${(entry.narration || '').trim()}|${entry.transactionDate}|${Number(entry.amount).toFixed(2)}`;
+        if (seenKeys.has(key)) {
+          // Found a TRUE duplicate pair (identical narration + date + amount)
+          const original = seenKeys.get(key)!;
+          // Check if this pair is already recorded
+          const alreadyRecorded = duplicates.some(d =>
+            d.cashEntryIds.includes(original.id) || d.cashEntryIds.includes(entry.id)
+          );
+          if (!alreadyRecorded) {
+            duplicates.push({
+              id: 0, // no loan ID — this is entry-based duplicate
+              accountNumber: '',
+              borrowerName: (entry.narration || '').substring(0, 50),
+              loanDate: entry.transactionDate as string || '',
+              principalAmount: Number(entry.amount),
+              cashEntryIds: [original.id, entry.id],
+              cashEntryAmounts: [Number(original.amount), Number(entry.amount)],
+              keepEntryIds: [original.id],   // keep first, delete second
+              keepEntryId: original.id
+            });
+          }
+        } else {
+          seenKeys.set(key, entry);
+        }
+      }
+
       const mismatchDiscrepancy = mismatches.reduce((sum, m) => sum + Math.abs(m.principalAmount - m.cashEntryAmount), 0);
       const missingDiscrepancy = missingLoans.reduce((sum, l) => sum + l.principalAmount, 0);
       const duplicateDiscrepancy = duplicates.reduce((sum, d) => {
-        const totalCash = d.cashEntryAmounts.reduce((s: number, a: number) => s + a, 0);
-        return sum + Math.abs(totalCash - d.principalAmount);
+        // Each true duplicate adds exactly one extra copy of the amount
+        return sum + Number(d.principalAmount);
       }, 0);
 
       return {
@@ -1140,8 +1159,8 @@ export class DataManagementService {
         console.log(`✅ CASH-FIX: Updated amount+narration for account ${mismatch.accountNumber}: ₹${mismatch.cashEntryAmount} → ₹${mismatch.principalAmount}`);
       }
 
-      // SAFE duplicate cleanup — uses keepEntryIds (array) from group-based algorithm
-      // Only truly orphaned entries (not matched to any loan) are deleted
+      // TRUE DUPLICATE CLEANUP — deletes the second copy of entries with identical narration+date+amount
+      // keepEntryIds = [first/original entry] → delete = [second/accidental copy]
       let skippedDuplicates = 0;
       for (const dup of diagnostic.duplicates) {
         // Support both keepEntryIds (array, new) and keepEntryId (single, backward compat)
