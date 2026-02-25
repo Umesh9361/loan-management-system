@@ -222,17 +222,23 @@ function CashReconciliationTab({ queryClient }: { queryClient: any }) {
               </Alert>
             )}
 
-            {!allClear && (recoData.summary?.missingCount > 0 || recoData.summary?.mismatchCount > 0) && (
+            {!allClear && (
               !confirmFix ? (
                 <Button onClick={() => setConfirmFix(true)} className="bg-red-600 hover:bg-red-700 text-white" disabled={fixMutation.isPending}>
                   <Scale className="h-4 w-4 mr-2" />
-                  गहाळ/चुकीच्या {(recoData.summary?.missingCount || 0) + (recoData.summary?.mismatchCount || 0)} नोंदी दुरुस्त करा
+                  सर्व {totalIssues} समस्या दुरुस्त करा
                 </Button>
               ) : (
                 <div className="p-4 bg-red-50 rounded-xl border-2 border-red-300 space-y-3">
                   <p className="text-red-700 text-sm font-semibold">
-                    ⚠️ खात्री आहे का? गहाळ नोंदी तयार होतील आणि चुकीच्या रकमा दुरुस्त होतील. डुप्लिकेट आपोआप हटवल्या जाणार नाहीत — त्यासाठी कर्ज Edit → Save करा.
+                    ⚠️ खात्री आहे का?
                   </p>
+                  <ul className="text-red-700 text-sm space-y-1 list-disc list-inside">
+                    <li>गहाळ नोंदी तयार होतील</li>
+                    <li>चुकीच्या रकमा दुरुस्त होतील</li>
+                    <li>डुप्लिकेट — ज्यांची रक्कम बरोबर आहे त्या safe पद्धतीने हटवल्या जातील</li>
+                    <li>ज्या डुप्लिकेट हटवता येणार नाहीत त्यासाठी कर्ज Edit → Save करा</li>
+                  </ul>
                   <div className="flex gap-3">
                     <Button onClick={() => fixMutation.mutate()} disabled={fixMutation.isPending} className="bg-red-600 hover:bg-red-700 text-white">
                       {fixMutation.isPending ? <><RefreshCw className="h-4 w-4 mr-2 animate-spin" />दुरुस्त करत आहे...</> : <>✅ होय, दुरुस्त करा</>}
