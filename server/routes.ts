@@ -1330,7 +1330,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // DUPLICATE LOAN CHECK: borrowerName + principalAmount + loanDate + weight सगळे same = duplicate
       const duplicateWarningConfirmed = req.body.duplicateWarningConfirmed === true;
-      if (!duplicateWarningConfirmed && !editingLoan) {
+      if (!duplicateWarningConfirmed) {
         try {
           const dupLoans = await db.select({
             id: loans.id,
