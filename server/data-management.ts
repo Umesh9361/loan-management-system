@@ -939,7 +939,10 @@ export class DataManagementService {
             });
           }
         } else {
-          const matchingEntry = allEntries.find(e => Math.abs(Number(e.amount) - loanAmount) < 0.01);
+          // Use ₹1 tolerance to handle decimal precision differences in DB storage
+          // e.g., loan ₹12,000 vs cash entry ₹12,000.50 would fail with 0.01 tolerance
+          const matchingEntry = allEntries.find(e => Math.abs(Number(e.amount) - loanAmount) < 0.01)
+            || allEntries.find(e => Math.abs(Number(e.amount) - loanAmount) < 1.0);
           if (!matchingEntry) {
             duplicates.push({
               id: loan.id,
