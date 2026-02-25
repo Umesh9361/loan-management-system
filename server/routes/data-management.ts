@@ -200,6 +200,23 @@ router.post("/rebuild-disbursement-entries", async (req: any, res) => {
   }
 });
 
+/**
+ * GET /api/data-management/balance-check
+ * Simple SUM comparison: cashbook loan_disbursement total vs loans principalAmount total
+ * This is the definitive source-of-truth check — no narration matching, no false positives
+ */
+router.get("/balance-check", async (req: any, res) => {
+  try {
+    const tenantId = req.session?.tenantId;
+    if (!tenantId) return res.status(401).json({ message: "Unauthorized" });
+    const result = await dataManagementService.getBalanceCheck(tenantId);
+    res.json(result);
+  } catch (error) {
+    console.error("Balance check error:", error);
+    res.status(500).json({ message: "Balance check अयशस्वी: " + (error as Error).message });
+  }
+});
+
 const rearrangeSchema = z.object({
   groupId: z.string().min(1, "ग्रुप ID आवश्यक आहे"),
   upToDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "तारीख YYYY-MM-DD फॉर्मॅट मध्ये असावी").optional(),
