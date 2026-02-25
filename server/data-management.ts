@@ -768,37 +768,39 @@ export class DataManagementService {
    */
   private async checkForDuplicateTransactions(tenantId: string): Promise<{duplicatesFound: number, details: any[]}> {
     try {
-      const transactions = await db.select()
-        .from(cashTransactions)
-        .where(eq(cashTransactions.tenantId, tenantId))
-        .orderBy(asc(cashTransactions.transactionDate));
+      // RELIABLE DUPLICATE CHECK: Only detect loan_disbursement entries with the same loanId
+      // This eliminates false positives from legitimate same-narration manual entries
+      // Old entries without loanId are excluded (they'll get loanId after Rebuild)
+      let disbursements: any[] = [];
+      try {
+        disbursements = await db.select()
+          .from(cashTransactions)
+          .where(and(
+            eq(cashTransactions.tenantId, tenantId),
+            eq(cashTransactions.category, 'loan_disbursement'),
+            sql`${cashTransactions.loanId} IS NOT NULL`
+          ));
+      } catch {
+        // loan_id column may not exist yet — skip check entirely
+        return { duplicatesFound: 0, details: [] };
+      }
 
-      const seenTransactions = new Map<string, any[]>();
-      let duplicatesFound = 0;
-      const duplicateDetails: any[] = [];
-
-      transactions.forEach(transaction => {
-        const key = `${transaction.transactionDate}_${transaction.amount}_${transaction.transactionType}_${transaction.narration}`;
-        
-        if (!seenTransactions.has(key)) {
-          seenTransactions.set(key, []);
-        }
-        
-        seenTransactions.get(key)!.push(transaction);
+      const byLoanId = new Map<string, any[]>();
+      disbursements.forEach(t => {
+        const lid = t.loanId as string;
+        if (!byLoanId.has(lid)) byLoanId.set(lid, []);
+        byLoanId.get(lid)!.push(t);
       });
 
-      seenTransactions.forEach((transactions, key) => {
-        if (transactions.length > 1) {
-          duplicatesFound += transactions.length - 1;
+      let duplicatesFound = 0;
+      const duplicateDetails: any[] = [];
+      byLoanId.forEach((entries, loanId) => {
+        if (entries.length > 1) {
+          duplicatesFound += entries.length - 1;
           duplicateDetails.push({
-            key,
-            count: transactions.length,
-            transactions: transactions.map(t => ({
-              id: t.id,
-              date: t.transactionDate,
-              amount: t.amount,
-              narration: t.narration
-            }))
+            loanId,
+            count: entries.length,
+            transactions: entries.map(t => ({ id: t.id, date: t.transactionDate, amount: t.amount }))
           });
         }
       });
