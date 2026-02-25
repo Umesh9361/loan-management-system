@@ -100,6 +100,8 @@ function Loans() {
   
   // Scroll position restore after edit/delete
   const savedScrollPositionRef = useRef<number | null>(null);
+  // Scroll lock: holds scroll position for delete operations across multiple renders
+  const scrollLockRef = useRef<{ targetY: number; until: number } | null>(null);
 
   // Refs for keyboard shortcuts
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -292,13 +294,9 @@ function Loans() {
   const handleDelete = (loanId: string) => {
     if (confirm("हे कर्ज पूर्णपणे डिलीट करायचे काय? ही क्रिया रद्द करता येणार नाही.")) {
       const scrollY = window.scrollY;
+      // Lock scroll position for 1.5 seconds - covers optimistic update + server refetch
+      scrollLockRef.current = { targetY: scrollY, until: Date.now() + 1500 };
       deleteLoanMutation.mutate(loanId);
-      // Restore scroll after optimistic update reflows DOM (2 frames: render + paint)
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          window.scrollTo({ top: scrollY, behavior: 'instant' });
-        });
-      });
     }
   };
 
@@ -1325,6 +1323,18 @@ function Loans() {
       return () => clearTimeout(timer);
     }
   }, [isDialogOpen, loans]);
+
+  // Scroll lock effect: fires after EVERY render (optimistic + server refetch both covered)
+  useEffect(() => {
+    if (scrollLockRef.current) {
+      const { targetY, until } = scrollLockRef.current;
+      if (Date.now() < until) {
+        window.scrollTo({ top: targetY, behavior: 'instant' as ScrollBehavior });
+      } else {
+        scrollLockRef.current = null;
+      }
+    }
+  });
 
   // Comprehensive Keyboard Shortcuts System
   useEffect(() => {
