@@ -14,6 +14,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { DateUtils } from "@/lib/date-utils";
+import { displayNarration } from "@/lib/utils";
 import { Sidebar } from "@/components/ui/sidebar";
 import { MobileNav } from "@/components/ui/mobile-nav";
 import CashInDialog from "@/components/cash-in-dialog";
@@ -446,7 +447,7 @@ export default function CashTransactions() {
                                 </span>
                               </TableCell>
                               <TableCell className="max-w-xs truncate md:px-4 md:py-3 md:text-base">
-                                {transaction.narration}
+                                {displayNarration(transaction.narration)}
                               </TableCell>
                               <TableCell className="md:px-4 md:py-3">
                                 <div className="flex space-x-2">
