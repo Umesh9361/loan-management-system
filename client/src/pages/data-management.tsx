@@ -33,28 +33,22 @@ interface IntegrityCheckResult {
   details: Array<{ issue: string }>;
 }
 
-interface MissingCashEntry {
-  id: number;
-  accountNumber: string;
-  borrowerName: string;
-  groupName: string;
-  loanDate: string;
-  principalAmount: number;
-}
-
-interface MissingCashEntriesResult {
+interface ReconciliationResult {
   success: boolean;
   missingCount: number;
   totalMissingAmount: number;
-  loans: MissingCashEntry[];
+  loans: Array<{ id: number; accountNumber: string; borrowerName: string; groupName: string; loanDate: string; principalAmount: number }>;
+  mismatches: Array<{ id: number; accountNumber: string; borrowerName: string; groupName: string; loanDate: string; principalAmount: number; cashEntryId: string; cashEntryAmount: number }>;
+  duplicates: Array<{ id: number; accountNumber: string; borrowerName: string; loanDate: string; principalAmount: number; cashEntryIds: string[]; cashEntryAmounts: number[]; keepEntryId?: string }>;
+  summary: { missingCount: number; mismatchCount: number; duplicateCount: number; totalDiscrepancy: number };
 }
 
 function CashReconciliationTab({ queryClient }: { queryClient: any }) {
   const [checked, setChecked] = useState(false);
   const [confirmFix, setConfirmFix] = useState(false);
-  const [fixResult, setFixResult] = useState<{ fixedCount: number; totalFixedAmount: number; message: string } | null>(null);
+  const [fixResult, setFixResult] = useState<{ message: string; details?: any } | null>(null);
 
-  const { data: missingData, isLoading: isChecking, refetch: recheckEntries } = useQuery<MissingCashEntriesResult>({
+  const { data: recoData, isLoading: isChecking, refetch: recheckEntries } = useQuery<ReconciliationResult>({
     queryKey: ["/api/data-management/missing-cash-entries"],
     enabled: checked,
     retry: false
@@ -76,15 +70,18 @@ function CashReconciliationTab({ queryClient }: { queryClient: any }) {
     }
   });
 
-  const formatAmount = (amount: number) =>
+  const fmt = (amount: number) =>
     new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(amount);
 
-  const formatDate = (dateStr: string) => {
+  const fmtDate = (dateStr: string) => {
     if (!dateStr) return '-';
     const d = new Date(dateStr);
     if (isNaN(d.getTime())) return dateStr;
     return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
   };
+
+  const totalIssues = recoData ? (recoData.summary?.missingCount || 0) + (recoData.summary?.mismatchCount || 0) + (recoData.summary?.duplicateCount || 0) : 0;
+  const allClear = recoData && totalIssues === 0;
 
   return (
     <Card className="border-2 border-amber-200 dark:border-amber-800 rounded-xl shadow-sm">
@@ -96,132 +93,153 @@ function CashReconciliationTab({ queryClient }: { queryClient: any }) {
           रोकड मेळ (Cash Reconciliation)
         </CardTitle>
         <CardDescription className="text-amber-700 dark:text-amber-400">
-          जुन्या कर्ज नोंदींसाठी रोकड व्यवहार तपासा आणि गहाळ नोंदी तयार करा
+          कर्ज व रोकड नोंदींचा मेळ तपासा — गहाळ, चुकीच्या रकमेच्या आणि डुप्लिकेट नोंदी शोधा
         </CardDescription>
       </CardHeader>
       <CardContent className="p-4 sm:p-6 space-y-5">
 
-        <div className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-xl border-2 border-amber-200 dark:border-amber-700">
-          <p className="text-sm text-amber-800 dark:text-amber-300">
-            <strong>हे साधन काय करते:</strong> प्रत्येक कर्जासाठी कॅशबुकमध्ये "कर्ज वाटप" रोकड नोंद आहे का ते तपासते.
-            जुना डेटा फक्त कर्ज नोंदीसह आणला असेल आणि रोकड एन्ट्री नसेल तर हे साधन त्या तयार करते.
-          </p>
+        <div className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-xl border-2 border-amber-200 dark:border-amber-700 text-sm text-amber-800 dark:text-amber-300 space-y-1">
+          <p><strong>हे साधन तीन प्रकारच्या समस्या शोधते:</strong></p>
+          <p>🔴 <strong>गहाळ नोंद</strong> — कर्जासाठी कोणतीही रोकड नोंद नाही</p>
+          <p>🟠 <strong>चुकीची रक्कम</strong> — कर्ज edit झाले पण जुनी रोकड नोंद अजून आहे</p>
+          <p>🟡 <strong>डुप्लिकेट</strong> — एकाच कर्जासाठी एकापेक्षा जास्त रोकड नोंदी</p>
         </div>
 
         {!checked && (
-          <Button
-            onClick={() => setChecked(true)}
-            className="bg-amber-600 hover:bg-amber-700 text-white"
-          >
+          <Button onClick={() => setChecked(true)} className="bg-amber-600 hover:bg-amber-700 text-white">
             <RefreshCw className="h-4 w-4 mr-2" />
-            तपासा - रोकड नोंद नसलेली कर्जे शोधा
+            तपासा — सर्व समस्या शोधा
           </Button>
         )}
 
         {checked && isChecking && (
           <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl border">
             <RefreshCw className="h-5 w-5 animate-spin text-amber-600" />
-            <span className="text-gray-600">तपासत आहे...</span>
+            <span className="text-gray-600">सर्व कर्जे तपासत आहे... (थोडा वेळ लागेल)</span>
           </div>
         )}
 
-        {checked && missingData && !isChecking && (
-          <div className="space-y-4">
-            <div className={`p-4 rounded-xl border-2 ${missingData.missingCount === 0 ? 'bg-green-50 border-green-300' : 'bg-red-50 border-red-300'}`}>
-              {missingData.missingCount === 0 ? (
-                <div className="flex items-center gap-2 text-green-700">
-                  <CheckCircle className="h-5 w-5" />
-                  <strong>सर्व कर्जांसाठी रोकड नोंद आहे! कोणतीही दुरुस्ती आवश्यक नाही.</strong>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-red-700">
-                    <AlertTriangle className="h-5 w-5" />
-                    <strong>{missingData.missingCount} कर्जांना रोकड नोंद नाही</strong>
-                  </div>
-                  <div className="text-red-600 text-sm">
-                    एकूण गहाळ रक्कम: <strong>{formatAmount(missingData.totalMissingAmount)}</strong>
-                  </div>
-                </div>
-              )}
-            </div>
+        {checked && recoData && !isChecking && (
+          <div className="space-y-5">
 
-            {missingData.loans.length > 0 && (
-              <>
-                <div className="rounded-xl border-2 border-gray-200 overflow-hidden">
-                  <div className="bg-indigo-700 text-white px-3 py-2 grid grid-cols-4 gap-2 text-xs font-semibold">
-                    <span>खाते क्र.</span>
-                    <span>कर्जदार</span>
-                    <span>तारीख</span>
-                    <span className="text-right">रक्कम</span>
+            {allClear ? (
+              <div className="flex items-center gap-2 p-4 bg-green-50 border-2 border-green-300 rounded-xl text-green-700">
+                <CheckCircle className="h-5 w-5" />
+                <strong>सर्व कर्जांची रोकड नोंद व्यवस्थित आहे! कोणतीही दुरुस्ती आवश्यक नाही.</strong>
+              </div>
+            ) : (
+              <div className="p-4 bg-red-50 border-2 border-red-300 rounded-xl space-y-2">
+                <div className="flex items-center gap-2 text-red-700 font-semibold">
+                  <AlertTriangle className="h-5 w-5" />
+                  {totalIssues} समस्या आढळल्या — एकूण फरक: {fmt(recoData.summary?.totalDiscrepancy || 0)}
+                </div>
+                <div className="flex flex-wrap gap-3 text-sm">
+                  {recoData.summary?.missingCount > 0 && <span className="px-2 py-1 bg-red-100 text-red-700 rounded-lg">🔴 {recoData.summary.missingCount} गहाळ</span>}
+                  {recoData.summary?.mismatchCount > 0 && <span className="px-2 py-1 bg-orange-100 text-orange-700 rounded-lg">🟠 {recoData.summary.mismatchCount} चुकीची रक्कम</span>}
+                  {recoData.summary?.duplicateCount > 0 && <span className="px-2 py-1 bg-yellow-100 text-yellow-700 rounded-lg">🟡 {recoData.summary.duplicateCount} डुप्लिकेट</span>}
+                </div>
+              </div>
+            )}
+
+            {recoData.loans?.length > 0 && (
+              <div className="space-y-2">
+                <h4 className="font-semibold text-red-700 text-sm">🔴 गहाळ रोकड नोंदी ({recoData.loans.length})</h4>
+                <div className="rounded-xl border-2 border-red-200 overflow-hidden">
+                  <div className="bg-red-700 text-white px-3 py-2 grid grid-cols-4 gap-2 text-xs font-semibold">
+                    <span>खाते क्र.</span><span>कर्जदार</span><span>तारीख</span><span className="text-right">रक्कम</span>
                   </div>
-                  <div className="max-h-64 overflow-y-auto divide-y divide-gray-100">
-                    {missingData.loans.map((loan) => (
-                      <div key={loan.id} className="grid grid-cols-4 gap-2 px-3 py-2 text-xs hover:bg-gray-50">
-                        <span className="font-medium text-indigo-700">{loan.accountNumber || '-'}</span>
+                  <div className="max-h-48 overflow-y-auto divide-y divide-red-50">
+                    {recoData.loans.map((loan) => (
+                      <div key={loan.id} className="grid grid-cols-4 gap-2 px-3 py-2 text-xs hover:bg-red-50">
+                        <span className="font-medium text-red-700">{loan.accountNumber || '-'}</span>
                         <span>{loan.borrowerName}</span>
-                        <span className="text-gray-500">{formatDate(loan.loanDate)}</span>
-                        <span className="text-right font-semibold text-red-600">{formatAmount(loan.principalAmount)}</span>
+                        <span className="text-gray-500">{fmtDate(loan.loanDate)}</span>
+                        <span className="text-right font-semibold text-red-600">{fmt(loan.principalAmount)}</span>
                       </div>
                     ))}
                   </div>
                 </div>
-
-                {fixResult && (
-                  <Alert className="border-green-300 bg-green-50">
-                    <CheckCircle className="h-4 w-4 text-green-600" />
-                    <AlertTitle className="text-green-700">दुरुस्ती यशस्वी!</AlertTitle>
-                    <AlertDescription className="text-green-600">
-                      {fixResult.message}
-                    </AlertDescription>
-                  </Alert>
-                )}
-
-                {!confirmFix ? (
-                  <Button
-                    onClick={() => setConfirmFix(true)}
-                    className="bg-red-600 hover:bg-red-700 text-white"
-                    disabled={fixMutation.isPending}
-                  >
-                    <Scale className="h-4 w-4 mr-2" />
-                    {missingData.missingCount} रोकड नोंदी तयार करा
-                  </Button>
-                ) : (
-                  <div className="p-4 bg-red-50 rounded-xl border-2 border-red-300 space-y-3">
-                    <p className="text-red-700 text-sm font-semibold">
-                      ⚠️ खात्री आहे का? {missingData.missingCount} कर्जांसाठी {formatAmount(missingData.totalMissingAmount)} च्या रोकड नोंदी तयार होतील.
-                    </p>
-                    <div className="flex gap-3">
-                      <Button
-                        onClick={() => fixMutation.mutate()}
-                        disabled={fixMutation.isPending}
-                        className="bg-red-600 hover:bg-red-700 text-white"
-                      >
-                        {fixMutation.isPending ? (
-                          <><RefreshCw className="h-4 w-4 mr-2 animate-spin" />तयार करत आहे...</>
-                        ) : (
-                          <>✅ होय, दुरुस्त करा</>
-                        )}
-                      </Button>
-                      <Button
-                        variant="outline"
-                        onClick={() => setConfirmFix(false)}
-                        disabled={fixMutation.isPending}
-                      >
-                        रद्द करा
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </>
+              </div>
             )}
 
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => recheckEntries()}
-              disabled={isChecking}
-            >
+            {recoData.mismatches?.length > 0 && (
+              <div className="space-y-2">
+                <h4 className="font-semibold text-orange-700 text-sm">🟠 चुकीच्या रकमेच्या नोंदी ({recoData.mismatches.length}) — कर्ज edit केल्यामुळे</h4>
+                <div className="rounded-xl border-2 border-orange-200 overflow-hidden">
+                  <div className="bg-orange-600 text-white px-3 py-2 grid grid-cols-5 gap-2 text-xs font-semibold">
+                    <span>खाते क्र.</span><span>कर्जदार</span><span>कर्ज रक्कम</span><span>रोकड नोंद</span><span className="text-right">फरक</span>
+                  </div>
+                  <div className="max-h-48 overflow-y-auto divide-y divide-orange-50">
+                    {recoData.mismatches.map((m) => (
+                      <div key={m.id} className="grid grid-cols-5 gap-2 px-3 py-2 text-xs hover:bg-orange-50">
+                        <span className="font-medium text-orange-700">{m.accountNumber || '-'}</span>
+                        <span>{m.borrowerName}</span>
+                        <span className="text-green-700 font-semibold">{fmt(m.principalAmount)}</span>
+                        <span className="text-red-600">{fmt(m.cashEntryAmount)}</span>
+                        <span className="text-right font-semibold text-orange-700">{fmt(Math.abs(m.principalAmount - m.cashEntryAmount))}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {recoData.duplicates?.length > 0 && (
+              <div className="space-y-2">
+                <h4 className="font-semibold text-yellow-700 text-sm">🟡 डुप्लिकेट रोकड नोंदी ({recoData.duplicates.length}) — एकाच कर्जासाठी अनेक entries</h4>
+                <div className="rounded-xl border-2 border-yellow-200 overflow-hidden">
+                  <div className="bg-yellow-600 text-white px-3 py-2 grid grid-cols-4 gap-2 text-xs font-semibold">
+                    <span>खाते क्र.</span><span>कर्जदार</span><span>कर्ज रक्कम</span><span className="text-right">रोकड entries</span>
+                  </div>
+                  <div className="max-h-48 overflow-y-auto divide-y divide-yellow-50">
+                    {recoData.duplicates.map((d) => (
+                      <div key={d.id} className="grid grid-cols-4 gap-2 px-3 py-2 text-xs hover:bg-yellow-50">
+                        <span className="font-medium text-yellow-700">{d.accountNumber || '-'}</span>
+                        <span>{d.borrowerName}</span>
+                        <span className="text-green-700 font-semibold">{fmt(d.principalAmount)}</span>
+                        <span className="text-right text-red-600">{d.cashEntryAmounts.map(a => fmt(a)).join(', ')}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {fixResult && (
+              <Alert className="border-green-300 bg-green-50">
+                <CheckCircle className="h-4 w-4 text-green-600" />
+                <AlertTitle className="text-green-700">दुरुस्ती यशस्वी!</AlertTitle>
+                <AlertDescription className="text-green-600 space-y-1">
+                  <p>{fixResult.message}</p>
+                  {fixResult.details && (
+                    <p className="text-xs">नव्या: {fixResult.details.created} | अपडेट: {fixResult.details.updated} | डुप्लिकेट हटवले: {fixResult.details.duplicatesRemoved}</p>
+                  )}
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {!allClear && (
+              !confirmFix ? (
+                <Button onClick={() => setConfirmFix(true)} className="bg-red-600 hover:bg-red-700 text-white" disabled={fixMutation.isPending}>
+                  <Scale className="h-4 w-4 mr-2" />
+                  सर्व {totalIssues} समस्या दुरुस्त करा
+                </Button>
+              ) : (
+                <div className="p-4 bg-red-50 rounded-xl border-2 border-red-300 space-y-3">
+                  <p className="text-red-700 text-sm font-semibold">
+                    ⚠️ खात्री आहे का? गहाळ नोंदी तयार होतील, चुकीच्या रकमा दुरुस्त होतील, डुप्लिकेट हटवले जातील.
+                  </p>
+                  <div className="flex gap-3">
+                    <Button onClick={() => fixMutation.mutate()} disabled={fixMutation.isPending} className="bg-red-600 hover:bg-red-700 text-white">
+                      {fixMutation.isPending ? <><RefreshCw className="h-4 w-4 mr-2 animate-spin" />दुरुस्त करत आहे...</> : <>✅ होय, दुरुस्त करा</>}
+                    </Button>
+                    <Button variant="outline" onClick={() => setConfirmFix(false)} disabled={fixMutation.isPending}>रद्द करा</Button>
+                  </div>
+                </div>
+              )
+            )}
+
+            <Button variant="outline" size="sm" onClick={() => recheckEntries()} disabled={isChecking}>
               <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
               पुन्हा तपासा
             </Button>

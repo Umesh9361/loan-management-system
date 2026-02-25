@@ -883,45 +883,105 @@ export class DataManagementService {
     missingCount: number;
     totalMissingAmount: number;
     loans: Array<{ id: number; accountNumber: string; borrowerName: string; groupName: string; loanDate: string; principalAmount: number }>;
+    mismatches: Array<{ id: number; accountNumber: string; borrowerName: string; groupName: string; loanDate: string; principalAmount: number; cashEntryId: string; cashEntryAmount: number }>;
+    duplicates: Array<{ id: number; accountNumber: string; borrowerName: string; loanDate: string; principalAmount: number; cashEntryIds: string[]; cashEntryAmounts: number[] }>;
+    summary: { missingCount: number; mismatchCount: number; duplicateCount: number; totalDiscrepancy: number };
   }> {
     try {
       const loansData = await db.select().from(loans).where(eq(loans.tenantId, tenantId));
-      const missingLoans: Array<{ id: number; accountNumber: string; borrowerName: string; groupName: string; loanDate: string; principalAmount: number }> = [];
+      const missingLoans: any[] = [];
+      const mismatches: any[] = [];
+      const duplicates: any[] = [];
 
       for (const loan of loansData) {
-        const existing = await db.select()
+        const accountNum = loan.accountNumber || '';
+        const loanAmount = Number(loan.principalAmount) || 0;
+
+        const allEntries = await db.select()
           .from(cashTransactions)
           .where(and(
             eq(cashTransactions.tenantId, tenantId),
             eq(cashTransactions.transactionType, 'cash_out'),
-            sql`(${cashTransactions.category} = 'loan_disbursement' OR ${cashTransactions.narration} LIKE ${'%खाते क्र. ' + loan.accountNumber + '%'} OR ${cashTransactions.narration} LIKE ${'%' + loan.accountNumber + '%'})`,
-            sql`ABS(CAST(${cashTransactions.amount} AS NUMERIC) - ${Number(loan.principalAmount)}) < 0.01`
-          ))
-          .limit(1);
+            sql`(${cashTransactions.category} = 'loan_disbursement' OR ${cashTransactions.narration} LIKE ${'%खाते क्र. ' + accountNum + '%'})`
+          ));
 
-        if (existing.length === 0) {
+        if (allEntries.length === 0) {
           missingLoans.push({
             id: loan.id,
-            accountNumber: loan.accountNumber || '',
+            accountNumber: accountNum,
             borrowerName: loan.borrowerName || '',
             groupName: loan.groupName || '',
             loanDate: loan.loanDate || '',
-            principalAmount: Number(loan.principalAmount) || 0
+            principalAmount: loanAmount
           });
+        } else if (allEntries.length === 1) {
+          const entryAmount = Number(allEntries[0].amount) || 0;
+          if (Math.abs(entryAmount - loanAmount) > 0.01) {
+            mismatches.push({
+              id: loan.id,
+              accountNumber: accountNum,
+              borrowerName: loan.borrowerName || '',
+              groupName: loan.groupName || '',
+              loanDate: loan.loanDate || '',
+              principalAmount: loanAmount,
+              cashEntryId: allEntries[0].id,
+              cashEntryAmount: entryAmount
+            });
+          }
+        } else {
+          const matchingEntry = allEntries.find(e => Math.abs(Number(e.amount) - loanAmount) < 0.01);
+          if (!matchingEntry) {
+            duplicates.push({
+              id: loan.id,
+              accountNumber: accountNum,
+              borrowerName: loan.borrowerName || '',
+              loanDate: loan.loanDate || '',
+              principalAmount: loanAmount,
+              cashEntryIds: allEntries.map(e => e.id),
+              cashEntryAmounts: allEntries.map(e => Number(e.amount))
+            });
+          } else {
+            const extraIds = allEntries.filter(e => e.id !== matchingEntry.id).map(e => e.id);
+            if (extraIds.length > 0) {
+              duplicates.push({
+                id: loan.id,
+                accountNumber: accountNum,
+                borrowerName: loan.borrowerName || '',
+                loanDate: loan.loanDate || '',
+                principalAmount: loanAmount,
+                cashEntryIds: allEntries.map(e => e.id),
+                cashEntryAmounts: allEntries.map(e => Number(e.amount)),
+                keepEntryId: matchingEntry.id
+              });
+            }
+          }
         }
       }
 
-      const totalMissingAmount = missingLoans.reduce((sum, l) => sum + l.principalAmount, 0);
+      const mismatchDiscrepancy = mismatches.reduce((sum, m) => sum + Math.abs(m.principalAmount - m.cashEntryAmount), 0);
+      const missingDiscrepancy = missingLoans.reduce((sum, l) => sum + l.principalAmount, 0);
+      const duplicateDiscrepancy = duplicates.reduce((sum, d) => {
+        const totalCash = d.cashEntryAmounts.reduce((s: number, a: number) => s + a, 0);
+        return sum + Math.abs(totalCash - d.principalAmount);
+      }, 0);
 
       return {
         success: true,
         missingCount: missingLoans.length,
-        totalMissingAmount,
-        loans: missingLoans
+        totalMissingAmount: missingDiscrepancy,
+        loans: missingLoans,
+        mismatches,
+        duplicates,
+        summary: {
+          missingCount: missingLoans.length,
+          mismatchCount: mismatches.length,
+          duplicateCount: duplicates.length,
+          totalDiscrepancy: missingDiscrepancy + mismatchDiscrepancy + duplicateDiscrepancy
+        }
       };
     } catch (error) {
       console.error("getMissingDisbursementEntries error:", error);
-      return { success: false, missingCount: 0, totalMissingAmount: 0, loans: [] };
+      return { success: false, missingCount: 0, totalMissingAmount: 0, loans: [], mismatches: [], duplicates: [], summary: { missingCount: 0, mismatchCount: 0, duplicateCount: 0, totalDiscrepancy: 0 } };
     }
   }
 
@@ -930,13 +990,15 @@ export class DataManagementService {
     fixedCount: number;
     totalFixedAmount: number;
     message: string;
+    details: { created: number; updated: number; duplicatesRemoved: number };
   }> {
     try {
       const diagnostic = await this.getMissingDisbursementEntries(tenantId);
       if (!diagnostic.success) throw new Error("Diagnostic failed");
 
-      let fixedCount = 0;
-      let totalFixedAmount = 0;
+      let created = 0;
+      let updated = 0;
+      let duplicatesRemoved = 0;
 
       for (const loan of diagnostic.loans) {
         await storage.createCashTransaction({
@@ -948,16 +1010,52 @@ export class DataManagementService {
           category: 'loan_disbursement',
           isSystemGenerated: true
         } as any);
-        fixedCount++;
-        totalFixedAmount += loan.principalAmount;
-        console.log(`✅ CASH-FIX: Created missing disbursement entry for account ${loan.accountNumber} - ₹${loan.principalAmount}`);
+        created++;
+        console.log(`✅ CASH-FIX: Created missing entry for account ${loan.accountNumber} - ₹${loan.principalAmount}`);
       }
 
+      for (const mismatch of diagnostic.mismatches) {
+        await db.update(cashTransactions)
+          .set({ amount: mismatch.principalAmount.toString(), updatedAt: new Date() } as any)
+          .where(and(
+            eq(cashTransactions.id, mismatch.cashEntryId),
+            eq(cashTransactions.tenantId, tenantId)
+          ));
+        updated++;
+        console.log(`✅ CASH-FIX: Updated amount for account ${mismatch.accountNumber}: ₹${mismatch.cashEntryAmount} → ₹${mismatch.principalAmount}`);
+      }
+
+      for (const dup of diagnostic.duplicates) {
+        const keepId = (dup as any).keepEntryId;
+        const toDelete = keepId
+          ? dup.cashEntryIds.filter((id: string) => id !== keepId)
+          : dup.cashEntryIds.slice(1);
+        for (const deleteId of toDelete) {
+          await db.delete(cashTransactions).where(and(
+            eq(cashTransactions.id, deleteId),
+            eq(cashTransactions.tenantId, tenantId)
+          ));
+          duplicatesRemoved++;
+          console.log(`✅ CASH-FIX: Deleted duplicate cash entry ${deleteId} for account ${dup.accountNumber}`);
+        }
+        if (!keepId) {
+          await db.update(cashTransactions)
+            .set({ amount: dup.principalAmount.toString(), updatedAt: new Date() } as any)
+            .where(and(
+              eq(cashTransactions.id, dup.cashEntryIds[0]),
+              eq(cashTransactions.tenantId, tenantId)
+            ));
+          updated++;
+        }
+      }
+
+      const fixedCount = created + updated + duplicatesRemoved;
       return {
         success: true,
         fixedCount,
-        totalFixedAmount,
-        message: `${fixedCount} कर्जांच्या रोकड नोंदी तयार केल्या, एकूण रक्कम: ₹${totalFixedAmount.toLocaleString('en-IN')}`
+        totalFixedAmount: diagnostic.loans.reduce((s, l) => s + l.principalAmount, 0),
+        message: `दुरुस्ती यशस्वी: ${created} नव्या नोंदी, ${updated} रक्कम दुरुस्त, ${duplicatesRemoved} डुप्लिकेट हटवल्या`,
+        details: { created, updated, duplicatesRemoved }
       };
     } catch (error) {
       console.error("fixMissingDisbursementEntries error:", error);
@@ -965,7 +1063,8 @@ export class DataManagementService {
         success: false,
         fixedCount: 0,
         totalFixedAmount: 0,
-        message: "दुरुस्ती अयशस्वी: " + (error as Error).message
+        message: "दुरुस्ती अयशस्वी: " + (error as Error).message,
+        details: { created: 0, updated: 0, duplicatesRemoved: 0 }
       };
     }
   }
