@@ -1041,17 +1041,35 @@ export class DataManagementService {
         console.log(`✅ CASH-FIX: Updated amount+narration for account ${mismatch.accountNumber}: ₹${mismatch.cashEntryAmount} → ₹${mismatch.principalAmount}`);
       }
 
-      // SAFE: Do NOT auto-delete duplicates — only user-initiated loan edit (Save) will clean them up
-      // duplicatesRemoved remains 0
-      // Reason: Auto-deletion caused ₹26,000 real data loss when false positives were deleted
-      console.log(`ℹ️ CASH-FIX: ${diagnostic.duplicates.length} duplicates SKIPPED (safe mode — use loan edit/save to auto-clean)`);
+      // SAFE duplicate cleanup: only delete when we know EXACTLY which entry to keep
+      // Safety rule: keepEntryId must be set (= cash amount exactly matches loan amount)
+      // If keepEntryId is missing (no exact match) → skip that loan, let sync engine handle it via loan edit/save
+      let skippedDuplicates = 0;
+      for (const dup of diagnostic.duplicates) {
+        const keepId = (dup as any).keepEntryId;
+        if (!keepId) {
+          // No entry matches loan amount exactly — too risky to auto-delete
+          skippedDuplicates++;
+          console.log(`⚠️ CASH-FIX: Skipping duplicate for account ${dup.accountNumber} — no exact amount match, manual edit required`);
+          continue;
+        }
+        const toDelete = dup.cashEntryIds.filter((id: string) => id !== keepId);
+        for (const deleteId of toDelete) {
+          await db.delete(cashTransactions).where(and(
+            eq(cashTransactions.id, deleteId),
+            eq(cashTransactions.tenantId, tenantId)
+          ));
+          duplicatesRemoved++;
+          console.log(`✅ CASH-FIX: Deleted duplicate entry ${deleteId} for account ${dup.accountNumber} (kept: ${keepId})`);
+        }
+      }
 
-      const fixedCount = created + updated;
+      const fixedCount = created + updated + duplicatesRemoved;
       return {
         success: true,
         fixedCount,
         totalFixedAmount: diagnostic.loans.reduce((s, l) => s + l.principalAmount, 0),
-        message: `दुरुस्ती यशस्वी: ${created} नव्या नोंदी, ${updated} रक्कम दुरुस्त. ${duplicatesRemoved} डुप्लिकेट सुरक्षितपणे वगळले (कर्ज Edit → Save केल्यावर आपोआप हटतात).`,
+        message: `दुरुस्ती यशस्वी: ${created} नव्या नोंदी, ${updated} रक्कम दुरुस्त, ${duplicatesRemoved} डुप्लिकेट हटवल्या${skippedDuplicates > 0 ? `. ${skippedDuplicates} डुप्लिकेट वगळल्या (कर्ज Edit → Save करा)` : ''}.`,
         details: { created, updated, duplicatesRemoved }
       };
     } catch (error) {
