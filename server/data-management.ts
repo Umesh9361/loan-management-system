@@ -902,7 +902,14 @@ export class DataManagementService {
           .where(and(
             eq(cashTransactions.tenantId, tenantId),
             eq(cashTransactions.transactionType, 'cash_out'),
-            sql`(${cashTransactions.category} = 'loan_disbursement' OR ${cashTransactions.narration} LIKE ${'%खाते क्र. ' + accountNum + '%'})`
+            eq(cashTransactions.category, 'loan_disbursement'),
+            or(
+              sql`${cashTransactions.narration} LIKE ${'%खाते क्र. ' + accountNum + ' %'}`,
+              sql`${cashTransactions.narration} LIKE ${'%खाते क्र. ' + accountNum + '-%'}`,
+              sql`${cashTransactions.narration} LIKE ${'%खाते क्र.' + accountNum + ' %'}`,
+              sql`${cashTransactions.narration} LIKE ${'%खाते क्र.' + accountNum + '-%'}`,
+              sql`${cashTransactions.narration} = ${'कर्ज वितरण - खाते क्र. ' + accountNum}`
+            )
           ));
 
         if (allEntries.length === 0) {
