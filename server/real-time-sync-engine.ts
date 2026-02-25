@@ -412,17 +412,37 @@ export class RealTimeSyncEngine {
   private async findDisbursementTransaction(tenantId: string, accountNumber: string, amount: number, date: string): Promise<any> {
     const transactions = await storage.getCashTransactions(tenantId);
     const pattern = this.buildAccountPattern(accountNumber);
-    // BUG FIX: For accounts with multiple loans (same account number), MUST match by amount.
-    // Previously ignoring amount caused Loan A's edit to pick Loan B's entry and then delete it.
-    // Priority 1: exact amount match (< ₹0.01) — correct for multiple loans per account
-    const exactMatch = transactions.find((ct: any) =>
+
+    // Priority 1: exact amount AND exact date — handles same-account multi-loan scenarios (e.g. account 99 has two ₹10k loans)
+    const exactDateAndAmount = transactions.find((ct: any) =>
+      ct.category === 'loan_disbursement' &&
+      ct.transactionType === 'cash_out' &&
+      ct.narration && pattern.test(ct.narration) &&
+      Math.abs(Number(ct.amount) - Number(amount)) < 0.01 &&
+      ct.transactionDate === date
+    );
+    if (exactDateAndAmount) return exactDateAndAmount;
+
+    // Priority 2: exact amount only (different date — multi-year same-account loan)
+    const exactAmount = transactions.find((ct: any) =>
       ct.category === 'loan_disbursement' &&
       ct.transactionType === 'cash_out' &&
       ct.narration && pattern.test(ct.narration) &&
       Math.abs(Number(ct.amount) - Number(amount)) < 0.01
     );
-    if (exactMatch) return exactMatch;
-    // Priority 2: within ₹1 for decimal rounding edge cases
+    if (exactAmount) return exactAmount;
+
+    // Priority 3: within ₹1 with exact date (decimal rounding edge cases)
+    const nearDateMatch = transactions.find((ct: any) =>
+      ct.category === 'loan_disbursement' &&
+      ct.transactionType === 'cash_out' &&
+      ct.narration && pattern.test(ct.narration) &&
+      Math.abs(Number(ct.amount) - Number(amount)) < 1.0 &&
+      ct.transactionDate === date
+    );
+    if (nearDateMatch) return nearDateMatch;
+
+    // Priority 4: within ₹1 any date
     const nearMatch = transactions.find((ct: any) =>
       ct.category === 'loan_disbursement' &&
       ct.transactionType === 'cash_out' &&
@@ -430,7 +450,7 @@ export class RealTimeSyncEngine {
       Math.abs(Number(ct.amount) - Number(amount)) < 1.0
     );
     if (nearMatch) return nearMatch;
-    // Priority 3: any entry for this account (single-loan accounts, or post-edit where amount already changed)
+    // Priority 5: any entry for this account — last resort for single-loan accounts or post-edit amount mismatch
     return transactions.find((ct: any) =>
       ct.category === 'loan_disbursement' &&
       ct.transactionType === 'cash_out' &&
