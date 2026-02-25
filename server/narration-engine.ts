@@ -11,11 +11,40 @@ export class NarrationEngine {
     accountNumber: string, 
     borrowerName: string, 
     principalAmount: number,
-    groupName?: string
+    groupName?: string,
+    loanType?: string,
+    collateralDetails?: string,
+    weight?: string | number,
+    loanDate?: string
   ): string {
     const group = groupName ? ` (${groupName})` : '';
     const cleanAmount = this.formatAmountWithoutDecimals(principalAmount);
-    return `कर्ज वितरण - खाते क्र. ${accountNumber} ${borrowerName}${group} - मुद्दल: ₹${cleanAmount}`;
+    let base = `कर्ज वितरण - खाते क्र. ${accountNumber} ${borrowerName}${group} - मुद्दल: ₹${cleanAmount}`;
+
+    const parts: string[] = [];
+
+    const isBlank = (v?: string | number) =>
+      v === undefined || v === null || String(v).trim() === '' || String(v).trim() === '—';
+
+    if (!isBlank(loanType)) parts.push(String(loanType).trim());
+    if (!isBlank(collateralDetails)) parts.push(String(collateralDetails).trim());
+    if (!isBlank(weight)) parts.push(`${String(weight).trim()}g`);
+
+    if (loanDate && String(loanDate).trim() !== '') {
+      const d = new Date(String(loanDate) + 'T00:00:00Z');
+      if (!isNaN(d.getTime())) {
+        const dd = String(d.getUTCDate()).padStart(2, '0');
+        const mm = String(d.getUTCMonth() + 1).padStart(2, '0');
+        const yyyy = d.getUTCFullYear();
+        parts.push(`${dd}/${mm}/${yyyy}`);
+      }
+    }
+
+    if (parts.length > 0) {
+      base += ' | ' + parts.join(' | ');
+    }
+
+    return base;
   }
 
   /**
