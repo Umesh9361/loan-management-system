@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Separator } from "@/components/ui/separator";
 import { Calendar, Download, Printer, FileText } from "lucide-react";
+import { displayNarration } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import { useReactToPrint } from 'react-to-print';
 import jsPDF from 'jspdf';
@@ -51,7 +52,7 @@ export default function CashbookLedger() {
     if (t.transactionType === 'cash_in') {
       return {
         date,
-        creditNarration: t.party ? `${t.party.name} - ${t.narration || ''}` : t.narration || 'रोख व्यवहार',
+        creditNarration: t.party ? `${t.party.name} - ${displayNarration(t.narration) || ''}` : displayNarration(t.narration) || 'रोख व्यवहार',
         creditAmount: amount,
         debitNarration: '',
         debitAmount: 0
@@ -61,7 +62,7 @@ export default function CashbookLedger() {
         date,
         creditNarration: '',
         creditAmount: 0,
-        debitNarration: t.narration || 'खर्च',
+        debitNarration: displayNarration(t.narration) || 'खर्च',
         debitAmount: amount
       };
     }
