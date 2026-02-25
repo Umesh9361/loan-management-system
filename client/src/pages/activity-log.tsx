@@ -1,4 +1,6 @@
 import { useState, useMemo } from "react";
+import { Sidebar } from "@/components/ui/sidebar";
+import { MobileNav } from "@/components/ui/mobile-nav";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -169,7 +171,14 @@ export default function ActivityLogPage() {
   const hasFilters = filterType !== "all" || filterUser !== "all" || searchText.trim() || dateFrom || dateTo;
 
   return (
-    <div className="container mx-auto p-4 max-w-6xl md:max-w-7xl">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-indigo-50 to-white">
+      <MobileNav />
+      <div className="lg:flex">
+        <aside className="hidden lg:block lg:w-72 lg:fixed lg:inset-y-0 lg:h-screen">
+          <Sidebar />
+        </aside>
+        <main className="flex-1 w-full lg:pl-72 pb-16 lg:pb-0">
+      <div className="p-3 sm:p-6 md:p-8 max-w-6xl md:max-w-7xl mx-auto">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-indigo-800 flex items-center gap-2">
@@ -492,6 +501,9 @@ export default function ActivityLogPage() {
           })}
         </div>
       )}
+    </div>
+        </main>
+      </div>
     </div>
   );
 }
