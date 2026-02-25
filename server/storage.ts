@@ -527,37 +527,9 @@ export class DatabaseStorage implements IStorage {
       .where(and(eq(loans.id, id), eq(loans.tenantId, tenantId)));
 
     if (loanToDelete) {
-      // Step 1: Delete by loanId (reliable — only deletes THIS loan's entries, no collateral damage)
-      try {
-        await db.delete(cashTransactions)
-          .where(and(
-            eq(cashTransactions.tenantId, tenantId),
-            eq(cashTransactions.loanId, id)
-          ));
-      } catch { /* loan_id column may not exist on older DB */ }
-
-      // Step 2: Fallback for old entries without loanId — match by account + exact amount + exact date
-      // Using amount+date prevents accidentally deleting OTHER loans' entries for same account number
-      await db.delete(cashTransactions)
-        .where(and(
-          eq(cashTransactions.tenantId, tenantId),
-          eq(cashTransactions.category, 'loan_disbursement'),
-          eq(cashTransactions.transactionType, 'cash_out'),
-          eq(cashTransactions.amount, loanToDelete.principalAmount),
-          eq(cashTransactions.transactionDate, loanToDelete.loanDate),
-          sql`(${cashTransactions.loanId} IS NULL OR ${cashTransactions.loanId} = '')`,
-          sql`${cashTransactions.narration} LIKE ${`%खाते क्र. ${loanToDelete.accountNumber}%`}`
-        ));
-
-      // Step 3: Delete closure cash transactions for this loan by loanId or narration
-      try {
-        await db.delete(cashTransactions)
-          .where(and(
-            eq(cashTransactions.tenantId, tenantId),
-            eq(cashTransactions.category, 'loan_repayment'),
-            eq(cashTransactions.loanId, id)
-          ));
-      } catch { /* loan_id column may not exist */ }
+      // NOTE: cashbook (loan_disbursement) deletion is handled by handleLoanDeletion in the sync engine
+      // (called via triggerLoanSync before this function). Do NOT duplicate deletion here — causes double deletion.
+      // Only do structural DB cleanup here: closures + journal transactions.
 
       await db
         .delete(loanClosures)
