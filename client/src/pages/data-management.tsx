@@ -187,6 +187,10 @@ function CashReconciliationTab({ queryClient }: { queryClient: any }) {
             {recoData.duplicates?.length > 0 && (
               <div className="space-y-2">
                 <h4 className="font-semibold text-yellow-700 text-sm">🟡 डुप्लिकेट रोकड नोंदी ({recoData.duplicates.length}) — एकाच कर्जासाठी अनेक entries</h4>
+                <div className="bg-yellow-50 border border-yellow-300 rounded-xl p-3 text-xs text-yellow-800 space-y-1">
+                  <p className="font-semibold">ℹ️ डुप्लिकेट स्वयंचलित हटवल्या जाणार नाहीत (सुरक्षित पद्धत)</p>
+                  <p>कर्ज फॉर्ममधून त्या कर्जाची रक्कम Edit करा → Save करा — डुप्लिकेट आपोआप हटेल आणि एकच योग्य नोंद राहील.</p>
+                </div>
                 <div className="rounded-xl border-2 border-yellow-200 overflow-hidden">
                   <div className="bg-yellow-600 text-white px-3 py-2 grid grid-cols-4 gap-2 text-xs font-semibold">
                     <span>खाते क्र.</span><span>कर्जदार</span><span>कर्ज रक्कम</span><span className="text-right">रोकड entries</span>
@@ -218,16 +222,16 @@ function CashReconciliationTab({ queryClient }: { queryClient: any }) {
               </Alert>
             )}
 
-            {!allClear && (
+            {!allClear && (recoData.summary?.missingCount > 0 || recoData.summary?.mismatchCount > 0) && (
               !confirmFix ? (
                 <Button onClick={() => setConfirmFix(true)} className="bg-red-600 hover:bg-red-700 text-white" disabled={fixMutation.isPending}>
                   <Scale className="h-4 w-4 mr-2" />
-                  सर्व {totalIssues} समस्या दुरुस्त करा
+                  गहाळ/चुकीच्या {(recoData.summary?.missingCount || 0) + (recoData.summary?.mismatchCount || 0)} नोंदी दुरुस्त करा
                 </Button>
               ) : (
                 <div className="p-4 bg-red-50 rounded-xl border-2 border-red-300 space-y-3">
                   <p className="text-red-700 text-sm font-semibold">
-                    ⚠️ खात्री आहे का? गहाळ नोंदी तयार होतील, चुकीच्या रकमा दुरुस्त होतील, डुप्लिकेट हटवले जातील.
+                    ⚠️ खात्री आहे का? गहाळ नोंदी तयार होतील आणि चुकीच्या रकमा दुरुस्त होतील. डुप्लिकेट आपोआप हटवल्या जाणार नाहीत — त्यासाठी कर्ज Edit → Save करा.
                   </p>
                   <div className="flex gap-3">
                     <Button onClick={() => fixMutation.mutate()} disabled={fixMutation.isPending} className="bg-red-600 hover:bg-red-700 text-white">
