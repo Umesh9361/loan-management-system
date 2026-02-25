@@ -1166,6 +1166,7 @@ export class DataManagementService {
             narration,
             category: 'loan_disbursement',
             isSystemGenerated: true,
+            loanId: loan.id,
             createdAt: new Date(),
             updatedAt: new Date()
           } as any);
@@ -1758,6 +1759,7 @@ export class DataManagementService {
             narration,
             category: 'loan_disbursement',
             isSystemGenerated: true,
+            loanId: loan.id,
             createdAt: new Date(),
             updatedAt: new Date()
           } as any);
