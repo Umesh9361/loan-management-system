@@ -1,12 +1,17 @@
 /**
- * COMPREHENSIVE REAL-TIME SYNCHRONIZATION ENGINE
- * Ensures ALL loan operations automatically sync with ALL cashbook forms
- * सर्व कर्ज व्यवहार ऑटोमॅटिक रोकडबुक सिंक्रोनाइझेशन
+ * REAL-TIME SYNCHRONIZATION ENGINE — 3-TIER ARCHITECTURE
+ *
+ * Tier 1: loan_id UUID  — primary source of truth (new entries, post-Rebuild)
+ * Tier 2: NULL loan_id + exact amount + exact date — safe fallback for old entries
+ * Tier 3: Startup auto-backfill — migrates old entries to Tier 1 automatically
+ *
+ * Narration is DISPLAY-ONLY. Never used for lookup/matching.
+ * UUID collision is mathematically impossible → no false matches across loans.
  */
 
 import { db } from "./db";
 import { loans, cashTransactions, loanClosures, groups } from "@shared/schema";
-import { eq, and, sql } from "drizzle-orm";
+import { eq, and, sql, isNull } from "drizzle-orm";
 import { storage } from "./storage";
 import { NarrationEngine } from "./narration-engine";
 
@@ -33,7 +38,7 @@ export interface SyncResult {
 
 export class RealTimeSyncEngine {
   private static instance: RealTimeSyncEngine;
-  
+
   static getInstance(): RealTimeSyncEngine {
     if (!RealTimeSyncEngine.instance) {
       RealTimeSyncEngine.instance = new RealTimeSyncEngine();
@@ -41,9 +46,6 @@ export class RealTimeSyncEngine {
     return RealTimeSyncEngine.instance;
   }
 
-  /**
-   * Main sync orchestrator - handles ALL loan operations
-   */
   async syncLoanOperation(operation: LoanSyncOperation): Promise<SyncResult> {
     const startTime = Date.now();
     const result: SyncResult = {
@@ -74,9 +76,7 @@ export class RealTimeSyncEngine {
         default:
           throw new Error(`Unknown sync operation type: ${operation.type}`);
       }
-
       result.timeTaken = Date.now() - startTime;
-      
     } catch (error) {
       result.success = false;
       result.errors.push(error instanceof Error ? error.message : String(error));
@@ -86,46 +86,106 @@ export class RealTimeSyncEngine {
     return result;
   }
 
-  /**
-   * Handle loan creation - create corresponding disbursement cash transaction
-   */
+  // ─────────────────────────────────────────────────────────────────────────
+  // TIER 1 HELPER: Find disbursement entry by loanId (UUID) — 100% reliable
+  // ─────────────────────────────────────────────────────────────────────────
+  private async findDisbursementByLoanId(tenantId: string, loanId: string): Promise<any> {
+    try {
+      const [row] = await db.select()
+        .from(cashTransactions)
+        .where(and(
+          eq(cashTransactions.tenantId, tenantId),
+          eq(cashTransactions.loanId, loanId),
+          eq(cashTransactions.category, 'loan_disbursement'),
+          eq(cashTransactions.transactionType, 'cash_out')
+        ));
+      return row || null;
+    } catch {
+      return null;
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // NARRATION DATE VERIFIER — confirms loanId entry truly belongs to this loan
+  //
+  // Old narrations (no ' | ') → trust loanId fully (return true)
+  // New narrations (has ' | ') → check if DD/MM/YYYY of loanDate appears in narration
+  //   Match  → correct entry ✅
+  //   No match → corrupt loanId (unlikely but safe) ❌ → caller uses Tier 2
+  //
+  // Replace for the earlier 180-day arbitrary range check.
+  // ─────────────────────────────────────────────────────────────────────────
+  private verifyEntryBelongsToLoan(entry: any, loanDate: string): boolean {
+    const narration: string = entry?.narration || '';
+    if (!narration.includes(' | ')) {
+      // Old format — trust loanId unconditionally
+      return true;
+    }
+    const d = new Date(String(loanDate) + 'T00:00:00Z');
+    if (isNaN(d.getTime())) return true; // Can't parse → don't block
+    const dd = String(d.getUTCDate()).padStart(2, '0');
+    const mm = String(d.getUTCMonth() + 1).padStart(2, '0');
+    const yyyy = d.getUTCFullYear();
+    return narration.includes(`${dd}/${mm}/${yyyy}`);
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // TIER 2 HELPER: Find old disbursement entry (loan_id IS NULL) by exact
+  // amount + exact date. Returns ONLY when exactly 1 match exists — never
+  // guesses when ambiguous (0 or 2+ matches → returns null, user runs Rebuild)
+  // ─────────────────────────────────────────────────────────────────────────
+  private async findOrphanDisbursement(
+    tenantId: string,
+    amount: number,
+    date: string
+  ): Promise<any> {
+    try {
+      const rows = await db.select()
+        .from(cashTransactions)
+        .where(and(
+          eq(cashTransactions.tenantId, tenantId),
+          eq(cashTransactions.category, 'loan_disbursement'),
+          eq(cashTransactions.transactionType, 'cash_out'),
+          isNull(cashTransactions.loanId),
+          eq(cashTransactions.transactionDate, date),
+          sql`ABS(${cashTransactions.amount} - ${amount}) < 0.01`
+        ));
+      return rows.length === 1 ? rows[0] : null;
+    } catch {
+      return null;
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // CREATE — loan नवीन बनवणे
+  // ─────────────────────────────────────────────────────────────────────────
   private async handleLoanCreation(operation: LoanSyncOperation, result: SyncResult): Promise<void> {
     const { loanId, tenantId, newData } = operation;
-    
-    if (!newData || Number(newData.principalAmount) <= 0) {
+
+    if (!newData || Number(newData.principalAmount) <= 0) return;
+
+    // Tier 1: Check by loanId — already has an entry?
+    const byLoanId = await this.findDisbursementByLoanId(tenantId, loanId);
+    if (byLoanId) {
+      result.operationsPerformed.push('SKIP_EXISTS_BY_LOANID');
       return;
     }
 
-    // Priority 0: Check by loanId — 100% reliable, no narration parsing needed
-    if (loanId) {
-      const existingByLoanId = await this.findDisbursementByLoanId(tenantId, loanId);
-      if (existingByLoanId) {
-        result.operationsPerformed.push('SKIP_EXISTING_DISBURSEMENT_BY_LOANID');
-        return;
-      }
+    // Tier 2: Check for an orphan entry (loan_id IS NULL) with exact amount + date.
+    // If found and unambiguous → claim it by assigning this loan's loanId (avoid duplicate).
+    const orphan = await this.findOrphanDisbursement(tenantId, Number(newData.principalAmount), newData.loanDate);
+    if (orphan) {
+      await db.update(cashTransactions)
+        .set({ loanId })
+        .where(eq(cashTransactions.id, orphan.id));
+      result.operationsPerformed.push('CLAIMED_ORPHAN_ENTRY');
+      result.cashTransactionsAffected += 1;
+      return;
     }
 
-    // Fallback: narration-based check for backward compatibility
-    const existingDisbursement = await this.findDisbursementTransaction(tenantId, newData.accountNumber, newData.principalAmount, newData.loanDate);
-    if (existingDisbursement) {
-      // SAFETY CHECK: If this entry belongs to a DIFFERENT loan (has a different loanId),
-      // do NOT treat it as "already exists" — create a fresh entry for this loan instead.
-      // This prevents corruption when two loans share the same account number + amount.
-      if (existingDisbursement.loanId && loanId && existingDisbursement.loanId !== loanId) {
-        // Entry belongs to another loan — fall through to create a new one
-      } else {
-        // Backfill loanId only if entry is truly orphaned (no loanId at all)
-        if (loanId && !existingDisbursement.loanId) {
-          await storage.updateCashTransaction(existingDisbursement.id, tenantId, { loanId });
-        }
-        result.operationsPerformed.push('SKIP_EXISTING_DISBURSEMENT');
-        return;
-      }
-    }
-
-    // Create disbursement cash transaction with loanId for reliable future lookups
+    // Neither found → create fresh entry
     const groupName = await this.getGroupName(tenantId, newData.groupId);
-    const standardNarration = this.createDisbursementNarration(
+    const narration = this.createDisbursementNarration(
       newData.accountNumber,
       newData.borrowerName,
       Number(newData.principalAmount),
@@ -142,32 +202,24 @@ export class RealTimeSyncEngine {
       transactionType: 'cash_out',
       amount: Number(newData.principalAmount),
       category: 'loan_disbursement',
-      narration: standardNarration,
+      narration,
       isSystemGenerated: true,
-      loanId: loanId || null
+      loanId
     } as any);
 
-    result.operationsPerformed.push('CREATE_DISBURSEMENT_TRANSACTION');
+    result.operationsPerformed.push('CREATED_DISBURSEMENT');
     result.cashTransactionsAffected += 1;
   }
 
-  /**
-   * Handle loan updates - sync amount/date changes with existing cash transactions
-   */
+  // ─────────────────────────────────────────────────────────────────────────
+  // UPDATE — loan edit करणे
+  // ─────────────────────────────────────────────────────────────────────────
   private async handleLoanUpdate(operation: LoanSyncOperation, result: SyncResult): Promise<void> {
-    const { tenantId, oldData, newData } = operation;
-    
-    if (!oldData || !newData) {
-      // console.log('🚫 SYNC: Missing old or new data for update operation');
-      return;
-    }
+    const { oldData, newData } = operation;
+    if (!oldData || !newData) return;
 
-    // Check for disbursement transaction updates
     const statusChanged = oldData.status !== newData.status;
 
-    // Always call updateDisbursementTransaction on any loan edit:
-    // - Updates amount/date if they changed
-    // - Also cleans up any duplicate disbursement entries for this account (idempotent)
     if (newData.status !== 'closed') {
       await this.updateDisbursementTransaction(operation, result);
     }
@@ -177,173 +229,143 @@ export class RealTimeSyncEngine {
     }
   }
 
-  /**
-   * Update disbursement transaction when loan amount or date changes
-   * Also cleans up any extra duplicate entries for the same account
-   */
   private async updateDisbursementTransaction(operation: LoanSyncOperation, result: SyncResult): Promise<void> {
     const { loanId, tenantId, oldData, newData } = operation;
 
-    // Priority 0: Find by loanId — 100% reliable for entries created after this fix
-    let disbursementTransaction: any = null;
-    if (loanId) {
-      const byLoanId = await this.findDisbursementByLoanId(tenantId, loanId);
-      if (byLoanId) {
-        // NARRATION VERIFICATION: if narration has rich format (contains ' | '), confirm
-        // the embedded loan date matches. Mismatched date → corrupt loanId → fall back.
-        if (this.verifyEntryBelongsToLoan(byLoanId, oldData.loanDate)) {
-          disbursementTransaction = byLoanId;
-        } else {
-          console.log(`⚠️ SYNC: narration date mismatch for loanId ${loanId} — falling back to narration search`);
-        }
+    // Tier 1: Find by loanId
+    let entry: any = await this.findDisbursementByLoanId(tenantId, loanId);
+
+    // Verify narration date matches (guards against corrupt loanId on new-format entries)
+    if (entry && !this.verifyEntryBelongsToLoan(entry, oldData.loanDate)) {
+      console.warn(`⚠️ SYNC UPDATE: loanId ${loanId} found entry but narration date mismatch → falling back to Tier 2`);
+      entry = null;
+    }
+
+    // Tier 2: If not found by loanId, try orphan (loan_id IS NULL + old amount + old date)
+    if (!entry) {
+      const orphan = await this.findOrphanDisbursement(tenantId, Number(oldData.principalAmount), oldData.loanDate);
+      if (orphan) {
+        // Backfill loanId so future ops use Tier 1
+        await db.update(cashTransactions)
+          .set({ loanId })
+          .where(eq(cashTransactions.id, orphan.id));
+        entry = { ...orphan, loanId };
+        result.operationsPerformed.push('BACKFILLED_LOANID');
       }
     }
 
-    // Fallback: narration-based search for old entries (no loanId stored yet)
-    if (!disbursementTransaction) {
-      disbursementTransaction = await this.findDisbursementTransaction(
-        tenantId,
-        oldData.accountNumber,
-        oldData.principalAmount,
-        oldData.loanDate
-      );
-    }
-
-    if (!disbursementTransaction) {
-      result.operationsPerformed.push('NO_DISBURSEMENT_TO_UPDATE');
+    if (!entry) {
+      // Entry not found — warn only, do not create (Rebuild handles missing entries)
+      console.warn(`⚠️ SYNC UPDATE: No disbursement entry found for loanId ${loanId}. Run Rebuild to fix.`);
+      result.operationsPerformed.push('NO_ENTRY_FOUND_FOR_UPDATE');
       return;
     }
 
-    // Backfill loanId only if entry is truly orphaned (no loanId) AND belongs to this loan
-    if (loanId && !disbursementTransaction.loanId) {
-      await storage.updateCashTransaction(disbursementTransaction.id, tenantId, { loanId } as any);
-    }
-
-    // Prepare update data — only update amount and/or date, NEVER change original narration
+    // Update amount and/or date — narration is NEVER changed
     const updateData: any = {};
 
-    if (Number(oldData.principalAmount) !== Number(newData.principalAmount)) {
+    if (Math.abs(Number(oldData.principalAmount) - Number(newData.principalAmount)) > 0.001) {
       updateData.amount = Number(newData.principalAmount);
-      result.operationsPerformed.push(`UPDATE_AMOUNT_${oldData.principalAmount}_TO_${newData.principalAmount}`);
+      result.operationsPerformed.push(`AMOUNT_${oldData.principalAmount}→${newData.principalAmount}`);
     }
 
     if (oldData.loanDate !== newData.loanDate) {
       updateData.transactionDate = newData.loanDate;
-      result.operationsPerformed.push(`UPDATE_DATE_${oldData.loanDate}_TO_${newData.loanDate}`);
+      result.operationsPerformed.push(`DATE_${oldData.loanDate}→${newData.loanDate}`);
     }
-
-    // NOTE: narration is intentionally NOT updated — original narration is preserved as-is
-    // Only amount and date are synced when a loan is edited
 
     if (Object.keys(updateData).length > 0) {
-      await storage.updateCashTransaction(disbursementTransaction.id, tenantId, updateData);
+      await storage.updateCashTransaction(entry.id, tenantId, updateData);
       result.cashTransactionsAffected += 1;
-      result.operationsPerformed.push('UPDATED_DISBURSEMENT_AMOUNT_DATE');
+      result.operationsPerformed.push('UPDATED_AMOUNT_DATE');
     }
 
-    // Clean up TRUE DUPLICATES of THIS loan only.
-    // With loanId: compare loanIds — definitive.
-    // Without loanId (old entries): must match BOTH amount AND date to be safe for multi-loan accounts.
-    const allEntries = await this.findAllDisbursementTransactions(tenantId, newData.accountNumber);
-    for (const extra of allEntries) {
-      if (extra.id === disbursementTransaction.id) continue; // skip the one we just updated
+    // Cleanup: delete true duplicates (same loanId, different entry id)
+    // Only by loanId — never by narration — never touches other loans
+    const duplicates = await db.select({ id: cashTransactions.id })
+      .from(cashTransactions)
+      .where(and(
+        eq(cashTransactions.tenantId, tenantId),
+        eq(cashTransactions.loanId, loanId),
+        eq(cashTransactions.category, 'loan_disbursement'),
+        sql`${cashTransactions.id} != ${entry.id}`
+      ));
 
-      let isDuplicate = false;
-      if (loanId && extra.loanId) {
-        // Both have loanId — definitive comparison, no date check needed
-        isDuplicate = extra.loanId === loanId;
-      } else {
-        // Old entries without loanId: require BOTH amount AND date match to avoid deleting another loan's entry
-        const amountMatch = Math.abs(Number(extra.amount) - Number(oldData.principalAmount)) < 0.01;
-        const dateMatch = extra.transactionDate === oldData.loanDate;
-        isDuplicate = amountMatch && dateMatch;
-      }
-
-      if (isDuplicate) {
-        await storage.deleteCashTransaction(extra.id, tenantId);
-        result.cashTransactionsAffected += 1;
-        result.operationsPerformed.push(`DELETED_DUPLICATE_${extra.id}`);
-        console.log(`🗑️ SYNC: Deleted duplicate for loan ${loanId}, account ${newData.accountNumber}: ₹${extra.amount}`);
-      }
+    for (const dup of duplicates) {
+      await storage.deleteCashTransaction(dup.id, tenantId);
+      result.cashTransactionsAffected += 1;
+      result.operationsPerformed.push(`DELETED_DUPLICATE_${dup.id}`);
     }
   }
 
-  /**
-   * Handle loan deletion - remove all related cash transactions
-   */
+  // ─────────────────────────────────────────────────────────────────────────
+  // DELETE — loan डिलीट करणे
+  // ─────────────────────────────────────────────────────────────────────────
   private async handleLoanDeletion(operation: LoanSyncOperation, result: SyncResult): Promise<void> {
     const { tenantId, loanId, oldData } = operation;
-    
+
     if (!oldData) return;
 
-    // Step 1: Delete by loanId — but ONLY entries whose date is reasonably close to the loan date.
-    // This prevents deleting another loan's entry if its loanId was corrupted to this loan's id.
-    if (loanId) {
-      try {
-        const byLoanId = await db.select()
-          .from(cashTransactions)
-          .where(and(
-            eq(cashTransactions.tenantId, tenantId),
-            eq(cashTransactions.loanId, loanId)
-          ));
+    // Tier 1: Delete all entries with this loanId (UUID — guaranteed to belong to this loan)
+    const byLoanId = await db.select()
+      .from(cashTransactions)
+      .where(and(
+        eq(cashTransactions.tenantId, tenantId),
+        eq(cashTransactions.loanId, loanId),
+        eq(cashTransactions.category, 'loan_disbursement')
+      ));
 
-        let deletedAny = false;
-        for (const t of byLoanId) {
-          // NARRATION VERIFICATION: if narration has rich format (contains ' | '), confirm
-          // the embedded loan date matches. Mismatched date → corrupt loanId → skip this entry.
-          if (this.verifyEntryBelongsToLoan(t, oldData.loanDate)) {
-            await storage.deleteCashTransaction(t.id, tenantId);
-            result.cashTransactionsAffected += 1;
-            result.operationsPerformed.push('DELETE_TRANSACTION_BY_LOANID');
-            deletedAny = true;
-          } else {
-            console.log(`⚠️ DELETE: Skipping entry ${t.id} — narration date mismatch, likely corrupt loanId`);
-          }
+    if (byLoanId.length > 0) {
+      let deletedCount = 0;
+      for (const entry of byLoanId) {
+        // Narration date verification: if new-format narration date doesn't match loan date,
+        // the loanId may have been corrupted → skip to avoid deleting the wrong loan's entry
+        if (!this.verifyEntryBelongsToLoan(entry, oldData.loanDate)) {
+          console.warn(`⚠️ DELETE: Entry ${entry.id} has loanId=${loanId} but narration date mismatch — skipping (corrupt loanId)`);
+          continue;
         }
-        if (deletedAny) return; // loanId-based deletion succeeded — done
-      } catch { /* loan_id column may not exist — fall through to narration-based */ }
+        await storage.deleteCashTransaction(entry.id, tenantId);
+        result.cashTransactionsAffected += 1;
+        deletedCount++;
+      }
+      if (deletedCount > 0) {
+        result.operationsPerformed.push(`DELETED_BY_LOANID_COUNT_${deletedCount}`);
+        return;
+      }
+      // All loanId entries failed narration verification → fall through to Tier 2
     }
 
-    // Step 2: Narration fallback — exact amount + date (safe for multi-loan accounts)
-    const allTx = await storage.getCashTransactions(tenantId);
-    const pattern = this.buildAccountPattern(oldData.accountNumber);
-    const matchedDisbursement = allTx.find((ct: any) =>
-      ct.category === 'loan_disbursement' &&
-      ct.transactionType === 'cash_out' &&
-      ct.narration && pattern.test(ct.narration) &&
-      Math.abs(Number(ct.amount) - Number(oldData.principalAmount)) < 0.01 &&
-      ct.transactionDate === oldData.loanDate
-    );
-    if (matchedDisbursement) {
-      await storage.deleteCashTransaction(matchedDisbursement.id, tenantId);
+    // Tier 2: loanId not found — try orphan with exact amount + exact date
+    // Safe: loan_id IS NULL condition ensures other loans' entries are never touched
+    const orphan = await this.findOrphanDisbursement(tenantId, Number(oldData.principalAmount), oldData.loanDate);
+    if (orphan) {
+      await storage.deleteCashTransaction(orphan.id, tenantId);
       result.cashTransactionsAffected += 1;
-      result.operationsPerformed.push('DELETE_DISBURSEMENT_NARRATION_FALLBACK');
-    }
-  }
-
-  /**
-   * Handle loan closure - create closure cash transaction
-   */
-  private async handleLoanClosure(operation: LoanSyncOperation, result: SyncResult): Promise<void> {
-    const { tenantId, newData } = operation;
-    
-    if (!newData) {
-      // console.log('🚫 SYNC: No closure data provided');
+      result.operationsPerformed.push('DELETED_ORPHAN_BY_AMOUNT_DATE');
       return;
     }
 
-    // Check if closure transaction already exists
-    const existingClosure = await this.findClosureTransaction(tenantId, newData.accountNumber, newData.totalAmount, newData.closureDate);
-    
-    if (existingClosure) {
-      // console.log('🚫 SYNC: Closure transaction already exists');
+    // Nothing found — already deleted or needs Rebuild
+    console.warn(`⚠️ SYNC DELETE: No cashbook entry found for loanId ${loanId}. Already deleted or run Rebuild.`);
+    result.operationsPerformed.push('NOTHING_TO_DELETE');
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // CLOSURE
+  // ─────────────────────────────────────────────────────────────────────────
+  private async handleLoanClosure(operation: LoanSyncOperation, result: SyncResult): Promise<void> {
+    const { tenantId, loanId, newData } = operation;
+
+    if (!newData) return;
+
+    const existing = await this.findClosureTransaction(tenantId, newData.accountNumber, newData.totalAmount, newData.closureDate);
+    if (existing) {
       result.operationsPerformed.push('SKIP_EXISTING_CLOSURE');
       return;
     }
 
-    // Create closure cash transaction
     const groupName = await this.getGroupName(tenantId, newData.groupId);
-    const standardNarration = this.createClosureNarration(
+    const narration = this.createClosureNarration(
       newData.accountNumber,
       newData.borrowerName,
       Number(newData.totalAmount),
@@ -356,139 +378,66 @@ export class RealTimeSyncEngine {
       transactionType: 'cash_in',
       amount: Number(newData.totalAmount),
       category: 'loan_repayment',
-      narration: standardNarration,
-      isSystemGenerated: true
-    });
+      narration,
+      isSystemGenerated: true,
+      loanId: loanId || null
+    } as any);
 
-    result.operationsPerformed.push('CREATE_CLOSURE_TRANSACTION');
+    result.operationsPerformed.push('CREATED_CLOSURE');
     result.cashTransactionsAffected += 1;
-    // console.log(`💰 SYNC: Created closure transaction for ₹${newData.totalAmount}`);
   }
 
-  /**
-   * Handle loan reopen - remove closure transactions
-   */
+  // ─────────────────────────────────────────────────────────────────────────
+  // REOPEN
+  // ─────────────────────────────────────────────────────────────────────────
   private async handleLoanReopen(operation: LoanSyncOperation, result: SyncResult): Promise<void> {
-    const { tenantId, oldData } = operation;
-    
-    if (!oldData) {
-      // console.log('🚫 SYNC: No data provided for reopen');
-      return;
-    }
+    const { tenantId, loanId, oldData } = operation;
 
-    // Find and delete closure transactions
-    const closureTransactions = await this.findClosureTransactions(tenantId, oldData.accountNumber, oldData.borrowerName);
-    
-    for (const transaction of closureTransactions) {
-      await storage.deleteCashTransaction(transaction.id, tenantId);
-      result.cashTransactionsAffected += 1;
-      result.operationsPerformed.push('DELETE_CLOSURE_TRANSACTION');
-    }
+    if (!oldData) return;
 
-    // console.log(`🔄 SYNC: Removed ${closureTransactions.length} closure transactions for reopen`);
-  }
-
-  /**
-   * Handle status change between active/closed
-   */
-  private async handleStatusChange(operation: LoanSyncOperation, result: SyncResult): Promise<void> {
-    const { oldData, newData } = operation;
-    
-    if (oldData.status === 'active' && newData.status === 'closed') {
-      // Handle automatic closure
-      await this.handleLoanClosure(operation, result);
-    } else if (oldData.status === 'closed' && newData.status === 'active') {
-      // Handle automatic reopen
-      await this.handleLoanReopen(operation, result);
-    }
-  }
-
-  // Helper: build exact account number regex (e.g. "461" → matches "461 " or "461-" or "461" at end, NOT "4610")
-  private buildAccountPattern(accountNumber: string): RegExp {
-    const escaped = accountNumber.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    return new RegExp('खाते क्र\\.[ ]?' + escaped + '([^0-9]|$)');
-  }
-
-  // Helper methods for finding transactions
-
-  /**
-   * Find disbursement entry by loanId — 100% reliable, no narration parsing
-   * Returns null if not found, loanId column missing (old DB), or any error
-   */
-  private async findDisbursementByLoanId(tenantId: string, loanId: string): Promise<any> {
-    try {
-      const [row] = await db.select()
+    // Try loanId-based closure entry first
+    let closureEntries: any[] = [];
+    if (loanId) {
+      closureEntries = await db.select()
         .from(cashTransactions)
         .where(and(
           eq(cashTransactions.tenantId, tenantId),
           eq(cashTransactions.loanId, loanId),
-          eq(cashTransactions.category, 'loan_disbursement'),
-          eq(cashTransactions.transactionType, 'cash_out')
+          eq(cashTransactions.category, 'loan_repayment'),
+          eq(cashTransactions.transactionType, 'cash_in')
         ));
-      return row || null;
-    } catch {
-      // Column may not exist yet on older DB (Railway production) — fall back to narration search
-      return null;
+    }
+
+    // Fallback: narration-based for old entries without loanId
+    if (closureEntries.length === 0) {
+      closureEntries = await this.findClosureTransactions(tenantId, oldData.accountNumber, oldData.borrowerName);
+    }
+
+    for (const entry of closureEntries) {
+      await storage.deleteCashTransaction(entry.id, tenantId);
+      result.cashTransactionsAffected += 1;
+      result.operationsPerformed.push('DELETED_CLOSURE_ENTRY');
     }
   }
 
-  private async findDisbursementTransaction(tenantId: string, accountNumber: string, amount: number, date: string): Promise<any> {
-    const transactions = await storage.getCashTransactions(tenantId);
-    const pattern = this.buildAccountPattern(accountNumber);
-
-    // Priority 1: exact amount AND exact date — handles same-account multi-loan scenarios (e.g. account 99 has two ₹10k loans)
-    const exactDateAndAmount = transactions.find((ct: any) =>
-      ct.category === 'loan_disbursement' &&
-      ct.transactionType === 'cash_out' &&
-      ct.narration && pattern.test(ct.narration) &&
-      Math.abs(Number(ct.amount) - Number(amount)) < 0.01 &&
-      ct.transactionDate === date
-    );
-    if (exactDateAndAmount) return exactDateAndAmount;
-
-    // Priority 2: exact amount only (different date — multi-year same-account loan)
-    const exactAmount = transactions.find((ct: any) =>
-      ct.category === 'loan_disbursement' &&
-      ct.transactionType === 'cash_out' &&
-      ct.narration && pattern.test(ct.narration) &&
-      Math.abs(Number(ct.amount) - Number(amount)) < 0.01
-    );
-    if (exactAmount) return exactAmount;
-
-    // Priority 3: within ₹1 with exact date (decimal rounding edge cases)
-    const nearDateMatch = transactions.find((ct: any) =>
-      ct.category === 'loan_disbursement' &&
-      ct.transactionType === 'cash_out' &&
-      ct.narration && pattern.test(ct.narration) &&
-      Math.abs(Number(ct.amount) - Number(amount)) < 1.0 &&
-      ct.transactionDate === date
-    );
-    if (nearDateMatch) return nearDateMatch;
-
-    // Priority 4: within ₹1 any date
-    const nearMatch = transactions.find((ct: any) =>
-      ct.category === 'loan_disbursement' &&
-      ct.transactionType === 'cash_out' &&
-      ct.narration && pattern.test(ct.narration) &&
-      Math.abs(Number(ct.amount) - Number(amount)) < 1.0
-    );
-    if (nearMatch) return nearMatch;
-    // Priority 5: any entry for this account — last resort for single-loan accounts or post-edit amount mismatch
-    return transactions.find((ct: any) =>
-      ct.category === 'loan_disbursement' &&
-      ct.transactionType === 'cash_out' &&
-      ct.narration && pattern.test(ct.narration)
-    );
+  // ─────────────────────────────────────────────────────────────────────────
+  // STATUS CHANGE
+  // ─────────────────────────────────────────────────────────────────────────
+  private async handleStatusChange(operation: LoanSyncOperation, result: SyncResult): Promise<void> {
+    const { oldData, newData } = operation;
+    if (oldData.status === 'active' && newData.status === 'closed') {
+      await this.handleLoanClosure(operation, result);
+    } else if (oldData.status === 'closed' && newData.status === 'active') {
+      await this.handleLoanReopen(operation, result);
+    }
   }
 
-  private async findAllDisbursementTransactions(tenantId: string, accountNumber: string): Promise<any[]> {
-    const transactions = await storage.getCashTransactions(tenantId);
-    const pattern = this.buildAccountPattern(accountNumber);
-    return transactions.filter((ct: any) =>
-      ct.category === 'loan_disbursement' &&
-      ct.transactionType === 'cash_out' &&
-      ct.narration && pattern.test(ct.narration)
-    );
+  // ─────────────────────────────────────────────────────────────────────────
+  // CLOSURE HELPERS (narration-based — safe for closures, unique amounts)
+  // ─────────────────────────────────────────────────────────────────────────
+  private buildAccountPattern(accountNumber: string): RegExp {
+    const escaped = accountNumber.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return new RegExp('खाते क्र\\.[ ]?' + escaped + '([^0-9]|$)');
   }
 
   private async findClosureTransaction(tenantId: string, accountNumber: string, amount: number, date: string): Promise<any> {
@@ -499,17 +448,6 @@ export class RealTimeSyncEngine {
       ct.transactionType === 'cash_in' &&
       ct.narration && pattern.test(ct.narration) &&
       Math.abs(Number(ct.amount) - Number(amount)) < 0.01
-    );
-  }
-
-  private async findAllRelatedTransactions(tenantId: string, accountNumber: string, borrowerName: string): Promise<any[]> {
-    const transactions = await storage.getCashTransactions(tenantId);
-    const pattern = this.buildAccountPattern(accountNumber);
-    return transactions.filter((ct: any) =>
-      ct.narration && (
-        pattern.test(ct.narration) ||
-        ct.narration.includes(borrowerName)
-      )
     );
   }
 
@@ -525,12 +463,14 @@ export class RealTimeSyncEngine {
     );
   }
 
-  // Helper methods for data processing
+  // ─────────────────────────────────────────────────────────────────────────
+  // UTILITIES
+  // ─────────────────────────────────────────────────────────────────────────
   private async getGroupName(tenantId: string, groupId?: string): Promise<string> {
     if (!groupId) return '';
-    const groups = await storage.getGroups(tenantId);
-    const group = groups.find(g => g.id === groupId);
-    return group?.name || '';
+    const grps = await storage.getGroups(tenantId);
+    const g = grps.find((g: any) => g.id === groupId);
+    return g?.name || '';
   }
 
   private createDisbursementNarration(
@@ -543,64 +483,42 @@ export class RealTimeSyncEngine {
     weight?: string | number,
     loanDate?: string
   ): string {
-    const { NarrationEngine } = require('./narration-engine');
     return NarrationEngine.createLoanDisbursementNarration(
       accountNumber, borrowerName, amount, groupName, loanType, collateralDetails, weight, loanDate
     );
   }
 
-  /**
-   * Verify that a cashbook entry belongs to the expected loan using narration fingerprint.
-   * Old format narrations (no ' | ' separator) are trusted on loanId alone.
-   * New format narrations contain loan date as last pipe-segment — must match exactly.
-   */
-  private verifyEntryBelongsToLoan(entry: any, loanDate: string): boolean {
-    const narration: string = entry.narration || '';
-    if (!narration.includes(' | ')) {
-      return true;
-    }
-    const d = new Date(String(loanDate) + 'T00:00:00Z');
-    if (isNaN(d.getTime())) return true;
-    const dd = String(d.getUTCDate()).padStart(2, '0');
-    const mm = String(d.getUTCMonth() + 1).padStart(2, '0');
-    const yyyy = d.getUTCFullYear();
-    const expectedDate = `${dd}/${mm}/${yyyy}`;
-    return narration.includes(expectedDate);
-  }
-
   private createClosureNarration(accountNumber: string, borrowerName: string, amount: number, groupName?: string): string {
-    // CRITICAL FIX: Use standardized NarrationEngine to preserve full borrower names
-    const { NarrationEngine } = require('./narration-engine');
     return NarrationEngine.createLoanClosureNarration(accountNumber, borrowerName, amount, 0, groupName);
   }
 }
 
-/**
- * Factory function to get the singleton instance
- */
+// ─────────────────────────────────────────────────────────────────────────────
+// FACTORY & TRIGGER
+// ─────────────────────────────────────────────────────────────────────────────
 export function getRealTimeSyncEngine(): RealTimeSyncEngine {
   return RealTimeSyncEngine.getInstance();
 }
 
-/**
- * Convenience function for triggering sync operations
- */
 export async function triggerLoanSync(operation: LoanSyncOperation): Promise<SyncResult> {
-  const engine = getRealTimeSyncEngine();
-  return await engine.syncLoanOperation(operation);
+  return RealTimeSyncEngine.getInstance().syncLoanOperation(operation);
 }
 
-/**
- * REPAIR FUNCTION: Backfill missing closure cash_in entries
- * Finds all loan closures that don't have a matching cash_in in cash_transactions
- * and creates them. Also backfills missing disbursement cash_out entries.
- * Run on server startup to ensure data integrity.
- */
-export async function repairMissingCashEntries(): Promise<{ closuresRepaired: number; disbursementsRepaired: number }> {
+// ─────────────────────────────────────────────────────────────────────────────
+// STARTUP REPAIR + AUTO-BACKFILL
+// Runs on every server start (index.ts line 138).
+// ─────────────────────────────────────────────────────────────────────────────
+export async function repairMissingCashEntries(): Promise<{
+  closuresRepaired: number;
+  disbursementsRepaired: number;
+  backfillAssigned: number;
+}> {
   let closuresRepaired = 0;
   let disbursementsRepaired = 0;
+  let backfillAssigned = 0;
 
   try {
+    // ── STEP A: Repair missing closure cash_in entries (existing logic) ──────
     const allClosures = await db.select({
       closureId: loanClosures.id,
       loanId: loanClosures.loanId,
@@ -620,6 +538,7 @@ export async function repairMissingCashEntries(): Promise<{ closuresRepaired: nu
       const tenantId = closure.tenantId;
       const accountNumber = closure.accountNumber;
 
+      // Check closure cash_in
       const existingClosureCashIn = await db.select({ id: cashTransactions.id })
         .from(cashTransactions)
         .where(and(
@@ -640,7 +559,6 @@ export async function repairMissingCashEntries(): Promise<{ closuresRepaired: nu
           accountNumber, closure.borrowerName,
           Number(closure.totalAmount), Number(closure.interestPaid), groupName
         );
-
         await storage.createCashTransaction({
           tenantId,
           transactionDate: closure.closureDate,
@@ -654,27 +572,29 @@ export async function repairMissingCashEntries(): Promise<{ closuresRepaired: nu
         console.log(`🔧 REPAIR: Created missing closure cash_in for account ${accountNumber} - ₹${closure.totalAmount}`);
       }
 
-      // Check by loanId first (reliable), then fallback to narration LIKE (old entries / DB without column)
-      let existingByLoanId: any[] = [];
+      // Check disbursement cash_out for closed loans
+      let existingDisbursement: any[] = [];
       try {
-        existingByLoanId = await db.select({ id: cashTransactions.id })
+        existingDisbursement = await db.select({ id: cashTransactions.id })
           .from(cashTransactions)
           .where(and(
             eq(cashTransactions.tenantId, tenantId),
-            eq(cashTransactions.loanId, closure.id),
+            eq(cashTransactions.loanId, closure.loanId),
             eq(cashTransactions.category, 'loan_disbursement')
           ));
-      } catch { /* loan_id column may not exist yet on production DB */ }
+      } catch { /* loan_id column may not exist on very old Railway DB */ }
 
-      const existingDisbursement = existingByLoanId.length > 0 ? existingByLoanId : await db.select({ id: cashTransactions.id })
-        .from(cashTransactions)
-        .where(and(
-          eq(cashTransactions.tenantId, tenantId),
-          eq(cashTransactions.transactionType, 'cash_out'),
-          eq(cashTransactions.category, 'loan_disbursement'),
-          sql`${cashTransactions.narration} LIKE ${`%खाते क्र. ${accountNumber}%`}`,
-          sql`ABS(${cashTransactions.amount} - ${Number(closure.principalAmount)}) < 0.01`
-        ));
+      if (existingDisbursement.length === 0) {
+        existingDisbursement = await db.select({ id: cashTransactions.id })
+          .from(cashTransactions)
+          .where(and(
+            eq(cashTransactions.tenantId, tenantId),
+            eq(cashTransactions.transactionType, 'cash_out'),
+            eq(cashTransactions.category, 'loan_disbursement'),
+            sql`${cashTransactions.narration} LIKE ${`%खाते क्र. ${accountNumber}%`}`,
+            sql`ABS(${cashTransactions.amount} - ${Number(closure.principalAmount)}) < 0.01`
+          ));
+      }
 
       if (existingDisbursement.length === 0) {
         let groupName = '';
@@ -683,10 +603,8 @@ export async function repairMissingCashEntries(): Promise<{ closuresRepaired: nu
           groupName = grp?.name || '';
         }
         const narration = NarrationEngine.createLoanDisbursementNarration(
-          accountNumber, closure.borrowerName,
-          Number(closure.principalAmount), groupName
+          accountNumber, closure.borrowerName, Number(closure.principalAmount), groupName
         );
-
         await storage.createCashTransaction({
           tenantId,
           transactionDate: closure.loanDate,
@@ -694,21 +612,65 @@ export async function repairMissingCashEntries(): Promise<{ closuresRepaired: nu
           amount: Number(closure.principalAmount),
           category: 'loan_disbursement',
           narration,
-          isSystemGenerated: true
+          isSystemGenerated: true,
+          loanId: closure.loanId
         } as any);
         disbursementsRepaired++;
         console.log(`🔧 REPAIR: Created missing disbursement cash_out for account ${accountNumber} - ₹${closure.principalAmount}`);
       }
     }
 
+    // ── STEP B: Auto-backfill loanId for old entries (loan_id IS NULL) ───────
+    // For each orphan entry, find a loan with exact amount + exact date.
+    // Assign loanId ONLY when exactly 1 loan matches — never guess with 2+.
+    try {
+      const orphanEntries = await db.select({
+        id: cashTransactions.id,
+        tenantId: cashTransactions.tenantId,
+        amount: cashTransactions.amount,
+        transactionDate: cashTransactions.transactionDate,
+      })
+        .from(cashTransactions)
+        .where(and(
+          eq(cashTransactions.category, 'loan_disbursement'),
+          eq(cashTransactions.transactionType, 'cash_out'),
+          isNull(cashTransactions.loanId)
+        ));
+
+      for (const entry of orphanEntries) {
+        const matchingLoans = await db.select({ id: loans.id })
+          .from(loans)
+          .where(and(
+            eq(loans.tenantId, entry.tenantId),
+            eq(loans.loanDate, entry.transactionDate as string),
+            sql`ABS(${loans.principalAmount} - ${Number(entry.amount)}) < 0.01`
+          ));
+
+        if (matchingLoans.length === 1) {
+          await db.update(cashTransactions)
+            .set({ loanId: matchingLoans[0].id })
+            .where(eq(cashTransactions.id, entry.id));
+          backfillAssigned++;
+        }
+        // 0 or 2+ matches → skip safely (Rebuild will fix if needed)
+      }
+
+      if (backfillAssigned > 0) {
+        console.log(`✅ BACKFILL: ${backfillAssigned} orphan cashbook entries assigned loanId`);
+      }
+    } catch (backfillErr) {
+      console.warn('⚠️ BACKFILL: Skipped (loan_id column may be unavailable):', backfillErr);
+    }
+
     if (closuresRepaired > 0 || disbursementsRepaired > 0) {
-      console.log(`🔧 CASH ENTRY REPAIR COMPLETE: ${closuresRepaired} closures, ${disbursementsRepaired} disbursements backfilled`);
-    } else {
+      console.log(`🔧 CASH ENTRY REPAIR: ${closuresRepaired} closures, ${disbursementsRepaired} disbursements repaired`);
+    } else if (backfillAssigned === 0) {
       console.log(`✅ CASH ENTRY CHECK: All loan cash entries are in sync`);
     }
+
   } catch (error) {
     console.error('❌ REPAIR ERROR:', error);
   }
 
-  return { closuresRepaired, disbursementsRepaired };
+  return { closuresRepaired, disbursementsRepaired, backfillAssigned };
 }
