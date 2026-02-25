@@ -157,40 +157,40 @@ export class RealTimeSyncEngine {
 
   /**
    * Update disbursement transaction when loan amount or date changes
+   * Also cleans up any extra duplicate entries for the same account
    */
   private async updateDisbursementTransaction(operation: LoanSyncOperation, result: SyncResult): Promise<void> {
     const { tenantId, oldData, newData } = operation;
-    
+
+    // Find the FIRST disbursement entry for this account (any narration format)
     const disbursementTransaction = await this.findDisbursementTransaction(
-      tenantId, 
-      oldData.accountNumber, 
-      oldData.principalAmount, 
+      tenantId,
+      oldData.accountNumber,
+      oldData.principalAmount,
       oldData.loanDate
     );
 
     if (!disbursementTransaction) {
-      // console.log('⚠️ SYNC: No disbursement transaction found to update');
       result.operationsPerformed.push('NO_DISBURSEMENT_TO_UPDATE');
       return;
     }
 
     // Prepare update data
     const updateData: any = {};
-    
+
     if (Number(oldData.principalAmount) !== Number(newData.principalAmount)) {
       updateData.amount = Number(newData.principalAmount);
       result.operationsPerformed.push(`UPDATE_AMOUNT_${oldData.principalAmount}_TO_${newData.principalAmount}`);
     }
-    
+
     if (oldData.loanDate !== newData.loanDate) {
       updateData.transactionDate = newData.loanDate;
       result.operationsPerformed.push(`UPDATE_DATE_${oldData.loanDate}_TO_${newData.loanDate}`);
     }
 
-    // Update narration with new details using proper UPDATE narration (not disbursement)
+    // Always standardize narration to "कर्ज वितरण" format (replaces "कर्ज वाटप", "कर्ज रकम अपडेट", etc.)
     const groupName = await this.getGroupName(tenantId, newData.groupId);
-    const { NarrationEngine } = require('./narration-engine');
-    updateData.narration = NarrationEngine.createLoanAmountUpdateNarration(
+    updateData.narration = NarrationEngine.createLoanDisbursementNarration(
       newData.accountNumber,
       newData.borrowerName,
       Number(newData.principalAmount),
@@ -199,8 +199,18 @@ export class RealTimeSyncEngine {
 
     await storage.updateCashTransaction(disbursementTransaction.id, tenantId, updateData);
     result.cashTransactionsAffected += 1;
-    
-    // console.log(`🔄 SYNC: Updated disbursement transaction with new data`);
+    result.operationsPerformed.push('UPDATED_DISBURSEMENT_NARRATION');
+
+    // Clean up any OTHER disbursement entries for the same account (old duplicates)
+    const allEntries = await this.findAllDisbursementTransactions(tenantId, newData.accountNumber);
+    for (const extra of allEntries) {
+      if (extra.id !== disbursementTransaction.id) {
+        await storage.deleteCashTransaction(extra.id, tenantId);
+        result.cashTransactionsAffected += 1;
+        result.operationsPerformed.push(`DELETED_DUPLICATE_DISBURSEMENT_${extra.id}`);
+        console.log(`🗑️ SYNC: Deleted old duplicate disbursement for account ${newData.accountNumber}: ${extra.narration?.substring(0, 40)}`);
+      }
+    }
   }
 
   /**
@@ -308,32 +318,52 @@ export class RealTimeSyncEngine {
     }
   }
 
+  // Helper: build exact account number regex (e.g. "461" → matches "461 " or "461-" or "461" at end, NOT "4610")
+  private buildAccountPattern(accountNumber: string): RegExp {
+    const escaped = accountNumber.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return new RegExp('खाते क्र\\.[ ]?' + escaped + '([^0-9]|$)');
+  }
+
   // Helper methods for finding transactions
   private async findDisbursementTransaction(tenantId: string, accountNumber: string, amount: number, date: string): Promise<any> {
     const transactions = await storage.getCashTransactions(tenantId);
-    return transactions.find((ct: any) => 
-      ct.narration?.includes('कर्ज वितरण') &&
-      ct.narration?.includes(accountNumber) &&
+    const pattern = this.buildAccountPattern(accountNumber);
+    // Match ANY narration format: "कर्ज वितरण", "कर्ज वाटप", "कर्ज रकम अपडेट", etc.
+    // Do NOT filter by amount — find by account+category so ALL formats are found
+    return transactions.find((ct: any) =>
       ct.category === 'loan_disbursement' &&
-      Math.abs(Number(ct.amount) - Number(amount)) < 0.01
+      ct.transactionType === 'cash_out' &&
+      ct.narration && pattern.test(ct.narration)
+    );
+  }
+
+  private async findAllDisbursementTransactions(tenantId: string, accountNumber: string): Promise<any[]> {
+    const transactions = await storage.getCashTransactions(tenantId);
+    const pattern = this.buildAccountPattern(accountNumber);
+    return transactions.filter((ct: any) =>
+      ct.category === 'loan_disbursement' &&
+      ct.transactionType === 'cash_out' &&
+      ct.narration && pattern.test(ct.narration)
     );
   }
 
   private async findClosureTransaction(tenantId: string, accountNumber: string, amount: number, date: string): Promise<any> {
     const transactions = await storage.getCashTransactions(tenantId);
-    return transactions.find((ct: any) => 
-      ct.narration?.includes('कर्ज बंद') &&
-      ct.narration?.includes(accountNumber) &&
+    const pattern = this.buildAccountPattern(accountNumber);
+    return transactions.find((ct: any) =>
       ct.category === 'loan_repayment' &&
+      ct.transactionType === 'cash_in' &&
+      ct.narration && pattern.test(ct.narration) &&
       Math.abs(Number(ct.amount) - Number(amount)) < 0.01
     );
   }
 
   private async findAllRelatedTransactions(tenantId: string, accountNumber: string, borrowerName: string): Promise<any[]> {
     const transactions = await storage.getCashTransactions(tenantId);
-    return transactions.filter((ct: any) => 
+    const pattern = this.buildAccountPattern(accountNumber);
+    return transactions.filter((ct: any) =>
       ct.narration && (
-        ct.narration.includes(accountNumber) || 
+        pattern.test(ct.narration) ||
         ct.narration.includes(borrowerName)
       )
     );
@@ -341,9 +371,13 @@ export class RealTimeSyncEngine {
 
   private async findClosureTransactions(tenantId: string, accountNumber: string, borrowerName: string): Promise<any[]> {
     const transactions = await storage.getCashTransactions(tenantId);
-    return transactions.filter((ct: any) => 
-      ct.narration?.includes('कर्ज बंद') &&
-      (ct.narration.includes(accountNumber) || ct.narration.includes(borrowerName))
+    const pattern = this.buildAccountPattern(accountNumber);
+    return transactions.filter((ct: any) =>
+      ct.category === 'loan_repayment' &&
+      ct.narration && (
+        pattern.test(ct.narration) ||
+        ct.narration.includes(borrowerName)
+      )
     );
   }
 
