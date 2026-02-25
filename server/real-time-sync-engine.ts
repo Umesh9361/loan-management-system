@@ -93,20 +93,30 @@ export class RealTimeSyncEngine {
     const { loanId, tenantId, newData } = operation;
     
     if (!newData || Number(newData.principalAmount) <= 0) {
-      // console.log('🚫 SYNC: No disbursement needed for zero amount loan');
       return;
     }
 
-    // Check if disbursement cash transaction already exists
+    // Priority 0: Check by loanId — 100% reliable, no narration parsing needed
+    if (loanId) {
+      const existingByLoanId = await this.findDisbursementByLoanId(tenantId, loanId);
+      if (existingByLoanId) {
+        result.operationsPerformed.push('SKIP_EXISTING_DISBURSEMENT_BY_LOANID');
+        return;
+      }
+    }
+
+    // Fallback: narration-based check for backward compatibility
     const existingDisbursement = await this.findDisbursementTransaction(tenantId, newData.accountNumber, newData.principalAmount, newData.loanDate);
-    
     if (existingDisbursement) {
-      // console.log('🚫 SYNC: Disbursement transaction already exists, skipping creation');
+      // Backfill loanId if missing
+      if (loanId && !existingDisbursement.loanId) {
+        await storage.updateCashTransaction(existingDisbursement.id, tenantId, { loanId });
+      }
       result.operationsPerformed.push('SKIP_EXISTING_DISBURSEMENT');
       return;
     }
 
-    // Create disbursement cash transaction
+    // Create disbursement cash transaction with loanId for reliable future lookups
     const groupName = await this.getGroupName(tenantId, newData.groupId);
     const standardNarration = this.createDisbursementNarration(
       newData.accountNumber,
@@ -122,12 +132,12 @@ export class RealTimeSyncEngine {
       amount: Number(newData.principalAmount),
       category: 'loan_disbursement',
       narration: standardNarration,
-      isSystemGenerated: true
-    });
+      isSystemGenerated: true,
+      loanId: loanId || null
+    } as any);
 
     result.operationsPerformed.push('CREATE_DISBURSEMENT_TRANSACTION');
     result.cashTransactionsAffected += 1;
-    // console.log(`💰 SYNC: Created disbursement transaction for ₹${newData.principalAmount}`);
   }
 
   /**
@@ -161,19 +171,32 @@ export class RealTimeSyncEngine {
    * Also cleans up any extra duplicate entries for the same account
    */
   private async updateDisbursementTransaction(operation: LoanSyncOperation, result: SyncResult): Promise<void> {
-    const { tenantId, oldData, newData } = operation;
+    const { loanId, tenantId, oldData, newData } = operation;
 
-    // Find the FIRST disbursement entry for this account (any narration format)
-    const disbursementTransaction = await this.findDisbursementTransaction(
-      tenantId,
-      oldData.accountNumber,
-      oldData.principalAmount,
-      oldData.loanDate
-    );
+    // Priority 0: Find by loanId — 100% reliable for entries created after this fix
+    let disbursementTransaction: any = null;
+    if (loanId) {
+      disbursementTransaction = await this.findDisbursementByLoanId(tenantId, loanId);
+    }
+
+    // Fallback: narration-based search for old entries (no loanId stored yet)
+    if (!disbursementTransaction) {
+      disbursementTransaction = await this.findDisbursementTransaction(
+        tenantId,
+        oldData.accountNumber,
+        oldData.principalAmount,
+        oldData.loanDate
+      );
+    }
 
     if (!disbursementTransaction) {
       result.operationsPerformed.push('NO_DISBURSEMENT_TO_UPDATE');
       return;
+    }
+
+    // Backfill loanId on found entry if missing (one-time migration as entries are edited)
+    if (loanId && !disbursementTransaction.loanId) {
+      await storage.updateCashTransaction(disbursementTransaction.id, tenantId, { loanId } as any);
     }
 
     // Prepare update data — only update amount and/or date, NEVER change original narration
@@ -198,22 +221,27 @@ export class RealTimeSyncEngine {
       result.operationsPerformed.push('UPDATED_DISBURSEMENT_AMOUNT_DATE');
     }
 
-    // BUG FIX: Only delete TRUE DUPLICATES of THIS loan — entries matching OLD amount.
-    // Previously deleted ALL other entries for the account, which destroyed other loans'
-    // disbursement entries when multiple loans share the same account number (e.g. account 602).
+    // Clean up TRUE DUPLICATES of THIS loan only.
+    // With loanId available: delete entries with same loanId (except the one we just updated).
+    // Without loanId (old entries): delete entries with same account + OLD amount (old logic, safe).
     const allEntries = await this.findAllDisbursementTransactions(tenantId, newData.accountNumber);
     for (const extra of allEntries) {
       if (extra.id === disbursementTransaction.id) continue; // skip the one we just updated
-      // Only delete if it matches the OLD loan amount — true duplicate of THIS specific loan
-      const matchesOldAmount = Math.abs(Number(extra.amount) - Number(oldData.principalAmount)) < 0.01;
-      if (matchesOldAmount) {
+
+      let isDuplicate = false;
+      if (loanId && extra.loanId) {
+        // Both have loanId — definitive comparison
+        isDuplicate = extra.loanId === loanId;
+      } else {
+        // Old entries without loanId — use amount match as proxy
+        isDuplicate = Math.abs(Number(extra.amount) - Number(oldData.principalAmount)) < 0.01;
+      }
+
+      if (isDuplicate) {
         await storage.deleteCashTransaction(extra.id, tenantId);
         result.cashTransactionsAffected += 1;
-        result.operationsPerformed.push(`DELETED_OLD_AMOUNT_DUPLICATE_${extra.id}`);
-        console.log(`🗑️ SYNC: Deleted old-amount duplicate for account ${newData.accountNumber}: ₹${extra.amount} (old amount was ₹${oldData.principalAmount})`);
-      } else {
-        // Different amount = belongs to another loan for this account — DO NOT DELETE
-        console.log(`✅ SYNC: Preserved entry ₹${extra.amount} for account ${newData.accountNumber} — belongs to another loan`);
+        result.operationsPerformed.push(`DELETED_DUPLICATE_${extra.id}`);
+        console.log(`🗑️ SYNC: Deleted duplicate for loan ${loanId}, account ${newData.accountNumber}: ₹${extra.amount}`);
       }
     }
   }
@@ -330,6 +358,23 @@ export class RealTimeSyncEngine {
   }
 
   // Helper methods for finding transactions
+
+  /**
+   * Find disbursement entry by loanId — 100% reliable, no narration parsing
+   * Returns null if not found or loanId column not yet set on this entry
+   */
+  private async findDisbursementByLoanId(tenantId: string, loanId: string): Promise<any> {
+    const [row] = await db.select()
+      .from(cashTransactions)
+      .where(and(
+        eq(cashTransactions.tenantId, tenantId),
+        eq(cashTransactions.loanId, loanId),
+        eq(cashTransactions.category, 'loan_disbursement'),
+        eq(cashTransactions.transactionType, 'cash_out')
+      ));
+    return row || null;
+  }
+
   private async findDisbursementTransaction(tenantId: string, accountNumber: string, amount: number, date: string): Promise<any> {
     const transactions = await storage.getCashTransactions(tenantId);
     const pattern = this.buildAccountPattern(accountNumber);
@@ -503,7 +548,16 @@ export async function repairMissingCashEntries(): Promise<{ closuresRepaired: nu
         console.log(`🔧 REPAIR: Created missing closure cash_in for account ${accountNumber} - ₹${closure.totalAmount}`);
       }
 
-      const existingDisbursement = await db.select({ id: cashTransactions.id })
+      // Check by loanId first (reliable), then fallback to narration LIKE (old entries)
+      const existingByLoanId = await db.select({ id: cashTransactions.id })
+        .from(cashTransactions)
+        .where(and(
+          eq(cashTransactions.tenantId, tenantId),
+          eq(cashTransactions.loanId, closure.id),
+          eq(cashTransactions.category, 'loan_disbursement')
+        ));
+
+      const existingDisbursement = existingByLoanId.length > 0 ? existingByLoanId : await db.select({ id: cashTransactions.id })
         .from(cashTransactions)
         .where(and(
           eq(cashTransactions.tenantId, tenantId),
@@ -531,8 +585,9 @@ export async function repairMissingCashEntries(): Promise<{ closuresRepaired: nu
           amount: Number(closure.principalAmount),
           category: 'loan_disbursement',
           narration,
-          isSystemGenerated: true
-        });
+          isSystemGenerated: true,
+          loanId: closure.id
+        } as any);
         disbursementsRepaired++;
         console.log(`🔧 REPAIR: Created missing disbursement cash_out for account ${accountNumber} - ₹${closure.principalAmount}`);
       }
