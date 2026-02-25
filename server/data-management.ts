@@ -906,7 +906,7 @@ export class DataManagementService {
       // Per-loan processing caused INFINITE CYCLE: each loan deleted the other's entry then recreated it
       const loansByAccount = new Map<string, typeof loansData>();
       for (const loan of loansData) {
-        const acct = loan.accountNumber || '';
+        const acct = (loan.accountNumber || '').trim();  // trim spaces to avoid '602 ' ≠ '602' mismatch
         if (!loansByAccount.has(acct)) loansByAccount.set(acct, []);
         loansByAccount.get(acct)!.push(loan);
       }
@@ -1692,7 +1692,7 @@ export class DataManagementService {
       for (const loan of allLoans) {
         try {
           const narration = NarrationEngine.createLoanDisbursementNarration(
-            loan.accountNumber || '',
+            (loan.accountNumber || '').trim(),  // trim so '602 ' becomes '602' — consistent with diagnostic grouping
             loan.borrowerName || '',
             Number(loan.principalAmount) || 0,
             loan.groupName || ''
