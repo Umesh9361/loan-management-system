@@ -248,6 +248,14 @@ function Loans() {
       const response = await apiRequest(`/api/loans/${loanId}`, "DELETE");
       return response.json();
     },
+    onMutate: async (loanId: string) => {
+      await queryClient.cancelQueries({ queryKey: ["/api/loans"] });
+      const previousLoans = queryClient.getQueryData(["/api/loans"]);
+      queryClient.setQueryData(["/api/loans"], (old: any) =>
+        Array.isArray(old) ? old.filter((loan: any) => loan.id !== loanId) : old
+      );
+      return { previousLoans };
+    },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["/api/loans"], refetchType: 'all' });
       queryClient.invalidateQueries({ queryKey: ["/api/cash-transactions"], refetchType: 'all' });
@@ -260,7 +268,10 @@ function Loans() {
         description: "कर्ज आणि संबंधित व्यवहार यशस्वीपणे डिलीट केले गेले.",
       });
     },
-    onError: (error: any) => {
+    onError: (error: any, _loanId: string, context: any) => {
+      if (context?.previousLoans) {
+        queryClient.setQueryData(["/api/loans"], context.previousLoans);
+      }
       let msg = "कर्ज डिलीट करताना त्रुटी आली. पुन्हा प्रयत्न करा.";
       try {
         const errorText = error?.message || '';
