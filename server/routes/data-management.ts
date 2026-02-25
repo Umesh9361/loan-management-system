@@ -186,6 +186,20 @@ router.post("/fix-missing-cash-entries", async (req: any, res) => {
   }
 });
 
+router.post("/rebuild-disbursement-entries", async (req: any, res) => {
+  try {
+    const tenantId = req.session?.tenantId;
+    if (!tenantId) return res.status(401).json({ success: false, message: "Unauthorized" });
+    console.log(`🔄 REBUILD DISBURSEMENT ENTRIES: Starting for tenant ${tenantId}`);
+    const result = await dataManagementService.rebuildDisbursementEntries(tenantId);
+    console.log(`✅ REBUILD: ${result.deleted} deleted, ${result.created} created`);
+    res.json(result);
+  } catch (error) {
+    console.error("Rebuild disbursement entries error:", error);
+    res.status(500).json({ success: false, deleted: 0, created: 0, message: "Rebuild अयशस्वी: " + (error as Error).message });
+  }
+});
+
 const rearrangeSchema = z.object({
   groupId: z.string().min(1, "ग्रुप ID आवश्यक आहे"),
   upToDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "तारीख YYYY-MM-DD फॉर्मॅट मध्ये असावी").optional(),
