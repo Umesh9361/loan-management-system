@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Printer, Search, Home, FileText, ArrowLeft } from "lucide-react";
+import { displayNarration } from "@/lib/utils";
 import { Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { DateUtils } from "@/lib/date-utils";
@@ -111,7 +112,7 @@ export default function PartyStatement() {
       
       entries.push({
         date: transaction.transactionDate,
-        description: transaction.narration || (transaction.transactionType === 'cash_in' ? 'रोकड मिळाली' : 'रोकड दिली'),
+        description: displayNarration(transaction.narration) || (transaction.transactionType === 'cash_in' ? 'रोकड मिळाली' : 'रोकड दिली'),
         debit,
         credit,
         balance: runningBalance,
