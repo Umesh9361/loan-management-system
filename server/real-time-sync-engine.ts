@@ -198,14 +198,22 @@ export class RealTimeSyncEngine {
       result.operationsPerformed.push('UPDATED_DISBURSEMENT_AMOUNT_DATE');
     }
 
-    // Clean up any OTHER disbursement entries for the same account (old duplicates)
+    // BUG FIX: Only delete TRUE DUPLICATES of THIS loan — entries matching OLD amount.
+    // Previously deleted ALL other entries for the account, which destroyed other loans'
+    // disbursement entries when multiple loans share the same account number (e.g. account 602).
     const allEntries = await this.findAllDisbursementTransactions(tenantId, newData.accountNumber);
     for (const extra of allEntries) {
-      if (extra.id !== disbursementTransaction.id) {
+      if (extra.id === disbursementTransaction.id) continue; // skip the one we just updated
+      // Only delete if it matches the OLD loan amount — true duplicate of THIS specific loan
+      const matchesOldAmount = Math.abs(Number(extra.amount) - Number(oldData.principalAmount)) < 0.01;
+      if (matchesOldAmount) {
         await storage.deleteCashTransaction(extra.id, tenantId);
         result.cashTransactionsAffected += 1;
-        result.operationsPerformed.push(`DELETED_DUPLICATE_DISBURSEMENT_${extra.id}`);
-        console.log(`🗑️ SYNC: Deleted old duplicate disbursement for account ${newData.accountNumber}: ${extra.narration?.substring(0, 40)}`);
+        result.operationsPerformed.push(`DELETED_OLD_AMOUNT_DUPLICATE_${extra.id}`);
+        console.log(`🗑️ SYNC: Deleted old-amount duplicate for account ${newData.accountNumber}: ₹${extra.amount} (old amount was ₹${oldData.principalAmount})`);
+      } else {
+        // Different amount = belongs to another loan for this account — DO NOT DELETE
+        console.log(`✅ SYNC: Preserved entry ₹${extra.amount} for account ${newData.accountNumber} — belongs to another loan`);
       }
     }
   }
@@ -325,8 +333,25 @@ export class RealTimeSyncEngine {
   private async findDisbursementTransaction(tenantId: string, accountNumber: string, amount: number, date: string): Promise<any> {
     const transactions = await storage.getCashTransactions(tenantId);
     const pattern = this.buildAccountPattern(accountNumber);
-    // Match ANY narration format: "कर्ज वितरण", "कर्ज वाटप", "कर्ज रकम अपडेट", etc.
-    // Do NOT filter by amount — find by account+category so ALL formats are found
+    // BUG FIX: For accounts with multiple loans (same account number), MUST match by amount.
+    // Previously ignoring amount caused Loan A's edit to pick Loan B's entry and then delete it.
+    // Priority 1: exact amount match (< ₹0.01) — correct for multiple loans per account
+    const exactMatch = transactions.find((ct: any) =>
+      ct.category === 'loan_disbursement' &&
+      ct.transactionType === 'cash_out' &&
+      ct.narration && pattern.test(ct.narration) &&
+      Math.abs(Number(ct.amount) - Number(amount)) < 0.01
+    );
+    if (exactMatch) return exactMatch;
+    // Priority 2: within ₹1 for decimal rounding edge cases
+    const nearMatch = transactions.find((ct: any) =>
+      ct.category === 'loan_disbursement' &&
+      ct.transactionType === 'cash_out' &&
+      ct.narration && pattern.test(ct.narration) &&
+      Math.abs(Number(ct.amount) - Number(amount)) < 1.0
+    );
+    if (nearMatch) return nearMatch;
+    // Priority 3: any entry for this account (single-loan accounts, or post-edit where amount already changed)
     return transactions.find((ct: any) =>
       ct.category === 'loan_disbursement' &&
       ct.transactionType === 'cash_out' &&
