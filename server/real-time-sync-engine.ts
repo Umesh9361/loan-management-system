@@ -142,11 +142,12 @@ export class RealTimeSyncEngine {
     }
 
     // Check for disbursement transaction updates
-    const amountChanged = Number(oldData.principalAmount) !== Number(newData.principalAmount);
-    const dateChanged = oldData.loanDate !== newData.loanDate;
     const statusChanged = oldData.status !== newData.status;
 
-    if (amountChanged || dateChanged) {
+    // Always call updateDisbursementTransaction on any loan edit:
+    // - Updates amount/date if they changed
+    // - Also cleans up any duplicate disbursement entries for this account (idempotent)
+    if (newData.status !== 'closed') {
       await this.updateDisbursementTransaction(operation, result);
     }
 
