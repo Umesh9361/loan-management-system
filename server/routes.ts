@@ -1457,8 +1457,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           amount: Number(loanData.principalAmount),
           category: 'loan_disbursement',
           narration: standardNarration,
-          isSystemGenerated: true  // System generated - only editable through proper loan forms
-        });
+          isSystemGenerated: true,
+          loanId: loan.id
+        } as any);
         
         console.log('✅ LOAN CREATED: Single disbursement cash transaction created automatically without duplicates');
       } else {
