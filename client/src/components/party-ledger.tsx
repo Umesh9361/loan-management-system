@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { CalendarIcon, PrinterIcon } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { DateUtils } from "@/lib/date-utils";
+import { displayNarration } from "@/lib/utils";
 import PartySelector from "@/components/party-selector";
 
 interface PartyLedgerProps {
@@ -197,7 +198,7 @@ export default function PartyLedger({ className }: PartyLedgerProps) {
                 <p className={`text-lg font-bold ${opening.type === "credit" ? "text-green-600" : "text-red-600"}`}>
                   ₹{opening.amount.toLocaleString()} {opening.type === "credit" ? "Cr" : "Dr"}
                 </p>
-                <p className="text-xs text-gray-500">{opening.narration}</p>
+                <p className="text-xs text-gray-500">{displayNarration(opening.narration)}</p>
               </div>
             </div>
           </CardContent>
@@ -284,7 +285,7 @@ export default function PartyLedger({ className }: PartyLedgerProps) {
                           {DateUtils.formatForDisplay(txn.transactionDate)}
                         </td>
                         <td className="px-4 py-3 text-sm">
-                          {txn.narration || txn.category}
+                          {displayNarration(txn.narration) || txn.category}
                         </td>
                         <td className="px-4 py-3 text-sm text-right">
                           {isDebit ? `₹${amount.toLocaleString()}` : "-"}
