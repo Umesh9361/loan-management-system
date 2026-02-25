@@ -129,7 +129,11 @@ export class RealTimeSyncEngine {
       newData.accountNumber,
       newData.borrowerName,
       Number(newData.principalAmount),
-      groupName
+      groupName,
+      newData.loanType,
+      newData.collateralDetails,
+      newData.weight,
+      newData.loanDate
     );
 
     await storage.createCashTransaction({
@@ -185,16 +189,12 @@ export class RealTimeSyncEngine {
     if (loanId) {
       const byLoanId = await this.findDisbursementByLoanId(tenantId, loanId);
       if (byLoanId) {
-        // SANITY CHECK: date on the found entry should be reasonably close to loan's old date.
-        // If dates are > 180 days apart, this entry was likely corrupted (loanId overwritten).
-        // In that case, fall back to narration-based search which uses date as Priority 1.
-        const foundDate = new Date(byLoanId.transactionDate);
-        const expectedDate = new Date(oldData.loanDate);
-        const daysDiff = Math.abs((foundDate.getTime() - expectedDate.getTime()) / 86400000);
-        if (daysDiff <= 180) {
+        // NARRATION VERIFICATION: if narration has rich format (contains ' | '), confirm
+        // the embedded loan date matches. Mismatched date → corrupt loanId → fall back.
+        if (this.verifyEntryBelongsToLoan(byLoanId, oldData.loanDate)) {
           disbursementTransaction = byLoanId;
         } else {
-          console.log(`⚠️ SYNC: loanId entry date mismatch (${daysDiff} days) — falling back to narration search`);
+          console.log(`⚠️ SYNC: narration date mismatch for loanId ${loanId} — falling back to narration search`);
         }
       }
     }
@@ -289,17 +289,15 @@ export class RealTimeSyncEngine {
 
         let deletedAny = false;
         for (const t of byLoanId) {
-          // Date sanity: only delete if entry date is within 180 days of loan date (prevents corrupt loanId matches)
-          const entryDate = new Date(t.transactionDate);
-          const loanDate = new Date(oldData.loanDate);
-          const daysDiff = Math.abs((entryDate.getTime() - loanDate.getTime()) / 86400000);
-          if (daysDiff <= 180) {
+          // NARRATION VERIFICATION: if narration has rich format (contains ' | '), confirm
+          // the embedded loan date matches. Mismatched date → corrupt loanId → skip this entry.
+          if (this.verifyEntryBelongsToLoan(t, oldData.loanDate)) {
             await storage.deleteCashTransaction(t.id, tenantId);
             result.cashTransactionsAffected += 1;
             result.operationsPerformed.push('DELETE_TRANSACTION_BY_LOANID');
             deletedAny = true;
           } else {
-            console.log(`⚠️ DELETE: Skipping entry ${t.id} — date too far (${daysDiff} days) from loan date, likely corrupt loanId`);
+            console.log(`⚠️ DELETE: Skipping entry ${t.id} — narration date mismatch, likely corrupt loanId`);
           }
         }
         if (deletedAny) return; // loanId-based deletion succeeded — done
@@ -535,10 +533,39 @@ export class RealTimeSyncEngine {
     return group?.name || '';
   }
 
-  private createDisbursementNarration(accountNumber: string, borrowerName: string, amount: number, groupName?: string): string {
-    // CRITICAL FIX: Use standardized NarrationEngine to preserve full borrower names
+  private createDisbursementNarration(
+    accountNumber: string,
+    borrowerName: string,
+    amount: number,
+    groupName?: string,
+    loanType?: string,
+    collateralDetails?: string,
+    weight?: string | number,
+    loanDate?: string
+  ): string {
     const { NarrationEngine } = require('./narration-engine');
-    return NarrationEngine.createLoanDisbursementNarration(accountNumber, borrowerName, amount, groupName);
+    return NarrationEngine.createLoanDisbursementNarration(
+      accountNumber, borrowerName, amount, groupName, loanType, collateralDetails, weight, loanDate
+    );
+  }
+
+  /**
+   * Verify that a cashbook entry belongs to the expected loan using narration fingerprint.
+   * Old format narrations (no ' | ' separator) are trusted on loanId alone.
+   * New format narrations contain loan date as last pipe-segment — must match exactly.
+   */
+  private verifyEntryBelongsToLoan(entry: any, loanDate: string): boolean {
+    const narration: string = entry.narration || '';
+    if (!narration.includes(' | ')) {
+      return true;
+    }
+    const d = new Date(String(loanDate) + 'T00:00:00Z');
+    if (isNaN(d.getTime())) return true;
+    const dd = String(d.getUTCDate()).padStart(2, '0');
+    const mm = String(d.getUTCMonth() + 1).padStart(2, '0');
+    const yyyy = d.getUTCFullYear();
+    const expectedDate = `${dd}/${mm}/${yyyy}`;
+    return narration.includes(expectedDate);
   }
 
   private createClosureNarration(accountNumber: string, borrowerName: string, amount: number, groupName?: string): string {
