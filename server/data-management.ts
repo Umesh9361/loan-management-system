@@ -918,19 +918,38 @@ export class DataManagementService {
         // Spaces in account numbers (e.g. "232 A") are made optional to match "232A" format too
         const escapedNum = accountNum.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         const flexibleNum = escapedNum.replace(/\s+/g, '\\s*');
-        // Boundary logic — prevents cross-account false matches:
-        // - Account ending in LETTER (e.g. "232 A"): strict boundary, no alphanumeric after
-        // - Account ending in DIGIT (e.g. "232"): negative lookahead prevents matching "232 A" or "232B"
-        //   Space alone is NOT enough boundary — "232 A..." has space but "A" is a letter suffix
-        //   Negative lookahead (?!\s*[a-zA-Z]) blocks "232 A" and "232A" (Latin letters only — Marathi script is safe)
+        // Boundary: accounts ending in letter need stricter boundary to avoid "232AB" matching "232A"
         const lastChar = accountNum.trim().slice(-1);
-        const boundary = /[a-zA-Z]/.test(lastChar)
-          ? '([^0-9a-zA-Z]|$)'
-          : '(?!\\s*[a-zA-Z])([^0-9]|$)';
+        const boundary = /[a-zA-Z]/.test(lastChar) ? '([^0-9a-zA-Z]|$)' : '([^0-9]|$)';
         const accountPattern = new RegExp('खाते क्र\\.[ ]?' + flexibleNum + boundary);
-        const allEntries = allDisbursements.filter(e =>
+        let allEntries = allDisbursements.filter(e =>
           e.narration && accountPattern.test(e.narration)
         );
+
+        // EXCLUSION STEP: For purely numeric accounts (e.g. "232"), exclude entries that belong
+        // to an alphanumeric extension account (e.g. "232 A", "232B") if that loan exists in DB.
+        // This correctly separates "232" and "232 A" without blocking borrowers named "M J" etc.
+        // "232 A" is detected as nextChar = ' ' or letter (alpha suffix), NOT a digit extension.
+        if (/^\d+$/.test(accountNum.trim())) {
+          const alphaExtensions = Array.from(loansByAccount.keys()).filter(acct => {
+            if (acct === accountNum) return false;
+            if (!acct.startsWith(accountNum)) return false;
+            const nextChar = acct[accountNum.length]; // char right after accountNum in extension
+            return nextChar === ' ' || /[a-zA-Z]/.test(nextChar); // space-then-letter or direct letter
+          });
+          if (alphaExtensions.length > 0) {
+            allEntries = allEntries.filter(entry => {
+              return !alphaExtensions.some(specific => {
+                const specEscaped = specific.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                const specFlexible = specEscaped.replace(/\s+/g, '\\s*');
+                const specLastChar = specific.trim().slice(-1);
+                const specBoundary = /[a-zA-Z]/.test(specLastChar) ? '([^0-9a-zA-Z]|$)' : '([^0-9]|$)';
+                const specPattern = new RegExp('खाते क्र\\.[ ]?' + specFlexible + specBoundary);
+                return specPattern.test(entry.narration);
+              });
+            });
+          }
+        }
 
         // Greedily match each loan to its best available cash entry (no entry reused)
         // Loans with exact matches get priority so they claim their entry first
