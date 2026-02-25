@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Printer, Search, FileText, User, Wallet, CreditCard, Download, FileDown } from "lucide-react";
+import { displayNarration } from "@/lib/utils";
 import { exportAccountLedgerToExcel } from "@/utils/excel-export";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
@@ -359,12 +360,12 @@ export default function AccountLedger() {
         if (transaction.partyId && (parties as any[])?.length > 0) {
           const relatedParty = (parties as any[]).find((p: any) => p.id === transaction.partyId);
           if (relatedParty) {
-            simpleDescription = `${transaction.narration} - ${relatedParty.name}`;
+            simpleDescription = `${displayNarration(transaction.narration)} - ${relatedParty.name}`;
           } else {
-            simpleDescription = transaction.narration;
+            simpleDescription = displayNarration(transaction.narration);
           }
         } else {
-          simpleDescription = transaction.narration;
+          simpleDescription = displayNarration(transaction.narration);
         }
 
         // CRITICAL FIX: Ensure proper date formatting for each transaction
@@ -507,7 +508,7 @@ export default function AccountLedger() {
           simpleDescription = `${party.name} - रोकड दिली`;
         }
       } else {
-        simpleDescription = transaction.narration || 
+        simpleDescription = displayNarration(transaction.narration) || 
           (transaction.transactionType === 'cash_out' ? 'रोकड दिली' : 'रोकड मिळाली');
       }
 
@@ -633,7 +634,7 @@ export default function AccountLedger() {
         runningBalance -= amount;
         entries.push({
           date: transaction.transactionDate,
-          description: `${transaction.description || 'Payment'} - ${transaction.narration || ''}`,
+          description: `${transaction.description || 'Payment'} - ${displayNarration(transaction.narration) || ''}`,
           debit: 0,
           credit: amount,
           balance: runningBalance,
