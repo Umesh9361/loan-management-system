@@ -44,19 +44,16 @@ interface ReconciliationResult {
 }
 
 function CashReconciliationTab({ queryClient }: { queryClient: any }) {
-  const [checked, setChecked] = useState(false);
-  const [confirmFix, setConfirmFix] = useState(false);
-  const [fixResult, setFixResult] = useState<{ message: string; details?: any } | null>(null);
-
-  const { data: recoData, isLoading: isChecking, refetch: recheckEntries } = useQuery<ReconciliationResult>({
-    queryKey: ["/api/data-management/missing-cash-entries"],
-    enabled: checked,
-    retry: false
-  });
-
-  const [deletingEntryId, setDeletingEntryId] = useState<string | null>(null);
   const [confirmRebuild, setConfirmRebuild] = useState(false);
   const [rebuildResult, setRebuildResult] = useState<{ message: string; deleted: number; created: number } | null>(null);
+
+  const { data: balanceData, isLoading, refetch } = useQuery<{
+    cashTotal: number; loanTotal: number; diff: number; allClear: boolean;
+  }>({
+    queryKey: ["/api/data-management/balance-check"],
+    retry: false,
+    staleTime: 0,
+  });
 
   const rebuildMutation = useMutation({
     mutationFn: async () => {
@@ -70,55 +67,12 @@ function CashReconciliationTab({ queryClient }: { queryClient: any }) {
       queryClient.invalidateQueries({ queryKey: ["/api/cash-balance"], refetchType: 'all' });
       queryClient.invalidateQueries({ queryKey: ["/api/mobile-cashbook"], refetchType: 'all' });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"], refetchType: 'all' });
-      recheckEntries();
+      refetch();
     }
   });
 
-  const fixMutation = useMutation({
-    mutationFn: async () => {
-      const response = await apiRequest("/api/data-management/fix-missing-cash-entries", "POST");
-      return await response.json();
-    },
-    onSuccess: async (data: any) => {
-      setFixResult(data);
-      setConfirmFix(false);
-      await queryClient.invalidateQueries({ queryKey: ["/api/cash-transactions"], refetchType: 'all' });
-      queryClient.invalidateQueries({ queryKey: ["/api/cash-balance"], refetchType: 'all' });
-      queryClient.invalidateQueries({ queryKey: ["/api/mobile-cashbook"], refetchType: 'all' });
-      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"], refetchType: 'all' });
-      recheckEntries();
-    }
-  });
-
-  const deleteEntryMutation = useMutation({
-    mutationFn: async (entryId: string) => {
-      setDeletingEntryId(entryId);
-      const response = await apiRequest(`/api/cash-transactions/${entryId}`, "DELETE");
-      return response;
-    },
-    onSuccess: async () => {
-      setDeletingEntryId(null);
-      await queryClient.invalidateQueries({ queryKey: ["/api/cash-transactions"], refetchType: 'all' });
-      queryClient.invalidateQueries({ queryKey: ["/api/cash-balance"], refetchType: 'all' });
-      queryClient.invalidateQueries({ queryKey: ["/api/mobile-cashbook"], refetchType: 'all' });
-      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"], refetchType: 'all' });
-      recheckEntries();
-    },
-    onError: () => setDeletingEntryId(null)
-  });
-
-  const fmt = (amount: number) =>
-    new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(amount);
-
-  const fmtDate = (dateStr: string) => {
-    if (!dateStr) return '-';
-    const d = new Date(dateStr);
-    if (isNaN(d.getTime())) return dateStr;
-    return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
-  };
-
-  const totalIssues = recoData ? (recoData.summary?.missingCount || 0) + (recoData.summary?.mismatchCount || 0) + (recoData.summary?.duplicateCount || 0) : 0;
-  const allClear = recoData && totalIssues === 0;
+  const fmt = (n: number) =>
+    new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(n);
 
   return (
     <Card className="border-2 border-amber-200 dark:border-amber-800 rounded-xl shadow-sm">
@@ -127,194 +81,69 @@ function CashReconciliationTab({ queryClient }: { queryClient: any }) {
           <div className="p-1.5 bg-gradient-to-br from-amber-500 to-amber-600 rounded-lg">
             <Scale className="h-4 w-4 text-white" />
           </div>
-          रोकड मेळ (Cash Reconciliation)
+          कर्ज व रोकड मेळ
         </CardTitle>
         <CardDescription className="text-amber-700 dark:text-amber-400">
-          कर्ज व रोकड नोंदींचा मेळ तपासा — गहाळ, चुकीच्या रकमेच्या आणि डुप्लिकेट नोंदी शोधा
+          कॅशबुक कर्ज वितरण = कर्ज DB मुद्दल — दोन्ही जुळतात का ते तपासा
         </CardDescription>
       </CardHeader>
       <CardContent className="p-4 sm:p-6 space-y-5">
 
-        <div className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-xl border-2 border-amber-200 dark:border-amber-700 text-sm text-amber-800 dark:text-amber-300 space-y-1">
-          <p><strong>हे साधन तीन प्रकारच्या समस्या शोधते:</strong></p>
-          <p>🔴 <strong>गहाळ नोंद</strong> — कर्जासाठी कोणतीही रोकड नोंद नाही</p>
-          <p>🟠 <strong>चुकीची रक्कम</strong> — कर्ज edit झाले पण जुनी रोकड नोंद अजून आहे</p>
-          <p>🟡 <strong>डुप्लिकेट</strong> — एकाच कर्जासाठी एकापेक्षा जास्त रोकड नोंदी</p>
-        </div>
-
-        {!checked && (
-          <Button onClick={() => setChecked(true)} className="bg-amber-600 hover:bg-amber-700 text-white">
-            <RefreshCw className="h-4 w-4 mr-2" />
-            तपासा — सर्व समस्या शोधा
-          </Button>
-        )}
-
-        {checked && isChecking && (
+        {isLoading && (
           <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl border">
             <RefreshCw className="h-5 w-5 animate-spin text-amber-600" />
-            <span className="text-gray-600">सर्व कर्जे तपासत आहे... (थोडा वेळ लागेल)</span>
+            <span className="text-gray-600 text-sm">तपासत आहे...</span>
           </div>
         )}
 
-        {checked && recoData && !isChecking && (
-          <div className="space-y-5">
-
-            {allClear ? (
-              <div className="flex items-center gap-2 p-4 bg-green-50 border-2 border-green-300 rounded-xl text-green-700">
-                <CheckCircle className="h-5 w-5" />
-                <strong>सर्व कर्जांची रोकड नोंद व्यवस्थित आहे! कोणतीही दुरुस्ती आवश्यक नाही.</strong>
+        {balanceData && !isLoading && (
+          <div className="space-y-4">
+            <div className={`p-4 rounded-xl border-2 ${balanceData.allClear
+              ? 'bg-green-50 border-green-300'
+              : 'bg-red-50 border-red-300'}`}>
+              <div className={`flex items-center gap-2 font-semibold text-sm ${balanceData.allClear ? 'text-green-700' : 'text-red-700'}`}>
+                {balanceData.allClear
+                  ? <><CheckCircle className="h-5 w-5" /> सर्व ठीक आहे — कॅशबुक आणि कर्ज जुळतात</>
+                  : <><AlertTriangle className="h-5 w-5" /> फरक आढळला — Rebuild करणे आवश्यक आहे</>
+                }
               </div>
-            ) : (
-              <div className="p-4 bg-red-50 border-2 border-red-300 rounded-xl space-y-2">
-                <div className="flex items-center gap-2 text-red-700 font-semibold">
-                  <AlertTriangle className="h-5 w-5" />
-                  {totalIssues} समस्या आढळल्या — एकूण फरक: {fmt(recoData.summary?.totalDiscrepancy || 0)}
+              <div className="mt-3 grid grid-cols-3 gap-3 text-xs">
+                <div className="bg-white rounded-lg p-2 text-center border">
+                  <div className="text-gray-500 mb-1">कॅशबुक कर्ज वितरण</div>
+                  <div className="font-bold text-blue-700">{fmt(balanceData.cashTotal)}</div>
                 </div>
-                <div className="flex flex-wrap gap-3 text-sm">
-                  {recoData.summary?.missingCount > 0 && <span className="px-2 py-1 bg-red-100 text-red-700 rounded-lg">🔴 {recoData.summary.missingCount} गहाळ</span>}
-                  {recoData.summary?.mismatchCount > 0 && <span className="px-2 py-1 bg-orange-100 text-orange-700 rounded-lg">🟠 {recoData.summary.mismatchCount} चुकीची रक्कम</span>}
-                  {recoData.summary?.duplicateCount > 0 && <span className="px-2 py-1 bg-yellow-100 text-yellow-700 rounded-lg">🟡 {recoData.summary.duplicateCount} डुप्लिकेट</span>}
+                <div className="bg-white rounded-lg p-2 text-center border">
+                  <div className="text-gray-500 mb-1">कर्ज DB मुद्दल</div>
+                  <div className="font-bold text-indigo-700">{fmt(balanceData.loanTotal)}</div>
                 </div>
-              </div>
-            )}
-
-            {recoData.loans?.length > 0 && (
-              <div className="space-y-2">
-                <h4 className="font-semibold text-red-700 text-sm">🔴 गहाळ रोकड नोंदी ({recoData.loans.length})</h4>
-                <div className="rounded-xl border-2 border-red-200 overflow-hidden">
-                  <div className="bg-red-700 text-white px-3 py-2 grid grid-cols-4 gap-2 text-xs font-semibold">
-                    <span>खाते क्र.</span><span>कर्जदार</span><span>तारीख</span><span className="text-right">रक्कम</span>
-                  </div>
-                  <div className="max-h-48 overflow-y-auto divide-y divide-red-50">
-                    {recoData.loans.map((loan) => (
-                      <div key={loan.id} className="grid grid-cols-4 gap-2 px-3 py-2 text-xs hover:bg-red-50">
-                        <span className="font-medium text-red-700">{loan.accountNumber || '-'}</span>
-                        <span>{loan.borrowerName}</span>
-                        <span className="text-gray-500">{fmtDate(loan.loanDate)}</span>
-                        <span className="text-right font-semibold text-red-600">{fmt(loan.principalAmount)}</span>
-                      </div>
-                    ))}
+                <div className={`rounded-lg p-2 text-center border ${balanceData.allClear ? 'bg-green-100' : 'bg-red-100'}`}>
+                  <div className="text-gray-500 mb-1">फरक</div>
+                  <div className={`font-bold ${balanceData.allClear ? 'text-green-700' : 'text-red-700'}`}>
+                    {balanceData.allClear ? '₹0' : fmt(balanceData.diff)}
                   </div>
                 </div>
               </div>
-            )}
+            </div>
 
-            {recoData.mismatches?.length > 0 && (
-              <div className="space-y-2">
-                <h4 className="font-semibold text-orange-700 text-sm">🟠 चुकीच्या रकमेच्या नोंदी ({recoData.mismatches.length}) — कर्ज edit केल्यामुळे</h4>
-                <div className="rounded-xl border-2 border-orange-200 overflow-hidden">
-                  <div className="bg-orange-600 text-white px-3 py-2 grid grid-cols-5 gap-2 text-xs font-semibold">
-                    <span>खाते क्र.</span><span>कर्जदार</span><span>कर्ज रक्कम</span><span>रोकड नोंद</span><span className="text-right">फरक</span>
-                  </div>
-                  <div className="max-h-48 overflow-y-auto divide-y divide-orange-50">
-                    {recoData.mismatches.map((m) => (
-                      <div key={m.id} className="grid grid-cols-5 gap-2 px-3 py-2 text-xs hover:bg-orange-50">
-                        <span className="font-medium text-orange-700">{m.accountNumber || '-'}</span>
-                        <span>{m.borrowerName}</span>
-                        <span className="text-green-700 font-semibold">{fmt(m.principalAmount)}</span>
-                        <span className="text-red-600">{fmt(m.cashEntryAmount)}</span>
-                        <span className="text-right font-semibold text-orange-700">{fmt(Math.abs(m.principalAmount - m.cashEntryAmount))}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+            {!balanceData.allClear && (
+              <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-xs text-amber-800">
+                <strong>उपाय:</strong> खाली "Rebuild" button वापरा — सर्व कर्ज वितरण entries DB वरून fresh तयार होतील आणि फरक ₹0 होईल.
               </div>
             )}
 
-            {recoData.duplicates?.length > 0 && (
-              <div className="space-y-2">
-                <h4 className="font-semibold text-yellow-700 text-sm">🟡 डुप्लिकेट रोकड नोंदी ({recoData.duplicates.length}) — एकाच कर्जासाठी अनेक entries</h4>
-                <div className="space-y-3">
-                  {recoData.duplicates.map((d) => {
-                    const keepIds = d.keepEntryIds || (d.keepEntryId ? [d.keepEntryId] : []);
-                    const orphanEntries = d.cashEntryIds
-                      .map((id, i) => ({ id, amount: d.cashEntryAmounts[i] }))
-                      .filter(e => !keepIds.includes(e.id));
-                    const keptEntries = d.cashEntryIds
-                      .map((id, i) => ({ id, amount: d.cashEntryAmounts[i] }))
-                      .filter(e => keepIds.includes(e.id));
-                    return (
-                      <div key={d.id} className="border-2 border-yellow-300 rounded-xl overflow-hidden">
-                        <div className="bg-yellow-100 px-3 py-2 flex items-center justify-between">
-                          <span className="font-semibold text-yellow-800 text-sm">खाते क्र. {d.accountNumber || '-'} — {d.borrowerName}</span>
-                          <span className="text-xs text-yellow-700">कर्ज: {fmt(d.principalAmount)}</span>
-                        </div>
-                        <div className="divide-y divide-yellow-100">
-                          {keptEntries.map(e => (
-                            <div key={e.id} className="px-3 py-2 flex items-center justify-between bg-green-50">
-                              <span className="text-xs text-green-700 font-medium">✅ {fmt(e.amount)} — योग्य नोंद (ठेवणार)</span>
-                            </div>
-                          ))}
-                          {orphanEntries.map(e => (
-                            <div key={e.id} className="px-3 py-2 flex items-center justify-between bg-red-50">
-                              <span className="text-xs text-red-700 font-medium">⚠️ {fmt(e.amount)} — अनावश्यक नोंद</span>
-                              <Button
-                                size="sm"
-                                variant="destructive"
-                                className="h-7 px-3 text-xs"
-                                disabled={deletingEntryId === e.id}
-                                onClick={() => deleteEntryMutation.mutate(e.id)}
-                              >
-                                <Trash2 className="h-3 w-3 mr-1" />
-                                {deletingEntryId === e.id ? 'हटवत आहे...' : 'हटवा'}
-                              </Button>
-                            </div>
-                          ))}
-                          {orphanEntries.length === 0 && (
-                            <div className="px-3 py-2 text-xs text-gray-500 italic">
-                              सर्व entries matched — कर्ज Edit → Save करून sync करा
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {fixResult && (
+            {rebuildResult && (
               <Alert className="border-green-300 bg-green-50">
                 <CheckCircle className="h-4 w-4 text-green-600" />
-                <AlertTitle className="text-green-700">दुरुस्ती यशस्वी!</AlertTitle>
-                <AlertDescription className="text-green-600 space-y-1">
-                  <p>{fixResult.message}</p>
-                  {fixResult.details && (
-                    <p className="text-xs">नव्या: {fixResult.details.created} | अपडेट: {fixResult.details.updated} | डुप्लिकेट हटवले: {fixResult.details.duplicatesRemoved}</p>
-                  )}
+                <AlertTitle className="text-green-700 text-sm">Rebuild यशस्वी!</AlertTitle>
+                <AlertDescription className="text-green-600 text-xs">
+                  {rebuildResult.message}
+                  <span className="block mt-1">हटवल्या: {rebuildResult.deleted} | नव्या: {rebuildResult.created}</span>
                 </AlertDescription>
               </Alert>
             )}
 
-            {!allClear && (
-              !confirmFix ? (
-                <Button onClick={() => setConfirmFix(true)} className="bg-red-600 hover:bg-red-700 text-white" disabled={fixMutation.isPending}>
-                  <Scale className="h-4 w-4 mr-2" />
-                  सर्व {totalIssues} समस्या दुरुस्त करा
-                </Button>
-              ) : (
-                <div className="p-4 bg-red-50 rounded-xl border-2 border-red-300 space-y-3">
-                  <p className="text-red-700 text-sm font-semibold">
-                    ⚠️ खात्री आहे का?
-                  </p>
-                  <ul className="text-red-700 text-sm space-y-1 list-disc list-inside">
-                    <li>गहाळ नोंदी तयार होतील</li>
-                    <li>चुकीच्या रकमा दुरुस्त होतील</li>
-                    <li>डुप्लिकेट — ज्यांची रक्कम बरोबर आहे त्या safe पद्धतीने हटवल्या जातील</li>
-                    <li>ज्या डुप्लिकेट हटवता येणार नाहीत त्यासाठी कर्ज Edit → Save करा</li>
-                  </ul>
-                  <div className="flex gap-3">
-                    <Button onClick={() => fixMutation.mutate()} disabled={fixMutation.isPending} className="bg-red-600 hover:bg-red-700 text-white">
-                      {fixMutation.isPending ? <><RefreshCw className="h-4 w-4 mr-2 animate-spin" />दुरुस्त करत आहे...</> : <>✅ होय, दुरुस्त करा</>}
-                    </Button>
-                    <Button variant="outline" onClick={() => setConfirmFix(false)} disabled={fixMutation.isPending}>रद्द करा</Button>
-                  </div>
-                </div>
-              )
-            )}
-
-            <div className="border-t border-gray-200 pt-3 mt-2 space-y-2">
-              <p className="text-xs text-gray-500 font-medium">⚡ Advanced — कर्ज वितरण Entries Rebuild</p>
+            <div className="border-t border-gray-200 pt-4 space-y-2">
+              <p className="text-xs text-gray-500 font-medium">कर्ज वितरण Entries Rebuild</p>
               {!confirmRebuild ? (
                 <Button
                   variant="outline"
@@ -323,15 +152,15 @@ function CashReconciliationTab({ queryClient }: { queryClient: any }) {
                   onClick={() => setConfirmRebuild(true)}
                 >
                   <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
-                  सर्व Entries Delete करून Rebuild करा
+                  Rebuild करा (सर्व entries fresh तयार होतील)
                 </Button>
               ) : (
                 <div className="p-3 bg-orange-50 rounded-xl border-2 border-orange-300 space-y-2">
                   <p className="text-orange-800 text-xs font-semibold">⚠️ खात्री करा:</p>
                   <ul className="text-orange-700 text-xs space-y-1 list-disc list-inside">
-                    <li>सर्व जुन्या <strong>loan_disbursement</strong> entries DELETE होतील</li>
+                    <li>जुन्या loan_disbursement entries DELETE होतील</li>
                     <li>प्रत्येक कर्जासाठी DB वरून fresh entry तयार होईल</li>
-                    <li>Opening balance, expenses, loan repayment entries <strong>safe</strong> आहेत</li>
+                    <li>Opening balance, expenses, repayment entries safe आहेत</li>
                   </ul>
                   <div className="flex gap-2">
                     <Button
@@ -340,25 +169,20 @@ function CashReconciliationTab({ queryClient }: { queryClient: any }) {
                       onClick={() => rebuildMutation.mutate()}
                       disabled={rebuildMutation.isPending}
                     >
-                      {rebuildMutation.isPending ? <><RefreshCw className="h-3 w-3 mr-1 animate-spin" />Rebuild करत आहे...</> : <>✅ होय, Rebuild करा</>}
+                      {rebuildMutation.isPending
+                        ? <><RefreshCw className="h-3 w-3 mr-1 animate-spin" />Rebuild करत आहे...</>
+                        : <>✅ होय, Rebuild करा</>}
                     </Button>
-                    <Button variant="outline" size="sm" className="text-xs h-7" onClick={() => setConfirmRebuild(false)} disabled={rebuildMutation.isPending}>रद्द करा</Button>
+                    <Button variant="outline" size="sm" className="text-xs h-7"
+                      onClick={() => setConfirmRebuild(false)} disabled={rebuildMutation.isPending}>
+                      रद्द करा
+                    </Button>
                   </div>
                 </div>
               )}
-              {rebuildResult && (
-                <Alert className="border-orange-300 bg-orange-50">
-                  <CheckCircle className="h-4 w-4 text-orange-600" />
-                  <AlertTitle className="text-orange-700 text-sm">Rebuild यशस्वी!</AlertTitle>
-                  <AlertDescription className="text-orange-600 text-xs">
-                    {rebuildResult.message}
-                    <span className="block mt-1">हटवल्या: {rebuildResult.deleted} | नव्या: {rebuildResult.created}</span>
-                  </AlertDescription>
-                </Alert>
-              )}
             </div>
 
-            <Button variant="outline" size="sm" onClick={() => recheckEntries()} disabled={isChecking}>
+            <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isLoading}>
               <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
               पुन्हा तपासा
             </Button>
