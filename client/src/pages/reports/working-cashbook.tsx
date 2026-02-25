@@ -4,6 +4,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useRealTimeSync } from "@/hooks/use-real-time-sync";
+import { displayNarration } from "@/lib/utils";
 
 import { Label } from "@/components/ui/label";
 import { Search, Printer, Home, ArrowLeft, Download } from "lucide-react";
@@ -124,7 +125,7 @@ export default function WorkingCashBook() {
     // Process filtered cash transactions - SIMPLIFIED NARRATION
     filteredCashTransactions.forEach((transaction: any) => {
       const partyName = transaction.party?.name || '';
-      const narration = transaction.narration || '';
+      const narration = displayNarration(transaction.narration) || '';
       
 
       
@@ -296,7 +297,7 @@ export default function WorkingCashBook() {
         .forEach(transaction => {
           cleanStatementData.push({
             date: transaction.formattedDate || transaction.date,
-            particulars: transaction.narration || transaction.particulars,
+            particulars: displayNarration(transaction.narration) || transaction.particulars,
             amount: transaction.amount,
             type: transaction.type === 'cash_in' ? 'आवक' : 'जावक'
           });
