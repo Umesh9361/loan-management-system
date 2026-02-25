@@ -850,12 +850,10 @@ export class DataManagementService {
   }
 
   private async reconcileLoanDisbursements(tenantId: string): Promise<DataManagementResult> {
-    // Implementation for loan disbursement reconciliation
     const loansData = await db.select().from(loans).where(eq(loans.tenantId, tenantId));
     let reconciledCount = 0;
     
     for (const loan of loansData) {
-      // Check if corresponding cash transaction exists
       const disbursementTransaction = await db.select()
         .from(cashTransactions)
         .where(and(
@@ -867,9 +865,6 @@ export class DataManagementService {
         .limit(1);
 
       if (disbursementTransaction.length === 0) {
-        // Create missing disbursement transaction
-        // DUPLICATE CREATION DISABLED: No cash transaction creation from data-management
-        // All loan disbursement cash transactions handled by main routes.ts only
         console.log(`🚫 DATA-MANAGEMENT DISABLED: Cash transaction creation disabled for account ${loan.accountNumber} to prevent duplicates`);
         reconciledCount++;
       }
@@ -881,6 +876,98 @@ export class DataManagementService {
       affectedRecords: reconciledCount,
       details: []
     };
+  }
+
+  async getMissingDisbursementEntries(tenantId: string): Promise<{
+    success: boolean;
+    missingCount: number;
+    totalMissingAmount: number;
+    loans: Array<{ id: number; accountNumber: string; borrowerName: string; groupName: string; loanDate: string; principalAmount: number }>;
+  }> {
+    try {
+      const loansData = await db.select().from(loans).where(eq(loans.tenantId, tenantId));
+      const missingLoans: Array<{ id: number; accountNumber: string; borrowerName: string; groupName: string; loanDate: string; principalAmount: number }> = [];
+
+      for (const loan of loansData) {
+        const existing = await db.select()
+          .from(cashTransactions)
+          .where(and(
+            eq(cashTransactions.tenantId, tenantId),
+            eq(cashTransactions.transactionType, 'cash_out'),
+            sql`(${cashTransactions.category} = 'loan_disbursement' OR ${cashTransactions.narration} LIKE ${'%खाते क्र. ' + loan.accountNumber + '%'} OR ${cashTransactions.narration} LIKE ${'%' + loan.accountNumber + '%'})`,
+            sql`ABS(CAST(${cashTransactions.amount} AS NUMERIC) - ${Number(loan.principalAmount)}) < 0.01`
+          ))
+          .limit(1);
+
+        if (existing.length === 0) {
+          missingLoans.push({
+            id: loan.id,
+            accountNumber: loan.accountNumber || '',
+            borrowerName: loan.borrowerName || '',
+            groupName: loan.groupName || '',
+            loanDate: loan.loanDate || '',
+            principalAmount: Number(loan.principalAmount) || 0
+          });
+        }
+      }
+
+      const totalMissingAmount = missingLoans.reduce((sum, l) => sum + l.principalAmount, 0);
+
+      return {
+        success: true,
+        missingCount: missingLoans.length,
+        totalMissingAmount,
+        loans: missingLoans
+      };
+    } catch (error) {
+      console.error("getMissingDisbursementEntries error:", error);
+      return { success: false, missingCount: 0, totalMissingAmount: 0, loans: [] };
+    }
+  }
+
+  async fixMissingDisbursementEntries(tenantId: string): Promise<{
+    success: boolean;
+    fixedCount: number;
+    totalFixedAmount: number;
+    message: string;
+  }> {
+    try {
+      const diagnostic = await this.getMissingDisbursementEntries(tenantId);
+      if (!diagnostic.success) throw new Error("Diagnostic failed");
+
+      let fixedCount = 0;
+      let totalFixedAmount = 0;
+
+      for (const loan of diagnostic.loans) {
+        await storage.createCashTransaction({
+          tenantId,
+          transactionDate: loan.loanDate,
+          transactionType: 'cash_out',
+          amount: loan.principalAmount,
+          narration: `कर्ज वाटप - खाते क्र. ${loan.accountNumber} - ${loan.borrowerName}${loan.groupName ? ' - ' + loan.groupName : ''}`,
+          category: 'loan_disbursement',
+          isSystemGenerated: true
+        } as any);
+        fixedCount++;
+        totalFixedAmount += loan.principalAmount;
+        console.log(`✅ CASH-FIX: Created missing disbursement entry for account ${loan.accountNumber} - ₹${loan.principalAmount}`);
+      }
+
+      return {
+        success: true,
+        fixedCount,
+        totalFixedAmount,
+        message: `${fixedCount} कर्जांच्या रोकड नोंदी तयार केल्या, एकूण रक्कम: ₹${totalFixedAmount.toLocaleString('en-IN')}`
+      };
+    } catch (error) {
+      console.error("fixMissingDisbursementEntries error:", error);
+      return {
+        success: false,
+        fixedCount: 0,
+        totalFixedAmount: 0,
+        message: "दुरुस्ती अयशस्वी: " + (error as Error).message
+      };
+    }
   }
 
   private async reconcileLoanClosures(tenantId: string): Promise<DataManagementResult> {

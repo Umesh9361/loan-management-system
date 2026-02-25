@@ -10,7 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { AlertTriangle, ArrowUpDown, CheckCircle, Database, Download, HardDrive, RefreshCw, Shield, Trash2, Upload } from "lucide-react";
+import { AlertTriangle, ArrowUpDown, CheckCircle, Database, Download, HardDrive, RefreshCw, Scale, Shield, Trash2, Upload } from "lucide-react";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
 import { initDevanagariFont } from "@/lib/pdf-text-generator";
@@ -31,6 +31,205 @@ interface IntegrityCheckResult {
     timestamp: string;
   };
   details: Array<{ issue: string }>;
+}
+
+interface MissingCashEntry {
+  id: number;
+  accountNumber: string;
+  borrowerName: string;
+  groupName: string;
+  loanDate: string;
+  principalAmount: number;
+}
+
+interface MissingCashEntriesResult {
+  success: boolean;
+  missingCount: number;
+  totalMissingAmount: number;
+  loans: MissingCashEntry[];
+}
+
+function CashReconciliationTab({ queryClient }: { queryClient: any }) {
+  const [checked, setChecked] = useState(false);
+  const [confirmFix, setConfirmFix] = useState(false);
+  const [fixResult, setFixResult] = useState<{ fixedCount: number; totalFixedAmount: number; message: string } | null>(null);
+
+  const { data: missingData, isLoading: isChecking, refetch: recheckEntries } = useQuery<MissingCashEntriesResult>({
+    queryKey: ["/api/data-management/missing-cash-entries"],
+    enabled: checked,
+    retry: false
+  });
+
+  const fixMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("/api/data-management/fix-missing-cash-entries", "POST");
+      return await response.json();
+    },
+    onSuccess: async (data: any) => {
+      setFixResult(data);
+      setConfirmFix(false);
+      await queryClient.invalidateQueries({ queryKey: ["/api/cash-transactions"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["/api/cash-balance"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["/api/mobile-cashbook"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"], refetchType: 'all' });
+      recheckEntries();
+    }
+  });
+
+  const formatAmount = (amount: number) =>
+    new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(amount);
+
+  const formatDate = (dateStr: string) => {
+    if (!dateStr) return '-';
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr;
+    return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
+  };
+
+  return (
+    <Card className="border-2 border-amber-200 dark:border-amber-800 rounded-xl shadow-sm">
+      <CardHeader className="p-4 sm:p-6">
+        <CardTitle className="flex items-center gap-2 text-amber-700 dark:text-amber-400">
+          <div className="p-1.5 bg-gradient-to-br from-amber-500 to-amber-600 rounded-lg">
+            <Scale className="h-4 w-4 text-white" />
+          </div>
+          रोकड मेळ (Cash Reconciliation)
+        </CardTitle>
+        <CardDescription className="text-amber-700 dark:text-amber-400">
+          जुन्या कर्ज नोंदींसाठी रोकड व्यवहार तपासा आणि गहाळ नोंदी तयार करा
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="p-4 sm:p-6 space-y-5">
+
+        <div className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-xl border-2 border-amber-200 dark:border-amber-700">
+          <p className="text-sm text-amber-800 dark:text-amber-300">
+            <strong>हे साधन काय करते:</strong> प्रत्येक कर्जासाठी कॅशबुकमध्ये "कर्ज वाटप" रोकड नोंद आहे का ते तपासते.
+            जुना डेटा फक्त कर्ज नोंदीसह आणला असेल आणि रोकड एन्ट्री नसेल तर हे साधन त्या तयार करते.
+          </p>
+        </div>
+
+        {!checked && (
+          <Button
+            onClick={() => setChecked(true)}
+            className="bg-amber-600 hover:bg-amber-700 text-white"
+          >
+            <RefreshCw className="h-4 w-4 mr-2" />
+            तपासा - रोकड नोंद नसलेली कर्जे शोधा
+          </Button>
+        )}
+
+        {checked && isChecking && (
+          <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-xl border">
+            <RefreshCw className="h-5 w-5 animate-spin text-amber-600" />
+            <span className="text-gray-600">तपासत आहे...</span>
+          </div>
+        )}
+
+        {checked && missingData && !isChecking && (
+          <div className="space-y-4">
+            <div className={`p-4 rounded-xl border-2 ${missingData.missingCount === 0 ? 'bg-green-50 border-green-300' : 'bg-red-50 border-red-300'}`}>
+              {missingData.missingCount === 0 ? (
+                <div className="flex items-center gap-2 text-green-700">
+                  <CheckCircle className="h-5 w-5" />
+                  <strong>सर्व कर्जांसाठी रोकड नोंद आहे! कोणतीही दुरुस्ती आवश्यक नाही.</strong>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-red-700">
+                    <AlertTriangle className="h-5 w-5" />
+                    <strong>{missingData.missingCount} कर्जांना रोकड नोंद नाही</strong>
+                  </div>
+                  <div className="text-red-600 text-sm">
+                    एकूण गहाळ रक्कम: <strong>{formatAmount(missingData.totalMissingAmount)}</strong>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {missingData.loans.length > 0 && (
+              <>
+                <div className="rounded-xl border-2 border-gray-200 overflow-hidden">
+                  <div className="bg-indigo-700 text-white px-3 py-2 grid grid-cols-4 gap-2 text-xs font-semibold">
+                    <span>खाते क्र.</span>
+                    <span>कर्जदार</span>
+                    <span>तारीख</span>
+                    <span className="text-right">रक्कम</span>
+                  </div>
+                  <div className="max-h-64 overflow-y-auto divide-y divide-gray-100">
+                    {missingData.loans.map((loan) => (
+                      <div key={loan.id} className="grid grid-cols-4 gap-2 px-3 py-2 text-xs hover:bg-gray-50">
+                        <span className="font-medium text-indigo-700">{loan.accountNumber || '-'}</span>
+                        <span>{loan.borrowerName}</span>
+                        <span className="text-gray-500">{formatDate(loan.loanDate)}</span>
+                        <span className="text-right font-semibold text-red-600">{formatAmount(loan.principalAmount)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {fixResult && (
+                  <Alert className="border-green-300 bg-green-50">
+                    <CheckCircle className="h-4 w-4 text-green-600" />
+                    <AlertTitle className="text-green-700">दुरुस्ती यशस्वी!</AlertTitle>
+                    <AlertDescription className="text-green-600">
+                      {fixResult.message}
+                    </AlertDescription>
+                  </Alert>
+                )}
+
+                {!confirmFix ? (
+                  <Button
+                    onClick={() => setConfirmFix(true)}
+                    className="bg-red-600 hover:bg-red-700 text-white"
+                    disabled={fixMutation.isPending}
+                  >
+                    <Scale className="h-4 w-4 mr-2" />
+                    {missingData.missingCount} रोकड नोंदी तयार करा
+                  </Button>
+                ) : (
+                  <div className="p-4 bg-red-50 rounded-xl border-2 border-red-300 space-y-3">
+                    <p className="text-red-700 text-sm font-semibold">
+                      ⚠️ खात्री आहे का? {missingData.missingCount} कर्जांसाठी {formatAmount(missingData.totalMissingAmount)} च्या रोकड नोंदी तयार होतील.
+                    </p>
+                    <div className="flex gap-3">
+                      <Button
+                        onClick={() => fixMutation.mutate()}
+                        disabled={fixMutation.isPending}
+                        className="bg-red-600 hover:bg-red-700 text-white"
+                      >
+                        {fixMutation.isPending ? (
+                          <><RefreshCw className="h-4 w-4 mr-2 animate-spin" />तयार करत आहे...</>
+                        ) : (
+                          <>✅ होय, दुरुस्त करा</>
+                        )}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => setConfirmFix(false)}
+                        disabled={fixMutation.isPending}
+                      >
+                        रद्द करा
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => recheckEntries()}
+              disabled={isChecking}
+            >
+              <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
+              पुन्हा तपासा
+            </Button>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
 }
 
 function DataManagementPage() {
@@ -705,6 +904,11 @@ function DataManagementPage() {
               <span className="hidden sm:inline">खाते नंबर रिअरेंज</span>
               <span className="sm:hidden">रिअरेंज</span>
             </TabsTrigger>
+            <TabsTrigger value="cashfix" className="flex-shrink-0 flex items-center gap-1.5 px-3 py-2.5 text-xs sm:text-sm font-semibold rounded-lg whitespace-nowrap data-[state=active]:bg-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all">
+              <Scale className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">रोकड मेळ</span>
+              <span className="sm:hidden">रोकड मेळ</span>
+            </TabsTrigger>
             <TabsTrigger value="backup" className="flex-shrink-0 flex items-center gap-1.5 px-3 py-2.5 text-xs sm:text-sm font-semibold rounded-lg whitespace-nowrap data-[state=active]:bg-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all">
               <HardDrive className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               <span className="hidden sm:inline">बॅकअप व्यवस्थापन</span>
@@ -1347,6 +1551,10 @@ function DataManagementPage() {
                 )}
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="cashfix">
+            <CashReconciliationTab queryClient={queryClient} />
           </TabsContent>
 
           <TabsContent value="backup">

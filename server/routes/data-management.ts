@@ -140,6 +140,52 @@ router.get("/integrity-check", async (req: any, res) => {
   }
 });
 
+/**
+ * GET /api/data-management/missing-cash-entries
+ * रोकड नोंद नसलेल्या कर्जांची यादी
+ */
+router.get("/missing-cash-entries", async (req: any, res) => {
+  try {
+    const tenantId = req.session.tenantId;
+    console.log(`🔍 MISSING CASH ENTRIES: Checking for tenant ${tenantId}`);
+    const result = await dataManagementService.getMissingDisbursementEntries(tenantId);
+    res.json(result);
+  } catch (error) {
+    console.error("Missing cash entries check error:", error);
+    res.status(500).json({
+      success: false,
+      missingCount: 0,
+      totalMissingAmount: 0,
+      loans: [],
+      message: "तपासणी अयशस्वी: " + (error as Error).message
+    });
+  }
+});
+
+/**
+ * POST /api/data-management/fix-missing-cash-entries
+ * रोकड नोंद नसलेल्या कर्जांची रोकड एन्ट्री तयार करा
+ */
+router.post("/fix-missing-cash-entries", async (req: any, res) => {
+  try {
+    const tenantId = req.session.tenantId;
+    console.log(`🔧 FIX MISSING CASH ENTRIES: Starting for tenant ${tenantId}`);
+    const result = await dataManagementService.fixMissingDisbursementEntries(tenantId);
+    if (result.success) {
+      console.log(`✅ FIX MISSING CASH ENTRIES: Fixed ${result.fixedCount} entries, total ₹${result.totalFixedAmount}`);
+    }
+    res.json(result);
+  } catch (error) {
+    console.error("Fix missing cash entries error:", error);
+    res.status(500).json({
+      success: false,
+      fixedCount: 0,
+      totalFixedAmount: 0,
+      message: "दुरुस्ती अयशस्वी: " + (error as Error).message
+    });
+  }
+});
+
 const rearrangeSchema = z.object({
   groupId: z.string().min(1, "ग्रुप ID आवश्यक आहे"),
   upToDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "तारीख YYYY-MM-DD फॉर्मॅट मध्ये असावी").optional(),
