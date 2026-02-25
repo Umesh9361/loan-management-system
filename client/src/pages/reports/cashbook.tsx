@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Sidebar } from "@/components/ui/sidebar";
 import { MobileNav } from "@/components/ui/mobile-nav";
 import { DateUtils } from "@/lib/date-utils";
+import { displayNarration } from "@/lib/utils";
 import { LoanCalculations } from "@/lib/loan-calculations";
 import { useQuery } from "@tanstack/react-query";
 import { useRealTimeSync } from "@/hooks/use-real-time-sync";
@@ -627,7 +628,7 @@ function CashBookReport() {
       
       acc.push({
         date: transaction.transactionDate,
-        description: `${transaction.transactionType === 'cash_in' ? 'जमा' : 'नावे'}: ${transaction.narration}`,
+        description: `${transaction.transactionType === 'cash_in' ? 'जमा' : 'नावे'}: ${displayNarration(transaction.narration)}`,
         credit: credit || 0,
         debit: debit || 0,
         balance: runningBalance,
