@@ -1380,95 +1380,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       });
       
-      // AUTOMATIC DUPLICATE PREVENTION: Loan disbursement with single source processing
-      // हे सगळं ऑटोमॅटिक झालं पाहिजे बिना प्रॉब्लेमच - Complete automation
-      
-      // STEP 1: COMPREHENSIVE CHECK - Look for both system and manual entries
-      const existingDisbursement = await db
-        .select()
-        .from(cashTransactions)
-        .where(and(
-          eq(cashTransactions.tenantId, req.session.tenantId!),
-          eq(cashTransactions.transactionType, 'cash_out'),
-          eq(cashTransactions.category, 'loan_disbursement'),
-          sql`${cashTransactions.narration} LIKE ${`%खाते क्र. ${loanData.accountNumber}%`}`,
-          eq(cashTransactions.transactionDate, loanData.loanDate),
-          sql`ABS(${cashTransactions.amount} - ${loanData.principalAmount}) < 0.01`
-        ));
-
-      // STEP 1.5: PRE-EMPTIVE CLEANUP - Remove any manual expense entries that match this loan
-      const manualExpenseEntries = await db
-        .select()
-        .from(cashTransactions)
-        .where(and(
-          eq(cashTransactions.tenantId, req.session.tenantId!),
-          eq(cashTransactions.transactionType, 'cash_out'),
-          eq(cashTransactions.category, 'expense'),
-          eq(cashTransactions.isSystemGenerated, false),
-          sql`${cashTransactions.narration} LIKE ${`%खाते क्र. ${loanData.accountNumber}%`}`,
-          sql`ABS(${cashTransactions.amount} - ${loanData.principalAmount}) < 0.01`,
-          sql`${cashTransactions.createdAt} > NOW() - INTERVAL '1 hour'` // Only recent manual entries
-        ));
-
-      if (manualExpenseEntries.length > 0) {
-        console.log(`🧹 PRE-EMPTIVE CLEANUP: Removing ${manualExpenseEntries.length} manual expense entries for loan ${loanData.accountNumber}`);
-        await db.delete(cashTransactions)
-          .where(and(
-            eq(cashTransactions.tenantId, req.session.tenantId!),
-            eq(cashTransactions.transactionType, 'cash_out'),
-            eq(cashTransactions.category, 'expense'),
-            eq(cashTransactions.isSystemGenerated, false),
-            sql`${cashTransactions.narration} LIKE ${`%खाते क्र. ${loanData.accountNumber}%`}`,
-            sql`ABS(${cashTransactions.amount} - ${loanData.principalAmount}) < 0.01`,
-            sql`${cashTransactions.createdAt} > NOW() - INTERVAL '1 hour'`
-          ));
-      }
-        
-      console.log('🔍 DISBURSEMENT CHECK:', {
-        accountNumber: loanData.accountNumber,
-        amount: loanData.principalAmount,
-        date: loanData.loanDate,
-        existingCount: existingDisbursement.length
-      });
-
-      if (existingDisbursement.length === 0 && Number(loanData.principalAmount) > 0) {
-        // STEP 2: Get group name if groupId exists
-        let groupName = undefined;
-        if (loanData.groupId) {
-          const groups = await storage.getGroups(req.session.tenantId!);
-          const group = groups.find(g => g.id === loanData.groupId);
-          groupName = group ? group.name : undefined;
-        }
-        
-        // STEP 3: Create ONLY cash transaction with standardized narration
-        const { NarrationEngine } = await import('./narration-engine');
-        const standardNarration = NarrationEngine.createLoanDisbursementNarration(
-          loanData.accountNumber,
-          loanData.borrowerName,
-          Number(loanData.principalAmount),
-          groupName,
-          loanData.loanType,
-          loanData.collateralDetails,
-          loanData.weight,
-          loanData.loanDate
-        );
-
-        // CRITICAL FIX: Use storage layer for proper duplicate prevention
-        await storage.createCashTransaction({
-          tenantId: req.session.tenantId!,
-          transactionDate: loanData.loanDate,
-          transactionType: 'cash_out',
-          amount: Number(loanData.principalAmount),
-          category: 'loan_disbursement',
-          narration: standardNarration,
-          isSystemGenerated: true,
-          loanId: loan.id
-        } as any);
-        
-        console.log('✅ LOAN CREATED: Single disbursement cash transaction created automatically without duplicates');
-      } else {
-        console.log('🚫 AUTOMATIC: Duplicate disbursement cash transaction prevented');
-      }
+      // Disbursement cash entry is created by triggerLoanSync(CREATE) above.
+      // sync engine uses loanId (UUID) as primary key — guaranteed unique, no narration matching needed.
+      console.log('✅ LOAN CREATED: Disbursement handled by sync engine (loanId-based, no duplicates possible)');
 
       try { await storage.logUserActivity({ userId: req.session.userId!, tenantId: req.session.tenantId!, activityType: 'create_loan', description: `नवीन कर्ज तयार: खाते क्र. ${loan.accountNumber} - ${loan.borrowerName} - ₹${loan.principalAmount}`, metadata: JSON.stringify({ loanId: loan.id, accountNumber: loan.accountNumber, borrowerName: loan.borrowerName, principalAmount: loan.principalAmount, loanDate: loan.loanDate, interestRate: loan.interestRate, groupId: loan.groupId }) }); } catch(e) { console.error('Audit log error:', e); }
 
@@ -1572,34 +1486,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // If loan status changed from closed to active, reverse cash transactions
+      // If loan status changed from closed to active via PATCH update (not /reopen route):
+      // Delete closure records + closure cash entries are handled by triggerLoanSync(UPDATE→REOPEN) above.
       if (oldLoan && oldLoan.status === 'closed' && loanData.status === 'active') {
         try {
-          const cashTransactions = await storage.getCashTransactions(req.session.tenantId!);
-          const closureTransactions = cashTransactions.filter((ct: any) => 
-            ct.narration && 
-            ct.narration.includes('कर्ज बंद') &&
-            (ct.narration.includes(loan.accountNumber) || ct.narration.includes(loan.borrowerName))
-          );
-          
-          // Delete closure-related cash transactions
-          for (const ct of closureTransactions) {
-            await storage.deleteCashTransaction(ct.id, req.session.tenantId!);
-            console.log(`✅ REOPEN: Deleted closure cash transaction - ₹${ct.amount}`);
-          }
-
-          // 📸 PHOTO REOPEN POLICY: Photos remain deleted after reopen  
-          // Business Logic: Once closed and photos auto-deleted, they don't restore on reopen
-          // User must re-upload photos if needed after reopening loan
-          console.log(`📸 PHOTO REOPEN: Photos remain deleted - user can re-upload if needed`);
-          
-          // Delete loan closure record if exists
+          // Delete loan closure RECORDS
           const closures = await storage.getLoanClosures(req.session.tenantId!, id);
           for (const closure of closures) {
             await storage.deleteLoanClosure(closure.id, req.session.tenantId!);
           }
+          // Closure CASH entries deleted by triggerLoanSync(UPDATE) → handleStatusChange → handleLoanReopen (loanId-based, safe)
+          console.log(`✅ STATUS REOPEN: Closure records removed; cash entries handled by sync engine`);
         } catch (cashError) {
-          console.error('Failed to reverse cash transactions for reopened loan:', cashError);
+          console.error('Failed to cleanup closure records during status-based reopen:', cashError);
         }
       }
       
@@ -1672,7 +1571,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Only closed loans can be reopened" });
       }
       
-      // 🔧 CRITICAL FIX: Delete existing closure records before reopening
+      // Delete existing closure RECORDS (loanClosure table) before reopening
       // This prevents "Loan already closed" error when re-closing
       try {
         const closures = await storage.getLoanClosures(req.session.tenantId!, id);
@@ -1680,21 +1579,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           await storage.deleteLoanClosure(closure.id, req.session.tenantId!);
           console.log(`🗑️ CLEANUP: Deleted closure record ${closure.id} for loan reopen`);
         }
-        
-        // Also cleanup related closure cash transactions
-        const cashTransactions = await storage.getCashTransactions(req.session.tenantId!);
-        const closureCashEntries = cashTransactions.filter((ct: any) => 
-          ct.narration && 
-          ct.narration.includes('कर्ज बंद') &&
-          (ct.narration.includes(loan.accountNumber) || ct.narration.includes(loan.borrowerName))
-        );
-        
-        for (const ct of closureCashEntries) {
-          await storage.deleteCashTransaction(ct.id, req.session.tenantId!);
-          console.log(`🗑️ CLEANUP: Deleted closure cash transaction for loan reopen - ₹${ct.amount}`);
-        }
-        
-        console.log(`✅ CLEANUP COMPLETE: Loan ${id} ready for reopen - ${closures.length} closure records + ${closureCashEntries.length} cash entries removed`);
+        // Closure CASH entries are deleted by triggerLoanSync(REOPEN) below (loanId-based, safe)
+        console.log(`✅ CLOSURE RECORDS REMOVED: ${closures.length} closure record(s) deleted for loan ${id}`);
       } catch (cleanupError) {
         console.error('Cleanup error during loan reopen:', cleanupError);
         return res.status(500).json({ message: "Failed to cleanup closure records during reopen" });
