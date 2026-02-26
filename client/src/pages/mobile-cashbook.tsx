@@ -897,6 +897,8 @@ function MobileCashbook() {
                   setIsSearchOpen(newSearchOpen);
                   if (!newSearchOpen) {
                     setViewPeriod('daily');
+                    setSearchDisplayText("");
+                    setSearchFilters({ search: "", amount: "", dateFrom: "", dateTo: "", transactionType: "", monthsBack: "" });
                   } else {
                     setTimeout(() => {
                       const searchPanel = document.querySelector('[data-search-panel]');
