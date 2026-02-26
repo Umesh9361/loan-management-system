@@ -306,6 +306,7 @@ export class RealTimeSyncEngine {
 
     if (!oldData) return;
 
+    // ── STEP 1: Delete disbursement (cash_out) entry ──────────────────────────
     // Tier 1: Delete all entries with this loanId (UUID — guaranteed to belong to this loan)
     const byLoanId = await db.select()
       .from(cashTransactions)
@@ -314,6 +315,8 @@ export class RealTimeSyncEngine {
         eq(cashTransactions.loanId, loanId),
         eq(cashTransactions.category, 'loan_disbursement')
       ));
+
+    let disbursementDeleted = false;
 
     if (byLoanId.length > 0) {
       let deletedCount = 0;
@@ -330,24 +333,79 @@ export class RealTimeSyncEngine {
       }
       if (deletedCount > 0) {
         result.operationsPerformed.push(`DELETED_BY_LOANID_COUNT_${deletedCount}`);
-        return;
+        disbursementDeleted = true;
       }
-      // All loanId entries failed narration verification → fall through to Tier 2
+      // If all loanId entries failed narration verification → fall through to Tier 2
     }
 
-    // Tier 2: loanId not found — try orphan with exact amount + exact date
-    // Safe: loan_id IS NULL condition ensures other loans' entries are never touched
-    const orphan = await this.findOrphanDisbursement(tenantId, Number(oldData.principalAmount), oldData.loanDate);
-    if (orphan) {
-      await storage.deleteCashTransaction(orphan.id, tenantId);
-      result.cashTransactionsAffected += 1;
-      result.operationsPerformed.push('DELETED_ORPHAN_BY_AMOUNT_DATE');
+    if (!disbursementDeleted) {
+      // Tier 2: loanId not found — try orphan with exact amount + exact date
+      // Safe: loan_id IS NULL condition ensures other loans' entries are never touched
+      const orphan = await this.findOrphanDisbursement(tenantId, Number(oldData.principalAmount), oldData.loanDate);
+      if (orphan) {
+        await storage.deleteCashTransaction(orphan.id, tenantId);
+        result.cashTransactionsAffected += 1;
+        result.operationsPerformed.push('DELETED_ORPHAN_BY_AMOUNT_DATE');
+        disbursementDeleted = true;
+      }
+    }
+
+    if (!disbursementDeleted) {
+      console.warn(`⚠️ SYNC DELETE: No disbursement entry found for loanId ${loanId}. Already deleted or run Rebuild.`);
+      result.operationsPerformed.push('NOTHING_TO_DELETE');
+    }
+
+    // ── STEP 2: If loan was closed, also delete closure (loan_repayment) entry ──
+    // Critical: When user closes a loan then directly deletes it (without reopening first),
+    // the closure cash_in entry becomes an orphan if not cleaned up here.
+    if (oldData.status === 'closed') {
+      await this.deleteClosureEntriesOnLoanDelete(tenantId, loanId, oldData.accountNumber, result);
+    }
+  }
+
+  private async deleteClosureEntriesOnLoanDelete(
+    tenantId: string,
+    loanId: string,
+    accountNumber: string,
+    result: SyncResult
+  ): Promise<void> {
+    // Tier 1: loanId-based (reliable — works if closure entry was created with loanId linked)
+    const closureByLoanId = await db.select()
+      .from(cashTransactions)
+      .where(and(
+        eq(cashTransactions.tenantId, tenantId),
+        eq(cashTransactions.loanId, loanId),
+        eq(cashTransactions.category, 'loan_repayment'),
+        eq(cashTransactions.transactionType, 'cash_in')
+      ));
+
+    if (closureByLoanId.length > 0) {
+      for (const entry of closureByLoanId) {
+        await storage.deleteCashTransaction(entry.id, tenantId);
+        result.cashTransactionsAffected += 1;
+        result.operationsPerformed.push('DELETED_CLOSURE_BY_LOANID');
+      }
       return;
     }
 
-    // Nothing found — already deleted or needs Rebuild
-    console.warn(`⚠️ SYNC DELETE: No cashbook entry found for loanId ${loanId}. Already deleted or run Rebuild.`);
-    result.operationsPerformed.push('NOTHING_TO_DELETE');
+    // Tier 2: account number pattern match (fallback for old entries without loanId)
+    const pattern = this.buildAccountPattern(accountNumber);
+    const allTransactions = await storage.getCashTransactions(tenantId);
+    const closureMatches = allTransactions.filter((ct: any) =>
+      ct.category === 'loan_repayment' &&
+      ct.transactionType === 'cash_in' &&
+      ct.narration && pattern.test(ct.narration)
+    );
+
+    for (const entry of closureMatches) {
+      await storage.deleteCashTransaction(entry.id, tenantId);
+      result.cashTransactionsAffected += 1;
+      result.operationsPerformed.push('DELETED_CLOSURE_BY_ACCOUNT_PATTERN');
+    }
+
+    if (closureMatches.length === 0) {
+      console.warn(`⚠️ DELETE CLOSED LOAN: No closure entry found for account ${accountNumber}. May have already been cleaned up.`);
+    }
   }
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -451,15 +509,15 @@ export class RealTimeSyncEngine {
     );
   }
 
-  private async findClosureTransactions(tenantId: string, accountNumber: string, borrowerName: string): Promise<any[]> {
+  private async findClosureTransactions(tenantId: string, accountNumber: string, _borrowerName: string): Promise<any[]> {
     const transactions = await storage.getCashTransactions(tenantId);
     const pattern = this.buildAccountPattern(accountNumber);
+    // Only match by account number pattern — borrowerName fallback removed
+    // because same borrowerName can exist in multiple groups → wrong delete risk
     return transactions.filter((ct: any) =>
       ct.category === 'loan_repayment' &&
-      ct.narration && (
-        pattern.test(ct.narration) ||
-        ct.narration.includes(borrowerName)
-      )
+      ct.narration &&
+      pattern.test(ct.narration)
     );
   }
 
