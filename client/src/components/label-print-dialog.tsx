@@ -544,13 +544,16 @@ function generatePrintPage(labelsHtml: string, settings: LabelSettings): string 
 function generateQrLabelHtml(loan: LabelLoan, qrDataUrl: string, settings: LabelSettings): string {
   const { stickerSize } = settings;
   const shorterSide = Math.min(stickerSize.width, stickerSize.height);
-  const qrSize = +(shorterSide * 0.62).toFixed(1);
+  const qrSize = +(shorterSide * 0.82).toFixed(1);
   const qrPx = Math.round(qrSize * 3.78);
-  const accFontPt = Math.max(5, Math.min(8, shorterSide * 0.09));
+  const textAreaW = +(stickerSize.width - qrSize - 4).toFixed(1);
+  const accFontPt = Math.max(7, Math.min(18, textAreaW * 0.28));
   return `
-    <div class="label-container" style="width:${stickerSize.width}mm;height:${stickerSize.height}mm;box-sizing:border-box;page-break-after:always;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0.8mm;padding:1.5mm;">
-      <img src="${qrDataUrl}" width="${qrPx}" height="${qrPx}" style="width:${qrSize}mm;height:${qrSize}mm;max-width:100%;display:block;flex-shrink:0;" />
-      <div style="font-family:'Arial','Helvetica',sans-serif;font-size:${accFontPt}pt;font-weight:700;letter-spacing:0.5pt;text-align:center;white-space:nowrap;line-height:1;flex-shrink:0;">${loan.accountNumber}</div>
+    <div class="label-container" style="width:${stickerSize.width}mm;height:${stickerSize.height}mm;box-sizing:border-box;page-break-after:always;overflow:hidden;display:flex;flex-direction:row;align-items:center;justify-content:flex-start;gap:1mm;padding:1mm;">
+      <img src="${qrDataUrl}" width="${qrPx}" height="${qrPx}" style="width:${qrSize}mm;height:${qrSize}mm;display:block;flex-shrink:0;" />
+      <div style="flex:1;min-width:0;display:flex;align-items:center;justify-content:center;height:${qrSize}mm;">
+        <div style="font-family:'Arial Rounded MT Bold','Nunito','Arial','Helvetica',sans-serif;font-size:${accFontPt}pt;font-weight:900;text-align:center;word-break:break-all;line-height:1.2;letter-spacing:0.3pt;">${loan.accountNumber}</div>
+      </div>
     </div>
   `;
 }
@@ -1243,16 +1246,19 @@ export function LabelPrintDialog({ open, onOpenChange, loans }: LabelPrintDialog
                   >
                     {settings.qrMode ? (() => {
                       const shorterPx = Math.min(realWPx, realHPx);
-                      const qrPrevSize = +(shorterPx * 0.62).toFixed(1);
-                      const accFontPx = Math.max(5, Math.min(8, shorterPx * 0.09));
+                      const qrPrevSize = +(shorterPx * 0.82).toFixed(1);
+                      const textAreaPx = realWPx - qrPrevSize - 4;
+                      const accFontPx = Math.max(6, Math.min(16, textAreaPx * 0.28));
                       return (
-                        <div style={{ width: `${realWPx}px`, height: `${realHPx}px`, transform: `scale(${previewScale})`, transformOrigin: 'top left', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '2px', padding: '4px', overflow: 'hidden', boxSizing: 'border-box' }}>
+                        <div style={{ width: `${realWPx}px`, height: `${realHPx}px`, transform: `scale(${previewScale})`, transformOrigin: 'top left', display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-start', gap: '2px', padding: '2px', overflow: 'hidden', boxSizing: 'border-box' }}>
                           {qrPreviewUrls[String(loan.id)] ? (
                             <img src={qrPreviewUrls[String(loan.id)]} style={{ width: `${qrPrevSize}px`, height: `${qrPrevSize}px`, display: 'block', flexShrink: 0 }} alt="QR" />
                           ) : (
                             <div style={{ width: `${qrPrevSize}px`, height: `${qrPrevSize}px`, background: '#f3f4f6', borderRadius: '2px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '7px', color: '#9ca3af', flexShrink: 0 }}>QR…</div>
                           )}
-                          <div style={{ fontFamily: "'Arial','Helvetica',sans-serif", fontWeight: '700', textAlign: 'center', whiteSpace: 'nowrap', fontSize: `${accFontPx}px`, flexShrink: 0 }}>{loan.accountNumber}</div>
+                          <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', height: `${qrPrevSize}px` }}>
+                            <div style={{ fontFamily: "'Arial Rounded MT Bold','Nunito','Arial',sans-serif", fontWeight: '900', textAlign: 'center', wordBreak: 'break-all', fontSize: `${accFontPx}px`, lineHeight: 1.2 }}>{loan.accountNumber}</div>
+                          </div>
                         </div>
                       );
                     })() : (
