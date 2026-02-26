@@ -884,8 +884,8 @@ export class DataManagementService {
     success: boolean;
     missingCount: number;
     totalMissingAmount: number;
-    loans: Array<{ id: number; accountNumber: string; borrowerName: string; groupName: string; loanDate: string; principalAmount: number }>;
-    mismatches: Array<{ id: number; accountNumber: string; borrowerName: string; groupName: string; loanDate: string; principalAmount: number; cashEntryId: string; cashEntryAmount: number }>;
+    loans: Array<{ id: number; accountNumber: string; borrowerName: string; groupName: string; loanDate: string; principalAmount: number; status?: string }>;
+    mismatches: Array<{ id: number; accountNumber: string; borrowerName: string; groupName: string; loanDate: string; principalAmount: number; cashEntryId: string; cashEntryAmount: number; status?: string }>;
     duplicates: Array<{ id: number; accountNumber: string; borrowerName: string; loanDate: string; principalAmount: number; cashEntryIds: string[]; cashEntryAmounts: number[] }>;
     summary: { missingCount: number; mismatchCount: number; duplicateCount: number; totalDiscrepancy: number };
   }> {
@@ -924,7 +924,21 @@ export class DataManagementService {
       // ────────────────────────────────────────────────────────────────────────
       // Totals differ → run full narration-based diagnostic to find which loans/entries cause the gap
 
-      const loansData = await db.select().from(loans).where(eq(loans.tenantId, tenantId));
+      // Fetch ALL loans with group name (join) + status for richer matching and UI display
+      const loansData = await db.select({
+        id: loans.id,
+        accountNumber: loans.accountNumber,
+        borrowerName: loans.borrowerName,
+        principalAmount: loans.principalAmount,
+        loanDate: loans.loanDate,
+        groupId: loans.groupId,
+        status: loans.status,
+        groupName: groups.name
+      })
+        .from(loans)
+        .leftJoin(groups, eq(loans.groupId, groups.id))
+        .where(eq(loans.tenantId, tenantId));
+
       const missingLoans: any[] = [];
       const mismatches: any[] = [];
       const duplicates: any[] = [];
@@ -992,25 +1006,63 @@ export class DataManagementService {
         }
 
         // Greedily match each loan to its best available cash entry (no entry reused)
-        // Loans with exact matches get priority so they claim their entry first
+        // Priority: 1) Amount + Group + Date (perfect), 2) Amount + Date, 3) Amount only
+        // This correctly handles: same account number in multiple groups (each group independent numbering)
         const usedEntryIds = new Set<string>();
+
+        // Sort: loans with most-specific match get priority to claim their entry first
         const sortedLoans = [...accountLoans].sort((a, b) => {
           const amtA = Number(a.principalAmount);
           const amtB = Number(b.principalAmount);
-          const exactA = allEntries.some(e => Math.abs(Number(e.amount) - amtA) < 0.01);
-          const exactB = allEntries.some(e => Math.abs(Number(e.amount) - amtB) < 0.01);
-          if (exactA && !exactB) return -1;
-          if (!exactA && exactB) return 1;
+          const loanDateA = String(a.loanDate || '').split('T')[0];
+          const loanDateB = String(b.loanDate || '').split('T')[0];
+          const groupA = (a.groupName || '').trim();
+          const groupB = (b.groupName || '').trim();
+
+          // Priority 1 wins: amount + date + group all match
+          const p1A = allEntries.some(e =>
+            Math.abs(Number(e.amount) - amtA) < 0.01 &&
+            String(e.transactionDate || '').split('T')[0] === loanDateA &&
+            groupA && e.narration && e.narration.includes(groupA)
+          );
+          const p1B = allEntries.some(e =>
+            Math.abs(Number(e.amount) - amtB) < 0.01 &&
+            String(e.transactionDate || '').split('T')[0] === loanDateB &&
+            groupB && e.narration && e.narration.includes(groupB)
+          );
+          if (p1A && !p1B) return -1;
+          if (p1B && !p1A) return 1;
           return 0;
         });
 
         for (const loan of sortedLoans) {
           const loanAmount = Number(loan.principalAmount) || 0;
+          const loanDate = String(loan.loanDate || '').split('T')[0];
+          const groupName = (loan.groupName || '').trim();
           const available = allEntries.filter(e => !usedEntryIds.has(e.id));
 
-          // Find best match: exact (< ₹0.01) first, then within ₹1 for decimal precision issues
-          const matchingEntry = available.find(e => Math.abs(Number(e.amount) - loanAmount) < 0.01)
-            || available.find(e => Math.abs(Number(e.amount) - loanAmount) < 1.0);
+          // Priority 1: Amount + Date + Group Name all match (perfect — handles same account in multiple groups)
+          let matchingEntry = groupName
+            ? available.find(e =>
+                Math.abs(Number(e.amount) - loanAmount) < 0.01 &&
+                String(e.transactionDate || '').split('T')[0] === loanDate &&
+                e.narration && e.narration.includes(groupName)
+              )
+            : undefined;
+
+          // Priority 2: Amount + Date match (no group in narration or group not found)
+          if (!matchingEntry) {
+            matchingEntry = available.find(e =>
+              Math.abs(Number(e.amount) - loanAmount) < 0.01 &&
+              String(e.transactionDate || '').split('T')[0] === loanDate
+            );
+          }
+
+          // Priority 3: Amount only (last resort — old entries without date match)
+          if (!matchingEntry) {
+            matchingEntry = available.find(e => Math.abs(Number(e.amount) - loanAmount) < 0.01)
+              || available.find(e => Math.abs(Number(e.amount) - loanAmount) < 1.0);
+          }
 
           if (!matchingEntry) {
             // This loan has no matching cash entry → MISSING
@@ -1020,7 +1072,8 @@ export class DataManagementService {
               borrowerName: loan.borrowerName || '',
               groupName: loan.groupName || '',
               loanDate: loan.loanDate || '',
-              principalAmount: loanAmount
+              principalAmount: loanAmount,
+              status: loan.status || 'active'
             });
           } else {
             usedEntryIds.add(matchingEntry.id);
@@ -1035,7 +1088,8 @@ export class DataManagementService {
                 loanDate: loan.loanDate || '',
                 principalAmount: loanAmount,
                 cashEntryId: matchingEntry.id,
-                cashEntryAmount: Number(matchingEntry.amount)
+                cashEntryAmount: Number(matchingEntry.amount),
+                status: loan.status || 'active'
               });
             }
             // else: exact match → HEALTHY, no action needed
@@ -1072,7 +1126,8 @@ export class DataManagementService {
             borrowerName: loan.borrowerName || '',
             groupName: loan.groupName || '',
             loanDate: loan.loanDate || '',
-            principalAmount: loanAmount
+            principalAmount: loanAmount,
+            status: loan.status || 'active'
           });
         }
       }
