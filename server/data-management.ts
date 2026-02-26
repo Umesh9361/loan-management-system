@@ -321,16 +321,27 @@ export class DataManagementService {
 
         // Delete associated cash transactions and journal entries if requested
         if (includeTransactions) {
+          // Build safe account number regex boundary — same pattern as getMissingDisbursementEntries
+          // LIKE '%50%' would match account 500, 501, 5000 — regex boundary prevents false matches
+          const escapedAcct = (loan.accountNumber || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          const acctBoundary = /[a-zA-Z]/.test((loan.accountNumber || '').trim().slice(-1))
+            ? '([^0-9a-zA-Z]|$)' : '([^0-9]|$)';
+          const acctPattern = `खाते क्र\\.[ ]?${escapedAcct}${acctBoundary}`;
+
           const deletedCashTx = await tx.delete(cashTransactions)
             .where(and(
               eq(cashTransactions.tenantId, tenantId),
               or(
-                sql`${cashTransactions.narration} LIKE '%खाते क्र. ${loan.accountNumber}%'`,
-                sql`${cashTransactions.narration} LIKE '%Account ${loan.accountNumber}%'`,
-                sql`${cashTransactions.narration} LIKE '%A/c ${loan.accountNumber}%'`,
-                sql`${cashTransactions.narration} LIKE '%कर्ज वितरण%' AND ${cashTransactions.narration} LIKE '%${loan.borrowerName}%'`,
-                sql`${cashTransactions.narration} LIKE '%कर्ज जमा%' AND ${cashTransactions.narration} LIKE '%${loan.borrowerName}%'`,
-                sql`${cashTransactions.narration} LIKE '%कर्ज बंद%' AND ${cashTransactions.narration} LIKE '%${loan.borrowerName}%'`
+                // PRIMARY: UUID match — reliable for new entries (loanId set on CREATE/Rebuild/Fix)
+                eq(cashTransactions.loanId, loan.id),
+                // FALLBACK: narration-based — for old entries without loanId
+                // Uses regex boundary to prevent account 50 matching 500, 501, etc.
+                sql`${cashTransactions.narration} ~ ${acctPattern}`,
+                sql`${cashTransactions.narration} LIKE ${'%Account ' + loan.accountNumber + ' %'}`,
+                sql`${cashTransactions.narration} LIKE ${'%A/c ' + loan.accountNumber + ' %'}`,
+                sql`${cashTransactions.narration} LIKE ${'%कर्ज वितरण%'} AND ${cashTransactions.narration} LIKE ${'%' + loan.borrowerName + '%'}`,
+                sql`${cashTransactions.narration} LIKE ${'%कर्ज जमा%'} AND ${cashTransactions.narration} LIKE ${'%' + loan.borrowerName + '%'}`,
+                sql`${cashTransactions.narration} LIKE ${'%कर्ज बंद%'} AND ${cashTransactions.narration} LIKE ${'%' + loan.borrowerName + '%'}`
               )
             ));
           affectedRecords.cashTransactions = deletedCashTx.rowCount || 0;
@@ -341,9 +352,10 @@ export class DataManagementService {
             .where(and(
               eq(journalEntries.tenantId, tenantId),
               or(
-                sql`${journalEntries.description} LIKE '%खाते क्र. ${loan.accountNumber}%'`,
-                sql`${journalEntries.description} LIKE '%Account ${loan.accountNumber}%'`,
-                sql`${journalEntries.description} LIKE '%${loan.borrowerName}%' AND ${journalEntries.description} LIKE '%कर्ज%'`
+                // Regex boundary for account number — prevents 50 matching 500, 501
+                sql`${journalEntries.description} ~ ${acctPattern}`,
+                sql`${journalEntries.description} LIKE ${'%Account ' + loan.accountNumber + ' %'}`,
+                sql`${journalEntries.description} LIKE ${'%' + loan.borrowerName + '%'} AND ${journalEntries.description} LIKE '%कर्ज%'`
               )
             ));
 
@@ -360,9 +372,9 @@ export class DataManagementService {
               .where(and(
                 eq(journalEntries.tenantId, tenantId),
                 or(
-                  sql`${journalEntries.description} LIKE '%खाते क्र. ${loan.accountNumber}%'`,
-                  sql`${journalEntries.description} LIKE '%Account ${loan.accountNumber}%'`,
-                  sql`${journalEntries.description} LIKE '%${loan.borrowerName}%' AND ${journalEntries.description} LIKE '%कर्ज%'`
+                  sql`${journalEntries.description} ~ ${acctPattern}`,
+                  sql`${journalEntries.description} LIKE ${'%Account ' + loan.accountNumber + ' %'}`,
+                  sql`${journalEntries.description} LIKE ${'%' + loan.borrowerName + '%'} AND ${journalEntries.description} LIKE '%कर्ज%'`
                 )
               ));
             affectedRecords.journalEntries = loanRelatedJournalEntries.length;
