@@ -78,10 +78,15 @@ export function QrScannerModal({ open, onOpenChange }: QrScannerModalProps) {
 
   const stopScanner = () => {
     if (scannerRef.current) {
-      scannerRef.current.stop().catch(() => {}).finally(() => {
-        try { scannerRef.current?.clear(); } catch {}
-        scannerRef.current = null;
-      });
+      const s = scannerRef.current;
+      scannerRef.current = null;
+      try {
+        if (s.isScanning) {
+          s.stop().catch(() => {}).finally(() => { try { s.clear(); } catch {} });
+        } else {
+          try { s.clear(); } catch {}
+        }
+      } catch {}
     }
   };
 
