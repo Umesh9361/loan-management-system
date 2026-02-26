@@ -56,6 +56,7 @@ import DataManagement from "@/pages/data-management";
 import ActivityLogPage from "@/pages/activity-log";
 import UserManagement from "@/pages/user-management";
 import PartyManagement from "@/pages/party-management";
+import QrScan from "@/pages/qr-scan";
 
 function normalizeRole(role: string | undefined): string {
   if (!role) return '';
@@ -132,6 +133,7 @@ function useInactivityRedirect(isLoggedIn: boolean) {
 function AppContent() {
   const { safeNavigate } = useSafeNavigation();
   const { user: rawUser, authReady, isLoading } = useCurrentUser();
+  const [location] = useLocation();
 
   useMidnightLogout(!!rawUser);
   useInactivityRedirect(!!rawUser);
@@ -159,6 +161,7 @@ function AppContent() {
   }
 
   if (!rawUser) {
+    if (location.startsWith('/qr/')) return <QrScan />;
     return <Login />;
   }
 
@@ -225,6 +228,7 @@ function AppContent() {
           <Route path="/receipt/closure/:loanId" component={ClosureReceiptPage} />
           <Route path="/receipt/annual-statement" component={AnnualStatementPage} />
           <Route path="/profile" component={Profile} />
+          <Route path="/qr/:loanId" component={QrScan} />
           
           <Route component={RedirectToDashboard} />
         </Switch>
@@ -289,6 +293,7 @@ function AppContent() {
         {/* Receipt routes - Only if loan closure permitted */}
           {perms.canAccessLoanClosure && <Route path="/receipt/closure/:loanId" component={ClosureReceiptPage} />}
           {perms.canViewReceiptGenerator && <Route path="/receipt/annual-statement" component={AnnualStatementPage} />}
+          <Route path="/qr/:loanId" component={QrScan} />
           
           <Route component={NoPermissionPage} />
         </Switch>
@@ -334,6 +339,7 @@ function AppContent() {
           <Route path="/receipt/closure/:loanId" component={ClosureReceiptPage} />
           <Route path="/receipt/annual-statement" component={AnnualStatementPage} />
           <Route path="/profile" component={Profile} />
+          <Route path="/qr/:loanId" component={QrScan} />
           <Route component={RedirectToDashboard} />
         </Switch>
       </div>
