@@ -1877,6 +1877,103 @@ export class DataManagementService {
   }
 
   /**
+   * Preview closed loan cleanup — shows exact cashbook impact BEFORE deletion.
+   * Returns: loanCount, totalDisbursed (cash_out), totalRepaid (cash_in), netCashbookImpact
+   * netCashbookImpact = disbursed - repaid → usually negative (interest amount removed from history)
+   */
+  async previewClosedLoanCleanup(tenantId: string, options: { dateFrom?: string; dateTo?: string }): Promise<{
+    success: boolean;
+    loanCount: number;
+    totalDisbursed: number;
+    totalRepaid: number;
+    netCashbookImpact: number;
+    interestAmount: number;
+    loans: { accountNumber: string; borrowerName: string; disbursed: number; repaid: number; net: number }[];
+    message: string;
+  }> {
+    try {
+      const closedLoansWithClosure = await db.select({
+        loan: loans,
+        closure: loanClosures
+      }).from(loans)
+        .innerJoin(loanClosures, eq(loans.id, loanClosures.loanId))
+        .where(and(eq(loans.tenantId, tenantId), eq(loans.status, 'closed')));
+
+      let filteredRows = closedLoansWithClosure;
+      if (options.dateFrom || options.dateTo) {
+        filteredRows = closedLoansWithClosure.filter(row => {
+          const closureDate = new Date(row.closure.closureDate);
+          if (options.dateFrom && closureDate < new Date(options.dateFrom)) return false;
+          if (options.dateTo && closureDate > new Date(options.dateTo)) return false;
+          return true;
+        });
+      }
+
+      const filteredLoans = filteredRows.map(r => r.loan);
+
+      if (filteredLoans.length === 0) {
+        return { success: true, loanCount: 0, totalDisbursed: 0, totalRepaid: 0, netCashbookImpact: 0, interestAmount: 0, loans: [], message: "या तारखांमध्ये बंद झालेली कर्जे नाहीत" };
+      }
+
+      const loanRows: { accountNumber: string; borrowerName: string; disbursed: number; repaid: number; net: number }[] = [];
+      let totalDisbursed = 0;
+      let totalRepaid = 0;
+
+      for (const loan of filteredLoans) {
+        const escapedAcct = (loan.accountNumber || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const acctBoundary = /[a-zA-Z]/.test((loan.accountNumber || '').trim().slice(-1)) ? '([^0-9a-zA-Z]|$)' : '([^0-9]|$)';
+        const acctPattern = `खाते क्र\\.[ ]?${escapedAcct}${acctBoundary}`;
+
+        const entries = await db.select({
+          id: cashTransactions.id,
+          transactionType: cashTransactions.transactionType,
+          amount: cashTransactions.amount
+        }).from(cashTransactions).where(and(
+          eq(cashTransactions.tenantId, tenantId),
+          or(
+            eq(cashTransactions.loanId, loan.id),
+            sql`${cashTransactions.narration} ~ ${acctPattern}`,
+            sql`${cashTransactions.narration} LIKE ${'%कर्ज वितरण%'} AND ${cashTransactions.narration} LIKE ${'%' + loan.borrowerName + '%'}`,
+            sql`${cashTransactions.narration} LIKE ${'%कर्ज जमा%'} AND ${cashTransactions.narration} LIKE ${'%' + loan.borrowerName + '%'}`,
+            sql`${cashTransactions.narration} LIKE ${'%कर्ज बंद%'} AND ${cashTransactions.narration} LIKE ${'%' + loan.borrowerName + '%'}`
+          )
+        ));
+
+        const seen = new Set<string>();
+        let disbursed = 0;
+        let repaid = 0;
+        for (const e of entries) {
+          if (seen.has(e.id)) continue;
+          seen.add(e.id);
+          const amt = Number(e.amount) || 0;
+          if (e.transactionType === 'cash_out') disbursed += amt;
+          else if (e.transactionType === 'cash_in') repaid += amt;
+        }
+
+        totalDisbursed += disbursed;
+        totalRepaid += repaid;
+        loanRows.push({ accountNumber: loan.accountNumber || '', borrowerName: loan.borrowerName || '', disbursed, repaid, net: disbursed - repaid });
+      }
+
+      const netCashbookImpact = totalDisbursed - totalRepaid;
+
+      return {
+        success: true,
+        loanCount: filteredLoans.length,
+        totalDisbursed,
+        totalRepaid,
+        netCashbookImpact,
+        interestAmount: Math.abs(netCashbookImpact),
+        loans: loanRows,
+        message: `${filteredLoans.length} बंद कर्जे सापडली`
+      };
+    } catch (error) {
+      console.error("Preview closed loan cleanup error:", error);
+      return { success: false, loanCount: 0, totalDisbursed: 0, totalRepaid: 0, netCashbookImpact: 0, interestAmount: 0, loans: [], message: "Preview अयशस्वी: " + (error as Error).message };
+    }
+  }
+
+  /**
    * Simple SUM balance check — the definitive, false-positive-free check.
    * Compares: SUM(cashbook loan_disbursement cash_out) vs SUM(all loans.principalAmount)
    * If diff < ₹1 → allClear = true. No narration matching, no complex algorithm.
