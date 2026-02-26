@@ -929,6 +929,18 @@ export function LabelPrintDialog({ open, onOpenChange, loans }: LabelPrintDialog
 
           {showSettings && (
             <div className="bg-gray-50 rounded-lg border border-gray-200 overflow-hidden">
+              <div className="px-3 py-2 bg-white border-b border-gray-200 flex items-center gap-2">
+                <span className="text-xs font-medium text-gray-700 whitespace-nowrap">लेबल फॉन्ट:</span>
+                <select
+                  value={settings.fontFamily || 'Noto Sans Devanagari'}
+                  onChange={(e) => updateSettings(prev => ({ ...prev, fontFamily: e.target.value }))}
+                  className="flex-1 h-7 text-xs rounded-md border border-gray-300 bg-white px-2 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                >
+                  {FONT_OPTIONS.map(opt => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
+                </select>
+              </div>
               <div className="flex border-b border-gray-200">
                 {([
                   { key: 'size' as const, label: 'साइज', icon: <Ruler className="h-3 w-3" /> },
@@ -968,18 +980,6 @@ export function LabelPrintDialog({ open, onOpenChange, loans }: LabelPrintDialog
                           {preset.label}
                         </button>
                       ))}
-                    </div>
-                    <div className="pt-2 border-t border-gray-200">
-                      <div className="text-xs font-medium text-gray-700 mb-2">लेबल फॉन्ट:</div>
-                      <select
-                        value={settings.fontFamily || 'Noto Sans Devanagari'}
-                        onChange={(e) => updateSettings(prev => ({ ...prev, fontFamily: e.target.value }))}
-                        className="h-8 text-xs w-full rounded-md border border-gray-300 bg-white px-2 focus:outline-none focus:ring-2 focus:ring-indigo-400"
-                      >
-                        {FONT_OPTIONS.map(opt => (
-                          <option key={opt.value} value={opt.value}>{opt.label}</option>
-                        ))}
-                      </select>
                     </div>
                     <div className="pt-2 border-t border-gray-200">
                       <div className="text-xs font-medium text-gray-600 mb-2">कस्टम साइज (mm):</div>
