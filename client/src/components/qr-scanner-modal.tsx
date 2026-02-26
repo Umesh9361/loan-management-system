@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { QrCode, X } from "lucide-react";
+import { QrCode } from "lucide-react";
 
 interface QrScannerModalProps {
   open: boolean;
@@ -15,6 +15,20 @@ export function QrScannerModal({ open, onOpenChange }: QrScannerModalProps) {
   const scannerRef = useRef<any>(null);
   const containerId = "qr-scanner-container";
 
+  const stopScanner = () => {
+    if (scannerRef.current) {
+      const s = scannerRef.current;
+      scannerRef.current = null;
+      try {
+        if (s.isScanning) {
+          s.stop().catch(() => {}).finally(() => { try { s.clear(); } catch {} });
+        } else {
+          try { s.clear(); } catch {}
+        }
+      } catch {}
+    }
+  };
+
   useEffect(() => {
     if (!open) {
       stopScanner();
@@ -27,16 +41,40 @@ export function QrScannerModal({ open, onOpenChange }: QrScannerModalProps) {
     setStatus("loading");
 
     const startScanner = async () => {
+      // Wait for Dialog animation + DOM render to complete
+      await new Promise(resolve => setTimeout(resolve, 350));
+      if (!mounted) return;
+
+      // Verify container exists in DOM
+      const containerEl = document.getElementById(containerId);
+      if (!containerEl) {
+        if (mounted) {
+          setErrorMsg("Camera container तयार नाही — पुन्हा प्रयत्न करा");
+          setStatus("error");
+        }
+        return;
+      }
+
+      // Clear any leftover html from previous scan
+      containerEl.innerHTML = "";
+
       try {
         const { Html5Qrcode } = await import("html5-qrcode");
         if (!mounted) return;
 
-        const scanner = new Html5Qrcode(containerId);
+        const scanner = new Html5Qrcode(containerId, { verbose: false } as any);
         scannerRef.current = scanner;
+
+        const containerW = containerEl.offsetWidth || 280;
+        const boxSize = Math.min(containerW - 40, 220);
 
         await scanner.start(
           { facingMode: "environment" },
-          { fps: 10, qrbox: { width: 220, height: 220 } },
+          {
+            fps: 10,
+            qrbox: { width: boxSize, height: boxSize },
+            aspectRatio: 1.0,
+          },
           (decodedText: string) => {
             if (!mounted) return;
             try {
@@ -63,31 +101,66 @@ export function QrScannerModal({ open, onOpenChange }: QrScannerModalProps) {
         );
         if (mounted) setStatus("scanning");
       } catch (err: any) {
-        if (mounted) {
-          setErrorMsg(err?.message?.includes("permission") || err?.message?.includes("Permission")
-            ? "Camera परवानगी नाकारली — browser settings मध्ये camera allow करा"
-            : "Camera सुरू करताना समस्या झाली");
-          setStatus("error");
+        if (!mounted) return;
+        const msg = err?.message || "";
+        if (msg.toLowerCase().includes("permission") || msg.toLowerCase().includes("notallowed")) {
+          setErrorMsg("Camera परवानगी नाकारली — browser मध्ये camera allow करा");
+        } else if (msg.toLowerCase().includes("notfound") || msg.toLowerCase().includes("no camera")) {
+          setErrorMsg("Camera सापडला नाही — device ला camera आहे का तपासा");
+        } else {
+          setErrorMsg("Camera सुरू करताना समस्या झाली");
         }
+        setStatus("error");
       }
     };
 
     startScanner();
-    return () => { mounted = false; stopScanner(); };
+    return () => {
+      mounted = false;
+      stopScanner();
+    };
   }, [open]);
 
-  const stopScanner = () => {
-    if (scannerRef.current) {
-      const s = scannerRef.current;
-      scannerRef.current = null;
+  const handleRetry = () => {
+    stopScanner();
+    setStatus("loading");
+    setErrorMsg("");
+    // Re-trigger the effect by toggling
+    const containerEl = document.getElementById(containerId);
+    if (containerEl) containerEl.innerHTML = "";
+    setTimeout(async () => {
+      const containerEl2 = document.getElementById(containerId);
+      if (!containerEl2) return;
       try {
-        if (s.isScanning) {
-          s.stop().catch(() => {}).finally(() => { try { s.clear(); } catch {} });
-        } else {
-          try { s.clear(); } catch {}
-        }
-      } catch {}
-    }
+        const { Html5Qrcode } = await import("html5-qrcode");
+        const scanner = new Html5Qrcode(containerId, { verbose: false } as any);
+        scannerRef.current = scanner;
+        const boxSize = Math.min((containerEl2.offsetWidth || 280) - 40, 220);
+        await scanner.start(
+          { facingMode: "environment" },
+          { fps: 10, qrbox: { width: boxSize, height: boxSize }, aspectRatio: 1.0 },
+          (decodedText: string) => {
+            try {
+              const url = new URL(decodedText);
+              const match = url.pathname.match(/^\/qr\/([a-zA-Z0-9\-]+)$/);
+              if (match) {
+                setStatus("found");
+                stopScanner();
+                setTimeout(() => { onOpenChange(false); setLocation(`/closure?loanId=${match[1]}`); }, 600);
+              } else {
+                setErrorMsg("हे आपल्या app चे QR नाही"); setStatus("error");
+              }
+            } catch { setErrorMsg("QR code ओळखता आला नाही"); setStatus("error"); }
+          },
+          () => {}
+        );
+        setStatus("scanning");
+      } catch (err: any) {
+        const msg = err?.message || "";
+        setErrorMsg(msg.toLowerCase().includes("permission") ? "Camera परवानगी नाकारली" : "Camera सुरू करताना समस्या झाली");
+        setStatus("error");
+      }
+    }, 300);
   };
 
   return (
@@ -100,32 +173,35 @@ export function QrScannerModal({ open, onOpenChange }: QrScannerModalProps) {
           </DialogTitle>
         </DialogHeader>
 
-        <div className="p-4 space-y-3">
+        <div className="p-3 space-y-2">
+          {/* Camera container — explicit height so video renders properly */}
           <div
             id={containerId}
-            className="w-full rounded-lg overflow-hidden bg-gray-900"
-            style={{ minHeight: "260px" }}
+            style={{ width: '100%', height: '280px', borderRadius: '8px', overflow: 'hidden', background: '#111', position: 'relative' }}
           />
 
           {status === "loading" && (
-            <div className="text-center text-sm text-gray-500 py-2">Camera सुरू होत आहे...</div>
+            <div className="text-center text-sm text-gray-500 py-1 flex items-center justify-center gap-2">
+              <span className="inline-block w-3 h-3 border-2 border-gray-400 border-t-indigo-600 rounded-full animate-spin" />
+              Camera सुरू होत आहे...
+            </div>
           )}
           {status === "scanning" && (
             <div className="text-center text-sm text-indigo-600 font-medium py-1">
-              लेबल वरील QR code camera समोर धरा
+              📷 लेबल वरील QR code camera समोर धरा
             </div>
           )}
           {status === "found" && (
-            <div className="text-center text-sm text-green-600 font-semibold py-1 flex items-center justify-center gap-2">
-              <span>✓</span> कर्ज सापडले! उघडत आहे...
+            <div className="text-center text-sm text-green-600 font-semibold py-1">
+              ✓ कर्ज सापडले! उघडत आहे...
             </div>
           )}
           {status === "error" && (
             <div className="space-y-2">
               <div className="text-center text-sm text-red-600 py-1">{errorMsg}</div>
               <button
-                onClick={() => { setStatus("loading"); setErrorMsg(""); stopScanner(); setTimeout(() => { if (open) setStatus("loading"); }, 100); }}
-                className="w-full py-1.5 text-sm text-indigo-600 border border-indigo-300 rounded-md hover:bg-indigo-50"
+                onClick={handleRetry}
+                className="w-full py-1.5 text-sm text-indigo-600 border border-indigo-300 rounded-md hover:bg-indigo-50 font-medium"
               >
                 पुन्हा प्रयत्न करा
               </button>
