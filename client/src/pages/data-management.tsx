@@ -12,7 +12,7 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { AlertTriangle, ArrowUpDown, CheckCircle, Database, Download, HardDrive, RefreshCw, Scale, Shield, Trash2, Upload } from "lucide-react";
+import { AlertTriangle, ArrowUpDown, CheckCircle, Database, Download, Eye, HardDrive, RefreshCw, Scale, Shield, Trash2, Upload } from "lucide-react";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
 import { initDevanagariFont } from "@/lib/pdf-text-generator";
@@ -340,6 +340,19 @@ function DataManagementPage() {
     createBackup: true
   });
 
+  const [loanCleanupPreview, setLoanCleanupPreview] = useState<{
+    success: boolean;
+    loanCount: number;
+    totalDisbursed: number;
+    totalRepaid: number;
+    netCashbookImpact: number;
+    interestAmount: number;
+    loans: { accountNumber: string; borrowerName: string; disbursed: number; repaid: number; net: number }[];
+    message: string;
+  } | null>(null);
+
+  const [showLoanPreviewTable, setShowLoanPreviewTable] = useState(false);
+
   const [cashbookPreview, setCashbookPreview] = useState<{
     success: boolean;
     deletableCount: number;
@@ -527,6 +540,17 @@ function DataManagementPage() {
   });
 
   const rearrangeAccountsMutation = rearrangeConfirmMutation;
+
+  const loanCleanupPreviewMutation = useMutation({
+    mutationFn: async (options: { dateFrom?: string; dateTo?: string }) => {
+      const response = await apiRequest("/api/data-management/preview-closed-loan-cleanup", "POST", options);
+      return await response.json();
+    },
+    onSuccess: (data: any) => {
+      setLoanCleanupPreview(data);
+      setShowLoanPreviewTable(false);
+    }
+  });
 
   const cashbookPreviewMutation = useMutation({
     mutationFn: async (options: { dateFrom: string; dateTo: string }) => {
@@ -1016,7 +1040,7 @@ function DataManagementPage() {
                         id="dateFrom"
                         type="date"
                         value={cleanupOptions.dateFrom}
-                        onChange={(e) => setCleanupOptions({...cleanupOptions, dateFrom: e.target.value})}
+                        onChange={(e) => { setCleanupOptions({...cleanupOptions, dateFrom: e.target.value}); setLoanCleanupPreview(null); }}
                         className="bg-white dark:bg-gray-800"
                       />
                     </div>
@@ -1026,7 +1050,7 @@ function DataManagementPage() {
                         id="dateTo"
                         type="date"
                         value={cleanupOptions.dateTo}
-                        onChange={(e) => setCleanupOptions({...cleanupOptions, dateTo: e.target.value})}
+                        onChange={(e) => { setCleanupOptions({...cleanupOptions, dateTo: e.target.value}); setLoanCleanupPreview(null); }}
                         className="bg-white dark:bg-gray-800"
                       />
                     </div>
@@ -1046,6 +1070,118 @@ function DataManagementPage() {
                     <strong>लक्षात ठेवा:</strong> कॅश बॅलन्स त्यानुसार ऍडजेस्ट होईल
                   </div>
                 </div>
+
+                {/* Preview Button */}
+                <div className="flex justify-start">
+                  <Button
+                    variant="outline"
+                    onClick={() => loanCleanupPreviewMutation.mutate({ dateFrom: cleanupOptions.dateFrom || undefined, dateTo: cleanupOptions.dateTo || undefined })}
+                    disabled={loanCleanupPreviewMutation.isPending}
+                    className="flex items-center gap-2 border-2 border-indigo-300 text-indigo-700 hover:bg-indigo-50"
+                  >
+                    {loanCleanupPreviewMutation.isPending ? (
+                      <RefreshCw className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                    {loanCleanupPreviewMutation.isPending ? "तपासत आहे..." : "कॅशबुक प्रभाव पहा (Preview)"}
+                  </Button>
+                </div>
+
+                {/* Preview Result Box */}
+                {loanCleanupPreview && loanCleanupPreview.success && (
+                  <div className="space-y-3">
+                    {loanCleanupPreview.loanCount === 0 ? (
+                      <div className="bg-green-50 border-2 border-green-200 rounded-xl p-4 text-green-700 text-sm">
+                        ✅ {loanCleanupPreview.message}
+                      </div>
+                    ) : (
+                      <>
+                        <div className="grid grid-cols-3 gap-3">
+                          <div className="bg-white border-2 border-red-200 rounded-xl p-3 text-center">
+                            <div className="text-xs text-red-500 mb-1">बंद कर्जे</div>
+                            <div className="text-2xl font-bold text-red-600">{loanCleanupPreview.loanCount}</div>
+                          </div>
+                          <div className="bg-white border-2 border-orange-200 rounded-xl p-3 text-center">
+                            <div className="text-xs text-orange-500 mb-1">कर्ज वितरण (हटेल)</div>
+                            <div className="text-lg font-bold text-orange-600">₹{loanCleanupPreview.totalDisbursed.toLocaleString('hi-IN')}</div>
+                          </div>
+                          <div className="bg-white border-2 border-blue-200 rounded-xl p-3 text-center">
+                            <div className="text-xs text-blue-500 mb-1">कर्ज जमा (हटेल)</div>
+                            <div className="text-lg font-bold text-blue-600">₹{loanCleanupPreview.totalRepaid.toLocaleString('hi-IN')}</div>
+                          </div>
+                        </div>
+
+                        <div className="bg-yellow-50 border-2 border-yellow-300 rounded-xl p-4 space-y-3">
+                          <h4 className="font-bold text-yellow-800">📊 कॅशबुक बॅलन्स प्रभाव विश्लेषण</h4>
+                          <div className="grid grid-cols-2 gap-2 text-sm">
+                            <div className="bg-white rounded-lg p-2">
+                              <div className="text-xs text-gray-500">Cash Out हटेल (कर्ज वितरण)</div>
+                              <div className="font-semibold text-orange-600">₹{loanCleanupPreview.totalDisbursed.toLocaleString('hi-IN')}</div>
+                            </div>
+                            <div className="bg-white rounded-lg p-2">
+                              <div className="text-xs text-gray-500">Cash In हटेल (कर्ज जमा)</div>
+                              <div className="font-semibold text-blue-600">₹{loanCleanupPreview.totalRepaid.toLocaleString('hi-IN')}</div>
+                            </div>
+                          </div>
+                          <div className={`rounded-lg p-3 border-2 ${loanCleanupPreview.netCashbookImpact < 0 ? 'bg-red-50 border-red-300' : 'bg-green-50 border-green-300'}`}>
+                            <div className="text-xs text-gray-600 mb-1">Cashbook Closing Balance वर परिणाम</div>
+                            <div className={`text-xl font-bold ${loanCleanupPreview.netCashbookImpact < 0 ? 'text-red-700' : 'text-green-700'}`}>
+                              {loanCleanupPreview.netCashbookImpact >= 0 ? '+' : ''}₹{loanCleanupPreview.netCashbookImpact.toLocaleString('hi-IN')}
+                            </div>
+                            <div className="text-xs text-gray-500 mt-1">
+                              {loanCleanupPreview.netCashbookImpact < 0
+                                ? `Cashbook balance ₹${loanCleanupPreview.interestAmount.toLocaleString('hi-IN')} ने कमी होईल (व्याजाची रक्कम history मधून निघेल)`
+                                : 'Cashbook balance वर विशेष फरक नाही'}
+                            </div>
+                          </div>
+                          {loanCleanupPreview.netCashbookImpact < 0 && (
+                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-xs text-blue-700">
+                              💡 <strong>Balance adjust करायचे असेल तर:</strong> Cashbook मध्ये एक <strong>Cash In (जमा)</strong> entry ₹{loanCleanupPreview.interestAmount.toLocaleString('hi-IN')} रकमेची "व्याज उत्पन्न" म्हणून करा
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Per-loan table toggle */}
+                        <button
+                          onClick={() => setShowLoanPreviewTable(v => !v)}
+                          className="text-xs text-indigo-600 underline flex items-center gap-1"
+                        >
+                          {showLoanPreviewTable ? '▲ कर्ज-निहाय तपशील लपवा' : `▼ कर्ज-निहाय तपशील पहा (${loanCleanupPreview.loanCount} कर्जे)`}
+                        </button>
+
+                        {showLoanPreviewTable && (
+                          <div className="overflow-x-auto rounded-xl border border-gray-200">
+                            <table className="w-full text-xs">
+                              <thead className="bg-gray-50">
+                                <tr>
+                                  <th className="px-3 py-2 text-left text-gray-600">खाते क्र.</th>
+                                  <th className="px-3 py-2 text-left text-gray-600">कर्जदार</th>
+                                  <th className="px-3 py-2 text-right text-orange-600">वितरण (Out)</th>
+                                  <th className="px-3 py-2 text-right text-blue-600">जमा (In)</th>
+                                  <th className="px-3 py-2 text-right text-gray-600">Net</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {loanCleanupPreview.loans.map((l, i) => (
+                                  <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                                    <td className="px-3 py-1.5 font-medium">{l.accountNumber}</td>
+                                    <td className="px-3 py-1.5">{l.borrowerName}</td>
+                                    <td className="px-3 py-1.5 text-right text-orange-600">₹{l.disbursed.toLocaleString('hi-IN')}</td>
+                                    <td className="px-3 py-1.5 text-right text-blue-600">₹{l.repaid.toLocaleString('hi-IN')}</td>
+                                    <td className={`px-3 py-1.5 text-right font-medium ${l.net < 0 ? 'text-red-600' : 'text-green-600'}`}>
+                                      {l.net >= 0 ? '+' : ''}₹{l.net.toLocaleString('hi-IN')}
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                )}
 
                 <Separator />
 
