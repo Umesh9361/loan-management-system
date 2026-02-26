@@ -577,7 +577,7 @@ function generateQrLabelHtml(loan: LabelLoan, qrDataUrl: string, settings: Label
           <span style="font-family:${numFont};font-size:${f1}pt;font-weight:800;white-space:nowrap;flex-shrink:0;margin-left:1.5mm;">${amtStr}</span>
         </div>
         <div style="font-family:${numFont};font-size:${f2}pt;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2;">${dateStr}</div>
-        <div style="font-family:${devaFont};font-size:${f3}pt;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2;">${groupLine}</div>
+        <div style="font-family:${devaFont};font-size:${f3}pt;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2;">${groupLine}</div>
         ${hasExtra ? `<div style="display:flex;justify-content:space-between;align-items:center;overflow:hidden;"><span style="font-family:${numFont};font-size:${f4}pt;color:#444;white-space:nowrap;">${intStr}</span><span style="font-family:${numFont};font-size:${f4}pt;color:#444;white-space:nowrap;">${wtStr}</span></div>` : ''}
       </div>
     </div>
@@ -1302,7 +1302,7 @@ export function LabelPrintDialog({ open, onOpenChange, loans }: LabelPrintDialog
                               <span style={{ fontFamily: numF2, fontSize: `${f1p}px`, fontWeight: 800, whiteSpace: 'nowrap', flexShrink: 0, marginLeft: '4px' }}>{amt2}</span>
                             </div>
                             <div style={{ fontFamily: numF2, fontSize: `${f2p}px`, fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: 1.2 }}>{dateStr2}</div>
-                            <div style={{ fontFamily: devaF2, fontSize: `${f3p}px`, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: 1.2 }}>{grpLine2}</div>
+                            <div style={{ fontFamily: devaF2, fontSize: `${f3p}px`, fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: 1.2 }}>{grpLine2}</div>
                             {hasExtra2 && (
                               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', overflow: 'hidden' }}>
                                 <span style={{ fontFamily: numF2, fontSize: `${f4p}px`, color: '#444', whiteSpace: 'nowrap' }}>{intStr2}</span>
