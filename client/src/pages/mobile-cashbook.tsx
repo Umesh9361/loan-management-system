@@ -908,7 +908,7 @@ function MobileCashbook() {
                     }, 100);
                   }
                 }}
-                className="text-gray-500 hover:bg-gray-100 w-10 h-10"
+                className={`w-10 h-10 transition-colors ${isSearchOpen ? 'bg-indigo-100 text-indigo-600 hover:bg-indigo-200' : 'text-gray-500 hover:bg-gray-100'}`}
               >
                 <Search className="h-5 w-5" />
               </Button>
