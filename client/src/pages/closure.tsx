@@ -25,6 +25,7 @@ import { LoanCalculationsAdvanced } from "@/lib/loan-calculations";
 import { LoanCalculations } from "@/lib/calculations";
 import { DateUtils } from "@/lib/date-utils";
 import { Calculator, FileText, AlertTriangle, CheckCircle, Download, Search, X, Clock, Edit, Calendar, Lightbulb, Sparkles, TrendingUp, Info, Check, AlertCircle, Home, Trash2, Printer, Bluetooth, Loader2 } from "lucide-react";
+import { QrScannerModal } from "@/components/qr-scanner-modal";
 import html2canvas from "html2canvas";
 import { printReceiptViaBluetooth, isBluetoothSupported } from "@/lib/bluetooth-printer";
 import jsPDF from "jspdf";
@@ -125,6 +126,7 @@ export default function Closure() {
   const urlParams = new URLSearchParams(window.location.search);
   const loanIdFromUrl = urlParams.get('loanId');
   const hideSearch = !!loanIdFromUrl;
+  const [qrScannerOpen, setQrScannerOpen] = useState(false);
 
   useEffect(() => {
     summaryEntriesRef.current = summaryEntries;
@@ -1426,7 +1428,19 @@ export default function Closure() {
                     {/* Enhanced Loan Search - Only show if not from URL */}
                     {!hideSearch && (
                       <div className="space-y-4">
-                        <Label className="font-noto text-lg">कर्ज निवडा</Label>
+                        <div className="flex items-center gap-2">
+                          <Label className="font-noto text-lg">कर्ज निवडा</Label>
+                          <button
+                            type="button"
+                            onClick={() => setQrScannerOpen(true)}
+                            className="flex items-center gap-1 px-2 py-0.5 text-xs text-indigo-600 border border-indigo-300 rounded-md hover:bg-indigo-50 transition-colors font-medium"
+                            title="QR कोड स्कॅन करा"
+                          >
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect width="5" height="5" x="3" y="3" rx="1"/><rect width="5" height="5" x="16" y="3" rx="1"/><rect width="5" height="5" x="3" y="16" rx="1"/><path d="M21 16h-3a2 2 0 0 0-2 2v3"/><path d="M21 21v.01"/><path d="M12 7v3a2 2 0 0 1-2 2H7"/><path d="M3 12h.01"/><path d="M12 3h.01"/><path d="M12 16v.01"/><path d="M16 12h1"/><path d="M21 12v.01"/><path d="M12 21v-1"/></svg>
+                            QR
+                          </button>
+                        </div>
+                        <QrScannerModal open={qrScannerOpen} onOpenChange={setQrScannerOpen} />
                         
                         {/* Group Selection First */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
