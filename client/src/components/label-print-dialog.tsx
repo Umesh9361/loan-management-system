@@ -234,9 +234,10 @@ function ptToMm(pt: number): number {
 function getFieldHeightMm(field: LabelField, isPaired: boolean, partnerField?: LabelField): number {
   if (field.id === 'details') return 0;
   const fs = isPaired && partnerField ? Math.max(field.fontSize, partnerField.fontSize) : field.fontSize;
-  const lineH = fs * 1.15;
+  const lineH = fs * 1.4;
+  const ptop = fs * 0.12;
   const hasOval = field.hasOvalBorder || (partnerField?.hasOvalBorder);
-  const heightPt = hasOval ? lineH + 3 : lineH;
+  const heightPt = hasOval ? lineH + 3 + ptop : lineH + ptop;
   return ptToMm(heightPt);
 }
 
@@ -314,13 +315,15 @@ function generateLabelHtml(loan: LabelLoan, settings: LabelSettings): string {
 
     if (field.id === 'details') {
       const fontSize = field.fontSize;
-      const lineH = +(fontSize * 1.1).toFixed(1);
-      return `<div style="font-size: ${fontSize}pt; font-weight: ${field.bold ? '800' : '400'}; line-height: ${lineH}pt; word-wrap: break-word; overflow-wrap: break-word; white-space: normal; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: ${dynamicLineClamp}; -webkit-box-orient: vertical; color: #444; width: 100%; flex-shrink: 1; flex-grow: 1; ${marginTopAuto} padding: 0;">${val}</div>`;
+      const lineH = +(fontSize * 1.4).toFixed(1);
+      const ptop = +(fontSize * 0.12).toFixed(1);
+      return `<div style="font-size: ${fontSize}pt; font-weight: ${field.bold ? '800' : '400'}; line-height: ${lineH}pt; word-wrap: break-word; overflow-wrap: break-word; white-space: normal; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: ${dynamicLineClamp}; -webkit-box-orient: vertical; color: #444; width: 100%; flex-shrink: 1; flex-grow: 1; ${marginTopAuto} padding-top: ${ptop}pt; padding-bottom: 0; padding-left: 0; padding-right: 0;">${val}</div>`;
     }
 
-    const lineH = +(field.fontSize * 1.15).toFixed(1);
-    const fieldMaxH = field.hasOvalBorder ? +(field.fontSize * 1.15 + 3).toFixed(1) : lineH;
-    let style = `font-size: ${field.fontSize}pt; font-weight: ${field.bold ? '800' : '400'}; line-height: ${lineH}pt; max-height: ${fieldMaxH}pt; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-shrink: 0; flex-grow: 0; max-width: 100%; ${marginTopAuto} padding: 0;`;
+    const lineH = +(field.fontSize * 1.4).toFixed(1);
+    const ptop = +(field.fontSize * 0.12).toFixed(1);
+    const fieldMaxH = field.hasOvalBorder ? +(field.fontSize * 1.4 + 3 + field.fontSize * 0.12).toFixed(1) : +(field.fontSize * 1.4 + field.fontSize * 0.12).toFixed(1);
+    let style = `font-size: ${field.fontSize}pt; font-weight: ${field.bold ? '800' : '400'}; line-height: ${lineH}pt; max-height: ${fieldMaxH}pt; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-shrink: 0; flex-grow: 0; max-width: 100%; ${marginTopAuto} padding-top: ${ptop}pt; padding-bottom: 0; padding-left: 0; padding-right: 0;`;
     if (field.hasOvalBorder) {
       style += ` border: 0.6pt solid #333; border-radius: 50px; padding: 1pt 3pt; letter-spacing: 0.3pt; font-family: 'Arial','Helvetica',sans-serif; display: inline-block; max-width: 100%; box-sizing: border-box;`;
     }
@@ -338,9 +341,10 @@ function generateLabelHtml(loan: LabelLoan, settings: LabelSettings): string {
     const leftVal = leftField.type === 'custom' ? (leftField.customText || "") : getFieldValue(leftField.id, loan, leftField.displayMode);
     const rightVal = rightField.type === 'custom' ? (rightField.customText || "") : getFieldValue(rightField.id, loan, rightField.displayMode);
     const rowFontSize = Math.max(leftField.fontSize, rightField.fontSize);
-    const rowLineH = +(rowFontSize * 1.15).toFixed(1);
+    const rowLineH = +(rowFontSize * 1.4).toFixed(1);
+    const rowPtop = +(rowFontSize * 0.12).toFixed(1);
     const hasAnyOval = leftField.hasOvalBorder || rightField.hasOvalBorder;
-    const pairMaxH = hasAnyOval ? +(rowFontSize * 1.15 + 3).toFixed(1) : rowLineH;
+    const pairMaxH = hasAnyOval ? +(rowFontSize * 1.4 + 3 + rowFontSize * 0.12).toFixed(1) : +(rowFontSize * 1.4 + rowFontSize * 0.12).toFixed(1);
     const marginTopAuto = isLastRow ? 'margin-top:auto;' : 'margin:0;';
     let leftStyle = `font-size: ${leftField.fontSize}pt; font-weight: ${leftField.bold ? '800' : '400'}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 55%;`;
     let rightStyle = `font-size: ${rightField.fontSize}pt; font-weight: ${rightField.bold ? '800' : '400'}; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 45%;`;
@@ -351,7 +355,7 @@ function generateLabelHtml(loan: LabelLoan, settings: LabelSettings): string {
     // ₹ symbol always normal weight; number bold per user setting; add space between ₹ and number
     const displayLeftVal = leftVal.includes('₹') ? leftVal.replace(/₹\s*/g, `<span style="font-weight:400">₹</span>&nbsp;`) : leftVal;
     const displayRightVal = rightVal.includes('₹') ? rightVal.replace(/₹\s*/g, `<span style="font-weight:400">₹</span>&nbsp;`) : rightVal;
-    return `<div style="display:flex;justify-content:space-between;align-items:center;gap:1pt;line-height:${rowLineH}pt;max-height:${pairMaxH}pt;overflow:hidden;flex-shrink:0;flex-grow:0;width:100%;${marginTopAuto}padding:0;">
+    return `<div style="display:flex;justify-content:space-between;align-items:center;gap:1pt;line-height:${rowLineH}pt;max-height:${pairMaxH}pt;overflow:hidden;flex-shrink:0;flex-grow:0;width:100%;${marginTopAuto}padding-top:${rowPtop}pt;padding-bottom:0;padding-left:0;padding-right:0;">
       <span style="${leftStyle}">${displayLeftVal}</span>
       <span style="${rightStyle}">${displayRightVal}</span>
     </div>`;
@@ -366,9 +370,10 @@ function generateLabelHtml(loan: LabelLoan, settings: LabelSettings): string {
     const centerVal = getFieldValue(centerField.id, loan, centerField.displayMode);
     const rightVal = getFieldValue(rightField.id, loan, rightField.displayMode);
     const rowFontSize = Math.max(leftField.fontSize, centerField.fontSize, rightField.fontSize);
-    const rowLineH = +(rowFontSize * 1.15).toFixed(1);
+    const rowLineH = +(rowFontSize * 1.4).toFixed(1);
+    const rowPtop = +(rowFontSize * 0.12).toFixed(1);
     const hasAnyOval = leftField.hasOvalBorder || centerField.hasOvalBorder || rightField.hasOvalBorder;
-    const trioMaxH = hasAnyOval ? +(rowFontSize * 1.15 + 3).toFixed(1) : rowLineH;
+    const trioMaxH = hasAnyOval ? +(rowFontSize * 1.4 + 3 + rowFontSize * 0.12).toFixed(1) : +(rowFontSize * 1.4 + rowFontSize * 0.12).toFixed(1);
     const marginTopAuto = isLastRow ? 'margin-top:auto;' : 'margin:0;';
     let leftStyle = `font-size: ${leftField.fontSize}pt; font-weight: ${leftField.bold ? '800' : '400'}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;`;
     let centerStyle = `font-size: ${centerField.fontSize}pt; font-weight: ${centerField.bold ? '800' : '400'}; white-space: nowrap; text-align: center; color: #444;`;
@@ -380,7 +385,7 @@ function generateLabelHtml(loan: LabelLoan, settings: LabelSettings): string {
     const displayTrioLeft = leftVal.includes('₹') ? leftVal.replace(/₹\s*/g, `<span style="font-weight:400">₹</span>&nbsp;`) : leftVal;
     const displayTrioCenter = centerVal.includes('₹') ? centerVal.replace(/₹\s*/g, `<span style="font-weight:400">₹</span>&nbsp;`) : centerVal;
     const displayTrioRight = rightVal.includes('₹') ? rightVal.replace(/₹\s*/g, `<span style="font-weight:400">₹</span>&nbsp;`) : rightVal;
-    return `<div style="display:flex;justify-content:space-between;align-items:center;gap:1pt;line-height:${rowLineH}pt;max-height:${trioMaxH}pt;overflow:hidden;flex-shrink:0;flex-grow:0;width:100%;${marginTopAuto}padding:0;">
+    return `<div style="display:flex;justify-content:space-between;align-items:center;gap:1pt;line-height:${rowLineH}pt;max-height:${trioMaxH}pt;overflow:hidden;flex-shrink:0;flex-grow:0;width:100%;${marginTopAuto}padding-top:${rowPtop}pt;padding-bottom:0;padding-left:0;padding-right:0;">
       <span style="${leftStyle}">${displayTrioLeft}</span>
       <span style="${centerStyle}">${displayTrioCenter}</span>
       <span style="${rightStyle}">${displayTrioRight}</span>
