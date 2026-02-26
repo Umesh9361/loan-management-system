@@ -339,6 +339,7 @@ function generateLabelHtml(loan: LabelLoan, settings: LabelSettings): string {
     }
     if (field.id === 'interestRate') style += ` text-align: center; color: #444;`;
     if (field.id === 'date') style += ` font-family: 'Arial','Helvetica',sans-serif; letter-spacing: 0.3pt;`;
+    if (['accountNumber','amount','marketValue','interestRate','borrowerMobile'].includes(field.id)) style += ` font-family: 'Arial','Helvetica',sans-serif;`;
     // ₹ symbol always normal weight; number bold per user setting; add space between ₹ and number
     let displayVal = val;
     if (val.includes('₹')) {
@@ -362,6 +363,9 @@ function generateLabelHtml(loan: LabelLoan, settings: LabelSettings): string {
     if (rightField.hasOvalBorder) rightStyle += ` border: 0.6pt solid #333; border-radius: 50px; padding: 1pt 3pt; letter-spacing: 0.3pt; font-family: 'Arial','Helvetica',sans-serif; display: inline-block; box-sizing: border-box;`;
     if (leftField.id === 'date') leftStyle += ` font-family: 'Arial','Helvetica',sans-serif; letter-spacing: 0.3pt;`;
     if (rightField.id === 'date') rightStyle += ` font-family: 'Arial','Helvetica',sans-serif; letter-spacing: 0.3pt;`;
+    const NUMERIC_FIELDS = ['accountNumber','amount','marketValue','interestRate','borrowerMobile'];
+    if (NUMERIC_FIELDS.includes(leftField.id)) leftStyle += ` font-family: 'Arial','Helvetica',sans-serif;`;
+    if (NUMERIC_FIELDS.includes(rightField.id)) rightStyle += ` font-family: 'Arial','Helvetica',sans-serif;`;
     // ₹ symbol always normal weight; number bold per user setting; add space between ₹ and number
     const displayLeftVal = leftVal.includes('₹') ? leftVal.replace(/₹\s*/g, `<span style="font-weight:400">₹</span>&nbsp;`) : leftVal;
     const displayRightVal = rightVal.includes('₹') ? rightVal.replace(/₹\s*/g, `<span style="font-weight:400">₹</span>&nbsp;`) : rightVal;
@@ -392,6 +396,10 @@ function generateLabelHtml(loan: LabelLoan, settings: LabelSettings): string {
     if (centerField.hasOvalBorder) centerStyle += ` border: 0.6pt solid #333; border-radius: 50px; padding: 1pt 3pt; font-family: 'Arial','Helvetica',sans-serif; display: inline-block; box-sizing: border-box;`;
     if (rightField.hasOvalBorder) rightStyle += ` border: 0.6pt solid #333; border-radius: 50px; padding: 1pt 3pt; font-family: 'Arial','Helvetica',sans-serif; display: inline-block; box-sizing: border-box;`;
     if (rightField.id === 'date') rightStyle += ` font-family: 'Arial','Helvetica',sans-serif; letter-spacing: 0.3pt;`;
+    const TRIO_NUMERIC = ['accountNumber','amount','marketValue','interestRate','borrowerMobile'];
+    if (TRIO_NUMERIC.includes(leftField.id)) leftStyle += ` font-family: 'Arial','Helvetica',sans-serif;`;
+    if (TRIO_NUMERIC.includes(centerField.id)) centerStyle += ` font-family: 'Arial','Helvetica',sans-serif;`;
+    if (TRIO_NUMERIC.includes(rightField.id)) rightStyle += ` font-family: 'Arial','Helvetica',sans-serif;`;
     const displayTrioLeft = leftVal.includes('₹') ? leftVal.replace(/₹\s*/g, `<span style="font-weight:400">₹</span>&nbsp;`) : leftVal;
     const displayTrioCenter = centerVal.includes('₹') ? centerVal.replace(/₹\s*/g, `<span style="font-weight:400">₹</span>&nbsp;`) : centerVal;
     const displayTrioRight = rightVal.includes('₹') ? rightVal.replace(/₹\s*/g, `<span style="font-weight:400">₹</span>&nbsp;`) : rightVal;
