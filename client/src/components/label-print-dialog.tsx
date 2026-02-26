@@ -377,10 +377,13 @@ function generateLabelHtml(loan: LabelLoan, settings: LabelSettings): string {
     if (centerField.hasOvalBorder) centerStyle += ` border: 0.6pt solid #333; border-radius: 50px; padding: 1pt 3pt; font-family: 'Arial','Helvetica',sans-serif; display: inline-block; box-sizing: border-box;`;
     if (rightField.hasOvalBorder) rightStyle += ` border: 0.6pt solid #333; border-radius: 50px; padding: 1pt 3pt; font-family: 'Arial','Helvetica',sans-serif; display: inline-block; box-sizing: border-box;`;
     if (rightField.id === 'date') rightStyle += ` font-family: 'Arial','Helvetica',sans-serif; letter-spacing: 0.3pt;`;
+    const displayTrioLeft = leftVal.includes('₹') ? leftVal.replace(/₹\s*/g, `<span style="font-weight:400">₹</span>&nbsp;`) : leftVal;
+    const displayTrioCenter = centerVal.includes('₹') ? centerVal.replace(/₹\s*/g, `<span style="font-weight:400">₹</span>&nbsp;`) : centerVal;
+    const displayTrioRight = rightVal.includes('₹') ? rightVal.replace(/₹\s*/g, `<span style="font-weight:400">₹</span>&nbsp;`) : rightVal;
     return `<div style="display:flex;justify-content:space-between;align-items:center;gap:1pt;line-height:${rowLineH}pt;max-height:${trioMaxH}pt;overflow:hidden;flex-shrink:0;flex-grow:0;width:100%;${marginTopAuto}padding:0;">
-      <span style="${leftStyle}">${leftVal}</span>
-      <span style="${centerStyle}">${centerVal}</span>
-      <span style="${rightStyle}">${rightVal}</span>
+      <span style="${leftStyle}">${displayTrioLeft}</span>
+      <span style="${centerStyle}">${displayTrioCenter}</span>
+      <span style="${rightStyle}">${displayTrioRight}</span>
     </div>`;
   }
 
