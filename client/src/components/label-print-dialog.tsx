@@ -62,7 +62,15 @@ interface LabelSettings {
   margins: MarginSettings;
   fields: LabelField[];
   horizontalOffset: number;
+  fontFamily?: string;
 }
+
+const FONT_OPTIONS = [
+  { label: 'Noto Sans (Default)', value: 'Noto Sans Devanagari', url: 'Noto+Sans+Devanagari:wght@400;700;800', preview: 'अ आ क' },
+  { label: 'Baloo 2 (आकर्षक ⭐)', value: 'Baloo 2', url: 'Baloo+2:wght@400;600;800', preview: 'अ आ क' },
+  { label: 'Laila (Elegant)', value: 'Laila', url: 'Laila:wght@400;600;700', preview: 'अ आ क' },
+  { label: 'Hind (Professional)', value: 'Hind', url: 'Hind:wght@400;700', preview: 'अ आ क' },
+];
 
 interface LabelPrintDialogProps {
   open: boolean;
@@ -105,6 +113,7 @@ const DEFAULT_SETTINGS: LabelSettings = {
   margins: { top: 1.5, bottom: 1, left: 2, right: 2 },
   fields: DEFAULT_FIELDS,
   horizontalOffset: 0,
+  fontFamily: 'Noto Sans Devanagari',
 };
 
 const STORAGE_KEY = "label_print_settings_v2";
@@ -171,6 +180,7 @@ function loadSettings(): LabelSettings {
           },
           fields: validFields,
           horizontalOffset: typeof parsed.horizontalOffset === 'number' ? Math.max(-10, Math.min(10, parsed.horizontalOffset)) : 0,
+          fontFamily: typeof parsed.fontFamily === 'string' && FONT_OPTIONS.some(f => f.value === parsed.fontFamily) ? parsed.fontFamily : 'Noto Sans Devanagari',
         };
       }
     }
@@ -469,6 +479,8 @@ function generatePrintPage(labelsHtml: string, settings: LabelSettings): string 
   const { stickerSize, horizontalOffset } = settings;
   const offsetMm = horizontalOffset || 0;
   const transformStyle = offsetMm !== 0 ? `transform: translateX(${offsetMm}mm);` : '';
+  const selectedFont = settings.fontFamily || 'Noto Sans Devanagari';
+  const fontOption = FONT_OPTIONS.find(f => f.value === selectedFont) || FONT_OPTIONS[0];
   return `
     <!DOCTYPE html>
     <html>
@@ -476,7 +488,7 @@ function generatePrintPage(labelsHtml: string, settings: LabelSettings): string 
       <meta charset="utf-8">
       <title>लेबल प्रिंट</title>
       <link rel="preconnect" href="https://fonts.googleapis.com">
-      <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;700;800&display=swap" rel="stylesheet">
+      <link href="https://fonts.googleapis.com/css2?family=${fontOption.url}&display=swap" rel="stylesheet">
       <style>
         @page {
           size: ${stickerSize.width}mm ${stickerSize.height}mm;
@@ -484,7 +496,7 @@ function generatePrintPage(labelsHtml: string, settings: LabelSettings): string 
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-          font-family: 'Noto Sans Devanagari', 'Mangal', 'Arial Unicode MS', sans-serif;
+          font-family: '${selectedFont}', 'Mangal', 'Arial Unicode MS', sans-serif;
           -webkit-print-color-adjust: exact;
           print-color-adjust: exact;
           text-rendering: optimizeLegibility;
@@ -712,6 +724,20 @@ export function LabelPrintDialog({ open, onOpenChange, loans }: LabelPrintDialog
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     };
   }, [settings, dbLoaded, isDirty]);
+
+  useEffect(() => {
+    const fontFamily = settings.fontFamily || 'Noto Sans Devanagari';
+    const fontOption = FONT_OPTIONS.find(f => f.value === fontFamily) || FONT_OPTIONS[0];
+    const linkId = 'label-preview-font';
+    let link = document.getElementById(linkId) as HTMLLinkElement | null;
+    if (!link) {
+      link = document.createElement('link');
+      link.id = linkId;
+      link.rel = 'stylesheet';
+      document.head.appendChild(link);
+    }
+    link.href = `https://fonts.googleapis.com/css2?family=${fontOption.url}&display=swap`;
+  }, [settings.fontFamily]);
 
   const updateMargin = useCallback((side: keyof MarginSettings, delta: number) => {
     updateSettings(prev => ({
@@ -944,6 +970,18 @@ export function LabelPrintDialog({ open, onOpenChange, loans }: LabelPrintDialog
                       ))}
                     </div>
                     <div className="pt-2 border-t border-gray-200">
+                      <div className="text-xs font-medium text-gray-700 mb-2">लेबल फॉन्ट:</div>
+                      <select
+                        value={settings.fontFamily || 'Noto Sans Devanagari'}
+                        onChange={(e) => updateSettings(prev => ({ ...prev, fontFamily: e.target.value }))}
+                        className="h-8 text-xs w-full rounded-md border border-gray-300 bg-white px-2 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                      >
+                        {FONT_OPTIONS.map(opt => (
+                          <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="pt-2 border-t border-gray-200">
                       <div className="text-xs font-medium text-gray-600 mb-2">कस्टम साइज (mm):</div>
                       <div className="flex items-center gap-2">
                         <div className="flex items-center gap-1">
@@ -1130,7 +1168,7 @@ export function LabelPrintDialog({ open, onOpenChange, loans }: LabelPrintDialog
                         height: `${realHPx}px`,
                         transform: `scale(${previewScale})`,
                         transformOrigin: 'top left',
-                        fontFamily: "'Noto Sans Devanagari', 'Mangal', 'Arial Unicode MS', sans-serif",
+                        fontFamily: `'${settings.fontFamily || 'Noto Sans Devanagari'}', 'Mangal', 'Arial Unicode MS', sans-serif`,
                       }}
                       dangerouslySetInnerHTML={{
                         __html: generateLabelHtml(loan, settings)
