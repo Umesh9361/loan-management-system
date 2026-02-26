@@ -797,7 +797,8 @@ export class DatabaseStorage implements IStorage {
             amount: closure.totalAmount.toString(),
             category: 'loan_repayment',
             narration: standardizedNarration,
-            isSystemGenerated: true  // System generated - only editable through proper closure forms
+            isSystemGenerated: true,  // System generated - only editable through proper closure forms
+            loanId: closure.loanId    // Link to loan UUID — enables reliable reopen/delete sync
           });
         } else {
         }
