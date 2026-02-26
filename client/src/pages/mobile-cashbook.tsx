@@ -889,9 +889,7 @@ function MobileCashbook() {
                 <RefreshCw className="h-5 w-5" />
               </Button>
               
-              <Button
-                variant="ghost"
-                size="icon"
+              <button
                 onClick={() => {
                   const newSearchOpen = !isSearchOpen;
                   setIsSearchOpen(newSearchOpen);
@@ -908,10 +906,21 @@ function MobileCashbook() {
                     }, 100);
                   }
                 }}
-                className={`w-10 h-10 transition-colors ${isSearchOpen ? 'bg-indigo-100 text-indigo-600 hover:bg-indigo-200' : 'text-gray-800 hover:bg-gray-100'}`}
+                style={{
+                  width: 40, height: 40,
+                  borderRadius: 8,
+                  border: 'none',
+                  cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  backgroundColor: isSearchOpen ? '#e0e7ff' : 'transparent',
+                  color: isSearchOpen ? '#4f46e5' : '#1f2937',
+                  transition: 'background-color 0.15s, color 0.15s',
+                }}
+                onMouseEnter={e => { if (!isSearchOpen) (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#f3f4f6'; }}
+                onMouseLeave={e => { if (!isSearchOpen) (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'transparent'; }}
               >
-                <Search className="h-5 w-5" />
-              </Button>
+                <Search style={{ width: 20, height: 20 }} />
+              </button>
             </div>
           </div>
         </div>
