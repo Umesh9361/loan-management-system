@@ -542,20 +542,18 @@ function generatePrintPage(labelsHtml: string, settings: LabelSettings): string 
 }
 
 function generateQrLabelHtml(loan: LabelLoan, qrDataUrl: string, settings: LabelSettings): string {
-  const { stickerSize, margins } = settings;
-  const safeTop = Math.min(margins.top, stickerSize.height * 0.12);
-  const safeBottom = Math.min(margins.bottom, stickerSize.height * 0.12);
-  const safeLeft = Math.min(margins.left, stickerSize.width * 0.08);
-  const safeRight = Math.min(margins.right, stickerSize.width * 0.08);
-  const contentH = stickerSize.height - safeTop - safeBottom;
-  const contentW = stickerSize.width - safeLeft - safeRight;
-  const qrSize = Math.min(contentW * 0.78, contentH - 4.5);
-  const accFontPt = Math.max(6, Math.min(10, stickerSize.width * 0.14));
+  const { stickerSize } = settings;
+  const pad = 1;
+  const accH = 3.5;
+  const innerH = stickerSize.height - pad * 2;
+  const innerW = stickerSize.width - pad * 2;
+  const qrSize = +(Math.min(innerW, innerH - accH - 0.5)).toFixed(1);
+  const accFontPt = Math.max(5.5, Math.min(9, stickerSize.width * 0.12));
   return `
-    <div class="label-container" style="width:${stickerSize.width}mm;height:${stickerSize.height}mm;padding:${safeTop}mm ${safeRight}mm ${safeBottom}mm ${safeLeft}mm;box-sizing:border-box;page-break-after:always;overflow:hidden;">
-      <div style="width:${contentW}mm;height:${contentH}mm;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1mm;">
-        <img src="${qrDataUrl}" style="width:${qrSize}mm;height:${qrSize}mm;display:block;image-rendering:-webkit-optimize-contrast;" />
-        <div style="font-family:'Arial','Helvetica',sans-serif;font-size:${accFontPt}pt;font-weight:700;letter-spacing:0.5pt;text-align:center;white-space:nowrap;">${loan.accountNumber}</div>
+    <div class="label-container" style="width:${stickerSize.width}mm;height:${stickerSize.height}mm;padding:${pad}mm;box-sizing:border-box;page-break-after:always;overflow:hidden;">
+      <div style="width:${innerW}mm;height:${innerH}mm;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0.5mm;">
+        <img src="${qrDataUrl}" style="width:${qrSize}mm;height:${qrSize}mm;display:block;image-rendering:-webkit-optimize-contrast;flex-shrink:0;" />
+        <div style="font-family:'Arial','Helvetica',sans-serif;font-size:${accFontPt}pt;font-weight:700;letter-spacing:0.5pt;text-align:center;white-space:nowrap;line-height:1;flex-shrink:0;">${loan.accountNumber}</div>
       </div>
     </div>
   `;
