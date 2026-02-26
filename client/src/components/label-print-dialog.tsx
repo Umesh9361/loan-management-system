@@ -1241,16 +1241,21 @@ export function LabelPrintDialog({ open, onOpenChange, loans }: LabelPrintDialog
                       position: 'relative',
                     }}
                   >
-                    {settings.qrMode ? (
-                      <div style={{ width: `${realWPx}px`, height: `${realHPx}px`, transform: `scale(${previewScale})`, transformOrigin: 'top left', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '2px', padding: '3px' }}>
-                        {qrPreviewUrls[String(loan.id)] ? (
-                          <img src={qrPreviewUrls[String(loan.id)]} style={{ width: '70%', height: 'auto', display: 'block' }} alt="QR" />
-                        ) : (
-                          <div style={{ width: '60%', aspectRatio: '1', background: '#f3f4f6', borderRadius: '2px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '8px', color: '#9ca3af' }}>QR…</div>
-                        )}
-                        <div style={{ fontFamily: "'Arial','Helvetica',sans-serif", fontWeight: '700', textAlign: 'center', whiteSpace: 'nowrap', fontSize: '9px' }}>{loan.accountNumber}</div>
-                      </div>
-                    ) : (
+                    {settings.qrMode ? (() => {
+                      const shorterPx = Math.min(realWPx, realHPx);
+                      const qrPrevSize = +(shorterPx * 0.62).toFixed(1);
+                      const accFontPx = Math.max(5, Math.min(8, shorterPx * 0.09));
+                      return (
+                        <div style={{ width: `${realWPx}px`, height: `${realHPx}px`, transform: `scale(${previewScale})`, transformOrigin: 'top left', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '2px', padding: '4px', overflow: 'hidden', boxSizing: 'border-box' }}>
+                          {qrPreviewUrls[String(loan.id)] ? (
+                            <img src={qrPreviewUrls[String(loan.id)]} style={{ width: `${qrPrevSize}px`, height: `${qrPrevSize}px`, display: 'block', flexShrink: 0 }} alt="QR" />
+                          ) : (
+                            <div style={{ width: `${qrPrevSize}px`, height: `${qrPrevSize}px`, background: '#f3f4f6', borderRadius: '2px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '7px', color: '#9ca3af', flexShrink: 0 }}>QR…</div>
+                          )}
+                          <div style={{ fontFamily: "'Arial','Helvetica',sans-serif", fontWeight: '700', textAlign: 'center', whiteSpace: 'nowrap', fontSize: `${accFontPx}px`, flexShrink: 0 }}>{loan.accountNumber}</div>
+                        </div>
+                      );
+                    })() : (
                       <div
                         style={{
                           width: `${realWPx}px`,
