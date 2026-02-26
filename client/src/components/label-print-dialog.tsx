@@ -326,7 +326,12 @@ function generateLabelHtml(loan: LabelLoan, settings: LabelSettings): string {
     }
     if (field.id === 'interestRate') style += ` text-align: center; color: #444;`;
     if (field.id === 'date') style += ` font-family: 'Arial','Helvetica',sans-serif; letter-spacing: 0.3pt;`;
-    return `<div style="${style}">${val}</div>`;
+    // ₹ symbol always normal weight; number bold per user setting; add space between ₹ and number
+    let displayVal = val;
+    if (val.includes('₹')) {
+      displayVal = val.replace(/₹\s*/g, `<span style="font-weight:400">₹</span>&nbsp;`);
+    }
+    return `<div style="${style}">${displayVal}</div>`;
   }
 
   function renderPairRow(leftField: LabelField, rightField: LabelField, isLastRow: boolean): string {
@@ -343,9 +348,12 @@ function generateLabelHtml(loan: LabelLoan, settings: LabelSettings): string {
     if (rightField.hasOvalBorder) rightStyle += ` border: 0.6pt solid #333; border-radius: 50px; padding: 1pt 3pt; letter-spacing: 0.3pt; font-family: 'Arial','Helvetica',sans-serif; display: inline-block; box-sizing: border-box;`;
     if (leftField.id === 'date') leftStyle += ` font-family: 'Arial','Helvetica',sans-serif; letter-spacing: 0.3pt;`;
     if (rightField.id === 'date') rightStyle += ` font-family: 'Arial','Helvetica',sans-serif; letter-spacing: 0.3pt;`;
+    // ₹ symbol always normal weight; number bold per user setting; add space between ₹ and number
+    const displayLeftVal = leftVal.includes('₹') ? leftVal.replace(/₹\s*/g, `<span style="font-weight:400">₹</span>&nbsp;`) : leftVal;
+    const displayRightVal = rightVal.includes('₹') ? rightVal.replace(/₹\s*/g, `<span style="font-weight:400">₹</span>&nbsp;`) : rightVal;
     return `<div style="display:flex;justify-content:space-between;align-items:center;gap:1pt;line-height:${rowLineH}pt;max-height:${pairMaxH}pt;overflow:hidden;flex-shrink:0;flex-grow:0;width:100%;${marginTopAuto}padding:0;">
-      <span style="${leftStyle}">${leftVal}</span>
-      <span style="${rightStyle}">${rightVal}</span>
+      <span style="${leftStyle}">${displayLeftVal}</span>
+      <span style="${rightStyle}">${displayRightVal}</span>
     </div>`;
   }
 
