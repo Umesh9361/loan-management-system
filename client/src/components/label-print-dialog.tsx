@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import QRCode from "qrcode";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -63,6 +64,7 @@ interface LabelSettings {
   fields: LabelField[];
   horizontalOffset: number;
   fontFamily?: string;
+  qrMode?: boolean;
 }
 
 const FONT_OPTIONS = [
@@ -114,6 +116,7 @@ const DEFAULT_SETTINGS: LabelSettings = {
   fields: DEFAULT_FIELDS,
   horizontalOffset: 0,
   fontFamily: 'Noto Sans Devanagari',
+  qrMode: false,
 };
 
 const STORAGE_KEY = "label_print_settings_v2";
@@ -181,6 +184,7 @@ function loadSettings(): LabelSettings {
           fields: validFields,
           horizontalOffset: typeof parsed.horizontalOffset === 'number' ? Math.max(-10, Math.min(10, parsed.horizontalOffset)) : 0,
           fontFamily: typeof parsed.fontFamily === 'string' && FONT_OPTIONS.some(f => f.value === parsed.fontFamily) ? parsed.fontFamily : 'Noto Sans Devanagari',
+          qrMode: false,
         };
       }
     }
@@ -537,6 +541,36 @@ function generatePrintPage(labelsHtml: string, settings: LabelSettings): string 
   `;
 }
 
+function generateQrLabelHtml(loan: LabelLoan, qrDataUrl: string, settings: LabelSettings): string {
+  const { stickerSize, margins } = settings;
+  const safeTop = Math.min(margins.top, stickerSize.height * 0.12);
+  const safeBottom = Math.min(margins.bottom, stickerSize.height * 0.12);
+  const safeLeft = Math.min(margins.left, stickerSize.width * 0.08);
+  const safeRight = Math.min(margins.right, stickerSize.width * 0.08);
+  const contentH = stickerSize.height - safeTop - safeBottom;
+  const contentW = stickerSize.width - safeLeft - safeRight;
+  const qrSize = Math.min(contentW * 0.78, contentH - 4.5);
+  const accFontPt = Math.max(6, Math.min(10, stickerSize.width * 0.14));
+  return `
+    <div class="label-container" style="width:${stickerSize.width}mm;height:${stickerSize.height}mm;padding:${safeTop}mm ${safeRight}mm ${safeBottom}mm ${safeLeft}mm;box-sizing:border-box;page-break-after:always;overflow:hidden;">
+      <div style="width:${contentW}mm;height:${contentH}mm;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1mm;">
+        <img src="${qrDataUrl}" style="width:${qrSize}mm;height:${qrSize}mm;display:block;image-rendering:-webkit-optimize-contrast;" />
+        <div style="font-family:'Arial','Helvetica',sans-serif;font-size:${accFontPt}pt;font-weight:700;letter-spacing:0.5pt;text-align:center;white-space:nowrap;">${loan.accountNumber}</div>
+      </div>
+    </div>
+  `;
+}
+
+function generateQrPrintPage(labelsHtml: string, settings: LabelSettings): string {
+  const { stickerSize } = settings;
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>QR लेबल प्रिंट</title>
+    <style>@page{size:${stickerSize.width}mm ${stickerSize.height}mm;margin:0;}*{margin:0;padding:0;box-sizing:border-box;}
+    body{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+    .label-container:last-child{page-break-after:avoid;}
+    @media print{.label-container{page-break-after:always;}.label-container:last-child{page-break-after:avoid;}}</style></head>
+    <body>${labelsHtml}<script>window.onload=function(){setTimeout(function(){window.print();},500);};</script></body></html>`;
+}
+
 interface FieldItemProps {
   field: LabelField;
   idx: number;
@@ -658,6 +692,7 @@ export function LabelPrintDialog({ open, onOpenChange, loans }: LabelPrintDialog
   const [pairWithField, setPairWithField] = useState("");
   const [dbLoaded, setDbLoaded] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
+  const [qrPreviewUrls, setQrPreviewUrls] = useState<Record<string, string>>({});
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const { data: dbSettings, isLoading: isLoadingSettings, isFetched } = useQuery({
@@ -746,6 +781,21 @@ export function LabelPrintDialog({ open, onOpenChange, loans }: LabelPrintDialog
     }
     link.href = `https://fonts.googleapis.com/css2?family=${fontOption.url}&display=swap`;
   }, [settings.fontFamily]);
+
+  useEffect(() => {
+    if (!settings.qrMode || !open) { setQrPreviewUrls({}); return; }
+    let cancelled = false;
+    (async () => {
+      const urls: Record<string, string> = {};
+      for (const loan of loans.slice(0, 4)) {
+        if (cancelled) return;
+        const qrUrl = `${window.location.origin}/qr/${loan.id}`;
+        urls[String(loan.id)] = await QRCode.toDataURL(qrUrl, { width: 128, margin: 1, errorCorrectionLevel: 'M' });
+      }
+      if (!cancelled) setQrPreviewUrls(urls);
+    })();
+    return () => { cancelled = true; };
+  }, [settings.qrMode, open, loans]);
 
   const updateMargin = useCallback((side: keyof MarginSettings, delta: number) => {
     updateSettings(prev => ({
@@ -884,10 +934,20 @@ export function LabelPrintDialog({ open, onOpenChange, loans }: LabelPrintDialog
     }));
   }, [updateSettings]);
 
-  const openPrintWindow = useCallback((loansToprint: LabelLoan[]) => {
+  const openPrintWindow = useCallback(async (loansToprint: LabelLoan[]) => {
     const printWindow = window.open('', '_blank', 'width=600,height=400');
     if (!printWindow) {
       alert("पॉप-अप ब्लॉक झाले. कृपया ब्राउझर सेटिंग्ज मध्ये पॉप-अप अनुमती द्या.");
+      return;
+    }
+    if (settings.qrMode) {
+      const labelsHtml = (await Promise.all(loansToprint.map(async loan => {
+        const qrUrl = `${window.location.origin}/qr/${loan.id}`;
+        const qrDataUrl = await QRCode.toDataURL(qrUrl, { width: 256, margin: 1, errorCorrectionLevel: 'M' });
+        return generateQrLabelHtml(loan, qrDataUrl, settings);
+      }))).join('');
+      printWindow.document.write(generateQrPrintPage(labelsHtml, settings));
+      printWindow.document.close();
       return;
     }
     const labelsHtml = loansToprint.map(loan => generateLabelHtml(loan, settings)).join('');
@@ -948,6 +1008,23 @@ export function LabelPrintDialog({ open, onOpenChange, loans }: LabelPrintDialog
                     <option key={opt.value} value={opt.value}>{opt.label}</option>
                   ))}
                 </select>
+              </div>
+              <div className="px-3 py-2 bg-white border-b border-gray-200 flex items-center gap-2">
+                <span className="text-xs font-medium text-gray-700 whitespace-nowrap">QR मोड:</span>
+                <button
+                  onClick={() => updateSettings(prev => ({ ...prev, qrMode: !prev.qrMode }))}
+                  style={{
+                    padding: '2px 12px', borderRadius: '6px', fontSize: '11px', fontWeight: '600',
+                    cursor: 'pointer', border: settings.qrMode ? 'none' : '1px solid #d1d5db',
+                    background: settings.qrMode ? '#4f46e5' : '#ffffff',
+                    color: settings.qrMode ? '#ffffff' : '#374151',
+                  }}
+                >
+                  {settings.qrMode ? '✓ QR मोड ON' : 'QR मोड'}
+                </button>
+                <span className="text-[10px] text-gray-500">
+                  {settings.qrMode ? 'फक्त QR + खाते नंबर प्रिंट होईल' : 'सगळे fields प्रिंट होतील'}
+                </span>
               </div>
               <div className="flex border-b border-gray-200">
                 {([
@@ -1170,20 +1247,31 @@ export function LabelPrintDialog({ open, onOpenChange, loans }: LabelPrintDialog
                       position: 'relative',
                     }}
                   >
-                    <div
-                      style={{
-                        width: `${realWPx}px`,
-                        height: `${realHPx}px`,
-                        transform: `scale(${previewScale})`,
-                        transformOrigin: 'top left',
-                        fontFamily: `'${settings.fontFamily || 'Noto Sans Devanagari'}', 'Mangal', 'Arial Unicode MS', sans-serif`,
-                      }}
-                      dangerouslySetInnerHTML={{
-                        __html: generateLabelHtml(loan, settings)
-                          .replace(/class="label-container"/, '')
-                          .replace(/page-break-after:\s*always;/, '')
-                      }}
-                    />
+                    {settings.qrMode ? (
+                      <div style={{ width: `${realWPx}px`, height: `${realHPx}px`, transform: `scale(${previewScale})`, transformOrigin: 'top left', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '2px', padding: '3px' }}>
+                        {qrPreviewUrls[String(loan.id)] ? (
+                          <img src={qrPreviewUrls[String(loan.id)]} style={{ width: '70%', height: 'auto', display: 'block' }} alt="QR" />
+                        ) : (
+                          <div style={{ width: '60%', aspectRatio: '1', background: '#f3f4f6', borderRadius: '2px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '8px', color: '#9ca3af' }}>QR…</div>
+                        )}
+                        <div style={{ fontFamily: "'Arial','Helvetica',sans-serif", fontWeight: '700', textAlign: 'center', whiteSpace: 'nowrap', fontSize: '9px' }}>{loan.accountNumber}</div>
+                      </div>
+                    ) : (
+                      <div
+                        style={{
+                          width: `${realWPx}px`,
+                          height: `${realHPx}px`,
+                          transform: `scale(${previewScale})`,
+                          transformOrigin: 'top left',
+                          fontFamily: `'${settings.fontFamily || 'Noto Sans Devanagari'}', 'Mangal', 'Arial Unicode MS', sans-serif`,
+                        }}
+                        dangerouslySetInnerHTML={{
+                          __html: generateLabelHtml(loan, settings)
+                            .replace(/class="label-container"/, '')
+                            .replace(/page-break-after:\s*always;/, '')
+                        }}
+                      />
+                    )}
                   </div>
                 );
               })}
