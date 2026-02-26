@@ -434,6 +434,23 @@ router.post("/restore-from-backup", async (req: any, res) => {
 });
 
 /**
+ * POST /api/data-management/preview-closed-loan-cleanup
+ * बंद कर्ज cleanup करण्यापूर्वी cashbook वर नक्की किती impact होणार ते दाखवा
+ */
+router.post("/preview-closed-loan-cleanup", async (req: any, res) => {
+  try {
+    const tenantId = req.session?.tenantId;
+    if (!tenantId) return res.status(401).json({ success: false, message: "Unauthorized" });
+    const { dateFrom, dateTo } = req.body;
+    const result = await dataManagementService.previewClosedLoanCleanup(tenantId, { dateFrom, dateTo });
+    res.json(result);
+  } catch (error) {
+    console.error("Preview closed loan cleanup error:", error);
+    res.status(500).json({ success: false, loanCount: 0, totalDisbursed: 0, totalRepaid: 0, netCashbookImpact: 0, interestAmount: 0, loans: [], message: "Preview अयशस्वी: " + (error as Error).message });
+  }
+});
+
+/**
  * POST /api/data-management/preview-cashbook-cleanup
  * कॅशबुक एन्ट्री क्लीनअप preview - किती entries delete होतील आणि किती safe राहतील
  */
