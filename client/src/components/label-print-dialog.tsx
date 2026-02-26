@@ -543,18 +543,14 @@ function generatePrintPage(labelsHtml: string, settings: LabelSettings): string 
 
 function generateQrLabelHtml(loan: LabelLoan, qrDataUrl: string, settings: LabelSettings): string {
   const { stickerSize } = settings;
-  const pad = 1;
-  const accH = 3.5;
-  const innerH = stickerSize.height - pad * 2;
-  const innerW = stickerSize.width - pad * 2;
-  const qrSize = +(Math.min(innerW, innerH - accH - 0.5)).toFixed(1);
-  const accFontPt = Math.max(5.5, Math.min(9, stickerSize.width * 0.12));
+  const shorterSide = Math.min(stickerSize.width, stickerSize.height);
+  const qrSize = +(shorterSide * 0.62).toFixed(1);
+  const qrPx = Math.round(qrSize * 3.78);
+  const accFontPt = Math.max(5, Math.min(8, shorterSide * 0.09));
   return `
-    <div class="label-container" style="width:${stickerSize.width}mm;height:${stickerSize.height}mm;padding:${pad}mm;box-sizing:border-box;page-break-after:always;overflow:hidden;">
-      <div style="width:${innerW}mm;height:${innerH}mm;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0.5mm;">
-        <img src="${qrDataUrl}" style="width:${qrSize}mm;height:${qrSize}mm;display:block;image-rendering:-webkit-optimize-contrast;flex-shrink:0;" />
-        <div style="font-family:'Arial','Helvetica',sans-serif;font-size:${accFontPt}pt;font-weight:700;letter-spacing:0.5pt;text-align:center;white-space:nowrap;line-height:1;flex-shrink:0;">${loan.accountNumber}</div>
-      </div>
+    <div class="label-container" style="width:${stickerSize.width}mm;height:${stickerSize.height}mm;box-sizing:border-box;page-break-after:always;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0.8mm;padding:1.5mm;">
+      <img src="${qrDataUrl}" width="${qrPx}" height="${qrPx}" style="width:${qrSize}mm;height:${qrSize}mm;max-width:100%;display:block;flex-shrink:0;" />
+      <div style="font-family:'Arial','Helvetica',sans-serif;font-size:${accFontPt}pt;font-weight:700;letter-spacing:0.5pt;text-align:center;white-space:nowrap;line-height:1;flex-shrink:0;">${loan.accountNumber}</div>
     </div>
   `;
 }
