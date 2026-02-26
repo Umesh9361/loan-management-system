@@ -39,8 +39,8 @@ interface ReconciliationResult {
   success: boolean;
   missingCount: number;
   totalMissingAmount: number;
-  loans: Array<{ id: number; accountNumber: string; borrowerName: string; groupName: string; loanDate: string; principalAmount: number }>;
-  mismatches: Array<{ id: number; accountNumber: string; borrowerName: string; groupName: string; loanDate: string; principalAmount: number; cashEntryId: string; cashEntryAmount: number }>;
+  loans: Array<{ id: number; accountNumber: string; borrowerName: string; groupName: string; loanDate: string; principalAmount: number; status?: string }>;
+  mismatches: Array<{ id: number; accountNumber: string; borrowerName: string; groupName: string; loanDate: string; principalAmount: number; cashEntryId: string; cashEntryAmount: number; status?: string }>;
   duplicates: Array<{ id: number; accountNumber: string; borrowerName: string; loanDate: string; principalAmount: number; cashEntryIds: string[]; cashEntryAmounts: number[]; keepEntryId?: string; keepEntryIds?: string[] }>;
   summary: { missingCount: number; mismatchCount: number; duplicateCount: number; totalDiscrepancy: number };
 }
@@ -48,6 +48,7 @@ interface ReconciliationResult {
 function CashReconciliationTab({ queryClient }: { queryClient: any }) {
   const [confirmRebuild, setConfirmRebuild] = useState(false);
   const [rebuildResult, setRebuildResult] = useState<{ message: string; deleted: number; created: number } | null>(null);
+  const [showDetails, setShowDetails] = useState(false);
 
   const { data: balanceData, isLoading, refetch } = useQuery<{
     cashTotal: number; loanTotal: number; diff: number; allClear: boolean;
@@ -55,6 +56,13 @@ function CashReconciliationTab({ queryClient }: { queryClient: any }) {
     queryKey: ["/api/data-management/balance-check"],
     retry: false,
     staleTime: 0,
+  });
+
+  const { data: detailData, isLoading: detailLoading, refetch: refetchDetails } = useQuery<ReconciliationResult>({
+    queryKey: ["/api/data-management/missing-cash-entries"],
+    retry: false,
+    staleTime: 0,
+    enabled: showDetails,
   });
 
   const rebuildMutation = useMutation({
@@ -184,10 +192,107 @@ function CashReconciliationTab({ queryClient }: { queryClient: any }) {
               )}
             </div>
 
-            <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isLoading}>
-              <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
-              पुन्हा तपासा
-            </Button>
+            <div className="flex gap-2 flex-wrap">
+              <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isLoading}>
+                <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
+                पुन्हा तपासा
+              </Button>
+              {!balanceData.allClear && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="border-blue-400 text-blue-700 hover:bg-blue-50 text-xs"
+                  onClick={() => { setShowDetails(!showDetails); if (!showDetails) refetchDetails(); }}
+                >
+                  {showDetails ? "तपशील लपवा" : "कोणती कर्जे मिसिंग? पाहा"}
+                </Button>
+              )}
+            </div>
+
+            {showDetails && (
+              <div className="mt-3 border border-blue-200 rounded-xl overflow-hidden">
+                <div className="bg-blue-50 px-4 py-2 flex items-center justify-between">
+                  <span className="text-xs font-semibold text-blue-800">कॅशबुक एन्ट्री नसलेली कर्जे</span>
+                  {detailLoading && <RefreshCw className="h-3.5 w-3.5 animate-spin text-blue-600" />}
+                </div>
+                {detailData && !detailLoading && (
+                  <div className="overflow-x-auto">
+                    {detailData.loans.length === 0 && detailData.mismatches.length === 0 ? (
+                      <div className="p-4 text-center text-sm text-green-700">
+                        ✅ सर्व कर्जांच्या कॅशबुक entries सापडल्या — Details सापडले नाहीत (totals मध्ये फरक असेल तर Rebuild करा)
+                      </div>
+                    ) : (
+                      <table className="w-full text-xs">
+                        <thead>
+                          <tr className="bg-blue-100 text-blue-800">
+                            <th className="px-3 py-2 text-left font-semibold">खाते</th>
+                            <th className="px-3 py-2 text-left font-semibold">ग्रुप</th>
+                            <th className="px-3 py-2 text-left font-semibold">नाव</th>
+                            <th className="px-3 py-2 text-left font-semibold">कर्ज दिनांक</th>
+                            <th className="px-3 py-2 text-right font-semibold">मुद्दल</th>
+                            <th className="px-3 py-2 text-center font-semibold">स्थिती</th>
+                            <th className="px-3 py-2 text-center font-semibold">समस्या</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {detailData.loans.map((loan, i) => (
+                            <tr key={`miss-${i}`} className="border-t border-blue-100 hover:bg-red-50">
+                              <td className="px-3 py-2 font-mono font-semibold text-gray-800">{loan.accountNumber || '—'}</td>
+                              <td className="px-3 py-2 text-gray-700">{loan.groupName || '—'}</td>
+                              <td className="px-3 py-2 text-gray-800">{loan.borrowerName}</td>
+                              <td className="px-3 py-2 text-gray-600">
+                                {loan.loanDate ? (() => {
+                                  const d = new Date(loan.loanDate);
+                                  return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
+                                })() : '—'}
+                              </td>
+                              <td className="px-3 py-2 text-right font-semibold text-red-700">
+                                ₹{Number(loan.principalAmount).toLocaleString('en-IN')}
+                              </td>
+                              <td className="px-3 py-2 text-center">
+                                {loan.status === 'closed'
+                                  ? <span className="inline-block px-2 py-0.5 bg-orange-100 text-orange-700 rounded-full text-xs font-medium">बंद खाते</span>
+                                  : <span className="inline-block px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-medium">सक्रिय</span>
+                                }
+                              </td>
+                              <td className="px-3 py-2 text-center">
+                                <span className="inline-block px-2 py-0.5 bg-red-100 text-red-700 rounded-full text-xs font-medium">एन्ट्री नाही</span>
+                              </td>
+                            </tr>
+                          ))}
+                          {detailData.mismatches.map((m, i) => (
+                            <tr key={`mm-${i}`} className="border-t border-blue-100 hover:bg-amber-50">
+                              <td className="px-3 py-2 font-mono font-semibold text-gray-800">{m.accountNumber || '—'}</td>
+                              <td className="px-3 py-2 text-gray-700">{m.groupName || '—'}</td>
+                              <td className="px-3 py-2 text-gray-800">{m.borrowerName}</td>
+                              <td className="px-3 py-2 text-gray-600">
+                                {m.loanDate ? (() => {
+                                  const d = new Date(m.loanDate);
+                                  return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
+                                })() : '—'}
+                              </td>
+                              <td className="px-3 py-2 text-right">
+                                <div className="text-indigo-700 font-semibold">₹{Number(m.principalAmount).toLocaleString('en-IN')}</div>
+                                <div className="text-gray-500 text-xs">कॅश: ₹{Number(m.cashEntryAmount).toLocaleString('en-IN')}</div>
+                              </td>
+                              <td className="px-3 py-2 text-center">
+                                {m.status === 'closed'
+                                  ? <span className="inline-block px-2 py-0.5 bg-orange-100 text-orange-700 rounded-full text-xs font-medium">बंद खाते</span>
+                                  : <span className="inline-block px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-medium">सक्रिय</span>
+                                }
+                              </td>
+                              <td className="px-3 py-2 text-center">
+                                <span className="inline-block px-2 py-0.5 bg-amber-100 text-amber-700 rounded-full text-xs font-medium">रक्कम वेगळी</span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
       </CardContent>
