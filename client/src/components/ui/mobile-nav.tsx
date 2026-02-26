@@ -16,6 +16,7 @@ import { AuthService } from "@/lib/auth";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { useSafeNavigation } from "@/hooks/use-safe-navigation";
 import { NotificationBell } from "@/components/maturity-reminder";
+import { QrScanButton } from "@/components/qr-scanner-modal";
 import { 
   Home, 
   CreditCard, 
@@ -109,6 +110,7 @@ export function MobileNav({ hideBottomNav = false }: MobileNavProps = {}) {
           </div>
           
           <div className="flex items-center gap-1">
+            <QrScanButton className="flex items-center justify-center h-9 w-9 rounded-md hover:bg-indigo-50 text-indigo-600 transition-colors" />
             <NotificationBell />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
