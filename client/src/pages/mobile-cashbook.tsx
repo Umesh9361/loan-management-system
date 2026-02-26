@@ -843,7 +843,7 @@ function MobileCashbook() {
         <div className="bg-white border-b border-gray-200 px-4 py-3">
           <div className="flex items-center justify-between">
             <Link href="/">
-              <Button variant="ghost" size="icon" className="text-gray-500 hover:bg-gray-100 w-10 h-10">
+              <Button variant="ghost" size="icon" className="text-gray-800 hover:bg-gray-100 w-10 h-10">
                 <Home className="h-5 w-5" />
               </Button>
             </Link>
@@ -854,7 +854,7 @@ function MobileCashbook() {
               <Button 
                 variant="ghost" 
                 size="icon"
-                className="text-gray-500 hover:bg-gray-100 w-10 h-10"
+                className="text-gray-800 hover:bg-gray-100 w-10 h-10"
                 onClick={async () => {
                   queryClient.invalidateQueries({ queryKey: ["/api/cash-transactions"] });
                   queryClient.invalidateQueries({ queryKey: ["/api/cash-balance"] });
@@ -908,7 +908,7 @@ function MobileCashbook() {
                     }, 100);
                   }
                 }}
-                className={`w-10 h-10 transition-colors ${isSearchOpen ? 'bg-indigo-100 text-indigo-600 hover:bg-indigo-200' : 'text-gray-500 hover:bg-gray-100'}`}
+                className={`w-10 h-10 transition-colors ${isSearchOpen ? 'bg-indigo-100 text-indigo-600 hover:bg-indigo-200' : 'text-gray-800 hover:bg-gray-100'}`}
               >
                 <Search className="h-5 w-5" />
               </Button>
