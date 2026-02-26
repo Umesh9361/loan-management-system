@@ -96,7 +96,7 @@ export default function ActivityLogPage() {
   };
 
   const userLogs = useMemo(() => {
-    return logs.filter(log => log.userRole !== 'admin' && log.userRole !== 'super_admin');
+    return logs; // सर्व users चे logs दाखवा — admin, super_admin, clerk सर्व
   }, [logs]);
 
   const uniqueUsers = useMemo(() => {
@@ -409,9 +409,15 @@ export default function ActivityLogPage() {
                         <Badge className={`text-xs border ${typeInfo.color}`} variant="outline">
                           {typeInfo.icon} {typeInfo.label}
                         </Badge>
-                        <span className="text-xs text-indigo-600 font-medium flex items-center gap-1 bg-indigo-50 px-2 py-0.5 rounded-full">
+                        <span className={`text-xs font-medium flex items-center gap-1 px-2 py-0.5 rounded-full ${
+                          log.userRole === 'super_admin' ? 'text-purple-700 bg-purple-50' :
+                          log.userRole === 'admin' ? 'text-indigo-700 bg-indigo-50' :
+                          'text-blue-600 bg-blue-50'
+                        }`}>
                           <User className="h-3 w-3" />
                           {log.userName || "Unknown"}
+                          {log.userRole === 'super_admin' && <span className="ml-1 text-[10px] bg-purple-200 text-purple-800 px-1 rounded">सुपर ऍडमिन</span>}
+                          {log.userRole === 'admin' && <span className="ml-1 text-[10px] bg-indigo-200 text-indigo-800 px-1 rounded">ऍडमिन</span>}
                         </span>
                       </div>
                       <p className="text-sm md:text-base font-medium break-words text-gray-800">
