@@ -86,7 +86,8 @@ export function QrScannerModal({ open, onOpenChange }: QrScannerModalProps) {
   }, [onOpenChange, setLocation, stopScanner]);
 
   const tryStartCamera = useCallback(async (scanner: any, boxSize: number): Promise<boolean> => {
-    const scanConfig = { fps: 10, qrbox: { width: boxSize, height: boxSize }, aspectRatio: 1.0 };
+    // aspectRatio काढला — Android Chrome वर black screen चे कारण
+    const scanConfig = { fps: 10, qrbox: { width: boxSize, height: boxSize } };
     for (const cfg of CAMERA_CONFIGS) {
       if (!mountedRef.current) return false;
       try {
@@ -108,7 +109,7 @@ export function QrScannerModal({ open, onOpenChange }: QrScannerModalProps) {
     setStatus("loading");
     setErrorMsg("");
 
-    await new Promise(resolve => setTimeout(resolve, 400));
+    await new Promise(resolve => setTimeout(resolve, 600));
     if (!mountedRef.current) return;
 
     const containerEl = document.getElementById(containerId);
@@ -200,9 +201,21 @@ export function QrScannerModal({ open, onOpenChange }: QrScannerModalProps) {
         </DialogHeader>
 
         <div className="p-3 space-y-2">
+          <style>{`
+            #qr-scanner-container video {
+              width: 100% !important;
+              height: 100% !important;
+              object-fit: cover !important;
+              border-radius: 8px;
+            }
+            #qr-scanner-container canvas {
+              width: 100% !important;
+              height: 100% !important;
+            }
+          `}</style>
           <div
             id={containerId}
-            style={{ width: '100%', height: '280px', borderRadius: '8px', overflow: 'hidden', background: '#111', position: 'relative' }}
+            style={{ width: '100%', height: '280px', borderRadius: '8px', background: '#111', position: 'relative' }}
           />
 
           {status === "loading" && (
