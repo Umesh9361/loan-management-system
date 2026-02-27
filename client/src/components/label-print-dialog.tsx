@@ -626,14 +626,17 @@ function generateQrLabelHtml(loan: LabelLoan, qrDataUrl: string, settings: Label
 
 function generateQrPrintPage(labelsHtml: string, settings: LabelSettings): string {
   const { stickerSize, fontFamily } = settings;
+  const offsetMm = settings.horizontalOffset || 0;
+  const transformStyle = offsetMm !== 0 ? `transform:translateX(${offsetMm}mm);` : '';
   const fontOpt = FONT_OPTIONS.find(f => f.value === fontFamily) || FONT_OPTIONS[0];
   return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>QR लेबल प्रिंट</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=${fontOpt.url}&display=swap" rel="stylesheet">
     <style>@page{size:${stickerSize.width}mm ${stickerSize.height}mm;margin:0;}*{margin:0;padding:0;box-sizing:border-box;}
     body{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+    .label-container{${transformStyle}}
     .label-container:last-child{page-break-after:avoid;}
-    @media print{.label-container{page-break-after:always;}.label-container:last-child{page-break-after:avoid;}}</style></head>
+    @media print{.label-container{page-break-after:always;${transformStyle}}.label-container:last-child{page-break-after:avoid;}}</style></head>
     <body>${labelsHtml}<script>window.onload=function(){setTimeout(function(){window.print();},900);};</script></body></html>`;
 }
 
