@@ -589,7 +589,12 @@ function generateQrLabelHtml(loan: LabelLoan, qrDataUrl: string, settings: Label
     try { const p = loan.loanDate.split('T')[0].split('-'); return `${p[2]}/${p[1]}/${p[0]}`; } catch { return loan.loanDate; }
   })() : '';
   const amtNum = (parseInt(String(loan.principalAmount)) || 0).toLocaleString('en-IN');
-  const groupLine = loan.groupName ? `${loan.groupName} (${loan.borrowerName})` : loan.borrowerName;
+  const grpDisplayMode = settings.fields.find(f => f.id === 'groupBorrower')?.displayMode ?? 'groupBorrower';
+  const groupLine = grpDisplayMode === 'groupOnly'
+    ? (loan.groupName || '')
+    : grpDisplayMode === 'borrowerOnly'
+    ? (loan.borrowerName || '')
+    : (loan.groupName ? `${loan.groupName} (${loan.borrowerName})` : (loan.borrowerName || ''));
   const intStr = (show_int && loan.interestRate) ? `${loan.interestRate}` : '';
   const wtStr  = (show_wt  && loan.weight)       ? `${loan.weight}g`      : '';
   const hasExtra = !!(intStr || wtStr);
@@ -1343,7 +1348,12 @@ export function LabelPrintDialog({ open, onOpenChange, loans }: LabelPrintDialog
                       const numF2 = `'Arial','Helvetica',sans-serif`;
                       const dateStr2 = loan.loanDate ? (() => { try { const p = loan.loanDate.split('T')[0].split('-'); return `${p[2]}/${p[1]}/${p[0]}`; } catch { return loan.loanDate; } })() : '';
                       const amtNum2 = (parseInt(String(loan.principalAmount)) || 0).toLocaleString('en-IN');
-                      const grpLine2 = loan.groupName ? `${loan.groupName} (${loan.borrowerName})` : loan.borrowerName;
+                      const grpDM2 = settings.fields.find(f => f.id === 'groupBorrower')?.displayMode ?? 'groupBorrower';
+                      const grpLine2 = grpDM2 === 'groupOnly'
+                        ? (loan.groupName || '')
+                        : grpDM2 === 'borrowerOnly'
+                        ? (loan.borrowerName || '')
+                        : (loan.groupName ? `${loan.groupName} (${loan.borrowerName})` : (loan.borrowerName || ''));
                       const intStr2 = (sv_int && loan.interestRate) ? `${loan.interestRate}` : '';
                       const wtStr2  = (sv_wt  && loan.weight)       ? `${loan.weight}g`      : '';
                       const hasExtra2 = !!(intStr2 || wtStr2);
