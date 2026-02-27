@@ -110,6 +110,8 @@ export default function Closure() {
     } catch { return []; }
   });
   const summaryEntriesRef = useRef<SummaryEntry[]>(summaryEntries);
+  const autoCalculateRef = useRef(false);
+  const resultSectionRef = useRef<HTMLDivElement>(null);
   const [summaryCounter, setSummaryCounter] = useState(() => {
     try {
       const saved = sessionStorage.getItem(SUMMARY_COUNTER_KEY);
@@ -278,9 +280,24 @@ export default function Closure() {
         form.setValue("loanId", loan.id);
         setSearchQuery(`${loan.borrowerName} - ${loan.accountNumber}`);
         setEditableLoanDate(loan.loanDate || "");
+        autoCalculateRef.current = true;
       }
     }
   }, [loanIdFromUrl, activeLoans, form]);
+
+  // QR scan नंतर auto-calculate + auto-scroll to result
+  useEffect(() => {
+    if (selectedLoan && autoCalculateRef.current) {
+      autoCalculateRef.current = false;
+      const timer = setTimeout(() => {
+        calculateInterest();
+        setTimeout(() => {
+          resultSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 400);
+      }, 350);
+      return () => clearTimeout(timer);
+    }
+  }, [selectedLoan, calculateInterest]);
 
   // Get group name for display
   const getGroupName = (groupId: string) => {
@@ -1833,6 +1850,7 @@ export default function Closure() {
 
                     {/* Calculation Results */}
                     {calculationResult && (
+                      <div ref={resultSectionRef}>
                       <Card className="border-2 border-indigo-300 bg-gradient-to-r from-indigo-50 to-indigo-50">
                         <CardHeader className="pb-3">
                           <CardTitle className="text-indigo-800 flex items-center gap-2">
@@ -1913,6 +1931,7 @@ export default function Closure() {
                           </div>
                         </CardContent>
                       </Card>
+                      </div>
                     )}
 
                     {/* SIMPLIFIED: Single Final Interest Amount Field */}
