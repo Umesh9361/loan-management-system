@@ -546,15 +546,33 @@ function generateQrLabelHtml(loan: LabelLoan, qrDataUrl: string, settings: Label
   const totalW = stickerSize.width;
   const totalH = stickerSize.height;
   const shorterSide = Math.min(totalW, totalH);
-  const scale = shorterSide / 25;
 
   const qrSizeMm = +(shorterSide * 0.85).toFixed(1);
   const qrPx = Math.round(qrSizeMm * 3.78);
 
-  const f1 = +(Math.min(9.5, 8 * scale)).toFixed(1);
-  const f2 = +(Math.min(8.5, 7 * scale)).toFixed(1);
-  const f3 = +(Math.min(7.5, 6 * scale)).toFixed(1);
-  const f4 = +(Math.min(6.5, 5 * scale)).toFixed(1);
+  // Read font sizes, bold, oval from settings.fields — same as regular label
+  const gf  = (id: string, fb: number)   => settings.fields.find(f => f.id === id)?.fontSize ?? fb;
+  const gb  = (id: string, fb: boolean)  => (settings.fields.find(f => f.id === id)?.bold ?? fb) ? '800' : '600';
+  const gov = (id: string)               => settings.fields.find(f => f.id === id)?.hasOvalBorder ?? false;
+
+  const f_acct = gf('accountNumber', 11);
+  const f_amt  = gf('amount', 10);
+  const f_date = gf('date', 10);
+  const f_grp  = gf('groupBorrower', 8);
+  const f_int  = gf('interestRate', 7.5);
+  const f_wt   = gf('weight', 7.5);
+
+  const b_acct = gb('accountNumber', true);
+  const b_amt  = gb('amount', true);
+  const b_date = gb('date', true);
+  const b_grp  = gb('groupBorrower', false);
+  const b_int  = gb('interestRate', true);
+  const b_wt   = gb('weight', true);
+
+  const acctOval = gov('accountNumber');
+  const acctOvalStyle = acctOval
+    ? `border:0.6pt solid #333;border-radius:50px;padding:1pt 3pt;letter-spacing:0.3pt;display:inline-block;box-sizing:border-box;`
+    : ``;
 
   const devaFont = `'${fontFamily || 'Noto Sans Devanagari'}','Mangal','Arial Unicode MS',sans-serif`;
   const numFont = `'Arial','Helvetica',sans-serif`;
@@ -573,12 +591,12 @@ function generateQrLabelHtml(loan: LabelLoan, qrDataUrl: string, settings: Label
       <img src="${qrDataUrl}" width="${qrPx}" height="${qrPx}" style="width:${qrSizeMm}mm;height:${qrSizeMm}mm;display:block;flex-shrink:0;" />
       <div style="flex:1;min-width:0;height:${qrSizeMm}mm;display:flex;flex-direction:column;justify-content:space-between;padding-left:1.5mm;padding-right:1.5mm;border-left:0.3mm solid #ccc;margin-left:0.8mm;overflow:hidden;">
         <div style="display:flex;justify-content:space-between;align-items:center;overflow:hidden;">
-          <span style="font-family:${numFont};font-size:${f1}pt;font-weight:800;white-space:nowrap;background:#e8edf8;border-radius:20pt;padding:0.25mm 0.8mm;letter-spacing:0.2pt;line-height:1.2;flex-shrink:1;overflow:hidden;text-overflow:ellipsis;">${loan.accountNumber}</span>
-          <span style="font-family:${numFont};font-size:${f1}pt;font-weight:800;white-space:nowrap;flex-shrink:0;margin-left:1.5mm;">${amtStr}</span>
+          <span style="font-family:${numFont};font-size:${f_acct}pt;font-weight:${b_acct};white-space:nowrap;line-height:1.3;flex-shrink:1;overflow:hidden;text-overflow:ellipsis;${acctOvalStyle}">${loan.accountNumber}</span>
+          <span style="font-family:${numFont};font-size:${f_amt}pt;font-weight:${b_amt};white-space:nowrap;flex-shrink:0;margin-left:1.5mm;">${amtStr}</span>
         </div>
-        <div style="font-family:${numFont};font-size:${f2}pt;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2;">${dateStr}</div>
-        <div style="font-family:${devaFont};font-size:${f3}pt;font-weight:700;word-break:break-word;overflow-wrap:anywhere;line-height:1.2;overflow:hidden;">${groupLine}</div>
-        ${hasExtra ? `<div style="display:flex;justify-content:space-between;align-items:center;overflow:hidden;"><span style="font-family:${numFont};font-size:${f4}pt;color:#444;white-space:nowrap;">${intStr}</span><span style="font-family:${numFont};font-size:${f4}pt;color:#444;white-space:nowrap;">${wtStr}</span></div>` : ''}
+        <div style="font-family:${numFont};font-size:${f_date}pt;font-weight:${b_date};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3;letter-spacing:0.3pt;">${dateStr}</div>
+        <div style="font-family:${devaFont};font-size:${f_grp}pt;font-weight:${b_grp};word-break:break-word;overflow-wrap:anywhere;line-height:1.3;overflow:hidden;">${groupLine}</div>
+        ${hasExtra ? `<div style="display:flex;justify-content:space-between;align-items:center;overflow:hidden;"><span style="font-family:${numFont};font-size:${f_int}pt;font-weight:${b_int};color:#444;white-space:nowrap;">${intStr}</span><span style="font-family:${numFont};font-size:${f_wt}pt;font-weight:${b_wt};color:#444;white-space:nowrap;">${wtStr}</span></div>` : ''}
       </div>
     </div>
   `;
@@ -1275,12 +1293,25 @@ export function LabelPrintDialog({ open, onOpenChange, loans }: LabelPrintDialog
                   >
                     {settings.qrMode ? (() => {
                       const shorterPx = Math.min(realWPx, realHPx);
-                      const sc2 = shorterPx / 94.5;
                       const qrSizePx = +(shorterPx * 0.85).toFixed(1);
-                      const f1p = Math.min(13, 10.5 * sc2);
-                      const f2p = Math.min(11, 9 * sc2);
-                      const f3p = Math.min(10, 8 * sc2);
-                      const f4p = Math.min(8.5, 6.5 * sc2);
+                      // Read from settings.fields — same as regular label
+                      const gf2  = (id: string, fb: number)  => settings.fields.find(f => f.id === id)?.fontSize ?? fb;
+                      const gb2  = (id: string, fb: boolean) => (settings.fields.find(f => f.id === id)?.bold ?? fb) ? 800 : 600;
+                      const gov2 = (id: string)              => settings.fields.find(f => f.id === id)?.hasOvalBorder ?? false;
+                      const pt2px = (pt: number) => Math.round(pt * 1.333);
+                      const fp_acct = pt2px(gf2('accountNumber', 11));
+                      const fp_amt  = pt2px(gf2('amount', 10));
+                      const fp_date = pt2px(gf2('date', 10));
+                      const fp_grp  = pt2px(gf2('groupBorrower', 8));
+                      const fp_int  = pt2px(gf2('interestRate', 7.5));
+                      const fp_wt   = pt2px(gf2('weight', 7.5));
+                      const bw_acct = gb2('accountNumber', true);
+                      const bw_amt  = gb2('amount', true);
+                      const bw_date = gb2('date', true);
+                      const bw_grp  = gb2('groupBorrower', false);
+                      const bw_int  = gb2('interestRate', true);
+                      const bw_wt   = gb2('weight', true);
+                      const acctOval2 = gov2('accountNumber');
                       const devaF2 = `'${settings.fontFamily || 'Noto Sans Devanagari'}','Mangal',sans-serif`;
                       const numF2 = `'Arial','Helvetica',sans-serif`;
                       const dateStr2 = loan.loanDate ? (() => { try { const p = loan.loanDate.split('T')[0].split('-'); return `${p[2]}/${p[1]}/${p[0]}`; } catch { return loan.loanDate; } })() : '';
@@ -1294,19 +1325,19 @@ export function LabelPrintDialog({ open, onOpenChange, loans }: LabelPrintDialog
                           {qrPreviewUrls[String(loan.id)] ? (
                             <img src={qrPreviewUrls[String(loan.id)]} style={{ width: `${qrSizePx}px`, height: `${qrSizePx}px`, display: 'block', flexShrink: 0 }} alt="QR" />
                           ) : (
-                            <div style={{ width: `${qrSizePx}px`, height: `${qrSizePx}px`, background: '#f3f4f6', borderRadius: '2px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: `${f4p}px`, color: '#9ca3af', flexShrink: 0 }}>QR…</div>
+                            <div style={{ width: `${qrSizePx}px`, height: `${qrSizePx}px`, background: '#f3f4f6', borderRadius: '2px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: `${fp_int}px`, color: '#9ca3af', flexShrink: 0 }}>QR…</div>
                           )}
                           <div style={{ flex: 1, minWidth: 0, height: `${qrSizePx}px`, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', paddingLeft: '3px', paddingRight: '3px', borderLeft: '0.8px solid #ccc', marginLeft: '2px', overflow: 'hidden' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', overflow: 'hidden' }}>
-                              <span style={{ fontFamily: numF2, fontSize: `${f1p}px`, fontWeight: 800, whiteSpace: 'nowrap', background: '#e8edf8', borderRadius: '10px', padding: '1px 5px', lineHeight: 1.2, flexShrink: 1, overflow: 'hidden', textOverflow: 'ellipsis' }}>{loan.accountNumber}</span>
-                              <span style={{ fontFamily: numF2, fontSize: `${f1p}px`, fontWeight: 800, whiteSpace: 'nowrap', flexShrink: 0, marginLeft: '4px' }}>{amt2}</span>
+                              <span style={{ fontFamily: numF2, fontSize: `${fp_acct}px`, fontWeight: bw_acct, whiteSpace: 'nowrap', lineHeight: 1.3, flexShrink: 1, overflow: 'hidden', textOverflow: 'ellipsis', ...(acctOval2 ? { border: '0.8px solid #333', borderRadius: '50px', padding: '1px 3px', letterSpacing: '0.3px', display: 'inline-block', boxSizing: 'border-box' as const } : {}) }}>{loan.accountNumber}</span>
+                              <span style={{ fontFamily: numF2, fontSize: `${fp_amt}px`, fontWeight: bw_amt, whiteSpace: 'nowrap', flexShrink: 0, marginLeft: '4px' }}>{amt2}</span>
                             </div>
-                            <div style={{ fontFamily: numF2, fontSize: `${f2p}px`, fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: 1.2 }}>{dateStr2}</div>
-                            <div style={{ fontFamily: devaF2, fontSize: `${f3p}px`, fontWeight: 700, wordBreak: 'break-word', overflowWrap: 'anywhere', lineHeight: 1.2, overflow: 'hidden' }}>{grpLine2}</div>
+                            <div style={{ fontFamily: numF2, fontSize: `${fp_date}px`, fontWeight: bw_date, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: 1.3, letterSpacing: '0.3px' }}>{dateStr2}</div>
+                            <div style={{ fontFamily: devaF2, fontSize: `${fp_grp}px`, fontWeight: bw_grp, wordBreak: 'break-word', overflowWrap: 'anywhere', lineHeight: 1.3, overflow: 'hidden' }}>{grpLine2}</div>
                             {hasExtra2 && (
                               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', overflow: 'hidden' }}>
-                                <span style={{ fontFamily: numF2, fontSize: `${f4p}px`, color: '#444', whiteSpace: 'nowrap' }}>{intStr2}</span>
-                                <span style={{ fontFamily: numF2, fontSize: `${f4p}px`, color: '#444', whiteSpace: 'nowrap' }}>{wtStr2}</span>
+                                <span style={{ fontFamily: numF2, fontSize: `${fp_int}px`, fontWeight: bw_int, color: '#444', whiteSpace: 'nowrap' }}>{intStr2}</span>
+                                <span style={{ fontFamily: numF2, fontSize: `${fp_wt}px`, fontWeight: bw_wt, color: '#444', whiteSpace: 'nowrap' }}>{wtStr2}</span>
                               </div>
                             )}
                           </div>
