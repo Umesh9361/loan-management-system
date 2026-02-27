@@ -10,6 +10,7 @@ import { PhotoStorageFactory, CloudinaryStorageProvider } from "./photo-storage-
 import path from 'path';
 import fs from 'fs/promises';
 import { z } from "zod";
+import QRCode from 'qrcode';
 import { and, eq, sql, or, ne, inArray, desc, asc, count, sum, gte, lte } from "drizzle-orm";
 import connectPgSimple from "connect-pg-simple";
 import { pool } from "./db";
@@ -5217,6 +5218,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error generating profit & loss:", error);
       res.status(500).json({ message: "Failed to generate profit & loss statement" });
+    }
+  });
+
+  app.get('/api/qr-generate', requireAuth, async (req: any, res) => {
+    try {
+      const { url, size = '256' } = req.query;
+      if (!url) return res.status(400).json({ error: 'url required' });
+      const dataUrl = await QRCode.toDataURL(String(url), {
+        width: Math.min(512, Math.max(64, parseInt(String(size)) || 256)),
+        margin: 1,
+        errorCorrectionLevel: 'M',
+      });
+      res.json({ dataUrl });
+    } catch (e) {
+      res.status(500).json({ error: 'QR generation failed' });
     }
   });
 
