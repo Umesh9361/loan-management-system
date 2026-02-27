@@ -599,26 +599,25 @@ function generateQrLabelHtml(loan: LabelLoan, qrDataUrl: string, settings: Label
   const hasExtra = !!(intStr || wtStr);
   const showRow1 = show_acct || show_amt;
 
-  // Auto font-size for Row 1: shrink if account + amount too wide
-  const panelWmm = totalW - qrSizeMm - 5;
-  const row1Chars = (show_acct ? (loan.accountNumber || '').length : 0) + (show_amt ? amtNum.length + 1 : 0);
-  const maxRow1Font = Math.max(show_acct ? f_acct : 0, show_amt ? f_amt : 0);
-  const charsPerMm = panelWmm / (maxRow1Font * 0.353 * 0.55);
-  const row1Scale = row1Chars > 0 && row1Chars > charsPerMm ? Math.max(0.6, charsPerMm / row1Chars) : 1;
-  const eff_f_acct = +(f_acct * row1Scale).toFixed(1);
-  const eff_f_amt  = +(f_amt  * row1Scale).toFixed(1);
+  // Large amount → moves to 2nd line (no auto-shrink needed)
+  const amtIsLong = show_amt && amtNum.length > 7;
 
   return `
     <div class="label-container" style="width:${totalW}mm;height:${totalH}mm;box-sizing:border-box;page-break-after:always;overflow:hidden;display:flex;flex-direction:row;align-items:center;padding:1mm;gap:0;">
       <img src="${qrDataUrl}" width="${qrPx}" height="${qrPx}" style="width:${qrSizeMm}mm;height:${qrSizeMm}mm;display:block;flex-shrink:0;" />
       <div style="flex:1;min-width:0;height:${qrSizeMm}mm;display:flex;flex-direction:column;justify-content:space-between;padding-left:1.5mm;padding-right:1.5mm;border-left:0.3mm solid #ccc;margin-left:0.8mm;overflow:hidden;">
-        ${showRow1 ? `<div style="display:flex;justify-content:space-between;align-items:center;overflow:hidden;">
-          ${show_acct ? `<span style="font-family:${numFont};font-size:${eff_f_acct}pt;font-weight:${b_acct};white-space:nowrap;line-height:1.3;flex-shrink:1;overflow:hidden;text-overflow:ellipsis;${acctOvalStyle}">${loan.accountNumber}</span>` : ''}
-          ${show_amt  ? `<span style="font-family:${numFont};font-size:${eff_f_amt}pt;font-weight:${b_amt};white-space:nowrap;flex-shrink:0;margin-left:1.5mm;">${amtNum}</span>` : ''}
+        ${amtIsLong ? `
+          <div style="display:flex;flex-direction:column;overflow:hidden;">
+            ${show_acct ? `<div style="font-family:${numFont};font-size:${f_acct}pt;font-weight:${b_acct};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3;text-align:left;${acctOvalStyle}">${loan.accountNumber}</div>` : ''}
+            ${show_amt  ? `<div style="font-family:${numFont};font-size:${f_amt}pt;font-weight:${b_amt};white-space:nowrap;line-height:1.3;text-align:right;width:100%;">${amtNum}</div>` : ''}
+          </div>
+        ` : showRow1 ? `<div style="display:flex;justify-content:space-between;align-items:center;overflow:hidden;">
+          ${show_acct ? `<span style="font-family:${numFont};font-size:${f_acct}pt;font-weight:${b_acct};white-space:nowrap;line-height:1.3;flex-shrink:1;overflow:hidden;text-overflow:ellipsis;${acctOvalStyle}">${loan.accountNumber}</span>` : ''}
+          ${show_amt  ? `<span style="font-family:${numFont};font-size:${f_amt}pt;font-weight:${b_amt};white-space:nowrap;flex-shrink:0;margin-left:1.5mm;">${amtNum}</span>` : ''}
         </div>` : ''}
         ${show_date ? `<div style="font-family:${numFont};font-size:${f_date}pt;font-weight:${b_date};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3;letter-spacing:0.3pt;">${dateStr}</div>` : ''}
         ${show_grp  ? `<div style="font-family:${devaFont};font-size:${f_grp}pt;font-weight:${b_grp};word-break:break-word;overflow-wrap:anywhere;line-height:1.3;overflow:hidden;">${groupLine}</div>` : ''}
-        ${hasExtra ? `<div style="display:flex;justify-content:space-between;align-items:center;overflow:hidden;">${intStr ? `<span style="font-family:${numFont};font-size:${f_int}pt;font-weight:${b_int};color:#444;white-space:nowrap;">${intStr}</span>` : ''}${wtStr ? `<span style="font-family:${numFont};font-size:${f_wt}pt;font-weight:${b_wt};color:#444;white-space:nowrap;">${wtStr}</span>` : ''}</div>` : ''}
+        ${(hasExtra && !amtIsLong) ? `<div style="display:flex;justify-content:space-between;align-items:center;overflow:hidden;">${intStr ? `<span style="font-family:${numFont};font-size:${f_int}pt;font-weight:${b_int};color:#444;white-space:nowrap;">${intStr}</span>` : ''}${wtStr ? `<span style="font-family:${numFont};font-size:${f_wt}pt;font-weight:${b_wt};color:#444;white-space:nowrap;">${wtStr}</span>` : ''}</div>` : ''}
       </div>
     </div>
   `;
