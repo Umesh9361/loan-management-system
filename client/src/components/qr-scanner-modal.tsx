@@ -59,7 +59,7 @@ export function QrScannerModal({ open, onOpenChange }: QrScannerModalProps) {
       containerEl.innerHTML = "";
 
       try {
-        const { Html5Qrcode } = await import("html5-qrcode");
+        const { Html5Qrcode } = await import(/* @vite-ignore */ "html5-qrcode");
         if (!mounted) return;
 
         const scanner = new Html5Qrcode(containerId, { verbose: false } as any);
@@ -132,7 +132,7 @@ export function QrScannerModal({ open, onOpenChange }: QrScannerModalProps) {
       const containerEl2 = document.getElementById(containerId);
       if (!containerEl2) return;
       try {
-        const { Html5Qrcode } = await import("html5-qrcode");
+        const { Html5Qrcode } = await import(/* @vite-ignore */ "html5-qrcode");
         const scanner = new Html5Qrcode(containerId, { verbose: false } as any);
         scannerRef.current = scanner;
         const boxSize = Math.min((containerEl2.offsetWidth || 280) - 40, 220);
