@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import QRCode from "qrcode";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -859,7 +858,9 @@ export function LabelPrintDialog({ open, onOpenChange, loans }: LabelPrintDialog
       for (const loan of loans.slice(0, 4)) {
         if (cancelled) return;
         const qrUrl = `${window.location.origin}/qr/${loan.id}`;
-        urls[String(loan.id)] = await QRCode.toDataURL(qrUrl, { width: 128, margin: 1, errorCorrectionLevel: 'M' });
+        const qrRes = await fetch(`/api/qr-generate?url=${encodeURIComponent(qrUrl)}&size=128`);
+        const qrJson = await qrRes.json();
+        urls[String(loan.id)] = qrJson.dataUrl;
       }
       if (!cancelled) setQrPreviewUrls(urls);
     })();
@@ -1012,7 +1013,9 @@ export function LabelPrintDialog({ open, onOpenChange, loans }: LabelPrintDialog
     if (settings.qrMode) {
       const labelsHtml = (await Promise.all(loansToprint.map(async loan => {
         const qrUrl = `${window.location.origin}/qr/${loan.id}`;
-        const qrDataUrl = await QRCode.toDataURL(qrUrl, { width: 256, margin: 1, errorCorrectionLevel: 'M' });
+        const qrFetch = await fetch(`/api/qr-generate?url=${encodeURIComponent(qrUrl)}&size=256`);
+        const qrFetchJson = await qrFetch.json();
+        const qrDataUrl = qrFetchJson.dataUrl;
         return generateQrLabelHtml(loan, qrDataUrl, settings);
       }))).join('');
       printWindow.document.write(generateQrPrintPage(labelsHtml, settings));
