@@ -8,18 +8,45 @@ interface QrScannerModalProps {
   onOpenChange: (open: boolean) => void;
 }
 
-const CAMERA_CONFIGS: Array<{ facingMode?: string; label: string }> = [
-  { facingMode: "environment", label: "back camera" },
-  { facingMode: "user", label: "front camera" },
-  { label: "any camera" },
+const CAMERA_CONFIGS: Array<{ facingMode?: string }> = [
+  { facingMode: "environment" },
+  { facingMode: "user" },
+  {},
 ];
+
+const CDN_URL = "https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js";
+
+let cdnLoadPromise: Promise<void> | null = null;
+
+function loadHtml5QrcodeCdn(): Promise<void> {
+  if (cdnLoadPromise) return cdnLoadPromise;
+  if ((window as any).Html5Qrcode) {
+    cdnLoadPromise = Promise.resolve();
+    return cdnLoadPromise;
+  }
+  cdnLoadPromise = new Promise((resolve, reject) => {
+    const existing = document.querySelector(`script[src="${CDN_URL}"]`);
+    if (existing) {
+      existing.addEventListener("load", () => resolve());
+      existing.addEventListener("error", () => reject(new Error("CDN script load failed")));
+      return;
+    }
+    const script = document.createElement("script");
+    script.src = CDN_URL;
+    script.async = true;
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error("html5-qrcode CDN लोड होऊ शकला नाही — internet तपासा"));
+    document.head.appendChild(script);
+  });
+  return cdnLoadPromise;
+}
 
 export function QrScannerModal({ open, onOpenChange }: QrScannerModalProps) {
   const [, setLocation] = useLocation();
   const [status, setStatus] = useState<"loading" | "scanning" | "found" | "error">("loading");
   const [errorMsg, setErrorMsg] = useState("");
   const scannerRef = useRef<any>(null);
-  const mountedRef = useRef(true);
+  const mountedRef = useRef(false);
   const containerId = "qr-scanner-container";
 
   const stopScanner = useCallback(() => {
@@ -42,12 +69,11 @@ export function QrScannerModal({ open, onOpenChange }: QrScannerModalProps) {
       const url = new URL(decodedText);
       const match = url.pathname.match(/^\/qr\/([a-zA-Z0-9\-]+)$/);
       if (match) {
-        const loanId = match[1];
         setStatus("found");
         stopScanner();
         setTimeout(() => {
           onOpenChange(false);
-          setLocation(`/closure?loanId=${loanId}`);
+          setLocation(`/closure?loanId=${match[1]}`);
         }, 600);
       } else {
         setErrorMsg("हे आपल्या app चे QR नाही");
@@ -59,16 +85,16 @@ export function QrScannerModal({ open, onOpenChange }: QrScannerModalProps) {
     }
   }, [onOpenChange, setLocation, stopScanner]);
 
-  const tryStartCamera = useCallback(async (scanner: any, boxSize: number, configs: typeof CAMERA_CONFIGS): Promise<boolean> => {
+  const tryStartCamera = useCallback(async (scanner: any, boxSize: number): Promise<boolean> => {
     const scanConfig = { fps: 10, qrbox: { width: boxSize, height: boxSize }, aspectRatio: 1.0 };
-    for (const cfg of configs) {
+    for (const cfg of CAMERA_CONFIGS) {
       if (!mountedRef.current) return false;
       try {
         const cameraId = cfg.facingMode ? { facingMode: cfg.facingMode } : true;
         await scanner.start(cameraId, scanConfig, onQrDecoded, () => {});
         return true;
       } catch (e: any) {
-        const msg = (e?.message || "").toLowerCase();
+        const msg = (e?.message || e?.name || "").toLowerCase();
         if (msg.includes("permission") || msg.includes("notallowed")) {
           throw e;
         }
@@ -97,17 +123,24 @@ export function QrScannerModal({ open, onOpenChange }: QrScannerModalProps) {
     containerEl.innerHTML = "";
 
     try {
-      const { Html5Qrcode } = await import(/* @vite-ignore */ "html5-qrcode");
+      await loadHtml5QrcodeCdn();
       if (!mountedRef.current) return;
 
+      const Html5Qrcode = (window as any).Html5Qrcode;
+      if (!Html5Qrcode) {
+        setErrorMsg("QR library लोड झाली नाही — पुन्हा प्रयत्न करा");
+        setStatus("error");
+        return;
+      }
+
       stopScanner();
-      const scanner = new Html5Qrcode(containerId, { verbose: false } as any);
+      const scanner = new Html5Qrcode(containerId, { verbose: false });
       scannerRef.current = scanner;
 
       const containerW = containerEl.offsetWidth || 280;
       const boxSize = Math.min(containerW - 40, 220);
 
-      const started = await tryStartCamera(scanner, boxSize, CAMERA_CONFIGS);
+      const started = await tryStartCamera(scanner, boxSize);
       if (!mountedRef.current) return;
 
       if (started) {
@@ -118,7 +151,7 @@ export function QrScannerModal({ open, onOpenChange }: QrScannerModalProps) {
       }
     } catch (err: any) {
       if (!mountedRef.current) return;
-      const msg = err?.message || "";
+      const msg = err?.message || err?.name || "";
       if (msg.toLowerCase().includes("permission") || msg.toLowerCase().includes("notallowed")) {
         setErrorMsg("Camera परवानगी नाकारली — browser settings मध्ये camera allow करा");
       } else if (msg.toLowerCase().includes("notfound") || msg.toLowerCase().includes("no camera")) {
@@ -150,6 +183,7 @@ export function QrScannerModal({ open, onOpenChange }: QrScannerModalProps) {
 
   const handleRetry = useCallback(() => {
     stopScanner();
+    cdnLoadPromise = null;
     const containerEl = document.getElementById(containerId);
     if (containerEl) containerEl.innerHTML = "";
     initScanner();
