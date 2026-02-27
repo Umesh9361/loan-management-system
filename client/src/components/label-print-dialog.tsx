@@ -786,6 +786,8 @@ export function LabelPrintDialog({ open, onOpenChange, loans }: LabelPrintDialog
               margins: parsed.margins || DEFAULT_SETTINGS.margins,
               fields: validFields,
               horizontalOffset: typeof parsed.horizontalOffset === 'number' ? parsed.horizontalOffset : 0,
+              fontFamily: typeof parsed.fontFamily === 'string' ? parsed.fontFamily : undefined,
+              qrMode: typeof parsed.qrMode === 'boolean' ? parsed.qrMode : false,
             });
           }
         }
