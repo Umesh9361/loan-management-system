@@ -4,8 +4,6 @@ RUN apt-get update && apt-get install -y python3 make g++ && rm -rf /var/lib/apt
 
 WORKDIR /app
 
-ARG CACHEBUST=20260227v3
-
 COPY package.json package-lock.json ./
 
 RUN npm ci
@@ -41,4 +39,4 @@ EXPOSE 5000
 ENV NODE_ENV=production
 ENV PORT=5000
 
-CMD ["sh", "-c", "npm ci --include=dev && npm run db:push && npm run start"]
+CMD ["sh", "-c", "npm run db:push && npm run start"]
