@@ -41,4 +41,4 @@ EXPOSE 5000
 ENV NODE_ENV=production
 ENV PORT=5000
 
-CMD ["sh", "-c", "npm run db:push && npm run start"]
+CMD ["sh", "-c", "npm install --no-save qrcode && npm run db:push && npm run start"]
