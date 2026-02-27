@@ -595,13 +595,22 @@ function generateQrLabelHtml(loan: LabelLoan, qrDataUrl: string, settings: Label
   const hasExtra = !!(intStr || wtStr);
   const showRow1 = show_acct || show_amt;
 
+  // Auto font-size for Row 1: shrink if account + amount too wide
+  const panelWmm = totalW - qrSizeMm - 5;
+  const row1Chars = (show_acct ? (loan.accountNumber || '').length : 0) + (show_amt ? amtNum.length + 1 : 0);
+  const maxRow1Font = Math.max(show_acct ? f_acct : 0, show_amt ? f_amt : 0);
+  const charsPerMm = panelWmm / (maxRow1Font * 0.353 * 0.55);
+  const row1Scale = row1Chars > 0 && row1Chars > charsPerMm ? Math.max(0.6, charsPerMm / row1Chars) : 1;
+  const eff_f_acct = +(f_acct * row1Scale).toFixed(1);
+  const eff_f_amt  = +(f_amt  * row1Scale).toFixed(1);
+
   return `
     <div class="label-container" style="width:${totalW}mm;height:${totalH}mm;box-sizing:border-box;page-break-after:always;overflow:hidden;display:flex;flex-direction:row;align-items:center;padding:1mm;gap:0;">
       <img src="${qrDataUrl}" width="${qrPx}" height="${qrPx}" style="width:${qrSizeMm}mm;height:${qrSizeMm}mm;display:block;flex-shrink:0;" />
       <div style="flex:1;min-width:0;height:${qrSizeMm}mm;display:flex;flex-direction:column;justify-content:space-between;padding-left:1.5mm;padding-right:1.5mm;border-left:0.3mm solid #ccc;margin-left:0.8mm;overflow:hidden;">
         ${showRow1 ? `<div style="display:flex;justify-content:space-between;align-items:center;overflow:hidden;">
-          ${show_acct ? `<span style="font-family:${numFont};font-size:${f_acct}pt;font-weight:${b_acct};white-space:nowrap;line-height:1.3;flex-shrink:1;overflow:hidden;text-overflow:ellipsis;${acctOvalStyle}">${loan.accountNumber}</span>` : ''}
-          ${show_amt  ? `<span style="font-family:${numFont};font-size:${f_amt}pt;font-weight:${b_amt};white-space:nowrap;flex-shrink:0;margin-left:1.5mm;"><span style="font-weight:400">₹</span>&nbsp;${amtNum}</span>` : ''}
+          ${show_acct ? `<span style="font-family:${numFont};font-size:${eff_f_acct}pt;font-weight:${b_acct};white-space:nowrap;line-height:1.3;flex-shrink:1;overflow:hidden;text-overflow:ellipsis;${acctOvalStyle}">${loan.accountNumber}</span>` : ''}
+          ${show_amt  ? `<span style="font-family:${numFont};font-size:${eff_f_amt}pt;font-weight:${b_amt};white-space:nowrap;flex-shrink:0;margin-left:1.5mm;">${amtNum}</span>` : ''}
         </div>` : ''}
         ${show_date ? `<div style="font-family:${numFont};font-size:${f_date}pt;font-weight:${b_date};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3;letter-spacing:0.3pt;">${dateStr}</div>` : ''}
         ${show_grp  ? `<div style="font-family:${devaFont};font-size:${f_grp}pt;font-weight:${b_grp};word-break:break-word;overflow-wrap:anywhere;line-height:1.3;overflow:hidden;">${groupLine}</div>` : ''}
@@ -1339,6 +1348,16 @@ export function LabelPrintDialog({ open, onOpenChange, loans }: LabelPrintDialog
                       const wtStr2  = (sv_wt  && loan.weight)       ? `${loan.weight}g`      : '';
                       const hasExtra2 = !!(intStr2 || wtStr2);
                       const showRow1v = sv_acct || sv_amt;
+
+                      // Auto font-size for Row 1 preview: shrink if account + amount too wide
+                      const panelWpx = realWPx - qrSizePx - Math.round(5 * 3.78);
+                      const row1Chars2 = (sv_acct ? (loan.accountNumber || '').length : 0) + (sv_amt ? amtNum2.length + 1 : 0);
+                      const maxRow1Fpx = Math.max(sv_acct ? fp_acct : 0, sv_amt ? fp_amt : 0);
+                      const charsPx = maxRow1Fpx > 0 ? panelWpx / (maxRow1Fpx * 0.55) : 999;
+                      const row1Scale2 = row1Chars2 > 0 && row1Chars2 > charsPx ? Math.max(0.6, charsPx / row1Chars2) : 1;
+                      const eff_fp_acct = Math.round(fp_acct * row1Scale2);
+                      const eff_fp_amt  = Math.round(fp_amt  * row1Scale2);
+
                       return (
                         <div style={{ width: `${realWPx}px`, height: `${realHPx}px`, transform: `scale(${previewScale})`, transformOrigin: 'top left', display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '2.5px', gap: 0, overflow: 'hidden', boxSizing: 'border-box' }}>
                           {qrPreviewUrls[String(loan.id)] ? (
@@ -1349,8 +1368,8 @@ export function LabelPrintDialog({ open, onOpenChange, loans }: LabelPrintDialog
                           <div style={{ flex: 1, minWidth: 0, height: `${qrSizePx}px`, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', paddingLeft: '3px', paddingRight: '3px', borderLeft: '0.8px solid #ccc', marginLeft: '2px', overflow: 'hidden' }}>
                             {showRow1v && (
                               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', overflow: 'hidden' }}>
-                                {sv_acct && <span style={{ fontFamily: numF2, fontSize: `${fp_acct}px`, fontWeight: bw_acct, whiteSpace: 'nowrap', lineHeight: 1.3, flexShrink: 1, overflow: 'hidden', textOverflow: 'ellipsis', ...(acctOval2 ? { border: '0.8px solid #333', borderRadius: '50px', padding: '1px 3px', letterSpacing: '0.3px', display: 'inline-block', boxSizing: 'border-box' as const } : {}) }}>{loan.accountNumber}</span>}
-                                {sv_amt  && <span style={{ fontFamily: numF2, fontSize: `${fp_amt}px`, fontWeight: bw_amt, whiteSpace: 'nowrap', flexShrink: 0, marginLeft: '4px' }}><span style={{ fontWeight: 400 }}>₹</span>&nbsp;{amtNum2}</span>}
+                                {sv_acct && <span style={{ fontFamily: numF2, fontSize: `${eff_fp_acct}px`, fontWeight: bw_acct, whiteSpace: 'nowrap', lineHeight: 1.3, flexShrink: 1, overflow: 'hidden', textOverflow: 'ellipsis', ...(acctOval2 ? { border: '0.8px solid #333', borderRadius: '50px', padding: '1px 3px', letterSpacing: '0.3px', display: 'inline-block', boxSizing: 'border-box' as const } : {}) }}>{loan.accountNumber}</span>}
+                                {sv_amt  && <span style={{ fontFamily: numF2, fontSize: `${eff_fp_amt}px`, fontWeight: bw_amt, whiteSpace: 'nowrap', flexShrink: 0, marginLeft: '4px' }}>{amtNum2}</span>}
                               </div>
                             )}
                             {sv_date && <div style={{ fontFamily: numF2, fontSize: `${fp_date}px`, fontWeight: bw_date, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: 1.3, letterSpacing: '0.3px' }}>{dateStr2}</div>}
