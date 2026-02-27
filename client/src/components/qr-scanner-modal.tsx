@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { useLocation } from "wouter";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { QrCode } from "lucide-react";
@@ -8,14 +8,21 @@ interface QrScannerModalProps {
   onOpenChange: (open: boolean) => void;
 }
 
+const CAMERA_CONFIGS: Array<{ facingMode?: string; label: string }> = [
+  { facingMode: "environment", label: "back camera" },
+  { facingMode: "user", label: "front camera" },
+  { label: "any camera" },
+];
+
 export function QrScannerModal({ open, onOpenChange }: QrScannerModalProps) {
   const [, setLocation] = useLocation();
   const [status, setStatus] = useState<"loading" | "scanning" | "found" | "error">("loading");
   const [errorMsg, setErrorMsg] = useState("");
   const scannerRef = useRef<any>(null);
+  const mountedRef = useRef(true);
   const containerId = "qr-scanner-container";
 
-  const stopScanner = () => {
+  const stopScanner = useCallback(() => {
     if (scannerRef.current) {
       const s = scannerRef.current;
       scannerRef.current = null;
@@ -27,141 +34,126 @@ export function QrScannerModal({ open, onOpenChange }: QrScannerModalProps) {
         }
       } catch {}
     }
-  };
+  }, []);
+
+  const onQrDecoded = useCallback((decodedText: string) => {
+    if (!mountedRef.current) return;
+    try {
+      const url = new URL(decodedText);
+      const match = url.pathname.match(/^\/qr\/([a-zA-Z0-9\-]+)$/);
+      if (match) {
+        const loanId = match[1];
+        setStatus("found");
+        stopScanner();
+        setTimeout(() => {
+          onOpenChange(false);
+          setLocation(`/closure?loanId=${loanId}`);
+        }, 600);
+      } else {
+        setErrorMsg("हे आपल्या app चे QR नाही");
+        setStatus("error");
+      }
+    } catch {
+      setErrorMsg("QR code ओळखता आला नाही");
+      setStatus("error");
+    }
+  }, [onOpenChange, setLocation, stopScanner]);
+
+  const tryStartCamera = useCallback(async (scanner: any, boxSize: number, configs: typeof CAMERA_CONFIGS): Promise<boolean> => {
+    const scanConfig = { fps: 10, qrbox: { width: boxSize, height: boxSize }, aspectRatio: 1.0 };
+    for (const cfg of configs) {
+      if (!mountedRef.current) return false;
+      try {
+        const cameraId = cfg.facingMode ? { facingMode: cfg.facingMode } : true;
+        await scanner.start(cameraId, scanConfig, onQrDecoded, () => {});
+        return true;
+      } catch (e: any) {
+        const msg = (e?.message || "").toLowerCase();
+        if (msg.includes("permission") || msg.includes("notallowed")) {
+          throw e;
+        }
+      }
+    }
+    return false;
+  }, [onQrDecoded]);
+
+  const initScanner = useCallback(async () => {
+    if (!mountedRef.current) return;
+    setStatus("loading");
+    setErrorMsg("");
+
+    await new Promise(resolve => setTimeout(resolve, 400));
+    if (!mountedRef.current) return;
+
+    const containerEl = document.getElementById(containerId);
+    if (!containerEl || containerEl.offsetWidth === 0) {
+      if (mountedRef.current) {
+        setErrorMsg("Camera container तयार नाही — पुन्हा प्रयत्न करा");
+        setStatus("error");
+      }
+      return;
+    }
+
+    containerEl.innerHTML = "";
+
+    try {
+      const { Html5Qrcode } = await import(/* @vite-ignore */ "html5-qrcode");
+      if (!mountedRef.current) return;
+
+      stopScanner();
+      const scanner = new Html5Qrcode(containerId, { verbose: false } as any);
+      scannerRef.current = scanner;
+
+      const containerW = containerEl.offsetWidth || 280;
+      const boxSize = Math.min(containerW - 40, 220);
+
+      const started = await tryStartCamera(scanner, boxSize, CAMERA_CONFIGS);
+      if (!mountedRef.current) return;
+
+      if (started) {
+        setStatus("scanning");
+      } else {
+        setErrorMsg("कोणताही camera सापडला नाही — device ला camera आहे का तपासा");
+        setStatus("error");
+      }
+    } catch (err: any) {
+      if (!mountedRef.current) return;
+      const msg = err?.message || "";
+      if (msg.toLowerCase().includes("permission") || msg.toLowerCase().includes("notallowed")) {
+        setErrorMsg("Camera परवानगी नाकारली — browser settings मध्ये camera allow करा");
+      } else if (msg.toLowerCase().includes("notfound") || msg.toLowerCase().includes("no camera")) {
+        setErrorMsg("Camera सापडला नाही — device ला camera आहे का तपासा");
+      } else {
+        setErrorMsg(`Camera समस्या: ${msg || "unknown error"}`);
+      }
+      setStatus("error");
+    }
+  }, [stopScanner, tryStartCamera]);
 
   useEffect(() => {
     if (!open) {
+      mountedRef.current = false;
       stopScanner();
       setStatus("loading");
       setErrorMsg("");
       return;
     }
 
-    let mounted = true;
-    setStatus("loading");
+    mountedRef.current = true;
+    initScanner();
 
-    const startScanner = async () => {
-      // Wait for Dialog animation + DOM render to complete
-      await new Promise(resolve => setTimeout(resolve, 350));
-      if (!mounted) return;
-
-      // Verify container exists in DOM
-      const containerEl = document.getElementById(containerId);
-      if (!containerEl) {
-        if (mounted) {
-          setErrorMsg("Camera container तयार नाही — पुन्हा प्रयत्न करा");
-          setStatus("error");
-        }
-        return;
-      }
-
-      // Clear any leftover html from previous scan
-      containerEl.innerHTML = "";
-
-      try {
-        const { Html5Qrcode } = await import(/* @vite-ignore */ "html5-qrcode");
-        if (!mounted) return;
-
-        const scanner = new Html5Qrcode(containerId, { verbose: false } as any);
-        scannerRef.current = scanner;
-
-        const containerW = containerEl.offsetWidth || 280;
-        const boxSize = Math.min(containerW - 40, 220);
-
-        await scanner.start(
-          { facingMode: "environment" },
-          {
-            fps: 10,
-            qrbox: { width: boxSize, height: boxSize },
-            aspectRatio: 1.0,
-          },
-          (decodedText: string) => {
-            if (!mounted) return;
-            try {
-              const url = new URL(decodedText);
-              const match = url.pathname.match(/^\/qr\/([a-zA-Z0-9\-]+)$/);
-              if (match) {
-                const loanId = match[1];
-                setStatus("found");
-                stopScanner();
-                setTimeout(() => {
-                  onOpenChange(false);
-                  setLocation(`/closure?loanId=${loanId}`);
-                }, 600);
-              } else {
-                setErrorMsg("हे आपल्या app चे QR नाही");
-                setStatus("error");
-              }
-            } catch {
-              setErrorMsg("QR code ओळखता आला नाही");
-              setStatus("error");
-            }
-          },
-          () => {}
-        );
-        if (mounted) setStatus("scanning");
-      } catch (err: any) {
-        if (!mounted) return;
-        const msg = err?.message || "";
-        if (msg.toLowerCase().includes("permission") || msg.toLowerCase().includes("notallowed")) {
-          setErrorMsg("Camera परवानगी नाकारली — browser मध्ये camera allow करा");
-        } else if (msg.toLowerCase().includes("notfound") || msg.toLowerCase().includes("no camera")) {
-          setErrorMsg("Camera सापडला नाही — device ला camera आहे का तपासा");
-        } else {
-          setErrorMsg("Camera सुरू करताना समस्या झाली");
-        }
-        setStatus("error");
-      }
-    };
-
-    startScanner();
     return () => {
-      mounted = false;
+      mountedRef.current = false;
       stopScanner();
     };
   }, [open]);
 
-  const handleRetry = () => {
+  const handleRetry = useCallback(() => {
     stopScanner();
-    setStatus("loading");
-    setErrorMsg("");
-    // Re-trigger the effect by toggling
     const containerEl = document.getElementById(containerId);
     if (containerEl) containerEl.innerHTML = "";
-    setTimeout(async () => {
-      const containerEl2 = document.getElementById(containerId);
-      if (!containerEl2) return;
-      try {
-        const { Html5Qrcode } = await import(/* @vite-ignore */ "html5-qrcode");
-        const scanner = new Html5Qrcode(containerId, { verbose: false } as any);
-        scannerRef.current = scanner;
-        const boxSize = Math.min((containerEl2.offsetWidth || 280) - 40, 220);
-        await scanner.start(
-          { facingMode: "environment" },
-          { fps: 10, qrbox: { width: boxSize, height: boxSize }, aspectRatio: 1.0 },
-          (decodedText: string) => {
-            try {
-              const url = new URL(decodedText);
-              const match = url.pathname.match(/^\/qr\/([a-zA-Z0-9\-]+)$/);
-              if (match) {
-                setStatus("found");
-                stopScanner();
-                setTimeout(() => { onOpenChange(false); setLocation(`/closure?loanId=${match[1]}`); }, 600);
-              } else {
-                setErrorMsg("हे आपल्या app चे QR नाही"); setStatus("error");
-              }
-            } catch { setErrorMsg("QR code ओळखता आला नाही"); setStatus("error"); }
-          },
-          () => {}
-        );
-        setStatus("scanning");
-      } catch (err: any) {
-        const msg = err?.message || "";
-        setErrorMsg(msg.toLowerCase().includes("permission") ? "Camera परवानगी नाकारली" : "Camera सुरू करताना समस्या झाली");
-        setStatus("error");
-      }
-    }, 300);
-  };
+    initScanner();
+  }, [stopScanner, initScanner]);
 
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) stopScanner(); onOpenChange(v); }}>
@@ -174,7 +166,6 @@ export function QrScannerModal({ open, onOpenChange }: QrScannerModalProps) {
         </DialogHeader>
 
         <div className="p-3 space-y-2">
-          {/* Camera container — explicit height so video renders properly */}
           <div
             id={containerId}
             style={{ width: '100%', height: '280px', borderRadius: '8px', overflow: 'hidden', background: '#111', position: 'relative' }}
