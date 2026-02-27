@@ -588,7 +588,7 @@ function generateQrLabelHtml(loan: LabelLoan, qrDataUrl: string, settings: Label
   const dateStr = loan.loanDate ? (() => {
     try { const p = loan.loanDate.split('T')[0].split('-'); return `${p[2]}/${p[1]}/${p[0]}`; } catch { return loan.loanDate; }
   })() : '';
-  const amtStr = '\u20B9' + (parseInt(String(loan.principalAmount)) || 0).toLocaleString('en-IN');
+  const amtNum = (parseInt(String(loan.principalAmount)) || 0).toLocaleString('en-IN');
   const groupLine = loan.groupName ? `${loan.groupName} (${loan.borrowerName})` : loan.borrowerName;
   const intStr = (show_int && loan.interestRate) ? `${loan.interestRate}` : '';
   const wtStr  = (show_wt  && loan.weight)       ? `${loan.weight}g`      : '';
@@ -601,7 +601,7 @@ function generateQrLabelHtml(loan: LabelLoan, qrDataUrl: string, settings: Label
       <div style="flex:1;min-width:0;height:${qrSizeMm}mm;display:flex;flex-direction:column;justify-content:space-between;padding-left:1.5mm;padding-right:1.5mm;border-left:0.3mm solid #ccc;margin-left:0.8mm;overflow:hidden;">
         ${showRow1 ? `<div style="display:flex;justify-content:space-between;align-items:center;overflow:hidden;">
           ${show_acct ? `<span style="font-family:${numFont};font-size:${f_acct}pt;font-weight:${b_acct};white-space:nowrap;line-height:1.3;flex-shrink:1;overflow:hidden;text-overflow:ellipsis;${acctOvalStyle}">${loan.accountNumber}</span>` : ''}
-          ${show_amt  ? `<span style="font-family:${numFont};font-size:${f_amt}pt;font-weight:${b_amt};white-space:nowrap;flex-shrink:0;margin-left:1.5mm;">${amtStr}</span>` : ''}
+          ${show_amt  ? `<span style="font-family:${numFont};font-size:${f_amt}pt;font-weight:${b_amt};white-space:nowrap;flex-shrink:0;margin-left:1.5mm;"><span style="font-weight:400">₹</span>&nbsp;${amtNum}</span>` : ''}
         </div>` : ''}
         ${show_date ? `<div style="font-family:${numFont};font-size:${f_date}pt;font-weight:${b_date};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3;letter-spacing:0.3pt;">${dateStr}</div>` : ''}
         ${show_grp  ? `<div style="font-family:${devaFont};font-size:${f_grp}pt;font-weight:${b_grp};word-break:break-word;overflow-wrap:anywhere;line-height:1.3;overflow:hidden;">${groupLine}</div>` : ''}
@@ -1333,7 +1333,7 @@ export function LabelPrintDialog({ open, onOpenChange, loans }: LabelPrintDialog
                       const devaF2 = `'${settings.fontFamily || 'Noto Sans Devanagari'}','Mangal',sans-serif`;
                       const numF2 = `'Arial','Helvetica',sans-serif`;
                       const dateStr2 = loan.loanDate ? (() => { try { const p = loan.loanDate.split('T')[0].split('-'); return `${p[2]}/${p[1]}/${p[0]}`; } catch { return loan.loanDate; } })() : '';
-                      const amt2 = '\u20B9' + (parseInt(String(loan.principalAmount)) || 0).toLocaleString('en-IN');
+                      const amtNum2 = (parseInt(String(loan.principalAmount)) || 0).toLocaleString('en-IN');
                       const grpLine2 = loan.groupName ? `${loan.groupName} (${loan.borrowerName})` : loan.borrowerName;
                       const intStr2 = (sv_int && loan.interestRate) ? `${loan.interestRate}` : '';
                       const wtStr2  = (sv_wt  && loan.weight)       ? `${loan.weight}g`      : '';
@@ -1350,7 +1350,7 @@ export function LabelPrintDialog({ open, onOpenChange, loans }: LabelPrintDialog
                             {showRow1v && (
                               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', overflow: 'hidden' }}>
                                 {sv_acct && <span style={{ fontFamily: numF2, fontSize: `${fp_acct}px`, fontWeight: bw_acct, whiteSpace: 'nowrap', lineHeight: 1.3, flexShrink: 1, overflow: 'hidden', textOverflow: 'ellipsis', ...(acctOval2 ? { border: '0.8px solid #333', borderRadius: '50px', padding: '1px 3px', letterSpacing: '0.3px', display: 'inline-block', boxSizing: 'border-box' as const } : {}) }}>{loan.accountNumber}</span>}
-                                {sv_amt  && <span style={{ fontFamily: numF2, fontSize: `${fp_amt}px`, fontWeight: bw_amt, whiteSpace: 'nowrap', flexShrink: 0, marginLeft: '4px' }}>{amt2}</span>}
+                                {sv_amt  && <span style={{ fontFamily: numF2, fontSize: `${fp_amt}px`, fontWeight: bw_amt, whiteSpace: 'nowrap', flexShrink: 0, marginLeft: '4px' }}><span style={{ fontWeight: 400 }}>₹</span>&nbsp;{amtNum2}</span>}
                               </div>
                             )}
                             {sv_date && <div style={{ fontFamily: numF2, fontSize: `${fp_date}px`, fontWeight: bw_date, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: 1.3, letterSpacing: '0.3px' }}>{dateStr2}</div>}
