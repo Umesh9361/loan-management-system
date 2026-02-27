@@ -4,6 +4,8 @@ RUN apt-get update && apt-get install -y python3 make g++ && rm -rf /var/lib/apt
 
 WORKDIR /app
 
+ARG CACHEBUST=20260227v3
+
 COPY package.json package-lock.json ./
 
 RUN npm ci
