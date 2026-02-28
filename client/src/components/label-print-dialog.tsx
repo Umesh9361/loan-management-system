@@ -798,17 +798,6 @@ export function LabelPrintDialog({ open, onOpenChange, loans }: LabelPrintDialog
     setIsDirty(false);
   }, [dbSettings, isFetched, dbLoaded]);
 
-  useEffect(() => {
-    if (!open) {
-      setDbLoaded(false);
-      setIsDirty(false);
-      if (saveTimerRef.current) {
-        clearTimeout(saveTimerRef.current);
-        saveTimerRef.current = null;
-      }
-    }
-  }, [open]);
-
   const saveMutation = useMutation({
     mutationFn: async (newSettings: LabelSettings) => {
       await apiRequest('PUT', '/api/label-settings', newSettings);
@@ -817,6 +806,21 @@ export function LabelPrintDialog({ open, onOpenChange, loans }: LabelPrintDialog
       queryClient.invalidateQueries({ queryKey: ['/api/label-settings'] });
     },
   });
+
+  useEffect(() => {
+    if (!open) {
+      if (saveTimerRef.current) {
+        clearTimeout(saveTimerRef.current);
+        saveTimerRef.current = null;
+      }
+      if (isDirty && dbLoaded) {
+        saveSettings(settings);
+        saveMutation.mutate(settings);
+      }
+      setDbLoaded(false);
+      setIsDirty(false);
+    }
+  }, [open, isDirty, dbLoaded, settings]);
 
   const updateSettings = useCallback((updater: (prev: LabelSettings) => LabelSettings) => {
     setSettings(prev => {
