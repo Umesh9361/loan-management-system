@@ -633,7 +633,6 @@ function generateQrCenterLabelHtml(loan: LabelLoan, qrDataUrl: string, settings:
   const totalW = stickerSize.width;
   const totalH = stickerSize.height;
   const qrSizeMm = +(Math.min(totalW, totalH) * 0.85).toFixed(1);
-  const marginMm = +((totalW - qrSizeMm) / 2).toFixed(1);
 
   const acctField = settings.fields.find(f => f.id === 'accountNumber');
   const show_acct = acctField?.enabled ?? true;
@@ -645,13 +644,26 @@ function generateQrCenterLabelHtml(loan: LabelLoan, qrDataUrl: string, settings:
     ? `border:0.6pt solid #333;border-radius:50px;padding:1pt 3pt;letter-spacing:0.3pt;display:inline-block;box-sizing:border-box;`
     : '';
 
+  const nominalMarginMm = +((totalW - qrSizeMm) / 2).toFixed(2);
+  let estimatedTextWidthMm = 0;
+  if (show_acct && (loan.accountNumber || '').length > 0) {
+    const charWidthMm = f_acct * 0.212;
+    const acctLen = (loan.accountNumber || '').length;
+    const ovalExtraMm = acctOval ? 2.0 : 0;
+    estimatedTextWidthMm = acctLen * charWidthMm + ovalExtraMm + 1.5;
+  }
+  const effectiveLeftMm = Math.max(nominalMarginMm, estimatedTextWidthMm);
+  const maxLeftMm = totalW - qrSizeMm;
+  const finalLeftMm = +(Math.min(effectiveLeftMm, maxLeftMm)).toFixed(2);
+  const rightMm = +(Math.max(0, totalW - finalLeftMm - +qrSizeMm)).toFixed(2);
+
   return `
     <div class="label-container" style="width:${totalW}mm;height:${totalH}mm;box-sizing:border-box;page-break-after:always;overflow:hidden;display:flex;flex-direction:row;align-items:center;">
-      <div style="width:${marginMm}mm;height:${totalH}mm;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:0.5mm;overflow:hidden;">
+      <div style="width:${finalLeftMm}mm;height:${totalH}mm;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:0.5mm;overflow:hidden;">
         ${show_acct ? `<div style="font-family:${numFont};font-size:${f_acct}pt;font-weight:${b_acct};text-align:center;word-break:break-all;line-height:1.2;${acctOvalStyle}">${loan.accountNumber}</div>` : ''}
       </div>
-      <img src="${qrDataUrl}" width="${Math.round(qrSizeMm * 3.78)}" height="${Math.round(qrSizeMm * 3.78)}" style="width:${qrSizeMm}mm;height:${qrSizeMm}mm;display:block;flex-shrink:0;" />
-      <div style="width:${marginMm}mm;height:${totalH}mm;flex-shrink:0;"></div>
+      <img src="${qrDataUrl}" width="${Math.round(+qrSizeMm * 3.78)}" height="${Math.round(+qrSizeMm * 3.78)}" style="width:${qrSizeMm}mm;height:${qrSizeMm}mm;display:block;flex-shrink:0;" />
+      <div style="width:${rightMm}mm;height:${totalH}mm;flex-shrink:0;"></div>
     </div>
   `;
 }
@@ -1393,20 +1405,30 @@ export function LabelPrintDialog({ open, onOpenChange, loans }: LabelPrintDialog
 
                       // QR Center preview
                       if (previewQrCenter) {
-                        const marginPx = (realWPx - qrSizePx) / 2;
+                        const nominalMarginPx = (realWPx - qrSizePx) / 2;
+                        const acctText = loan.accountNumber || '';
+                        const charWidthPx = fp_acct * 0.212 * 3.78;
+                        const ovalExtraPx = acctOval2 ? 7.56 : 0;
+                        const estimatedTextWidthPx = sv_acct && acctText.length > 0
+                          ? acctText.length * charWidthPx + ovalExtraPx + 5.67
+                          : 0;
+                        const effectiveLeftPx = Math.max(nominalMarginPx, estimatedTextWidthPx);
+                        const maxLeftPx = realWPx - qrSizePx;
+                        const finalLeftPx = Math.min(effectiveLeftPx, maxLeftPx);
+                        const rightPx = Math.max(0, realWPx - finalLeftPx - qrSizePx);
                         const acctStyle: React.CSSProperties = acctOval2
                           ? { border: '0.8px solid #333', borderRadius: '50px', padding: '1px 3px', letterSpacing: '0.3px', display: 'inline-block', boxSizing: 'border-box' }
                           : {};
                         return (
                           <div style={{ width: `${realWPx}px`, height: `${realHPx}px`, transform: `scale(${previewScale})`, transformOrigin: 'top left', display: 'flex', flexDirection: 'row', alignItems: 'center', overflow: 'hidden', boxSizing: 'border-box' }}>
-                            <div style={{ width: `${marginPx}px`, height: `${realHPx}px`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, padding: '2px', overflow: 'hidden' }}>
+                            <div style={{ width: `${finalLeftPx}px`, height: `${realHPx}px`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, padding: '2px', overflow: 'hidden' }}>
                               {sv_acct && <span style={{ fontFamily: numF2, fontSize: `${fp_acct}px`, fontWeight: bw_acct, textAlign: 'center', wordBreak: 'break-all', lineHeight: 1.2, ...acctStyle }}>{loan.accountNumber}</span>}
                             </div>
                             {qrPreviewUrls[String(loan.id)]
                               ? <img src={qrPreviewUrls[String(loan.id)]} style={{ width: `${qrSizePx}px`, height: `${qrSizePx}px`, display: 'block', flexShrink: 0 }} alt="QR" />
                               : <div style={{ width: `${qrSizePx}px`, height: `${qrSizePx}px`, background: '#f3f4f6', borderRadius: '2px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '7px', color: '#9ca3af', flexShrink: 0 }}>QR</div>
                             }
-                            <div style={{ width: `${marginPx}px`, height: `${realHPx}px`, flexShrink: 0 }} />
+                            <div style={{ width: `${rightPx}px`, height: `${realHPx}px`, flexShrink: 0 }} />
                           </div>
                         );
                       }
