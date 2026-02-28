@@ -64,6 +64,7 @@ interface LabelSettings {
   horizontalOffset: number;
   fontFamily?: string;
   qrMode?: boolean;
+  printMode?: 'normal' | 'qrSide' | 'qrCenter';
 }
 
 const FONT_OPTIONS = [
@@ -116,6 +117,7 @@ const DEFAULT_SETTINGS: LabelSettings = {
   horizontalOffset: 0,
   fontFamily: 'Noto Sans Devanagari',
   qrMode: false,
+  printMode: 'normal',
 };
 
 const STORAGE_KEY = "label_print_settings_v2";
@@ -184,6 +186,9 @@ function loadSettings(): LabelSettings {
           horizontalOffset: typeof parsed.horizontalOffset === 'number' ? Math.max(-10, Math.min(10, parsed.horizontalOffset)) : 0,
           fontFamily: typeof parsed.fontFamily === 'string' && FONT_OPTIONS.some(f => f.value === parsed.fontFamily) ? parsed.fontFamily : 'Noto Sans Devanagari',
           qrMode: false,
+          printMode: (['normal','qrSide','qrCenter'] as const).includes(parsed.printMode)
+            ? parsed.printMode
+            : (parsed.qrMode ? 'qrSide' : 'normal'),
         };
       }
     }
@@ -623,6 +628,34 @@ function generateQrLabelHtml(loan: LabelLoan, qrDataUrl: string, settings: Label
   `;
 }
 
+function generateQrCenterLabelHtml(loan: LabelLoan, qrDataUrl: string, settings: LabelSettings): string {
+  const { stickerSize } = settings;
+  const totalW = stickerSize.width;
+  const totalH = stickerSize.height;
+  const qrSizeMm = +(Math.min(totalW, totalH) * 0.85).toFixed(1);
+  const marginMm = +((totalW - qrSizeMm) / 2).toFixed(1);
+
+  const acctField = settings.fields.find(f => f.id === 'accountNumber');
+  const show_acct = acctField?.enabled ?? true;
+  const f_acct = acctField?.fontSize ?? 11;
+  const b_acct = (acctField?.bold ?? true) ? '800' : '600';
+  const acctOval = acctField?.hasOvalBorder ?? false;
+  const numFont = `'Arial','Helvetica',sans-serif`;
+  const acctOvalStyle = acctOval
+    ? `border:0.6pt solid #333;border-radius:50px;padding:1pt 3pt;letter-spacing:0.3pt;display:inline-block;box-sizing:border-box;`
+    : '';
+
+  return `
+    <div class="label-container" style="width:${totalW}mm;height:${totalH}mm;box-sizing:border-box;page-break-after:always;overflow:hidden;display:flex;flex-direction:row;align-items:center;">
+      <div style="width:${marginMm}mm;height:${totalH}mm;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:0.5mm;overflow:hidden;">
+        ${show_acct ? `<div style="font-family:${numFont};font-size:${f_acct}pt;font-weight:${b_acct};text-align:center;word-break:break-all;line-height:1.2;${acctOvalStyle}">${loan.accountNumber}</div>` : ''}
+      </div>
+      <img src="${qrDataUrl}" width="${Math.round(qrSizeMm * 3.78)}" height="${Math.round(qrSizeMm * 3.78)}" style="width:${qrSizeMm}mm;height:${qrSizeMm}mm;display:block;flex-shrink:0;" />
+      <div style="width:${marginMm}mm;height:${totalH}mm;flex-shrink:0;"></div>
+    </div>
+  `;
+}
+
 function generateQrPrintPage(labelsHtml: string, settings: LabelSettings): string {
   const { stickerSize, fontFamily } = settings;
   const offsetMm = settings.horizontalOffset || 0;
@@ -789,6 +822,9 @@ export function LabelPrintDialog({ open, onOpenChange, loans }: LabelPrintDialog
               horizontalOffset: typeof parsed.horizontalOffset === 'number' ? parsed.horizontalOffset : 0,
               fontFamily: typeof parsed.fontFamily === 'string' ? parsed.fontFamily : undefined,
               qrMode: typeof parsed.qrMode === 'boolean' ? parsed.qrMode : false,
+              printMode: (['normal','qrSide','qrCenter'] as const).includes(parsed.printMode)
+                ? parsed.printMode
+                : (parsed.qrMode ? 'qrSide' : 'normal'),
             });
           }
         }
@@ -857,7 +893,8 @@ export function LabelPrintDialog({ open, onOpenChange, loans }: LabelPrintDialog
   }, [settings.fontFamily]);
 
   useEffect(() => {
-    if (!settings.qrMode || !open) { setQrPreviewUrls({}); return; }
+    const isQrAny = settings.printMode === 'qrSide' || settings.printMode === 'qrCenter' || !!settings.qrMode;
+    if (!isQrAny || !open) { setQrPreviewUrls({}); return; }
     let cancelled = false;
     (async () => {
       const urls: Record<string, string> = {};
@@ -871,7 +908,7 @@ export function LabelPrintDialog({ open, onOpenChange, loans }: LabelPrintDialog
       if (!cancelled) setQrPreviewUrls(urls);
     })();
     return () => { cancelled = true; };
-  }, [settings.qrMode, open, loans]);
+  }, [settings.printMode, settings.qrMode, open, loans]);
 
   const updateMargin = useCallback((side: keyof MarginSettings, delta: number) => {
     updateSettings(prev => ({
@@ -1016,13 +1053,17 @@ export function LabelPrintDialog({ open, onOpenChange, loans }: LabelPrintDialog
       alert("पॉप-अप ब्लॉक झाले. कृपया ब्राउझर सेटिंग्ज मध्ये पॉप-अप अनुमती द्या.");
       return;
     }
-    if (settings.qrMode) {
+    const effectiveQrMode = settings.printMode === 'qrSide' || settings.printMode === 'qrCenter' || !!settings.qrMode;
+    const isQrCenter = settings.printMode === 'qrCenter';
+    if (effectiveQrMode) {
       const labelsHtml = (await Promise.all(loansToprint.map(async loan => {
         const qrUrl = `${window.location.origin}/qr/${loan.id}`;
         const qrFetch = await fetch(`/api/qr-generate?url=${encodeURIComponent(qrUrl)}&size=256`);
         const qrFetchJson = await qrFetch.json();
         const qrDataUrl = qrFetchJson.dataUrl;
-        return generateQrLabelHtml(loan, qrDataUrl, settings);
+        return isQrCenter
+          ? generateQrCenterLabelHtml(loan, qrDataUrl, settings)
+          : generateQrLabelHtml(loan, qrDataUrl, settings);
       }))).join('');
       printWindow.document.write(generateQrPrintPage(labelsHtml, settings));
       printWindow.document.close();
@@ -1075,54 +1116,61 @@ export function LabelPrintDialog({ open, onOpenChange, loans }: LabelPrintDialog
 
           {showSettings && (
             <div className="bg-gray-50 rounded-lg border border-gray-200 overflow-hidden">
-              <div className="px-3 py-2 bg-white border-b border-gray-200 flex items-center gap-2">
-                <span className="text-xs font-medium text-gray-700 whitespace-nowrap">लेबल फॉन्ट:</span>
-                <select
-                  value={settings.fontFamily || 'Noto Sans Devanagari'}
-                  onChange={(e) => updateSettings(prev => ({ ...prev, fontFamily: e.target.value }))}
-                  className="flex-1 h-7 text-xs rounded-md border border-gray-300 bg-white px-2 focus:outline-none focus:ring-2 focus:ring-indigo-400"
-                >
-                  {FONT_OPTIONS.map(opt => (
-                    <option key={opt.value} value={opt.value}>{opt.label}</option>
-                  ))}
-                </select>
+              {/* Row 1: Print Mode — 3-way compact toggle */}
+              <div className="px-3 py-2 bg-white border-b border-gray-100 flex items-center gap-2">
+                <span className="text-[11px] font-semibold text-gray-600 whitespace-nowrap">प्रिंट मोड:</span>
+                <div className="flex gap-1">
+                  {([
+                    { mode: 'normal'    as const, label: 'Regular' },
+                    { mode: 'qrSide'   as const, label: 'QR साइड' },
+                    { mode: 'qrCenter' as const, label: 'QR Center' },
+                  ]).map(opt => {
+                    const active = (settings.printMode || 'normal') === opt.mode;
+                    return (
+                      <button key={opt.mode}
+                        onClick={() => updateSettings(prev => ({ ...prev, printMode: opt.mode, qrMode: opt.mode !== 'normal' }))}
+                        style={{
+                          padding: '3px 9px', borderRadius: '5px', fontSize: '10px', fontWeight: 600,
+                          background: active ? '#4f46e5' : '#f3f4f6',
+                          color: active ? '#fff' : '#4b5563',
+                          border: active ? 'none' : '1px solid #e5e7eb',
+                          cursor: 'pointer', whiteSpace: 'nowrap',
+                        }}
+                      >{opt.label}</button>
+                    );
+                  })}
+                </div>
+                {saveMutation.isPending && <Loader2 className="h-3 w-3 animate-spin text-indigo-400 ml-auto flex-shrink-0" />}
+                {!saveMutation.isPending && dbLoaded && <span className="text-[9px] text-green-500 ml-auto flex-shrink-0">✓ सेव्ह</span>}
               </div>
-              <div className="px-3 py-2 bg-white border-b border-gray-200 flex items-center gap-2">
-                <span className="text-xs font-medium text-gray-700 whitespace-nowrap">QR मोड:</span>
-                <button
-                  onClick={() => updateSettings(prev => ({ ...prev, qrMode: !prev.qrMode }))}
-                  style={{
-                    padding: '2px 12px', borderRadius: '6px', fontSize: '11px', fontWeight: '600',
-                    cursor: 'pointer', border: settings.qrMode ? 'none' : '1px solid #d1d5db',
-                    background: settings.qrMode ? '#4f46e5' : '#ffffff',
-                    color: settings.qrMode ? '#ffffff' : '#374151',
-                  }}
-                >
-                  {settings.qrMode ? '✓ QR मोड ON' : 'QR मोड'}
-                </button>
-                <span className="text-[10px] text-gray-500">
-                  {settings.qrMode ? 'फक्त QR + खाते नंबर प्रिंट होईल' : 'सगळे fields प्रिंट होतील'}
-                </span>
-              </div>
-              <div className="flex border-b border-gray-200">
+              {/* Row 2: Tabs + Font inline */}
+              <div className="flex items-stretch border-b border-gray-200">
                 {([
-                  { key: 'size' as const, label: 'साइज', icon: <Ruler className="h-3 w-3" /> },
-                  { key: 'fields' as const, label: 'फील्ड्स', icon: <Type className="h-3 w-3" /> },
-                  { key: 'margins' as const, label: 'मार्जिन', icon: <Settings className="h-3 w-3" /> },
+                  { key: 'size'    as const, label: 'साइज' },
+                  { key: 'fields' as const, label: 'फील्ड्स' },
+                  { key: 'margins' as const, label: 'मार्जिन' },
                 ]).map(tab => (
                   <button
                     key={tab.key}
                     onClick={() => setSettingsTab(tab.key)}
-                    className={`flex-1 flex items-center justify-center gap-1 py-2.5 text-xs font-medium transition-colors ${
+                    className={`flex-1 py-2 text-[11px] font-medium transition-colors ${
                       settingsTab === tab.key
-                        ? 'bg-indigo-100 text-indigo-700 border-b-2 border-indigo-600'
-                        : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                        ? 'bg-indigo-50 text-indigo-700 border-b-2 border-indigo-600'
+                        : 'text-gray-500 hover:bg-gray-50'
                     }`}
-                  >
-                    {tab.icon}
-                    {tab.label}
-                  </button>
+                  >{tab.label}</button>
                 ))}
+                <select
+                  value={settings.fontFamily || 'Noto Sans Devanagari'}
+                  onChange={(e) => updateSettings(prev => ({ ...prev, fontFamily: e.target.value }))}
+                  className="text-[10px] border-l border-gray-200 bg-white px-1 focus:outline-none text-gray-600 cursor-pointer"
+                  style={{ minWidth: '82px', maxWidth: '100px' }}
+                  title="फॉन्ट बदला"
+                >
+                  {FONT_OPTIONS.map(opt => (
+                    <option key={opt.value} value={opt.value}>{opt.label.split(' ')[0]}</option>
+                  ))}
+                </select>
               </div>
 
               <div className="p-3">
@@ -1325,60 +1373,77 @@ export function LabelPrintDialog({ open, onOpenChange, loans }: LabelPrintDialog
                       position: 'relative',
                     }}
                   >
-                    {settings.qrMode ? (() => {
+                    {(() => {
+                      const previewQrMode = settings.printMode === 'qrSide' || settings.printMode === 'qrCenter' || !!settings.qrMode;
+                      const previewQrCenter = settings.printMode === 'qrCenter';
+                      if (!previewQrMode) return null;
+
                       const shorterPx = Math.min(realWPx, realHPx);
                       const qrSizePx = +(shorterPx * 0.85).toFixed(1);
-                      // Read from settings.fields — same as regular label
+                      const pt2px = (pt: number) => Math.round(pt * 1.333);
                       const gf2  = (id: string, fb: number)  => settings.fields.find(f => f.id === id)?.fontSize ?? fb;
                       const gb2  = (id: string, fb: boolean) => (settings.fields.find(f => f.id === id)?.bold ?? fb) ? 800 : 600;
                       const gov2 = (id: string)              => settings.fields.find(f => f.id === id)?.hasOvalBorder ?? false;
                       const ge2  = (id: string)              => settings.fields.find(f => f.id === id)?.enabled ?? true;
-                      const pt2px = (pt: number) => Math.round(pt * 1.333);
-
-                      const sv_acct = ge2('accountNumber');
-                      const sv_amt  = ge2('amount');
-                      const sv_date = ge2('date');
-                      const sv_grp  = ge2('groupBorrower');
-                      const sv_int  = ge2('interestRate');
-                      const sv_wt   = ge2('weight');
-
+                      const numF2 = `'Arial','Helvetica',sans-serif`;
                       const fp_acct = pt2px(gf2('accountNumber', 11));
+                      const bw_acct = gb2('accountNumber', true);
+                      const acctOval2 = gov2('accountNumber');
+                      const sv_acct = ge2('accountNumber');
+
+                      // QR Center preview
+                      if (previewQrCenter) {
+                        const marginPx = (realWPx - qrSizePx) / 2;
+                        const acctStyle: React.CSSProperties = acctOval2
+                          ? { border: '0.8px solid #333', borderRadius: '50px', padding: '1px 3px', letterSpacing: '0.3px', display: 'inline-block', boxSizing: 'border-box' }
+                          : {};
+                        return (
+                          <div style={{ width: `${realWPx}px`, height: `${realHPx}px`, transform: `scale(${previewScale})`, transformOrigin: 'top left', display: 'flex', flexDirection: 'row', alignItems: 'center', overflow: 'hidden', boxSizing: 'border-box' }}>
+                            <div style={{ width: `${marginPx}px`, height: `${realHPx}px`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, padding: '2px', overflow: 'hidden' }}>
+                              {sv_acct && <span style={{ fontFamily: numF2, fontSize: `${fp_acct}px`, fontWeight: bw_acct, textAlign: 'center', wordBreak: 'break-all', lineHeight: 1.2, ...acctStyle }}>{loan.accountNumber}</span>}
+                            </div>
+                            {qrPreviewUrls[String(loan.id)]
+                              ? <img src={qrPreviewUrls[String(loan.id)]} style={{ width: `${qrSizePx}px`, height: `${qrSizePx}px`, display: 'block', flexShrink: 0 }} alt="QR" />
+                              : <div style={{ width: `${qrSizePx}px`, height: `${qrSizePx}px`, background: '#f3f4f6', borderRadius: '2px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '7px', color: '#9ca3af', flexShrink: 0 }}>QR</div>
+                            }
+                            <div style={{ width: `${marginPx}px`, height: `${realHPx}px`, flexShrink: 0 }} />
+                          </div>
+                        );
+                      }
+
+                      // QR Side preview (existing)
+                      const ge2full = ge2;
+                      const sv_amt  = ge2full('amount');
+                      const sv_date = ge2full('date');
+                      const sv_grp  = ge2full('groupBorrower');
+                      const sv_int  = ge2full('interestRate');
+                      const sv_wt   = ge2full('weight');
                       const fp_amt  = pt2px(gf2('amount', 10));
                       const fp_date = pt2px(gf2('date', 10));
                       const fp_grp  = pt2px(gf2('groupBorrower', 8));
                       const fp_int  = pt2px(gf2('interestRate', 7.5));
                       const fp_wt   = pt2px(gf2('weight', 7.5));
-                      const bw_acct = gb2('accountNumber', true);
                       const bw_amt  = gb2('amount', true);
                       const bw_date = gb2('date', true);
                       const bw_grp  = gb2('groupBorrower', false);
                       const bw_int  = gb2('interestRate', true);
                       const bw_wt   = gb2('weight', true);
-                      const acctOval2 = gov2('accountNumber');
                       const devaF2 = `'${settings.fontFamily || 'Noto Sans Devanagari'}','Mangal',sans-serif`;
-                      const numF2 = `'Arial','Helvetica',sans-serif`;
                       const dateStr2 = loan.loanDate ? (() => { try { const p = loan.loanDate.split('T')[0].split('-'); return `${p[2]}/${p[1]}/${p[0]}`; } catch { return loan.loanDate; } })() : '';
                       const amtNum2 = (parseInt(String(loan.principalAmount)) || 0).toLocaleString('en-IN');
                       const grpDM2 = settings.fields.find(f => f.id === 'groupBorrower')?.displayMode ?? 'groupBorrower';
-                      const grpLine2 = grpDM2 === 'groupOnly'
-                        ? (loan.groupName || '')
-                        : grpDM2 === 'borrowerOnly'
-                        ? (loan.borrowerName || '')
-                        : (loan.groupName ? `${loan.groupName} (${loan.borrowerName})` : (loan.borrowerName || ''));
+                      const grpLine2 = grpDM2 === 'groupOnly' ? (loan.groupName || '') : grpDM2 === 'borrowerOnly' ? (loan.borrowerName || '') : (loan.groupName ? `${loan.groupName} (${loan.borrowerName})` : (loan.borrowerName || ''));
                       const intStr2 = (sv_int && loan.interestRate) ? `${loan.interestRate}` : '';
-                      const wtStr2  = (sv_wt  && loan.weight)       ? `${loan.weight}g`      : '';
+                      const wtStr2  = (sv_wt && loan.weight) ? `${loan.weight}g` : '';
                       const hasExtra2 = !!(intStr2 || wtStr2);
                       const showRow1v = sv_acct || sv_amt;
-
-                      // Auto font-size for Row 1 preview: shrink if account + amount too wide
                       const panelWpx = realWPx - qrSizePx - Math.round(5 * 3.78);
                       const row1Chars2 = (sv_acct ? (loan.accountNumber || '').length : 0) + (sv_amt ? amtNum2.length + 1 : 0);
                       const maxRow1Fpx = Math.max(sv_acct ? fp_acct : 0, sv_amt ? fp_amt : 0);
                       const charsPx = maxRow1Fpx > 0 ? panelWpx / (maxRow1Fpx * 0.55) : 999;
                       const row1Scale2 = row1Chars2 > 0 && row1Chars2 > charsPx ? Math.max(0.6, charsPx / row1Chars2) : 1;
                       const eff_fp_acct = Math.round(fp_acct * row1Scale2);
-                      const eff_fp_amt  = Math.round(fp_amt  * row1Scale2);
-
+                      const eff_fp_amt  = Math.round(fp_amt * row1Scale2);
                       return (
                         <div style={{ width: `${realWPx}px`, height: `${realHPx}px`, transform: `scale(${previewScale})`, transformOrigin: 'top left', display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '2.5px', gap: 0, overflow: 'hidden', boxSizing: 'border-box' }}>
                           {qrPreviewUrls[String(loan.id)] ? (
@@ -1404,7 +1469,8 @@ export function LabelPrintDialog({ open, onOpenChange, loans }: LabelPrintDialog
                           </div>
                         </div>
                       );
-                    })() : (
+                    })()}
+                    {(settings.printMode === 'normal' || (!settings.printMode && !settings.qrMode)) && (
                       <div
                         style={{
                           width: `${realWPx}px`,
