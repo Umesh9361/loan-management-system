@@ -51,6 +51,7 @@ function MobileCashbook() {
   const [quickEntryType, setQuickEntryType] = useState<'cash_in' | 'cash_out'>('cash_in');
   const [editingTransaction, setEditingTransaction] = useState<any>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [quickEntryDate, setQuickEntryDate] = useState(() => new Date().toISOString().split('T')[0]);
 
   
   
@@ -169,7 +170,6 @@ function MobileCashbook() {
   // CRITICAL FIX: Remove React Query and use direct state management
   const [rawTransactions, setRawTransactions] = React.useState<any[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
-  const [searchDebounceTimer, setSearchDebounceTimer] = React.useState<NodeJS.Timeout | null>(null);
   
   const normalizeMarathiVowels = (text: string): string => {
     return text
@@ -313,7 +313,7 @@ function MobileCashbook() {
           setRawTransactions(data);
         }
       } catch (_) {}
-    }, 5000);
+    }, 30000);
 
     return () => {
       controller.abort();
@@ -443,10 +443,9 @@ function MobileCashbook() {
   // Create transaction mutation with automatic dual entry support
   const createMutation = useMutation({
     mutationFn: (data: any) => {
-      // Always use standard endpoint - backend will handle dual entry automatically
       return apiRequest("/api/cash-transactions", "POST", {
         ...data,
-        transactionDate: currentDate.toISOString().split('T')[0],
+        transactionDate: quickEntryDate,
         transactionType: quickEntryType,
       });
     },
@@ -690,7 +689,20 @@ function MobileCashbook() {
       return;
     }
 
-    createMutation.mutate(quickEntryForm);
+    const numAmount = Number(quickEntryForm.amount);
+    if (isNaN(numAmount) || numAmount === 0) {
+      toast({
+        title: "त्रुटी",
+        description: "रक्कम शून्य असू शकत नाही",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    createMutation.mutate({
+      ...quickEntryForm,
+      amount: Math.abs(numAmount).toString(),
+    });
   };
 
   // Handle transaction edit with loan integration check
@@ -805,6 +817,15 @@ function MobileCashbook() {
     transactionsList.filter(t => t.category === 'loan_disbursement' || t.category === 'loan_closure' || t.category === 'loan_repayment').length,
     [transactionsList]
   );
+
+  // B3 FIX: Pre-computed running balances O(n) instead of O(n²)
+  const runningBalances = useMemo(() => {
+    let balance = correctOpeningBalance;
+    return transactionsList.map(t => {
+      balance += (t.transactionType === 'cash_in' ? Number(t.amount) : -Number(t.amount));
+      return balance;
+    });
+  }, [transactionsList, correctOpeningBalance]);
 
   // Format date for display in DD/MM/YY format - FIXED: Manual formatting to prevent timezone issues
   const formatDisplayDate = () => {
@@ -1037,6 +1058,14 @@ function MobileCashbook() {
               <Button
                 onClick={() => {
                   if (customDateRange.startDate && customDateRange.endDate) {
+                    if (customDateRange.startDate > customDateRange.endDate) {
+                      toast({
+                        title: "त्रुटी",
+                        description: "सुरुवात तारीख शेवट तारखेपेक्षा मोठी असू शकत नाही",
+                        variant: "destructive",
+                      });
+                      return;
+                    }
                     setSearchFilters(prev => ({
                       ...prev,
                       dateFrom: customDateRange.startDate,
@@ -1087,8 +1116,8 @@ function MobileCashbook() {
                   style={{ colorScheme: 'light' }}
                 />
               </div>
-              <div className="text-sm text-indigo-600 font-medium">
-                आरंभिक शिल्लक: ₹{correctOpeningBalance.toLocaleString('en-IN')}
+              <div className={`text-sm font-medium ${correctOpeningBalance < 0 ? 'text-red-600' : 'text-indigo-600'}`}>
+                आरंभिक शिल्लक: {correctOpeningBalance < 0 ? `-₹${Math.abs(correctOpeningBalance).toLocaleString('en-IN')}` : `₹${correctOpeningBalance.toLocaleString('en-IN')}`}
               </div>
             </div>
             
@@ -1121,9 +1150,6 @@ function MobileCashbook() {
                     setSearchDisplayText(newValue);
                     const enhancedSearchTerm = performCrossLanguageSearch(newValue);
                     setSearchFilters(prev => ({ ...prev, search: enhancedSearchTerm, amount: "" }));
-                    if (searchDebounceTimer) clearTimeout(searchDebounceTimer);
-                    const timer = setTimeout(() => {}, 300);
-                    setSearchDebounceTimer(timer);
                   }}
                   className="h-11 px-4 text-base bg-gray-50 border-gray-200 rounded-lg focus:bg-white focus:border-indigo-400 focus:ring-1 focus:ring-indigo-200"
                   data-testid="input-unified-search"
@@ -1241,8 +1267,8 @@ function MobileCashbook() {
                 </div>
                 <div></div>
                 <div></div>
-                <div className="font-semibold text-indigo-600 text-center text-sm">
-                  ₹{correctOpeningBalance.toLocaleString('en-IN')}
+                <div className={`font-semibold text-center text-sm ${correctOpeningBalance < 0 ? 'text-red-600' : 'text-indigo-600'}`}>
+                  {correctOpeningBalance < 0 ? `-₹${Math.abs(correctOpeningBalance).toLocaleString('en-IN')}` : `₹${correctOpeningBalance.toLocaleString('en-IN')}`}
                 </div>
               </div>
 
@@ -1256,10 +1282,7 @@ function MobileCashbook() {
                 <div className="p-8 text-center text-gray-500 text-sm">या कालावधीत कोणतेही व्यवहार नाहीत</div>
               ) : (
                 transactionsList.map((transaction: any, index: number) => {
-                  const runningBalance = correctOpeningBalance + 
-                    transactionsList.slice(0, index + 1).reduce((sum, t) => {
-                      return sum + (t.transactionType === 'cash_in' ? Number(t.amount) : -Number(t.amount));
-                    }, 0);
+                  const runningBalance = runningBalances[index] ?? correctOpeningBalance;
 
                   const isLoanTransaction = transaction.category === 'loan_disbursement' || 
                                           transaction.category === 'loan_closure' || 
@@ -1268,30 +1291,10 @@ function MobileCashbook() {
                   return (
                     <div
                       key={transaction.id}
-                      onClick={() => {
-                        if (!isLoanTransaction) {
-                          handleEditTransaction(transaction);
-                        }
-                      }}
-                      onDoubleClick={() => {
-                        if (!isLoanTransaction) {
-                          if (confirm('हा व्यवहार डिलीट करायचा का?')) {
-                            handleDeleteTransaction(transaction.id);
-                          }
-                        }
-                      }}
-                      onContextMenu={(e) => {
-                        e.preventDefault();
-                        if (!isLoanTransaction) {
-                          if (confirm('हा व्यवहार डिलीट करायचा का?')) {
-                            handleDeleteTransaction(transaction.id);
-                          }
-                        }
-                      }}
-                      className={`p-3 cursor-pointer ${
+                      className={`p-3 ${
                         isLoanTransaction 
-                          ? 'bg-amber-50 border-b border-amber-100 cursor-not-allowed' 
-                          : 'bg-white border-b border-gray-100 hover:bg-gray-50 active:bg-indigo-50'
+                          ? 'bg-amber-50 border-b border-amber-100' 
+                          : 'bg-white border-b border-gray-100'
                       }`}
                     >
                       <div className="grid gap-2 text-sm" style={{ gridTemplateColumns: '2.5fr 1fr 1fr 1fr' }}>
@@ -1315,9 +1318,24 @@ function MobileCashbook() {
                               </div>
                             )}
                           </div>
-                          {isLoanTransaction && (
+                          {isLoanTransaction ? (
                             <div className="bg-amber-100 text-amber-700 rounded px-2 py-0.5 text-xs font-medium inline-block">
                               {transaction.category === 'loan_disbursement' ? 'कर्ज वाटप' : 'कर्ज बंद'}
+                            </div>
+                          ) : (
+                            <div className="flex gap-2 mt-1">
+                              <button
+                                onClick={() => handleEditTransaction(transaction)}
+                                className="flex items-center gap-1 px-2 py-1 text-xs text-indigo-600 bg-indigo-50 rounded-md active:bg-indigo-100"
+                              >
+                                <Edit2 className="h-3 w-3" /> बदला
+                              </button>
+                              <button
+                                onClick={() => handleDeleteTransaction(transaction)}
+                                className="flex items-center gap-1 px-2 py-1 text-xs text-red-600 bg-red-50 rounded-md active:bg-red-100"
+                              >
+                                <Trash2 className="h-3 w-3" /> हटवा
+                              </button>
                             </div>
                           )}
                         </div>
@@ -1342,8 +1360,12 @@ function MobileCashbook() {
                           )}
                         </div>
                         
-                        <div className="text-center self-center text-gray-800 font-semibold text-sm">
-                          ₹{runningBalance.toLocaleString('en-IN')}
+                        <div className="text-center self-center font-semibold text-sm">
+                          {runningBalance < 0 ? (
+                            <span className="text-red-600">-₹{Math.abs(runningBalance).toLocaleString('en-IN')}</span>
+                          ) : (
+                            <span className="text-gray-800">₹{runningBalance.toLocaleString('en-IN')}</span>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -1353,13 +1375,11 @@ function MobileCashbook() {
             </div>
           ) : (
             <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-              {/* Journal Header */}
-              <div className="bg-gray-100 text-gray-700 p-3 grid grid-cols-5 gap-1 text-xs font-semibold sticky top-0 z-10">
-                <div className="text-center">दिनांक</div>
-                <div className="text-center">नंबर</div>
-                <div className="text-center">खाते</div>
-                <div className="text-center text-green-600">नावे</div>
-                <div className="text-center text-red-600">जमा</div>
+              {/* Journal Header — U4 FIX: 3-column mobile-friendly layout */}
+              <div className="bg-gray-100 text-gray-700 p-3 grid gap-1 text-xs font-semibold sticky top-0 z-10" style={{ gridTemplateColumns: '2fr 1fr 1fr' }}>
+                <div>खाते तपशील</div>
+                <div className="text-center text-green-600">नावे (Dr)</div>
+                <div className="text-center text-red-600">जमा (Cr)</div>
               </div>
 
               {journalLoading ? (
@@ -1371,53 +1391,45 @@ function MobileCashbook() {
                 <div className="p-8 text-center text-gray-500 text-sm">या काळात कोणतेही जर्नल entries नाहीत</div>
               ) : (
                 journalEntries.map((entry: any) => (
-                  <div key={entry.id} className="border-b border-gray-100">
-                    <div className="p-3 bg-gray-50 border-b border-gray-200">
+                  <div key={entry.id} className="border-b border-gray-200">
+                    <div className="px-3 py-2 bg-gray-50 border-b border-gray-100">
                       <div className="flex justify-between items-center">
-                        <div className="font-medium text-sm text-gray-800">
-                          जर्नल #{entry.journalNumber}
+                        <div className="font-medium text-xs text-gray-800">
+                          #{entry.journalNumber}
                         </div>
                         <div className="text-xs text-gray-500">
-                          {DateUtils.isoToIndianDate(entry.transactionDate)}
+                          {DateUtils.isoToShortDate(entry.transactionDate)}
                         </div>
                       </div>
                       {entry.narration && (
-                        <div className="text-xs text-gray-500 mt-1">{displayNarration(entry.narration)}</div>
+                        <div className="text-xs text-gray-400 mt-0.5 truncate">{displayNarration(entry.narration)}</div>
                       )}
                     </div>
                     
                     {entry.entries?.filter((e: any) => e.type === 'debit').map((debitEntry: any, idx: number) => (
-                      <div key={`debit-${idx}`} className="p-2 grid grid-cols-5 gap-1 text-sm border-b border-gray-100">
-                        <div className="text-xs text-gray-500">
-                          {idx === 0 ? DateUtils.isoToShortDate(entry.transactionDate) : ''}
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          {idx === 0 ? entry.journalNumber : ''}
-                        </div>
-                        <div className="text-xs font-medium text-gray-800">
+                      <div key={`debit-${idx}`} className="px-3 py-2 grid gap-1 text-sm border-b border-gray-50" style={{ gridTemplateColumns: '2fr 1fr 1fr' }}>
+                        <div className="text-xs font-medium text-gray-800 truncate">
                           {debitEntry.accountName}
                         </div>
                         <div className="text-center">
-                          <div className="bg-green-50 text-green-700 rounded px-2 py-1 text-xs font-semibold border border-green-200">
+                          <span className="bg-green-50 text-green-700 rounded px-1.5 py-0.5 text-xs font-semibold border border-green-200">
                             ₹{Number(debitEntry.amount).toLocaleString('en-IN')}
-                          </div>
+                          </span>
                         </div>
                         <div></div>
                       </div>
                     ))}
                     
                     {entry.entries?.filter((e: any) => e.type === 'credit').map((creditEntry: any, idx: number) => (
-                      <div key={`credit-${idx}`} className="p-2 grid grid-cols-5 gap-1 text-sm border-b border-gray-100">
-                        <div></div>
-                        <div></div>
-                        <div className="text-xs font-medium text-gray-800 pl-4">
-                          To {creditEntry.accountName}
+                      <div key={`credit-${idx}`} className="px-3 py-2 grid gap-1 text-sm border-b border-gray-50" style={{ gridTemplateColumns: '2fr 1fr 1fr' }}>
+                        <div className="text-xs font-medium text-gray-800 pl-3 truncate">
+                          ↳ {creditEntry.accountName}
                         </div>
                         <div></div>
                         <div className="text-center">
-                          <div className="bg-red-50 text-red-700 rounded px-2 py-1 text-xs font-semibold border border-red-200">
+                          <span className="bg-red-50 text-red-700 rounded px-1.5 py-0.5 text-xs font-semibold border border-red-200">
                             ₹{Number(creditEntry.amount).toLocaleString('en-IN')}
-                          </div>
+                          </span>
                         </div>
                       </div>
                     ))}
@@ -1450,19 +1462,23 @@ function MobileCashbook() {
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-500">आरंभिक शिल्लक:</span>
-                  <span className="font-medium text-gray-800">₹{correctOpeningBalance.toLocaleString('en-IN')}</span>
+                  <span className={`font-medium ${correctOpeningBalance < 0 ? 'text-red-600' : 'text-gray-800'}`}>
+                    {correctOpeningBalance < 0 ? `-₹${Math.abs(correctOpeningBalance).toLocaleString('en-IN')}` : `₹${correctOpeningBalance.toLocaleString('en-IN')}`}
+                  </span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-500">निव्वळ फरक:</span>
                   <span className={`font-medium ${(totals.cashIn - totals.cashOut) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    ₹{(totals.cashIn - totals.cashOut).toLocaleString('en-IN')}
+                    {(totals.cashIn - totals.cashOut) < 0 
+                      ? `-₹${Math.abs(totals.cashIn - totals.cashOut).toLocaleString('en-IN')}` 
+                      : `₹${(totals.cashIn - totals.cashOut).toLocaleString('en-IN')}`}
                   </span>
                 </div>
                 <div className="border-t border-gray-200 pt-2 mt-2">
                   <div className="flex justify-between items-center">
                     <span className="text-sm font-semibold text-gray-800">अंतिम शिल्लक:</span>
                     <span className={`font-bold text-lg ${periodBalance >= 0 ? 'text-indigo-600' : 'text-red-600'}`}>
-                      ₹{periodBalance.toLocaleString('en-IN')}
+                      {periodBalance < 0 ? `-₹${Math.abs(periodBalance).toLocaleString('en-IN')}` : `₹${periodBalance.toLocaleString('en-IN')}`}
                     </span>
                   </div>
                 </div>
@@ -1472,35 +1488,30 @@ function MobileCashbook() {
         </div>
       </div>
 
-      {/* Bottom Action Buttons */}
+      {/* Bottom Action Buttons — B6 FIX: Removed redundant Dialog wrappers */}
       <div className="fixed bottom-[72px] left-0 right-0 lg:left-1/2 lg:-translate-x-1/2 lg:max-w-lg lg:w-full bg-white border-t border-gray-200 p-3 grid grid-cols-2 gap-3 shadow-sm z-40">
-        <Dialog open={isQuickEntryOpen && quickEntryType === 'cash_in'} onOpenChange={setIsQuickEntryOpen}>
-          <DialogTrigger asChild>
-            <Button 
-              className="bg-green-500 hover:bg-green-600 text-white h-12 rounded-lg font-medium"
-              onClick={() => {
-                setQuickEntryType('cash_in');
-                setIsQuickEntryOpen(true);
-              }}
-            >
-              पैसे आले
-            </Button>
-          </DialogTrigger>
-        </Dialog>
-
-        <Dialog open={isQuickEntryOpen && quickEntryType === 'cash_out'} onOpenChange={setIsQuickEntryOpen}>
-          <DialogTrigger asChild>
-            <Button 
-              className="bg-red-500 hover:bg-red-600 text-white h-12 rounded-lg font-medium"
-              onClick={() => {
-                setQuickEntryType('cash_out');
-                setIsQuickEntryOpen(true);
-              }}
-            >
-              पैसे दिले
-            </Button>
-          </DialogTrigger>
-        </Dialog>
+        <Button 
+          className="bg-green-500 hover:bg-green-600 text-white h-12 rounded-lg font-medium"
+          onClick={() => {
+            setQuickEntryType('cash_in');
+            setQuickEntryForm({ amount: "", narration: "", partyId: null, category: "capital" });
+            setQuickEntryDate(currentDate.toISOString().split('T')[0]);
+            setIsQuickEntryOpen(true);
+          }}
+        >
+          पैसे आले
+        </Button>
+        <Button 
+          className="bg-red-500 hover:bg-red-600 text-white h-12 rounded-lg font-medium"
+          onClick={() => {
+            setQuickEntryType('cash_out');
+            setQuickEntryForm({ amount: "", narration: "", partyId: null, category: "capital" });
+            setQuickEntryDate(currentDate.toISOString().split('T')[0]);
+            setIsQuickEntryOpen(true);
+          }}
+        >
+          पैसे दिले
+        </Button>
       </div>
 
       {/* Quick Entry Dialog */}
@@ -1524,11 +1535,25 @@ function MobileCashbook() {
           <div className="space-y-5">
             <div className="bg-gray-50 p-3 rounded-lg">
               <Label className="text-sm font-semibold text-gray-800">
+                तारीख
+              </Label>
+              <Input
+                type="date"
+                value={quickEntryDate}
+                onChange={(e) => setQuickEntryDate(e.target.value)}
+                className="mt-2 h-10 text-sm font-inter"
+                style={{ colorScheme: 'light' }}
+              />
+            </div>
+
+            <div className="bg-gray-50 p-3 rounded-lg">
+              <Label className="text-sm font-semibold text-gray-800">
                 रक्कम *
               </Label>
               <Input
                 type="number"
                 placeholder="₹ 0"
+                step="any"
                 value={quickEntryForm.amount}
                 onChange={(e) => setQuickEntryForm(prev => ({ ...prev, amount: e.target.value }))}
                 className="mt-2 text-lg font-bold text-center h-10"
@@ -1630,9 +1655,21 @@ function MobileCashbook() {
           {editingTransaction && (
             <div className="space-y-5">
               <div className="bg-gray-50 p-4 rounded-lg">
+                <Label className="text-sm font-semibold text-gray-800">तारीख</Label>
+                <Input
+                  type="date"
+                  value={editingTransaction.transactionDate}
+                  onChange={(e) => setEditingTransaction((prev: any) => ({ ...prev, transactionDate: e.target.value }))}
+                  className="mt-2 h-12 text-sm font-inter"
+                  style={{ colorScheme: 'light' }}
+                />
+              </div>
+
+              <div className="bg-gray-50 p-4 rounded-lg">
                 <Label className="text-sm font-semibold text-gray-800">रक्कम</Label>
                 <Input
                   type="number"
+                  step="any"
                   value={editingTransaction.amount}
                   onChange={(e) => setEditingTransaction((prev: any) => ({ ...prev, amount: e.target.value }))}
                   className="mt-2 text-xl font-bold text-center h-12"
@@ -1648,29 +1685,21 @@ function MobileCashbook() {
                 />
               </div>
               
-              {editingTransaction?.partyId && editingTransaction?.partyId !== 'cash' && (
-                <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                  <Label className="text-sm font-semibold text-gray-800">पार्टी (द्विनोंदणी)</Label>
-                  <Select 
-                    value={editingTransaction.partyId} 
-                    onValueChange={(value) => setEditingTransaction((prev: any) => ({ ...prev, partyId: value }))}
-                  >
-                    <SelectTrigger className="mt-2 h-12">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {partiesList?.map((party: any) => (
-                        <SelectItem key={party.id} value={party.id}>
-                          {party.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <div className="text-xs text-gray-500 mt-1">
-                    द्विनोंदणी: पार्टी बदलल्यास दोन्ही अकाउंट मध्ये बदल होईल
-                  </div>
+              <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                <Label className="text-sm font-semibold text-gray-800">
+                  व्यक्ती {editingTransaction?.partyId && editingTransaction?.partyId !== 'cash' ? '(द्विनोंदणी)' : '(पर्यायी)'}
+                </Label>
+                <div className="mt-2">
+                  <PartySelector
+                    value={editingTransaction.partyId && editingTransaction.partyId !== 'cash' ? editingTransaction.partyId : undefined}
+                    onValueChange={(value) => setEditingTransaction((prev: any) => ({ ...prev, partyId: value || null }))}
+                    placeholder="व्यक्ती निवडा"
+                  />
                 </div>
-              )}
+                <div className="text-xs text-gray-500 mt-1">
+                  व्यक्ती निवडल्यास / बदलल्यास dual entry अपडेट होईल
+                </div>
+              </div>
               
               <div className="grid grid-cols-3 gap-2 pt-4">
                 <Button 
@@ -1683,12 +1712,22 @@ function MobileCashbook() {
                 
                 <Button 
                   onClick={() => {
+                    const editAmount = Number(editingTransaction.amount);
+                    if (isNaN(editAmount) || editAmount === 0) {
+                      toast({
+                        title: "त्रुटी",
+                        description: "रक्कम शून्य असू शकत नाही",
+                        variant: "destructive",
+                      });
+                      return;
+                    }
                     updateMutation.mutate({
                       id: editingTransaction.id,
                       data: {
                         amount: editingTransaction.amount,
                         narration: editingTransaction.narration,
                         partyId: editingTransaction.partyId,
+                        transactionDate: editingTransaction.transactionDate,
                       }
                     });
                   }}
