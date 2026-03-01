@@ -419,18 +419,22 @@ function Loans() {
           window.scrollTo(0, scrollTarget);
         }
 
-        queryClient.invalidateQueries({ queryKey: ["/api/loans"], refetchType: 'all' });
+        const safetyTimeout = scrollLock ? setTimeout(() => { if (scrollLock) clearInterval(scrollLock); }, 5000) : null;
+
+        await queryClient.invalidateQueries({ queryKey: ["/api/loans"], refetchType: 'all' });
         queryClient.invalidateQueries({ queryKey: ["/api/borrowers/autocomplete"], refetchType: 'all' });
         queryClient.invalidateQueries({ queryKey: ["/api/cash-transactions"], refetchType: 'all' });
         queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"], refetchType: 'all' });
 
         if (scrollLock !== null) {
-          setTimeout(() => {
-            window.scrollTo(0, scrollTarget!);
-            savedScrollPositionRef.current = null;
-            if (scrollLock) clearInterval(scrollLock);
-          }, 500);
-          setTimeout(() => { if (scrollLock) clearInterval(scrollLock); }, 5000);
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              window.scrollTo(0, scrollTarget!);
+              savedScrollPositionRef.current = null;
+              clearInterval(scrollLock!);
+              if (safetyTimeout) clearTimeout(safetyTimeout);
+            });
+          });
         }
         return;
       }
