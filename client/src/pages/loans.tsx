@@ -402,18 +402,28 @@ function Loans() {
         setEditingLoan(null);
         setCreatedLoanId(null);
 
+        let scrollLock: ReturnType<typeof setInterval> | null = null;
+        if (scrollTarget !== null) {
+          scrollLock = setInterval(() => {
+            window.scrollTo(0, scrollTarget);
+          }, 16);
+          window.scrollTo(0, scrollTarget);
+        }
+
         await queryClient.invalidateQueries({ queryKey: ["/api/loans"], refetchType: 'all' });
         queryClient.invalidateQueries({ queryKey: ["/api/borrowers/autocomplete"], refetchType: 'all' });
         queryClient.invalidateQueries({ queryKey: ["/api/cash-transactions"], refetchType: 'all' });
         queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"], refetchType: 'all' });
 
-        if (scrollTarget !== null) {
+        if (scrollLock !== null) {
           requestAnimationFrame(() => {
             requestAnimationFrame(() => {
-              window.scrollTo(0, scrollTarget);
+              window.scrollTo(0, scrollTarget!);
               savedScrollPositionRef.current = null;
+              if (scrollLock) clearInterval(scrollLock);
             });
           });
+          setTimeout(() => { if (scrollLock) clearInterval(scrollLock); }, 5000);
         }
         return;
       }
