@@ -100,7 +100,6 @@ function Loans() {
   }>({ open: false, title: '', message: '', formData: null });
   
   const savedScrollPositionRef = useRef<number | null>(null);
-  const editedLoanIdRef = useRef<number | null>(null);
 
   // Refs for keyboard shortcuts
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -200,7 +199,6 @@ function Loans() {
   // Simple handlers
   const handleEdit = (loan: any) => {
     savedScrollPositionRef.current = window.scrollY;
-    editedLoanIdRef.current = loan.id;
     
     // Pre-fill form with loan data
     form.reset({
@@ -398,10 +396,26 @@ function Loans() {
       }
       
       if (editingLoan) {
+        const scrollTarget = savedScrollPositionRef.current;
         form.reset();
         setIsDialogOpen(false);
         setEditingLoan(null);
         setCreatedLoanId(null);
+
+        await queryClient.invalidateQueries({ queryKey: ["/api/loans"], refetchType: 'all' });
+        queryClient.invalidateQueries({ queryKey: ["/api/borrowers/autocomplete"], refetchType: 'all' });
+        queryClient.invalidateQueries({ queryKey: ["/api/cash-transactions"], refetchType: 'all' });
+        queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"], refetchType: 'all' });
+
+        if (scrollTarget !== null) {
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              window.scrollTo(0, scrollTarget);
+              savedScrollPositionRef.current = null;
+            });
+          });
+        }
+        return;
       }
 
       queryClient.invalidateQueries({ queryKey: ["/api/loans"], refetchType: 'all' });
@@ -1312,39 +1326,14 @@ function Loans() {
 
   useEffect(() => {
     if (isDialogOpen) return;
-
-    if (editedLoanIdRef.current !== null) {
-      const loanId = editedLoanIdRef.current;
-      editedLoanIdRef.current = null;
-      savedScrollPositionRef.current = null;
-
-      const startTime = Date.now();
-      const scrollInterval = setInterval(() => {
-        if (Date.now() - startTime > 3000) {
-          clearInterval(scrollInterval);
-          return;
-        }
-        const el = document.querySelector(`[data-loan-id="${loanId}"]`);
-        if (el) {
-          el.scrollIntoView({ behavior: 'instant' as ScrollBehavior, block: 'center' });
-        }
-      }, 50);
-
-      return () => clearInterval(scrollInterval);
-    } else if (savedScrollPositionRef.current !== null) {
+    if (savedScrollPositionRef.current !== null) {
       const targetScroll = savedScrollPositionRef.current;
       savedScrollPositionRef.current = null;
-
-      const startTime = Date.now();
-      const scrollInterval = setInterval(() => {
-        if (Date.now() - startTime > 1500) {
-          clearInterval(scrollInterval);
-          return;
-        }
-        window.scrollTo({ top: targetScroll, behavior: 'instant' as ScrollBehavior });
-      }, 50);
-
-      return () => clearInterval(scrollInterval);
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          window.scrollTo(0, targetScroll);
+        });
+      });
     }
   }, [isDialogOpen]);
 
