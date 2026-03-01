@@ -397,6 +397,15 @@ function Loans() {
       
       if (editingLoan) {
         const scrollTarget = savedScrollPositionRef.current;
+        const editedLoanId = editingLoan.id;
+
+        queryClient.setQueryData(["/api/loans"], (oldLoans: any[]) => {
+          if (!oldLoans) return oldLoans;
+          return oldLoans.map((loan: any) =>
+            loan.id === editedLoanId ? { ...loan, ...newLoan } : loan
+          );
+        });
+
         form.reset();
         setIsDialogOpen(false);
         setEditingLoan(null);
@@ -410,19 +419,17 @@ function Loans() {
           window.scrollTo(0, scrollTarget);
         }
 
-        await queryClient.invalidateQueries({ queryKey: ["/api/loans"], refetchType: 'all' });
+        queryClient.invalidateQueries({ queryKey: ["/api/loans"], refetchType: 'all' });
         queryClient.invalidateQueries({ queryKey: ["/api/borrowers/autocomplete"], refetchType: 'all' });
         queryClient.invalidateQueries({ queryKey: ["/api/cash-transactions"], refetchType: 'all' });
         queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"], refetchType: 'all' });
 
         if (scrollLock !== null) {
-          requestAnimationFrame(() => {
-            requestAnimationFrame(() => {
-              window.scrollTo(0, scrollTarget!);
-              savedScrollPositionRef.current = null;
-              if (scrollLock) clearInterval(scrollLock);
-            });
-          });
+          setTimeout(() => {
+            window.scrollTo(0, scrollTarget!);
+            savedScrollPositionRef.current = null;
+            if (scrollLock) clearInterval(scrollLock);
+          }, 500);
           setTimeout(() => { if (scrollLock) clearInterval(scrollLock); }, 5000);
         }
         return;
