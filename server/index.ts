@@ -36,6 +36,7 @@ app.use((req, res, next) => {
     '.replit.app',
     '.replit.dev',
     '.replit.co',
+    '.repl.co',
     '.replitapp.com',
     '.railway.app',
     '.up.railway.app'

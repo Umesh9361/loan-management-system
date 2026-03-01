@@ -1,4 +1,4 @@
-const CACHE_NAME = 'lonopro-v2';
+const CACHE_NAME = 'lonopro-v3';
 const STATIC_ASSETS = [
   '/',
   '/manifest.json'

@@ -4,7 +4,7 @@ export const getApiBaseUrl = () => {
     const currentOrigin = window.location.origin;
     
     // For Replit domains (production/preview)
-    if (currentOrigin.includes('replit.app') || currentOrigin.includes('replit.dev') || currentOrigin.includes('replit.co')) {
+    if (currentOrigin.includes('replit.app') || currentOrigin.includes('replit.dev') || currentOrigin.includes('replit.co') || currentOrigin.includes('repl.co')) {
       return currentOrigin;
     }
     
