@@ -100,7 +100,6 @@ function Loans() {
   }>({ open: false, title: '', message: '', formData: null });
   
   const savedScrollPositionRef = useRef<number | null>(null);
-  const scrollLockRef = useRef<{ targetY: number; until: number } | null>(null);
   const editedLoanIdRef = useRef<number | null>(null);
 
   // Refs for keyboard shortcuts
@@ -295,8 +294,14 @@ function Loans() {
   const handleDelete = (loanId: string) => {
     if (confirm("हे कर्ज पूर्णपणे डिलीट करायचे काय? ही क्रिया रद्द करता येणार नाही.")) {
       const scrollY = window.scrollY;
-      // Lock scroll position for 1.5 seconds - covers optimistic update + server refetch
-      scrollLockRef.current = { targetY: scrollY, until: Date.now() + 1500 };
+      const startTime = Date.now();
+      const lockInterval = setInterval(() => {
+        if (Date.now() - startTime > 1500) {
+          clearInterval(lockInterval);
+          return;
+        }
+        window.scrollTo({ top: scrollY, behavior: 'instant' as ScrollBehavior });
+      }, 50);
       deleteLoanMutation.mutate(loanId);
     }
   };
@@ -380,12 +385,6 @@ function Loans() {
       if (newLoan?.__dateWarning) return;
       if (newLoan?.__duplicateWarning) return;
       
-      await queryClient.invalidateQueries({ queryKey: ["/api/loans"], refetchType: 'all' });
-      queryClient.invalidateQueries({ queryKey: ["/api/borrowers/autocomplete"], refetchType: 'all' });
-      queryClient.invalidateQueries({ queryKey: ["/api/cash-transactions"], refetchType: 'all' });
-      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"], refetchType: 'all' });
-      
-      // Show initial success message for loan creation
       toast({
         title: editingLoan ? "कर्ज अपडेट झाले" : "कर्ज नोंद झाले",
         description: editingLoan 
@@ -403,7 +402,14 @@ function Loans() {
         setIsDialogOpen(false);
         setEditingLoan(null);
         setCreatedLoanId(null);
-      } else {
+      }
+
+      queryClient.invalidateQueries({ queryKey: ["/api/loans"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["/api/borrowers/autocomplete"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["/api/cash-transactions"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"], refetchType: 'all' });
+
+      if (!editingLoan) {
         const currentGroupId = form.getValues('groupId');
         const currentGroupName = groupSearchTerm;
         const todayDate = DateUtils.getCurrentIndianDate();
@@ -1304,52 +1310,43 @@ function Loans() {
     }
   }, [isDialogOpen, editingLoan, form]);
 
-  // Scroll position restore after edit - activate scroll lock when dialog closes
   useEffect(() => {
-    if (!isDialogOpen && editedLoanIdRef.current !== null) {
+    if (isDialogOpen) return;
+
+    if (editedLoanIdRef.current !== null) {
       const loanId = editedLoanIdRef.current;
-      const fallbackY = savedScrollPositionRef.current;
       editedLoanIdRef.current = null;
       savedScrollPositionRef.current = null;
 
-      const scrollToLoan = () => {
+      const startTime = Date.now();
+      const scrollInterval = setInterval(() => {
+        if (Date.now() - startTime > 3000) {
+          clearInterval(scrollInterval);
+          return;
+        }
         const el = document.querySelector(`[data-loan-id="${loanId}"]`);
         if (el) {
           el.scrollIntoView({ behavior: 'instant' as ScrollBehavior, block: 'center' });
-          return true;
         }
-        return false;
-      };
+      }, 50);
 
-      if (!scrollToLoan()) {
-        let attempts = 0;
-        const interval = setInterval(() => {
-          attempts++;
-          if (scrollToLoan() || attempts > 15) {
-            clearInterval(interval);
-            if (attempts > 15 && fallbackY !== null) {
-              window.scrollTo({ top: fallbackY, behavior: 'instant' as ScrollBehavior });
-            }
-          }
-        }, 100);
-      }
-    } else if (!isDialogOpen && savedScrollPositionRef.current !== null) {
+      return () => clearInterval(scrollInterval);
+    } else if (savedScrollPositionRef.current !== null) {
       const targetScroll = savedScrollPositionRef.current;
       savedScrollPositionRef.current = null;
-      scrollLockRef.current = { targetY: targetScroll, until: Date.now() + 1500 };
-    }
-  }, [isDialogOpen, loans]);
 
-  useEffect(() => {
-    if (scrollLockRef.current) {
-      const { targetY, until } = scrollLockRef.current;
-      if (Date.now() < until) {
-        window.scrollTo({ top: targetY, behavior: 'instant' as ScrollBehavior });
-      } else {
-        scrollLockRef.current = null;
-      }
+      const startTime = Date.now();
+      const scrollInterval = setInterval(() => {
+        if (Date.now() - startTime > 1500) {
+          clearInterval(scrollInterval);
+          return;
+        }
+        window.scrollTo({ top: targetScroll, behavior: 'instant' as ScrollBehavior });
+      }, 50);
+
+      return () => clearInterval(scrollInterval);
     }
-  });
+  }, [isDialogOpen]);
 
   // Comprehensive Keyboard Shortcuts System
   useEffect(() => {
