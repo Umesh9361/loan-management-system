@@ -181,6 +181,15 @@ export default function PartySelector({ value, onValueChange, placeholder = "व
 
   return (
     <div className="space-y-2">
+      <div className="flex items-center space-x-2 mb-1">
+        <Search className="h-4 w-4 text-gray-400 flex-shrink-0" />
+        <Input
+          placeholder="व्यक्ती शोधा..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="h-8 text-sm"
+        />
+      </div>
       <div className="flex items-center space-x-2">
         <div className="flex-1">
           <Select value={value} onValueChange={onValueChange}>
@@ -188,17 +197,6 @@ export default function PartySelector({ value, onValueChange, placeholder = "व
               <SelectValue placeholder={placeholder} />
             </SelectTrigger>
             <SelectContent>
-              <div className="p-2">
-                <div className="flex items-center space-x-2 mb-2">
-                  <Search className="h-4 w-4 text-gray-500" />
-                  <Input
-                    placeholder="व्यक्ती शोधा..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="h-8"
-                  />
-                </div>
-              </div>
               <SelectItem value="none">कोणतीही व्यक्ती नाही (रोकड)</SelectItem>
               {filteredParties.map((party: any) => (
                 <SelectItem key={party.id} value={party.id}>

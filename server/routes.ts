@@ -2756,6 +2756,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Account-to-Account Transfer
+  app.post("/api/cash-transactions/transfer", requireAuth, cacheBuster(['dashboard:', 'cash-transactions:']), async (req, res) => {
+    try {
+      const { fromPartyId, toPartyId, amount, transactionDate, narration, category } = req.body;
+      const tenantId = req.session.tenantId!;
+
+      if (!fromPartyId || !toPartyId || !amount || !transactionDate || !narration) {
+        return res.status(400).json({ message: "सर्व फील्ड आवश्यक आहेत" });
+      }
+      if (fromPartyId === toPartyId) {
+        return res.status(400).json({ message: "Source आणि Destination पार्टी वेगवेगळ्या हव्यात" });
+      }
+      const numAmount = Number(amount);
+      if (isNaN(numAmount) || numAmount <= 0) {
+        return res.status(400).json({ message: "रक्कम शून्यापेक्षा जास्त असणे आवश्यक आहे" });
+      }
+
+      const result = await storage.createAccountTransfer(tenantId, {
+        fromPartyId, toPartyId, amount: numAmount.toString(), transactionDate, narration, category,
+      });
+
+      try {
+        await storage.logUserActivity({
+          userId: req.session.userId!, tenantId,
+          activityType: 'account_transfer',
+          description: `खाते ट्रान्सफर: ₹${amount} - ${narration}`,
+          metadata: JSON.stringify({ fromPartyId, toPartyId, amount, transactionDate, narration }),
+        });
+      } catch(e) { console.error('Audit log error:', e); }
+
+      console.log(`✅ Account transfer: ₹${amount} on ${transactionDate}`);
+      res.json(result);
+    } catch (error) {
+      console.error("Transfer error:", error);
+      res.status(500).json({ message: "ट्रान्सफर अयशस्वी", error: error instanceof Error ? error.message : String(error) });
+    }
+  });
+
   // Transaction cleanup endpoint (simplified)
   app.post("/api/cash-transactions/cleanup", requireAuth, async (req, res) => {
     try {
@@ -2784,6 +2822,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const transaction = await storage.updateCashTransaction(id, req.session.tenantId!, transactionData);
       if (!transaction) {
         return res.status(404).json({ message: "Failed to update transaction" });
+      }
+
+      // Sync linked transfer transaction (amount, narration, date)
+      if (oldTransaction?.linkedTransactionId) {
+        const linkedTx = transactions.find(t => 
+          t.id !== id && t.linkedTransactionId === oldTransaction.linkedTransactionId
+        );
+        if (linkedTx) {
+          const linkedUpdate: any = {};
+          if (transactionData.amount !== undefined) linkedUpdate.amount = transactionData.amount;
+          if (transactionData.narration !== undefined) linkedUpdate.narration = transactionData.narration;
+          if (transactionData.transactionDate !== undefined) linkedUpdate.transactionDate = transactionData.transactionDate;
+          if (Object.keys(linkedUpdate).length > 0) {
+            await storage.updateCashTransaction(linkedTx.id, req.session.tenantId!, linkedUpdate);
+            console.log('🔗 Linked transfer entry updated:', linkedTx.id);
+          }
+        }
       }
 
       try {
@@ -2906,20 +2961,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
+      // Delete linked transfer transaction if exists
+      if (transaction.linkedTransactionId) {
+        const linkedTx = transactions.find(t => 
+          t.id !== id && t.linkedTransactionId === transaction.linkedTransactionId
+        );
+        if (linkedTx) {
+          await storage.deleteCashTransaction(linkedTx.id, req.session.tenantId!);
+          console.log('🔗 Linked transfer entry deleted:', linkedTx.id);
+        }
+      }
+
       const success = await storage.deleteCashTransaction(id, req.session.tenantId!);
       
-      console.log('💥 DELETE RESULT:', {
-        success,
-        transactionId: id,
-        tenantId: req.session.tenantId
-      });
-      
       if (!success) {
-        console.log('❌ DELETE FAILED - Transaction not found in storage');
         return res.status(404).json({ message: "Failed to delete transaction" });
       }
 
-      try { await storage.logUserActivity({ userId: req.session.userId!, tenantId: req.session.tenantId!, activityType: 'delete_cash_transaction', description: `रोख व्यवहार डिलीट: ₹${transaction.amount} - ${transaction.narration?.substring(0, 80) || ''}`, metadata: JSON.stringify({ transactionId: id, amount: transaction.amount, narration: transaction.narration, transactionType: transaction.transactionType, transactionDate: transaction.transactionDate, category: transaction.category, partyId: transaction.partyId }) }); } catch(e) { console.error('Audit log error:', e); }
+      try { await storage.logUserActivity({ userId: req.session.userId!, tenantId: req.session.tenantId!, activityType: 'delete_cash_transaction', description: `रोख व्यवहार डिलीट: ₹${transaction.amount} - ${transaction.narration?.substring(0, 80) || ''}`, metadata: JSON.stringify({ transactionId: id, amount: transaction.amount, narration: transaction.narration, transactionType: transaction.transactionType, transactionDate: transaction.transactionDate, category: transaction.category, partyId: transaction.partyId, linkedTransactionId: transaction.linkedTransactionId }) }); } catch(e) { console.error('Audit log error:', e); }
 
       console.log('✅ DELETE SUCCESS - Transaction deleted successfully');
       res.json({ message: "Transaction deleted successfully" });

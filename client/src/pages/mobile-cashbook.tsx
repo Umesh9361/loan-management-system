@@ -53,8 +53,16 @@ function MobileCashbook() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [quickEntryDate, setQuickEntryDate] = useState(() => new Date().toISOString().split('T')[0]);
 
-  
-  
+  const [isTransferOpen, setIsTransferOpen] = useState(false);
+  const [transferForm, setTransferForm] = useState({
+    fromPartyId: "",
+    toPartyId: "",
+    amount: "",
+    narration: "",
+    category: "transfer",
+  });
+  const [transferDate, setTransferDate] = useState(() => new Date().toISOString().split('T')[0]);
+
   // Search functionality
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   
@@ -490,6 +498,34 @@ function MobileCashbook() {
     },
   });
 
+  const transferMutation = useMutation({
+    mutationFn: (data: any) => {
+      return apiRequest("/api/cash-transactions/transfer", "POST", {
+        ...data,
+        transactionDate: transferDate,
+      });
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["/api/cash-transactions"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["/api/mobile-cashbook/daily-balance"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["/api/mobile-cashbook/balance"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["/api/cash-balance"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["/api/journal-entries"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["/api/parties"], refetchType: 'all' });
+      queryClient.invalidateQueries({ queryKey: ["/api/reports"], refetchType: 'all' });
+
+      setIsTransferOpen(false);
+      setTransferForm({ fromPartyId: "", toPartyId: "", amount: "", narration: "", category: "transfer" });
+      toast({ title: "यशस्वी!", description: "खाते ट्रान्सफर नोंद झाली" });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "त्रुटी!",
+        description: error?.message || "ट्रान्सफर अयशस्वी",
+        variant: "destructive",
+      });
+    },
+  });
 
 
   // Update transaction mutation with comprehensive real-time synchronization
@@ -1287,6 +1323,7 @@ function MobileCashbook() {
                   const isLoanTransaction = transaction.category === 'loan_disbursement' || 
                                           transaction.category === 'loan_closure' || 
                                           transaction.category === 'loan_repayment';
+                  const isTransferTransaction = transaction.category === 'transfer';
 
                   return (
                     <div
@@ -1294,6 +1331,8 @@ function MobileCashbook() {
                       className={`p-3 ${
                         isLoanTransaction 
                           ? 'bg-amber-50 border-b border-amber-100' 
+                          : isTransferTransaction
+                          ? 'bg-indigo-50 border-b border-indigo-100'
                           : 'bg-white border-b border-gray-100'
                       }`}
                     >
@@ -1321,6 +1360,26 @@ function MobileCashbook() {
                           {isLoanTransaction ? (
                             <div className="bg-amber-100 text-amber-700 rounded px-2 py-0.5 text-xs font-medium inline-block">
                               {transaction.category === 'loan_disbursement' ? 'कर्ज वाटप' : 'कर्ज बंद'}
+                            </div>
+                          ) : isTransferTransaction ? (
+                            <div className="space-y-1">
+                              <div className="bg-indigo-100 text-indigo-700 rounded px-2 py-0.5 text-xs font-medium inline-block">
+                                खाते ट्रान्सफर
+                              </div>
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() => handleEditTransaction(transaction)}
+                                  className="flex items-center gap-1 px-2 py-1 text-xs text-indigo-600 bg-indigo-50 rounded-md active:bg-indigo-100"
+                                >
+                                  <Edit2 className="h-3 w-3" /> बदला
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteTransaction(transaction)}
+                                  className="flex items-center gap-1 px-2 py-1 text-xs text-red-600 bg-red-50 rounded-md active:bg-red-100"
+                                >
+                                  <Trash2 className="h-3 w-3" /> हटवा
+                                </button>
+                              </div>
                             </div>
                           ) : (
                             <div className="flex gap-2 mt-1">
@@ -1488,10 +1547,10 @@ function MobileCashbook() {
         </div>
       </div>
 
-      {/* Bottom Action Buttons — B6 FIX: Removed redundant Dialog wrappers */}
-      <div className="fixed bottom-[72px] left-0 right-0 lg:left-1/2 lg:-translate-x-1/2 lg:max-w-lg lg:w-full bg-white border-t border-gray-200 p-3 grid grid-cols-2 gap-3 shadow-sm z-40">
+      {/* Bottom Action Buttons */}
+      <div className="fixed bottom-[72px] left-0 right-0 lg:left-1/2 lg:-translate-x-1/2 lg:max-w-lg lg:w-full bg-white border-t border-gray-200 p-3 grid grid-cols-3 gap-2 shadow-sm z-40">
         <Button 
-          className="bg-green-500 hover:bg-green-600 text-white h-12 rounded-lg font-medium"
+          className="bg-green-500 hover:bg-green-600 text-white h-12 rounded-lg font-medium text-sm"
           onClick={() => {
             setQuickEntryType('cash_in');
             setQuickEntryForm({ amount: "", narration: "", partyId: null, category: "capital" });
@@ -1502,7 +1561,17 @@ function MobileCashbook() {
           पैसे आले
         </Button>
         <Button 
-          className="bg-red-500 hover:bg-red-600 text-white h-12 rounded-lg font-medium"
+          className="bg-indigo-500 hover:bg-indigo-600 text-white h-12 rounded-lg font-medium text-sm"
+          onClick={() => {
+            setTransferForm({ fromPartyId: "", toPartyId: "", amount: "", narration: "", category: "transfer" });
+            setTransferDate(currentDate.toISOString().split('T')[0]);
+            setIsTransferOpen(true);
+          }}
+        >
+          ट्रान्सफर
+        </Button>
+        <Button 
+          className="bg-red-500 hover:bg-red-600 text-white h-12 rounded-lg font-medium text-sm"
           onClick={() => {
             setQuickEntryType('cash_out');
             setQuickEntryForm({ amount: "", narration: "", partyId: null, category: "capital" });
@@ -1636,6 +1705,144 @@ function MobileCashbook() {
         </DialogContent>
       </Dialog>
 
+      {/* Account Transfer Dialog */}
+      <Dialog open={isTransferOpen} onOpenChange={setIsTransferOpen}>
+        <DialogContent
+          className="sm:max-w-md mx-4 max-h-[85vh] overflow-y-auto"
+          aria-describedby="transfer-description"
+          onOpenAutoFocus={(e) => e.preventDefault()}
+        >
+          <DialogHeader>
+            <DialogTitle className="text-center text-xl font-bold text-indigo-600">
+              खाते ट्रान्सफर
+            </DialogTitle>
+          </DialogHeader>
+          <div id="transfer-description" className="sr-only">
+            Account to account transfer form
+          </div>
+
+          <div className="space-y-4">
+            <div className="bg-gray-50 p-3 rounded-lg">
+              <Label className="text-sm font-semibold text-gray-800">तारीख</Label>
+              <Input
+                type="date"
+                value={transferDate}
+                onChange={(e) => setTransferDate(e.target.value)}
+                className="mt-2 h-10 text-sm font-inter"
+                style={{ colorScheme: 'light' }}
+              />
+            </div>
+
+            <div className="bg-green-50 p-3 rounded-lg border border-green-200">
+              <Label className="text-sm font-semibold text-green-700">कोणाकडून (Source)</Label>
+              <div className="mt-2">
+                <PartySelector
+                  value={transferForm.fromPartyId || undefined}
+                  onValueChange={(value) => setTransferForm(prev => ({ ...prev, fromPartyId: value || "" }))}
+                  placeholder="Source पार्टी निवडा"
+                />
+              </div>
+            </div>
+
+            <div className="bg-red-50 p-3 rounded-lg border border-red-200">
+              <Label className="text-sm font-semibold text-red-700">कोणाला (Destination)</Label>
+              <div className="mt-2">
+                <PartySelector
+                  value={transferForm.toPartyId || undefined}
+                  onValueChange={(value) => setTransferForm(prev => ({ ...prev, toPartyId: value || "" }))}
+                  placeholder="Destination पार्टी निवडा"
+                />
+              </div>
+            </div>
+
+            <div className="bg-gray-50 p-3 rounded-lg">
+              <Label className="text-sm font-semibold text-gray-800">रक्कम *</Label>
+              <Input
+                type="number"
+                placeholder="₹ 0"
+                step="any"
+                value={transferForm.amount}
+                onChange={(e) => setTransferForm(prev => ({ ...prev, amount: e.target.value }))}
+                className="mt-2 text-lg font-bold text-center h-10"
+              />
+            </div>
+
+            <div className="bg-gray-50 p-3 rounded-lg">
+              <Label className="text-sm font-semibold text-gray-800">तपशील *</Label>
+              <Input
+                placeholder="ट्रान्सफरचा तपशील लिहा..."
+                value={transferForm.narration}
+                onChange={(e) => setTransferForm(prev => ({ ...prev, narration: e.target.value }))}
+                className="mt-2 h-10"
+              />
+            </div>
+
+            <div className="bg-gray-50 p-3 rounded-lg">
+              <Label className="text-sm font-semibold text-gray-800">प्रकार</Label>
+              <Select
+                value={transferForm.category}
+                onValueChange={(value) => setTransferForm(prev => ({ ...prev, category: value }))}
+              >
+                <SelectTrigger className="mt-2 h-10">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="transfer">ट्रान्सफर</SelectItem>
+                  <SelectItem value="capital">भांडवल</SelectItem>
+                  <SelectItem value="income">उत्पन्न</SelectItem>
+                  <SelectItem value="expense">खर्च</SelectItem>
+                  <SelectItem value="other">इतर</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="bg-indigo-50 p-3 rounded-lg border border-indigo-200 text-xs text-indigo-700">
+              कॅशबुक balance बदलणार नाही — दोन्ही parties च्या ledger मध्ये entry दिसेल
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 pt-2">
+              <Button
+                variant="outline"
+                onClick={() => setIsTransferOpen(false)}
+                className="h-10"
+              >
+                रद्द
+              </Button>
+              <Button
+                onClick={() => {
+                  if (!transferForm.fromPartyId || transferForm.fromPartyId === 'none') {
+                    toast({ title: "त्रुटी", description: "Source पार्टी निवडा", variant: "destructive" });
+                    return;
+                  }
+                  if (!transferForm.toPartyId || transferForm.toPartyId === 'none') {
+                    toast({ title: "त्रुटी", description: "Destination पार्टी निवडा", variant: "destructive" });
+                    return;
+                  }
+                  if (transferForm.fromPartyId === transferForm.toPartyId) {
+                    toast({ title: "त्रुटी", description: "Source आणि Destination पार्टी वेगवेगळ्या हव्यात", variant: "destructive" });
+                    return;
+                  }
+                  const amt = Number(transferForm.amount);
+                  if (!transferForm.amount || isNaN(amt) || amt <= 0) {
+                    toast({ title: "त्रुटी", description: "योग्य रक्कम भरा", variant: "destructive" });
+                    return;
+                  }
+                  if (!transferForm.narration.trim()) {
+                    toast({ title: "त्रुटी", description: "तपशील आवश्यक आहे", variant: "destructive" });
+                    return;
+                  }
+                  transferMutation.mutate(transferForm);
+                }}
+                disabled={transferMutation.isPending}
+                className="bg-indigo-500 hover:bg-indigo-600 h-10"
+              >
+                {transferMutation.isPending ? "जतन होत आहे..." : "ट्रान्सफर करा"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Edit Transaction Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent
@@ -1654,6 +1861,14 @@ function MobileCashbook() {
           
           {editingTransaction && (
             <div className="space-y-5">
+              {editingTransaction.category === 'transfer' && (
+                <div className="bg-indigo-50 border border-indigo-200 p-3 rounded-lg text-sm text-indigo-700">
+                  <div className="font-semibold">खाते ट्रान्सफर entry</div>
+                  <div className="text-xs mt-1">
+                    {editingTransaction.transactionType === 'cash_in' ? 'Source (कोणाकडून)' : 'Destination (कोणाला)'} — रक्कम/तपशील/तारीख बदलल्यास दोन्ही entries अपडेट होतील
+                  </div>
+                </div>
+              )}
               <div className="bg-gray-50 p-4 rounded-lg">
                 <Label className="text-sm font-semibold text-gray-800">तारीख</Label>
                 <Input

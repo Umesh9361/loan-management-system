@@ -113,6 +113,9 @@ export interface IStorage {
   getMobileCashbookDailyBalance(tenantId: string, forDate: string): Promise<any>;
   getMobileCashbookUniversalBalance(tenantId: string, startDate: string, endDate: string, viewPeriod: string): Promise<any>;
   
+  // Account-to-Account transfer
+  createAccountTransfer(tenantId: string, data: { fromPartyId: string; toPartyId: string; amount: string; transactionDate: string; narration: string; category?: string }): Promise<{ cashInTransaction: CashTransaction; cashOutTransaction: CashTransaction }>;
+  
   // Dual-entry accounting operations
   createCashTransactionWithJournal(transaction: InsertCashTransaction): Promise<{cashTransaction: CashTransaction, journalEntry: JournalEntry}>;
   getJournalEntries(tenantId: string, filters?: { dateFrom?: string; dateTo?: string; sourceType?: string }): Promise<(JournalEntry & { lines: JournalEntryLine[] })[]>;
@@ -2890,6 +2893,87 @@ export class DatabaseStorage implements IStorage {
         updatedAt: new Date()
       })
       .where(eq(users.id, userId));
+  }
+
+  async createAccountTransfer(tenantId: string, data: { fromPartyId: string; toPartyId: string; amount: string; transactionDate: string; narration: string; category?: string }): Promise<{ cashInTransaction: CashTransaction; cashOutTransaction: CashTransaction }> {
+    return await db.transaction(async (tx) => {
+      const transferId = crypto.randomUUID();
+      const category = data.category || 'transfer';
+
+      const [cashInTx] = await tx
+        .insert(cashTransactions)
+        .values({
+          tenantId,
+          transactionDate: data.transactionDate,
+          transactionType: 'cash_in',
+          amount: data.amount,
+          category,
+          narration: data.narration,
+          partyId: data.fromPartyId,
+          fromAccount: data.fromPartyId,
+          toAccount: 'cash',
+          linkedTransactionId: transferId,
+          isSystemGenerated: false,
+        })
+        .returning();
+
+      const [cashOutTx] = await tx
+        .insert(cashTransactions)
+        .values({
+          tenantId,
+          transactionDate: data.transactionDate,
+          transactionType: 'cash_out',
+          amount: data.amount,
+          category,
+          narration: data.narration,
+          partyId: data.toPartyId,
+          fromAccount: 'cash',
+          toAccount: data.toPartyId,
+          linkedTransactionId: transferId,
+          isSystemGenerated: false,
+        })
+        .returning();
+
+      const jeNum1 = `JE-${Date.now()}-IN`;
+      const [je1] = await tx.insert(journalEntries).values({
+        tenantId, journalNumber: jeNum1, transactionDate: data.transactionDate,
+        description: data.narration, totalAmount: data.amount,
+        sourceId: cashInTx.id, sourceType: 'cash_transaction',
+      }).returning();
+      await tx.insert(journalEntryLines).values({
+        tenantId, journalEntryId: je1.id, type: 'debit',
+        accountType: 'cash', accountId: null, accountName: 'Cash',
+        amount: data.amount, debitAmount: data.amount, creditAmount: '0',
+        description: `ट्रान्सफर जमा - ${data.narration}`,
+      });
+      await tx.insert(journalEntryLines).values({
+        tenantId, journalEntryId: je1.id, type: 'credit',
+        accountType: 'party', accountId: data.fromPartyId, accountName: 'Party Account',
+        amount: data.amount, debitAmount: '0', creditAmount: data.amount,
+        description: `ट्रान्सफर स्रोत - ${data.narration}`,
+      });
+
+      const jeNum2 = `JE-${Date.now()}-OUT`;
+      const [je2] = await tx.insert(journalEntries).values({
+        tenantId, journalNumber: jeNum2, transactionDate: data.transactionDate,
+        description: data.narration, totalAmount: data.amount,
+        sourceId: cashOutTx.id, sourceType: 'cash_transaction',
+      }).returning();
+      await tx.insert(journalEntryLines).values({
+        tenantId, journalEntryId: je2.id, type: 'debit',
+        accountType: 'party', accountId: data.toPartyId, accountName: 'Party Account',
+        amount: data.amount, debitAmount: data.amount, creditAmount: '0',
+        description: `ट्रान्सफर गंतव्य - ${data.narration}`,
+      });
+      await tx.insert(journalEntryLines).values({
+        tenantId, journalEntryId: je2.id, type: 'credit',
+        accountType: 'cash', accountId: null, accountName: 'Cash',
+        amount: data.amount, debitAmount: '0', creditAmount: data.amount,
+        description: `ट्रान्सफर नावे - ${data.narration}`,
+      });
+
+      return { cashInTransaction: cashInTx, cashOutTransaction: cashOutTx };
+    });
   }
 
   // Dual-entry accounting operations
