@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import { sortLoans } from "@/lib/loan-sorting";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -98,10 +99,9 @@ function Loans() {
     formData: LoanFormData | null;
   }>({ open: false, title: '', message: '', formData: null });
   
-  // Scroll position restore after edit/delete
   const savedScrollPositionRef = useRef<number | null>(null);
-  // Scroll lock: holds scroll position for delete operations across multiple renders
   const scrollLockRef = useRef<{ targetY: number; until: number } | null>(null);
+  const editedLoanIdRef = useRef<number | null>(null);
 
   // Refs for keyboard shortcuts
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -201,6 +201,7 @@ function Loans() {
   // Simple handlers
   const handleEdit = (loan: any) => {
     savedScrollPositionRef.current = window.scrollY;
+    editedLoanIdRef.current = loan.id;
     
     // Pre-fill form with loan data
     form.reset({
@@ -1151,16 +1152,15 @@ function Loans() {
     return passesFilters ? { ...loan, searchScore } : null;
   }).filter(loan => loan !== null)
   .sort((a, b) => {
-    // If search query exists, sort by search score (higher first)
     if (hasSearchQuery) {
       return (b.searchScore || 0) - (a.searchScore || 0);
     }
-    // Otherwise sort by date (newest first)
-    return new Date(b.loanDate).getTime() - new Date(a.loanDate).getTime();
+    return 0;
   }) : [];
 
-  // FINAL RESULT: Smart sorted loans with ranking
-  const sortedLoans = filteredLoans;
+  const sortedLoans = hasSearchQuery
+    ? filteredLoans
+    : sortLoans(filteredLoans, Array.isArray(groups) ? groups : [], { dateOrder: 'asc' });
 
   // Pagination logic for large datasets
   const totalRecords = sortedLoans.length;
@@ -1306,15 +1306,40 @@ function Loans() {
 
   // Scroll position restore after edit - activate scroll lock when dialog closes
   useEffect(() => {
-    if (!isDialogOpen && savedScrollPositionRef.current !== null) {
+    if (!isDialogOpen && editedLoanIdRef.current !== null) {
+      const loanId = editedLoanIdRef.current;
+      const fallbackY = savedScrollPositionRef.current;
+      editedLoanIdRef.current = null;
+      savedScrollPositionRef.current = null;
+
+      const scrollToLoan = () => {
+        const el = document.querySelector(`[data-loan-id="${loanId}"]`);
+        if (el) {
+          el.scrollIntoView({ behavior: 'instant' as ScrollBehavior, block: 'center' });
+          return true;
+        }
+        return false;
+      };
+
+      if (!scrollToLoan()) {
+        let attempts = 0;
+        const interval = setInterval(() => {
+          attempts++;
+          if (scrollToLoan() || attempts > 15) {
+            clearInterval(interval);
+            if (attempts > 15 && fallbackY !== null) {
+              window.scrollTo({ top: fallbackY, behavior: 'instant' as ScrollBehavior });
+            }
+          }
+        }, 100);
+      }
+    } else if (!isDialogOpen && savedScrollPositionRef.current !== null) {
       const targetScroll = savedScrollPositionRef.current;
       savedScrollPositionRef.current = null;
-      // Activate scroll lock for 1.5 seconds - covers dialog close + server refetch renders
       scrollLockRef.current = { targetY: targetScroll, until: Date.now() + 1500 };
     }
   }, [isDialogOpen, loans]);
 
-  // Scroll lock effect: fires after EVERY render (optimistic + server refetch both covered)
   useEffect(() => {
     if (scrollLockRef.current) {
       const { targetY, until } = scrollLockRef.current;
@@ -2887,6 +2912,7 @@ function Loans() {
                         setSelectedRowIndex(index);
                         setSelectedLoanId(loan.id);
                       }}
+                      data-loan-id={loan.id}
                       data-testid={`row-loan-${loan.id}`}
                     >
                       <TableCell className="w-10" onClick={(e) => e.stopPropagation()}>
@@ -3055,6 +3081,7 @@ function Loans() {
                 {Array.isArray(paginatedLoans) && paginatedLoans.length > 0 && paginatedLoans.map((loan: any, index: number) => (
                   <div 
                     key={loan.id}
+                    data-loan-id={loan.id}
                     className={`
                       p-4 rounded-xl border shadow-sm transition-all duration-200 cursor-pointer
                       ${loan.status === 'closed' 
