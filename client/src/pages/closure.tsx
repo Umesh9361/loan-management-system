@@ -1393,7 +1393,7 @@ export default function Closure() {
         <main className="flex-1 w-full lg:pl-72 pb-16 lg:pb-0">
           <div className="px-4 sm:px-6 lg:px-8 py-6 md:max-w-7xl md:mx-auto">
             <div className="mb-6">
-              <div className="flex items-center gap-4 mb-4">
+              <div className="flex items-center gap-4 mb-2">
                 <Link href="/">
                   <Button variant="outline" size="sm" className="flex items-center gap-2">
                     <Home className="h-4 w-4" />
@@ -1401,6 +1401,8 @@ export default function Closure() {
                   </Button>
                 </Link>
               </div>
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-semibold text-indigo-900 mb-1">कर्ज बंद करा</h1>
+              <p className="text-sm text-gray-500">Loan Closure & Interest Calculation</p>
             </div>
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -1814,15 +1816,14 @@ export default function Closure() {
                       </div>
                     )}
 
-                    {/* Calculate Interest Button */}
                     <div className="flex justify-center">
                       <Button
                         type="button"
                         onClick={calculateInterest}
                         disabled={!selectedLoan}
-                        className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 transform hover:scale-105 transition-all duration-300 shadow-lg"
+                        className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 transform hover:scale-105 transition-all duration-300 shadow-lg md:px-8 md:py-3 md:text-base"
                       >
-                        <Calculator className="h-4 w-4 mr-2" />
+                        <Calculator className="h-4 w-4 mr-2 md:h-5 md:w-5" />
                         व्याज गणना करा
                       </Button>
                     </div>

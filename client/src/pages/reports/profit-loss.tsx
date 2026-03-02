@@ -247,43 +247,45 @@ export default function ProfitLoss() {
   };
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
-      <aside className="hidden lg:block lg:w-72 lg:fixed lg:inset-y-0 lg:h-screen print:hidden">
-        <Sidebar />
-      </aside>
-      <main className="flex-1 w-full lg:pl-72 pb-16 lg:pb-0">
-        <div className="md:hidden print:hidden">
-          <MobileNav />
-        </div>
+    <div className="min-h-screen bg-gray-50">
+      <MobileNav />
 
-        <div className="p-3 sm:p-6 max-w-4xl md:max-w-6xl mx-auto w-full print:p-0 print:max-w-none">
-          <div className="print:hidden mb-4">
-            <h1 className="text-xl sm:text-2xl font-bold text-indigo-900 mb-1">नफा-तोटा पत्रक</h1>
-            <p className="text-sm text-gray-500">Profit & Loss Statement</p>
-          </div>
+      <div className="lg:flex">
+        <aside className="hidden lg:block lg:w-72 lg:fixed lg:inset-y-0 lg:h-screen print:hidden">
+          <Sidebar />
+        </aside>
 
-          <Card className="print:hidden mb-4">
-            <CardContent className="p-3 sm:p-4">
-              <div className="flex flex-wrap items-end gap-3">
-                <div>
-                  <Label className="text-xs text-gray-600">तारखेपासून</Label>
-                  <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="h-9 w-36 text-sm" />
+        <main className="flex-1 w-full lg:pl-72 pb-16 lg:pb-0">
+          <div className="px-4 sm:px-6 lg:px-8 py-6 max-w-4xl md:max-w-6xl mx-auto w-full print:p-0 print:max-w-none">
+            <div className="print:hidden mb-6">
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-semibold text-indigo-900 mb-1">नफा-तोटा पत्रक</h1>
+              <p className="text-sm text-gray-500">Profit & Loss Statement</p>
+            </div>
+
+            <Card className="print:hidden mb-6">
+              <CardContent className="p-3 sm:p-4 md:p-6">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-3 md:gap-4">
+                  <div>
+                    <Label className="text-xs md:text-sm text-gray-600">तारखेपासून</Label>
+                    <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="h-9 md:h-10 text-sm" />
+                  </div>
+                  <div>
+                    <Label className="text-xs md:text-sm text-gray-600">तारखेपर्यंत</Label>
+                    <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="h-9 md:h-10 text-sm" />
+                  </div>
+                  <div className="flex items-end">
+                    <Button onClick={() => refetch()} size="sm" className="bg-indigo-600 hover:bg-indigo-700 h-9 md:h-10 w-full md:w-auto">
+                      <Search className="w-4 h-4 mr-1" /> शोधा
+                    </Button>
+                  </div>
+                  <div className="flex items-end gap-2 flex-wrap">
+                    <Button variant="ghost" size="sm" className="text-xs h-7 md:h-8" onClick={() => quickFY(0)}>चालू वर्ष</Button>
+                    <Button variant="ghost" size="sm" className="text-xs h-7 md:h-8" onClick={() => quickFY(1)}>मागील वर्ष</Button>
+                    <Button variant="ghost" size="sm" className="text-xs h-7 md:h-8" onClick={() => quickFY(2)}>२ वर्षांपूर्वी</Button>
+                  </div>
                 </div>
-                <div>
-                  <Label className="text-xs text-gray-600">तारखेपर्यंत</Label>
-                  <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="h-9 w-36 text-sm" />
-                </div>
-                <Button onClick={() => refetch()} size="sm" className="bg-indigo-600 hover:bg-indigo-700 h-9">
-                  <Search className="w-4 h-4 mr-1" /> शोधा
-                </Button>
-              </div>
-              <div className="flex gap-2 mt-2">
-                <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => quickFY(0)}>चालू वर्ष</Button>
-                <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => quickFY(1)}>मागील वर्ष</Button>
-                <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => quickFY(2)}>२ वर्षांपूर्वी</Button>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
 
           {isLoading && (
             <div className="text-center py-12 print:hidden">
@@ -452,8 +454,9 @@ export default function ProfitLoss() {
               <p>नफा-तोटा पत्रक पाहण्यासाठी तारखा निवडा आणि शोधा बटण दाबा</p>
             </div>
           )}
-        </div>
-      </main>
+          </div>
+        </main>
+      </div>
     </div>
   );
 }
