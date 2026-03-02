@@ -361,7 +361,7 @@ export default function InformationRegister() {
     if (num % 1 === 0) {
       return num.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
     }
-    return num.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return num.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
   };
 
   const formatDate = (val: string | null) => {
