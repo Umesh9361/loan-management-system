@@ -311,7 +311,7 @@ export function Sidebar({ className }: SidebarProps) {
               )}
             </div>
           </div>
-          {user && (user.role === 'admin' || user.role === 'superadmin') && (
+          {user && (
             <NotificationBell variant="sidebar" />
           )}
         </div>
