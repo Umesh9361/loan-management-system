@@ -327,13 +327,13 @@ export function Sidebar({ className }: SidebarProps) {
                   variant={isActive ? "default" : "ghost"}
                   size="sm"
                   className={cn(
-                    "w-full justify-start text-sm py-3 lg:py-2 lg:text-[13px] h-auto font-medium rounded-lg transition-all duration-200",
+                    "w-full justify-start text-sm py-3 lg:py-2.5 lg:text-sm h-auto font-medium rounded-lg transition-all duration-200",
                     isActive 
                       ? "bg-gradient-to-r from-indigo-500 to-indigo-600 text-white shadow-sm lg:shadow-md lg:border-l-3 lg:border-l-indigo-400" 
                       : "hover:bg-indigo-50/80 hover:text-indigo-700 lg:text-gray-700"
                   )}
                 >
-                  <Icon className="mr-2 lg:mr-2.5 h-4 w-4 lg:h-[18px] lg:w-[18px] flex-shrink-0" />
+                  <Icon className="mr-2 lg:mr-2.5 h-4 w-4 flex-shrink-0" />
                   <span className="truncate font-noto">{item.name}</span>
                 </Button>
               </Link>
@@ -343,7 +343,7 @@ export function Sidebar({ className }: SidebarProps) {
           <Separator className="my-3 lg:my-2" />
           
           <div className="px-2 lg:px-1.5 py-2 lg:py-1">
-            <h3 className="text-sm lg:text-[11px] font-bold text-indigo-600 uppercase tracking-wider bg-indigo-50 rounded-lg px-3 lg:px-2.5 py-2 lg:py-1.5 font-noto">
+            <h3 className="text-sm lg:text-xs font-bold text-indigo-600 uppercase tracking-wider bg-indigo-50 rounded-lg px-3 lg:px-2.5 py-2 lg:py-1.5 font-noto">
               📊 अहवाल
             </h3>
           </div>
@@ -379,7 +379,7 @@ export function Sidebar({ className }: SidebarProps) {
                   <Button
                     variant={isActive ? "secondary" : "ghost"}
                     className={cn(
-                      "w-full justify-start text-sm py-3 lg:py-2 lg:text-[13px] h-auto font-medium report-button-fix rounded-lg",
+                      "w-full justify-start text-sm py-3 lg:py-2.5 lg:text-sm h-auto font-medium report-button-fix rounded-lg",
                       isActive && "bg-indigo-50 text-indigo-700 border-r-2 border-indigo-500"
                     )}
                     data-report-button="true"
@@ -390,7 +390,7 @@ export function Sidebar({ className }: SidebarProps) {
                       window.location.href = item.href;
                     }}
                   >
-                    <Icon className="mr-3 lg:mr-2.5 h-4 w-4 lg:h-[18px] lg:w-[18px] flex-shrink-0" />
+                    <Icon className="mr-3 lg:mr-2.5 h-4 w-4 flex-shrink-0" />
                     <span className="truncate font-noto">{item.name}</span>
                   </Button>
                 </Link>
@@ -404,7 +404,7 @@ export function Sidebar({ className }: SidebarProps) {
               <Separator className="my-3 lg:my-2" />
               
               <div className="px-2 lg:px-1.5 py-2 lg:py-1">
-                <h3 className="text-sm lg:text-[11px] font-bold text-orange-600 uppercase tracking-wider bg-orange-50 rounded-lg px-3 lg:px-2.5 py-2 lg:py-1.5 font-noto">
+                <h3 className="text-sm lg:text-xs font-bold text-orange-600 uppercase tracking-wider bg-orange-50 rounded-lg px-3 lg:px-2.5 py-2 lg:py-1.5 font-noto">
                   🔧 {(user as any)?.role === 'super_admin' ? 'सुपर एडमिन पॅनेल' : 'एडमिन पॅनेल'}
                 </h3>
               </div>
@@ -419,13 +419,13 @@ export function Sidebar({ className }: SidebarProps) {
                       variant={isActive ? "default" : "ghost"}
                       size="sm"
                       className={cn(
-                        "w-full justify-start text-sm py-3 lg:py-2 lg:text-[13px] h-auto font-medium rounded-lg transition-all duration-200",
+                        "w-full justify-start text-sm py-3 lg:py-2.5 lg:text-sm h-auto font-medium rounded-lg transition-all duration-200",
                         isActive 
                           ? "bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-sm lg:shadow-md" 
                           : "hover:bg-orange-50 hover:text-orange-700 lg:text-gray-700"
                       )}
                     >
-                      <Icon className="mr-2 lg:mr-2.5 h-4 w-4 lg:h-[18px] lg:w-[18px] flex-shrink-0" />
+                      <Icon className="mr-2 lg:mr-2.5 h-4 w-4 flex-shrink-0" />
                       <span className="truncate font-noto">{item.name}</span>
                     </Button>
                   </Link>
@@ -440,7 +440,7 @@ export function Sidebar({ className }: SidebarProps) {
               <Separator className="my-3 lg:my-2" />
               
               <div className="px-2 lg:px-1.5 py-2 lg:py-1">
-                <h3 className="text-sm lg:text-[11px] font-bold text-red-600 uppercase tracking-wider bg-red-50 rounded-lg px-3 lg:px-2.5 py-2 lg:py-1.5 font-noto">
+                <h3 className="text-sm lg:text-xs font-bold text-red-600 uppercase tracking-wider bg-red-50 rounded-lg px-3 lg:px-2.5 py-2 lg:py-1.5 font-noto">
                   🔐 सुपर एडमिन पॅनेल
                 </h3>
               </div>
@@ -455,13 +455,13 @@ export function Sidebar({ className }: SidebarProps) {
                       variant={isActive ? "default" : "ghost"}
                       size="sm"
                       className={cn(
-                        "w-full justify-start text-sm py-3 lg:py-2 lg:text-[13px] h-auto font-medium rounded-lg transition-all duration-200",
+                        "w-full justify-start text-sm py-3 lg:py-2.5 lg:text-sm h-auto font-medium rounded-lg transition-all duration-200",
                         isActive 
                           ? "bg-gradient-to-r from-red-500 to-red-600 text-white shadow-sm lg:shadow-md" 
                           : "hover:bg-red-50 hover:text-red-600 lg:text-gray-700"
                       )}
                     >
-                      <Icon className="mr-2 lg:mr-2.5 h-4 w-4 lg:h-[18px] lg:w-[18px] flex-shrink-0" />
+                      <Icon className="mr-2 lg:mr-2.5 h-4 w-4 flex-shrink-0" />
                       <span className="truncate font-noto">{item.name}</span>
                     </Button>
                   </Link>
