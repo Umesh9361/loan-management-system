@@ -28,7 +28,8 @@ import {
   Cloud,
   ClipboardList,
   AlertTriangle,
-  Scale
+  Scale,
+  Settings
 } from "lucide-react";
 
 const navigation = [
@@ -78,6 +79,11 @@ const navigation = [
     name: "व्याज कॅल्क्युलेटर",
     href: "/calculator",
     icon: Calculator,
+  },
+  {
+    name: "माझे प्रोफाईल",
+    href: "/profile",
+    icon: Settings,
   },
   {
     name: "ताळेबंद",
