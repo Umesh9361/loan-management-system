@@ -84,6 +84,7 @@ const navigation = [
     name: "माझे प्रोफाईल",
     href: "/profile",
     icon: Settings,
+    adminOnly: true,
   },
   {
     name: "ताळेबंद",
@@ -314,6 +315,9 @@ export function Sidebar({ className }: SidebarProps) {
       >
         <div className="space-y-0.5 lg:space-y-0 py-3 lg:py-3">
           {navigation.map((item) => {
+            if ((item as any).adminOnly && user?.role !== 'admin' && user?.role !== 'super_admin') {
+              return null;
+            }
             const Icon = item.icon;
             const isActive = location === item.href;
             
