@@ -20,8 +20,8 @@ function getDefaultFY() {
 }
 
 function formatCurrency(amount: number): string {
-  if (amount === 0) return "0.00";
-  return Math.abs(amount).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  if (amount === 0) return "0";
+  return Math.abs(amount).toLocaleString("en-IN", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 }
 
 function formatDateDisplay(dateStr: string): string {
@@ -32,8 +32,8 @@ function formatDateDisplay(dateStr: string): string {
 
 function buildBalanceSheetHTML(balanceSheet: any, company: any, fyStartDate: string, asOfDate: string): string {
   const fc = (amount: number) => {
-    if (amount === 0) return "0.00";
-    return Math.abs(amount).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    if (amount === 0) return "0";
+    return Math.abs(amount).toLocaleString("en-IN", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
   };
   const fd = (dateStr: string) => {
     if (!dateStr) return "";
