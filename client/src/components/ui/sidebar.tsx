@@ -1,12 +1,10 @@
 import { Link, useLocation } from "wouter";
-import { useSafeNavigation } from "@/hooks/use-safe-navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { useQuery } from "@tanstack/react-query";
 import { useCurrentUser } from "@/hooks/use-current-user";
-import { AuthService } from "@/lib/auth";
 import { useEffect, useRef } from "react";
 import { NotificationBell } from "@/components/maturity-reminder";
 import { 
@@ -14,7 +12,6 @@ import {
   Users, 
   User,
   CreditCard, 
-  UserCheck, 
   CheckCircle, 
   Book, 
   TrendingUp, 
@@ -23,7 +20,6 @@ import {
   BarChart3,
   Home,
   Wallet,
-  LogOut,
   Receipt,
   Calculator,
   Shield,
@@ -214,7 +210,6 @@ interface SidebarProps {
 
 export function Sidebar({ className }: SidebarProps) {
   const [location] = useLocation();
-  const { safeNavigate } = useSafeNavigation();
   const scrollRef = useRef<HTMLDivElement>(null);
   
   const { user: currentUser } = useCurrentUser();
@@ -282,13 +277,6 @@ export function Sidebar({ className }: SidebarProps) {
       scrollContainer.removeEventListener('wheel', handleWheel);
     };
   }, []);
-
-  const handleLogout = async () => {
-    sessionStorage.removeItem('closure_summary_entries');
-    sessionStorage.removeItem('closure_summary_counter');
-    await AuthService.logout();
-    window.location.reload();
-  };
 
   return (
     <div className={cn("flex flex-col sidebar-modern h-full", className)}>
@@ -477,51 +465,6 @@ export function Sidebar({ className }: SidebarProps) {
         
       </div>
 
-      {/* Fixed Footer - Always Visible */}
-      <div className="flex-shrink-0 mt-auto border-t border-gray-100 px-3 py-2.5 bg-gradient-to-t from-gray-50 to-white hidden lg:block">
-        <div className="flex items-center justify-between gap-2">
-          {(user?.role === 'admin' || user?.role === 'super_admin') ? (
-            <Link href="/profile" className="flex items-center space-x-2.5 min-w-0 flex-1 hover:bg-indigo-50/70 rounded-lg p-1.5 transition-colors cursor-pointer group">
-              <div className="h-9 w-9 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-full flex items-center justify-center flex-shrink-0 shadow-sm">
-                <UserCheck className="h-4 w-4 text-white" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-[13px] font-semibold text-gray-800 truncate group-hover:text-indigo-700">{user?.username}</p>
-                <p className="text-[10px] text-indigo-500 font-medium uppercase tracking-wider">
-                  {user?.role === 'super_admin' ? 'Super Admin' : 'Admin'}
-                </p>
-              </div>
-            </Link>
-          ) : (
-            <div className="flex items-center space-x-2.5 min-w-0 flex-1 p-1.5">
-              <div className="h-9 w-9 bg-gradient-to-br from-gray-400 to-gray-500 rounded-full flex items-center justify-center flex-shrink-0 shadow-sm">
-                <UserCheck className="h-4 w-4 text-white" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-[13px] font-semibold text-gray-800 truncate">{user?.username}</p>
-                <p className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">User</p>
-              </div>
-            </div>
-          )}
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="flex-shrink-0 h-8 w-8 p-0 text-gray-400 hover:bg-red-50 hover:text-red-500 rounded-full transition-colors"
-            title="Log Out"
-            onClick={async () => {
-              try {
-                await handleLogout();
-              } catch (error) {
-                localStorage.clear();
-                sessionStorage.clear();
-                safeNavigate('/login');
-              }
-            }}
-          >
-            <LogOut className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
     </div>
   );
 }
