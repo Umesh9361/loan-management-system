@@ -81,16 +81,16 @@ export default function InterestCalculator() {
         
       case "week":
         {
-          // Weekly calculation: 1-7=0.25, 8-15=0.5, 16-21=0.75, 22+=1 month
+          // Weekly calculation: 1-8=0.25, 9-15=0.5, 16-22=0.75, 23+=1 month
           const fullMonthsWeek = Math.floor(totalDays / 30);
           const remainingDaysWeek = totalDays % 30;
           let weekMonths = 0;
           
-          if (remainingDaysWeek <= 7) {
+          if (remainingDaysWeek <= 8) {
             weekMonths = 0.25;
           } else if (remainingDaysWeek <= 15) {
             weekMonths = 0.5;
-          } else if (remainingDaysWeek <= 21) {
+          } else if (remainingDaysWeek <= 22) {
             weekMonths = 0.75;
           } else {
             weekMonths = 1;
@@ -193,8 +193,8 @@ export default function InterestCalculator() {
             break;
           case "week":
             let weekFraction = 0;
-            if (remainingDays >= 1 && remainingDays <= 7) weekFraction = 0.25;
-            else if (remainingDays >= 8 && remainingDays <= 15) weekFraction = 0.5;
+            if (remainingDays >= 1 && remainingDays <= 8) weekFraction = 0.25;
+            else if (remainingDays >= 9 && remainingDays <= 15) weekFraction = 0.5;
             else if (remainingDays >= 16 && remainingDays <= 22) weekFraction = 0.75;
             else if (remainingDays >= 23) weekFraction = 1;
             calculatedMonths = timePeriod.totalMonths + weekFraction;
@@ -637,7 +637,7 @@ export default function InterestCalculator() {
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                             <div>
                               <div className="font-semibold text-indigo-700">कंपाऊंड वारंवारता: {compoundFrequency === 'yearly' ? 'वार्षिक' : compoundFrequency === 'half_yearly' ? 'सहा महिने' : compoundFrequency === 'quarterly' ? 'तीन महिने' : 'मासिक'}</div>
-                              <div className="text-purple-700">दिन गणना पद्धत: {calculationMode === 'month' ? 'पूर्ण महिना (1 दिवस = 1 महिना)' : calculationMode === 'half_month' ? 'अर्धा महिना (1-15=0.5, 16+=1)' : calculationMode === 'week' ? 'आठवडा (1-7=0.25, 8-15=0.5, 16-21=0.75, 22+=1)' : 'दैनिक अचूक गणना'}</div>
+                              <div className="text-purple-700">दिन गणना पद्धत: {calculationMode === 'month' ? 'पूर्ण महिना (1 दिवस = 1 महिना)' : calculationMode === 'half_month' ? 'अर्धा महिना (1-15=0.5, 16+=1)' : calculationMode === 'week' ? 'आठवडा (1-8=0.25, 9-15=0.5, 16-22=0.75, 23+=1)' : 'दैनिक अचूक गणना'}</div>
                             </div>
                             <div>
                               <div className="font-semibold text-red-700">व्याज मुद्दलावर भर घालून चक्रवाढ व्याज गणना</div>

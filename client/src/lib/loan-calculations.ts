@@ -123,10 +123,10 @@ export class LoanCalculationsAdvanced {
         }
       } else if (calculationMode === "week") {
         // Week-based calculation: 1 week = 0.25 months  
-        // Corrected ranges: 1-7=0.25, 8-15=0.5, 16-22=0.75, 23+=1 month
-        if (timePeriod.days >= 1 && timePeriod.days <= 7) {
+        // Corrected ranges: 1-8=0.25, 9-15=0.5, 16-22=0.75, 23+=1 month
+        if (timePeriod.days >= 1 && timePeriod.days <= 8) {
           daysInterest = monthlyInterestRate * 0.25; // 1 week = 0.25 months
-        } else if (timePeriod.days >= 8 && timePeriod.days <= 15) {
+        } else if (timePeriod.days >= 9 && timePeriod.days <= 15) {
           daysInterest = monthlyInterestRate * 0.5; // 2 weeks = 0.5 months
         } else if (timePeriod.days >= 16 && timePeriod.days <= 22) {
           daysInterest = monthlyInterestRate * 0.75; // 3 weeks = 0.75 months
@@ -331,9 +331,9 @@ export class LoanCalculationsAdvanced {
         const fullMonthsWeek = timePeriod.years * 12 + timePeriod.months;
         let weekMonths = 0;
         
-        if (timePeriod.days >= 1 && timePeriod.days <= 7) {
+        if (timePeriod.days >= 1 && timePeriod.days <= 8) {
           weekMonths = 0.25;
-        } else if (timePeriod.days >= 8 && timePeriod.days <= 15) {
+        } else if (timePeriod.days >= 9 && timePeriod.days <= 15) {
           weekMonths = 0.5;
         } else if (timePeriod.days >= 16 && timePeriod.days <= 22) {
           weekMonths = 0.75;
