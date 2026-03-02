@@ -100,6 +100,7 @@ function Loans() {
   }>({ open: false, title: '', message: '', formData: null });
   
   const savedScrollPositionRef = useRef<number | null>(null);
+  const scrollLockActiveRef = useRef<boolean>(false);
 
   // Refs for keyboard shortcuts
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -411,6 +412,7 @@ function Loans() {
         setEditingLoan(null);
         setCreatedLoanId(null);
 
+        scrollLockActiveRef.current = true;
         let scrollLock: ReturnType<typeof setInterval> | null = null;
         if (scrollTarget !== null) {
           scrollLock = setInterval(() => {
@@ -419,9 +421,20 @@ function Loans() {
           window.scrollTo(0, scrollTarget);
         }
 
-        const safetyTimeout = scrollLock ? setTimeout(() => { if (scrollLock) clearInterval(scrollLock); }, 5000) : null;
+        const safetyTimeout = scrollLock ? setTimeout(() => {
+          if (scrollLock) clearInterval(scrollLock);
+          scrollLockActiveRef.current = false;
+        }, 5000) : null;
 
         await queryClient.invalidateQueries({ queryKey: ["/api/loans"], refetchType: 'all' });
+
+        queryClient.setQueryData(["/api/loans"], (currentLoans: any[]) => {
+          if (!currentLoans) return currentLoans;
+          return currentLoans.map((loan: any) =>
+            loan.id === editedLoanId ? { ...loan, ...newLoan } : loan
+          );
+        });
+
         queryClient.invalidateQueries({ queryKey: ["/api/borrowers/autocomplete"], refetchType: 'all' });
         queryClient.invalidateQueries({ queryKey: ["/api/cash-transactions"], refetchType: 'all' });
         queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"], refetchType: 'all' });
@@ -433,8 +446,11 @@ function Loans() {
               savedScrollPositionRef.current = null;
               clearInterval(scrollLock!);
               if (safetyTimeout) clearTimeout(safetyTimeout);
+              scrollLockActiveRef.current = false;
             });
           });
+        } else {
+          scrollLockActiveRef.current = false;
         }
         return;
       }
@@ -1347,6 +1363,7 @@ function Loans() {
 
   useEffect(() => {
     if (isDialogOpen) return;
+    if (scrollLockActiveRef.current) return;
     if (savedScrollPositionRef.current !== null) {
       const targetScroll = savedScrollPositionRef.current;
       savedScrollPositionRef.current = null;
