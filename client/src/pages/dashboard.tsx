@@ -127,9 +127,9 @@ export default function Dashboard() {
     const n = Number(num) || 0;
     const abs = Math.abs(n);
     const sign = n < 0 ? '-' : '';
-    if (abs >= 10000000) return `${sign}${(abs / 10000000).toFixed(2)} कोटी`;
-    if (abs >= 100000) return `${sign}${(abs / 100000).toFixed(2)} लाख`;
-    if (abs >= 1000) return `${sign}${(abs / 1000).toFixed(2)} हजार`;
+    if (abs >= 10000000) return `${sign}${(abs / 10000000).toFixed(1)} कोटी`;
+    if (abs >= 100000) return `${sign}${(abs / 100000).toFixed(1)} लाख`;
+    if (abs >= 1000) return `${sign}${(abs / 1000).toFixed(1)} हजार`;
     return `${sign}${abs}`;
   };
 
