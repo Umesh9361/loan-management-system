@@ -1555,7 +1555,6 @@ export class DatabaseStorage implements IStorage {
   }
   
   async updateCashTransaction(id: string, tenantId: string, transaction: Partial<InsertCashTransaction>): Promise<CashTransaction | undefined> {
-    // Update main transaction
     const [updatedTransaction] = await db
       .update(cashTransactions)
       .set({ 
@@ -1566,7 +1565,6 @@ export class DatabaseStorage implements IStorage {
       .where(and(eq(cashTransactions.id, id), eq(cashTransactions.tenantId, tenantId)))
       .returning();
 
-    // Update linked transaction if exists (real-time sync)
     if (updatedTransaction && updatedTransaction.partyId && updatedTransaction.partyId !== 'cash') {
       await db
         .update(cashTransactions)
@@ -1577,6 +1575,67 @@ export class DatabaseStorage implements IStorage {
           updatedAt: new Date()
         })
         .where(eq(cashTransactions.linkedTransactionId, id));
+    }
+
+    if (updatedTransaction && (transaction.amount || transaction.transactionDate)) {
+      try {
+        const relatedJournals = await db
+          .select()
+          .from(journalEntries)
+          .where(and(
+            eq(journalEntries.tenantId, tenantId),
+            eq(journalEntries.sourceId, id),
+            eq(journalEntries.sourceType, 'cash_transaction')
+          ));
+
+        if (relatedJournals.length > 0) {
+          const newAmount = transaction.amount ? transaction.amount.toString() : updatedTransaction.amount;
+
+          for (const journal of relatedJournals) {
+            const updateFields: any = { updatedAt: new Date() };
+            if (transaction.amount) {
+              updateFields.totalAmount = newAmount;
+            }
+            if (transaction.transactionDate) {
+              updateFields.transactionDate = transaction.transactionDate;
+            }
+            if (transaction.narration) {
+              updateFields.narration = transaction.narration;
+            }
+
+            await db
+              .update(journalEntries)
+              .set(updateFields)
+              .where(eq(journalEntries.id, journal.id));
+
+            if (transaction.amount) {
+              const lines = await db
+                .select()
+                .from(journalEntryLines)
+                .where(eq(journalEntryLines.journalEntryId, journal.id));
+
+              for (const line of lines) {
+                const lineUpdate: any = {};
+                lineUpdate.amount = newAmount;
+                if (line.type === 'debit') {
+                  lineUpdate.debitAmount = newAmount;
+                  lineUpdate.creditAmount = "0";
+                } else {
+                  lineUpdate.creditAmount = newAmount;
+                  lineUpdate.debitAmount = "0";
+                }
+                await db
+                  .update(journalEntryLines)
+                  .set(lineUpdate)
+                  .where(eq(journalEntryLines.id, line.id));
+              }
+            }
+          }
+          console.log(`✅ Journal entries synced for transaction ${id}: ${relatedJournals.length} journal(s) updated`);
+        }
+      } catch (journalError) {
+        console.error(`⚠️ Journal sync warning for transaction ${id}:`, journalError);
+      }
     }
     
     return updatedTransaction || undefined;
