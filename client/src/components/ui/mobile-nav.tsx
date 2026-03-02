@@ -34,21 +34,25 @@ const bottomNavItems = [
     name: "मुख्य",
     href: "/",
     icon: Home,
+    permission: "canViewDashboard",
   },
   {
     name: "कर्ज",
     href: "/loans",
     icon: CreditCard,
+    permission: "canAccessLoanRegistration",
   },
   {
     name: "कर्ज बंद",
     href: "/closure",
     icon: UserCheck,
+    permission: "canAccessLoanClosure",
   },
   {
     name: "कॅशबुक",
     href: "/mobile-cashbook",
     icon: BarChart3,
+    permission: "canAccessMobileCashbook",
   },
 ];
 
@@ -65,6 +69,12 @@ export function MobileNav({ hideBottomNav = false }: MobileNavProps = {}) {
   const { data: companyData } = useQuery<any>({
     queryKey: ["/api/company"],
     staleTime: 60 * 1000,
+  });
+
+  const { data: perms } = useQuery<any>({
+    queryKey: ["/api/user-permissions"],
+    enabled: user?.role === 'user',
+    staleTime: 5 * 60 * 1000,
   });
 
   let bottomNavEnabled: boolean;
@@ -142,7 +152,12 @@ export function MobileNav({ hideBottomNav = false }: MobileNavProps = {}) {
       {!hideBottomNav && bottomNavEnabled && (
         <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-1 py-1.5 z-50 shadow-lg">
         <div className="flex justify-around max-w-md mx-auto">
-          {bottomNavItems.map((item) => {
+          {bottomNavItems.filter((item) => {
+            if (user?.role === 'user' && item.permission && perms && !(perms as any)[item.permission]) {
+              return false;
+            }
+            return true;
+          }).map((item) => {
             const Icon = item.icon;
             const isActive = location === item.href || 
               (item.href === "/mobile-cashbook" && location.startsWith("/mobile-cashbook"));

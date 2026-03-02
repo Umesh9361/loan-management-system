@@ -37,58 +37,67 @@ const navigation = [
     name: "मुख्य पटल",
     href: "/",
     icon: Home,
+    permission: "canViewDashboard",
   },
   {
     name: "कंपनी नोंदणी",
     href: "/company",
     icon: Building,
+    permission: "canAccessCompanyRegistration",
   },
   {
     name: "ग्रुप व्यवस्थापन",
     href: "/groups",
     icon: Users,
+    permission: "canAccessGroupManagement",
   },
   {
     name: "कर्ज नोंदणी",
     href: "/loans",
     icon: CreditCard,
+    permission: "canAccessLoanRegistration",
   },
-
   {
     name: "कर्ज बंद करा",
     href: "/closure",
     icon: CheckCircle,
+    permission: "canAccessLoanClosure",
   },
-
   {
     name: "रोकड व्यवहार",
     href: "/cash-transactions",
     icon: Wallet,
+    permission: "canAccessCashTransactions",
   },
   {
     name: "अकाउंट क्रिएशन",
     href: "/party-management",
     icon: User,
+    permission: "canAccessPartyManagement",
   },
   {
     name: "मोबाईल रोकड वही",
     href: "/mobile-cashbook",
     icon: Wallet,
+    permission: "canAccessMobileCashbook",
   },
   {
     name: "व्याज कॅल्क्युलेटर",
     href: "/calculator",
     icon: Calculator,
+    permission: "canAccessInterestCalculator",
   },
   {
     name: "ताळेबंद",
     href: "/reports/balance-sheet",
     icon: Scale,
+    permission: "canViewBalanceSheet",
   },
   {
     name: "नफा-तोटा पत्रक",
     href: "/reports/profit-loss",
     icon: TrendingUp,
+    permission: "canViewProfitLoss",
   },
 ];
 
@@ -316,6 +325,9 @@ export function Sidebar({ className }: SidebarProps) {
         <div className="space-y-0.5 lg:space-y-0 py-3 lg:py-3">
           {navigation.map((item) => {
             if ((item as any).adminOnly && user?.role !== 'admin' && user?.role !== 'super_admin') {
+              return null;
+            }
+            if (user?.role === 'user' && item.permission && !(perms as any)[item.permission]) {
               return null;
             }
             const Icon = item.icon;
