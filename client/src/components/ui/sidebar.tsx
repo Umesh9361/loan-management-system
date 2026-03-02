@@ -32,7 +32,9 @@ import {
   Cloud,
   ClipboardList,
   AlertTriangle,
-  Scale
+  Scale,
+  ChevronUp,
+  ChevronDown
 } from "lucide-react";
 
 const navigation = [
@@ -158,13 +160,13 @@ const reports = [
     description: "नियम १९ - कर्ज वाटप अहवाल"
   },
   {
-    name: "ताळेबंद (Balance Sheet)",
+    name: "ताळेबंद",
     href: "/reports/balance-sheet",
     icon: Scale,
     description: "मालमत्ता व दायित्वे - आर्थिक वर्षनिहाय"
   },
   {
-    name: "नफा-तोटा पत्रक (P&L)",
+    name: "नफा-तोटा पत्रक",
     href: "/reports/profit-loss",
     icon: TrendingUp,
     description: "उत्पन्न व खर्च - निव्वळ नफा/तोटा"
@@ -292,14 +294,19 @@ export function Sidebar({ className }: SidebarProps) {
 
   return (
     <div className={cn("flex flex-col sidebar-modern h-full", className)}>
-      <div className="header-gradient p-4 border-b">
+      <div className="header-gradient p-3 lg:px-5 lg:py-4 border-b">
         <div className="flex items-center justify-between w-full min-w-0">
-          <div className="flex items-center space-x-3">
-            <img src="/icons/icon-192x192.png" alt="LonoPro" className="h-10 w-10 lg:h-12 lg:w-12 rounded-xl flex-shrink-0" />
+          <div className="flex items-center space-x-2 lg:space-x-3">
+            <img src="/icons/icon-192x192.png" alt="LonoPro" className="h-10 w-10 lg:h-11 lg:w-11 rounded-xl flex-shrink-0 shadow-lg shadow-indigo-900/30" />
             <div>
-              <h1 className="text-sm lg:text-lg font-bold text-white font-noto">
+              <h1 className="text-sm lg:text-base font-bold text-white font-noto tracking-wide">
                 कर्ज व्यवस्थापन
               </h1>
+              {company && (
+                <p className="hidden lg:block text-[11px] text-indigo-200 font-medium truncate max-w-[140px]">
+                  {(company as any)?.name || ''}
+                </p>
+              )}
             </div>
           </div>
           {user && (user.role === 'admin' || user.role === 'superadmin') && (
@@ -311,9 +318,9 @@ export function Sidebar({ className }: SidebarProps) {
       {/* Custom Scrollable Area with Wider Scrollbar */}
       <div 
         ref={scrollRef}
-        className="flex-1 min-h-0 overflow-auto sidebar-scroll px-2 lg:px-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-inset"
+        className="flex-1 min-h-0 overflow-auto sidebar-scroll px-2 lg:px-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-inset"
       >
-        <div className="space-y-1 py-3 lg:py-4">
+        <div className="space-y-0.5 lg:space-y-0 py-3 lg:py-3">
           {navigation.map((item) => {
             const Icon = item.icon;
             const isActive = location === item.href;
@@ -324,23 +331,23 @@ export function Sidebar({ className }: SidebarProps) {
                   variant={isActive ? "default" : "ghost"}
                   size="sm"
                   className={cn(
-                    "w-full justify-start text-sm lg:text-base py-3 lg:py-3.5 h-auto font-medium rounded-lg transition-all duration-200",
+                    "w-full justify-start text-sm py-3 lg:py-2 lg:text-[13px] h-auto font-medium rounded-lg transition-all duration-200",
                     isActive 
-                      ? "bg-gradient-to-r from-indigo-500 to-indigo-600 text-white shadow-md transform scale-105" 
-                      : "hover:bg-indigo-50 hover:text-indigo-700 hover:transform hover:scale-102"
+                      ? "bg-gradient-to-r from-indigo-500 to-indigo-600 text-white shadow-sm lg:shadow-md lg:border-l-3 lg:border-l-indigo-400" 
+                      : "hover:bg-indigo-50/80 hover:text-indigo-700 lg:text-gray-700"
                   )}
                 >
-                  <Icon className="mr-2 lg:mr-3 h-4 w-4 lg:h-4 lg:w-4 flex-shrink-0" />
+                  <Icon className="mr-2 lg:mr-2.5 h-4 w-4 lg:h-[18px] lg:w-[18px] flex-shrink-0" />
                   <span className="truncate font-noto">{item.name}</span>
                 </Button>
               </Link>
             );
           })}
           
-          <Separator className="my-4" />
+          <Separator className="my-3 lg:my-2" />
           
-          <div className="px-2 lg:px-3 py-2">
-            <h3 className="text-sm lg:text-base font-bold text-indigo-600 uppercase tracking-wider bg-indigo-50 rounded-lg px-3 py-2 font-noto">
+          <div className="px-2 lg:px-1.5 py-2 lg:py-1">
+            <h3 className="text-sm lg:text-[11px] font-bold text-indigo-600 uppercase tracking-wider bg-indigo-50 rounded-lg px-3 lg:px-2.5 py-2 lg:py-1.5 font-noto">
               📊 अहवाल
             </h3>
           </div>
@@ -376,7 +383,7 @@ export function Sidebar({ className }: SidebarProps) {
                   <Button
                     variant={isActive ? "secondary" : "ghost"}
                     className={cn(
-                      "w-full justify-start text-sm lg:text-base py-3 lg:py-3.5 h-auto font-medium report-button-fix",
+                      "w-full justify-start text-sm py-3 lg:py-2 lg:text-[13px] h-auto font-medium report-button-fix rounded-lg",
                       isActive && "bg-indigo-50 text-indigo-700 border-r-2 border-indigo-500"
                     )}
                     data-report-button="true"
@@ -387,8 +394,8 @@ export function Sidebar({ className }: SidebarProps) {
                       window.location.href = item.href;
                     }}
                   >
-                    <Icon className="mr-3 h-4 w-4" />
-                    {item.name}
+                    <Icon className="mr-3 lg:mr-2.5 h-4 w-4 lg:h-[18px] lg:w-[18px] flex-shrink-0" />
+                    <span className="truncate font-noto">{item.name}</span>
                   </Button>
                 </Link>
               </div>
@@ -398,10 +405,10 @@ export function Sidebar({ className }: SidebarProps) {
           {/* Admin Navigation Section - For ALL admins including super admins */}
           {((user as any)?.role === 'admin' || (user as any)?.role === 'super_admin') && (
             <>
-              <Separator className="my-4" />
+              <Separator className="my-3 lg:my-2" />
               
-              <div className="px-2 lg:px-3 py-2">
-                <h3 className="text-sm lg:text-base font-bold text-orange-600 uppercase tracking-wider bg-orange-50 rounded-lg px-3 py-2 font-noto">
+              <div className="px-2 lg:px-1.5 py-2 lg:py-1">
+                <h3 className="text-sm lg:text-[11px] font-bold text-orange-600 uppercase tracking-wider bg-orange-50 rounded-lg px-3 lg:px-2.5 py-2 lg:py-1.5 font-noto">
                   🔧 {(user as any)?.role === 'super_admin' ? 'सुपर एडमिन पॅनेल' : 'एडमिन पॅनेल'}
                 </h3>
               </div>
@@ -416,13 +423,13 @@ export function Sidebar({ className }: SidebarProps) {
                       variant={isActive ? "default" : "ghost"}
                       size="sm"
                       className={cn(
-                        "w-full justify-start text-sm lg:text-base py-3 lg:py-3.5 h-auto font-medium rounded-lg transition-all duration-200",
+                        "w-full justify-start text-sm py-3 lg:py-2 lg:text-[13px] h-auto font-medium rounded-lg transition-all duration-200",
                         isActive 
-                          ? "bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-md transform scale-105" 
-                          : "hover:bg-orange-50 hover:text-orange-700 hover:transform hover:scale-102"
+                          ? "bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-sm lg:shadow-md" 
+                          : "hover:bg-orange-50 hover:text-orange-700 lg:text-gray-700"
                       )}
                     >
-                      <Icon className="mr-2 lg:mr-3 h-4 w-4 lg:h-4 lg:w-4 flex-shrink-0" />
+                      <Icon className="mr-2 lg:mr-2.5 h-4 w-4 lg:h-[18px] lg:w-[18px] flex-shrink-0" />
                       <span className="truncate font-noto">{item.name}</span>
                     </Button>
                   </Link>
@@ -434,10 +441,10 @@ export function Sidebar({ className }: SidebarProps) {
           {/* Super Admin Navigation Section - Role-based, not tenant-based */}
           {(user as any)?.role === 'super_admin' && (
             <>
-              <Separator className="my-4" />
+              <Separator className="my-3 lg:my-2" />
               
-              <div className="px-2 lg:px-3 py-2">
-                <h3 className="text-sm lg:text-base font-bold text-red-600 uppercase tracking-wider bg-red-50 rounded-lg px-3 py-2 font-noto">
+              <div className="px-2 lg:px-1.5 py-2 lg:py-1">
+                <h3 className="text-sm lg:text-[11px] font-bold text-red-600 uppercase tracking-wider bg-red-50 rounded-lg px-3 lg:px-2.5 py-2 lg:py-1.5 font-noto">
                   🔐 सुपर एडमिन पॅनेल
                 </h3>
               </div>
@@ -452,13 +459,13 @@ export function Sidebar({ className }: SidebarProps) {
                       variant={isActive ? "default" : "ghost"}
                       size="sm"
                       className={cn(
-                        "w-full justify-start text-sm lg:text-base py-3 lg:py-3.5 h-auto font-medium rounded-lg transition-all duration-200",
+                        "w-full justify-start text-sm py-3 lg:py-2 lg:text-[13px] h-auto font-medium rounded-lg transition-all duration-200",
                         isActive 
-                          ? "bg-gradient-to-r from-red-500 to-red-600 text-white shadow-md transform scale-105" 
-                          : "hover:bg-red-50 hover:text-red-600 hover:transform hover:scale-102"
+                          ? "bg-gradient-to-r from-red-500 to-red-600 text-white shadow-sm lg:shadow-md" 
+                          : "hover:bg-red-50 hover:text-red-600 lg:text-gray-700"
                       )}
                     >
-                      <Icon className="mr-2 lg:mr-3 h-4 w-4 lg:h-4 lg:w-4 flex-shrink-0" />
+                      <Icon className="mr-2 lg:mr-2.5 h-4 w-4 lg:h-[18px] lg:w-[18px] flex-shrink-0" />
                       <span className="truncate font-noto">{item.name}</span>
                     </Button>
                   </Link>
@@ -471,22 +478,24 @@ export function Sidebar({ className }: SidebarProps) {
         </div>
         
         {/* Quick Navigation */}
-        <div className="sticky bottom-0 bg-white border-t mt-4 pt-3 pb-3">
-          <div className="hidden lg:flex justify-center items-center px-2 gap-3">
+        <div className="sticky bottom-0 bg-white/95 backdrop-blur-sm border-t mt-2 py-2">
+          <div className="hidden lg:flex justify-center items-center px-2 gap-2">
             <Button
-              variant="outline"
+              variant="ghost"
               size="sm"
               onClick={() => {
                 if (scrollRef.current) {
                   scrollRef.current.scrollTo({ top: 0, behavior: 'smooth' });
                 }
               }}
-              className="text-sm px-3 py-2 h-8 font-medium hover:bg-indigo-50 hover:text-indigo-700 transition-colors"
+              className="text-[11px] px-3 h-7 font-medium text-gray-500 hover:bg-indigo-50 hover:text-indigo-600 rounded-full transition-colors"
             >
-              ⬆️ वर जा
+              <ChevronUp className="mr-1 h-3 w-3" />
+              वर जा
             </Button>
+            <div className="w-px h-4 bg-gray-200" />
             <Button
-              variant="outline"
+              variant="ghost"
               size="sm"
               onClick={() => {
                 if (scrollRef.current) {
@@ -496,40 +505,46 @@ export function Sidebar({ className }: SidebarProps) {
                   });
                 }
               }}
-              className="text-sm px-3 py-2 h-8 font-medium hover:bg-indigo-50 hover:text-indigo-700 transition-colors"
+              className="text-[11px] px-3 h-7 font-medium text-gray-500 hover:bg-indigo-50 hover:text-indigo-600 rounded-full transition-colors"
             >
-              ⬇️ खाली जा
+              <ChevronDown className="mr-1 h-3 w-3" />
+              खाली जा
             </Button>
           </div>
         </div>
       </div>
 
       {/* Fixed Footer - Always Visible */}
-      <div className="flex-shrink-0 mt-auto border-t p-3 bg-white hidden lg:block">
+      <div className="flex-shrink-0 mt-auto border-t border-gray-100 px-3 py-2.5 bg-gradient-to-t from-gray-50 to-white hidden lg:block">
         <div className="flex items-center justify-between gap-2">
           {(user?.role === 'admin' || user?.role === 'super_admin') ? (
-            <Link href="/profile" className="flex items-center space-x-2 min-w-0 flex-1 hover:bg-indigo-50 rounded-lg p-1 transition-colors cursor-pointer">
-              <div className="h-8 w-8 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0">
-                <UserCheck className="h-4 w-4 text-primary" />
+            <Link href="/profile" className="flex items-center space-x-2.5 min-w-0 flex-1 hover:bg-indigo-50/70 rounded-lg p-1.5 transition-colors cursor-pointer group">
+              <div className="h-9 w-9 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-full flex items-center justify-center flex-shrink-0 shadow-sm">
+                <UserCheck className="h-4 w-4 text-white" />
               </div>
               <div className="min-w-0">
-                <p className="text-sm font-medium text-indigo-600 truncate hover:text-indigo-700">{user?.username}</p>
+                <p className="text-[13px] font-semibold text-gray-800 truncate group-hover:text-indigo-700">{user?.username}</p>
+                <p className="text-[10px] text-indigo-500 font-medium uppercase tracking-wider">
+                  {user?.role === 'super_admin' ? 'Super Admin' : 'Admin'}
+                </p>
               </div>
             </Link>
           ) : (
-            <div className="flex items-center space-x-2 min-w-0 flex-1">
-              <div className="h-8 w-8 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0">
-                <UserCheck className="h-4 w-4 text-primary" />
+            <div className="flex items-center space-x-2.5 min-w-0 flex-1 p-1.5">
+              <div className="h-9 w-9 bg-gradient-to-br from-gray-400 to-gray-500 rounded-full flex items-center justify-center flex-shrink-0 shadow-sm">
+                <UserCheck className="h-4 w-4 text-white" />
               </div>
               <div className="min-w-0">
-                <p className="text-sm font-medium text-gray-700 truncate">{user?.username}</p>
+                <p className="text-[13px] font-semibold text-gray-800 truncate">{user?.username}</p>
+                <p className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">User</p>
               </div>
             </div>
           )}
           <Button 
-            variant="outline" 
+            variant="ghost" 
             size="sm" 
-            className="flex-shrink-0 text-indigo-600 border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700"
+            className="flex-shrink-0 h-8 w-8 p-0 text-gray-400 hover:bg-red-50 hover:text-red-500 rounded-full transition-colors"
+            title="Log Out"
             onClick={async () => {
               try {
                 await handleLogout();
@@ -540,8 +555,7 @@ export function Sidebar({ className }: SidebarProps) {
               }
             }}
           >
-            <LogOut className="mr-1 h-4 w-4" />
-            Log Out
+            <LogOut className="h-4 w-4" />
           </Button>
         </div>
       </div>
