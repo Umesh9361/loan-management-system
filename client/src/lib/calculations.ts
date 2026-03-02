@@ -138,11 +138,11 @@ export class LoanCalculations {
     
     switch (varianceType) {
       case 'positive':
-        description = `अतिरिक्त व्याज: ₹${absVariance.toFixed(2)}`;
+        description = `अतिरिक्त व्याज: ₹${Math.round(absVariance).toLocaleString('en-IN')}`;
         reason = interestType === 'manual' ? 'हस्तचलित वाढ - अतिरिक्त शुल्क' : 'गैर मानक व्याज दर';
         break;
       case 'negative':
-        description = `कमी व्याज: ₹${absVariance.toFixed(2)}`;
+        description = `कमी व्याज: ₹${Math.round(absVariance).toLocaleString('en-IN')}`;
         reason = interestType === 'advance' ? 'आगाऊ व्याज - कमी दर लागू' : 'माफी/सवलत दिली';
         break;
       case 'none':
