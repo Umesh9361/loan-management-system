@@ -32,9 +32,7 @@ import {
   Cloud,
   ClipboardList,
   AlertTriangle,
-  Scale,
-  ChevronUp,
-  ChevronDown
+  Scale
 } from "lucide-react";
 
 const navigation = [
@@ -477,41 +475,6 @@ export function Sidebar({ className }: SidebarProps) {
 
         </div>
         
-        {/* Quick Navigation */}
-        <div className="sticky bottom-0 bg-white/95 backdrop-blur-sm border-t mt-2 py-2">
-          <div className="hidden lg:flex justify-center items-center px-2 gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                if (scrollRef.current) {
-                  scrollRef.current.scrollTo({ top: 0, behavior: 'smooth' });
-                }
-              }}
-              className="text-[11px] px-3 h-7 font-medium text-gray-500 hover:bg-indigo-50 hover:text-indigo-600 rounded-full transition-colors"
-            >
-              <ChevronUp className="mr-1 h-3 w-3" />
-              वर जा
-            </Button>
-            <div className="w-px h-4 bg-gray-200" />
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                if (scrollRef.current) {
-                  scrollRef.current.scrollTo({ 
-                    top: scrollRef.current.scrollHeight, 
-                    behavior: 'smooth' 
-                  });
-                }
-              }}
-              className="text-[11px] px-3 h-7 font-medium text-gray-500 hover:bg-indigo-50 hover:text-indigo-600 rounded-full transition-colors"
-            >
-              <ChevronDown className="mr-1 h-3 w-3" />
-              खाली जा
-            </Button>
-          </div>
-        </div>
       </div>
 
       {/* Fixed Footer - Always Visible */}
