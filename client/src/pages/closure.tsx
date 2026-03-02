@@ -283,6 +283,132 @@ export default function Closure() {
     }
   }, [loanIdFromUrl, activeLoans, form]);
 
+  const calculateInterest = useCallback(() => {
+    if (!selectedLoan) return;
+
+    const formValues = form.getValues();
+    const closureDate = new Date(formValues.closureDate);
+    const { interestType, useCustomRate, customInterestRate: customRate, compoundingFrequency, advancedCalculationMode } = formValues;
+
+    let effectiveRate = useCustomRate && customRate ? 
+      Number(customRate) : Number(selectedLoan.interestRate);
+    
+    if (interestType !== "simple" && selectedLoan.interestRateType === "yearly") {
+      effectiveRate = effectiveRate / 12;
+    }
+
+    try {
+      let result;
+      
+      const loanStartDate = (editableLoanDate && !isNaN(new Date(editableLoanDate).getTime())) 
+        ? editableLoanDate 
+        : selectedLoan.loanDate;
+
+      if (interestType === "simple") {
+        let simpleInterestRate = effectiveRate;
+        if (selectedLoan.interestRateType === "monthly") {
+          simpleInterestRate = effectiveRate * 12;
+        }
+        
+        const timePeriod = LoanCalculationsAdvanced.calculateTimePeriod(
+          new Date(loanStartDate),
+          closureDate
+        );
+        
+        const timeInDays = timePeriod.totalDays;
+        const principalNum = Number(selectedLoan.principalAmount);
+        const interestAmount = LoanCalculations.calculateSimpleInterest(
+          principalNum,
+          simpleInterestRate,
+          timeInDays
+        );
+        
+        const calcModeMap: Record<string, string> = {
+          'month': 'month',
+          'half_month': 'half-month',
+          'week': 'week',
+          'day': 'daily'
+        };
+        const closureCalcResult = LoanCalculationsAdvanced.calculateInterestForClosure(
+          principalNum,
+          effectiveRate,
+          new Date(loanStartDate),
+          closureDate,
+          'simple',
+          (calcModeMap[advancedCalculationMode] || 'half-month') as any
+        );
+        
+        result = {
+          interestAmount: interestAmount,
+          totalPayable: principalNum + interestAmount,
+          durationInDays: timeInDays,
+          durationInMonths: closureCalcResult.durationInMonths,
+          years: timePeriod.years,
+          months: timePeriod.months,  
+          days: timePeriod.days,
+          breakdown: {
+            principalAmount: principalNum,
+            interestRate: simpleInterestRate,
+            calculationType: 'simple' as const,
+            calculationMode: (calcModeMap[advancedCalculationMode] || 'daily') as any,
+            periodUsed: `${timeInDays} दिवस`
+          }
+        };
+      } else {
+        const advancedResult = LoanCalculationsAdvanced.calculateAdvancedCompoundInterest(
+          Number(selectedLoan.principalAmount),
+          effectiveRate,
+          new Date(loanStartDate),
+          closureDate,
+          formValues.compoundingFrequency,
+          formValues.advancedCalculationMode
+        );
+        
+        const timePeriod = LoanCalculationsAdvanced.calculateTimePeriod(
+          new Date(loanStartDate),
+          closureDate
+        );
+
+        const compoundCalcModeMap: Record<string, string> = {
+          'month': 'month',
+          'half_month': 'half-month',
+          'week': 'week',
+          'day': 'daily'
+        };
+        const compoundClosureCalc = LoanCalculationsAdvanced.calculateInterestForClosure(
+          Number(selectedLoan.principalAmount),
+          effectiveRate,
+          new Date(loanStartDate),
+          closureDate,
+          'simple',
+          (compoundCalcModeMap[formValues.advancedCalculationMode] || 'half-month') as any
+        );
+        
+        result = {
+          ...advancedResult,
+          durationInMonths: compoundClosureCalc.durationInMonths,
+          durationInDays: timePeriod.totalDays,
+          years: timePeriod.years,
+          months: timePeriod.months,
+          days: timePeriod.days
+        };
+      }
+
+      setCalculationResult(result);
+      
+      const interestAmount = typeof result === 'number' ? result : result.interestAmount;
+      form.setValue("finalInterestAmount", interestAmount.toString());
+
+    } catch (error) {
+      console.error("Calculation error:", error);
+      toast({
+        title: "गणना त्रुटी",
+        description: "व्याज गणना करताना त्रुटी झाली",
+        variant: "destructive",
+      });
+    }
+  }, [selectedLoan, form, editableLoanDate]);
+
   // QR scan नंतर auto-calculate + auto-scroll to result
   useEffect(() => {
     if (selectedLoan && autoCalculateRef.current) {
@@ -514,139 +640,6 @@ export default function Closure() {
     setCalculationResult(null);
     form.setValue("finalInterestAmount", "");
   };
-
-  const calculateInterest = useCallback(() => {
-    if (!selectedLoan) return;
-
-    // Get form values once to avoid multiple watchers
-    const formValues = form.getValues();
-    const closureDate = new Date(formValues.closureDate);
-    const { interestType, useCustomRate, customInterestRate: customRate, compoundingFrequency, advancedCalculationMode } = formValues;
-
-    // FIXED: Convert yearly rate to monthly for advanced calculations
-    let effectiveRate = useCustomRate && customRate ? 
-      Number(customRate) : Number(selectedLoan.interestRate);
-    
-    // Convert yearly rate to monthly rate if needed (for advanced calculations)
-    if (interestType !== "simple" && selectedLoan.interestRateType === "yearly") {
-      effectiveRate = effectiveRate / 12;
-    }
-
-    try {
-      let result;
-      
-      const loanStartDate = (editableLoanDate && !isNaN(new Date(editableLoanDate).getTime())) 
-        ? editableLoanDate 
-        : selectedLoan.loanDate;
-
-      if (interestType === "simple") {
-        let simpleInterestRate = effectiveRate;
-        if (selectedLoan.interestRateType === "monthly") {
-          simpleInterestRate = effectiveRate * 12;
-        }
-        
-        const timePeriod = LoanCalculationsAdvanced.calculateTimePeriod(
-          new Date(loanStartDate),
-          closureDate
-        );
-        
-        const timeInDays = timePeriod.totalDays;
-        const principalNum = Number(selectedLoan.principalAmount);
-        const interestAmount = LoanCalculations.calculateSimpleInterest(
-          principalNum,
-          simpleInterestRate,
-          timeInDays
-        );
-        
-        const calcModeMap: Record<string, string> = {
-          'month': 'month',
-          'half_month': 'half-month',
-          'week': 'week',
-          'day': 'daily'
-        };
-        const closureCalcResult = LoanCalculationsAdvanced.calculateInterestForClosure(
-          principalNum,
-          effectiveRate,
-          new Date(loanStartDate),
-          closureDate,
-          'simple',
-          (calcModeMap[advancedCalculationMode] || 'half-month') as any
-        );
-        
-        result = {
-          interestAmount: interestAmount,
-          totalPayable: principalNum + interestAmount,
-          durationInDays: timeInDays,
-          durationInMonths: closureCalcResult.durationInMonths,
-          years: timePeriod.years,
-          months: timePeriod.months,  
-          days: timePeriod.days,
-          breakdown: {
-            principalAmount: principalNum,
-            interestRate: simpleInterestRate,
-            calculationType: 'simple' as const,
-            calculationMode: (calcModeMap[advancedCalculationMode] || 'daily') as any,
-            periodUsed: `${timeInDays} दिवस`
-          }
-        };
-      } else {
-        // For compound interest, use advanced calculations
-        
-        const advancedResult = LoanCalculationsAdvanced.calculateAdvancedCompoundInterest(
-          Number(selectedLoan.principalAmount),
-          effectiveRate,
-          new Date(loanStartDate),
-          closureDate,
-          formValues.compoundingFrequency,
-          formValues.advancedCalculationMode
-        );
-        
-        // Get calendar-based time period for display
-        const timePeriod = LoanCalculationsAdvanced.calculateTimePeriod(
-          new Date(loanStartDate),
-          closureDate
-        );
-
-        const compoundCalcModeMap: Record<string, string> = {
-          'month': 'month',
-          'half_month': 'half-month',
-          'week': 'week',
-          'day': 'daily'
-        };
-        const compoundClosureCalc = LoanCalculationsAdvanced.calculateInterestForClosure(
-          Number(selectedLoan.principalAmount),
-          effectiveRate,
-          new Date(loanStartDate),
-          closureDate,
-          'simple',
-          (compoundCalcModeMap[formValues.advancedCalculationMode] || 'half-month') as any
-        );
-        
-        result = {
-          ...advancedResult,
-          durationInMonths: compoundClosureCalc.durationInMonths,
-          durationInDays: timePeriod.totalDays,
-          years: timePeriod.years,
-          months: timePeriod.months,
-          days: timePeriod.days
-        };
-      }
-
-      setCalculationResult(result);
-      
-      // Auto-fill the final interest amount with calculated value
-      const interestAmount = typeof result === 'number' ? result : result.interestAmount;
-      form.setValue("finalInterestAmount", interestAmount.toString());
-
-    } catch (error) {
-      console.error("Calculation error:", error);
-      toast({
-        title: "गणना त्रुटी",
-        description: "व्याज गणना करताना त्रुटी झाली",
-        variant: "destructive",
-      });
-    }
-  }, [selectedLoan, form, editableLoanDate]);
 
   const parseFinalInterest = useCallback((inputValue: string, calculatedInterest: number): number => {
     const trimmedValue = inputValue.trim();

@@ -270,10 +270,10 @@ export default function BalanceSheet() {
 
   return (
     <div className="flex min-h-screen bg-gray-50">
-      <div className="hidden md:block print:hidden">
+      <aside className="hidden lg:block lg:w-72 lg:fixed lg:inset-y-0 lg:h-screen print:hidden">
         <Sidebar />
-      </div>
-      <div className="flex-1 flex flex-col">
+      </aside>
+      <main className="flex-1 w-full lg:pl-72 pb-16 lg:pb-0">
         <div className="md:hidden print:hidden">
           <MobileNav />
         </div>
@@ -604,7 +604,7 @@ export default function BalanceSheet() {
             </div>
           )}
         </div>
-      </div>
+      </main>
     </div>
   );
 }
