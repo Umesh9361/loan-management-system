@@ -32,11 +32,8 @@ export default defineConfig({ \
   } \
 });' > vite.config.prod.ts
 
-RUN npx vite build --config vite.config.prod.ts && npx esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist
-
-EXPOSE 5000
+RUN npx vite build --config vite.config.prod.ts && npx esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist --alias:@shared=./shared
 
 ENV NODE_ENV=production
-ENV PORT=5000
 
 CMD ["sh", "-c", "npm run db:push && npm run start"]
