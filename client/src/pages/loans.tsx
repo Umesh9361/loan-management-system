@@ -2992,7 +2992,7 @@ function Loans() {
                             <Button
                               size="sm"
                               variant="ghost"
-                              className="h-8 w-8 p-0 rounded-md hover:bg-slate-200 text-slate-500 hover:text-slate-700 touch-manipulation min-h-[44px] min-w-[44px]"
+                              className="h-9 w-9 p-0 rounded-md bg-slate-100 hover:bg-indigo-100 text-slate-700 hover:text-indigo-700 border border-slate-200 touch-manipulation min-h-[44px] min-w-[44px]"
                               onTouchStart={(e) => {
                                 const btn = e.currentTarget as any;
                                 btn._touchStartY = e.touches[0].clientY;
