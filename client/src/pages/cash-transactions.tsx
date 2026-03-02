@@ -8,8 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Edit, Trash2, Filter, Download, TrendingUp, TrendingDown, Home, Plus, Minus, ArrowRightLeft } from "lucide-react";
-import { Link, useLocation } from "wouter";
+import { Edit, Trash2, Filter, TrendingUp, TrendingDown, Home, Plus, Minus, ArrowRightLeft } from "lucide-react";
+import { useLocation } from "wouter";
 import { useSafeNavigation } from "@/hooks/use-safe-navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -212,7 +212,6 @@ export default function CashTransactions() {
   };
 
   const transactionsList = Array.isArray(transactions) ? transactions : [];
-  const partiesList = Array.isArray(parties) ? parties : [];
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {

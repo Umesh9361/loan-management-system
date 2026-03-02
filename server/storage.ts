@@ -1112,7 +1112,11 @@ export class DatabaseStorage implements IStorage {
       conditions.push(eq(cashTransactions.partyId, filters.partyId));
     }
     if (filters?.transactionType) {
-      conditions.push(eq(cashTransactions.transactionType, filters.transactionType));
+      if (filters.transactionType === 'transfer') {
+        conditions.push(eq(cashTransactions.category, 'transfer'));
+      } else {
+        conditions.push(eq(cashTransactions.transactionType, filters.transactionType));
+      }
     }
     
     // 🧠 FACEBOOK-STYLE UNIFIED SMART SEARCH - One search box for everything!

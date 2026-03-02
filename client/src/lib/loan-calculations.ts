@@ -216,8 +216,14 @@ export class LoanCalculationsAdvanced {
     // Handle negative days by borrowing from previous month
     if (calendarDays < 0) {
       calendarMonths--;
-      const prevMonth = new Date(endDate.getFullYear(), endDate.getMonth() - 1, 0);
+      const prevMonth = new Date(endDate.getFullYear(), endDate.getMonth(), 0);
       calendarDays += prevMonth.getDate();
+      
+      if (calendarDays < 0) {
+        calendarMonths--;
+        const prevPrevMonth = new Date(endDate.getFullYear(), endDate.getMonth() - 1, 0);
+        calendarDays += prevPrevMonth.getDate();
+      }
     }
 
     // Handle negative months by borrowing from previous year
@@ -226,25 +232,24 @@ export class LoanCalculationsAdvanced {
       calendarMonths += 12;
     }
     
-    // Final display values using calendar calculation
-    let displayYears = calendarYears;
-    let displayMonths = calendarMonths;
-    let displayDays = calendarDays;
+    let displayYears = years;
+    let displayMonths = months;
+    let displayDays = days;
     
     return {
       totalDays,
-      totalMonths: totalCalendarMonths, // Use calendar months for accuracy
-      bankingMonths: bankingTotalMonths, // Banking standard for comparison
-      years: displayYears, // Use calendar for display (user business logic)
-      months: displayMonths, // Use calendar for display (user business logic)
-      days: displayDays, // Use calendar for display (user business logic)
-      isExactMonth: calendarDays === 0, // Use calendar-based for exact month detection
-      calendarYears, // Store calendar-based calculations separately
-      calendarMonths, // Store calendar-based calculations separately
-      calendarDays, // Store calendar-based calculations separately
-      displayYears, // Final display values (calendar-based)
-      displayMonths, // Final display values (calendar-based)  
-      displayDays, // Final display values (calendar-based)
+      totalMonths: totalCalendarMonths,
+      bankingMonths: bankingTotalMonths,
+      years: displayYears,
+      months: displayMonths,
+      days: displayDays,
+      isExactMonth: days === 0,
+      calendarYears,
+      calendarMonths,
+      calendarDays,
+      displayYears,
+      displayMonths,
+      displayDays,
       calendarInfo: {
         isLeapYear: this.isLeapYear(startDate.getFullYear()) || this.isLeapYear(endDate.getFullYear()),
         monthsWithDays: this.getMonthDetails(startDate, endDate)
@@ -302,21 +307,20 @@ export class LoanCalculationsAdvanced {
     switch (calculationMode) {
       case 'month':
         // पूर्ण महिना: 1 दिवस झाला तरी पूर्ण महिन्याची व्याज
-        const fullMonthsOnly = timePeriod.calendarYears * 12 + timePeriod.calendarMonths;
+        const fullMonthsOnly = timePeriod.years * 12 + timePeriod.months;
         
-        if (timePeriod.calendarDays > 0) {
-          calculatedMonths = fullMonthsOnly + 1; // Any extra day counts as full month
+        if (timePeriod.days > 0) {
+          calculatedMonths = fullMonthsOnly + 1;
         } else {
           calculatedMonths = fullMonthsOnly;
         }
         break;
         
       case 'half-month':
-        // Up to 15 days = 0.5 month, 16+ days = 1 month
-        const fullMonthsHalf = timePeriod.calendarYears * 12 + timePeriod.calendarMonths;
-        if (timePeriod.calendarDays >= 1 && timePeriod.calendarDays <= 15) {
+        const fullMonthsHalf = timePeriod.years * 12 + timePeriod.months;
+        if (timePeriod.days >= 1 && timePeriod.days <= 15) {
           calculatedMonths = fullMonthsHalf + 0.5;
-        } else if (timePeriod.calendarDays >= 16) {
+        } else if (timePeriod.days >= 16) {
           calculatedMonths = fullMonthsHalf + 1;
         } else {
           calculatedMonths = fullMonthsHalf;
@@ -324,19 +328,17 @@ export class LoanCalculationsAdvanced {
         break;
         
       case 'week':
-        // Weekly calculation based on user specs:
-        // 0-8 days = 0.25 (1 week), 9-15 days = 0.5 (2 weeks), 16-22 days = 0.75 (3 weeks), 23+ days = 1 month
-        const fullMonthsWeek = timePeriod.calendarYears * 12 + timePeriod.calendarMonths;
+        const fullMonthsWeek = timePeriod.years * 12 + timePeriod.months;
         let weekMonths = 0;
         
-        if (timePeriod.calendarDays >= 1 && timePeriod.calendarDays <= 7) {
-          weekMonths = 0.25; // 1 week = 0.25 month
-        } else if (timePeriod.calendarDays >= 8 && timePeriod.calendarDays <= 15) {
-          weekMonths = 0.5; // 2 weeks = 0.5 month
-        } else if (timePeriod.calendarDays >= 16 && timePeriod.calendarDays <= 22) {
-          weekMonths = 0.75; // 3 weeks = 0.75 month
-        } else if (timePeriod.calendarDays >= 23) {
-          weekMonths = 1; // 4+ weeks = 1 full month
+        if (timePeriod.days >= 1 && timePeriod.days <= 7) {
+          weekMonths = 0.25;
+        } else if (timePeriod.days >= 8 && timePeriod.days <= 15) {
+          weekMonths = 0.5;
+        } else if (timePeriod.days >= 16 && timePeriod.days <= 22) {
+          weekMonths = 0.75;
+        } else if (timePeriod.days >= 23) {
+          weekMonths = 1;
         }
         
         calculatedMonths = fullMonthsWeek + weekMonths;
@@ -392,12 +394,12 @@ export class LoanCalculationsAdvanced {
         interestRate,
         calculationType: interestType,
         calculationMode: calculationMode as any,
-        periodUsed: `${timePeriod.calendarYears} years, ${timePeriod.calendarMonths} months, ${timePeriod.calendarDays} days`,
+        periodUsed: `${timePeriod.years} years, ${timePeriod.months} months, ${timePeriod.days} days`,
         totalDays: timePeriod.totalDays,
         calendarBreakdown: {
-          years: timePeriod.calendarYears,
-          months: timePeriod.calendarMonths,
-          days: timePeriod.calendarDays
+          years: timePeriod.years,
+          months: timePeriod.months,
+          days: timePeriod.days
         }
       }
     };
