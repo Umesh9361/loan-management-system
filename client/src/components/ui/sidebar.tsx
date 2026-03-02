@@ -311,9 +311,11 @@ export function Sidebar({ className }: SidebarProps) {
               )}
             </div>
           </div>
-          {user && (
-            <NotificationBell variant="sidebar" />
-          )}
+          <div className="hidden lg:block">
+            {user && (
+              <NotificationBell variant="sidebar" />
+            )}
+          </div>
         </div>
       </div>
 
