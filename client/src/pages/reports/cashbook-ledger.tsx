@@ -157,13 +157,13 @@ export default function CashbookLedger() {
 
     // Prepare table data
     const tableData = [
-      [`${new Date(dateFrom).toLocaleDateString('en-GB')}`, `उघडत शिल्लक (Opening Balance)`, openingBalance.toFixed(2), '', ''],
+      [`${new Date(dateFrom).toLocaleDateString('en-GB')}`, `उघडत शिल्लक (Opening Balance)`, Math.round(openingBalance).toLocaleString('en-IN'), '', ''],
       ...processedEntries.map(e => [
         e.date,
         e.creditNarration,
-        e.creditAmount ? e.creditAmount.toFixed(2) : '',
+        e.creditAmount ? Math.round(e.creditAmount).toLocaleString('en-IN') : '',
         e.debitNarration,
-        e.debitAmount ? e.debitAmount.toFixed(2) : ''
+        e.debitAmount ? Math.round(e.debitAmount).toLocaleString('en-IN') : ''
       ])
     ];
 
@@ -190,8 +190,8 @@ export default function CashbookLedger() {
         fontStyle: 'bold'
       },
       foot: [
-        ['', 'एकूण जमा:', totalCredit.toFixed(2), 'एकूण नावे:', totalDebit.toFixed(2)],
-        ['', `क्लोजिंग बॅलन्स: ₹${closingBalance.toFixed(2)}`, '', '', '']
+        ['', 'एकूण जमा:', Math.round(totalCredit).toLocaleString('en-IN'), 'एकूण नावे:', Math.round(totalDebit).toLocaleString('en-IN')],
+        ['', `क्लोजिंग बॅलन्स: ₹${Math.round(closingBalance).toLocaleString('en-IN')}`, '', '', '']
       ]
     });
 
@@ -287,7 +287,7 @@ export default function CashbookLedger() {
                       उघडत शिल्लक (Opening Balance)
                     </TableCell>
                     <TableCell className="border-r border-gray-400 text-right font-semibold md:text-base md:py-3">
-                      {openingBalance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                      {openingBalance.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                     </TableCell>
                     <TableCell className="border-r border-gray-400 md:py-3"></TableCell>
                     <TableCell className="text-right md:py-3"></TableCell>
@@ -303,13 +303,13 @@ export default function CashbookLedger() {
                         {entry.creditNarration}
                       </TableCell>
                       <TableCell className="border-r border-gray-400 text-right md:text-base md:py-3">
-                        {entry.creditAmount ? entry.creditAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 }) : ''}
+                        {entry.creditAmount ? entry.creditAmount.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) : ''}
                       </TableCell>
                       <TableCell className="border-r border-gray-400 md:text-base md:py-3">
                         {entry.debitNarration}
                       </TableCell>
                       <TableCell className="text-right md:text-base md:py-3">
-                        {entry.debitAmount ? entry.debitAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 }) : ''}
+                        {entry.debitAmount ? entry.debitAmount.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) : ''}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -321,13 +321,13 @@ export default function CashbookLedger() {
                       एकूण जमा:
                     </TableCell>
                     <TableCell className="border-r border-gray-600 text-right font-bold md:text-base md:py-3">
-                      ₹{totalCredit.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                      ₹{totalCredit.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                     </TableCell>
                     <TableCell className="border-r border-gray-600 font-bold md:text-base md:py-3">
                       एकूण नावे:
                     </TableCell>
                     <TableCell className="text-right font-bold md:text-base md:py-3">
-                      ₹{totalDebit.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                      ₹{totalDebit.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                     </TableCell>
                   </TableRow>
 
@@ -335,7 +335,7 @@ export default function CashbookLedger() {
                   <TableRow className="bg-indigo-50 border-t-2 border-gray-800">
                     <TableCell colSpan={5} className="text-center py-4 md:py-5">
                       <span className="text-lg font-bold">
-                        🔻 क्लोजिंग बॅलन्स: ₹{closingBalance.toLocaleString('en-IN', { minimumFractionDigits: 2 })} 🔻
+                        🔻 क्लोजिंग बॅलन्स: ₹{closingBalance.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })} 🔻
                       </span>
                     </TableCell>
                   </TableRow>
