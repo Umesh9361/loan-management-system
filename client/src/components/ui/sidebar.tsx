@@ -81,12 +81,6 @@ const navigation = [
     icon: Calculator,
   },
   {
-    name: "माझे प्रोफाईल",
-    href: "/profile",
-    icon: Settings,
-    adminOnly: true,
-  },
-  {
     name: "ताळेबंद",
     href: "/reports/balance-sheet",
     icon: Scale,
@@ -121,6 +115,12 @@ const adminNavigation = [
     name: "कार्यवाही नोंद",
     href: "/activity-log",
     icon: ClipboardList,
+    adminOnly: true,
+  },
+  {
+    name: "माझे प्रोफाईल",
+    href: "/profile",
+    icon: Settings,
     adminOnly: true,
   },
 ];
