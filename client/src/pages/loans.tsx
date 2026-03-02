@@ -2576,11 +2576,11 @@ function Loans() {
       </Card>
 
       {/* Search and Filter Section */}
-      <Card className="shadow-sm border border-gray-200">
+      <Card className="shadow-sm border border-indigo-200">
         <CardContent className="space-y-4 pt-4">
           {/* Smart Text Search */}
           <div>
-            <Label htmlFor="smart-search" className="text-gray-700 font-medium text-sm mb-1.5">
+            <Label htmlFor="smart-search" className="text-indigo-700 font-medium text-sm mb-1.5">
               नाव किंवा खाते क्रमांक शोधा
             </Label>
             <div className="flex gap-2">
@@ -2729,7 +2729,7 @@ function Loans() {
       {/* Search Results Card - Show ALL loans OR when any filters are active */}
       {(Array.isArray(loans) && loans.length > 0) && (
         <div ref={searchResultsRef}>
-        <Card>
+        <Card className="border-indigo-200">
           <CardHeader>
             <CardTitle>
               {searchQuery ? 
@@ -2884,10 +2884,10 @@ function Loans() {
               </div>
 
               {/* Desktop Table View - Hidden on Mobile */}
-              <div className="hidden md:block overflow-x-auto bg-white rounded-lg border border-slate-200 shadow-sm" ref={searchResultsRef}>
+              <div className="hidden md:block overflow-x-auto bg-white rounded-lg border border-indigo-200 shadow-sm" ref={searchResultsRef}>
                 <Table>
                   <TableHeader>
-                    <TableRow className="bg-slate-700 border-b border-slate-600">
+                    <TableRow className="bg-indigo-700 border-b border-indigo-600">
                       <TableHead className="py-3 px-3 w-10">
                         <button
                           onClick={() => {
@@ -2896,25 +2896,25 @@ function Loans() {
                             if (allSelected) setSelectedLoanIds(new Set());
                             else setSelectedLoanIds(new Set(allIds));
                           }}
-                          className="p-1 rounded hover:bg-slate-600 transition-colors"
+                          className="p-1 rounded hover:bg-indigo-600 transition-colors"
                           title={`सर्व ${sortedLoans.length} निवडा / रद्द करा`}
                         >
                           {Array.isArray(sortedLoans) && sortedLoans.length > 0 && sortedLoans.every((l: any) => selectedLoanIds.has(l.id))
                             ? <CheckSquare className="h-4 w-4 text-indigo-300" />
-                            : <Square className="h-4 w-4 text-slate-400" />
+                            : <Square className="h-4 w-4 text-indigo-300" />
                           }
                         </button>
                       </TableHead>
-                      <TableHead className="text-xs font-semibold text-slate-200 uppercase tracking-wider py-3 px-4">खाते नं.</TableHead>
-                      <TableHead className="text-xs font-semibold text-slate-200 uppercase tracking-wider py-3 px-4">कर्जदार नाव</TableHead>
-                      <TableHead className="text-xs font-semibold text-slate-200 uppercase tracking-wider py-3 px-4">मोबाइल</TableHead>
-                      <TableHead className="text-xs font-semibold text-slate-200 uppercase tracking-wider py-3 px-4">वस्तु/तारण</TableHead>
-                      <TableHead className="text-xs font-semibold text-slate-200 uppercase tracking-wider py-3 px-4">वजन</TableHead>
-                      <TableHead className="text-xs font-semibold text-slate-200 uppercase tracking-wider py-3 px-4 text-center">व्याज%</TableHead>
-                      <TableHead className="text-xs font-semibold text-slate-200 uppercase tracking-wider py-3 px-4 text-right min-w-[120px]">रक्कम (₹)</TableHead>
-                      <TableHead className="text-xs font-semibold text-slate-200 uppercase tracking-wider py-3 px-4">तारीख</TableHead>
-                      <TableHead className="text-xs font-semibold text-slate-200 uppercase tracking-wider py-3 px-4 text-center">स्थिती</TableHead>
-                      <TableHead className="text-xs font-semibold text-slate-200 uppercase tracking-wider py-3 px-4 text-center">कृती</TableHead>
+                      <TableHead className="text-xs font-semibold text-indigo-100 uppercase tracking-wider py-3 px-4">खाते नं.</TableHead>
+                      <TableHead className="text-xs font-semibold text-indigo-100 uppercase tracking-wider py-3 px-4">कर्जदार नाव</TableHead>
+                      <TableHead className="text-xs font-semibold text-indigo-100 uppercase tracking-wider py-3 px-4">मोबाइल</TableHead>
+                      <TableHead className="text-xs font-semibold text-indigo-100 uppercase tracking-wider py-3 px-4">वस्तु/तारण</TableHead>
+                      <TableHead className="text-xs font-semibold text-indigo-100 uppercase tracking-wider py-3 px-4">वजन</TableHead>
+                      <TableHead className="text-xs font-semibold text-indigo-100 uppercase tracking-wider py-3 px-4 text-center">व्याज%</TableHead>
+                      <TableHead className="text-xs font-semibold text-indigo-100 uppercase tracking-wider py-3 px-4 text-right min-w-[120px]">रक्कम (₹)</TableHead>
+                      <TableHead className="text-xs font-semibold text-indigo-100 uppercase tracking-wider py-3 px-4">तारीख</TableHead>
+                      <TableHead className="text-xs font-semibold text-indigo-100 uppercase tracking-wider py-3 px-4 text-center">स्थिती</TableHead>
+                      <TableHead className="text-xs font-semibold text-indigo-100 uppercase tracking-wider py-3 px-4 text-center">कृती</TableHead>
                     </TableRow>
                   </TableHeader>
                 <TableBody>
@@ -2923,12 +2923,12 @@ function Loans() {
                       key={loan.id} 
                       className={`
                         ${loan.status === 'closed' 
-                          ? 'bg-red-50/60 hover:bg-red-50 border-l-3 border-l-red-400 text-slate-700' 
-                          : index % 2 === 0 ? 'bg-white hover:bg-slate-50 border-l-3 border-l-transparent' : 'bg-slate-50/50 hover:bg-slate-100/70 border-l-3 border-l-transparent'
+                          ? 'bg-red-50/60 hover:bg-red-50 border-l-3 border-l-red-400 text-gray-700' 
+                          : index % 2 === 0 ? 'bg-white hover:bg-indigo-50/50 border-l-3 border-l-transparent' : 'bg-indigo-50/30 hover:bg-indigo-50 border-l-3 border-l-transparent'
                         }
                         ${selectedRowIndex === index 
                           ? 'bg-indigo-50 border-l-3 border-l-indigo-500' 
-                          : 'border-b border-slate-100'
+                          : 'border-b border-indigo-100'
                         }
                         cursor-pointer transition-colors duration-150
                       `}
@@ -2942,32 +2942,32 @@ function Loans() {
                       <TableCell className="w-10 px-3 py-3" onClick={(e) => e.stopPropagation()}>
                         <button
                           onClick={() => toggleLoanSelection(loan.id)}
-                          className="p-1 rounded hover:bg-slate-200 transition-colors"
+                          className="p-1 rounded hover:bg-indigo-100 transition-colors"
                         >
                           {selectedLoanIds.has(loan.id)
                             ? <CheckSquare className="h-4 w-4 text-indigo-600" />
-                            : <Square className="h-4 w-4 text-slate-300" />
+                            : <Square className="h-4 w-4 text-indigo-300" />
                           }
                         </button>
                       </TableCell>
                       <TableCell className="text-sm font-semibold text-indigo-700 py-3 px-4 whitespace-nowrap">
                         {loan.accountNumber || "—"}
                       </TableCell>
-                      <TableCell className="text-sm font-medium text-slate-800 py-3 px-4">{loan.borrowerName}</TableCell>
-                      <TableCell className="text-sm text-slate-600 py-3 px-4 tabular-nums">{loan.borrowerMobile || "—"}</TableCell>
-                      <TableCell className="text-sm text-slate-600 py-3 px-4 max-w-[200px] truncate" title={loan.collateralDetails}>
+                      <TableCell className="text-sm font-medium text-gray-800 py-3 px-4">{loan.borrowerName}</TableCell>
+                      <TableCell className="text-sm text-gray-600 py-3 px-4 tabular-nums">{loan.borrowerMobile || "—"}</TableCell>
+                      <TableCell className="text-sm text-gray-600 py-3 px-4 max-w-[200px] truncate" title={loan.collateralDetails}>
                         {loan.collateralDetails || "—"}
                       </TableCell>
-                      <TableCell className="text-sm text-slate-600 py-3 px-4">
+                      <TableCell className="text-sm text-gray-600 py-3 px-4">
                         {loan.weight || "—"}
                       </TableCell>
-                      <TableCell className="text-sm text-slate-700 py-3 px-4 text-center tabular-nums font-medium">
+                      <TableCell className="text-sm text-gray-700 py-3 px-4 text-center tabular-nums font-medium">
                         {loan.interestRate ? `${loan.interestRate}%` : "—"}
                       </TableCell>
-                      <TableCell className="text-sm font-semibold text-slate-800 py-3 px-4 text-right tabular-nums whitespace-nowrap min-w-[120px]">
+                      <TableCell className="text-sm font-semibold text-gray-800 py-3 px-4 text-right tabular-nums whitespace-nowrap min-w-[120px]">
                         ₹ {LoanCalculations.formatAmount(Number(loan.principalAmount))}
                       </TableCell>
-                      <TableCell className="text-sm text-slate-600 py-3 px-4 whitespace-nowrap tabular-nums">
+                      <TableCell className="text-sm text-gray-600 py-3 px-4 whitespace-nowrap tabular-nums">
                         {DateUtils.isoToIndianDate(loan.loanDate)}
                         {loan.status === 'closed' && loan.closureDate && (
                           <div className="text-xs text-red-600 mt-0.5">
@@ -2992,7 +2992,7 @@ function Loans() {
                             <Button
                               size="sm"
                               variant="ghost"
-                              className="h-9 w-9 p-0 rounded-md bg-slate-100 hover:bg-indigo-100 text-slate-700 hover:text-indigo-700 border border-slate-200 touch-manipulation min-h-[44px] min-w-[44px]"
+                              className="h-9 w-9 p-0 rounded-md bg-indigo-50 hover:bg-indigo-100 text-indigo-700 hover:text-indigo-800 border border-indigo-200 touch-manipulation min-h-[44px] min-w-[44px]"
                               onTouchStart={(e) => {
                                 const btn = e.currentTarget as any;
                                 btn._touchStartY = e.touches[0].clientY;
