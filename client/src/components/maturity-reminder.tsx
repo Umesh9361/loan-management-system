@@ -299,6 +299,8 @@ export function NotificationPanel({ onClose }: { onClose: () => void }) {
   const [touchStartY, setTouchStartY] = useState<number | null>(null);
   const [isDesktop, setIsDesktop] = useState(false);
   const [activeTab, setActiveTab] = useState<'maturity' | 'warnings'>('maturity');
+  const [dragPos, setDragPos] = useState<{ x: number; y: number } | null>(null);
+  const dragRef = useRef<{ startX: number; startY: number; origX: number; origY: number } | null>(null);
 
   const { data } = useQuery<{ success: boolean; reminders: MaturityReminder[]; count: number }>({
     queryKey: ["/api/maturity-reminders"],
@@ -354,6 +356,28 @@ export function NotificationPanel({ onClose }: { onClose: () => void }) {
     setTouchStartY(null);
   };
 
+  const handleDragStart = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    const panel = panelRef.current;
+    if (!panel) return;
+    const rect = panel.getBoundingClientRect();
+    dragRef.current = { startX: e.clientX, startY: e.clientY, origX: rect.left, origY: rect.top };
+
+    const onMove = (ev: MouseEvent) => {
+      if (!dragRef.current) return;
+      const dx = ev.clientX - dragRef.current.startX;
+      const dy = ev.clientY - dragRef.current.startY;
+      setDragPos({ x: dragRef.current.origX + dx, y: dragRef.current.origY + dy });
+    };
+    const onUp = () => {
+      dragRef.current = null;
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  }, []);
+
   const tabBar = (
     <div className="flex border-b border-gray-200 dark:border-gray-700 shrink-0">
       <button
@@ -402,14 +426,20 @@ export function NotificationPanel({ onClose }: { onClose: () => void }) {
   );
 
   const header = (
-    <div className="bg-gradient-to-r from-indigo-500 to-indigo-600 text-white p-3 rounded-t-xl flex items-center justify-between shrink-0">
+    <div
+      onMouseDown={isDesktop ? handleDragStart : undefined}
+      className={cn(
+        "bg-gradient-to-r from-indigo-500 to-indigo-600 text-white p-3 rounded-t-xl flex items-center justify-between shrink-0 select-none",
+        isDesktop && "cursor-move"
+      )}
+    >
       <div className="flex items-center gap-2">
         <div className="bg-white/20 p-1.5 rounded-full">
           <Bell className="h-4 w-4" />
         </div>
         <h2 className="text-base font-bold">सूचना</h2>
       </div>
-      <button onClick={onClose} className="bg-white/20 hover:bg-white/30 rounded-full p-1.5 transition-colors">
+      <button onClick={onClose} className="bg-white/20 hover:bg-white/30 rounded-full p-1.5 transition-colors cursor-pointer">
         <X className="h-4 w-4" />
       </button>
     </div>
@@ -421,7 +451,8 @@ export function NotificationPanel({ onClose }: { onClose: () => void }) {
         <div
           ref={panelRef}
           onClick={(e) => e.stopPropagation()}
-          className="fixed top-16 right-4 lg:right-auto lg:left-[calc(18rem+1rem)] w-[500px] min-h-[60vh] max-h-[90vh] bg-white dark:bg-gray-900 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 flex flex-col animate-in fade-in zoom-in-95 duration-200 z-[101]"
+          className="fixed w-[500px] min-h-[60vh] max-h-[90vh] bg-white dark:bg-gray-900 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 flex flex-col animate-in fade-in zoom-in-95 duration-200 z-[101]"
+          style={dragPos ? { left: dragPos.x, top: dragPos.y, right: 'auto' } : { top: '4rem', left: 'calc(18rem + 1rem)' }}
         >
           {header}
           {tabBar}
