@@ -415,11 +415,11 @@ export function NotificationPanel({ onClose }: { onClose: () => void }) {
 
   if (isDesktop) {
     return (
-      <div className="fixed inset-0 z-[60]" onClick={onClose}>
+      <div className="fixed inset-0 z-[100] bg-black/10" onClick={onClose}>
         <div
           ref={panelRef}
           onClick={(e) => e.stopPropagation()}
-          className="fixed top-16 right-4 lg:right-auto lg:left-[calc(18rem+1rem)] w-[420px] min-h-[50vh] max-h-[85vh] bg-white dark:bg-gray-900 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 flex flex-col animate-in fade-in zoom-in-95 duration-200 z-[61]"
+          className="fixed top-16 right-4 lg:right-auto lg:left-[calc(18rem+1rem)] w-[500px] min-h-[60vh] max-h-[90vh] bg-white dark:bg-gray-900 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 flex flex-col animate-in fade-in zoom-in-95 duration-200 z-[101]"
         >
           {header}
           {tabBar}
