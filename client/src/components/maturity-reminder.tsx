@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect, useRef, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { AlertTriangle, Calendar, Clock, X, Bell, IndianRupee, Check, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -191,8 +192,9 @@ export function NotificationBell({ variant = 'default' }: { variant?: 'default' 
           </span>
         )}
       </button>
-      {panelOpen && (
-        <NotificationPanel onClose={() => setPanelOpen(false)} />
+      {panelOpen && createPortal(
+        <NotificationPanel onClose={() => setPanelOpen(false)} />,
+        document.body
       )}
     </>
   );
