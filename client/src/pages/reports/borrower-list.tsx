@@ -1368,9 +1368,7 @@ export default function BorrowerListReports() {
       <tr style="border-bottom: 2px solid #000; height: 35px;">
         <th style="border-bottom: 1px solid #000; padding: 2px; width: 45px; text-align: center; font-size: 12px; height: 35px; vertical-align: middle; font-weight: bold;">अ.क्र.</th>
         <th style="border-bottom: 1px solid #000; border-left: 1px solid #000; padding: 2px; width: 75px; text-align: center; font-size: 12px; height: 35px; vertical-align: middle; font-weight: bold;">तारीख</th>
-        <th style="border-bottom: 1px solid #000; border-left: 1px solid #000; padding: 2px; width: 70px; font-size: 10px; text-align: center; line-height: 1.2; height: 35px; vertical-align: middle; font-weight: bold;">
-          अंदाजे बाजार मूल्य
-        </th>
+        <th style="border-bottom: 1px solid #000; border-left: 1px solid #000; padding: 2px; width: 70px; font-size: 8px; text-align: center; line-height: 1.2; height: 35px; vertical-align: middle; font-weight: bold;">अं.बा.मूल्य</th>
         <th style="border-bottom: 1px solid #000; border-left: 1px solid #000; padding: 2px; width: 200px; font-size: 12px; height: 35px; vertical-align: middle; font-weight: bold;">नाव</th>
         <th class="mobile-hide" style="border-bottom: 1px solid #000; border-left: 1px solid #000; padding: 2px; width: 70px; text-align: left; font-size: 12px; height: 35px; vertical-align: middle; font-weight: bold;">कोड नं</th>
         <th class="mobile-hide" style="border-bottom: 1px solid #000; border-left: 1px solid #000; padding: 2px; width: auto; min-width: 100px; font-size: 12px; height: 35px; vertical-align: middle; font-weight: bold;">वस्तूचा तपशील</th>
@@ -1384,9 +1382,7 @@ export default function BorrowerListReports() {
         <th style="border-bottom: 1px solid #000; padding: 8px; width: 45px; text-align: center; font-size: 12px; height: 45px; vertical-align: middle; font-weight: bold;">अ.क्र.</th>
         <th style="border-bottom: 1px solid #000; border-left: 1px solid #000; padding: 8px; width: 75px; text-align: center; font-size: 12px; height: 45px; vertical-align: middle; font-weight: bold;">तारीख</th>
         <th style="border-bottom: 1px solid #000; border-left: 1px solid #000; padding: 8px; width: 80px; text-align: center; font-size: 12px; height: 45px; vertical-align: middle; font-weight: bold;">मुदत</th>
-        <th style="border-bottom: 1px solid #000; border-left: 1px solid #000; padding: 8px; width: 120px; font-size: 10px; text-align: center; line-height: 1.2; height: 45px; vertical-align: middle; font-weight: bold;">
-          अंदाजे बाजार मूल्य
-        </th>
+        <th style="border-bottom: 1px solid #000; border-left: 1px solid #000; padding: 8px; width: 120px; font-size: 8px; text-align: center; line-height: 1.2; height: 45px; vertical-align: middle; font-weight: bold;">अं.बा.मूल्य</th>
         <th style="border-bottom: 1px solid #000; border-left: 1px solid #000; padding: 8px; width: 250px; font-size: 12px; height: 45px; vertical-align: middle; font-weight: bold; text-align: left;">नाव</th>
         <th class="mobile-hide" style="border-bottom: 1px solid #000; border-left: 1px solid #000; padding: 8px; width: 90px; text-align: left; font-size: 12px; height: 45px; vertical-align: middle; font-weight: bold;">कोड नं</th>
         <th class="mobile-hide" style="border-bottom: 1px solid #000; border-left: 1px solid #000; padding: 8px; width: auto; font-size: 12px; height: 45px; vertical-align: middle; font-weight: bold; text-align: left;">वस्तूचा तपशील</th>
@@ -1462,7 +1458,7 @@ export default function BorrowerListReports() {
           <th style="border-bottom: 1px solid #000; padding: 2px; width: 45px; text-align: center; font-size: 12px; height: 35px; vertical-align: middle; font-weight: bold;">अ.क्र.</th>
           <th style="border-bottom: 1px solid #000; border-left: 1px solid #000; padding: 2px; width: 75px; text-align: center; font-size: 12px; height: 35px; vertical-align: middle; font-weight: bold;">कर्ज तारीख</th>
           <th style="border-bottom: 1px solid #000; border-left: 1px solid #000; padding: 2px; width: 80px; text-align: center; font-size: 12px; height: 35px; vertical-align: middle; font-weight: bold;">बंद तारीख</th>
-          <th style="border-bottom: 1px solid #000; border-left: 1px solid #000; padding: 2px; width: 70px; font-size: 10px; text-align: center; line-height: 1.2; height: 35px; vertical-align: middle; font-weight: bold;">अंदाजे बाजार मूल्य</th>
+          <th style="border-bottom: 1px solid #000; border-left: 1px solid #000; padding: 2px; width: 70px; font-size: 8px; text-align: center; line-height: 1.2; height: 35px; vertical-align: middle; font-weight: bold;">अं.बा.मूल्य</th>
           <th style="border-bottom: 1px solid #000; border-left: 1px solid #000; padding: 2px; width: 50px; text-align: center; font-size: 12px; height: 35px; vertical-align: middle; font-weight: bold;">चार्जेस</th>
           <th style="border-bottom: 1px solid #000; border-left: 1px solid #000; padding: 2px; width: 200px; font-size: 12px; height: 35px; vertical-align: middle; font-weight: bold;">कर्जदाराचे नाव</th>
           <th class="mobile-hide" style="border-bottom: 1px solid #000; border-left: 1px solid #000; padding: 2px; width: 70px; text-align: left; font-size: 12px; height: 35px; vertical-align: middle; font-weight: bold;">कोड नं</th>
@@ -1524,9 +1520,7 @@ export default function BorrowerListReports() {
         <tr class="maturity-report-header" style="border-bottom: 3px solid #000000; height: 50px; background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); box-shadow: 0 2px 8px rgba(0,0,0,0.15);">
           <th class="maturity-col-serial" style="border-bottom: 2px solid #000000; padding: 10px 4px; width: 45px; text-align: center; font-size: 14px; font-weight: bold; color: #ffffff; vertical-align: middle; text-shadow: 1px 1px 2px rgba(0,0,0,0.3);">अ.क्र.</th>
           <th class="maturity-col-date" style="border-bottom: 2px solid #000000; border-left: 1px solid #ffffff; padding: 10px 4px; width: 75px; text-align: center; font-size: 14px; font-weight: bold; color: #ffffff; vertical-align: middle; text-shadow: 1px 1px 2px rgba(0,0,0,0.3);">तारीख</th>
-          <th class="maturity-col-amount" style="border-bottom: 2px solid #000000; border-left: 1px solid #ffffff; padding: 10px 4px; width: 70px; font-size: 12px; text-align: center; line-height: 1.2; font-weight: bold; color: #ffffff; vertical-align: middle; text-shadow: 1px 1px 2px rgba(0,0,0,0.3);">
-            अंदाजे बाजार मूल्य
-          </th>
+          <th class="maturity-col-amount" style="border-bottom: 2px solid #000000; border-left: 1px solid #ffffff; padding: 10px 4px; width: 70px; font-size: 10px; text-align: center; line-height: 1.2; font-weight: bold; color: #ffffff; vertical-align: middle; text-shadow: 1px 1px 2px rgba(0,0,0,0.3);">अं.बा.मूल्य</th>
           <th class="maturity-col-name" style="border-bottom: 2px solid #000000; border-left: 1px solid #ffffff; padding: 10px 4px; width: 200px; font-size: 14px; font-weight: bold; color: #ffffff; vertical-align: middle; text-shadow: 1px 1px 2px rgba(0,0,0,0.3);">नाव</th>
           <th class="maturity-col-code mobile-hide" style="border-bottom: 2px solid #000000; border-left: 1px solid #ffffff; padding: 10px 4px; width: 70px; text-align: center; font-size: 12px; font-weight: bold; color: #ffffff; vertical-align: middle; text-shadow: 1px 1px 2px rgba(0,0,0,0.3);">कोड नं</th>
           <th class="maturity-col-details mobile-hide" style="border-bottom: 2px solid #000000; border-left: 1px solid #ffffff; padding: 10px 4px; width: auto; font-size: 12px; font-weight: bold; color: #ffffff; vertical-align: middle; text-shadow: 1px 1px 2px rgba(0,0,0,0.3);">वस्तूचा तपशील</th>
@@ -1661,13 +1655,13 @@ export default function BorrowerListReports() {
           <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
           <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
           <style>
-            @page { size: A4 landscape; margin: 0; }
+            @page { size: A4 landscape; margin: 10mm 5mm 8mm 5mm; }
             * { box-sizing: border-box; }
             body { 
               font-family: 'Noto Sans Devanagari', 'Inter', 'Nirmala UI', 'Mangal', 'Segoe UI', 'Arial', sans-serif; 
               font-size: 14px; 
               margin: 0; 
-              padding: 10px; 
+              padding: 2mm 5mm; 
               line-height: 1.4;
               background: #ffffff;
             }
@@ -1713,7 +1707,7 @@ export default function BorrowerListReports() {
               
               body {
                 margin: 0;
-                padding: 5mm;
+                padding: 0;
                 font-size: 16px;
                 font-family: 'Noto Sans Devanagari', 'Inter', sans-serif !important;
               }
@@ -2678,8 +2672,8 @@ export default function BorrowerListReports() {
               
               /* Ensure proper page margins and professional appearance */
               @page {
-                margin: 15mm 10mm 15mm 10mm;
-                size: A4;
+                size: A4 landscape;
+                margin: 10mm 5mm 8mm 5mm;
               }
             }
           </style>
