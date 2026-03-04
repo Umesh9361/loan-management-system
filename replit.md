@@ -42,7 +42,7 @@ GitHub Push Policy: NEVER push the full project. Only push changed/modified file
 - **Localization**: Dual language support (English and Marathi) with default Marathi interface and bilingual search.
 - **Audit Logging**: Comprehensive activity logging for all CRUD operations on key entities with Marathi descriptions, user info, timestamps, and detailed change tracking. Accessible via an admin-only Activity Log page with filtering and clear functionality.
 - **Subscription Management**: Tenant subscription system supporting lifetime and time-limited types. Features automatic write-protection for expired subscriptions, dashboard reminders, full-screen expiry notices, and bidirectional conversion between subscription types managed by Super Admin.
-- **Security**: Verified multi-tenant security, data isolation, and an emergency recovery system. Super Admin access is role-based, enforced by a Guardian system.
+- **Security**: Verified multi-tenant security, data isolation, and an emergency recovery system. Super Admin access is role-based, enforced by a Guardian system. Granular permissions include dedicated canViewLoadingReport permission separate from canViewOverdueReport.
 - **Performance**: Achieved through aggressive caching, instant local calculations, memoized data processing, and reduced API calls.
 - **Search Results Ordering**: Multi-level ascending sort across Loan Date, Group Name, Loan Number, Borrower Name, and Loan Amount for consistent chronological and logical organization.
 - **Business Logic**: Centralized opening balance calculation ensuring "हर next day का opening balance = previous day का closing balance" across multi-period views.
