@@ -3515,6 +3515,10 @@ function Loans() {
                     <p className="text-base font-medium">{selectedLoanDetails.weight || "—"}</p>
                   </div>
                   <div>
+                    <label className="text-sm font-medium text-gray-600">शुद्धता %</label>
+                    <p className="text-base font-medium">{selectedLoanDetails.purity ? String(selectedLoanDetails.purity).replace('.00', '') : "82"}%</p>
+                  </div>
+                  <div>
                     <label className="text-sm font-medium text-gray-600">अंदाजे बाजार मूल्य</label>
                     <p className="text-base font-medium">₹ {selectedLoanDetails.marketValue ? LoanCalculations.formatAmount(Number(selectedLoanDetails.marketValue)) : "—"}</p>
                   </div>
