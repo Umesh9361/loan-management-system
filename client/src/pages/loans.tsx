@@ -660,13 +660,13 @@ function Loans() {
       const market = parseFloat(data.marketValue) || 0;
       if (market > 0 && principal > 0) {
         const ltv = (principal / market) * 100;
-        if (ltv > 80) {
-          const overAmount = principal - Math.round(market * 0.8);
+        if (ltv > 70) {
+          const overAmount = principal - Math.round(market * 0.7);
           const ltvRounded = Math.round(ltv);
           setLtvWarningDialog({
             open: true,
             title: `⚠️ लोडिंग — जास्त रक्कम (LTV ${ltvRounded}%)`,
-            message: `कर्ज रक्कम ₹${Number(principal).toLocaleString('en-IN')} ही बाजार मूल्य ₹${Number(market).toLocaleString('en-IN')} च्या 80% (₹${Math.round(market * 0.8).toLocaleString('en-IN')}) पेक्षा ₹${overAmount.toLocaleString('en-IN')} जास्त आहे.\n\nतरीही सेव्ह करायचे का?`,
+            message: `कर्ज रक्कम ₹${Number(principal).toLocaleString('en-IN')} ही बाजार मूल्य ₹${Number(market).toLocaleString('en-IN')} च्या 70% (₹${Math.round(market * 0.7).toLocaleString('en-IN')}) पेक्षा ₹${overAmount.toLocaleString('en-IN')} जास्त आहे.\n\nतरीही सेव्ह करायचे का?`,
             formData: data,
           });
           return;
