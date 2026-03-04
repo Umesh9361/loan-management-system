@@ -24,6 +24,8 @@ interface LoadingItem {
   marketValue: number;
   standard80Loan: number;
   principalAmount: number;
+  interestToDate: number;
+  totalWithInterest: number;
   ltvPercent: number;
   loadingAmount: number;
   loadingPercent: number;
@@ -216,6 +218,7 @@ export default function LoadingReport() {
       'शुद्धता %': (item as any).purityUsed,
       'शुद्ध वजन': item.fineWeight,
       'बाजार मूल्य': item.marketValue,
+      'व्याजासहित': item.totalWithInterest,
       '80% मानक कर्ज': item.standard80Loan,
       'प्रत्यक्ष कर्ज': item.principalAmount,
       'लोडिंग रक्कम': item.loadingAmount,
@@ -230,7 +233,7 @@ export default function LoadingReport() {
     ws['!cols'] = [
       { wch: 6 }, { wch: 20 }, { wch: 12 }, { wch: 15 }, { wch: 12 },
       { wch: 15 }, { wch: 10 }, { wch: 10 }, { wch: 12 }, { wch: 12 },
-      { wch: 12 }, { wch: 12 }, { wch: 8 }, { wch: 10 }, { wch: 12 }, { wch: 15 },
+      { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 8 }, { wch: 10 }, { wch: 12 }, { wch: 15 },
     ];
     XLSX.utils.book_append_sheet(wb, ws, "Loading Report");
     const reportDate = new Date().toLocaleDateString('en-GB').replace(/\//g, '-');
@@ -285,7 +288,7 @@ export default function LoadingReport() {
       <table>
         <thead><tr>
           <th>क्र.</th><th>कर्जदार नाव</th><th>खाते</th><th>दिनांक</th><th>गट</th>
-          <th>वजन</th><th>शुद्धता</th><th>बाजार मूल्य</th><th>80% मानक</th><th>प्रत्यक्ष कर्ज</th>
+          <th>वजन</th><th>शुद्धता</th><th>बाजार मूल्य</th><th>व्याजासहित</th><th>80% मानक</th><th>प्रत्यक्ष कर्ज</th>
           <th>लोडिंग</th><th>LTV%</th><th>जोखीम</th>
         </tr></thead>
         <tbody>
@@ -299,6 +302,7 @@ export default function LoadingReport() {
               <td>${item.weight}g</td>
               <td style="${(item as any).purityUsed !== 82 ? 'color:#1d4ed8;font-weight:bold' : ''}">${(item as any).purityUsed}%</td>
               <td>${formatCurrency(item.marketValue)}</td>
+              <td style="${item.totalWithInterest > item.marketValue ? 'color:#dc2626;font-weight:bold' : 'color:#16a34a;font-weight:bold'}">${formatCurrency(item.totalWithInterest)}</td>
               <td>${formatCurrency(item.standard80Loan)}</td>
               <td>${formatCurrency(item.principalAmount)}</td>
               <td>${formatCurrency(item.loadingAmount)}</td>
@@ -640,11 +644,15 @@ export default function LoadingReport() {
                                   <div className="font-semibold text-green-700">{formatCurrency(item.marketValue)}</div>
                                 </div>
                                 <div>
+                                  <span className="text-gray-500">व्याजासहित</span>
+                                  <div className={cn("font-semibold", item.totalWithInterest > item.marketValue ? "text-red-600" : "text-green-700")}>{formatCurrency(item.totalWithInterest)}</div>
+                                </div>
+                              </div>
+                              <div className="grid grid-cols-4 gap-2 text-xs mt-1">
+                                <div>
                                   <span className="text-gray-500">80% मानक</span>
                                   <div className="font-semibold text-gray-700">{formatCurrency(item.standard80Loan)}</div>
                                 </div>
-                              </div>
-                              <div className="grid grid-cols-3 gap-2 text-xs mt-1">
                                 <div>
                                   <span className="text-gray-500">प्रत्यक्ष कर्ज</span>
                                   <div className="font-bold text-indigo-700">{formatCurrency(item.principalAmount)}</div>
@@ -669,10 +677,14 @@ export default function LoadingReport() {
                           );
                         })}
                         <div className="p-3 bg-indigo-50 border-t-2 border-indigo-300">
-                          <div className="grid grid-cols-3 gap-2 text-xs">
+                          <div className="grid grid-cols-4 gap-2 text-xs">
                             <div>
                               <span className="text-gray-500">एकूण बाजार मूल्य</span>
                               <div className="font-bold text-indigo-800">{formatCurrency(items.reduce((sum, i) => sum + i.marketValue, 0))}</div>
+                            </div>
+                            <div>
+                              <span className="text-gray-500">एकूण व्याजासहित</span>
+                              <div className="font-bold text-red-700">{formatCurrency(items.reduce((sum, i) => sum + i.totalWithInterest, 0))}</div>
                             </div>
                             <div>
                               <span className="text-gray-500">एकूण कर्ज</span>
@@ -698,6 +710,7 @@ export default function LoadingReport() {
                               <TableHead className="text-white text-[10px] font-bold text-center">वजन</TableHead>
                               <TableHead className="text-white text-[10px] font-bold text-center">शुद्धता</TableHead>
                               <TableHead className="text-white text-[10px] font-bold text-center">बाजार मूल्य</TableHead>
+                              <TableHead className="text-white text-[10px] font-bold text-center">व्याजासहित</TableHead>
                               <TableHead className="text-white text-[10px] font-bold text-center">80% मानक</TableHead>
                               <TableHead className="text-white text-[10px] font-bold text-center">प्रत्यक्ष कर्ज</TableHead>
                               <TableHead className="text-white text-[10px] font-bold text-center">लोडिंग</TableHead>
@@ -726,6 +739,7 @@ export default function LoadingReport() {
                                   <TableCell className="text-center text-xs">{item.weight}g</TableCell>
                                   <TableCell className={cn("text-center text-xs font-semibold", (item as any).purityUsed !== 82 ? "text-blue-700" : "")}>{(item as any).purityUsed}%</TableCell>
                                   <TableCell className="text-center text-xs">{formatCurrency(item.marketValue)}</TableCell>
+                                  <TableCell className={cn("text-center text-xs font-semibold", item.totalWithInterest > item.marketValue ? "text-red-600" : "text-green-700")}>{formatCurrency(item.totalWithInterest)}</TableCell>
                                   <TableCell className="text-center text-xs">{formatCurrency(item.standard80Loan)}</TableCell>
                                   <TableCell className="text-center text-xs font-semibold">{formatCurrency(item.principalAmount)}</TableCell>
                                   <TableCell className="text-center">
@@ -748,6 +762,9 @@ export default function LoadingReport() {
                               <TableCell className="text-center text-xs font-bold text-indigo-800">—</TableCell>
                               <TableCell className="text-center text-xs font-bold text-indigo-800">
                                 {formatCurrency(items.reduce((sum, i) => sum + i.marketValue, 0))}
+                              </TableCell>
+                              <TableCell className="text-center text-xs font-bold text-red-700">
+                                {formatCurrency(items.reduce((sum, i) => sum + i.totalWithInterest, 0))}
                               </TableCell>
                               <TableCell className="text-center text-xs font-bold text-indigo-800">
                                 {formatCurrency(items.reduce((sum, i) => sum + i.standard80Loan, 0))}

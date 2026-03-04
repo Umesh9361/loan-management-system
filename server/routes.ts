@@ -2661,6 +2661,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           collateralDetails: loans.collateralDetails,
           weight: loans.weight,
           marketValue: loans.marketValue,
+          interestRate: loans.interestRate,
+          interestRateType: loans.interestRateType,
         })
         .from(loans)
         .leftJoin(groups, eq(loans.groupId, groups.id))
@@ -2713,6 +2715,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
 
+        const loanRate = parseFloat(loan.interestRate?.toString() || '0');
+        const monthlyRate = loan.interestRateType === 'yearly' ? loanRate / 12 : loanRate;
+        const loanDateObj = new Date(loan.loanDate);
+        const today = new Date();
+        const totalDays = Math.max(0, Math.floor((today.getTime() - loanDateObj.getTime()) / (1000 * 60 * 60 * 24)));
+        const fullMonths = Math.floor(totalDays / 30);
+        const remainingDays = totalDays % 30;
+        const totalMonths = fullMonths + (remainingDays > 0 ? 1 : 0);
+        const interestToDate = Math.round((principal * monthlyRate * totalMonths) / 100);
+        const totalWithInterest = Math.round(principal + interestToDate);
+
         allItems.push({
           loanId: loan.loanId,
           accountNumber: loan.accountNumber,
@@ -2727,6 +2740,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           marketValue: Math.round(calcMarketValue),
           standard80Loan: Math.round(standard80Loan),
           principalAmount: principal,
+          interestToDate,
+          totalWithInterest,
           ltvPercent: Math.round(ltvPercent * 10) / 10,
           loadingAmount: Math.round(loadingAmount),
           loadingPercent: Math.round(loadingPercent * 10) / 10,
