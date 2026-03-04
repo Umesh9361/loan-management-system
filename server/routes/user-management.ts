@@ -35,20 +35,7 @@ const adminOnlyMiddleware = (req: any, res: any, next: any) => {
 // Get all users - Super Admin sees ALL users, Normal Admin sees only their tenant
 router.get("/users", requireAuth, adminOnlyMiddleware, async (req: any, res) => {
   try {
-    console.log('🔍 User Management API: Fetching users for', {
-      userRole: req.user.role,
-      tenantId: req.user.tenantId,
-      isSuperAdmin: req.user.role === 'super_admin'
-    });
-
-    let users;
-    
-    // Both Super Admin and Normal Admin should only see users from their own tenant
-    // Super Admin manages SUPER_ADMIN tenant, Normal Admin manages their respective tenant
-    console.log('👤 Admin: Fetching users for tenant', req.user.tenantId);
-    users = await storage.getUsersForTenant(req.user.tenantId);
-    
-    console.log('✅ Users fetched successfully:', users.length, 'users returned');
+    const users = await storage.getUsersForTenant(req.user.tenantId);
     res.json(users);
   } catch (error) {
     console.error("❌ Error fetching users:", error);

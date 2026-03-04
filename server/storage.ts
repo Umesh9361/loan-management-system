@@ -2683,7 +2683,6 @@ export class DatabaseStorage implements IStorage {
       .select({
         id: users.id,
         username: users.username,
-        password: users.password,
         tenantId: users.tenantId,
         role: users.role,
         isActive: users.isActive,
@@ -2707,7 +2706,7 @@ export class DatabaseStorage implements IStorage {
       .leftJoin(sql`${users} as creator`, sql`${users.createdBy} = creator.id`)
       .where(and(
         eq(users.tenantId, tenantId),
-        or(eq(users.role, 'user'), eq(users.role, 'clerk'))  // Don't include admins in user management
+        or(eq(users.role, 'user'), eq(users.role, 'clerk'))
       ))
       .orderBy(desc(users.createdAt));
 

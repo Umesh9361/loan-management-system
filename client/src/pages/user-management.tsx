@@ -263,7 +263,6 @@ export default function UserManagement() {
         credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
-          'Cache-Control': 'no-cache', // Force fresh data
         }
       });
       
