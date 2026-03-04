@@ -689,6 +689,12 @@ function Loans() {
   });
   const borrowerInputRef = useRef<HTMLInputElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (borrowerAutocompleteSuggestions.length > 0 && borrowerSearchTerm.length >= 2) {
+      setShowBorrowerSuggestions(true);
+    }
+  }, [borrowerAutocompleteSuggestions, borrowerSearchTerm]);
   
   // Group Search State - Cross-Language Support
   const [groupSearchTerm, setGroupSearchTerm] = useState("");
