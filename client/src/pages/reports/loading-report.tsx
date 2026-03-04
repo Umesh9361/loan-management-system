@@ -89,10 +89,28 @@ export default function LoadingReport() {
   const [selectedCustomerName, setSelectedCustomerName] = useState("");
   const [showCustomerSuggestions, setShowCustomerSuggestions] = useState(false);
   const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1);
+  const [goldRateInput, setGoldRateInput] = useState("");
+  const [goldRateManuallyEdited, setGoldRateManuallyEdited] = useState(false);
   const customerInputRef = useRef<HTMLInputElement>(null);
   const customerSuggestionsRef = useRef<HTMLDivElement>(null);
 
   const { data: groups = [] } = useQuery({ queryKey: ['/api/groups'] });
+
+  const { data: goldRateData } = useQuery<any>({
+    queryKey: ['/api/gold-rate'],
+    queryFn: async () => {
+      const res = await fetch('/api/gold-rate', { credentials: 'include' });
+      if (!res.ok) throw new Error('Failed');
+      return res.json();
+    },
+    staleTime: 4 * 60 * 60 * 1000,
+  });
+
+  useEffect(() => {
+    if (goldRateData?.perGram && !goldRateManuallyEdited) {
+      setGoldRateInput(String(goldRateData.perGram));
+    }
+  }, [goldRateData, goldRateManuallyEdited]);
 
   const { data: customerAutocompleteSuggestions = [] } = useQuery<any[]>({
     queryKey: ["/api/borrowers/autocomplete", customerSearchTerm],
@@ -138,11 +156,14 @@ export default function LoadingReport() {
   if (activeTab === "customer" && selectedCustomerName) {
     queryParams.append('customerName', selectedCustomerName);
   }
+  if (goldRateInput) {
+    queryParams.append('goldRate', goldRateInput);
+  }
 
   const shouldFetch = activeTab === "group" || (activeTab === "customer" && !!selectedCustomerName);
 
   const { data: reportData, isLoading } = useQuery<LoadingReportData>({
-    queryKey: ['/api/loading-report', activeTab, groupId, selectedCustomerName],
+    queryKey: ['/api/loading-report', activeTab, groupId, selectedCustomerName, goldRateInput],
     queryFn: async () => {
       const res = await fetch(`/api/loading-report?${queryParams.toString()}`, { credentials: 'include' });
       if (!res.ok) throw new Error('Failed to fetch loading report');
@@ -445,13 +466,42 @@ export default function LoadingReport() {
                     </div>
                   )}
                   
-                  {summary && (
-                    <div className="mt-3 text-xs text-gray-500 flex flex-wrap gap-3">
-                      <span>सोन्याचा दर: ₹{summary.goldRateUsed?.toLocaleString('en-IN')}/ग्रॅम</span>
-                      <span>शुद्धता: 82% | पाटली/बांगडी: 90% | वेडण: 95% | चोख: 99.50%</span>
-                      <span>स्रोत: {summary.goldRateSource}</span>
+                  <div className="mt-3">
+                    <label className="text-sm font-semibold text-orange-700 block mb-1">💰 सोन्याचा दर (₹/ग्रॅम)</label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        step="1"
+                        placeholder="उदा: 7500"
+                        value={goldRateInput}
+                        onChange={(e) => {
+                          setGoldRateInput(e.target.value);
+                          setGoldRateManuallyEdited(true);
+                        }}
+                        className="w-40 px-3 py-1.5 text-sm border-2 border-orange-300 rounded-md focus:border-orange-500 focus:outline-none bg-white"
+                      />
+                      <span className="text-xs text-gray-500">प्रति ग्रॅम</span>
+                      {goldRateData?.success && !goldRateManuallyEdited && (
+                        <span className="text-[10px] text-green-600">✅ IBJA: ₹{goldRateData.perGram?.toLocaleString('en-IN')}/g</span>
+                      )}
+                      {goldRateManuallyEdited && (
+                        <button
+                          onClick={() => {
+                            setGoldRateManuallyEdited(false);
+                            if (goldRateData?.perGram) setGoldRateInput(String(goldRateData.perGram));
+                          }}
+                          className="text-[10px] text-blue-600 underline"
+                        >
+                          IBJA दर वापरा
+                        </button>
+                      )}
                     </div>
-                  )}
+                    {goldRateInput && (
+                      <div className="text-[10px] text-gray-400 mt-0.5">
+                        प्रति तोळा: ₹{(parseFloat(goldRateInput) * 10).toLocaleString('en-IN')} | शुद्धता: 82% | पाटली/बांगडी: 90% | वेडण: 95% | चोख: 99.50%
+                      </div>
+                    )}
+                  </div>
                 </CardContent>
               </Card>
 

@@ -2535,23 +2535,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Loading Report API - Dual-Logic LTV Overloading Analysis
   app.get("/api/loading-report", requireAuth, async (req: any, res: any) => {
     try {
-      const { groupId, customerName } = req.query;
+      const { groupId, customerName, goldRate } = req.query;
       const tenantId = req.session.tenantId!;
 
-      // Auto-fetch gold rate from cache or live
-      let goldRatePerGram = goldRateCache.perGram || 0;
-      if (!goldRatePerGram) {
-        try {
-          const ibjaData = await fetchGoldRateFromIBJA();
-          if (ibjaData && ibjaData.rate995 > 0) {
-            goldRatePerGram = Math.round(ibjaData.rate995 / 10);
-            goldRateCache.rate = ibjaData.rate995;
-            goldRateCache.perGram = goldRatePerGram;
-            goldRateCache.source = 'IBJA (995 शुद्धता)';
-            goldRateCache.timestamp = Date.now();
+      let goldRatePerGram = 0;
+      let goldRateSource = '';
+
+      if (goldRate && parseFloat(goldRate as string) > 0) {
+        goldRatePerGram = parseFloat(goldRate as string);
+        goldRateSource = 'मॅन्युअल दर';
+      } else {
+        goldRatePerGram = goldRateCache.perGram || 0;
+        goldRateSource = goldRateCache.source || '';
+        if (!goldRatePerGram) {
+          try {
+            const ibjaData = await fetchGoldRateFromIBJA();
+            if (ibjaData && ibjaData.rate995 > 0) {
+              goldRatePerGram = Math.round(ibjaData.rate995 / 10);
+              goldRateCache.rate = ibjaData.rate995;
+              goldRateCache.perGram = goldRatePerGram;
+              goldRateCache.source = 'IBJA (995 शुद्धता)';
+              goldRateCache.timestamp = Date.now();
+              goldRateSource = goldRateCache.source;
+            }
+          } catch (e) {
+            console.log('⚠️ Gold rate fetch failed for loading report');
           }
-        } catch (e) {
-          console.log('⚠️ Gold rate fetch failed for loading report');
         }
       }
 
@@ -2723,7 +2732,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           purityPatli: patliPurity,
           purityVedan: vedanPurity,
           purityFine: finePurity,
-          goldRateSource: goldRateCache.source || 'N/A',
+          goldRateSource: goldRateSource || 'N/A',
         },
       });
     } catch (error) {
