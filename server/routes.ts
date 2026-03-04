@@ -5338,20 +5338,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!response.ok) return null;
       const html = await response.text();
 
-      const match995 = html.match(/lblGold995_PM[^>]*>(\d+)/);
-      const match999 = html.match(/lblGold999_PM[^>]*>(\d+)/);
-      const match916 = html.match(/lblGold916_PM[^>]*>(\d+)/);
+      const match995PM = html.match(/lblGold995_PM[^>]*>(\d{4,})/);
+      const match999PM = html.match(/lblGold999_PM[^>]*>(\d{4,})/);
+      const match916PM = html.match(/lblGold916_PM[^>]*>(\d{4,})/);
+      const match995AM = html.match(/lblGold995_AM[^>]*>(\d{4,})/);
+      const match999AM = html.match(/lblGold999_AM[^>]*>(\d{4,})/);
+      const match916AM = html.match(/lblGold916_AM[^>]*>(\d{4,})/);
 
-      let rate995 = match995 ? parseInt(match995[1]) : 0;
-      let rate999 = match999 ? parseInt(match999[1]) : 0;
-      let rate916 = match916 ? parseInt(match916[1]) : 0;
+      let rate995 = match995PM ? parseInt(match995PM[1]) : (match995AM ? parseInt(match995AM[1]) : 0);
+      let rate999 = match999PM ? parseInt(match999PM[1]) : (match999AM ? parseInt(match999AM[1]) : 0);
+      let rate916 = match916PM ? parseInt(match916PM[1]) : (match916AM ? parseInt(match916AM[1]) : 0);
 
-      if (rate999 === 0) {
-        const chartMatch = html.match(/purity999[^[]*\[([^\]]+)\]/);
-        if (chartMatch) {
-          const values = chartMatch[1].split(',').map((v: string) => parseInt(v.trim()));
-          rate999 = values[values.length - 1] || 0;
-        }
+      if (rate995 === 0 && rate999 === 0) {
+        const cmp995 = html.match(/GoldRatesCompare995[^>]*>(\d{4,})/);
+        const cmp999 = html.match(/GoldRatesCompare999[^>]*>(\d{4,})/);
+        if (cmp995) rate995 = parseInt(cmp995[1]) * 10;
+        if (cmp999) rate999 = parseInt(cmp999[1]) * 10;
       }
 
       if (rate995 > 0 || rate999 > 0) {
@@ -5374,12 +5376,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!response.ok) return null;
       const html = await response.text();
 
-      const match24k = html.match(/"24K 999[^"]*per 10g[^"]*"[^}]*"price"\s*:\s*"?(\d+)"?/);
-      const match22k = html.match(/"22K 916[^"]*per 10g[^"]*"[^}]*"price"\s*:\s*"?(\d+)"?/);
+      let rate999 = 0;
+      let rate916 = 0;
 
-      if (match24k) {
-        const rate999 = parseInt(match24k[1]);
-        const rate916 = match22k ? parseInt(match22k[1]) : 0;
+      const gl999 = html.match(/GL999[^}]*?&quot;a&quot;:\[0,(\d{4,})\]/);
+      const gl916 = html.match(/GL916[^}]*?&quot;a&quot;:\[0,(\d{4,})\]/);
+      if (gl999) rate999 = parseInt(gl999[1]);
+      if (gl916) rate916 = parseInt(gl916[1]);
+
+      if (rate999 === 0) {
+        const goldPer10g = html.match(/goldPer10g[^:]*?:\s*\[0,(\d{4,})\]/);
+        if (goldPer10g) rate999 = parseInt(goldPer10g[1]);
+      }
+
+      if (rate999 > 0) {
         console.log(`✅ AIB Gold Rate fetched - 999: ₹${rate999}/10g, 916: ₹${rate916}/10g`);
         return { rate999, rate916 };
       }
@@ -5399,8 +5409,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!response.ok) return null;
       const html = await response.text();
 
-      const match24k = html.match(/id="24K-price"[^>]*>[\s\S]*?([\d,]+)/);
-      const match22k = html.match(/id="22K-price"[^>]*>[\s\S]*?([\d,]+)/);
+      const match24k = html.match(/id="24K-price"[^>]*>[^0-9]*([\d,]{4,})/);
+      const match22k = html.match(/id="22K-price"[^>]*>[^0-9]*([\d,]{4,})/);
 
       if (match24k) {
         const rate24k = parseInt(match24k[1].replace(/,/g, ''));
