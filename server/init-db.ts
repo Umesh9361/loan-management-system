@@ -73,6 +73,7 @@ export async function initializeDatabase() {
       // 6c. AUTO-MIGRATION: Data entry mode and notification warnings
       try {
         await db.execute(sql`ALTER TABLE companies ADD COLUMN IF NOT EXISTS data_entry_mode BOOLEAN NOT NULL DEFAULT false`);
+        await db.execute(sql`ALTER TABLE companies ADD COLUMN IF NOT EXISTS ltv_warning_enabled BOOLEAN NOT NULL DEFAULT true`);
         await db.execute(sql`CREATE TABLE IF NOT EXISTS notification_warnings (
           id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
           tenant_id VARCHAR(20) NOT NULL,
