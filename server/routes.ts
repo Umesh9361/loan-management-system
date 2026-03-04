@@ -36,7 +36,7 @@ async function invalidateOtherSessions(userId: string, currentSessionId: string)
     return 0;
   }
 }
-import { getNameTranslations, normalizeMarathiVowels } from "./name-translations";
+import { getNameTranslations, normalizeMarathiVowels, transliterateToDevanagari } from "./name-translations";
 import { automaticDuplicatePrevention } from "./middleware/automatic-duplicate-prevention";
 import { apiCache, cacheBuster, invalidateTenantCache, invalidateCache, getCacheStats, cache } from "./middleware/cache";
 import { triggerLoanSync } from "./real-time-sync-engine";
@@ -1140,6 +1140,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const searchVariations = getNameTranslations(searchTerm);
       
+      const transliterated = transliterateToDevanagari(searchTerm);
+      transliterated.forEach(v => {
+        if (!searchVariations.includes(v)) searchVariations.push(v);
+      });
+      
       const normalizedTerm = normalizeMarathiVowels(searchTerm);
       if (normalizedTerm !== searchTerm) {
         const normalizedVariations = getNameTranslations(normalizedTerm);
@@ -1220,7 +1225,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return 0;
       });
       
-      console.log(`🔍 Dual-language autocomplete for "${searchTerm}": ${sortedBorrowers.length} unique matches (merged from ${borrowerRows.length} rows)`);
+      console.log(`🔍 Dual-language autocomplete for "${searchTerm}": ${sortedBorrowers.length} unique matches (merged from ${borrowerRows.length} rows) | variations: [${searchVariations.join(', ')}]`);
       res.json(sortedBorrowers.slice(0, 10));
     } catch (error) {
       console.error("Borrower autocomplete error:", error);
