@@ -31,10 +31,21 @@ interface RegisterEntry {
   isClosed: boolean;
 }
 
+function getFinancialYearDates() {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = today.getMonth();
+  const fyStartYear = month >= 3 ? year : year - 1;
+  const from = `${fyStartYear}-04-01`;
+  const to = `${fyStartYear + 1}-03-31`;
+  return { from, to };
+}
+
 export default function InformationRegister() {
+  const fy = getFinancialYearDates();
   const [dateFilters, setDateFilters] = useState({
-    dateFrom: new Date().toISOString().split('T')[0],
-    dateTo: new Date().toISOString().split('T')[0]
+    dateFrom: fy.from,
+    dateTo: fy.to
   });
   const [pdfLoading, setPdfLoading] = useState(false);
   const [randomIndices, setRandomIndices] = useState<number[] | null>(null);
