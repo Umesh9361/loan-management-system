@@ -144,6 +144,7 @@ function Loans() {
   const [goldRateSource, setGoldRateSource] = useState<string>('');
   const [goldRateStatus, setGoldRateStatus] = useState<'loading' | 'success' | 'failed'>('loading');
   const [marketValueManual, setMarketValueManual] = useState(false);
+  const [editOriginalRate, setEditOriginalRate] = useState<number>(0);
   
   // Borrower autocomplete state
   const [showBorrowerSuggestions, setShowBorrowerSuggestions] = useState(false);
@@ -209,19 +210,24 @@ function Loans() {
   // Auto-calculate market value when weight or purity changes
   useEffect(() => {
     const subscription = form.watch((value, { name }) => {
-      if ((name === 'weight' || name === 'purity') && !marketValueManual && liveGoldRate > 0) {
+      if (name === 'weight' || name === 'purity') {
         const weightStr = (value.weight || '0').replace(/[^\d.]/g, '');
         const weightNum = parseFloat(weightStr) || 0;
         const purityNum = parseFloat(value.purity || '82') || 82;
         if (weightNum > 0) {
           const fineWeight = weightNum * (purityNum / 100);
-          const marketVal = smartRound(fineWeight * liveGoldRate);
-          form.setValue('marketValue', String(marketVal), { shouldValidate: false });
+          if (editOriginalRate > 0) {
+            const marketVal = smartRound(fineWeight * editOriginalRate);
+            form.setValue('marketValue', String(marketVal), { shouldValidate: false });
+          } else if (!marketValueManual && liveGoldRate > 0) {
+            const marketVal = smartRound(fineWeight * liveGoldRate);
+            form.setValue('marketValue', String(marketVal), { shouldValidate: false });
+          }
         }
       }
     });
     return () => subscription.unsubscribe();
-  }, [form, liveGoldRate, marketValueManual]);
+  }, [form, liveGoldRate, marketValueManual, editOriginalRate]);
 
   // Auto-calculate maturity date when loanDate changes (reactive)
   useEffect(() => {
@@ -289,6 +295,15 @@ function Loans() {
     
     setEditingLoan(loan);
     setMarketValueManual(true);
+    const mv = parseFloat(String(loan.marketValue || '0').replace(/[^\d.]/g, '')) || 0;
+    const wt = parseFloat(String(loan.weight || '0').replace(/[^\d.]/g, '')) || 0;
+    const pu = parseFloat(String(loan.purity || '82')) || 82;
+    const fineWt = wt * (pu / 100);
+    if (fineWt > 0 && mv > 0) {
+      setEditOriginalRate(mv / fineWt);
+    } else {
+      setEditOriginalRate(0);
+    }
     setIsDialogOpen(true);
   };
 
@@ -473,6 +488,7 @@ function Loans() {
         setEditingLoan(null);
         setCreatedLoanId(null);
         setMarketValueManual(false);
+        setEditOriginalRate(0);
 
         scrollLockActiveRef.current = true;
         let scrollLock: ReturnType<typeof setInterval> | null = null;
@@ -614,6 +630,7 @@ function Loans() {
         setIsDialogOpen(false);
         setEditingLoan(null);
         setMarketValueManual(false);
+        setEditOriginalRate(0);
       } else {
         const currentGroupId = form.getValues('groupId');
         const currentGroupName = groupSearchTerm;
@@ -1509,6 +1526,7 @@ function Loans() {
           setIsDialogOpen(false);
           setEditingLoan(null);
           setMarketValueManual(false);
+          setEditOriginalRate(0);
         } else if (searchQuery) {
           setSearchQuery('');
           searchInputRef.current?.focus();
@@ -1553,9 +1571,9 @@ function Loans() {
             return;
           }
           setIsDialogOpen(open);
-          // Clear editing state when dialog closes
           if (!open) {
             setEditingLoan(null);
+            setEditOriginalRate(0);
           }
         }}>
           <DialogTrigger asChild>
@@ -2478,16 +2496,30 @@ function Loans() {
                       <FormItem>
                         <FormLabel className="text-base font-medium">
                           बाजार मूल्य
-                          {goldRateStatus === 'success' && !marketValueManual && (
+                          {editOriginalRate > 0 && (
+                            <span className="text-xs text-indigo-600 ml-1">(मूळ दर — ₹{Math.round(editOriginalRate).toLocaleString('en-IN')}/ग्रॅम)</span>
+                          )}
+                          {editOriginalRate === 0 && goldRateStatus === 'success' && !marketValueManual && (
                             <span className="text-xs text-green-600 ml-1">(ऑटो — ₹{liveGoldRate.toLocaleString('en-IN')}/ग्रॅम • {goldRateSource})</span>
                           )}
-                          {goldRateStatus === 'failed' && (
+                          {editOriginalRate === 0 && goldRateStatus === 'failed' && (
                             <span className="text-xs text-red-600 ml-1">(दर उपलब्ध नाही — स्वतः भरा)</span>
                           )}
-                          {goldRateStatus === 'loading' && (
+                          {editOriginalRate === 0 && goldRateStatus === 'loading' && (
                             <span className="text-xs text-gray-500 ml-1">(दर लोड होत आहे...)</span>
                           )}
-                          {marketValueManual && goldRateStatus === 'success' && (
+                          {editOriginalRate > 0 && goldRateStatus === 'success' && (
+                            <button type="button" className="text-xs text-blue-600 ml-1 underline" onClick={() => {
+                              setEditOriginalRate(0);
+                              setMarketValueManual(false);
+                              const w = parseFloat((form.getValues('weight') || '0').replace(/[^\d.]/g, '')) || 0;
+                              const p = parseFloat(form.getValues('purity') || '82') || 82;
+                              if (w > 0 && liveGoldRate > 0) {
+                                form.setValue('marketValue', String(smartRound(w * (p / 100) * liveGoldRate)), { shouldValidate: false });
+                              }
+                            }}>(आजचा दर लावा)</button>
+                          )}
+                          {editOriginalRate === 0 && marketValueManual && goldRateStatus === 'success' && (
                             <button type="button" className="text-xs text-blue-600 ml-1 underline" onClick={() => {
                               setMarketValueManual(false);
                               const w = parseFloat((form.getValues('weight') || '0').replace(/[^\d.]/g, '')) || 0;
@@ -2508,6 +2540,15 @@ function Loans() {
                             onChange={(e) => {
                               field.onChange(e.target.value);
                               setMarketValueManual(true);
+                              if (editOriginalRate > 0) {
+                                const newMv = parseFloat(e.target.value) || 0;
+                                const w = parseFloat((form.getValues('weight') || '0').replace(/[^\d.]/g, '')) || 0;
+                                const p = parseFloat(form.getValues('purity') || '82') || 82;
+                                const fineWt = w * (p / 100);
+                                if (fineWt > 0 && newMv > 0) {
+                                  setEditOriginalRate(newMv / fineWt);
+                                }
+                              }
                             }}
                           />
                         </FormControl>
