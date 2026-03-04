@@ -1272,7 +1272,7 @@ export default function OverdueReport() {
                               <div className="font-bold text-gray-900 text-sm">{item.borrowerName}</div>
                               <div className="text-xs text-gray-500">{item.accountNumber ? `${item.accountNumber} | ` : ''}{item.groupName} | {formatDate(item.loanDate)}</div>
                               {item.goldItem && (
-                                <div className="text-[10px] text-gray-400 mt-0.5">{item.goldItem}</div>
+                                <div className="text-xs text-gray-400 mt-0.5">{item.goldItem}</div>
                               )}
                             </div>
                             <div className={`text-xs font-bold px-2 py-0.5 rounded-full ${security.bgColor} ${security.color}`}>
@@ -1348,7 +1348,7 @@ export default function OverdueReport() {
                               <td className="border border-gray-300 px-3 py-3">
                                 <div className="text-base font-bold text-gray-800">{item.borrowerName}</div>
                                 {item.goldItem && (
-                                  <div className="text-[10px] text-gray-400">{item.goldItem}</div>
+                                  <div className="text-xs text-gray-400">{item.goldItem}</div>
                                 )}
                               </td>
                               <td className="border border-gray-300 px-3 py-3 text-base text-indigo-600 font-medium">{item.borrowerPhone}</td>
@@ -1416,7 +1416,7 @@ export default function OverdueReport() {
                         <td style={{border: '1px solid black', padding: '3px'}}>
                           <div style={{fontWeight: 'bold'}}>{item.borrowerName}</div>
                           {item.goldItem && (
-                            <div style={{fontSize: '9px', color: '#999'}}>{item.goldItem}</div>
+                            <div style={{fontSize: '11px', color: '#999'}}>{item.goldItem}</div>
                           )}
                         </td>
                         <td style={{border: '1px solid black', padding: '3px'}}>{item.borrowerPhone}</td>
