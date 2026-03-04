@@ -141,6 +141,8 @@ function Loans() {
 
   // Live gold rate for auto market value calculation
   const [liveGoldRate, setLiveGoldRate] = useState<number>(0);
+  const [goldRateSource, setGoldRateSource] = useState<string>('');
+  const [goldRateStatus, setGoldRateStatus] = useState<'loading' | 'success' | 'failed'>('loading');
   const [marketValueManual, setMarketValueManual] = useState(false);
   
   // Borrower autocomplete state
@@ -186,9 +188,15 @@ function Loans() {
       .then(data => {
         if (data.success && data.perGram > 0) {
           setLiveGoldRate(data.perGram);
+          setGoldRateSource(data.source || 'Live');
+          setGoldRateStatus('success');
+        } else {
+          setGoldRateStatus('failed');
         }
       })
-      .catch(() => {});
+      .catch(() => {
+        setGoldRateStatus('failed');
+      });
   }, []);
 
   // Auto-calculate market value when weight or purity changes
@@ -2462,10 +2470,16 @@ function Loans() {
                       <FormItem>
                         <FormLabel className="text-base font-medium">
                           बाजार मूल्य
-                          {liveGoldRate > 0 && !marketValueManual && (
-                            <span className="text-xs text-green-600 ml-1">(ऑटो — ₹{liveGoldRate.toLocaleString('en-IN')}/ग्रॅम)</span>
+                          {goldRateStatus === 'success' && !marketValueManual && (
+                            <span className="text-xs text-green-600 ml-1">(ऑटो — ₹{liveGoldRate.toLocaleString('en-IN')}/ग्रॅम • {goldRateSource})</span>
                           )}
-                          {marketValueManual && (
+                          {goldRateStatus === 'failed' && (
+                            <span className="text-xs text-red-600 ml-1">(दर उपलब्ध नाही — स्वतः भरा)</span>
+                          )}
+                          {goldRateStatus === 'loading' && (
+                            <span className="text-xs text-gray-500 ml-1">(दर लोड होत आहे...)</span>
+                          )}
+                          {marketValueManual && goldRateStatus === 'success' && (
                             <button type="button" className="text-xs text-blue-600 ml-1 underline" onClick={() => {
                               setMarketValueManual(false);
                               const w = parseFloat((form.getValues('weight') || '0').replace(/[^\d.]/g, '')) || 0;
