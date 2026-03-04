@@ -2774,7 +2774,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
             order,
           };
         })
-        .sort((a, b) => a.order - b.order || b.loadingAmount - a.loadingAmount);
+        .sort((a, b) => {
+          if (a.order !== b.order) return a.order - b.order;
+          const dateA = new Date(a.loanDate || 0).getTime();
+          const dateB = new Date(b.loanDate || 0).getTime();
+          if (dateA !== dateB) return dateA - dateB;
+          const groupA = (a.groupName || '').localeCompare(b.groupName || '');
+          if (groupA !== 0) return groupA;
+          const numA = parseInt(a.accountNumber || '0') || 0;
+          const numB = parseInt(b.accountNumber || '0') || 0;
+          if (numA !== numB) return numA - numB;
+          const nameA = (a.borrowerName || '').localeCompare(b.borrowerName || '');
+          if (nameA !== 0) return nameA;
+          return a.principalAmount - b.principalAmount;
+        });
 
       const suspectCount = overloaded.filter(i => i.category === 'suspect').length;
       const highCount = overloaded.filter(i => i.category === 'high').length;
