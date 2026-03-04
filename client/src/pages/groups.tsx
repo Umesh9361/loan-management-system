@@ -39,8 +39,7 @@ export default function Groups() {
       group.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (group.description && group.description.toLowerCase().includes(searchTerm.toLowerCase()))
     )
-    .sort((a: any, b: any) => a.name.localeCompare(b.name)) // Ascending order by name
-    .slice(0, 5) : []; // Show recent 5 groups
+    .sort((a: any, b: any) => a.name.localeCompare(b.name)) : [];
 
   const form = useForm<GroupFormData>({
     resolver: zodResolver(groupSchema),
@@ -64,17 +63,15 @@ export default function Groups() {
       form.reset();
     },
     onError: (error: any) => {
-      console.log('Create group error:', error);
+      const errorMsg = error?.message || "";
+      const isDuplicate = errorMsg.includes("409") || errorMsg.includes("आधीच अस्तित्वात");
       
-      // Handle duplicate name error specifically
-      if (error?.response?.status === 409 && error?.response?.data?.type === "DUPLICATE_NAME_ERROR") {
+      if (isDuplicate) {
         toast({
           title: "डुप्लिकेट नाव त्रुटी",
-          description: error.response.data.message || "हे ग्रुप नाव आधीच अस्तित्वात आहे",
+          description: "हे ग्रुप नाव आधीच अस्तित्वात आहे. कृपया वेगळे नाव निवडा.",
           variant: "destructive",
         });
-        
-        // Set form error for name field
         form.setError("name", {
           type: "duplicate",
           message: "हे ग्रुप नाव आधीच अस्तित्वात आहे. कृपया वेगळे नाव निवडा."
@@ -82,7 +79,7 @@ export default function Groups() {
       } else {
         toast({
           title: "त्रुटी",
-          description: error?.response?.data?.message || "ग्रुप तयार करताना त्रुटी झाली",
+          description: "ग्रुप तयार करताना त्रुटी झाली",
           variant: "destructive",
         });
       }
@@ -105,17 +102,15 @@ export default function Groups() {
       form.reset();
     },
     onError: (error: any) => {
-      console.log('Update group error:', error);
+      const errorMsg = error?.message || "";
+      const isDuplicate = errorMsg.includes("409") || errorMsg.includes("आधीच अस्तित्वात");
       
-      // Handle duplicate name error specifically
-      if (error?.response?.status === 409 && error?.response?.data?.type === "DUPLICATE_NAME_ERROR") {
+      if (isDuplicate) {
         toast({
           title: "डुप्लिकेट नाव त्रुटी",
-          description: error.response.data.message || "हे ग्रुप नाव आधीच अस्तित्वात आहे",
+          description: "हे ग्रुप नाव आधीच अस्तित्वात आहे. कृपया वेगळे नाव निवडा.",
           variant: "destructive",
         });
-        
-        // Set form error for name field
         form.setError("name", {
           type: "duplicate",
           message: "हे ग्रुप नाव आधीच अस्तित्वात आहे. कृपया वेगळे नाव निवडा."
@@ -123,7 +118,7 @@ export default function Groups() {
       } else {
         toast({
           title: "त्रुटी",
-          description: error?.response?.data?.message || "ग्रुप अपडेट करताना त्रुटी झाली",
+          description: "ग्रुप अपडेट करताना त्रुटी झाली",
           variant: "destructive",
         });
       }

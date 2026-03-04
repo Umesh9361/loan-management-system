@@ -666,8 +666,8 @@ function Loans() {
 
   const { data: groups } = useQuery({
     queryKey: ["/api/groups"],
-    staleTime: 5 * 60 * 1000, // 5 minutes cache - groups rarely change
-    gcTime: 15 * 60 * 1000,
+    staleTime: 30 * 1000,
+    refetchOnMount: 'always',
   });
 
   // Smart Autocomplete State - Instant suggestions (no debounce)
