@@ -246,7 +246,7 @@ export default function LoadingReport() {
       <div class="info">
         <span>दिनांक: ${new Date().toLocaleDateString('en-GB')}</span>
         <span>सोन्याचा दर: ₹${summary?.goldRateUsed?.toLocaleString('en-IN')}/ग्रॅम</span>
-        <span>शुद्धता: 82% (चोख: 99.50%)</span>
+        <span>शुद्धता: 82% | वेडण: 95% | चोख: 99.50%</span>
         <span>सरासरी LTV: ${summary?.avgLTV}%</span>
       </div>
       <div class="summary">
@@ -270,7 +270,7 @@ export default function LoadingReport() {
               <td>${item.accountNumber}</td>
               <td>${item.groupName}</td>
               <td>${item.weight}g</td>
-              <td style="font-weight:bold;color:${item.purityUsed > 90 ? '#b45309' : '#374151'}">${item.purityUsed}%</td>
+              <td style="font-weight:bold;color:${item.purityUsed >= 99 ? '#b45309' : item.purityUsed >= 90 ? '#1e40af' : '#374151'}">${item.purityUsed}%</td>
               <td>${formatCurrency(item.marketValue)}</td>
               <td>${formatCurrency(item.standard80Loan)}</td>
               <td>${formatCurrency(item.principalAmount)}</td>
@@ -450,7 +450,7 @@ export default function LoadingReport() {
                   {summary && (
                     <div className="mt-3 text-xs text-gray-500 flex flex-wrap gap-3">
                       <span>सोन्याचा दर: ₹{summary.goldRateUsed?.toLocaleString('en-IN')}/ग्रॅम</span>
-                      <span>शुद्धता: 82% (चोख: 99.50%)</span>
+                      <span>शुद्धता: 82% | वेडण: 95% | चोख: 99.50%</span>
                       <span>स्रोत: {summary.goldRateSource}</span>
                     </div>
                   )}
@@ -575,7 +575,9 @@ export default function LoadingReport() {
                                   <TableCell className="text-center text-xs">{item.weight}g</TableCell>
                                   <TableCell className="text-center">
                                     <span className={cn("text-[10px] px-1.5 py-0.5 rounded font-medium", 
-                                      item.purityUsed > 90 ? "bg-amber-100 text-amber-800" : "bg-gray-100 text-gray-700"
+                                      item.purityUsed >= 99 ? "bg-amber-100 text-amber-800" : 
+                                      item.purityUsed >= 90 ? "bg-blue-100 text-blue-800" : 
+                                      "bg-gray-100 text-gray-700"
                                     )}>
                                       {item.purityUsed}%
                                     </span>
