@@ -74,6 +74,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const { pool } = await import('./db');
     await pool.query("UPDATE loans SET loan_type = 'तारण' WHERE loan_type IS NULL OR loan_type = 'विनातारण'");
     console.log('Migration: loan_type updated to तारण for all existing loans');
+
+    const { rows: purityLoans } = await pool.query(
+      "SELECT id, collateral_details FROM loans WHERE (purity IS NULL OR purity = 82) AND collateral_details IS NOT NULL AND collateral_details != ''"
+    );
+    if (purityLoans.length > 0) {
+      const fineSubstr = ['चोख','फाईन','फाइन','शिक्का','शिका','बिस्कीट','बुलियन','इंगॉट','गिन्नी','कॉइन','वाळा','वाळे','fine gold','pure gold','gold bar','gold coin','gold biscuit','tola bar','bullion','ingot','guinea','सोन्याचे नाणे','सोन्याची बिस्कीट','सोन्याची बार','सोन्याचा बार','गोल्ड गिन्नी','hallmark 999','bis 999','24k','24kt','24 karat','24कॅरेट'];
+      const fineExact = ['fine','pure','coin','biscuit','bar','ginni','नाणे','बार','999','995','9950','99.50','99.9','99.5'];
+      const vedanSubstr = ['वेडण','वेडन','वेडणी'];
+      const vedanExact = ['vedan','vedun','vedani'];
+      const patliSubstr = ['पाटली','पाटल्या','बांगडी','बांगड्या'];
+      const patliExact = ['patli','bangdi','bangadi'];
+      let updated = 0;
+      for (const row of purityLoans) {
+        const lower = row.collateral_details.toLowerCase();
+        const words = lower.split(/[\s,;|()+]+/).filter((w: string) => w.length > 0);
+        let purity = 0;
+        if (fineSubstr.some(kw => lower.includes(kw.toLowerCase())) || fineExact.some(kw => words.some((w: string) => w === kw.toLowerCase()))) purity = 99.50;
+        else if (vedanSubstr.some(kw => lower.includes(kw.toLowerCase())) || vedanExact.some(kw => words.some((w: string) => w === kw.toLowerCase()))) purity = 95;
+        else if (patliSubstr.some(kw => lower.includes(kw.toLowerCase())) || patliExact.some(kw => words.some((w: string) => w === kw.toLowerCase()))) purity = 90;
+        if (purity > 0) {
+          await pool.query('UPDATE loans SET purity = $1 WHERE id = $2', [purity, row.id]);
+          updated++;
+          console.log(`  Migration: purity ${purity}% set for "${row.collateral_details.substring(0, 30)}"`);
+        }
+      }
+      console.log(`Migration: purity auto-updated for ${updated}/${purityLoans.length} loans (keyword detection)`);
+    } else {
+      console.log('Migration: purity — no loans need keyword-based update');
+    }
   } catch (e: any) {
     console.log('Migration note:', e.message);
   }
