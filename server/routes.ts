@@ -2550,61 +2550,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
           goldRatePerGram = goldRateCache.perGram;
           goldRateSource = goldRateCache.source || 'Cache';
         } else {
-          try {
-            const ibjaData = await fetchGoldRateFromIBJA();
-            if (ibjaData && ibjaData.rate995 > 0) {
-              goldRatePerGram = Math.round(ibjaData.rate995 / 10);
-              goldRateCache.rate = ibjaData.rate995;
-              goldRateCache.perGram = goldRatePerGram;
-              goldRateCache.source = 'IBJA (995 शुद्धता)';
-              goldRateCache.timestamp = now;
-              goldRateSource = goldRateCache.source;
-            } else if (ibjaData && ibjaData.rate999 > 0) {
-              const rate995 = Math.round(ibjaData.rate999 * 995 / 999);
-              goldRatePerGram = Math.round(rate995 / 10);
-              goldRateCache.rate = rate995;
-              goldRateCache.perGram = goldRatePerGram;
-              goldRateCache.source = 'IBJA (999→995 गणना)';
-              goldRateCache.timestamp = now;
-              goldRateSource = goldRateCache.source;
-            }
-          } catch (e) {
-            console.log('⚠️ IBJA fetch failed for loading report, trying AIB...');
+          const [ibjaData, aibData, grData] = await Promise.all([
+            fetchGoldRateFromIBJA().catch(() => null),
+            fetchGoldRateFromAIB().catch(() => null),
+            fetchGoldRateFromGoodReturns().catch(() => null),
+          ]);
+
+          const candidates: { rate995per10g: number; source: string }[] = [];
+          if (ibjaData && ibjaData.rate995 > 0) {
+            candidates.push({ rate995per10g: ibjaData.rate995, source: 'IBJA (995)' });
+          } else if (ibjaData && ibjaData.rate999 > 0) {
+            candidates.push({ rate995per10g: Math.round(ibjaData.rate999 * 995 / 999), source: 'IBJA (999→995)' });
+          }
+          if (aibData && aibData.rate999 > 0) {
+            candidates.push({ rate995per10g: Math.round(aibData.rate999 * 995 / 999), source: 'All India Bullion' });
+          }
+          if (grData && grData.rate24k > 0) {
+            const rate999per10g = grData.rate24k * 10;
+            candidates.push({ rate995per10g: Math.round(rate999per10g * 995 / 999), source: 'GoodReturns' });
           }
 
-          if (!goldRatePerGram) {
-            try {
-              const aibData = await fetchGoldRateFromAIB();
-              if (aibData && aibData.rate999 > 0) {
-                const rate995 = Math.round(aibData.rate999 * 995 / 999);
-                goldRatePerGram = Math.round(rate995 / 10);
-                goldRateCache.rate = rate995;
-                goldRateCache.perGram = goldRatePerGram;
-                goldRateCache.source = 'All India Bullion';
-                goldRateCache.timestamp = now;
-                goldRateSource = 'All India Bullion';
-              }
-            } catch (e) {
-              console.log('⚠️ AIB fetch failed, trying GoodReturns...');
+          if (candidates.length > 0) {
+            let best = candidates[0];
+            if (candidates.length >= 2) {
+              const rates = candidates.map(c => c.rate995per10g).sort((a, b) => a - b);
+              const median = rates[Math.floor(rates.length / 2)];
+              const valid = candidates.filter(c => Math.abs(c.rate995per10g - median) / median < 0.05);
+              best = valid.length > 0 ? valid[0] : candidates.reduce((a, b) => Math.abs(a.rate995per10g - median) < Math.abs(b.rate995per10g - median) ? a : b);
             }
-          }
-
-          if (!goldRatePerGram) {
-            try {
-              const grData = await fetchGoldRateFromGoodReturns();
-              if (grData && grData.rate24k > 0) {
-                const rate10g = grData.rate24k * 10;
-                const rate995 = Math.round(rate10g * 995 / 999);
-                goldRatePerGram = Math.round(rate995 / 10);
-                goldRateCache.rate = rate995;
-                goldRateCache.perGram = goldRatePerGram;
-                goldRateCache.source = 'GoodReturns';
-                goldRateCache.timestamp = now;
-                goldRateSource = 'GoodReturns';
-              }
-            } catch (e) {
-              console.log('⚠️ GoodReturns fetch failed for loading report');
-            }
+            goldRatePerGram = Math.round(best.rate995per10g / 10);
+            goldRateSource = best.source;
+            goldRateCache.rate = best.rate995per10g;
+            goldRateCache.perGram = goldRatePerGram;
+            goldRateCache.source = best.source;
+            goldRateCache.timestamp = now;
+            console.log(`✅ Loading Report Gold Rate: ${candidates.map(c => `${c.source}: ₹${c.rate995per10g}`).join(' | ')} → ${best.source}`);
           }
         }
       }
@@ -5439,87 +5419,68 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Layer 1: IBJA (995 purity - most accurate for Indian market)
-      const ibjaData = await fetchGoldRateFromIBJA();
+      const [ibjaData, aibData, grData] = await Promise.all([
+        fetchGoldRateFromIBJA().catch(() => null),
+        fetchGoldRateFromAIB().catch(() => null),
+        fetchGoldRateFromGoodReturns().catch(() => null),
+      ]);
+
+      const candidates: { rate995per10g: number; source: string; rate999per10g: number; rate916per10g: number }[] = [];
+
       if (ibjaData && ibjaData.rate995 > 0) {
-        goldRateCache.rate = ibjaData.rate995;
-        goldRateCache.perGram = Math.round(ibjaData.rate995 / 10);
-        goldRateCache.source = 'IBJA (995 शुद्धता)';
-        goldRateCache.timestamp = now;
-        return res.json({
-          success: true,
-          rate: ibjaData.rate995,
-          perGram: Math.round(ibjaData.rate995 / 10),
-          rate999: ibjaData.rate999,
-          rate916: ibjaData.rate916,
-          source: 'IBJA (995 शुद्धता)',
-          cached: false
-        });
+        candidates.push({ rate995per10g: ibjaData.rate995, source: 'IBJA (995)', rate999per10g: ibjaData.rate999, rate916per10g: ibjaData.rate916 });
+      } else if (ibjaData && ibjaData.rate999 > 0) {
+        candidates.push({ rate995per10g: Math.round(ibjaData.rate999 * 995 / 999), source: 'IBJA (999→995)', rate999per10g: ibjaData.rate999, rate916per10g: ibjaData.rate916 });
       }
 
-      if (ibjaData && ibjaData.rate999 > 0) {
-        const rate995 = Math.round(ibjaData.rate999 * 995 / 999);
-        goldRateCache.rate = rate995;
-        goldRateCache.perGram = Math.round(rate995 / 10);
-        goldRateCache.source = 'IBJA (999→995 गणना)';
-        goldRateCache.timestamp = now;
-        return res.json({
-          success: true,
-          rate: rate995,
-          perGram: Math.round(rate995 / 10),
-          rate999: ibjaData.rate999,
-          rate916: ibjaData.rate916,
-          source: 'IBJA (999→995 गणना)',
-          cached: false
-        });
-      }
-
-      // Layer 2: All India Bullion (backup)
-      const aibData = await fetchGoldRateFromAIB();
       if (aibData && aibData.rate999 > 0) {
-        const rate995 = Math.round(aibData.rate999 * 995 / 999);
-        goldRateCache.rate = rate995;
-        goldRateCache.perGram = Math.round(rate995 / 10);
-        goldRateCache.source = 'All India Bullion';
-        goldRateCache.timestamp = now;
-        return res.json({
-          success: true,
-          rate: rate995,
-          perGram: Math.round(rate995 / 10),
-          rate999: aibData.rate999,
-          rate916: aibData.rate916,
-          source: 'All India Bullion',
-          cached: false
-        });
+        candidates.push({ rate995per10g: Math.round(aibData.rate999 * 995 / 999), source: 'All India Bullion', rate999per10g: aibData.rate999, rate916per10g: aibData.rate916 });
       }
 
-      // Layer 3: GoodReturns (backup 2)
-      const grData = await fetchGoldRateFromGoodReturns();
       if (grData && grData.rate24k > 0) {
-        const rate10g = grData.rate24k * 10;
-        const rate995 = Math.round(rate10g * 995 / 999);
-        goldRateCache.rate = rate995;
-        goldRateCache.perGram = Math.round(rate995 / 10);
-        goldRateCache.source = 'GoodReturns';
-        goldRateCache.timestamp = now;
+        const rate999per10g = grData.rate24k * 10;
+        candidates.push({ rate995per10g: Math.round(rate999per10g * 995 / 999), source: 'GoodReturns', rate999per10g, rate916per10g: grData.rate22k ? grData.rate22k * 10 : 0 });
+      }
+
+      if (candidates.length === 0) {
         return res.json({
-          success: true,
-          rate: rate995,
-          perGram: Math.round(rate995 / 10),
-          rate999: rate10g,
-          rate916: grData.rate22k ? grData.rate22k * 10 : 0,
-          source: 'GoodReturns',
-          cached: false
+          success: false, rate: null, perGram: null, source: 'manual',
+          message: 'ऑनलाईन दर उपलब्ध नाही, कृपया मॅन्युअल दर टाका'
         });
       }
 
-      // Layer 4: No data available - manual entry needed
+      let best = candidates[0];
+      if (candidates.length >= 2) {
+        const rates = candidates.map(c => c.rate995per10g);
+        const median = rates.sort((a, b) => a - b)[Math.floor(rates.length / 2)];
+        const validCandidates = candidates.filter(c => {
+          const diff = Math.abs(c.rate995per10g - median) / median;
+          return diff < 0.05;
+        });
+        if (validCandidates.length > 0) {
+          best = validCandidates[0];
+        } else {
+          best = candidates.reduce((a, b) => Math.abs(a.rate995per10g - median) < Math.abs(b.rate995per10g - median) ? a : b);
+        }
+      }
+
+      const allSources = candidates.map(c => `${c.source}: ₹${c.rate995per10g.toLocaleString('en-IN')}/10g`).join(' | ');
+      console.log(`✅ Gold Rate Cross-Validation: ${allSources} → Best: ${best.source}`);
+
+      goldRateCache.rate = best.rate995per10g;
+      goldRateCache.perGram = Math.round(best.rate995per10g / 10);
+      goldRateCache.source = best.source;
+      goldRateCache.timestamp = now;
+
       return res.json({
-        success: false,
-        rate: null,
-        perGram: null,
-        source: 'manual',
-        message: 'ऑनलाईन दर उपलब्ध नाही, कृपया मॅन्युअल दर टाका'
+        success: true,
+        rate: best.rate995per10g,
+        perGram: Math.round(best.rate995per10g / 10),
+        rate999: best.rate999per10g,
+        rate916: best.rate916per10g,
+        source: best.source,
+        allSources: candidates.map(c => ({ source: c.source, rate995: c.rate995per10g, perGram: Math.round(c.rate995per10g / 10) })),
+        cached: false
       });
 
     } catch (error) {

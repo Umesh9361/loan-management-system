@@ -935,7 +935,12 @@ export default function OverdueReport() {
             />
             {goldRateData?.success ? (
               <div className="text-[10px] text-green-600 mt-0.5">
-                ✅ IBJA: ₹{goldRateData.perGram?.toLocaleString('en-IN')}/g ({goldRateData.source})
+                ✅ ₹{goldRateData.perGram?.toLocaleString('en-IN')}/g ({goldRateData.source})
+                {goldRateData.allSources && goldRateData.allSources.length > 1 && (
+                  <span className="text-gray-500 block">
+                    {goldRateData.allSources.map((s: any) => `${s.source}: ₹${s.perGram?.toLocaleString('en-IN')}`).join(' | ')}
+                  </span>
+                )}
               </div>
             ) : (
               <div className="text-xs text-orange-600 mt-1">प्रति ग्राम दर</div>

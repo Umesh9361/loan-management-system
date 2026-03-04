@@ -488,7 +488,7 @@ export default function LoadingReport() {
                       />
                       <span className="text-xs text-gray-500">प्रति ग्रॅम</span>
                       {goldRateData?.success && !goldRateManuallyEdited && (
-                        <span className="text-[10px] text-green-600">✅ IBJA: ₹{goldRateData.perGram?.toLocaleString('en-IN')}/g</span>
+                        <span className="text-[10px] text-green-600">✅ ₹{goldRateData.perGram?.toLocaleString('en-IN')}/g ({goldRateData.source})</span>
                       )}
                       {goldRateManuallyEdited && (
                         <button
@@ -505,6 +505,11 @@ export default function LoadingReport() {
                     {goldRateInput && (
                       <div className="text-[10px] text-gray-400 mt-0.5">
                         प्रति तोळा: ₹{(parseFloat(goldRateInput) * 10).toLocaleString('en-IN')} | शुद्धता: 82% | पाटली/बांगडी: 90% | वेडण: 95% | चोख: 99.50%
+                      </div>
+                    )}
+                    {goldRateData?.allSources && goldRateData.allSources.length > 1 && (
+                      <div className="text-[10px] text-gray-500 mt-0.5">
+                        📊 {goldRateData.allSources.map((s: any) => `${s.source}: ₹${s.perGram?.toLocaleString('en-IN')}/g`).join(' | ')}
                       </div>
                     )}
                   </div>
