@@ -44,9 +44,9 @@ interface LoadingSummary {
   highCount: number;
   mediumCount: number;
   slightCount: number;
+  safeCount: number;
   totalOverloadAmount: number;
   goldRateUsed: number;
-  purityUsed: number;
   goldRateSource: string;
 }
 
@@ -62,8 +62,12 @@ function getCategoryStyle(category: string): { color: string; bgColor: string; b
     case 'medium':
       return { color: 'text-orange-700', bgColor: 'bg-orange-100', borderColor: 'border-orange-300' };
     case 'slight':
-    default:
       return { color: 'text-yellow-700', bgColor: 'bg-yellow-100', borderColor: 'border-yellow-300' };
+    case 'info':
+      return { color: 'text-blue-700', bgColor: 'bg-blue-50', borderColor: 'border-blue-200' };
+    case 'safe':
+    default:
+      return { color: 'text-green-700', bgColor: 'bg-green-50', borderColor: 'border-green-200' };
   }
 }
 
@@ -258,10 +262,12 @@ export default function LoadingReport() {
         .cat-high { background: #fee2e2; color: #991b1b; font-weight: bold; }
         .cat-medium { background: #fff7ed; color: #9a3412; }
         .cat-slight { background: #fefce8; color: #854d0e; }
+        .cat-info { background: #eff6ff; color: #1e40af; }
+        .cat-safe { background: #f0fdf4; color: #166534; }
         .footer { text-align: center; margin-top: 10px; font-size: 8px; color: #999; }
       </style></head><body>
       <h1>लोडिंग रिपोर्ट (LTV Overloading Analysis)</h1>
-      <h2>सरासरीपेक्षा जास्त कर्ज वाटप विश्लेषण</h2>
+      <h2>कर्ज-ते-मूल्य (LTV) विश्लेषण — सर्व कर्ज</h2>
       <div class="info">
         <span>दिनांक: ${new Date().toLocaleDateString('en-GB')}</span>
         <span>सोन्याचा दर: ₹${summary?.goldRateUsed?.toLocaleString('en-IN')}/ग्रॅम</span>
@@ -270,10 +276,12 @@ export default function LoadingReport() {
       </div>
       <div class="summary">
         <div class="summary-card">एकूण कर्ज: ${summary?.totalLoans}</div>
-        <div class="summary-card high">उच्च जोखीम: ${summary?.highCount}</div>
-        <div class="summary-card medium">मध्यम जोखीम: ${summary?.mediumCount}</div>
-        <div class="summary-card slight">किंचित जास्त: ${summary?.slightCount}</div>
-        <div class="summary-card">एकूण अतिरिक्त: ${formatCurrency(summary?.totalOverloadAmount || 0)}</div>
+        <div class="summary-card">80%+: ${summary?.overloadedCount}</div>
+        <div class="summary-card high">उच्च: ${summary?.highCount}</div>
+        <div class="summary-card medium">मध्यम: ${summary?.mediumCount}</div>
+        <div class="summary-card slight">किंचित: ${summary?.slightCount}</div>
+        <div class="summary-card" style="background:#f0fdf4;border-color:#86efac">सुरक्षित: ${summary?.safeCount}</div>
+        <div class="summary-card">अतिरिक्त: ${formatCurrency(summary?.totalOverloadAmount || 0)}</div>
       </div>
       <table>
         <thead><tr>
@@ -514,10 +522,10 @@ export default function LoadingReport() {
 
               {!isLoading && summary && (
                 <div ref={reportSectionRef}>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 print:hidden">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2 print:hidden">
                     <Card className="bg-white border-l-4 border-l-indigo-500">
                       <CardContent className="p-3">
-                        <p className="text-[10px] text-gray-500">एकूण active कर्ज</p>
+                        <p className="text-[10px] text-gray-500">एकूण कर्ज</p>
                         <p className="text-xl font-bold text-indigo-700">{summary.totalLoans}</p>
                       </CardContent>
                     </Card>
@@ -529,7 +537,7 @@ export default function LoadingReport() {
                     </Card>
                     <Card className="bg-white border-l-4 border-l-amber-500">
                       <CardContent className="p-3">
-                        <p className="text-[10px] text-gray-500">Overloaded कर्ज</p>
+                        <p className="text-[10px] text-gray-500">80% पेक्षा जास्त</p>
                         <p className="text-xl font-bold text-amber-700">{summary.overloadedCount}</p>
                       </CardContent>
                     </Card>
@@ -549,6 +557,12 @@ export default function LoadingReport() {
                       <CardContent className="p-3">
                         <p className="text-[10px] text-yellow-700">किंचित जास्त</p>
                         <p className="text-xl font-bold text-yellow-700">{summary.slightCount}</p>
+                      </CardContent>
+                    </Card>
+                    <Card className="bg-green-50 border-l-4 border-l-green-500">
+                      <CardContent className="p-3">
+                        <p className="text-[10px] text-green-600">सुरक्षित</p>
+                        <p className="text-xl font-bold text-green-700">{summary.safeCount}</p>
                       </CardContent>
                     </Card>
                   </div>

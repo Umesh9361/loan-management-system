@@ -2545,9 +2545,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         goldRatePerGram = parseFloat(goldRate as string);
         goldRateSource = 'मॅन्युअल दर';
       } else {
-        goldRatePerGram = goldRateCache.perGram || 0;
-        goldRateSource = goldRateCache.source || '';
-        if (!goldRatePerGram) {
+        const now = Date.now();
+        if (goldRateCache.perGram && goldRateCache.perGram > 0 && (now - goldRateCache.timestamp) < GOLD_CACHE_DURATION) {
+          goldRatePerGram = goldRateCache.perGram;
+          goldRateSource = goldRateCache.source || 'Cache';
+        } else {
           try {
             const ibjaData = await fetchGoldRateFromIBJA();
             if (ibjaData && ibjaData.rate995 > 0) {
@@ -2555,11 +2557,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
               goldRateCache.rate = ibjaData.rate995;
               goldRateCache.perGram = goldRatePerGram;
               goldRateCache.source = 'IBJA (995 शुद्धता)';
-              goldRateCache.timestamp = Date.now();
+              goldRateCache.timestamp = now;
+              goldRateSource = goldRateCache.source;
+            } else if (ibjaData && ibjaData.rate999 > 0) {
+              const rate995 = Math.round(ibjaData.rate999 * 995 / 999);
+              goldRatePerGram = Math.round(rate995 / 10);
+              goldRateCache.rate = rate995;
+              goldRateCache.perGram = goldRatePerGram;
+              goldRateCache.source = 'IBJA (999→995 गणना)';
+              goldRateCache.timestamp = now;
               goldRateSource = goldRateCache.source;
             }
           } catch (e) {
-            console.log('⚠️ Gold rate fetch failed for loading report');
+            console.log('⚠️ IBJA fetch failed for loading report, trying AIB...');
+          }
+
+          if (!goldRatePerGram) {
+            try {
+              const aibData = await fetchGoldRateFromAIB();
+              if (aibData && aibData.rate999 > 0) {
+                const rate995 = Math.round(aibData.rate999 * 995 / 999);
+                goldRatePerGram = Math.round(rate995 / 10);
+                goldRateCache.rate = rate995;
+                goldRateCache.perGram = goldRatePerGram;
+                goldRateCache.source = 'All India Bullion';
+                goldRateCache.timestamp = now;
+                goldRateSource = 'All India Bullion';
+              }
+            } catch (e) {
+              console.log('⚠️ AIB fetch failed, trying GoodReturns...');
+            }
+          }
+
+          if (!goldRatePerGram) {
+            try {
+              const grData = await fetchGoldRateFromGoodReturns();
+              if (grData && grData.rate24k > 0) {
+                const rate10g = grData.rate24k * 10;
+                const rate995 = Math.round(rate10g * 995 / 999);
+                goldRatePerGram = Math.round(rate995 / 10);
+                goldRateCache.rate = rate995;
+                goldRateCache.perGram = goldRatePerGram;
+                goldRateCache.source = 'GoodReturns';
+                goldRateCache.timestamp = now;
+                goldRateSource = 'GoodReturns';
+              }
+            } catch (e) {
+              console.log('⚠️ GoodReturns fetch failed for loading report');
+            }
           }
         }
       }
@@ -2631,18 +2676,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       for (const loan of activeLoans) {
         const principal = parseFloat(loan.principalAmount?.toString() || '0');
+        if (principal <= 0) continue;
+
         const weightStr = loan.weight?.toString() || '0';
         const weightNum = parseFloat(weightStr.replace(/[^\d.]/g, '')) || 0;
-        let calcMarketValue = parseFloat(loan.marketValue?.toString() || '0');
-
         const purityPercent = detectPurity(loan.collateralDetails || '');
 
-        if ((!calcMarketValue || calcMarketValue <= 0) && weightNum > 0 && goldRatePerGram > 0) {
+        let calcMarketValue = 0;
+        if (weightNum > 0 && goldRatePerGram > 0) {
           const fineWeight = weightNum * (purityPercent / 100);
           calcMarketValue = fineWeight * goldRatePerGram;
         }
 
-        if (calcMarketValue <= 0 || principal <= 0) continue;
+        if (calcMarketValue <= 0) {
+          calcMarketValue = parseFloat(loan.marketValue?.toString() || '0');
+        }
+
+        if (calcMarketValue <= 0) continue;
 
         const fineWeight = weightNum * (purityPercent / 100);
         const ltvPercent = (principal / calcMarketValue) * 100;
@@ -2674,58 +2724,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ? Math.round((allItems.reduce((sum, i) => sum + i.ltvPercent, 0) / allItems.length) * 10) / 10
         : 0;
 
-      const overloaded = allItems
-        .filter(item => item.ltvPercent > standardLTV || item.ltvPercent > avgLTV)
-        .map(item => {
-          const deviationFrom80 = item.ltvPercent - standardLTV;
-          const deviationFromAvg = item.ltvPercent - avgLTV;
-          const above80 = item.ltvPercent > standardLTV;
-          const aboveAvg = item.ltvPercent > avgLTV;
+      const enrichedItems = allItems.map(item => {
+        const deviationFrom80 = item.ltvPercent - standardLTV;
+        const deviationFromAvg = item.ltvPercent - avgLTV;
+        const above80 = item.ltvPercent > standardLTV;
+        const aboveAvg = item.ltvPercent > avgLTV;
 
-          let category: string;
-          let categoryLabel: string;
-          let order: number;
-          if (above80 && aboveAvg) {
-            if (deviationFrom80 > 15) { category = 'high'; categoryLabel = 'उच्च जोखीम'; order = 1; }
-            else if (deviationFrom80 > 5) { category = 'medium'; categoryLabel = 'मध्यम जोखीम'; order = 2; }
-            else { category = 'slight'; categoryLabel = 'किंचित जास्त'; order = 3; }
-          } else if (above80) {
-            if (deviationFrom80 > 10) { category = 'medium'; categoryLabel = 'मध्यम जोखीम'; order = 2; }
-            else { category = 'slight'; categoryLabel = 'किंचित जास्त'; order = 3; }
-          } else {
-            category = 'slight'; categoryLabel = 'सरासरीपेक्षा जास्त'; order = 4;
-          }
+        let category: string;
+        let categoryLabel: string;
+        let order: number;
+        if (above80 && aboveAvg) {
+          if (deviationFrom80 > 15) { category = 'high'; categoryLabel = 'उच्च जोखीम'; order = 1; }
+          else if (deviationFrom80 > 5) { category = 'medium'; categoryLabel = 'मध्यम जोखीम'; order = 2; }
+          else { category = 'slight'; categoryLabel = 'किंचित जास्त'; order = 3; }
+        } else if (above80) {
+          if (deviationFrom80 > 10) { category = 'medium'; categoryLabel = 'मध्यम जोखीम'; order = 2; }
+          else { category = 'slight'; categoryLabel = 'किंचित जास्त'; order = 3; }
+        } else if (aboveAvg) {
+          category = 'info'; categoryLabel = 'सरासरीपेक्षा जास्त'; order = 4;
+        } else {
+          category = 'safe'; categoryLabel = 'सुरक्षित'; order = 5;
+        }
 
-          return {
-            ...item,
-            avgLTV,
-            deviationFrom80: Math.round(deviationFrom80 * 10) / 10,
-            deviationFromAvg: Math.round(deviationFromAvg * 10) / 10,
-            above80,
-            aboveAvg,
-            category,
-            categoryLabel,
-            order,
-          };
-        })
-        .sort((a, b) => a.order - b.order || b.loadingAmount - a.loadingAmount);
+        return {
+          ...item,
+          avgLTV,
+          deviationFrom80: Math.round(deviationFrom80 * 10) / 10,
+          deviationFromAvg: Math.round(deviationFromAvg * 10) / 10,
+          above80,
+          aboveAvg,
+          category,
+          categoryLabel,
+          order,
+        };
+      }).sort((a, b) => a.order - b.order || b.loadingAmount - a.loadingAmount);
 
-      const highCount = overloaded.filter(i => i.category === 'high').length;
-      const mediumCount = overloaded.filter(i => i.category === 'medium').length;
-      const slightCount = overloaded.filter(i => i.category === 'slight').length;
-      const totalOverloadAmount = overloaded.reduce((sum, i) => sum + (i.loadingAmount > 0 ? i.loadingAmount : 0), 0);
+      const highCount = enrichedItems.filter(i => i.category === 'high').length;
+      const mediumCount = enrichedItems.filter(i => i.category === 'medium').length;
+      const slightCount = enrichedItems.filter(i => i.category === 'slight').length;
+      const safeCount = enrichedItems.filter(i => i.category === 'safe').length;
+      const overloadedCount = enrichedItems.filter(i => i.ltvPercent > standardLTV).length;
+      const totalOverloadAmount = enrichedItems.reduce((sum, i) => sum + (i.loadingAmount > 0 ? i.loadingAmount : 0), 0);
 
-      console.log(`📊 LOADING REPORT: ${overloaded.length} overloaded out of ${allItems.length} total | Avg LTV: ${avgLTV}% | Gold: ₹${goldRatePerGram}/g`);
+      console.log(`📊 LOADING REPORT: ${enrichedItems.length} total loans | ${overloadedCount} overloaded | Avg LTV: ${avgLTV}% | Gold: ₹${goldRatePerGram}/g (${goldRateSource})`);
 
       res.json({
-        items: overloaded,
+        items: enrichedItems,
         summary: {
-          totalLoans: allItems.length,
+          totalLoans: enrichedItems.length,
           avgLTV,
-          overloadedCount: overloaded.length,
+          overloadedCount,
           highCount,
           mediumCount,
           slightCount,
+          safeCount,
           totalOverloadAmount: Math.round(totalOverloadAmount),
           goldRateUsed: goldRatePerGram,
           purityDefault: defaultPurity,
