@@ -562,12 +562,14 @@ export default function LoadingReport() {
                         <p className="text-xl font-bold text-yellow-700">{summary.slightCount}</p>
                       </CardContent>
                     </Card>
-                    <Card className="bg-green-50 border-l-4 border-l-green-500">
-                      <CardContent className="p-3">
-                        <p className="text-[10px] text-green-600">सुरक्षित</p>
-                        <p className="text-xl font-bold text-green-700">{summary.safeCount}</p>
-                      </CardContent>
-                    </Card>
+                    {summary.suspectCount > 0 && (
+                      <Card className="bg-purple-50 border-l-4 border-l-purple-500">
+                        <CardContent className="p-3">
+                          <p className="text-[10px] text-purple-600">इनपुट तपासा</p>
+                          <p className="text-xl font-bold text-purple-700">{summary.suspectCount}</p>
+                        </CardContent>
+                      </Card>
+                    )}
                   </div>
 
                   {summary.totalOverloadAmount > 0 && (
@@ -604,8 +606,81 @@ export default function LoadingReport() {
                       </CardContent>
                     </Card>
                   ) : (
-                    <Card className="bg-white shadow-lg mt-2">
-                      <CardContent className="p-0 overflow-x-auto">
+                    <Card className="bg-white shadow-lg mt-2 overflow-hidden">
+                      <div className="sm:hidden divide-y divide-gray-100">
+                        {items.map((item, index) => {
+                          const style = getCategoryStyle(item.category);
+                          return (
+                            <div key={item.loanId} className={cn("p-3", index % 2 === 0 ? "bg-white" : "bg-gray-50/50")}>
+                              <div className="flex justify-between items-start mb-2">
+                                <div>
+                                  <div className="font-bold text-gray-900 text-sm">{item.borrowerName}</div>
+                                  <div className="text-xs text-gray-500">{item.accountNumber} | {item.groupName} | {formatDate(item.loanDate)}</div>
+                                  {item.collateralDetails && (
+                                    <div className="text-[10px] text-gray-400 mt-0.5">{item.collateralDetails}</div>
+                                  )}
+                                </div>
+                                <span className={cn("text-[10px] px-2 py-0.5 rounded-full font-semibold whitespace-nowrap", style.bgColor, style.color, "border", style.borderColor)}>
+                                  {item.categoryLabel}
+                                </span>
+                              </div>
+                              <div className="grid grid-cols-3 gap-2 text-xs">
+                                <div>
+                                  <span className="text-gray-500">वजन</span>
+                                  <div className="font-semibold text-amber-700">{item.weight}g</div>
+                                </div>
+                                <div>
+                                  <span className="text-gray-500">बाजार मूल्य</span>
+                                  <div className="font-semibold text-green-700">{formatCurrency(item.marketValue)}</div>
+                                </div>
+                                <div>
+                                  <span className="text-gray-500">80% मानक</span>
+                                  <div className="font-semibold text-gray-700">{formatCurrency(item.standard80Loan)}</div>
+                                </div>
+                              </div>
+                              <div className="grid grid-cols-3 gap-2 text-xs mt-1">
+                                <div>
+                                  <span className="text-gray-500">प्रत्यक्ष कर्ज</span>
+                                  <div className="font-bold text-indigo-700">{formatCurrency(item.principalAmount)}</div>
+                                </div>
+                                <div>
+                                  <span className="text-gray-500">लोडिंग</span>
+                                  <div className={cn("font-bold", item.loadingAmount > 0 ? "text-red-600" : "text-gray-500")}>
+                                    {item.loadingAmount > 0 ? `+${formatCurrency(item.loadingAmount)}` : formatCurrency(item.loadingAmount)}
+                                  </div>
+                                </div>
+                                <div>
+                                  <span className="text-gray-500">LTV</span>
+                                  <div className="font-bold text-purple-700">{item.ltvPercent}%</div>
+                                </div>
+                              </div>
+                              {(item as any).suspiciousInput && (
+                                <div className="mt-1 text-[10px] text-purple-600 font-semibold bg-purple-50 px-2 py-0.5 rounded">
+                                  {(item as any).suspiciousInput}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                        <div className="p-3 bg-indigo-50 border-t-2 border-indigo-300">
+                          <div className="grid grid-cols-3 gap-2 text-xs">
+                            <div>
+                              <span className="text-gray-500">एकूण बाजार मूल्य</span>
+                              <div className="font-bold text-indigo-800">{formatCurrency(items.reduce((sum, i) => sum + i.marketValue, 0))}</div>
+                            </div>
+                            <div>
+                              <span className="text-gray-500">एकूण कर्ज</span>
+                              <div className="font-bold text-indigo-800">{formatCurrency(items.reduce((sum, i) => sum + i.principalAmount, 0))}</div>
+                            </div>
+                            <div>
+                              <span className="text-gray-500">एकूण लोडिंग</span>
+                              <div className="font-bold text-red-700">+{formatCurrency(items.reduce((sum, i) => sum + (i.loadingAmount > 0 ? i.loadingAmount : 0), 0))}</div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <CardContent className="p-0 overflow-x-auto hidden sm:block">
                         <Table>
                           <TableHeader>
                             <TableRow className="bg-indigo-600">
@@ -634,6 +709,9 @@ export default function LoadingReport() {
                                     {item.collateralDetails && (
                                       <div className="text-[10px] text-gray-400">{item.collateralDetails}</div>
                                     )}
+                                    {(item as any).suspiciousInput && (
+                                      <div className="text-[10px] text-purple-600 font-semibold">{(item as any).suspiciousInput}</div>
+                                    )}
                                   </TableCell>
                                   <TableCell className="text-center text-xs">{item.accountNumber}</TableCell>
                                   <TableCell className="text-center text-xs">{formatDate(item.loanDate)}</TableCell>
@@ -658,6 +736,7 @@ export default function LoadingReport() {
                             })}
                             <TableRow className="bg-indigo-50 font-bold border-t-2 border-indigo-300">
                               <TableCell colSpan={5} className="text-right text-xs font-bold text-indigo-800">एकूण:</TableCell>
+                              <TableCell className="text-center text-xs font-bold text-indigo-800">—</TableCell>
                               <TableCell className="text-center text-xs font-bold text-indigo-800">
                                 {formatCurrency(items.reduce((sum, i) => sum + i.marketValue, 0))}
                               </TableCell>
