@@ -2664,7 +2664,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         const weightStr = loan.weight?.toString() || '0';
         const weightNum = parseFloat(weightStr.replace(/[^\d.]/g, '')) || 0;
-        const purityPercent = detectPurity(loan.collateralDetails || '');
+        const collateralText = loan.collateralDetails || '';
+        const purityPercent = detectPurity(collateralText);
+        if (purityPercent !== defaultPurity) {
+          console.log(`🔍 Purity ${purityPercent}% for: "${collateralText}" (${loan.borrowerName})`);
+        }
 
         let calcMarketValue = 0;
         if (weightNum > 0 && goldRatePerGram > 0) {
