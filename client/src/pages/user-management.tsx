@@ -60,6 +60,7 @@ const permissionsSchema = z.object({
   canViewLedgerReport: z.boolean().default(false), // खाते वही
   canViewBorrowerListReport: z.boolean().default(false), // कर्जदार सूची
   canViewOverdueReport: z.boolean().default(false), // मुदत संपलेले अहवाल
+  canViewLoadingReport: z.boolean().default(false), // लोडिंग रिपोर्ट
   canViewAccountSummaryReport: z.boolean().default(false), // खाते सारांश अहवाल
   canViewInformationRegister: z.boolean().default(false), // माहिती तक्ता
   canViewNoticeGenerator: z.boolean().default(false), // नोटीस जनरेटर
@@ -1104,6 +1105,7 @@ function PermissionsList({ form, userRole = "user" }: { form: any; userRole?: st
       { key: "canViewLedgerReport", label: "खाते वही अहवाल" },
       { key: "canViewBorrowerListReport", label: "कर्जदार यादी अहवाल" },
       { key: "canViewOverdueReport", label: "थकबाकी अहवाल" },
+      { key: "canViewLoadingReport", label: "लोडिंग रिपोर्ट (LTV)" },
       { key: "canViewAccountSummaryReport", label: "खाते सारांश अहवाल" },
       { key: "canViewInformationRegister", label: "माहिती तक्ता अहवाल" },
       { key: "canViewBalanceSheet", label: "ताळेबंद (Balance Sheet)" },
@@ -1185,6 +1187,7 @@ function PermissionsList({ form, userRole = "user" }: { form: any; userRole?: st
                 form.setValue("canViewLedgerReport", false);
                 form.setValue("canViewBorrowerListReport", false);
                 form.setValue("canViewOverdueReport", false);
+                form.setValue("canViewLoadingReport", false);
                 form.setValue("canViewAccountSummaryReport", false);
                 form.setValue("canViewInformationRegister", false);
                 form.setValue("canViewBalanceSheet", false);
@@ -1228,6 +1231,7 @@ function PermissionsList({ form, userRole = "user" }: { form: any; userRole?: st
               form.setValue("canViewLedgerReport", true);
               form.setValue("canViewBorrowerListReport", true);
               form.setValue("canViewOverdueReport", true);
+              form.setValue("canViewLoadingReport", true);
               form.setValue("canViewAccountSummaryReport", true);
               form.setValue("canViewInformationRegister", true);
               form.setValue("canViewBalanceSheet", true);
@@ -1260,6 +1264,7 @@ function PermissionsList({ form, userRole = "user" }: { form: any; userRole?: st
               form.setValue("canViewLedgerReport", true);
               form.setValue("canViewBorrowerListReport", true);
               form.setValue("canViewOverdueReport", true);
+              form.setValue("canViewLoadingReport", true);
               form.setValue("canViewAccountSummaryReport", true);
               form.setValue("canViewInformationRegister", true);
               form.setValue("canViewBalanceSheet", true);
@@ -1291,6 +1296,7 @@ function PermissionsList({ form, userRole = "user" }: { form: any; userRole?: st
               form.setValue("canViewLedgerReport", false);
               form.setValue("canViewBorrowerListReport", false);
               form.setValue("canViewOverdueReport", false);
+              form.setValue("canViewLoadingReport", false);
               form.setValue("canViewAccountSummaryReport", false);
               form.setValue("canViewInformationRegister", false);
               form.setValue("canViewBalanceSheet", false);
@@ -1323,6 +1329,7 @@ function PermissionsList({ form, userRole = "user" }: { form: any; userRole?: st
                   form.setValue("canViewLedgerReport", true);
                   form.setValue("canViewBorrowerListReport", true);
                   form.setValue("canViewOverdueReport", true);
+                  form.setValue("canViewLoadingReport", true);
                   form.setValue("canViewAccountSummaryReport", true);
                   form.setValue("canViewInformationRegister", true);
                   form.setValue("canViewBalanceSheet", true);

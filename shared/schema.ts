@@ -51,6 +51,7 @@ export const userPermissions = pgTable("user_permissions", {
   canViewLedgerReport: boolean("can_view_ledger_report").default(false), // खाते वही
   canViewBorrowerListReport: boolean("can_view_borrower_list_report").default(false), // कर्जदार सूची
   canViewOverdueReport: boolean("can_view_overdue_report").default(false), // मुदत संपलेले अहवाल
+  canViewLoadingReport: boolean("can_view_loading_report").default(false), // लोडिंग रिपोर्ट
   // Note: Date-wise, Name-wise, Closing-wise, and Maturity-wise reports removed as they're not used in current routing
   
   // Additional Report Permissions

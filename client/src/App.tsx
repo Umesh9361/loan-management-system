@@ -288,7 +288,7 @@ function AppContent() {
         {perms.canViewLedgerReport && <Route path="/reports/working-summary" component={WorkingSummary} />}
         {perms.canViewBorrowerListReport && <Route path="/reports/borrower-list" component={BorrowerListReports} />}
         {perms.canViewOverdueReport && <Route path="/reports/overdue" component={OverdueReport} />}
-        {perms.canViewOverdueReport && <Route path="/reports/loading-report" component={LoadingReport} />}
+        {perms.canViewLoadingReport && <Route path="/reports/loading-report" component={LoadingReport} />}
         {perms.canViewInformationRegister && <Route path="/reports/information-register" component={InformationRegister} />}
         {perms.canViewBalanceSheet && <Route path="/reports/balance-sheet" component={BalanceSheet} />}
         {perms.canViewProfitLoss && <Route path="/reports/profit-loss" component={ProfitLoss} />}

@@ -94,7 +94,8 @@ export async function initializeDatabase() {
           is_dismissed BOOLEAN NOT NULL DEFAULT false,
           created_at TIMESTAMP NOT NULL DEFAULT now()
         )`);
-        console.log("✅ Schema migration: data_entry_mode and notification_warnings verified");
+        await db.execute(sql`ALTER TABLE user_permissions ADD COLUMN IF NOT EXISTS can_view_loading_report BOOLEAN DEFAULT false`);
+        console.log("✅ Schema migration: data_entry_mode, notification_warnings, loading_report permission verified");
       } catch (migrationError) {
         console.warn("⚠️  Data entry mode migration warning (non-fatal):", migrationError instanceof Error ? migrationError.message : migrationError);
       }

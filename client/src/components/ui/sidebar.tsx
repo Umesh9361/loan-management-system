@@ -381,7 +381,7 @@ export function Sidebar({ className }: SidebarProps) {
                 '/reports/borrower-list': 'canViewBorrowerListReport',
                 '/reports/notice-generator': 'canViewNoticeGenerator',
                 '/reports/overdue': 'canViewOverdueReport',
-                '/reports/loading-report': 'canViewOverdueReport',
+                '/reports/loading-report': 'canViewLoadingReport',
                 '/reports/account-summary': 'canViewAccountSummaryReport',
                 '/reports/account-ledger': 'canViewLedgerReport',
                 '/reports/information-register': 'canViewInformationRegister',
