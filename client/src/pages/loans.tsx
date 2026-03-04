@@ -208,7 +208,7 @@ function Loans() {
         const purityNum = parseFloat(value.purity || '82') || 82;
         if (weightNum > 0) {
           const fineWeight = weightNum * (purityNum / 100);
-          const marketVal = Math.round(fineWeight * liveGoldRate);
+          const marketVal = Math.round((fineWeight * liveGoldRate) / 1000) * 1000;
           form.setValue('marketValue', String(marketVal), { shouldValidate: false });
         }
       }
@@ -2486,7 +2486,7 @@ function Loans() {
                               const w = parseFloat((form.getValues('weight') || '0').replace(/[^\d.]/g, '')) || 0;
                               const p = parseFloat(form.getValues('purity') || '82') || 82;
                               if (w > 0 && liveGoldRate > 0) {
-                                form.setValue('marketValue', String(Math.round(w * (p / 100) * liveGoldRate)), { shouldValidate: false });
+                                form.setValue('marketValue', String(Math.round((w * (p / 100) * liveGoldRate) / 1000) * 1000), { shouldValidate: false });
                               }
                             }}>(ऑटो करा)</button>
                           )}
