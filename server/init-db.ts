@@ -70,6 +70,14 @@ export async function initializeDatabase() {
         console.warn("⚠️  loan_id migration warning (non-fatal):", migrationError instanceof Error ? migrationError.message : migrationError);
       }
 
+      // 6e. AUTO-MIGRATION: purity column in loans (per-loan gold purity percentage)
+      try {
+        await db.execute(sql`ALTER TABLE loans ADD COLUMN IF NOT EXISTS purity NUMERIC(5,2) DEFAULT 82`);
+        console.log("✅ Schema migration: loans.purity column verified");
+      } catch (migrationError) {
+        console.warn("⚠️  purity migration warning (non-fatal):", migrationError instanceof Error ? migrationError.message : migrationError);
+      }
+
       // 6c. AUTO-MIGRATION: Data entry mode and notification warnings
       try {
         await db.execute(sql`ALTER TABLE companies ADD COLUMN IF NOT EXISTS data_entry_mode BOOLEAN NOT NULL DEFAULT false`);
