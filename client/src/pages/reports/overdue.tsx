@@ -1271,6 +1271,9 @@ export default function OverdueReport() {
                             <div>
                               <div className="font-bold text-gray-900 text-sm">{item.borrowerName}</div>
                               <div className="text-xs text-gray-500">{item.accountNumber ? `${item.accountNumber} | ` : ''}{item.groupName} | {formatDate(item.loanDate)}</div>
+                              {item.goldItem && (
+                                <div className="text-[10px] text-gray-400 mt-0.5">{item.goldItem}</div>
+                              )}
                             </div>
                             <div className={`text-xs font-bold px-2 py-0.5 rounded-full ${security.bgColor} ${security.color}`}>
                               {security.label}{item.lossAmount > 0 ? `: ${formatCurrency(item.lossAmount)}` : ''}
@@ -1342,7 +1345,12 @@ export default function OverdueReport() {
                                 "hover:bg-indigo-50 hover:border-l-indigo-300"
                               )}>
                               <td className="border border-gray-300 px-3 py-3 text-base font-medium text-gray-700">{item.accountNumber || '—'}</td>
-                              <td className="border border-gray-300 px-3 py-3 text-base font-bold text-gray-800">{item.borrowerName}</td>
+                              <td className="border border-gray-300 px-3 py-3">
+                                <div className="text-base font-bold text-gray-800">{item.borrowerName}</div>
+                                {item.goldItem && (
+                                  <div className="text-[10px] text-gray-400">{item.goldItem}</div>
+                                )}
+                              </td>
                               <td className="border border-gray-300 px-3 py-3 text-base text-indigo-600 font-medium">{item.borrowerPhone}</td>
                               <td className="border border-gray-300 px-3 py-3 text-base text-gray-600">{item.groupName}</td>
                               <td className="border border-gray-300 px-3 py-3 text-base text-center text-gray-700">{formatDate(item.loanDate)}</td>
@@ -1405,7 +1413,12 @@ export default function OverdueReport() {
                     sortedOverdueData.map((item: OverdueItem) => (
                       <tr key={item.loanId} style={{backgroundColor: 'white'}}>
                         <td style={{border: '1px solid black', padding: '3px'}}>{item.accountNumber || '—'}</td>
-                        <td style={{border: '1px solid black', padding: '3px', fontWeight: 'bold'}}>{item.borrowerName}</td>
+                        <td style={{border: '1px solid black', padding: '3px'}}>
+                          <div style={{fontWeight: 'bold'}}>{item.borrowerName}</div>
+                          {item.goldItem && (
+                            <div style={{fontSize: '9px', color: '#999'}}>{item.goldItem}</div>
+                          )}
+                        </td>
                         <td style={{border: '1px solid black', padding: '3px'}}>{item.borrowerPhone}</td>
                         <td style={{border: '1px solid black', padding: '3px'}}>{item.groupName}</td>
                         <td style={{border: '1px solid black', padding: '3px', textAlign: 'center'}}>{formatDate(item.loanDate)}</td>
