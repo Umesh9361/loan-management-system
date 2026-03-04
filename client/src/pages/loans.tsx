@@ -294,15 +294,16 @@ function Loans() {
     });
     
     setEditingLoan(loan);
-    setMarketValueManual(true);
     const mv = parseFloat(String(loan.marketValue || '0').replace(/[^\d.]/g, '')) || 0;
     const wt = parseFloat(String(loan.weight || '0').replace(/[^\d.]/g, '')) || 0;
     const pu = parseFloat(String(loan.purity || '82')) || 82;
     const fineWt = wt * (pu / 100);
     if (fineWt > 0 && mv > 0) {
       setEditOriginalRate(mv / fineWt);
+      setMarketValueManual(true);
     } else {
       setEditOriginalRate(0);
+      setMarketValueManual(false);
     }
     setIsDialogOpen(true);
   };
