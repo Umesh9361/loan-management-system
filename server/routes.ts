@@ -75,9 +75,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     await pool.query("UPDATE loans SET loan_type = 'तारण' WHERE loan_type IS NULL OR loan_type = 'विनातारण'");
     console.log('Migration: loan_type updated to तारण for all existing loans');
 
-    const { rows: purityLoans } = await pool.query(
-      "SELECT id, collateral_details FROM loans WHERE (purity IS NULL OR purity = 82) AND collateral_details IS NOT NULL AND collateral_details != ''"
+    const { rows: alreadyMigrated } = await pool.query(
+      "SELECT COUNT(*) as cnt FROM loans WHERE purity IS NOT NULL AND purity != 82"
     );
+    const migrationDone = parseInt(alreadyMigrated[0]?.cnt || '0') > 0;
+
+    const { rows: purityLoans } = migrationDone 
+      ? { rows: [] } 
+      : await pool.query(
+        "SELECT id, collateral_details FROM loans WHERE (purity IS NULL OR purity = 82) AND collateral_details IS NOT NULL AND collateral_details != ''"
+      );
     if (purityLoans.length > 0) {
       const fineSubstr = ['चोख','फाईन','फाइन','शिक्का','शिका','बिस्कीट','बुलियन','इंगॉट','गिन्नी','कॉइन','वाळा','वाळे','fine gold','pure gold','gold bar','gold coin','gold biscuit','tola bar','bullion','ingot','guinea','सोन्याचे नाणे','सोन्याची बिस्कीट','सोन्याची बार','सोन्याचा बार','गोल्ड गिन्नी','hallmark 999','bis 999','24k','24kt','24 karat','24कॅरेट'];
       const fineExact = ['fine','pure','coin','biscuit','bar','ginni','नाणे','बार','999','995','9950','99.50','99.9','99.5'];
@@ -101,7 +108,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       console.log(`Migration: purity auto-updated for ${updated}/${purityLoans.length} loans (keyword detection)`);
     } else {
-      console.log('Migration: purity — no loans need keyword-based update');
+      console.log(migrationDone 
+        ? 'Migration: purity — already migrated (skipped)' 
+        : 'Migration: purity — no loans need keyword-based update');
     }
   } catch (e: any) {
     console.log('Migration note:', e.message);

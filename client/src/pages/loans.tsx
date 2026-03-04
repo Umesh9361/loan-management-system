@@ -345,6 +345,7 @@ function Loans() {
         borrowerId: data.borrowerId || undefined,
         principalAmount: data.principalAmount,
         interestRate: data.interestRate,
+        purity: data.purity || "82",
         marketValue: data.marketValue || undefined,
         maturityMonths: data.maturityMonths ? parseInt(data.maturityMonths) : undefined,
       };

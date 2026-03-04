@@ -464,6 +464,7 @@ export class DatabaseStorage implements IStorage {
         // Ensure proper type conversion for decimal fields
         principalAmount: loan.principalAmount ? String(loan.principalAmount) : "0",
         interestRate: loan.interestRate ? String(loan.interestRate) : "0",
+        purity: loan.purity ? String(loan.purity) : "82",
         marketValue: loan.marketValue ? String(loan.marketValue) : null
       })
       .returning();
@@ -485,6 +486,7 @@ export class DatabaseStorage implements IStorage {
       // Ensure proper type conversion for decimal fields
       principalAmount: loan.principalAmount ? String(loan.principalAmount) : undefined,
       interestRate: loan.interestRate ? String(loan.interestRate) : undefined,
+      purity: loan.purity ? String(loan.purity) : undefined,
       marketValue: loan.marketValue ? String(loan.marketValue) : undefined
     };
     
