@@ -120,6 +120,7 @@ export const companies = pgTable("companies", {
   subscriptionEndDate: timestamp("subscription_end_date"),
   subscriptionMonths: integer("subscription_months"),
   dataEntryMode: boolean("data_entry_mode").notNull().default(false),
+  ltvWarningEnabled: boolean("ltv_warning_enabled").notNull().default(true),
   labelSettings: text("label_settings"),
   createdAt: timestamp("created_at").notNull().default(sql`now()`),
   updatedAt: timestamp("updated_at").notNull().default(sql`now()`),

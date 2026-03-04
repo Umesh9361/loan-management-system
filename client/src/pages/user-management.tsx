@@ -134,6 +134,53 @@ function DataEntryModeToggle() {
   );
 }
 
+function LtvWarningToggle() {
+  const { toast } = useToast();
+  const qc = useQueryClient();
+  const { data: company } = useQuery<any>({
+    queryKey: ["/api/company"],
+  });
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between p-4 rounded-lg border border-gray-200 bg-gray-50">
+        <div className="flex-1">
+          <h3 className="font-medium text-sm">लोडिंग वॉर्निंग (LTV चेतावणी)</h3>
+          <p className="text-xs text-muted-foreground mt-1">
+            कर्ज सेव्ह करताना रक्कम बाजार मूल्याच्या 80% पेक्षा जास्त असल्यास चेतावणी दाखवते.
+            <br />
+            <span className="text-amber-600 font-medium">बंद केल्यावर कोणतीही LTV चेतावणी दिसणार नाही.</span>
+          </p>
+        </div>
+        <Switch
+          checked={company?.ltvWarningEnabled !== false}
+          onCheckedChange={async (checked: boolean) => {
+            try {
+              await apiRequest("/api/company/ltv-warning-toggle", "PUT", { enabled: checked });
+              qc.invalidateQueries({ queryKey: ["/api/company"] });
+              toast({
+                title: checked ? "लोडिंग वॉर्निंग चालू" : "लोडिंग वॉर्निंग बंद",
+                description: checked
+                  ? "कर्ज सेव्ह करताना LTV चेतावणी दिसेल"
+                  : "LTV चेतावणी बंद केली",
+              });
+            } catch (error) {
+              toast({
+                title: "त्रुटी",
+                description: "सेटिंग बदलता आली नाही",
+                variant: "destructive",
+              });
+            }
+          }}
+        />
+      </div>
+      <div className={`text-xs px-3 py-2 rounded ${company?.ltvWarningEnabled !== false ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
+        स्थिती: {company?.ltvWarningEnabled !== false ? '✅ लोडिंग वॉर्निंग चालू — 80% पेक्षा जास्त रक्कमेवर चेतावणी' : '🔶 लोडिंग वॉर्निंग बंद — कोणतीही LTV चेतावणी नाही'}
+      </div>
+    </div>
+  );
+}
+
 export default function UserManagement() {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
@@ -576,6 +623,9 @@ export default function UserManagement() {
         </CardHeader>
         <CardContent>
           <DataEntryModeToggle />
+          <div className="mt-4">
+            <LtvWarningToggle />
+          </div>
         </CardContent>
       </Card>
 

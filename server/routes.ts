@@ -724,6 +724,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.put("/api/company/ltv-warning-toggle", requireAuth, async (req: any, res) => {
+    try {
+      if (req.session.role !== 'admin' && req.session.role !== 'super_admin') {
+        return res.status(403).json({ message: "फक्त अ‍ॅडमिन हे बदलू शकतो" });
+      }
+      const { enabled } = req.body;
+      if (typeof enabled !== 'boolean') {
+        return res.status(400).json({ message: "Invalid value" });
+      }
+      const tenantId = req.session.tenantId!;
+      const company = await storage.updateCompany(tenantId, { ltvWarningEnabled: enabled });
+      if (!company) {
+        return res.status(404).json({ message: "कंपनी सापडली नाही" });
+      }
+      invalidateCache('company', tenantId);
+      return res.json(company);
+    } catch (error) {
+      console.error("LTV warning toggle error:", error);
+      res.status(500).json({ message: "सेटिंग बदलताना त्रुटी झाली" });
+    }
+  });
+
   // Notification Warnings - Bell notification system
   app.get("/api/notification-warnings", requireAuth, async (req: any, res) => {
     try {

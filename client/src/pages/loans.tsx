@@ -663,7 +663,8 @@ function Loans() {
       return;
     }
 
-    if (!data.ltvWarningConfirmed && data.marketValue && data.principalAmount) {
+    const ltvEnabled = (company as any)?.ltvWarningEnabled !== false;
+    if (ltvEnabled && !data.ltvWarningConfirmed && data.marketValue && data.principalAmount) {
       const principal = parseFloat(data.principalAmount) || 0;
       const market = parseFloat(data.marketValue) || 0;
       if (market > 0 && principal > 0) {
