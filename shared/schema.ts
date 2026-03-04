@@ -187,6 +187,7 @@ export const loans = pgTable("loans", {
   // Collateral details
   collateralDetails: text("collateral_details"), // तारणाचे स्वरूप तपशील
   weight: varchar("weight", { length: 50 }),
+  purity: decimal("purity", { precision: 5, scale: 2 }).default('82'),
   marketValue: decimal("market_value", { precision: 12, scale: 2 }),
   
   // Document and other details

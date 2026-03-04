@@ -2320,6 +2320,7 @@ export class DatabaseStorage implements IStorage {
           interestRateType: loans.interestRateType,
           collateralDetails: loans.collateralDetails,
           weight: loans.weight,
+          purity: loans.purity,
           status: loans.status,
         })
         .from(loans)
@@ -2402,9 +2403,10 @@ export class DatabaseStorage implements IStorage {
         const totalAmountDue = principal + interestToDate;
         const outstandingAmount = totalAmountDue - totalPaid;
 
-        // Gold value calculation
+        // Gold value calculation — DB purity first, filter fallback
         const goldWeightNum = parseFloat(loan.weight?.toString() || '0');
-        const purityPercentage = filters.finePurityPercentage;
+        const dbPurity = loan.purity ? parseFloat(loan.purity.toString()) : 0;
+        const purityPercentage = dbPurity > 0 ? dbPurity : filters.finePurityPercentage;
         const goldRate = filters.currentGoldRate;
         const fineGoldWeight = goldWeightNum * (purityPercentage / 100);
         const currentGoldValue = fineGoldWeight * goldRate;

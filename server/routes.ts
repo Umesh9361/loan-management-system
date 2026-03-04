@@ -2660,6 +2660,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           principalAmount: loans.principalAmount,
           collateralDetails: loans.collateralDetails,
           weight: loans.weight,
+          purity: loans.purity,
           marketValue: loans.marketValue,
           interestRate: loans.interestRate,
           interestRateType: loans.interestRateType,
@@ -2678,9 +2679,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const weightStr = loan.weight?.toString() || '0';
         const weightNum = parseFloat(weightStr.replace(/[^\d.]/g, '')) || 0;
         const collateralText = loan.collateralDetails || '';
-        const purityPercent = detectPurity(collateralText);
+        const dbPurity = loan.purity ? parseFloat(loan.purity.toString()) : 0;
+        const purityPercent = dbPurity > 0 ? dbPurity : detectPurity(collateralText);
         if (purityPercent !== defaultPurity) {
-          console.log(`🔍 Purity ${purityPercent}% for: "${collateralText}" (${loan.borrowerName})`);
+          console.log(`🔍 Purity ${purityPercent}% (${dbPurity > 0 ? 'DB' : 'keyword'}) for: "${collateralText}" (${loan.borrowerName})`);
         }
 
         let calcMarketValue = 0;

@@ -59,6 +59,7 @@ const loanSchema = z.object({
   interestRateType: z.string().default("monthly"), // yearly, monthly
   collateralDetails: z.string().min(1, "कृपया तारणाचा तपशील भरा"),
   weight: z.string().min(1, "कृपया वजन भरा"),
+  purity: z.string().optional().default("82"),
   marketValue: z.string().optional(),
   documentDetails: z.string().optional().default("—"),
   specialConditions: z.string().optional().default("—"),
@@ -158,6 +159,7 @@ function Loans() {
       interestRateType: "monthly",
       collateralDetails: "",
       weight: "",
+      purity: "82",
       marketValue: "",
       documentDetails: "",
       specialConditions: "", 
@@ -222,6 +224,7 @@ function Loans() {
       interestRateType: loan.interestRateType || "monthly",
       collateralDetails: loan.collateralDetails || "",
       weight: loan.weight || "",
+      purity: loan.purity ? String(loan.purity).replace('.00', '') : "82",
       marketValue: loan.marketValue ? String(loan.marketValue).replace('.00', '') : "",
       documentDetails: loan.documentDetails || "",
       specialConditions: loan.specialConditions || "",
@@ -483,6 +486,7 @@ function Loans() {
           interestRateType: "monthly",
           collateralDetails: "",
           weight: "",
+          purity: "82",
           marketValue: "",
           documentDetails: "—",
           specialConditions: "—",
@@ -573,6 +577,7 @@ function Loans() {
           interestRateType: "monthly",
           collateralDetails: "",
           weight: "",
+          purity: "82",
           marketValue: "",
           documentDetails: "—",
           specialConditions: "—",
@@ -1347,6 +1352,7 @@ function Loans() {
         interestRateType: "monthly",
         collateralDetails: "",
         weight: "",
+        purity: "82",
         marketValue: "",
         documentDetails: "—",
         specialConditions: "—", 
@@ -2347,6 +2353,31 @@ function Loans() {
                     )}
                   />
 
+                  {/* Purity */}
+                  <FormField
+                    control={form.control}
+                    name="purity"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-base font-medium">शुद्धता %</FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            placeholder="82"
+                            tabIndex={16}
+                            className="text-base"
+                            value={field.value || '82'}
+                            onChange={(e) => {
+                              const converted = e.target.value.replace(/[०-९]/g, (d: string) => String('०१२३४५६७८९'.indexOf(d)));
+                              field.onChange(converted);
+                            }}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
                   {/* Market Value */}
                   <FormField
                     control={form.control}
@@ -2521,6 +2552,7 @@ function Loans() {
                       interestRateType: "monthly",
                       collateralDetails: "",
                       weight: "",
+                      purity: "82",
                       marketValue: "",
                       documentDetails: "",
                       specialConditions: "",
