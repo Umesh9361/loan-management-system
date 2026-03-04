@@ -8,11 +8,11 @@ import { Sidebar } from "@/components/ui/sidebar";
 import { MobileNav } from "@/components/ui/mobile-nav";
 import { DateUtils } from "@/lib/date-utils";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Printer, FileDown, ClipboardList, ArrowLeft, CheckSquare } from "lucide-react";
+import { Printer, FileDown, ClipboardList, ArrowLeft, CheckSquare, FileSpreadsheet } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useSafeNavigation } from "@/hooks/use-safe-navigation";
-import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 interface RegisterEntry {
   srNo: number;
@@ -166,6 +166,10 @@ export default function InformationRegister() {
       .map((e, i) => ({ ...e, srNo: i + 1 }));
   };
 
+  const getPrintData = (): RegisterEntry[] => {
+    return hasSelection ? getSelectedData() : (displayData || []);
+  };
+
   const handlePrint = () => {
     if (!displayData || displayData.length === 0) {
       toast({ title: "डेटा नाही", description: "प्रिंट करण्यासाठी आधी शोधा किंवा रँडम ५ नाव बटण दाबा", variant: "destructive" });
@@ -185,161 +189,129 @@ export default function InformationRegister() {
   };
 
   const handleDownloadPDF = async () => {
-    if (!displayData || displayData.length === 0) {
+    const data = getPrintData();
+    if (data.length === 0) {
       toast({ title: "डेटा नाही", description: "PDF साठी आधी शोधा किंवा रँडम ५ नाव बटण दाबा", variant: "destructive" });
       return;
     }
-    
+
     setPdfLoading(true);
     try {
-      const landscapeWidthPx = 1122;
-      const landscapeHeightPx = 794;
-
-      const wrapper = document.createElement('div');
-      wrapper.style.position = 'fixed';
-      wrapper.style.left = '-9999px';
-      wrapper.style.top = '0';
-      wrapper.style.width = landscapeWidthPx + 'px';
-      wrapper.style.zIndex = '-9999';
-      wrapper.style.pointerEvents = 'none';
-      wrapper.style.overflow = 'visible';
-      wrapper.style.background = 'white';
-
-      const source = hasSelection ? selectedPrintRef.current : printRef.current;
-      if (!source) { setPdfLoading(false); return; }
-      if (hasSelection) source.style.display = 'block';
-
-      const cloned = source.cloneNode(true) as HTMLElement;
-      cloned.style.width = landscapeWidthPx + 'px';
-      cloned.style.minWidth = landscapeWidthPx + 'px';
-      cloned.style.padding = '0px 20px 20px 20px';
-      cloned.style.background = 'white';
-      cloned.style.fontSize = '13px';
-
-      const header = cloned.querySelector('.register-header') as HTMLElement;
-      if (header) {
-        header.style.border = 'none';
-        header.style.borderRadius = '0';
-        header.style.padding = '6px 10px 8px';
-        header.style.marginBottom = '8px';
-      }
-      const title = cloned.querySelector('.register-title') as HTMLElement;
-      if (title) {
-        title.style.fontSize = '16px';
-        title.style.fontWeight = '800';
-        title.style.letterSpacing = '0.3px';
-      }
-      const proprietor = cloned.querySelector('.register-proprietor') as HTMLElement;
-      if (proprietor) {
-        proprietor.style.fontSize = '13px';
-        proprietor.style.marginTop = '18px';
-      }
-
-      const table = cloned.querySelector('.register-table') as HTMLElement;
-      if (table) {
-        table.style.minWidth = '100%';
-        table.style.width = '100%';
-        table.style.fontSize = '13px';
-      }
-
-      cloned.querySelectorAll('.register-table th').forEach(el => {
-        const th = el as HTMLElement;
-        th.style.fontSize = '11px';
-        th.style.padding = '5px 6px';
-        th.style.fontWeight = '700';
-        th.style.border = '1px solid #666';
-      });
-      cloned.querySelectorAll('.register-table td').forEach(el => {
-        const td = el as HTMLElement;
-        td.style.fontSize = '13px';
-        td.style.padding = '5px 6px 8px 6px';
-        td.style.border = '1px solid #666';
-      });
-      cloned.querySelectorAll('.ir-td-name strong').forEach(el => {
-        (el as HTMLElement).style.fontSize = '13.5px';
-      });
-      cloned.querySelectorAll('.ir-address').forEach(el => {
-        const addr = el as HTMLElement;
-        addr.style.fontSize = '10.5px';
-        addr.style.color = '#444';
-      });
-
-      const footer = cloned.querySelector('.register-footer') as HTMLElement;
-      if (footer) {
-        footer.style.marginTop = '30px';
-        footer.style.fontSize = '13px';
-        footer.style.fontWeight = '700';
-        footer.style.padding = '0 15px';
-      }
-
-      const scrollWrapper = cloned.querySelector('.ir-table-scroll') as HTMLElement;
-      if (scrollWrapper) {
-        scrollWrapper.style.overflow = 'visible';
-        scrollWrapper.style.border = 'none';
-      }
-
-      cloned.querySelectorAll('.no-print, .ir-col-check').forEach(el => {
-        (el as HTMLElement).style.display = 'none';
-      });
-
-      wrapper.appendChild(cloned);
-      document.body.appendChild(wrapper);
-
-      await new Promise(resolve => setTimeout(resolve, 300));
-
-      const canvas = await html2canvas(wrapper, {
-        scale: 3,
-        useCORS: true,
-        logging: false,
-        backgroundColor: '#ffffff',
-        width: landscapeWidthPx,
-        windowWidth: landscapeWidthPx,
-      });
-
-      document.body.removeChild(wrapper);
-      if (hasSelection && selectedPrintRef.current) selectedPrintRef.current.style.display = 'none';
-
-      const imgData = canvas.toDataURL('image/png');
-      const pageWidth = 297;
-      const pageHeight = 210;
-      const topMargin = 18;
-      const bottomMargin = 10;
-      const sideMargin = 10;
-      const printableWidth = pageWidth - (sideMargin * 2);
-      const printableHeight = pageHeight - topMargin - bottomMargin;
-      const imgWidth = printableWidth;
-      const imgTotalHeight = (canvas.height * imgWidth) / canvas.width;
-
       const doc = new jsPDF({
         orientation: 'landscape',
         unit: 'mm',
         format: 'a4',
       });
 
-      let remainingHeight = imgTotalHeight;
-      let srcY = 0;
-      let pageNum = 0;
+      const pageWidth = doc.internal.pageSize.getWidth();
 
-      while (remainingHeight > 0) {
-        if (pageNum > 0) doc.addPage();
-        const sliceHeight = Math.min(printableHeight, remainingHeight);
-        const srcHeightPx = (sliceHeight / imgTotalHeight) * canvas.height;
+      const companyName = company?.name || '';
+      const licenseNo = company?.licenseNumber || '';
+      const headerText = `सावकाराचे नांव :- ${companyName}     सावकारी लायसन नंबर :- ${licenseNo}`;
+      const proprietorText = `प्रोप्रायटर :- ___________________________`;
 
-        const sliceCanvas = document.createElement('canvas');
-        sliceCanvas.width = canvas.width;
-        sliceCanvas.height = Math.ceil(srcHeightPx);
-        const ctx = sliceCanvas.getContext('2d');
-        if (ctx) {
-          ctx.fillStyle = '#ffffff';
-          ctx.fillRect(0, 0, sliceCanvas.width, sliceCanvas.height);
-          ctx.drawImage(canvas, 0, srcY, canvas.width, srcHeightPx, 0, 0, canvas.width, srcHeightPx);
-        }
-        const sliceData = sliceCanvas.toDataURL('image/png');
-        doc.addImage(sliceData, 'PNG', sideMargin, topMargin, imgWidth, sliceHeight);
+      const tableBody = data.map((entry) => [
+        String(entry.srNo),
+        entry.borrowerName + (entry.borrowerAddress ? `\n${entry.borrowerAddress}` : ''),
+        formatDate(entry.loanDate),
+        formatAmount(entry.principalAmount),
+        entry.isClosed ? formatDate(entry.closureDate) : '.......',
+        entry.isClosed ? formatAmount(entry.principalPaid) : '.......',
+        entry.isClosed ? formatAmount(entry.interestPaid) : '.......',
+        getInterestDisplay(entry.interestRate, entry.interestRateType),
+        getLoanTypeLabel(entry.loanType),
+        entry.accountNumber,
+        entry.isClosed ? 'होय' : 'लागू नाही',
+      ]);
 
-        srcY += srcHeightPx;
-        remainingHeight -= sliceHeight;
-        pageNum++;
+      autoTable(doc, {
+        head: [
+          [
+            { content: 'अ.\nनं.', rowSpan: 2, styles: { halign: 'center', valign: 'middle' } },
+            { content: 'कर्जदाराचे पूर्ण नांव व\nपत्ता', rowSpan: 2, styles: { halign: 'center', valign: 'middle' } },
+            { content: 'कर्जाची\nतारीख', rowSpan: 2, styles: { halign: 'center', valign: 'middle' } },
+            { content: 'कर्जाची\nरक्कम\nरुपये', rowSpan: 2, styles: { halign: 'center', valign: 'middle' } },
+            { content: 'वसूल रक्कम रुपये', colSpan: 3, styles: { halign: 'center', valign: 'middle' } },
+            { content: 'व्याज\nदर %', rowSpan: 2, styles: { halign: 'center', valign: 'middle' } },
+            { content: 'तारणी की\nबिगर\nतारणी', rowSpan: 2, styles: { halign: 'center', valign: 'middle' } },
+            { content: 'खाते\nनं.', rowSpan: 2, styles: { halign: 'center', valign: 'middle' } },
+            { content: 'तारण माल\nपरत केला\nआहे का?', rowSpan: 2, styles: { halign: 'center', valign: 'middle' } },
+          ],
+          [
+            { content: 'तारीख', styles: { halign: 'center' } },
+            { content: 'मुद्दल', styles: { halign: 'center' } },
+            { content: 'व्याज', styles: { halign: 'center' } },
+          ],
+        ],
+        body: tableBody,
+        startY: 28,
+        margin: { top: 28, right: 10, bottom: 15, left: 10 },
+        styles: {
+          font: 'helvetica',
+          fontSize: 9,
+          cellPadding: { top: 3, right: 4, bottom: 3, left: 4 },
+          lineWidth: 0.3,
+          lineColor: [80, 80, 80],
+          textColor: [30, 30, 30],
+          overflow: 'linebreak',
+          valign: 'middle',
+        },
+        headStyles: {
+          fillColor: [230, 235, 255],
+          textColor: [40, 40, 100],
+          fontStyle: 'bold',
+          fontSize: 8,
+          lineWidth: 0.4,
+          lineColor: [80, 80, 80],
+        },
+        columnStyles: {
+          0: { cellWidth: 12, halign: 'center' },
+          1: { cellWidth: 65 },
+          2: { cellWidth: 22, halign: 'center' },
+          3: { cellWidth: 28, halign: 'right' },
+          4: { cellWidth: 22, halign: 'center' },
+          5: { cellWidth: 28, halign: 'right' },
+          6: { cellWidth: 24, halign: 'right' },
+          7: { cellWidth: 16, halign: 'center' },
+          8: { cellWidth: 22, halign: 'center' },
+          9: { cellWidth: 16, halign: 'center' },
+          10: { cellWidth: 22, halign: 'center' },
+        },
+        alternateRowStyles: {
+          fillColor: [248, 250, 252],
+        },
+        didDrawPage: (hookData: any) => {
+          doc.setFontSize(13);
+          doc.setFont('helvetica', 'bold');
+          doc.text(headerText, pageWidth / 2, 12, { align: 'center' });
+          doc.setFontSize(10);
+          doc.setFont('helvetica', 'normal');
+          doc.text(proprietorText, pageWidth / 2, 20, { align: 'center' });
+
+          const pageCount = doc.getNumberOfPages();
+          const currentPage = hookData.pageNumber;
+          doc.setFontSize(8);
+          doc.setFont('helvetica', 'normal');
+          doc.text(`पृष्ठ ${currentPage} / ${pageCount}`, pageWidth - 15, doc.internal.pageSize.getHeight() - 8, { align: 'right' });
+        },
+      });
+
+      const finalY = (doc as any).lastAutoTable?.finalY || 180;
+      const pageHeight = doc.internal.pageSize.getHeight();
+
+      if (finalY + 30 > pageHeight) {
+        doc.addPage();
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'bold');
+        doc.text('सावकाराचे सहा. निबंधक तथा उपनिबंधक', 15, 25);
+        doc.text('सह. संस्था, ___________________________', 15, 32);
+        doc.text('सावकाराची सही', pageWidth - 50, 25);
+      } else {
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'bold');
+        doc.text('सावकाराचे सहा. निबंधक तथा उपनिबंधक', 15, finalY + 18);
+        doc.text('सह. संस्था, ___________________________', 15, finalY + 25);
+        doc.text('सावकाराची सही', pageWidth - 50, finalY + 18);
       }
 
       const fileName = `माहिती_तक्ता_${DateUtils.formatDate(dateFilters.dateFrom)}_ते_${DateUtils.formatDate(dateFilters.dateTo)}.pdf`;
@@ -354,13 +326,53 @@ export default function InformationRegister() {
     }
   };
 
+  const handleExportExcel = () => {
+    const data = getPrintData();
+    if (data.length === 0) {
+      toast({ title: "डेटा नाही", description: "Excel साठी आधी शोधा", variant: "destructive" });
+      return;
+    }
+
+    const headers = [
+      'अ.नं.', 'कर्जदाराचे पूर्ण नांव', 'पत्ता', 'कर्जाची तारीख', 'कर्जाची रक्कम (₹)',
+      'वसूल तारीख', 'वसूल मुद्दल (₹)', 'वसूल व्याज (₹)',
+      'व्याज दर %', 'तारणी/बिगर तारणी', 'खाते नं.', 'तारण माल परत?'
+    ];
+
+    const rows = data.map((entry) => [
+      entry.srNo,
+      entry.borrowerName,
+      entry.borrowerAddress || '',
+      formatDate(entry.loanDate),
+      entry.principalAmount || '',
+      entry.isClosed ? formatDate(entry.closureDate) : '',
+      entry.isClosed ? (entry.principalPaid || '') : '',
+      entry.isClosed ? (entry.interestPaid || '') : '',
+      `${parseFloat(entry.interestRate)}%`,
+      getLoanTypeLabel(entry.loanType),
+      entry.accountNumber,
+      entry.isClosed ? 'होय' : 'लागू नाही',
+    ]);
+
+    const csvContent = '\uFEFF' + [headers, ...rows]
+      .map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+      .join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `माहिती_तक्ता_${DateUtils.formatDate(dateFilters.dateFrom)}_ते_${DateUtils.formatDate(dateFilters.dateTo)}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+
+    toast({ title: "Excel Export", description: "CSV फाइल डाउनलोड होत आहे" });
+  };
+
   const formatAmount = (val: string | null) => {
     if (!val) return '.......';
     const num = parseFloat(val);
     if (isNaN(num)) return '.......';
-    if (num % 1 === 0) {
-      return num.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
-    }
     return num.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
   };
 
@@ -378,6 +390,8 @@ export default function InformationRegister() {
     return `${r}%`;
   };
 
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 1024;
+
   return (
     <>
     <style>{`
@@ -393,18 +407,21 @@ export default function InformationRegister() {
       .register-header {
         text-align: center;
         margin-bottom: 10px;
-        padding: 8px 14px;
+        padding: 10px 14px;
       }
       .register-title {
-        font-size: 15px;
-        font-weight: 700;
+        font-size: 16px;
+        font-weight: 800;
         margin: 0;
         color: #1a1a1a;
+        letter-spacing: 0.3px;
+        line-height: 1.5;
       }
       .register-proprietor {
-        font-size: 12px;
-        margin: 4px 0 0 0;
+        font-size: 13px;
+        margin: 6px 0 0 0;
         color: #333;
+        font-weight: 600;
       }
       .ir-prop-line {
         display: inline-block;
@@ -412,8 +429,8 @@ export default function InformationRegister() {
         border-bottom: 1px solid #555;
       }
       @media (min-width: 1024px) {
-        .register-title { font-size: 17px; }
-        .register-proprietor { font-size: 13px; }
+        .register-title { font-size: 18px; }
+        .register-proprietor { font-size: 14px; }
       }
 
       .ir-table-scroll {
@@ -428,21 +445,22 @@ export default function InformationRegister() {
         min-width: 1080px;
         width: 100%;
         border-collapse: collapse;
-        font-size: 13px;
+        font-size: 14px;
         background: #fff;
         table-layout: fixed;
+        line-height: 1.45;
       }
       @media (min-width: 1024px) {
         .register-table {
-          font-size: 14px;
+          font-size: 15px;
           min-width: 100%;
         }
       }
 
       .register-table th,
       .register-table td {
-        border: 1px solid #999;
-        padding: 5px 5px 7px 5px;
+        border: 1px solid #888;
+        padding: 6px 7px 8px 7px;
         vertical-align: middle;
         word-wrap: break-word;
         overflow-wrap: break-word;
@@ -450,24 +468,24 @@ export default function InformationRegister() {
       @media (min-width: 1024px) {
         .register-table th,
         .register-table td {
-          border: 1px solid #888;
-          padding: 6px 8px 9px 8px;
+          border: 1px solid #777;
+          padding: 7px 9px 10px 9px;
         }
       }
 
       .register-table thead th {
         background: #eef2ff;
-        font-weight: 700;
+        font-weight: 800;
         text-align: center;
-        font-size: 10px;
-        line-height: 1.3;
+        font-size: 11px;
+        line-height: 1.35;
         color: #312e81;
         white-space: normal;
       }
       @media (min-width: 1024px) {
         .register-table thead th {
-          font-size: 11.5px;
-          line-height: 1.35;
+          font-size: 12.5px;
+          line-height: 1.4;
         }
       }
 
@@ -478,42 +496,42 @@ export default function InformationRegister() {
         background: #eef2ff;
       }
 
-      .ir-col-sr { width: 35px; min-width: 35px; }
-      .ir-col-name { width: 185px; min-width: 165px; }
-      .ir-col-date { width: 82px; min-width: 78px; }
-      .ir-col-amount { width: 100px; min-width: 88px; }
+      .ir-col-sr { width: 38px; min-width: 38px; }
+      .ir-col-name { width: 190px; min-width: 170px; }
+      .ir-col-date { width: 85px; min-width: 80px; }
+      .ir-col-amount { width: 105px; min-width: 92px; }
       .ir-col-recovery-header { text-align: center !important; }
-      .ir-col-rdate { width: 82px; min-width: 78px; }
-      .ir-col-rprincipal { width: 100px; min-width: 88px; }
-      .ir-col-rinterest { width: 85px; min-width: 78px; }
-      .ir-col-rate { width: 52px; min-width: 48px; }
-      .ir-col-type { width: 72px; min-width: 66px; }
-      .ir-col-acc { width: 48px; min-width: 42px; }
-      .ir-col-status { width: 78px; min-width: 72px; }
+      .ir-col-rdate { width: 85px; min-width: 80px; }
+      .ir-col-rprincipal { width: 105px; min-width: 92px; }
+      .ir-col-rinterest { width: 90px; min-width: 80px; }
+      .ir-col-rate { width: 55px; min-width: 50px; }
+      .ir-col-type { width: 75px; min-width: 68px; }
+      .ir-col-acc { width: 50px; min-width: 44px; }
+      .ir-col-status { width: 82px; min-width: 75px; }
 
       .ir-td-center { text-align: center; }
       .ir-td-right { text-align: right; font-variant-numeric: tabular-nums; }
       .ir-td-bold { font-weight: 600; }
       .ir-td-name {
         text-align: left;
-        line-height: 1.25;
+        line-height: 1.35;
       }
       .ir-td-name strong {
         font-weight: 700;
-        font-size: 13.5px;
+        font-size: 14px;
       }
       @media (min-width: 1024px) {
-        .ir-td-name strong { font-size: 14.5px; }
+        .ir-td-name strong { font-size: 15px; }
       }
       .ir-address {
-        font-size: 9px;
-        color: #666;
-        margin-top: 1px;
-        line-height: 1.15;
+        font-size: 10.5px;
+        color: #555;
+        margin-top: 2px;
+        line-height: 1.2;
         font-weight: 400;
       }
       @media (min-width: 1024px) {
-        .ir-address { font-size: 10.5px; }
+        .ir-address { font-size: 12px; }
       }
 
       .ir-status-closed {
@@ -522,15 +540,15 @@ export default function InformationRegister() {
       }
       .ir-status-open {
         color: #9ca3af;
-        font-size: 10px;
+        font-size: 11px;
       }
 
       .register-footer {
         display: flex;
         justify-content: space-between;
-        margin-top: 24px;
-        padding: 0 12px;
-        font-size: 12px;
+        margin-top: 28px;
+        padding: 0 14px;
+        font-size: 13px;
         font-weight: 700;
         color: #333;
       }
@@ -540,15 +558,15 @@ export default function InformationRegister() {
       }
       @media (min-width: 1024px) {
         .register-footer {
-          margin-top: 35px;
-          padding: 0 20px;
-          font-size: 13px;
+          margin-top: 40px;
+          padding: 0 22px;
+          font-size: 14px;
         }
         .footer-right {
           margin-right: 8%;
         }
       }
-      .footer-left p, .footer-right p { margin: 2px 0; }
+      .footer-left p, .footer-right p { margin: 3px 0; }
       .ir-underline-space {
         border-bottom: 1px solid #333;
         display: inline-block;
@@ -572,7 +590,7 @@ export default function InformationRegister() {
       @media print {
         @page {
           size: A4 landscape;
-          margin: 18mm 10mm 10mm 10mm;
+          margin: 15mm 10mm 10mm 10mm;
         }
         body * { visibility: hidden; }
         .ir-selected-print[style*="display: block"],
@@ -592,30 +610,29 @@ export default function InformationRegister() {
           display: none !important;
         }
         .no-print, .ir-filter-section, .ir-col-check { display: none !important; }
-        .ir-table-scroll { overflow: visible; border: none; border-radius: 0; }
-        .register-header { border: none; border-radius: 0; padding: 6px 10px 8px; margin-bottom: 6px; }
-        .register-title { font-size: 16px; font-weight: 800; letter-spacing: 0.3px; }
-        .register-proprietor { font-size: 13px; margin-top: 18px; }
-        .register-table { font-size: 13px; min-width: 100%; }
+        .ir-table-scroll { overflow: visible !important; border: none; border-radius: 0; max-height: none !important; height: auto !important; }
+        .register-header { border: none; border-radius: 0; padding: 6px 10px 8px; margin-bottom: 8px; }
+        .register-title { font-size: 17px; font-weight: 800; letter-spacing: 0.3px; }
+        .register-proprietor { font-size: 14px; margin-top: 20px; }
+        .register-table { font-size: 14px; min-width: 100%; }
         .register-table th {
-          font-size: 11px; padding: 5px 6px;
+          font-size: 12px; padding: 6px 7px;
           background: #eef2ff !important;
           -webkit-print-color-adjust: exact;
           print-color-adjust: exact;
-          font-weight: 700;
+          font-weight: 800;
         }
-        .register-table td { padding: 5px 6px 8px 6px; font-size: 13px; }
-        .ir-td-name strong { font-weight: 700; font-size: 13.5px; }
-        .ir-address { font-weight: 400; font-size: 10.5px; color: #444; margin-bottom: 1px; }
-        .register-table th, .register-table td { border: 1px solid #666 !important; }
-        .register-footer { margin-top: 25mm; font-size: 13px; font-weight: 700; page-break-inside: avoid; break-inside: avoid; padding: 0 15px; }
+        .register-table td { padding: 6px 7px 9px 7px; font-size: 14px; }
+        .ir-td-name strong { font-weight: 700; font-size: 14px; }
+        .ir-address { font-weight: 400; font-size: 11.5px; color: #444; margin-bottom: 1px; }
+        .register-table th, .register-table td { border: 1px solid #555 !important; }
+        .register-footer { margin-top: 25mm; font-size: 14px; font-weight: 700; page-break-inside: avoid; break-inside: avoid; padding: 0 18px; }
         .footer-right { margin-right: 5%; }
         .register-table tbody tr:nth-child(even) { background: #f8fafc !important; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
         .register-table thead { display: table-header-group; }
         .register-table tbody tr { page-break-inside: avoid; break-inside: avoid; }
         .register-table { page-break-after: auto; }
         .info-register-print { overflow: visible !important; height: auto !important; }
-        .ir-table-scroll { overflow: visible !important; max-height: none !important; height: auto !important; }
       }
     `}</style>
 
@@ -706,6 +723,14 @@ export default function InformationRegister() {
                       </Button>
                     </div>
                   </div>
+                  {!isMobile && displayData && displayData.length > 0 && (
+                    <div className="mt-3 flex justify-end">
+                      <Button onClick={handleExportExcel} variant="outline" size="sm" className="h-9 text-sm border-green-300 text-green-700 bg-green-50 hover:bg-green-100 hover:border-green-400">
+                        <FileSpreadsheet className="h-3.5 w-3.5 mr-1.5" />
+                        Export to Excel
+                      </Button>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </div>
