@@ -2550,17 +2550,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
           goldRatePerGram = goldRateCache.perGram;
           goldRateSource = goldRateCache.source || 'Cache';
         } else {
-          const [ibjaData, aibData, grData] = await Promise.all([
-            fetchGoldRateFromIBJA().catch(() => null),
+          const [ibjaSlots, aibData, grData] = await Promise.all([
+            fetchGoldRateFromIBJA().catch(() => []),
             fetchGoldRateFromAIB().catch(() => null),
             fetchGoldRateFromGoodReturns().catch(() => null),
           ]);
 
           const candidates: { rate995per10g: number; source: string }[] = [];
-          if (ibjaData && ibjaData.rate995 > 0) {
-            candidates.push({ rate995per10g: ibjaData.rate995, source: 'IBJA (995)' });
-          } else if (ibjaData && ibjaData.rate999 > 0) {
-            candidates.push({ rate995per10g: Math.round(ibjaData.rate999 * 995 / 999), source: 'IBJA (999→995)' });
+          if (ibjaSlots && ibjaSlots.length > 0) {
+            for (const slot of ibjaSlots) {
+              if (slot.rate995 > 0) {
+                candidates.push({ rate995per10g: slot.rate995, source: `IBJA ${slot.slot} (995)` });
+              } else if (slot.rate999 > 0) {
+                candidates.push({ rate995per10g: Math.round(slot.rate999 * 995 / 999), source: `IBJA ${slot.slot} (999→995)` });
+              }
+            }
           }
           if (aibData && aibData.rate999 > 0) {
             candidates.push({ rate995per10g: Math.round(aibData.rate999 * 995 / 999), source: 'All India Bullion' });
@@ -5309,41 +5313,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
   };
   const GOLD_CACHE_DURATION = 4 * 60 * 60 * 1000; // 4 hours cache
 
-  async function fetchGoldRateFromIBJA(): Promise<{ rate995: number; rate999: number; rate916: number } | null> {
+  interface IBJASlot { rate995: number; rate999: number; rate916: number; slot: string; }
+  async function fetchGoldRateFromIBJA(): Promise<IBJASlot[]> {
     try {
       const response = await fetch('https://ibjarates.com/', {
         headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
         signal: AbortSignal.timeout(10000)
       });
-      if (!response.ok) return null;
+      if (!response.ok) return [];
       const html = await response.text();
+
+      const results: IBJASlot[] = [];
+
+      const match995AM = html.match(/lblGold995_AM[^>]*>(\d{4,})/);
+      const match999AM = html.match(/lblGold999_AM[^>]*>(\d{4,})/);
+      const match916AM = html.match(/lblGold916_AM[^>]*>(\d{4,})/);
+      const am995 = match995AM ? parseInt(match995AM[1]) : 0;
+      const am999 = match999AM ? parseInt(match999AM[1]) : 0;
+      const am916 = match916AM ? parseInt(match916AM[1]) : 0;
+      if (am995 > 0 || am999 > 0) {
+        results.push({ rate995: am995, rate999: am999, rate916: am916, slot: 'AM' });
+      }
 
       const match995PM = html.match(/lblGold995_PM[^>]*>(\d{4,})/);
       const match999PM = html.match(/lblGold999_PM[^>]*>(\d{4,})/);
       const match916PM = html.match(/lblGold916_PM[^>]*>(\d{4,})/);
-      const match995AM = html.match(/lblGold995_AM[^>]*>(\d{4,})/);
-      const match999AM = html.match(/lblGold999_AM[^>]*>(\d{4,})/);
-      const match916AM = html.match(/lblGold916_AM[^>]*>(\d{4,})/);
+      const pm995 = match995PM ? parseInt(match995PM[1]) : 0;
+      const pm999 = match999PM ? parseInt(match999PM[1]) : 0;
+      const pm916 = match916PM ? parseInt(match916PM[1]) : 0;
+      if (pm995 > 0 || pm999 > 0) {
+        results.push({ rate995: pm995, rate999: pm999, rate916: pm916, slot: 'PM' });
+      }
 
-      let rate995 = match995PM ? parseInt(match995PM[1]) : (match995AM ? parseInt(match995AM[1]) : 0);
-      let rate999 = match999PM ? parseInt(match999PM[1]) : (match999AM ? parseInt(match999AM[1]) : 0);
-      let rate916 = match916PM ? parseInt(match916PM[1]) : (match916AM ? parseInt(match916AM[1]) : 0);
-
-      if (rate995 === 0 && rate999 === 0) {
+      if (results.length === 0) {
         const cmp995 = html.match(/GoldRatesCompare995[^>]*>(\d{4,})/);
         const cmp999 = html.match(/GoldRatesCompare999[^>]*>(\d{4,})/);
-        if (cmp995) rate995 = parseInt(cmp995[1]) * 10;
-        if (cmp999) rate999 = parseInt(cmp999[1]) * 10;
+        const c995 = cmp995 ? parseInt(cmp995[1]) * 10 : 0;
+        const c999 = cmp999 ? parseInt(cmp999[1]) * 10 : 0;
+        if (c995 > 0 || c999 > 0) {
+          results.push({ rate995: c995, rate999: c999, rate916: 0, slot: 'Compare' });
+        }
       }
 
-      if (rate995 > 0 || rate999 > 0) {
-        console.log(`✅ IBJA Gold Rate fetched - 995: ₹${rate995}/10g, 999: ₹${rate999}/10g, 916: ₹${rate916}/10g`);
-        return { rate995, rate999, rate916 };
+      if (results.length > 0) {
+        console.log(`✅ IBJA slots: ${results.map(r => `${r.slot} 995:₹${r.rate995} 999:₹${r.rate999}`).join(' | ')}`);
       }
-      return null;
+      return results;
     } catch (error) {
       console.log('⚠️ IBJA fetch failed:', (error as Error).message);
-      return null;
+      return [];
     }
   }
 
@@ -5419,18 +5437,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      const [ibjaData, aibData, grData] = await Promise.all([
-        fetchGoldRateFromIBJA().catch(() => null),
+      const [ibjaSlots, aibData, grData] = await Promise.all([
+        fetchGoldRateFromIBJA().catch(() => []),
         fetchGoldRateFromAIB().catch(() => null),
         fetchGoldRateFromGoodReturns().catch(() => null),
       ]);
 
       const candidates: { rate995per10g: number; source: string; rate999per10g: number; rate916per10g: number }[] = [];
 
-      if (ibjaData && ibjaData.rate995 > 0) {
-        candidates.push({ rate995per10g: ibjaData.rate995, source: 'IBJA (995)', rate999per10g: ibjaData.rate999, rate916per10g: ibjaData.rate916 });
-      } else if (ibjaData && ibjaData.rate999 > 0) {
-        candidates.push({ rate995per10g: Math.round(ibjaData.rate999 * 995 / 999), source: 'IBJA (999→995)', rate999per10g: ibjaData.rate999, rate916per10g: ibjaData.rate916 });
+      if (ibjaSlots && ibjaSlots.length > 0) {
+        for (const slot of ibjaSlots) {
+          if (slot.rate995 > 0) {
+            candidates.push({ rate995per10g: slot.rate995, source: `IBJA ${slot.slot} (995)`, rate999per10g: slot.rate999, rate916per10g: slot.rate916 });
+          } else if (slot.rate999 > 0) {
+            candidates.push({ rate995per10g: Math.round(slot.rate999 * 995 / 999), source: `IBJA ${slot.slot} (999→995)`, rate999per10g: slot.rate999, rate916per10g: slot.rate916 });
+          }
+        }
       }
 
       if (aibData && aibData.rate999 > 0) {
