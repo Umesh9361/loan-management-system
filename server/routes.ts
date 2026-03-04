@@ -2599,27 +2599,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const finePurity = 99.50;
       const fineGoldKeywords = [
         'चोख', 'चोख सोने', 'चोख सोनं', 'शिका', 'शिक्का',
-        'fine', 'fine gold', 'pure gold', 'pure',
+        'फाईन', 'फाइन', 'फाईन सोने', 'फाइन सोने', 'fine', 'fine gold', 'pure gold', 'pure',
         'कॉइन', 'coin', 'gold coin', 'सोन्याचे नाणे', 'नाणे',
         'बिस्कीट', 'biscuit', 'gold biscuit', 'सोन्याची बिस्कीट',
-        'बार', 'bar', 'gold bar', 'सोन्याची बार', 'सोन्याचा बार',
+        'gold bar', 'सोन्याची बार', 'सोन्याचा बार', 'सोन्याचे बार',
         'गिन्नी', 'ginni', 'guinea', 'गोल्ड गिन्नी',
         'वाळा', 'वाळे', 'tola bar',
         'बुलियन', 'bullion',
         'इंगॉट', 'ingot',
-        '999', '995', '9950', '99.50', '99.9', '99.5',
         '24k', '24kt', '24 karat', '24कॅरेट', '24 कॅरेट',
         'hallmark 999', 'bis 999',
       ];
+      const fineGoldExactKeywords = ['बार', 'bar', '999', '995', '9950', '99.50', '99.9', '99.5'];
       const vedanKeywords = ['वेडण', 'वेडन', 'vedan', 'vedun', 'वेडणी', 'vedani'];
-      const patliKeywords = ['पाटली', 'बांगडी', 'patli', 'bangdi', 'bangadi', 'पाटल्या', 'बांगड्या'];
+      const patliKeywords = ['पाटली', 'बांगडी', 'बांगड्या', 'patli', 'bangdi', 'bangadi', 'पाटल्या'];
       const standardLTV = 80;
 
       function detectPurity(collateral: string): number {
         if (!collateral) return defaultPurity;
         const lower = collateral.toLowerCase();
+        const words = lower.split(/[\s,;|]+/);
+
         for (const keyword of fineGoldKeywords) {
           if (lower.includes(keyword.toLowerCase())) return finePurity;
+        }
+        for (const keyword of fineGoldExactKeywords) {
+          const kw = keyword.toLowerCase();
+          if (words.some(w => w === kw)) return finePurity;
         }
         for (const keyword of vedanKeywords) {
           if (lower.includes(keyword.toLowerCase())) return vedanPurity;
