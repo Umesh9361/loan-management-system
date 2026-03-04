@@ -200,6 +200,12 @@ const reports = [
     description: "सोन्याच्या नुकसानाचे विश्लेषण"
   },
   {
+    name: "लोडिंग रिपोर्ट",
+    href: "/reports/loading-report",
+    icon: TrendingUp,
+    description: "LTV Overloading विश्लेषण"
+  },
+  {
     name: "खाते सारांश अहवाल",
     href: "/reports/account-summary",
     icon: BarChart3,
@@ -375,6 +381,7 @@ export function Sidebar({ className }: SidebarProps) {
                 '/reports/borrower-list': 'canViewBorrowerListReport',
                 '/reports/notice-generator': 'canViewNoticeGenerator',
                 '/reports/overdue': 'canViewOverdueReport',
+                '/reports/loading-report': 'canViewOverdueReport',
                 '/reports/account-summary': 'canViewAccountSummaryReport',
                 '/reports/account-ledger': 'canViewLedgerReport',
                 '/reports/information-register': 'canViewInformationRegister',

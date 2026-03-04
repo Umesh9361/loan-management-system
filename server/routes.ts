@@ -2532,6 +2532,166 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Loading Report API - Dual-Logic LTV Overloading Analysis
+  app.get("/api/loading-report", requireAuth, async (req: any, res: any) => {
+    try {
+      const { groupId, customerName } = req.query;
+      const tenantId = req.session.tenantId!;
+
+      // Auto-fetch gold rate from cache or live
+      let goldRatePerGram = goldRateCache.perGram || 0;
+      if (!goldRatePerGram) {
+        try {
+          const ibjaData = await fetchGoldRateFromIBJA();
+          if (ibjaData && ibjaData.rate995 > 0) {
+            goldRatePerGram = Math.round(ibjaData.rate995 / 10);
+            goldRateCache.rate = ibjaData.rate995;
+            goldRateCache.perGram = goldRatePerGram;
+            goldRateCache.source = 'IBJA (995 शुद्धता)';
+            goldRateCache.timestamp = Date.now();
+          }
+        } catch (e) {
+          console.log('⚠️ Gold rate fetch failed for loading report');
+        }
+      }
+
+      const purityPercent = 82;
+      const standardLTV = 80;
+
+      const conditions: any[] = [eq(loans.tenantId, tenantId), eq(loans.status, 'active')];
+      if (groupId && groupId !== 'all') {
+        conditions.push(eq(loans.groupId, groupId as string));
+      }
+      if (customerName) {
+        conditions.push(eq(loans.borrowerName, customerName as string));
+      }
+
+      const activeLoans = await db
+        .select({
+          loanId: loans.id,
+          accountNumber: loans.accountNumber,
+          borrowerName: loans.borrowerName,
+          borrowerMobile: loans.borrowerMobile,
+          groupName: groups.name,
+          loanDate: loans.loanDate,
+          principalAmount: loans.principalAmount,
+          collateralDetails: loans.collateralDetails,
+          weight: loans.weight,
+          marketValue: loans.marketValue,
+        })
+        .from(loans)
+        .leftJoin(groups, eq(loans.groupId, groups.id))
+        .where(and(...conditions))
+        .orderBy(loans.loanDate);
+
+      const allItems: any[] = [];
+
+      for (const loan of activeLoans) {
+        const principal = parseFloat(loan.principalAmount?.toString() || '0');
+        const weightStr = loan.weight?.toString() || '0';
+        const weightNum = parseFloat(weightStr.replace(/[^\d.]/g, '')) || 0;
+        let calcMarketValue = parseFloat(loan.marketValue?.toString() || '0');
+
+        if ((!calcMarketValue || calcMarketValue <= 0) && weightNum > 0 && goldRatePerGram > 0) {
+          const fineWeight = weightNum * (purityPercent / 100);
+          calcMarketValue = fineWeight * goldRatePerGram;
+        }
+
+        if (calcMarketValue <= 0 || principal <= 0) continue;
+
+        const fineWeight = weightNum * (purityPercent / 100);
+        const ltvPercent = (principal / calcMarketValue) * 100;
+        const standard80Loan = calcMarketValue * (standardLTV / 100);
+        const loadingAmount = principal - standard80Loan;
+        const loadingPercent = standard80Loan > 0 ? ((principal / standard80Loan) - 1) * 100 : 0;
+
+        allItems.push({
+          loanId: loan.loanId,
+          accountNumber: loan.accountNumber,
+          borrowerName: loan.borrowerName,
+          borrowerMobile: loan.borrowerMobile || '',
+          groupName: loan.groupName || 'सर्व गट',
+          loanDate: loan.loanDate,
+          collateralDetails: loan.collateralDetails || '',
+          weight: weightNum,
+          fineWeight: Math.round(fineWeight * 100) / 100,
+          marketValue: Math.round(calcMarketValue),
+          standard80Loan: Math.round(standard80Loan),
+          principalAmount: principal,
+          ltvPercent: Math.round(ltvPercent * 10) / 10,
+          loadingAmount: Math.round(loadingAmount),
+          loadingPercent: Math.round(loadingPercent * 10) / 10,
+        });
+      }
+
+      const avgLTV = allItems.length > 0
+        ? Math.round((allItems.reduce((sum, i) => sum + i.ltvPercent, 0) / allItems.length) * 10) / 10
+        : 0;
+
+      const overloaded = allItems
+        .filter(item => item.ltvPercent > standardLTV || item.ltvPercent > avgLTV)
+        .map(item => {
+          const deviationFrom80 = item.ltvPercent - standardLTV;
+          const deviationFromAvg = item.ltvPercent - avgLTV;
+          const above80 = item.ltvPercent > standardLTV;
+          const aboveAvg = item.ltvPercent > avgLTV;
+
+          let category: string;
+          let categoryLabel: string;
+          let order: number;
+          if (above80 && aboveAvg) {
+            if (deviationFrom80 > 15) { category = 'high'; categoryLabel = 'उच्च जोखीम'; order = 1; }
+            else if (deviationFrom80 > 5) { category = 'medium'; categoryLabel = 'मध्यम जोखीम'; order = 2; }
+            else { category = 'slight'; categoryLabel = 'किंचित जास्त'; order = 3; }
+          } else if (above80) {
+            if (deviationFrom80 > 10) { category = 'medium'; categoryLabel = 'मध्यम जोखीम'; order = 2; }
+            else { category = 'slight'; categoryLabel = 'किंचित जास्त'; order = 3; }
+          } else {
+            category = 'slight'; categoryLabel = 'सरासरीपेक्षा जास्त'; order = 4;
+          }
+
+          return {
+            ...item,
+            avgLTV,
+            deviationFrom80: Math.round(deviationFrom80 * 10) / 10,
+            deviationFromAvg: Math.round(deviationFromAvg * 10) / 10,
+            above80,
+            aboveAvg,
+            category,
+            categoryLabel,
+            order,
+          };
+        })
+        .sort((a, b) => a.order - b.order || b.loadingAmount - a.loadingAmount);
+
+      const highCount = overloaded.filter(i => i.category === 'high').length;
+      const mediumCount = overloaded.filter(i => i.category === 'medium').length;
+      const slightCount = overloaded.filter(i => i.category === 'slight').length;
+      const totalOverloadAmount = overloaded.reduce((sum, i) => sum + (i.loadingAmount > 0 ? i.loadingAmount : 0), 0);
+
+      console.log(`📊 LOADING REPORT: ${overloaded.length} overloaded out of ${allItems.length} total | Avg LTV: ${avgLTV}% | Gold: ₹${goldRatePerGram}/g`);
+
+      res.json({
+        items: overloaded,
+        summary: {
+          totalLoans: allItems.length,
+          avgLTV,
+          overloadedCount: overloaded.length,
+          highCount,
+          mediumCount,
+          slightCount,
+          totalOverloadAmount: Math.round(totalOverloadAmount),
+          goldRateUsed: goldRatePerGram,
+          purityUsed: purityPercent,
+          goldRateSource: goldRateCache.source || 'N/A',
+        },
+      });
+    } catch (error) {
+      console.error('❌ LOADING REPORT ERROR:', error);
+      res.status(500).json({ error: 'Failed to generate loading report' });
+    }
+  });
+
   // Overdue Report API - WORKING VERSION WITH PROPER AUTH
   app.get("/api/overdue-report", requireAuth, async (req: any, res: any) => {
     console.log('✅ OVERDUE API REACHED WITH PROPER AUTH');

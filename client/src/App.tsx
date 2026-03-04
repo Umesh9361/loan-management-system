@@ -38,6 +38,7 @@ import ReceiptGeneratorPage from "@/pages/reports/receipt-generator";
 import BorrowerListReports from "@/pages/reports/borrower-list";
 import AccountSummaryReport from "@/pages/reports/account-summary";
 import OverdueReport from "@/pages/reports/overdue";
+import LoadingReport from "@/pages/reports/loading-report";
 import NoticeGeneratorPage from "@/pages/reports/notice-generator";
 import InformationRegister from "@/pages/reports/information-register";
 import BalanceSheet from "@/pages/reports/balance-sheet";
@@ -217,6 +218,7 @@ function AppContent() {
         <Route path="/reports/borrower-list" component={BorrowerListReports} />
 
         <Route path="/reports/overdue" component={OverdueReport} />
+        <Route path="/reports/loading-report" component={LoadingReport} />
         <Route path="/reports/information-register" component={InformationRegister} />
         <Route path="/reports/balance-sheet" component={BalanceSheet} />
         <Route path="/reports/profit-loss" component={ProfitLoss} />
@@ -286,6 +288,7 @@ function AppContent() {
         {perms.canViewLedgerReport && <Route path="/reports/working-summary" component={WorkingSummary} />}
         {perms.canViewBorrowerListReport && <Route path="/reports/borrower-list" component={BorrowerListReports} />}
         {perms.canViewOverdueReport && <Route path="/reports/overdue" component={OverdueReport} />}
+        {perms.canViewOverdueReport && <Route path="/reports/loading-report" component={LoadingReport} />}
         {perms.canViewInformationRegister && <Route path="/reports/information-register" component={InformationRegister} />}
         {perms.canViewBalanceSheet && <Route path="/reports/balance-sheet" component={BalanceSheet} />}
         {perms.canViewProfitLoss && <Route path="/reports/profit-loss" component={ProfitLoss} />}
@@ -333,6 +336,7 @@ function AppContent() {
         <Route path="/reports/working-summary" component={WorkingSummary} />
         <Route path="/reports/borrower-list" component={BorrowerListReports} />
         <Route path="/reports/overdue" component={OverdueReport} />
+        <Route path="/reports/loading-report" component={LoadingReport} />
         <Route path="/reports/information-register" component={InformationRegister} />
         <Route path="/reports/balance-sheet" component={BalanceSheet} />
         <Route path="/reports/profit-loss" component={ProfitLoss} />
