@@ -2556,8 +2556,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const defaultPurity = 82;
-      const finePurity = 99.50;
+      const patliPurity = 90;
       const vedanPurity = 95;
+      const finePurity = 99.50;
       const fineGoldKeywords = [
         'चोख', 'चोख सोने', 'चोख सोनं', 'शिका', 'शिक्का',
         'fine', 'fine gold', 'pure gold', 'pure',
@@ -2573,16 +2574,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         'hallmark 999', 'bis 999',
       ];
       const vedanKeywords = ['वेडण', 'वेडन', 'vedan', 'vedun', 'वेडणी', 'vedani'];
+      const patliKeywords = ['पाटली', 'बांगडी', 'patli', 'bangdi', 'bangadi', 'पाटल्या', 'बांगड्या'];
       const standardLTV = 80;
 
       function detectPurity(collateral: string): number {
         if (!collateral) return defaultPurity;
         const lower = collateral.toLowerCase();
+        for (const keyword of fineGoldKeywords) {
+          if (lower.includes(keyword.toLowerCase())) return finePurity;
+        }
         for (const keyword of vedanKeywords) {
           if (lower.includes(keyword.toLowerCase())) return vedanPurity;
         }
-        for (const keyword of fineGoldKeywords) {
-          if (lower.includes(keyword.toLowerCase())) return finePurity;
+        for (const keyword of patliKeywords) {
+          if (lower.includes(keyword.toLowerCase())) return patliPurity;
         }
         return defaultPurity;
       }
@@ -2715,6 +2720,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           totalOverloadAmount: Math.round(totalOverloadAmount),
           goldRateUsed: goldRatePerGram,
           purityDefault: defaultPurity,
+          purityPatli: patliPurity,
           purityVedan: vedanPurity,
           purityFine: finePurity,
           goldRateSource: goldRateCache.source || 'N/A',
