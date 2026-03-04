@@ -2597,41 +2597,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const patliPurity = 90;
       const vedanPurity = 95;
       const finePurity = 99.50;
-      const fineGoldKeywords = [
-        'चोख', 'चोख सोने', 'चोख सोनं', 'शिका', 'शिक्का',
-        'फाईन', 'फाइन', 'फाईन सोने', 'फाइन सोने', 'fine', 'fine gold', 'pure gold', 'pure',
-        'कॉइन', 'coin', 'gold coin', 'सोन्याचे नाणे', 'नाणे',
-        'बिस्कीट', 'biscuit', 'gold biscuit', 'सोन्याची बिस्कीट',
-        'gold bar', 'सोन्याची बार', 'सोन्याचा बार', 'सोन्याचे बार',
-        'गिन्नी', 'ginni', 'guinea', 'गोल्ड गिन्नी',
-        'वाळा', 'वाळे', 'tola bar',
-        'बुलियन', 'bullion',
-        'इंगॉट', 'ingot',
-        '24k', '24kt', '24 karat', '24कॅरेट', '24 कॅरेट',
-        'hallmark 999', 'bis 999',
+      const fineGoldSubstring = [
+        'चोख', 'फाईन', 'फाइन', 'शिक्का', 'शिका',
+        'बिस्कीट', 'बुलियन', 'इंगॉट', 'गिन्नी',
+        'कॉइन', 'वाळा', 'वाळे',
+        'fine gold', 'pure gold', 'gold bar', 'gold coin', 'gold biscuit',
+        'tola bar', 'bullion', 'ingot', 'guinea',
+        'सोन्याचे नाणे', 'सोन्याची बिस्कीट', 'सोन्याची बार', 'सोन्याचा बार',
+        'गोल्ड गिन्नी', 'hallmark 999', 'bis 999',
+        '24k', '24kt', '24 karat', '24कॅरेट',
       ];
-      const fineGoldExactKeywords = ['बार', 'bar', '999', '995', '9950', '99.50', '99.9', '99.5'];
-      const vedanKeywords = ['वेडण', 'वेडन', 'vedan', 'vedun', 'वेडणी', 'vedani'];
-      const patliKeywords = ['पाटली', 'बांगडी', 'बांगड्या', 'patli', 'bangdi', 'bangadi', 'पाटल्या'];
+      const fineGoldExact = ['fine', 'pure', 'coin', 'biscuit', 'bar', 'ginni',
+        'नाणे', 'बार', '999', '995', '9950', '99.50', '99.9', '99.5'];
+      const vedanSubstring = ['वेडण', 'वेडन', 'वेडणी'];
+      const vedanExact = ['vedan', 'vedun', 'vedani'];
+      const patliSubstring = ['पाटली', 'पाटल्या', 'बांगडी', 'बांगड्या'];
+      const patliExact = ['patli', 'bangdi', 'bangadi'];
       const standardLTV = 80;
 
       function detectPurity(collateral: string): number {
         if (!collateral) return defaultPurity;
         const lower = collateral.toLowerCase();
-        const words = lower.split(/[\s,;|]+/);
+        const words = lower.split(/[\s,;|()]+/).filter(w => w.length > 0);
 
-        for (const keyword of fineGoldKeywords) {
-          if (lower.includes(keyword.toLowerCase())) return finePurity;
+        for (const kw of fineGoldSubstring) {
+          if (lower.includes(kw.toLowerCase())) return finePurity;
         }
-        for (const keyword of fineGoldExactKeywords) {
-          const kw = keyword.toLowerCase();
-          if (words.some(w => w === kw)) return finePurity;
+        for (const kw of fineGoldExact) {
+          if (words.some(w => w === kw.toLowerCase())) return finePurity;
         }
-        for (const keyword of vedanKeywords) {
-          if (lower.includes(keyword.toLowerCase())) return vedanPurity;
+        for (const kw of vedanSubstring) {
+          if (lower.includes(kw.toLowerCase())) return vedanPurity;
         }
-        for (const keyword of patliKeywords) {
-          if (lower.includes(keyword.toLowerCase())) return patliPurity;
+        for (const kw of vedanExact) {
+          if (words.some(w => w === kw.toLowerCase())) return vedanPurity;
+        }
+        for (const kw of patliSubstring) {
+          if (lower.includes(kw.toLowerCase())) return patliPurity;
+        }
+        for (const kw of patliExact) {
+          if (words.some(w => w === kw.toLowerCase())) return patliPurity;
         }
         return defaultPurity;
       }
