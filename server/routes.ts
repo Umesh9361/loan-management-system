@@ -2700,6 +2700,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const loadingAmount = principal - standard80Loan;
         const loadingPercent = standard80Loan > 0 ? ((principal / standard80Loan) - 1) * 100 : 0;
 
+        let suspiciousInput = '';
+        if (weightNum > 0 && goldRatePerGram > 0) {
+          const expectedLoanPerTola = goldRatePerGram * 10 * (purityPercent / 100) * (standardLTV / 100);
+          const tolaCount = weightNum / 10;
+          const expectedMaxLoan = tolaCount * expectedLoanPerTola;
+          if (principal > expectedMaxLoan * 3) {
+            suspiciousInput = '⚠️ वजन कमी / कर्ज जास्त — इनपुट तपासा';
+          } else if (ltvPercent > 200) {
+            suspiciousInput = '⚠️ LTV 200%+ — वजन चुकीचं असू शकतं';
+          } else if (weightNum < 1 && principal > 100000) {
+            suspiciousInput = '⚠️ वजन खूप कमी — ग्रॅम तपासा';
+          }
+        }
+
         allItems.push({
           loanId: loan.loanId,
           accountNumber: loan.accountNumber,
@@ -2717,6 +2731,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           ltvPercent: Math.round(ltvPercent * 10) / 10,
           loadingAmount: Math.round(loadingAmount),
           loadingPercent: Math.round(loadingPercent * 10) / 10,
+          suspiciousInput,
         });
       }
 
@@ -2724,60 +2739,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ? Math.round((allItems.reduce((sum, i) => sum + i.ltvPercent, 0) / allItems.length) * 10) / 10
         : 0;
 
-      const enrichedItems = allItems.map(item => {
-        const deviationFrom80 = item.ltvPercent - standardLTV;
-        const deviationFromAvg = item.ltvPercent - avgLTV;
-        const above80 = item.ltvPercent > standardLTV;
-        const aboveAvg = item.ltvPercent > avgLTV;
+      const overloaded = allItems
+        .filter(item => item.ltvPercent > standardLTV || item.ltvPercent > avgLTV)
+        .map(item => {
+          const deviationFrom80 = item.ltvPercent - standardLTV;
+          const deviationFromAvg = item.ltvPercent - avgLTV;
+          const above80 = item.ltvPercent > standardLTV;
+          const aboveAvg = item.ltvPercent > avgLTV;
 
-        let category: string;
-        let categoryLabel: string;
-        let order: number;
-        if (above80 && aboveAvg) {
-          if (deviationFrom80 > 15) { category = 'high'; categoryLabel = 'उच्च जोखीम'; order = 1; }
-          else if (deviationFrom80 > 5) { category = 'medium'; categoryLabel = 'मध्यम जोखीम'; order = 2; }
-          else { category = 'slight'; categoryLabel = 'किंचित जास्त'; order = 3; }
-        } else if (above80) {
-          if (deviationFrom80 > 10) { category = 'medium'; categoryLabel = 'मध्यम जोखीम'; order = 2; }
-          else { category = 'slight'; categoryLabel = 'किंचित जास्त'; order = 3; }
-        } else if (aboveAvg) {
-          category = 'info'; categoryLabel = 'सरासरीपेक्षा जास्त'; order = 4;
-        } else {
-          category = 'safe'; categoryLabel = 'सुरक्षित'; order = 5;
-        }
+          let category: string;
+          let categoryLabel: string;
+          let order: number;
+          if (item.suspiciousInput) {
+            category = 'suspect'; categoryLabel = 'इनपुट तपासा'; order = 0;
+          } else if (above80 && aboveAvg) {
+            if (deviationFrom80 > 15) { category = 'high'; categoryLabel = 'उच्च जोखीम'; order = 1; }
+            else if (deviationFrom80 > 5) { category = 'medium'; categoryLabel = 'मध्यम जोखीम'; order = 2; }
+            else { category = 'slight'; categoryLabel = 'किंचित जास्त'; order = 3; }
+          } else if (above80) {
+            if (deviationFrom80 > 10) { category = 'medium'; categoryLabel = 'मध्यम जोखीम'; order = 2; }
+            else { category = 'slight'; categoryLabel = 'किंचित जास्त'; order = 3; }
+          } else {
+            category = 'slight'; categoryLabel = 'सरासरीपेक्षा जास्त'; order = 4;
+          }
 
-        return {
-          ...item,
-          avgLTV,
-          deviationFrom80: Math.round(deviationFrom80 * 10) / 10,
-          deviationFromAvg: Math.round(deviationFromAvg * 10) / 10,
-          above80,
-          aboveAvg,
-          category,
-          categoryLabel,
-          order,
-        };
-      }).sort((a, b) => a.order - b.order || b.loadingAmount - a.loadingAmount);
+          return {
+            ...item,
+            avgLTV,
+            deviationFrom80: Math.round(deviationFrom80 * 10) / 10,
+            deviationFromAvg: Math.round(deviationFromAvg * 10) / 10,
+            above80,
+            aboveAvg,
+            category,
+            categoryLabel,
+            order,
+          };
+        })
+        .sort((a, b) => a.order - b.order || b.loadingAmount - a.loadingAmount);
 
-      const highCount = enrichedItems.filter(i => i.category === 'high').length;
-      const mediumCount = enrichedItems.filter(i => i.category === 'medium').length;
-      const slightCount = enrichedItems.filter(i => i.category === 'slight').length;
-      const safeCount = enrichedItems.filter(i => i.category === 'safe').length;
-      const overloadedCount = enrichedItems.filter(i => i.ltvPercent > standardLTV).length;
-      const totalOverloadAmount = enrichedItems.reduce((sum, i) => sum + (i.loadingAmount > 0 ? i.loadingAmount : 0), 0);
+      const suspectCount = overloaded.filter(i => i.category === 'suspect').length;
+      const highCount = overloaded.filter(i => i.category === 'high').length;
+      const mediumCount = overloaded.filter(i => i.category === 'medium').length;
+      const slightCount = overloaded.filter(i => i.category === 'slight').length;
+      const overloadedCount = overloaded.filter(i => i.ltvPercent > standardLTV).length;
+      const totalOverloadAmount = overloaded.reduce((sum, i) => sum + (i.loadingAmount > 0 ? i.loadingAmount : 0), 0);
 
-      console.log(`📊 LOADING REPORT: ${enrichedItems.length} total loans | ${overloadedCount} overloaded | Avg LTV: ${avgLTV}% | Gold: ₹${goldRatePerGram}/g (${goldRateSource})`);
+      console.log(`📊 LOADING REPORT: ${overloaded.length} flagged out of ${allItems.length} total | Avg LTV: ${avgLTV}% | Gold: ₹${goldRatePerGram}/g (${goldRateSource}) | Suspect: ${suspectCount}`);
 
       res.json({
-        items: enrichedItems,
+        items: overloaded,
         summary: {
-          totalLoans: enrichedItems.length,
+          totalLoans: allItems.length,
           avgLTV,
           overloadedCount,
+          suspectCount,
           highCount,
           mediumCount,
           slightCount,
-          safeCount,
           totalOverloadAmount: Math.round(totalOverloadAmount),
           goldRateUsed: goldRatePerGram,
           purityDefault: defaultPurity,

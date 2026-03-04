@@ -41,10 +41,10 @@ interface LoadingSummary {
   totalLoans: number;
   avgLTV: number;
   overloadedCount: number;
+  suspectCount: number;
   highCount: number;
   mediumCount: number;
   slightCount: number;
-  safeCount: number;
   totalOverloadAmount: number;
   goldRateUsed: number;
   goldRateSource: string;
@@ -57,17 +57,15 @@ interface LoadingReportData {
 
 function getCategoryStyle(category: string): { color: string; bgColor: string; borderColor: string } {
   switch (category) {
+    case 'suspect':
+      return { color: 'text-purple-700', bgColor: 'bg-purple-100', borderColor: 'border-purple-300' };
     case 'high':
       return { color: 'text-red-700', bgColor: 'bg-red-100', borderColor: 'border-red-300' };
     case 'medium':
       return { color: 'text-orange-700', bgColor: 'bg-orange-100', borderColor: 'border-orange-300' };
     case 'slight':
-      return { color: 'text-yellow-700', bgColor: 'bg-yellow-100', borderColor: 'border-yellow-300' };
-    case 'info':
-      return { color: 'text-blue-700', bgColor: 'bg-blue-50', borderColor: 'border-blue-200' };
-    case 'safe':
     default:
-      return { color: 'text-green-700', bgColor: 'bg-green-50', borderColor: 'border-green-200' };
+      return { color: 'text-yellow-700', bgColor: 'bg-yellow-100', borderColor: 'border-yellow-300' };
   }
 }
 
