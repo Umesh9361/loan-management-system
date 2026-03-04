@@ -199,6 +199,13 @@ function Loans() {
       });
   }, []);
 
+  const smartRound = (val: number): number => {
+    if (val >= 10000) return Math.round(val / 1000) * 1000;
+    if (val >= 1000) return Math.round(val / 500) * 500;
+    if (val >= 100) return Math.round(val / 100) * 100;
+    return Math.round(val);
+  };
+
   // Auto-calculate market value when weight or purity changes
   useEffect(() => {
     const subscription = form.watch((value, { name }) => {
@@ -208,7 +215,7 @@ function Loans() {
         const purityNum = parseFloat(value.purity || '82') || 82;
         if (weightNum > 0) {
           const fineWeight = weightNum * (purityNum / 100);
-          const marketVal = Math.round((fineWeight * liveGoldRate) / 1000) * 1000;
+          const marketVal = smartRound(fineWeight * liveGoldRate);
           form.setValue('marketValue', String(marketVal), { shouldValidate: false });
         }
       }
@@ -2486,7 +2493,7 @@ function Loans() {
                               const w = parseFloat((form.getValues('weight') || '0').replace(/[^\d.]/g, '')) || 0;
                               const p = parseFloat(form.getValues('purity') || '82') || 82;
                               if (w > 0 && liveGoldRate > 0) {
-                                form.setValue('marketValue', String(Math.round((w * (p / 100) * liveGoldRate) / 1000) * 1000), { shouldValidate: false });
+                                form.setValue('marketValue', String(smartRound(w * (p / 100) * liveGoldRate)), { shouldValidate: false });
                               }
                             }}>(ऑटो करा)</button>
                           )}
