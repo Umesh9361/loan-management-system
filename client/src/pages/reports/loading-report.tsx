@@ -19,6 +19,7 @@ interface LoadingItem {
   groupName: string;
   loanDate: string;
   collateralDetails: string;
+  purityUsed: number;
   weight: number;
   fineWeight: number;
   marketValue: number;
@@ -189,6 +190,7 @@ export default function LoadingReport() {
       'गट': item.groupName,
       'कर्ज दिनांक': formatDate(item.loanDate),
       'तारण वस्तू': item.collateralDetails,
+      'शुद्धता %': item.purityUsed,
       'वजन (ग्रॅम)': item.weight,
       'शुद्ध वजन': item.fineWeight,
       'बाजार मूल्य': item.marketValue,
@@ -244,7 +246,7 @@ export default function LoadingReport() {
       <div class="info">
         <span>दिनांक: ${new Date().toLocaleDateString('en-GB')}</span>
         <span>सोन्याचा दर: ₹${summary?.goldRateUsed?.toLocaleString('en-IN')}/ग्रॅम</span>
-        <span>शुद्धता: ${summary?.purityUsed}%</span>
+        <span>शुद्धता: 82% (चोख: 99.50%)</span>
         <span>सरासरी LTV: ${summary?.avgLTV}%</span>
       </div>
       <div class="summary">
@@ -257,7 +259,7 @@ export default function LoadingReport() {
       <table>
         <thead><tr>
           <th>क्र.</th><th>कर्जदार नाव</th><th>खाते</th><th>गट</th>
-          <th>वजन</th><th>बाजार मूल्य</th><th>80% मानक</th><th>प्रत्यक्ष कर्ज</th>
+          <th>वजन</th><th>शुद्धता</th><th>बाजार मूल्य</th><th>80% मानक</th><th>प्रत्यक्ष कर्ज</th>
           <th>लोडिंग</th><th>LTV%</th><th>जोखीम</th>
         </tr></thead>
         <tbody>
@@ -268,6 +270,7 @@ export default function LoadingReport() {
               <td>${item.accountNumber}</td>
               <td>${item.groupName}</td>
               <td>${item.weight}g</td>
+              <td style="font-weight:bold;color:${item.purityUsed > 90 ? '#b45309' : '#374151'}">${item.purityUsed}%</td>
               <td>${formatCurrency(item.marketValue)}</td>
               <td>${formatCurrency(item.standard80Loan)}</td>
               <td>${formatCurrency(item.principalAmount)}</td>
@@ -447,7 +450,7 @@ export default function LoadingReport() {
                   {summary && (
                     <div className="mt-3 text-xs text-gray-500 flex flex-wrap gap-3">
                       <span>सोन्याचा दर: ₹{summary.goldRateUsed?.toLocaleString('en-IN')}/ग्रॅम</span>
-                      <span>शुद्धता: {summary.purityUsed}%</span>
+                      <span>शुद्धता: 82% (चोख: 99.50%)</span>
                       <span>स्रोत: {summary.goldRateSource}</span>
                     </div>
                   )}
@@ -546,6 +549,7 @@ export default function LoadingReport() {
                               <TableHead className="text-white text-[10px] font-bold text-center">खाते</TableHead>
                               <TableHead className="text-white text-[10px] font-bold text-center">गट</TableHead>
                               <TableHead className="text-white text-[10px] font-bold text-center">वजन</TableHead>
+                              <TableHead className="text-white text-[10px] font-bold text-center">शुद्धता</TableHead>
                               <TableHead className="text-white text-[10px] font-bold text-center">बाजार मूल्य</TableHead>
                               <TableHead className="text-white text-[10px] font-bold text-center">80% मानक</TableHead>
                               <TableHead className="text-white text-[10px] font-bold text-center">प्रत्यक्ष कर्ज</TableHead>
@@ -569,6 +573,13 @@ export default function LoadingReport() {
                                   <TableCell className="text-center text-xs">{item.accountNumber}</TableCell>
                                   <TableCell className="text-center text-xs">{item.groupName}</TableCell>
                                   <TableCell className="text-center text-xs">{item.weight}g</TableCell>
+                                  <TableCell className="text-center">
+                                    <span className={cn("text-[10px] px-1.5 py-0.5 rounded font-medium", 
+                                      item.purityUsed > 90 ? "bg-amber-100 text-amber-800" : "bg-gray-100 text-gray-700"
+                                    )}>
+                                      {item.purityUsed}%
+                                    </span>
+                                  </TableCell>
                                   <TableCell className="text-center text-xs">{formatCurrency(item.marketValue)}</TableCell>
                                   <TableCell className="text-center text-xs">{formatCurrency(item.standard80Loan)}</TableCell>
                                   <TableCell className="text-center text-xs font-semibold">{formatCurrency(item.principalAmount)}</TableCell>

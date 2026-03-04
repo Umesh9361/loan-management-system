@@ -2555,8 +2555,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      const purityPercent = 82;
+      const defaultPurity = 82;
+      const finePurity = 99.50;
+      const fineGoldKeywords = [
+        'चोख', 'चोख सोने', 'चोख सोनं', 'शिका', 'शिक्का',
+        'fine', 'fine gold', 'pure gold', 'pure',
+        'कॉइन', 'coin', 'gold coin', 'सोन्याचे नाणे', 'नाणे',
+        'बिस्कीट', 'biscuit', 'gold biscuit', 'सोन्याची बिस्कीट',
+        'बार', 'bar', 'gold bar', 'सोन्याची बार', 'सोन्याचा बार',
+        'गिन्नी', 'ginni', 'guinea', 'गोल्ड गिन्नी',
+        'वाळा', 'वाळे', 'tola bar',
+        'बुलियन', 'bullion',
+        'इंगॉट', 'ingot',
+        '999', '995', '9950', '99.50', '99.9', '99.5',
+        '24k', '24kt', '24 karat', '24कॅरेट', '24 कॅरेट',
+        'hallmark 999', 'bis 999',
+      ];
       const standardLTV = 80;
+
+      function detectPurity(collateral: string): number {
+        if (!collateral) return defaultPurity;
+        const lower = collateral.toLowerCase();
+        for (const keyword of fineGoldKeywords) {
+          if (lower.includes(keyword.toLowerCase())) return finePurity;
+        }
+        return defaultPurity;
+      }
 
       const conditions: any[] = [eq(loans.tenantId, tenantId), eq(loans.status, 'active')];
       if (groupId && groupId !== 'all') {
@@ -2592,6 +2616,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const weightNum = parseFloat(weightStr.replace(/[^\d.]/g, '')) || 0;
         let calcMarketValue = parseFloat(loan.marketValue?.toString() || '0');
 
+        const purityPercent = detectPurity(loan.collateralDetails || '');
+
         if ((!calcMarketValue || calcMarketValue <= 0) && weightNum > 0 && goldRatePerGram > 0) {
           const fineWeight = weightNum * (purityPercent / 100);
           calcMarketValue = fineWeight * goldRatePerGram;
@@ -2613,6 +2639,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           groupName: loan.groupName || 'सर्व गट',
           loanDate: loan.loanDate,
           collateralDetails: loan.collateralDetails || '',
+          purityUsed: purityPercent,
           weight: weightNum,
           fineWeight: Math.round(fineWeight * 100) / 100,
           marketValue: Math.round(calcMarketValue),
@@ -2682,7 +2709,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           slightCount,
           totalOverloadAmount: Math.round(totalOverloadAmount),
           goldRateUsed: goldRatePerGram,
-          purityUsed: purityPercent,
+          purityDefault: defaultPurity,
+          purityFine: finePurity,
           goldRateSource: goldRateCache.source || 'N/A',
         },
       });
