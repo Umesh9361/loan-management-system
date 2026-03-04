@@ -99,6 +99,14 @@ function Loans() {
     message: string;
     formData: LoanFormData | null;
   }>({ open: false, title: '', message: '', formData: null });
+
+  // LTV overloading warning state
+  const [ltvWarningDialog, setLtvWarningDialog] = useState<{
+    open: boolean;
+    title: string;
+    message: string;
+    formData: LoanFormData | null;
+  }>({ open: false, title: '', message: '', formData: null });
   
   const savedScrollPositionRef = useRef<number | null>(null);
   const scrollLockActiveRef = useRef<boolean>(false);
@@ -641,10 +649,29 @@ function Loans() {
     }
   };
 
-  const onSubmit = async (data: LoanFormData) => {
+  const onSubmit = async (data: LoanFormData & { ltvWarningConfirmed?: boolean }) => {
     if (createdLoanId) {
       await handlePhotoUpload(createdLoanId);
       return;
+    }
+
+    if (!data.ltvWarningConfirmed && data.marketValue && data.principalAmount) {
+      const principal = parseFloat(data.principalAmount) || 0;
+      const market = parseFloat(data.marketValue) || 0;
+      if (market > 0 && principal > 0) {
+        const ltv = (principal / market) * 100;
+        if (ltv > 80) {
+          const overAmount = principal - Math.round(market * 0.8);
+          const ltvRounded = Math.round(ltv);
+          setLtvWarningDialog({
+            open: true,
+            title: `⚠️ लोडिंग — जास्त रक्कम (LTV ${ltvRounded}%)`,
+            message: `कर्ज रक्कम ₹${Number(principal).toLocaleString('en-IN')} ही बाजार मूल्य ₹${Number(market).toLocaleString('en-IN')} च्या 80% (₹${Math.round(market * 0.8).toLocaleString('en-IN')}) पेक्षा ₹${overAmount.toLocaleString('en-IN')} जास्त आहे.\n\nतरीही सेव्ह करायचे का?`,
+            formData: data,
+          });
+          return;
+        }
+      }
     }
     
     createLoanMutation.mutate(data);
@@ -670,6 +697,17 @@ function Loans() {
 
   const handleDuplicateWarningCancel = () => {
     setDuplicateWarningDialog({ open: false, title: '', message: '', formData: null });
+  };
+
+  const handleLtvWarningConfirm = () => {
+    if (ltvWarningDialog.formData) {
+      createLoanMutation.mutate({ ...ltvWarningDialog.formData, ltvWarningConfirmed: true } as any);
+      setLtvWarningDialog({ open: false, title: '', message: '', formData: null });
+    }
+  };
+
+  const handleLtvWarningCancel = () => {
+    setLtvWarningDialog({ open: false, title: '', message: '', formData: null });
   };
 
   // Keyboard shortcut handler for Ctrl+S
@@ -3739,6 +3777,28 @@ function Loans() {
             </Button>
             <Button size="sm" onClick={handleDuplicateWarningConfirm} className="text-sm text-white bg-orange-600 hover:bg-orange-700">
               होय, नवीन कर्ज नोंद करा
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={ltvWarningDialog.open} onOpenChange={(open) => { if (!open) handleLtvWarningCancel(); }}>
+        <DialogContent className="w-[90%] max-w-md p-0 border-t-4 border-red-500">
+          <div className="p-4 flex items-start gap-3 bg-red-50 rounded-t-lg">
+            <div className="p-2 rounded-full shrink-0 bg-red-100 text-red-600">
+              <AlertTriangle className="h-5 w-5" />
+            </div>
+            <div>
+              <h3 className="font-bold text-sm text-red-800">{ltvWarningDialog.title}</h3>
+              <p className="text-xs text-gray-700 mt-1 leading-relaxed whitespace-pre-line">{ltvWarningDialog.message}</p>
+            </div>
+          </div>
+          <div className="p-4 flex gap-2 justify-end bg-gray-50 rounded-b-xl">
+            <Button variant="outline" size="sm" onClick={handleLtvWarningCancel} className="text-sm">
+              रद्द करा (रक्कम बदला)
+            </Button>
+            <Button size="sm" onClick={handleLtvWarningConfirm} className="text-sm text-white bg-red-600 hover:bg-red-700">
+              होय, तरीही सेव्ह करा
             </Button>
           </div>
         </DialogContent>
