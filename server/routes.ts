@@ -2791,12 +2791,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         })
         .sort((a, b) => {
           if (a.order !== b.order) return a.order - b.order;
-          const now = Date.now();
-          const daysA = Math.max(1, Math.floor((now - new Date(a.loanDate || 0).getTime()) / (1000 * 60 * 60 * 24)));
-          const daysB = Math.max(1, Math.floor((now - new Date(b.loanDate || 0).getTime()) / (1000 * 60 * 60 * 24)));
-          const riskA = Math.max(0, a.loadingAmount) + (a.principalAmount * (a.ltvPercent / 100) * (daysA / 365));
-          const riskB = Math.max(0, b.loadingAmount) + (b.principalAmount * (b.ltvPercent / 100) * (daysB / 365));
-          return riskB - riskA;
+          if (a.ltvPercent !== b.ltvPercent) return b.ltvPercent - a.ltvPercent;
+          if (a.loadingAmount !== b.loadingAmount) return b.loadingAmount - a.loadingAmount;
+          return b.principalAmount - a.principalAmount;
         });
 
       const suspectCount = overloaded.filter(i => i.category === 'suspect').length;
