@@ -130,6 +130,10 @@ function Loans() {
   // Loan details modal state
   const [selectedLoanDetails, setSelectedLoanDetails] = useState<any>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
+
+  // Live gold rate for auto market value calculation
+  const [liveGoldRate, setLiveGoldRate] = useState<number>(0);
+  const [marketValueManual, setMarketValueManual] = useState(false);
   
   // Borrower autocomplete state
   const [showBorrowerSuggestions, setShowBorrowerSuggestions] = useState(false);
@@ -166,6 +170,35 @@ function Loans() {
       otherInfo: "",
     },
   });
+
+  // Fetch live gold rate on mount
+  useEffect(() => {
+    fetch('/api/gold-rate')
+      .then(r => r.json())
+      .then(data => {
+        if (data.success && data.perGram > 0) {
+          setLiveGoldRate(data.perGram);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  // Auto-calculate market value when weight or purity changes
+  useEffect(() => {
+    const subscription = form.watch((value, { name }) => {
+      if ((name === 'weight' || name === 'purity') && !marketValueManual && liveGoldRate > 0) {
+        const weightStr = (value.weight || '0').replace(/[^\d.]/g, '');
+        const weightNum = parseFloat(weightStr) || 0;
+        const purityNum = parseFloat(value.purity || '82') || 82;
+        if (weightNum > 0) {
+          const fineWeight = weightNum * (purityNum / 100);
+          const marketVal = Math.round(fineWeight * liveGoldRate);
+          form.setValue('marketValue', String(marketVal), { shouldValidate: false });
+        }
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [form, liveGoldRate, marketValueManual]);
 
   // Auto-calculate maturity date when loanDate changes (reactive)
   useEffect(() => {
@@ -232,6 +265,7 @@ function Loans() {
     });
     
     setEditingLoan(loan);
+    setMarketValueManual(true);
     setIsDialogOpen(true);
   };
 
@@ -415,6 +449,7 @@ function Loans() {
         setIsDialogOpen(false);
         setEditingLoan(null);
         setCreatedLoanId(null);
+        setMarketValueManual(false);
 
         scrollLockActiveRef.current = true;
         let scrollLock: ReturnType<typeof setInterval> | null = null;
@@ -555,6 +590,7 @@ function Loans() {
         form.reset();
         setIsDialogOpen(false);
         setEditingLoan(null);
+        setMarketValueManual(false);
       } else {
         const currentGroupId = form.getValues('groupId');
         const currentGroupName = groupSearchTerm;
@@ -1418,6 +1454,7 @@ function Loans() {
         if (isDialogOpen) {
           setIsDialogOpen(false);
           setEditingLoan(null);
+          setMarketValueManual(false);
         } else if (searchQuery) {
           setSearchQuery('');
           searchInputRef.current?.focus();
@@ -2385,15 +2422,33 @@ function Loans() {
                     name="marketValue"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-base font-medium">बाजार मूल्य</FormLabel>
+                        <FormLabel className="text-base font-medium">
+                          बाजार मूल्य
+                          {liveGoldRate > 0 && !marketValueManual && (
+                            <span className="text-xs text-green-600 ml-1">(ऑटो — ₹{liveGoldRate.toLocaleString('en-IN')}/ग्रॅम)</span>
+                          )}
+                          {marketValueManual && (
+                            <button type="button" className="text-xs text-blue-600 ml-1 underline" onClick={() => {
+                              setMarketValueManual(false);
+                              const w = parseFloat((form.getValues('weight') || '0').replace(/[^\d.]/g, '')) || 0;
+                              const p = parseFloat(form.getValues('purity') || '82') || 82;
+                              if (w > 0 && liveGoldRate > 0) {
+                                form.setValue('marketValue', String(Math.round(w * (p / 100) * liveGoldRate)), { shouldValidate: false });
+                              }
+                            }}>(ऑटो करा)</button>
+                          )}
+                        </FormLabel>
                         <FormControl>
                           <Input
                             {...field}
                             type="number"
                             placeholder="0"
                             className="text-base"
-                            tabIndex={16}
-                            onChange={(e) => field.onChange(e.target.value)}
+                            tabIndex={17}
+                            onChange={(e) => {
+                              field.onChange(e.target.value);
+                              setMarketValueManual(true);
+                            }}
                           />
                         </FormControl>
                         <FormMessage />
