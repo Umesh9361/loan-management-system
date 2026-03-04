@@ -167,7 +167,11 @@ export default function InformationRegister() {
   };
 
   const getPrintData = (): RegisterEntry[] => {
-    return hasSelection ? getSelectedData() : (displayData || []);
+    if (hasSelection) return getSelectedData();
+    if (randomIndices && registerData) {
+      return randomIndices.map((idx, i) => ({ ...registerData[idx], srNo: i + 1 }));
+    }
+    return displayData || [];
   };
 
   const handlePrint = () => {
