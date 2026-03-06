@@ -526,6 +526,16 @@ export default function AccountSummaryReport() {
                 <div className="font-bold text-red-800">{row.closedLoans}</div>
               </div>
             </div>
+            <div className="grid grid-cols-2 gap-1 text-xs mb-2">
+              <div className="bg-amber-50 rounded p-1.5 text-center">
+                <div className="text-amber-600">एकूण वजन</div>
+                <div className="font-bold text-amber-800">{row.totalWeight.toFixed(2)} ग्रॅ</div>
+              </div>
+              <div className="bg-yellow-50 rounded p-1.5 text-center">
+                <div className="text-yellow-600">शुद्ध वजन</div>
+                <div className="font-bold text-yellow-800">{row.totalFineWeight.toFixed(2)} ग्रॅ</div>
+              </div>
+            </div>
             <div className="grid grid-cols-2 gap-2 text-sm">
               <div>
                 <div className="text-gray-500 text-xs">एकूण वाटप</div>
