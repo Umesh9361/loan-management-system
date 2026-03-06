@@ -388,9 +388,9 @@ export default function Closure() {
           ...advancedResult,
           durationInMonths: compoundClosureCalc.durationInMonths,
           durationInDays: timePeriod.totalDays,
-          years: timePeriod.years,
-          months: timePeriod.months,
-          days: timePeriod.days
+          years: timePeriod.calendarYears,
+          months: timePeriod.calendarMonths,
+          days: timePeriod.calendarDays
         };
       }
 
@@ -1228,9 +1228,9 @@ export default function Closure() {
           ...advancedResult,
           durationInMonths: compoundClosureCalc.durationInMonths,
           durationInDays: timePeriod.totalDays,
-          years: timePeriod.years,
-          months: timePeriod.months,
-          days: timePeriod.days
+          years: timePeriod.calendarYears,
+          months: timePeriod.calendarMonths,
+          days: timePeriod.calendarDays
         };
       }
       

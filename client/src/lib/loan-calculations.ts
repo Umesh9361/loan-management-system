@@ -49,26 +49,15 @@ export class LoanCalculationsAdvanced {
       case "monthly": compoundingPeriodMonths = 1; break;
     }
     
-    const totalMonths = timePeriod.years * 12 + timePeriod.months;
+    const calYears = timePeriod.calendarYears;
+    const calMonths = timePeriod.calendarMonths;
+    const calDays = timePeriod.calendarDays;
+    const totalMonths = calYears * 12 + calMonths;
     const fullCompoundingPeriods = Math.floor(totalMonths / compoundingPeriodMonths);
     
-    // Calculate compound interest for full compounding periods  
     for (let period = 0; period < fullCompoundingPeriods; period++) {
-      // FIXED: Use user's monthly rate logic (Principal × Rate% = Monthly Interest)
       const monthlyInterestForPeriod = Math.round((currentPrincipal * monthlyRate) / 100);
       const periodInterest = monthlyInterestForPeriod * compoundingPeriodMonths;
-      
-      // Debug compound calculation
-      if (process.env.NODE_ENV === 'development' && compoundingFrequency === 'yearly') {
-        console.log(`🔧 COMPOUND YEARLY Period ${period + 1}:`, {
-          currentPrincipal,
-          monthlyRate: `${monthlyRate}%`,
-          monthlyInterest: monthlyInterestForPeriod,
-          periodMonths: compoundingPeriodMonths,
-          periodInterest,
-          formula: `${currentPrincipal} × ${monthlyRate}% × ${compoundingPeriodMonths} = ${periodInterest}`
-        });
-      }
       
       detailedBreakdown.push({
         period: period + 1,
@@ -80,15 +69,9 @@ export class LoanCalculationsAdvanced {
       });
       
       totalInterest += periodInterest;
-      currentPrincipal = Number(currentPrincipal) + Number(periodInterest); // FIXED: Ensure number addition, not string concatenation
-      
-      // Debug: Show corrected principal after compounding
-      if (process.env.NODE_ENV === 'development' && compoundingFrequency === 'yearly') {
-        console.log(`🔧 AFTER COMPOUNDING Period ${period + 1}: Principal = ${currentPrincipal} (was ${Number(currentPrincipal) - Number(periodInterest)} + ${periodInterest})`);
-      }
+      currentPrincipal = Number(currentPrincipal) + Number(periodInterest);
     }
     
-    // Calculate remaining months as simple interest
     const remainingMonths = totalMonths - (fullCompoundingPeriods * compoundingPeriodMonths);
     if (remainingMonths > 0) {
       const monthlyInterestRate = Math.round((currentPrincipal * monthlyRate) / 100);
@@ -104,55 +87,34 @@ export class LoanCalculationsAdvanced {
       });
     }
     
-    // Calculate remaining days based on enhanced calculation mode with calendar accuracy
-    if (timePeriod.days > 0 && !timePeriod.isExactMonth) {
+    if (calDays > 0) {
       const monthlyInterestRate = Math.round((currentPrincipal * monthlyRate) / 100);
       let daysInterest = 0;
       
       if (calculationMode === "half_month") {
-        // Half-month rule: 1-15 days = 0.5 month, 16+ days = 1 month
-        if (timePeriod.days >= 1 && timePeriod.days <= 15) {
-          daysInterest = monthlyInterestRate * 0.5; // Half month
-        } else if (timePeriod.days >= 16) {
-          daysInterest = monthlyInterestRate; // Full month
+        if (calDays >= 1 && calDays <= 15) {
+          daysInterest = monthlyInterestRate * 0.5;
+        } else if (calDays >= 16) {
+          daysInterest = monthlyInterestRate;
         }
       } else if (calculationMode === "month") {
-        // पूर्ण महिना mode: 1 दिवस झाला तरी पूर्ण महिन्याची व्याज
-        if (timePeriod.days > 0) {
-          daysInterest = monthlyInterestRate; // Any day counts as full month
+        if (calDays > 0) {
+          daysInterest = monthlyInterestRate;
         }
       } else if (calculationMode === "week") {
-        // Week-based calculation: 1 week = 0.25 months  
-        // Corrected ranges: 1-8=0.25, 9-15=0.5, 16-22=0.75, 23+=1 month
-        if (timePeriod.days >= 1 && timePeriod.days <= 8) {
-          daysInterest = monthlyInterestRate * 0.25; // 1 week = 0.25 months
-        } else if (timePeriod.days >= 9 && timePeriod.days <= 15) {
-          daysInterest = monthlyInterestRate * 0.5; // 2 weeks = 0.5 months
-        } else if (timePeriod.days >= 16 && timePeriod.days <= 22) {
-          daysInterest = monthlyInterestRate * 0.75; // 3 weeks = 0.75 months
-        } else if (timePeriod.days >= 23) {
-          daysInterest = monthlyInterestRate; // 4+ weeks = 1 full month
+        if (calDays >= 1 && calDays <= 8) {
+          daysInterest = monthlyInterestRate * 0.25;
+        } else if (calDays >= 9 && calDays <= 15) {
+          daysInterest = monthlyInterestRate * 0.5;
+        } else if (calDays >= 16 && calDays <= 22) {
+          daysInterest = monthlyInterestRate * 0.75;
+        } else if (calDays >= 23) {
+          daysInterest = monthlyInterestRate;
         }
       } else {
-        // FIXED: Daily calculation using user's monthly rate logic
-        // Monthly Interest = Principal × Rate%, Per Day = Monthly ÷ 30, For X days = Per Day × Days
-        // Example: 50000 × 1.8% = 900, then 900÷30×18 = 540
         const monthlyInterest = (currentPrincipal * monthlyRate) / 100;
         const perDayInterest = monthlyInterest / 30;
-        daysInterest = perDayInterest * timePeriod.days;
-        
-        // Debug days calculation for compound
-        if (process.env.NODE_ENV === 'development' && calculationMode === 'day') {
-          console.log(`🔧 COMPOUND DAYS Calculation:`, {
-            principalAfterCompound: currentPrincipal,
-            monthlyRate: `${monthlyRate}%`,
-            monthlyInterest,
-            perDayInterest,
-            days: timePeriod.days,
-            daysInterest: daysInterest,
-            formula: `${currentPrincipal} × ${monthlyRate}% = ${monthlyInterest}, then ${monthlyInterest}/30 × ${timePeriod.days} = ${daysInterest}`
-          });
-        }
+        daysInterest = perDayInterest * calDays;
       }
       
       daysInterest = Math.round(daysInterest);
@@ -160,7 +122,7 @@ export class LoanCalculationsAdvanced {
       
       detailedBreakdown.push({
         type: 'days',
-        days: timePeriod.days,
+        days: calDays,
         principal: currentPrincipal,
         dailyRate: monthlyInterestRate / 30,
         interest: daysInterest,
@@ -173,14 +135,14 @@ export class LoanCalculationsAdvanced {
     return {
       interestAmount: totalInterest,
       totalPayable: principal + totalInterest,
-      durationInMonths: timePeriod.totalMonths,
+      durationInMonths: totalMonths,
       durationInDays: timePeriod.totalDays,
       breakdown: {
         principalAmount: principal,
         interestRate: monthlyRate,
         calculationType: 'advanced_compound' as const,
         calculationMode: calculationMode as any,
-        periodUsed: `${timePeriod.years} years, ${timePeriod.months} months, ${timePeriod.days} days`,
+        periodUsed: `${calYears} वर्ष, ${calMonths} महिने, ${calDays} दिवस`,
         detailedBreakdown: detailedBreakdown,
         compoundingFrequency: compoundingFrequency,
         compoundingPeriods: fullCompoundingPeriods,
