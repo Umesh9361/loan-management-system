@@ -63,6 +63,12 @@ export default function WorkingSummary() {
         totalLoans: groupLoans.length,
         activeLoans: groupLoans.filter((loan: any) => loan.status !== 'closed').length,
         closedLoans: groupLoans.filter((loan: any) => loan.status === 'closed').length,
+        totalWeight: groupLoans.reduce((sum: number, loan: any) => sum + (parseFloat(String(loan.weight || '0').replace(/[^\d.]/g, '')) || 0), 0),
+        totalFineWeight: groupLoans.reduce((sum: number, loan: any) => {
+          const wt = parseFloat(String(loan.weight || '0').replace(/[^\d.]/g, '')) || 0;
+          const pu = parseFloat(String(loan.purity || '82')) || 82;
+          return sum + (wt * pu / 100);
+        }, 0),
         totalAmount: groupLoans.reduce((sum: number, loan: any) => sum + Number(loan.principalAmount || 0), 0),
         closedAmount: groupLoans
           .filter((loan: any) => loan.status === 'closed')
@@ -110,6 +116,8 @@ export default function WorkingSummary() {
       totalLoans: groupSummary.reduce((sum, group) => sum + group.totalLoans, 0),
       activeLoans: groupSummary.reduce((sum, group) => sum + group.activeLoans, 0),
       closedLoans: groupSummary.reduce((sum, group) => sum + group.closedLoans, 0),
+      totalWeight: groupSummary.reduce((sum, group) => sum + group.totalWeight, 0),
+      totalFineWeight: groupSummary.reduce((sum, group) => sum + group.totalFineWeight, 0),
       totalAmount: groupSummary.reduce((sum, group) => sum + group.totalAmount, 0),
       closedAmount: groupSummary.reduce((sum, group) => sum + group.closedAmount, 0),
       activeBalance: groupSummary.reduce((sum, group) => sum + group.activeBalance, 0),
@@ -304,37 +312,58 @@ export default function WorkingSummary() {
 
             {/* Summary Statistics - Screen Only */}
             {filteredData && (
-              <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4 print:hidden">
-                <div className="p-4 md:p-6 border-2 rounded-lg border-indigo-500 bg-indigo-50">
+              <div className="mt-6 grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4 print:hidden">
+                <div className="p-3 md:p-6 border-2 rounded-lg border-indigo-500 bg-indigo-50">
                   <div className="text-center">
-                    <p className="text-sm md:text-base font-medium text-gray-600">एकूण चालू कर्ज</p>
-                    <p className="text-2xl font-bold text-indigo-600">
+                    <p className="text-xs md:text-base font-medium text-gray-600">एकूण वस्तू</p>
+                    <p className="text-xl md:text-2xl font-bold text-indigo-600">
+                      {filteredData.totals.totalLoans}
+                    </p>
+                  </div>
+                </div>
+                <div className="p-3 md:p-6 border-2 rounded-lg border-amber-500 bg-amber-50">
+                  <div className="text-center">
+                    <p className="text-xs md:text-base font-medium text-gray-600">एकूण वजन</p>
+                    <p className="text-xl md:text-2xl font-bold text-amber-700">
+                      {filteredData.totals.totalWeight.toFixed(2)} ग्रॅ
+                    </p>
+                  </div>
+                </div>
+                <div className="p-3 md:p-6 border-2 rounded-lg border-yellow-500 bg-yellow-50">
+                  <div className="text-center">
+                    <p className="text-xs md:text-base font-medium text-gray-600">शुद्ध वजन</p>
+                    <p className="text-xl md:text-2xl font-bold text-yellow-700">
+                      {filteredData.totals.totalFineWeight.toFixed(2)} ग्रॅ
+                    </p>
+                  </div>
+                </div>
+                <div className="p-3 md:p-6 border-2 rounded-lg border-blue-500 bg-blue-50">
+                  <div className="text-center">
+                    <p className="text-xs md:text-base font-medium text-gray-600">चालू कर्ज</p>
+                    <p className="text-xl md:text-2xl font-bold text-blue-600">
                       {filteredData.totals.activeLoans}
                     </p>
-                    <p className="text-sm text-indigo-600">
+                    <p className="text-xs md:text-sm text-blue-600">
                       ₹{formatAmount(filteredData.totals.activeBalance)}
                     </p>
                   </div>
                 </div>
-                <div className="p-4 md:p-6 border-2 rounded-lg border-green-500 bg-green-50">
+                <div className="p-3 md:p-6 border-2 rounded-lg border-green-500 bg-green-50">
                   <div className="text-center">
-                    <p className="text-sm md:text-base font-medium text-gray-600">एकूण बंद कर्ज</p>
-                    <p className="text-2xl font-bold text-green-600">
+                    <p className="text-xs md:text-base font-medium text-gray-600">बंद कर्ज</p>
+                    <p className="text-xl md:text-2xl font-bold text-green-600">
                       {filteredData.totals.closedLoans}
                     </p>
-                    <p className="text-sm text-green-600">
+                    <p className="text-xs md:text-sm text-green-600">
                       ₹{formatAmount(filteredData.totals.closedAmount)}
                     </p>
                   </div>
                 </div>
-                <div className="p-4 md:p-6 border-2 rounded-lg border-purple-500 bg-purple-50">
+                <div className="p-3 md:p-6 border-2 rounded-lg border-purple-500 bg-purple-50">
                   <div className="text-center">
-                    <p className="text-sm md:text-base font-medium text-gray-600">एकूण व्याज</p>
-                    <p className="text-2xl font-bold text-purple-600">
+                    <p className="text-xs md:text-base font-medium text-gray-600">एकूण व्याज</p>
+                    <p className="text-xl md:text-2xl font-bold text-purple-600">
                       ₹{formatAmount(filteredData.totals.totalInterest)}
-                    </p>
-                    <p className="text-sm text-purple-600">
-                      प्राप्त व्याज
                     </p>
                   </div>
                 </div>
