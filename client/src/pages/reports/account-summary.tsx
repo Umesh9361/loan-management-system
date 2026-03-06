@@ -16,6 +16,8 @@ interface SummaryRow {
   totalLoans: number;
   activeLoans: number;
   closedLoans: number;
+  totalWeight: number;
+  totalFineWeight: number;
   totalAmount: number;
   closedAmount: number;
   activeBalance: number;
@@ -238,11 +240,21 @@ export default function AccountSummaryReport() {
       return sum + parseFloat(closure.calculatedInterest || closure.interestAmount || 0);
     }, 0);
 
+    const totalWeight = periodLoans.reduce((sum: number, loan: any) => 
+      sum + (parseFloat(String(loan.weight || '0').replace(/[^\d.]/g, '')) || 0), 0);
+    const totalFineWeight = periodLoans.reduce((sum: number, loan: any) => {
+      const wt = parseFloat(String(loan.weight || '0').replace(/[^\d.]/g, '')) || 0;
+      const pu = parseFloat(String(loan.purity || '82')) || 82;
+      return sum + (wt * pu / 100);
+    }, 0);
+
     return {
       name: group.name,
       totalLoans: totalLoansInPeriod,
       activeLoans: activeLoansInPeriod,
       closedLoans: closedLoansInPeriod,
+      totalWeight,
+      totalFineWeight,
       totalAmount: totalAmountDisbursed,
       closedAmount,
       activeBalance,
@@ -283,11 +295,21 @@ export default function AccountSummaryReport() {
     const totalInterest = periodClosures.reduce((sum: number, closure: any) => 
       sum + parseFloat(closure.calculatedInterest || closure.interestAmount || 0), 0);
 
+    const totalWeight = periodLoans.reduce((sum: number, loan: any) => 
+      sum + (parseFloat(String(loan.weight || '0').replace(/[^\d.]/g, '')) || 0), 0);
+    const totalFineWeight = periodLoans.reduce((sum: number, loan: any) => {
+      const wt = parseFloat(String(loan.weight || '0').replace(/[^\d.]/g, '')) || 0;
+      const pu = parseFloat(String(loan.purity || '82')) || 82;
+      return sum + (wt * pu / 100);
+    }, 0);
+
     return {
       name: customerName,
       totalLoans: totalLoansCount,
       activeLoans: activeLoansCount,
       closedLoans: closedLoansCount,
+      totalWeight,
+      totalFineWeight,
       totalAmount,
       closedAmount,
       activeBalance,
@@ -353,12 +375,14 @@ export default function AccountSummaryReport() {
       totalLoans: totals.totalLoans + row.totalLoans,
       activeLoans: totals.activeLoans + row.activeLoans,
       closedLoans: totals.closedLoans + row.closedLoans,
+      totalWeight: totals.totalWeight + row.totalWeight,
+      totalFineWeight: totals.totalFineWeight + row.totalFineWeight,
       totalAmount: totals.totalAmount + row.totalAmount,
       closedAmount: totals.closedAmount + row.closedAmount,
       activeBalance: totals.activeBalance + row.activeBalance,
       totalInterest: totals.totalInterest + row.totalInterest,
     }),
-    { totalLoans: 0, activeLoans: 0, closedLoans: 0, totalAmount: 0, closedAmount: 0, activeBalance: 0, totalInterest: 0 }
+    { totalLoans: 0, activeLoans: 0, closedLoans: 0, totalWeight: 0, totalFineWeight: 0, totalAmount: 0, closedAmount: 0, activeBalance: 0, totalInterest: 0 }
   );
 
   const groupGrandTotals = calcGrandTotals(groupSummaries);
@@ -538,6 +562,16 @@ export default function AccountSummaryReport() {
             <div className="bg-red-100 rounded p-1.5 text-center">
               <div className="text-red-700">बंद</div>
               <div className="font-bold text-red-900">{grandTotals.closedLoans}</div>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-1 text-xs mb-2">
+            <div className="bg-amber-100 rounded p-1.5 text-center">
+              <div className="text-amber-700">एकूण वजन</div>
+              <div className="font-bold text-amber-900">{grandTotals.totalWeight.toFixed(2)} ग्रॅ</div>
+            </div>
+            <div className="bg-yellow-100 rounded p-1.5 text-center">
+              <div className="text-yellow-700">शुद्ध वजन</div>
+              <div className="font-bold text-yellow-900">{grandTotals.totalFineWeight.toFixed(2)} ग्रॅ</div>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-2 text-sm">
