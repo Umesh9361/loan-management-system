@@ -2383,6 +2383,32 @@ function Loans() {
                       render={({ field }) => {
                         const rateType = form.watch("interestRateType");
                         const isYearly = rateType === "yearly";
+                        const rateValue = parseFloat(field.value || '0');
+                        
+                        const getSuggestedRate = () => {
+                          if (!rateValue || rateValue <= 0) return null;
+                          if (!isYearly && rateValue > 10) {
+                            const div100 = rateValue / 100;
+                            if (div100 >= 0.5 && div100 <= 5) {
+                              return { suggested: div100, message: `मासिक व्याजदर ${rateValue}% खूप जास्त वाटतो. तुम्हाला ${div100}% म्हणायचं आहे का?` };
+                            }
+                            const div10 = rateValue / 10;
+                            if (div10 >= 0.5 && div10 <= 5) {
+                              return { suggested: div10, message: `मासिक व्याजदर ${rateValue}% खूप जास्त वाटतो. तुम्हाला ${div10}% म्हणायचं आहे का?` };
+                            }
+                            return { suggested: null, message: `⚠️ मासिक व्याजदर ${rateValue}% खूप जास्त वाटतो. कृपया तपासा.` };
+                          }
+                          if (isYearly && rateValue > 50) {
+                            const div10 = rateValue / 10;
+                            if (div10 >= 6 && div10 <= 36) {
+                              return { suggested: div10, message: `वार्षिक व्याजदर ${rateValue}% खूप जास्त वाटतो. तुम्हाला ${div10}% म्हणायचं आहे का?` };
+                            }
+                            return { suggested: null, message: `⚠️ वार्षिक व्याजदर ${rateValue}% खूप जास्त वाटतो. कृपया तपासा.` };
+                          }
+                          return null;
+                        };
+                        const suggestion = getSuggestedRate();
+                        
                         return (
                           <FormItem>
                             <FormLabel className="text-base font-medium">व्याजाचा दर {isYearly ? "वार्षिक" : "मासिक"} *</FormLabel>
@@ -2400,6 +2426,20 @@ function Loans() {
                                 <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500">%</span>
                               </div>
                             </FormControl>
+                            {suggestion && (
+                              <div className="mt-1 p-2 bg-amber-50 border border-amber-300 rounded-lg">
+                                <p className="text-sm text-amber-800 font-medium font-noto">⚠️ {suggestion.message}</p>
+                                {suggestion.suggested !== null && (
+                                  <button
+                                    type="button"
+                                    className="mt-1 px-3 py-1 text-sm font-semibold text-white bg-amber-600 hover:bg-amber-700 rounded-md transition-colors font-noto"
+                                    onClick={() => form.setValue('interestRate', String(suggestion.suggested))}
+                                  >
+                                    होय, {suggestion.suggested}% करा
+                                  </button>
+                                )}
+                              </div>
+                            )}
                             <div className="text-sm text-gray-600 mt-1">
                               उदा: {isYearly ? "12% वार्षिक" : "1.5% मासिक"}
                             </div>
