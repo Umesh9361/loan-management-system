@@ -2802,6 +2802,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           marketValue: Math.round(calcMarketValue),
           standard80Loan: Math.round(standard80Loan),
           principalAmount: principal,
+          interestRate: loanRate,
+          interestRateType: loan.interestRateType || 'monthly',
           interestToDate,
           totalWithInterest,
           ltvPercent: Math.round(ltvPercent * 10) / 10,
