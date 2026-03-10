@@ -87,18 +87,6 @@ const navigation = [
     icon: Calculator,
     permission: "canAccessInterestCalculator",
   },
-  {
-    name: "ताळेबंद",
-    href: "/reports/balance-sheet",
-    icon: Scale,
-    permission: "canViewBalanceSheet",
-  },
-  {
-    name: "नफा-तोटा पत्रक",
-    href: "/reports/profit-loss",
-    icon: TrendingUp,
-    permission: "canViewProfitLoss",
-  },
 ];
 
 const adminNavigation = [
