@@ -2432,6 +2432,8 @@ export class DatabaseStorage implements IStorage {
           loanDate: loan.loanDate,
           goldItem: loan.collateralDetails || 'N/A',
           principalAmount: principal,
+          interestRate: parseFloat(loan.interestRate?.toString() || '0'),
+          interestRateType: loan.interestRateType || 'monthly',
           interestToDate: interestToDate,
           totalAmount: totalAmountDue,
           totalPaid: totalPaid,

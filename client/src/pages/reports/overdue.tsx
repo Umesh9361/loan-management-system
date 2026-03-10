@@ -43,6 +43,8 @@ interface OverdueItem {
   loanDate: string;
   goldItem: string;
   principalAmount: number;
+  interestRate: number;
+  interestRateType: string;
   interestToDate: number;
   totalAmount: number;
   totalPaid: number;
@@ -1491,9 +1493,9 @@ export default function OverdueReport() {
                   </div>
                   <div>
                     <Label className="text-sm font-semibold text-orange-700">व्याज दर</Label>
-                    <p className="text-base font-medium text-gray-800 mt-1">
+                    <p className="text-base font-medium text-orange-700 mt-1">
                       {filters.interestRateMode === 'loan-wise' 
-                        ? "कर्ज नोंदणीतील दर" 
+                        ? `${selectedLoan.interestRate}% ${selectedLoan.interestRateType === 'yearly' ? 'वार्षिक' : 'मासिक'}` 
                         : `${filters.monthlyInterestRate}% मासिक`
                       }
                     </p>
