@@ -654,7 +654,7 @@ export class ReceiptGenerator {
                 <span>|</span>
                 <span><b>व्यवसाय:</b> ${getBlankField(loan.businessType, 'शेती')}</span>
                 <span>|</span>
-                <span><b>प्रकार:</b> ${getBlankField(loan.collateralDetails ? 'तारण' : 'बिनतारण')}</span>
+                <span><b>प्रकार:</b> ${getBlankField((loan as any).loanType === 'विनातारण' ? 'विनातारण' : 'तारण')}</span>
             </div>
 
             <!-- Collateral Details Section - Always show for blank receipts -->
@@ -678,7 +678,17 @@ export class ReceiptGenerator {
                     </div>
                 </div>
             </div>
-            ` : getDisplayData(loan.collateralDetails) ? `
+            ` : (loan as any).loanType === 'विनातारण' ? (() => {
+                const unsecuredInfo = [(loan as any).specialConditions, (loan as any).documentDetails, (loan as any).otherInfo].filter((v: string) => v && v !== '—' && String(v).trim() !== '').join(' | ');
+                return unsecuredInfo ? `
+            <div style="margin: 6px 0 4px 0; border: 1px solid #333; padding: 4px 5px;">
+                <div style="text-align: center; font-weight: bold; margin-bottom: 5px; font-size: 11px; border-bottom: 1px solid #999; padding-bottom: 3px;">कर्ज तपशील</div>
+                <div style="font-size: 10px; line-height: 1.3; padding: 2px;">
+                    <div style="font-weight: 500;">${unsecuredInfo}</div>
+                </div>
+            </div>` : '';
+            })()
+            : getDisplayData(loan.collateralDetails) ? `
             <div style="margin: 6px 0 4px 0; border: 1px solid #333; padding: 4px 5px;">
                 <div style="text-align: center; font-weight: bold; margin-bottom: 5px; font-size: 11px; border-bottom: 1px solid #999; padding-bottom: 3px;">तारण तपशील</div>
                 ${ReceiptGenerator.parseCollateralDetails(loan.collateralDetails || '', loan.weight || undefined, loan.marketValue || undefined)}
@@ -812,21 +822,21 @@ export class ReceiptGenerator {
             </div>
 
             <div class="field-row">
-                <span class="field-label">४. तारणाचा तपशील:</span>
-                <div class="field-value" style="flex: 1; min-height: 36px;">${isBlankType ? '' : (loan.collateralDetails ? (loan.collateralDetails + ((loan as any).weight ? ' | वजन: ' + (loan as any).weight + ' ग्राम' : '')) : '')}</div>
+                <span class="field-label">४. ${(loan as any).loanType === 'विनातारण' ? 'कर्ज तपशील:' : 'तारणाचा तपशील:'}</span>
+                <div class="field-value" style="flex: 1; min-height: 36px;">${isBlankType ? '' : ((loan as any).loanType === 'विनातारण' ? [(loan as any).specialConditions, (loan as any).documentDetails, (loan as any).otherInfo].filter((v: string) => v && v !== '—' && String(v).trim() !== '').join(' | ') : (loan.collateralDetails ? (loan.collateralDetails + ((loan as any).weight ? ' | वजन: ' + (loan as any).weight + ' ग्राम' : '')) : ''))}</div>
             </div>
             ${isBlankType ? '<div style="border-bottom: 1px solid #333; height: 18px; margin: 0 0 2px 0;"></div>' : ''}
 
             <div class="field-row">
                 <span class="field-label">५. अंदाजे मूल्य:</span>
-                <div class="field-value" style="flex: 0.4;">${isBlankType ? '' : ((loan as any).marketValue ? '₹' + ReceiptGenerator.cleanDisplayAmount((loan as any).marketValue) : '')}</div>
+                <div class="field-value" style="flex: 0.4;">${isBlankType ? '' : ((loan as any).loanType === 'विनातारण' ? '—' : ((loan as any).marketValue ? '₹' + ReceiptGenerator.cleanDisplayAmount((loan as any).marketValue) : ''))}</div>
                 <span class="field-label" style="margin-left: 8px;">६. कर्जाची रक्कम:</span>
                 <div class="field-value" style="flex: 0.4;">${isBlankType ? '' : ('₹' + ReceiptGenerator.cleanDisplayAmount(loan.principalAmount || 0))}</div>
             </div>
 
             <div class="field-row">
                 <span class="field-label">७. इतर अनुषंगिक माहिती:</span>
-                <div class="field-value" style="flex: 1;">${isBlankType ? '' : ((loan as any).otherInfo && (loan as any).otherInfo !== '—' ? (loan as any).otherInfo : '')}</div>
+                <div class="field-value" style="flex: 1;">${isBlankType ? '' : ((loan as any).loanType === 'विनातारण' ? [(loan as any).specialConditions, (loan as any).documentDetails, (loan as any).otherInfo].filter((v: string) => v && v !== '—' && String(v).trim() !== '').join(' | ') : ((loan as any).otherInfo && (loan as any).otherInfo !== '—' ? (loan as any).otherInfo : ''))}</div>
             </div>
 
             <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: auto; padding: 0 8px; padding-bottom: 4px;">
