@@ -1323,13 +1323,14 @@ export default function OverdueReport() {
                   <div className="sm:hidden divide-y divide-gray-100">
                     {securedLoans.map((item: OverdueItem, index: number) => {
                       const security = getSecurityLevel(item);
+                      const globalIndex = sortedOverdueData.findIndex(d => d.loanId === item.loanId);
                       return (
                         <div 
                           key={item.loanId}
                           onClick={() => handleRowSelect(item)}
                           className={cn(
                             "p-3 cursor-pointer transition-colors",
-                            selectedRowIndex === index ? "bg-indigo-50 border-l-4 border-l-indigo-500" : "",
+                            selectedRowIndex === globalIndex ? "bg-indigo-50 border-l-4 border-l-indigo-500" : "",
                             "active:bg-indigo-50"
                           )}
                         >
@@ -1403,14 +1404,15 @@ export default function OverdueReport() {
                       <tbody>
                         {securedLoans.map((item: OverdueItem, index: number) => {
                           const security = getSecurityLevel(item);
+                          const globalIndex = sortedOverdueData.findIndex(d => d.loanId === item.loanId);
                           return (
                             <tr 
                               key={item.loanId} 
-                              data-row-index={index}
+                              data-row-index={globalIndex}
                               onClick={() => handleRowSelect(item)}
                               className={cn(
                                 "cursor-pointer transition-colors border-l-4",
-                                selectedRowIndex === index 
+                                selectedRowIndex === globalIndex 
                                   ? "bg-indigo-100 border-l-indigo-500 ring-2 ring-indigo-200" 
                                   : index % 2 === 0 ? 'bg-white border-l-transparent' : 'bg-gray-50 border-l-transparent',
                                 "hover:bg-indigo-50 hover:border-l-indigo-300"
@@ -1463,7 +1465,7 @@ export default function OverdueReport() {
                 {unsecuredLoans.length > 0 && (
                 <Card className="overflow-hidden mt-4">
                   <div className="bg-gradient-to-r from-amber-500 to-orange-500 text-white px-4 py-2 text-sm font-bold">
-                    विनातारण कर्ज ({unsecuredLoans.length}) — एकूण थकबाकी: {formatCurrency(unsecuredTotalLoss)}
+                    विनातारण कर्ज ({unsecuredLoans.length}) — एकूण थकबाकी: {formatCurrency(unsecuredLoans.reduce((s, i) => s + i.totalAmount, 0))}
                   </div>
                   <div className="sm:hidden divide-y divide-gray-100">
                     {unsecuredLoans.map((item: OverdueItem) => {
