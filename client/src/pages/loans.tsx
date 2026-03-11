@@ -3453,15 +3453,15 @@ function Loans() {
                         <p className="font-medium font-inter">{DateUtils.isoToIndianDate(loan.loanDate)}</p>
                       </div>
                       <div>
-                        <p className="text-gray-600">वस्तु</p>
-                        <p className="font-medium font-noto whitespace-normal break-words" title={loan.collateralDetails}>
-                          {loan.collateralDetails || "—"}
+                        <p className="text-gray-600">{loan.loanType === 'विनातारण' ? 'माहिती' : 'वस्तु'}</p>
+                        <p className="font-medium font-noto whitespace-normal break-words" title={loan.collateralDetails || ''}>
+                          {loan.loanType === 'विनातारण' ? ([loan.specialConditions, loan.documentDetails, loan.otherInfo].filter((v: string) => v && v !== '—' && v.trim() !== '').join(' | ') || '—') : (loan.collateralDetails || "—")}
                         </p>
                       </div>
                       <div>
-                        <p className="text-gray-600">वजन</p>
+                        <p className="text-gray-600">{loan.loanType === 'विनातारण' ? 'प्रकार' : 'वजन'}</p>
                         <p className="font-medium font-inter">
-                          {loan.weight || "—"}
+                          {loan.loanType === 'विनातारण' ? 'विनातारण' : (loan.weight || "—")}
                           {loan.interestRate ? <span className="ml-6 text-gray-500">{loan.interestRate}%</span> : null}
                         </p>
                       </div>

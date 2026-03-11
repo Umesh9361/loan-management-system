@@ -515,7 +515,14 @@ export class DatabaseStorage implements IStorage {
         interestRateType: loans.interestRateType,
         loanDate: loans.loanDate,
         groupId: loans.groupId,
-        groupName: groups.name
+        groupName: groups.name,
+        loanType: loans.loanType,
+        collateralDetails: loans.collateralDetails,
+        weight: loans.weight,
+        purity: loans.purity,
+        specialConditions: loans.specialConditions,
+        documentDetails: loans.documentDetails,
+        otherInfo: loans.otherInfo,
       })
       .from(loans)
       .leftJoin(groups, eq(loans.groupId, groups.id))
