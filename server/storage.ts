@@ -2455,6 +2455,7 @@ export class DatabaseStorage implements IStorage {
           outstandingAmount: outstandingAmount,
           goldWeight: isUnsecured ? 0 : metalWeightNum,
           fineGoldWeight: isUnsecured ? 0 : fineMetalWeight,
+          purityUsed: isUnsecured ? 0 : purityPercentage,
           currentGoldValue: isUnsecured ? 0 : currentMetalValue,
           lossAmount: isUnsecured ? outstandingAmount : lossAmount,
           lossPercentage: isUnsecured ? 100 : lossPercentage,
