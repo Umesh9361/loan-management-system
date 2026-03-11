@@ -2797,8 +2797,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const loadingPercent = standard80Loan > 0 ? ((principal / standard80Loan) - 1) * 100 : 0;
 
         let suspiciousInput = '';
-        if (weightNum > 0 && goldRatePerGram > 0) {
-          const expectedLoanPerTola = goldRatePerGram * 10 * (purityPercent / 100) * (standardLTV / 100);
+        if (weightNum > 0 && rateForLoan > 0) {
+          const expectedLoanPerTola = rateForLoan * 10 * (purityPercent / 100) * (standardLTV / 100);
           const tolaCount = weightNum / 10;
           const expectedMaxLoan = tolaCount * expectedLoanPerTola;
           if (principal > expectedMaxLoan * 3) {
@@ -5660,36 +5660,72 @@ export async function registerRoutes(app: Express): Promise<Server> {
   };
   const SILVER_CACHE_DURATION = 4 * 60 * 60 * 1000;
 
-  async function fetchSilverRateFromIBJA(): Promise<{ rate: number; slot: string } | null> {
+  async function fetchSilverRateFromIBJA(): Promise<{ rate: number; slot: string }[]> {
     try {
       const response = await fetch('https://ibjarates.com/', {
+        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
+        signal: AbortSignal.timeout(10000)
+      });
+      if (!response.ok) return [];
+      const html = await response.text();
+
+      const results: { rate: number; slot: string }[] = [];
+
+      const matchPM = html.match(/lblSilver(?:999)?_PM[^>]*>([\d,]{3,})/);
+      if (matchPM) {
+        const rate = parseInt(matchPM[1].replace(/,/g, ''));
+        if (rate > 0) {
+          console.log(`✅ IBJA Silver PM: ₹${rate}/kg`);
+          results.push({ rate, slot: 'PM' });
+        }
+      }
+
+      const matchAM = html.match(/lblSilver(?:999)?_AM[^>]*>([\d,]{3,})/);
+      if (matchAM) {
+        const rate = parseInt(matchAM[1].replace(/,/g, ''));
+        if (rate > 0) {
+          console.log(`✅ IBJA Silver AM: ₹${rate}/kg`);
+          results.push({ rate, slot: 'AM' });
+        }
+      }
+
+      return results;
+    } catch (error) {
+      console.log('⚠️ IBJA Silver fetch failed:', (error as Error).message);
+      return [];
+    }
+  }
+
+  async function fetchSilverRateFromAIB(): Promise<number | null> {
+    try {
+      const response = await fetch('https://allindiabullion.com/', {
         headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
         signal: AbortSignal.timeout(10000)
       });
       if (!response.ok) return null;
       const html = await response.text();
 
-      const matchAM = html.match(/lblSilver_AM[^>]*>([\d,]{3,})/);
-      if (matchAM) {
-        const rate = parseInt(matchAM[1].replace(/,/g, ''));
-        if (rate > 0) {
-          console.log(`✅ IBJA Silver AM: ₹${rate}/kg`);
-          return { rate, slot: 'AM' };
+      const silverMatch = html.match(/SL999[^}]*?&quot;a&quot;:\[0,(\d{4,})\]/);
+      if (silverMatch) {
+        const rate = parseInt(silverMatch[1]);
+        if (rate > 1000) {
+          console.log(`✅ AIB Silver Rate: ₹${rate}/kg`);
+          return rate;
         }
       }
 
-      const matchPM = html.match(/lblSilver_PM[^>]*>([\d,]{3,})/);
-      if (matchPM) {
-        const rate = parseInt(matchPM[1].replace(/,/g, ''));
-        if (rate > 0) {
-          console.log(`✅ IBJA Silver PM: ₹${rate}/kg`);
-          return { rate, slot: 'PM' };
+      const silverPerKg = html.match(/silverPerKg[^:]*?:\s*\[0,(\d{4,})\]/);
+      if (silverPerKg) {
+        const rate = parseInt(silverPerKg[1]);
+        if (rate > 1000) {
+          console.log(`✅ AIB Silver (fallback): ₹${rate}/kg`);
+          return rate;
         }
       }
 
       return null;
     } catch (error) {
-      console.log('⚠️ IBJA Silver fetch failed:', (error as Error).message);
+      console.log('⚠️ AIB Silver fetch failed:', (error as Error).message);
       return null;
     }
   }
@@ -5751,15 +5787,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      const [ibjaData, grRate] = await Promise.all([
-        fetchSilverRateFromIBJA().catch(() => null),
+      const [ibjaSlots, aibRate, grRate] = await Promise.all([
+        fetchSilverRateFromIBJA().catch(() => []),
+        fetchSilverRateFromAIB().catch(() => null),
         fetchSilverRateFromGoodReturns().catch(() => null),
       ]);
 
       const candidates: { ratePerKg: number; source: string }[] = [];
 
-      if (ibjaData && ibjaData.rate > 0) {
-        candidates.push({ ratePerKg: ibjaData.rate, source: `IBJA ${ibjaData.slot}` });
+      if (ibjaSlots && ibjaSlots.length > 0) {
+        for (const slot of ibjaSlots) {
+          if (slot.rate > 0) {
+            candidates.push({ ratePerKg: slot.rate, source: `IBJA ${slot.slot}` });
+          }
+        }
+      }
+
+      if (aibRate && aibRate > 0) {
+        candidates.push({ ratePerKg: aibRate, source: 'All India Bullion' });
       }
 
       if (grRate && grRate > 0) {
@@ -5777,7 +5822,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (candidates.length >= 2) {
         const rates = candidates.map(c => c.ratePerKg);
         const median = rates.sort((a, b) => a - b)[Math.floor(rates.length / 2)];
-        best = candidates.reduce((a, b) => Math.abs(a.ratePerKg - median) < Math.abs(b.ratePerKg - median) ? a : b);
+        const validCandidates = candidates.filter(c => {
+          const diff = Math.abs(c.ratePerKg - median) / median;
+          return diff < 0.05;
+        });
+        if (validCandidates.length > 0) {
+          best = validCandidates[0];
+        } else {
+          best = candidates.reduce((a, b) => Math.abs(a.ratePerKg - median) < Math.abs(b.ratePerKg - median) ? a : b);
+        }
       }
 
       const perGram = Math.round(best.ratePerKg / 1000 * 100) / 100;
