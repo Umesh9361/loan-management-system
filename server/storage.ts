@@ -2421,7 +2421,7 @@ export class DatabaseStorage implements IStorage {
         const isSilverLoan = loan.metalType === 'silver';
         const metalWeightNum = parseFloat(loan.weight?.toString() || '0');
         const dbPurity = loan.purity ? parseFloat(loan.purity.toString()) : 0;
-        const purityPercentage = dbPurity > 0 ? dbPurity : (isSilverLoan ? 99.9 : filters.finePurityPercentage);
+        const purityPercentage = dbPurity > 0 ? dbPurity : 100;
         const rateForLoan = isSilverLoan ? (filters.currentSilverRate || 0) : filters.currentGoldRate;
         const fineMetalWeight = metalWeightNum * (purityPercentage / 100);
         const currentMetalValue = fineMetalWeight * rateForLoan;
