@@ -804,7 +804,7 @@ export default function Closure() {
       borrowerName: selectedLoan.borrowerName || '',
       borrowerAddress: selectedLoan.borrowerAddress || selectedLoan.address || '',
       groupName: getGroupName(selectedLoan.groupId) || '',
-      collateralDetails: selectedLoan.collateralDetails || selectedLoan.otherInfo || '',
+      collateralDetails: selectedLoan.collateralDetails || [selectedLoan.specialConditions, selectedLoan.documentDetails, selectedLoan.otherInfo].filter((v: string) => v && v !== '—' && v.trim() !== '').join(' | ') || '',
       accountNumber: selectedLoan.accountNumber || '',
       loanDate: editableLoanDate || selectedLoan.loanDate || '',
       months: monthsDisplay,
@@ -1519,12 +1519,12 @@ export default function Closure() {
                                       <div className="text-sm text-green-600">
                                         मुद्दल: ₹{Math.round(loan.principalAmount).toLocaleString('en-IN')} | दर: {formatRate(loan.interestRate)}% {loan.interestRateType === 'monthly' ? 'मासिक' : 'वार्षिक'}
                                       </div>
-                                      {(loan.collateralDetails || loan.otherInfo) && (
+                                      {(loan.collateralDetails || loan.otherInfo || loan.specialConditions || loan.documentDetails) && (
                                         <div className="text-sm text-purple-600">
                                           {loan.collateralDetails ? (
                                             <>वस्तू: {loan.collateralDetails} {loan.weight && `| वजन: ${loan.weight}`}</>
                                           ) : (
-                                            <>माहिती: {loan.otherInfo}</>
+                                            <>माहिती: {[loan.specialConditions, loan.documentDetails, loan.otherInfo].filter((v: string) => v && v !== '—' && v.trim() !== '').join(' | ') || '—'}</>
                                           )}
                                         </div>
                                       )}
@@ -1596,9 +1596,9 @@ export default function Closure() {
                                   </div>
                                 )}
                               </>
-                            ) : selectedLoan.otherInfo ? (
+                            ) : (selectedLoan.otherInfo || selectedLoan.specialConditions || selectedLoan.documentDetails) ? (
                               <div className="md:col-span-2">
-                                <span className="font-medium">इतर माहिती:</span> {selectedLoan.otherInfo}
+                                <span className="font-medium">माहिती:</span> {[selectedLoan.specialConditions, selectedLoan.documentDetails, selectedLoan.otherInfo].filter((v: string) => v && v !== '—' && v.trim() !== '').join(' | ') || '—'}
                               </div>
                             ) : null}
                           </div>

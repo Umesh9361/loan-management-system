@@ -2641,7 +2641,9 @@ function Loans() {
 
               {/* Additional Information Section */}
               <div className="space-y-3 sm:space-y-4 pt-3 sm:pt-4 border-t border-gray-200">
-                <h3 className="text-base font-semibold text-purple-700">अतिरिक्त माहिती</h3>
+                <h3 className="text-base font-semibold text-purple-700">
+                  {watchedLoanType === 'विनातारण' ? 'कर्ज तपशील / अतिरिक्त माहिती (विनातारण कर्जाची माहिती येथे भरा)' : 'अतिरिक्त माहिती'}
+                </h3>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                   {/* Document Details */}
@@ -3230,8 +3232,8 @@ function Loans() {
                       </TableCell>
                       <TableCell className="text-sm font-medium text-gray-800 py-3 px-4">{loan.borrowerName}</TableCell>
                       <TableCell className="text-sm text-gray-600 py-3 px-4 tabular-nums">{loan.borrowerMobile || "—"}</TableCell>
-                      <TableCell className="text-sm text-gray-600 py-3 px-4 max-w-[200px] truncate" title={loan.collateralDetails || loan.otherInfo || ''}>
-                        {loan.collateralDetails || loan.otherInfo || "—"}
+                      <TableCell className="text-sm text-gray-600 py-3 px-4 max-w-[200px] truncate" title={loan.collateralDetails || [loan.specialConditions, loan.documentDetails, loan.otherInfo].filter((v: string) => v && v !== '—').join(' | ') || ''}>
+                        {loan.collateralDetails || [loan.specialConditions, loan.documentDetails, loan.otherInfo].filter((v: string) => v && v !== '—').join(' | ') || "—"}
                       </TableCell>
                       <TableCell className="text-sm text-gray-600 py-3 px-4">
                         {loan.loanType === 'विनातारण' ? "—" : (loan.weight || "—")}
@@ -3765,9 +3767,9 @@ function Loans() {
               )}
 
               {/* Documents & Additional Info */}
-              <div className="bg-gradient-to-r from-gray-50 to-slate-50 p-4 rounded-lg border border-gray-200">
-                <h3 className="text-lg font-semibold text-gray-800 mb-3 flex items-center">
-                  📄 अतिरिक्त माहिती
+              <div className={`p-4 rounded-lg border ${selectedLoanDetails.loanType === 'विनातारण' ? 'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200' : 'bg-gradient-to-r from-gray-50 to-slate-50 border-gray-200'}`}>
+                <h3 className={`text-lg font-semibold mb-3 flex items-center ${selectedLoanDetails.loanType === 'विनातारण' ? 'text-blue-800' : 'text-gray-800'}`}>
+                  📄 {selectedLoanDetails.loanType === 'विनातारण' ? 'कर्ज तपशील / अतिरिक्त माहिती' : 'अतिरिक्त माहिती'}
                 </h3>
                 <div className="space-y-3">
                   <div>

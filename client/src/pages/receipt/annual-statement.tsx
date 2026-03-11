@@ -658,11 +658,11 @@ export default function AnnualStatementPage() {
                               <div className="text-sm text-green-700 font-medium mt-1">
                                 मुद्दल: ₹{Math.round(loan.principalAmount).toLocaleString('en-IN')} | दर: {loan.interestRate}% {loan.interestRateType === 'monthly' ? 'मासिक' : 'वार्षिक'}
                               </div>
-                              {(loan.collateralDetails || loan.otherInfo) && (
+                              {(loan.collateralDetails || loan.otherInfo || loan.specialConditions || loan.documentDetails) && (
                                 <div className="text-sm text-purple-700 mt-1">
                                   {loan.collateralDetails
                                     ? <>वस्तू: {loan.collateralDetails} {loan.weight && `| वजन: ${loan.weight}`}</>
-                                    : <>माहिती: {loan.otherInfo}</>
+                                    : <>माहिती: {[loan.specialConditions, loan.documentDetails, loan.otherInfo].filter((v: string) => v && v !== '—' && v.trim() !== '').join(' | ') || '—'}</>
                                   }
                                 </div>
                               )}
