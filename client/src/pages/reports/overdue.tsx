@@ -1353,7 +1353,7 @@ export default function OverdueReport() {
                             </div>
                             <div>
                               <span className="text-gray-500">{item.loanType === 'विनातारण' ? '—' : 'शुद्धता'}</span>
-                              <div className="font-semibold text-blue-700">{item.loanType === 'विनातारण' ? '—' : `${item.purityUsed || 82}%`}</div>
+                              <div className="font-semibold text-blue-700">{item.loanType === 'विनातारण' ? '—' : `${item.purityUsed}%`}</div>
                             </div>
                             <div>
                               <span className="text-gray-500">{item.loanType === 'विनातारण' ? '—' : 'तारण मूल्य'}</span>
@@ -1415,7 +1415,7 @@ export default function OverdueReport() {
                               <td className="border border-gray-300 px-3 py-3 text-base text-right font-semibold text-purple-700">{formatCurrency(item.principalAmount)}</td>
                               <td className="border border-gray-300 px-3 py-3 text-base text-right font-semibold text-orange-700">{formatCurrency(item.interestToDate)}</td>
                               <td className="border border-gray-300 px-3 py-3 text-base text-center font-semibold text-amber-700">{item.loanType === 'विनातारण' ? 'विनातारण' : (item.goldWeight || '—')}</td>
-                              <td className="border border-gray-300 px-3 py-3 text-base text-center font-semibold text-blue-700">{item.loanType === 'विनातारण' ? '—' : `${item.purityUsed || 82}%`}</td>
+                              <td className="border border-gray-300 px-3 py-3 text-base text-center font-semibold text-blue-700">{item.loanType === 'विनातारण' ? '—' : `${item.purityUsed}%`}</td>
                               <td className="border border-gray-300 px-3 py-3 text-base text-right font-semibold text-green-700">{item.loanType === 'विनातारण' ? '—' : formatCurrency(item.currentGoldValue)}</td>
                               <td className="border border-gray-300 px-3 py-3 text-base text-right font-bold text-indigo-700">{formatCurrency(item.totalAmount)}</td>
                               <td className={`border border-gray-300 px-3 py-3 text-base text-right font-bold ${security.bgColor}`}>
@@ -1485,7 +1485,7 @@ export default function OverdueReport() {
                         <td style={{border: '1px solid black', padding: '3px', textAlign: 'right'}}>{formatCurrency(item.principalAmount)}</td>
                         <td style={{border: '1px solid black', padding: '3px', textAlign: 'right'}}>{formatCurrency(item.interestToDate)}</td>
                         <td style={{border: '1px solid black', padding: '3px', textAlign: 'center'}}>{item.loanType === 'विनातारण' ? 'विनातारण' : (item.goldWeight || '—')}</td>
-                        <td style={{border: '1px solid black', padding: '3px', textAlign: 'center'}}>{item.loanType === 'विनातारण' ? '—' : `${item.purityUsed || 82}%`}</td>
+                        <td style={{border: '1px solid black', padding: '3px', textAlign: 'center'}}>{item.loanType === 'विनातारण' ? '—' : `${item.purityUsed}%`}</td>
                         <td style={{border: '1px solid black', padding: '3px', textAlign: 'right'}}>{item.loanType === 'विनातारण' ? '—' : formatCurrency(item.currentGoldValue)}</td>
                         <td style={{border: '1px solid black', padding: '3px', textAlign: 'right', fontWeight: 'bold'}}>{formatCurrency(item.totalAmount)}</td>
                         <td style={{border: '1px solid black', padding: '3px', textAlign: 'right', fontWeight: 'bold', color: item.lossAmount > 0 ? 'red' : 'green'}}>
