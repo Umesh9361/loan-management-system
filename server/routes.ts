@@ -72,8 +72,8 @@ declare module "express-session" {
 export async function registerRoutes(app: Express): Promise<Server> {
   try {
     const { pool } = await import('./db');
-    await pool.query("UPDATE loans SET loan_type = 'तारण' WHERE loan_type IS NULL OR loan_type = 'विनातारण'");
-    console.log('Migration: loan_type updated to तारण for all existing loans');
+    await pool.query("UPDATE loans SET loan_type = 'तारण' WHERE loan_type IS NULL");
+    console.log('Migration: loan_type updated to तारण for all existing loans (विनातारण preserved)');
 
     const { rows: alreadyMigrated } = await pool.query(
       "SELECT COUNT(*) as cnt FROM loans WHERE purity IS NOT NULL AND purity != 82"
@@ -2723,7 +2723,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return defaultPurity;
       }
 
-      const conditions: any[] = [eq(loans.tenantId, tenantId), eq(loans.status, 'active')];
+      const conditions: any[] = [eq(loans.tenantId, tenantId), eq(loans.status, 'active'), ne(loans.loanType, 'विनातारण')];
       if (groupId && groupId !== 'all') {
         conditions.push(eq(loans.groupId, groupId as string));
       }

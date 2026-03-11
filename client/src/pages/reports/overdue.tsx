@@ -601,7 +601,7 @@ export default function OverdueReport() {
       'मुद्दल': item.principalAmount,
       'व्याज': item.interestToDate,
       'एकूण': item.totalAmount,
-      'वजन (ग्राम)': item.goldWeight,
+      'वजन (ग्राम)': item.goldWeight || '—',
       'सोन्याची किंमत': item.currentGoldValue,
       'नुकसान': item.lossAmount,
       'नुकसान %': `${item.lossPercentage}%`,
@@ -1298,7 +1298,7 @@ export default function OverdueReport() {
                           <div className="grid grid-cols-3 gap-2 text-xs mt-1">
                             <div>
                               <span className="text-gray-500">वजन</span>
-                              <div className="font-semibold text-amber-700">{item.goldWeight}g</div>
+                              <div className="font-semibold text-amber-700">{item.goldWeight ? `${item.goldWeight}g` : '—'}</div>
                             </div>
                             <div>
                               <span className="text-gray-500">सोन्याची किंमत</span>
@@ -1358,7 +1358,7 @@ export default function OverdueReport() {
                               <td className="border border-gray-300 px-3 py-3 text-base text-center text-gray-700">{formatDate(item.loanDate)}</td>
                               <td className="border border-gray-300 px-3 py-3 text-base text-right font-semibold text-purple-700">{formatCurrency(item.principalAmount)}</td>
                               <td className="border border-gray-300 px-3 py-3 text-base text-right font-semibold text-orange-700">{formatCurrency(item.interestToDate)}</td>
-                              <td className="border border-gray-300 px-3 py-3 text-base text-center font-semibold text-amber-700">{item.goldWeight}</td>
+                              <td className="border border-gray-300 px-3 py-3 text-base text-center font-semibold text-amber-700">{item.goldWeight || '—'}</td>
                               <td className="border border-gray-300 px-3 py-3 text-base text-right font-semibold text-green-700">{formatCurrency(item.currentGoldValue)}</td>
                               <td className="border border-gray-300 px-3 py-3 text-base text-right font-bold text-indigo-700">{formatCurrency(item.totalAmount)}</td>
                               <td className={`border border-gray-300 px-3 py-3 text-base text-right font-bold ${security.bgColor}`}>
@@ -1426,7 +1426,7 @@ export default function OverdueReport() {
                         <td style={{border: '1px solid black', padding: '3px', textAlign: 'center'}}>{formatDate(item.loanDate)}</td>
                         <td style={{border: '1px solid black', padding: '3px', textAlign: 'right'}}>{formatCurrency(item.principalAmount)}</td>
                         <td style={{border: '1px solid black', padding: '3px', textAlign: 'right'}}>{formatCurrency(item.interestToDate)}</td>
-                        <td style={{border: '1px solid black', padding: '3px', textAlign: 'center'}}>{item.goldWeight}</td>
+                        <td style={{border: '1px solid black', padding: '3px', textAlign: 'center'}}>{item.goldWeight || '—'}</td>
                         <td style={{border: '1px solid black', padding: '3px', textAlign: 'right'}}>{formatCurrency(item.currentGoldValue)}</td>
                         <td style={{border: '1px solid black', padding: '3px', textAlign: 'right', fontWeight: 'bold'}}>{formatCurrency(item.totalAmount)}</td>
                         <td style={{border: '1px solid black', padding: '3px', textAlign: 'right', fontWeight: 'bold', color: item.lossAmount > 0 ? 'red' : 'green'}}>

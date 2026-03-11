@@ -57,8 +57,8 @@ const loanSchema = z.object({
   
   interestRate: z.string().min(1, "व्याजाचा दर आवश्यक आहे"),
   interestRateType: z.string().default("monthly"), // yearly, monthly
-  collateralDetails: z.string().min(1, "कृपया तारणाचा तपशील भरा"),
-  weight: z.string().min(1, "कृपया वजन भरा"),
+  collateralDetails: z.string().optional().default(""),
+  weight: z.string().optional().default(""),
   purity: z.string().optional().default("82"),
   marketValue: z.string().optional(),
   documentDetails: z.string().optional().default("—"),
@@ -207,10 +207,22 @@ function Loans() {
     return Math.floor(val);
   };
 
+  const watchedLoanType = form.watch("loanType");
+
+  useEffect(() => {
+    if (watchedLoanType === 'विनातारण') {
+      form.setValue('collateralDetails', '', { shouldValidate: false });
+      form.setValue('weight', '', { shouldValidate: false });
+      form.setValue('purity', '82', { shouldValidate: false });
+      form.setValue('marketValue', '', { shouldValidate: false });
+    }
+  }, [watchedLoanType]);
+
   // Auto-calculate market value when weight or purity changes
   useEffect(() => {
     const subscription = form.watch((value, { name }) => {
       if (name === 'weight' || name === 'purity') {
+        if (value.loanType === 'विनातारण') return;
         const weightStr = (value.weight || '0').replace(/[^\d.]/g, '');
         const weightNum = parseFloat(weightStr) || 0;
         const purityNum = parseFloat(value.purity || '82') || 82;
@@ -686,6 +698,17 @@ function Loans() {
     if (createdLoanId) {
       await handlePhotoUpload(createdLoanId);
       return;
+    }
+
+    if (data.loanType !== 'विनातारण') {
+      if (!data.collateralDetails || data.collateralDetails.trim() === '') {
+        toast({ title: "कृपया तारणाचा तपशील भरा", variant: "destructive" });
+        return;
+      }
+      if (!data.weight || data.weight.trim() === '') {
+        toast({ title: "कृपया वजन भरा", variant: "destructive" });
+        return;
+      }
     }
 
     const ltvEnabled = (company as any)?.ltvWarningEnabled !== false;
@@ -2464,7 +2487,8 @@ function Loans() {
                     />
                 </div>
 
-                {/* Column 3 - Collateral Information */}
+                {/* Column 3 - Collateral Information (hidden for विनातारण) */}
+                {watchedLoanType !== 'विनातारण' && (
                 <div className="space-y-3">
                   <h3 className="text-lg font-semibold border-b pb-1 text-orange-700">तारणाची माहिती</h3>
                   
@@ -2612,6 +2636,7 @@ function Loans() {
                     )}
                   />
                 </div>
+                )}
               </div>
 
               {/* Additional Information Section */}
@@ -3205,11 +3230,11 @@ function Loans() {
                       </TableCell>
                       <TableCell className="text-sm font-medium text-gray-800 py-3 px-4">{loan.borrowerName}</TableCell>
                       <TableCell className="text-sm text-gray-600 py-3 px-4 tabular-nums">{loan.borrowerMobile || "—"}</TableCell>
-                      <TableCell className="text-sm text-gray-600 py-3 px-4 max-w-[200px] truncate" title={loan.collateralDetails}>
-                        {loan.collateralDetails || "—"}
+                      <TableCell className="text-sm text-gray-600 py-3 px-4 max-w-[200px] truncate" title={loan.collateralDetails || loan.otherInfo || ''}>
+                        {loan.collateralDetails || loan.otherInfo || "—"}
                       </TableCell>
                       <TableCell className="text-sm text-gray-600 py-3 px-4">
-                        {loan.weight || "—"}
+                        {loan.loanType === 'विनातारण' ? "—" : (loan.weight || "—")}
                       </TableCell>
                       <TableCell className="text-sm text-gray-700 py-3 px-4 text-center tabular-nums font-medium">
                         {loan.interestRate ? `${loan.interestRate}%` : "—"}
@@ -3712,7 +3737,8 @@ function Loans() {
                 </div>
               </div>
 
-              {/* Collateral Section */}
+              {/* Collateral Section - hidden for विनातारण */}
+              {selectedLoanDetails.loanType !== 'विनातारण' && (
               <div className="bg-gradient-to-r from-orange-50 to-amber-50 p-4 rounded-lg border border-orange-200">
                 <h3 className="text-lg font-semibold text-orange-800 mb-3 flex items-center">
                   🏺 तारण / गहाण तपशील
@@ -3736,6 +3762,7 @@ function Loans() {
                   </div>
                 </div>
               </div>
+              )}
 
               {/* Documents & Additional Info */}
               <div className="bg-gradient-to-r from-gray-50 to-slate-50 p-4 rounded-lg border border-gray-200">

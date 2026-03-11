@@ -804,7 +804,7 @@ export default function Closure() {
       borrowerName: selectedLoan.borrowerName || '',
       borrowerAddress: selectedLoan.borrowerAddress || selectedLoan.address || '',
       groupName: getGroupName(selectedLoan.groupId) || '',
-      collateralDetails: selectedLoan.collateralDetails || '',
+      collateralDetails: selectedLoan.collateralDetails || selectedLoan.otherInfo || '',
       accountNumber: selectedLoan.accountNumber || '',
       loanDate: editableLoanDate || selectedLoan.loanDate || '',
       months: monthsDisplay,
@@ -1519,9 +1519,13 @@ export default function Closure() {
                                       <div className="text-sm text-green-600">
                                         मुद्दल: ₹{Math.round(loan.principalAmount).toLocaleString('en-IN')} | दर: {formatRate(loan.interestRate)}% {loan.interestRateType === 'monthly' ? 'मासिक' : 'वार्षिक'}
                                       </div>
-                                      {loan.collateralDetails && (
+                                      {(loan.collateralDetails || loan.otherInfo) && (
                                         <div className="text-sm text-purple-600">
-                                          वस्तू: {loan.collateralDetails} {loan.weight && `| वजन: ${loan.weight}`}
+                                          {loan.collateralDetails ? (
+                                            <>वस्तू: {loan.collateralDetails} {loan.weight && `| वजन: ${loan.weight}`}</>
+                                          ) : (
+                                            <>माहिती: {loan.otherInfo}</>
+                                          )}
                                         </div>
                                       )}
                                     </div>
@@ -1581,16 +1585,22 @@ export default function Closure() {
                                 </span>
                               )}
                             </div>
-                            {selectedLoan.collateralDetails && (
+                            {selectedLoan.collateralDetails ? (
+                              <>
+                                <div className="md:col-span-2">
+                                  <span className="font-medium">वस्तूचे वर्णन:</span> {selectedLoan.collateralDetails}
+                                </div>
+                                {selectedLoan.weight && (
+                                  <div>
+                                    <span className="font-medium">वजन:</span> {selectedLoan.weight}
+                                  </div>
+                                )}
+                              </>
+                            ) : selectedLoan.otherInfo ? (
                               <div className="md:col-span-2">
-                                <span className="font-medium">वस्तूचे वर्णन:</span> {selectedLoan.collateralDetails}
+                                <span className="font-medium">इतर माहिती:</span> {selectedLoan.otherInfo}
                               </div>
-                            )}
-                            {selectedLoan.weight && (
-                              <div>
-                                <span className="font-medium">वजन:</span> {selectedLoan.weight}
-                              </div>
-                            )}
+                            ) : null}
                           </div>
                           
                           {/* Photo Viewer Section - Hidden by default, click to show */}

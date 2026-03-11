@@ -1415,8 +1415,8 @@ export default function BorrowerListReports() {
             <td style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 4px; text-align: right; width: 70px; font-size: 14px; vertical-align: middle; font-weight: 500;" class="loan-amount">${Math.round(loan.principalAmount).toLocaleString('en-IN')}</td>
             <td style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 4px; width: 200px; font-size: 14px; vertical-align: middle; font-weight: 500;">${getPhotoIndicator(loan.id)}${loan.borrowerName.length > 25 ? loan.borrowerName.substring(0, 25) + '...' : loan.borrowerName}${isClosedLoan && dateWiseStatus === 'all' ? ' (बंद)' : ''}</td>
             <td class="mobile-hide" style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 4px; text-align: left; width: 70px; font-size: 14px; vertical-align: middle; font-weight: 500;">${(loan.accountNumber || loan.id.slice(0, 5)).toString().substring(0, 7)}</td>
-            <td class="mobile-hide" style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 4px; width: auto; font-size: 14px; word-wrap: break-word; white-space: normal; vertical-align: middle; line-height: 1.3; overflow-wrap: break-word; font-weight: 500;">${loan.itemDescription || loan.collateralDetails || 'सोन्याचे दागिने, अंगूठी, कंगन, नथ, हार इत्यादी'}</td>
-            <td class="mobile-hide" style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 4px; text-align: center; width: 70px; font-size: 14px; vertical-align: middle; font-weight: 500;">${loan.weight ? loan.weight.toString().substring(0, 15) : '10'}</td>
+            <td class="mobile-hide" style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 4px; width: auto; font-size: 14px; word-wrap: break-word; white-space: normal; vertical-align: middle; line-height: 1.3; overflow-wrap: break-word; font-weight: 500;">${loan.loanType === 'विनातारण' ? (loan.otherInfo || '—') : (loan.itemDescription || loan.collateralDetails || 'सोन्याचे दागिने, अंगूठी, कंगन, नथ, हार इत्यादी')}</td>
+            <td class="mobile-hide" style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 4px; text-align: center; width: 70px; font-size: 14px; vertical-align: middle; font-weight: 500;">${loan.loanType === 'विनातारण' ? '—' : (loan.weight ? loan.weight.toString().substring(0, 15) : '10')}</td>
           </tr>
         `;
       }).join('');
@@ -1444,8 +1444,8 @@ export default function BorrowerListReports() {
             <td style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 4px; text-align: right; width: 70px; font-size: 14px; vertical-align: middle; font-weight: 500;" class="loan-amount">${Math.round(loan.principalAmount).toLocaleString('en-IN')}</td>
             <td style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 4px; width: 200px; font-size: 14px; vertical-align: middle; font-weight: 500;">${getPhotoIndicator(loan.id)}${loan.borrowerName.length > 25 ? loan.borrowerName.substring(0, 25) + '...' : loan.borrowerName}${isClosedLoan && nameWiseStatus === 'all' ? ' (बंद)' : ''}</td>
             <td class="mobile-hide" style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 4px; text-align: left; width: 70px; font-size: 14px; vertical-align: middle; font-weight: 500;">${(loan.accountNumber || loan.id.slice(0, 5)).toString().substring(0, 7)}</td>
-            <td class="mobile-hide" style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 4px; width: auto; font-size: 14px; word-wrap: break-word; white-space: normal; vertical-align: middle; line-height: 1.3; overflow-wrap: break-word; font-weight: 500;">${loan.itemDescription || loan.collateralDetails || 'सोन्याचे दागिने, अंगूठी, कंगन, नथ, हार इत्यादी'}</td>
-            <td class="mobile-hide" style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 4px; text-align: center; width: 70px; font-size: 14px; vertical-align: middle; font-weight: 500;">${loan.weight ? loan.weight.toString().substring(0, 15) : '10'}</td>
+            <td class="mobile-hide" style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 4px; width: auto; font-size: 14px; word-wrap: break-word; white-space: normal; vertical-align: middle; line-height: 1.3; overflow-wrap: break-word; font-weight: 500;">${loan.loanType === 'विनातारण' ? (loan.otherInfo || '—') : (loan.itemDescription || loan.collateralDetails || 'सोन्याचे दागिने, अंगूठी, कंगन, नथ, हार इत्यादी')}</td>
+            <td class="mobile-hide" style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 4px; text-align: center; width: 70px; font-size: 14px; vertical-align: middle; font-weight: 500;">${loan.loanType === 'विनातारण' ? '—' : (loan.weight ? loan.weight.toString().substring(0, 15) : '10')}</td>
           </tr>
         `;
       }).join('');
@@ -1507,8 +1507,8 @@ export default function BorrowerListReports() {
             </td>
             <td style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 4px; width: 200px; font-size: 14px; vertical-align: middle; font-weight: 500;">${getPhotoIndicator(loan.id)}${loan.borrowerName.length > 25 ? loan.borrowerName.substring(0, 25) + '...' : loan.borrowerName}</td>
             <td class="mobile-hide" style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 4px; text-align: left; width: 70px; font-size: 14px; vertical-align: middle; font-weight: 500;">${(loan.accountNumber || loan.id.slice(0, 5)).toString().substring(0, 7)}</td>
-            <td class="mobile-hide" style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 4px; width: auto; font-size: 14px; word-wrap: break-word; white-space: normal; vertical-align: middle; line-height: 1.3; overflow-wrap: break-word; font-weight: 500;">${(loan.itemDescription || loan.collateralDetails || 'सोन्याचे दागिने, अंगूठी, कंगन, नथ, हार इत्यादी').replace(/^\d+[\s-]*/, '').trim() || 'सोन्याचे दागिने, अंगूठी, कंगन, नथ, हार इत्यादी'}</td>
-            <td class="mobile-hide" style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 4px; text-align: center; width: 70px; font-size: 14px; vertical-align: middle; font-weight: 500;">${loan.weight ? loan.weight.toString().substring(0, 15) : '10'}</td>
+            <td class="mobile-hide" style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 4px; width: auto; font-size: 14px; word-wrap: break-word; white-space: normal; vertical-align: middle; line-height: 1.3; overflow-wrap: break-word; font-weight: 500;">${loan.loanType === 'विनातारण' ? (loan.otherInfo || '—') : ((loan.itemDescription || loan.collateralDetails || 'सोन्याचे दागिने, अंगूठी, कंगन, नथ, हार इत्यादी').replace(/^\d+[\s-]*/, '').trim() || 'सोन्याचे दागिने, अंगूठी, कंगन, नथ, हार इत्यादी')}</td>
+            <td class="mobile-hide" style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 4px; text-align: center; width: 70px; font-size: 14px; vertical-align: middle; font-weight: 500;">${loan.loanType === 'विनातारण' ? '—' : (loan.weight ? loan.weight.toString().substring(0, 15) : '10')}</td>
           </tr>
         `;
       }).join('');
@@ -1569,8 +1569,8 @@ export default function BorrowerListReports() {
             </td>
             <td class="maturity-cell-name" style="border-left: 1px solid #e5e7eb; padding: 8px 4px; width: 200px; font-size: 14px; font-weight: 500; color: #1f2937; vertical-align: middle; word-wrap: break-word;">${getPhotoIndicator(loan.id)}${loan.borrowerName.length > 28 ? loan.borrowerName.substring(0, 28) + '...' : loan.borrowerName}</td>
             <td class="maturity-cell-code mobile-hide" style="border-left: 1px solid #e5e7eb; padding: 8px 4px; text-align: center; width: 50px; font-size: 14px; font-weight: 600; color: #000000; vertical-align: middle;">${(loan.accountNumber || loan.id.slice(0, 5)).toString().substring(0, 7)}</td>
-            <td class="maturity-cell-details mobile-hide" style="border-left: 1px solid #e5e7eb; padding: 8px 4px; width: auto; font-size: 13px; font-weight: 400; color: #4b5563; vertical-align: middle; line-height: 1.4; word-wrap: break-word; overflow-wrap: break-word;">${(loan.itemDescription || loan.collateralDetails || 'सोन्याचे दागिने, अंगूठी, कंगन, नथ, हार इत्यादी').substring(0, 80)}</td>
-            <td class="maturity-cell-weight mobile-hide" style="border-left: 1px solid #e5e7eb; padding: 8px 4px; text-align: center; width: 50px; font-size: 14px; font-weight: 500; color: #6b7280; vertical-align: middle;">${loan.weight ? loan.weight.toString().substring(0, 10) : '10'}</td>
+            <td class="maturity-cell-details mobile-hide" style="border-left: 1px solid #e5e7eb; padding: 8px 4px; width: auto; font-size: 13px; font-weight: 400; color: #4b5563; vertical-align: middle; line-height: 1.4; word-wrap: break-word; overflow-wrap: break-word;">${loan.loanType === 'विनातारण' ? (loan.otherInfo || '—') : (loan.itemDescription || loan.collateralDetails || 'सोन्याचे दागिने, अंगूठी, कंगन, नथ, हार इत्यादी').substring(0, 80)}</td>
+            <td class="maturity-cell-weight mobile-hide" style="border-left: 1px solid #e5e7eb; padding: 8px 4px; text-align: center; width: 50px; font-size: 14px; font-weight: 500; color: #6b7280; vertical-align: middle;">${loan.loanType === 'विनातारण' ? '—' : (loan.weight ? loan.weight.toString().substring(0, 10) : '10')}</td>
             <td class="maturity-cell-maturity mobile-hide" style="border-left: 1px solid #e5e7eb; padding: 8px 4px; text-align: center; width: 60px; font-size: 14px; font-weight: 700; color: #dc2626; vertical-align: middle; background-color: #fef2f2;">${shortMaturityDate}</td>
           </tr>
         `;
@@ -1580,6 +1580,7 @@ export default function BorrowerListReports() {
     // Calculate totals
     const totalAmount = reportData.reduce((sum, loan) => sum + Math.round(loan.principalAmount), 0);
     const totalWeight = reportData.reduce((sum, loan) => {
+      if (loan.loanType === 'विनातारण') return sum;
       const weight = (loan.weight || '10').toString().replace(/[^\d]/g, '') || '10';
       return sum + parseInt(weight);
     }, 0);
@@ -4201,10 +4202,10 @@ export default function BorrowerListReports() {
                           {(loan.accountNumber || loan.id.slice(0, 5)).toString().substring(0, 7)}
                         </td>
                         <td className="border border-indigo-100 p-1.5 sm:p-2 md:p-3 text-xs sm:text-sm md:text-base">
-                          {loan.itemDescription || loan.collateralDetails || 'सोन्याचे दागिने'}
+                          {loan.loanType === 'विनातारण' ? (loan.otherInfo || '—') : (loan.itemDescription || loan.collateralDetails || 'सोन्याचे दागिने')}
                         </td>
                         <td className="border border-indigo-100 p-1.5 sm:p-2 md:p-3 text-center text-xs sm:text-sm md:text-base">
-                          {loan.weight || '10'}
+                          {loan.loanType === 'विनातारण' ? '—' : (loan.weight || '10')}
                         </td>
                       </tr>
                     );
