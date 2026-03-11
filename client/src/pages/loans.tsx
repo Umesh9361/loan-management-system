@@ -2385,7 +2385,9 @@ function Loans() {
                         const isYearly = rateType === "yearly";
                         const rateValue = parseFloat(field.value || '0');
                         
+                        const interestRateWarningEnabled = (company as any)?.interestRateWarningEnabled !== false;
                         const getSuggestedRate = () => {
+                          if (!interestRateWarningEnabled) return null;
                           if (!rateValue || rateValue <= 0) return null;
                           if (!isYearly && rateValue > 10) {
                             const div100 = rateValue / 100;

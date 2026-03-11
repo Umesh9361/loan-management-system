@@ -135,6 +135,53 @@ function DataEntryModeToggle() {
   );
 }
 
+function InterestRateWarningToggle() {
+  const { toast } = useToast();
+  const qc = useQueryClient();
+  const { data: company } = useQuery<any>({
+    queryKey: ["/api/company"],
+  });
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between p-4 rounded-lg border border-gray-200 bg-gray-50">
+        <div className="flex-1">
+          <h3 className="font-medium text-sm">व्याजदर वॉर्निंग (Interest Rate चेतावणी)</h3>
+          <p className="text-xs text-muted-foreground mt-1">
+            कर्ज नोंदणी करताना व्याजदर चुकीचा टाईप केल्यास चेतावणी दाखवते.
+            <br />
+            <span className="text-amber-600 font-medium">उदा: मासिक 175% → 1.75% सुचवणे, वार्षिक 1.80% → मासिक मध्ये बदला.</span>
+          </p>
+        </div>
+        <Switch
+          checked={company?.interestRateWarningEnabled !== false}
+          onCheckedChange={async (checked: boolean) => {
+            try {
+              await apiRequest("/api/company/interest-rate-warning-toggle", "PUT", { enabled: checked });
+              qc.invalidateQueries({ queryKey: ["/api/company"] });
+              toast({
+                title: checked ? "व्याजदर वॉर्निंग चालू" : "व्याजदर वॉर्निंग बंद",
+                description: checked
+                  ? "व्याजदर चुकीचा असल्यास चेतावणी दिसेल"
+                  : "व्याजदर चेतावणी बंद केली",
+              });
+            } catch (error) {
+              toast({
+                title: "त्रुटी",
+                description: "सेटिंग बदलता आली नाही",
+                variant: "destructive",
+              });
+            }
+          }}
+        />
+      </div>
+      <div className={`text-xs px-3 py-2 rounded ${company?.interestRateWarningEnabled !== false ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
+        स्थिती: {company?.interestRateWarningEnabled !== false ? '✅ व्याजदर वॉर्निंग चालू — चुकीचा दर टाईप केल्यास सुधारणा सुचवेल' : '🔶 व्याजदर वॉर्निंग बंद — कोणतीही व्याजदर चेतावणी नाही'}
+      </div>
+    </div>
+  );
+}
+
 function LtvWarningToggle() {
   const { toast } = useToast();
   const qc = useQueryClient();
@@ -625,6 +672,9 @@ export default function UserManagement() {
           <DataEntryModeToggle />
           <div className="mt-4">
             <LtvWarningToggle />
+          </div>
+          <div className="mt-4">
+            <InterestRateWarningToggle />
           </div>
         </CardContent>
       </Card>
