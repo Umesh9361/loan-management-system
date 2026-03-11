@@ -742,11 +742,17 @@ export default function OverdueReport() {
     return new Date(a.loanDate).getTime() - new Date(b.loanDate).getTime();
   });
 
+  const securedLoans = sortedOverdueData.filter((item: OverdueItem) => item.loanType !== 'विनातारण');
+  const unsecuredLoans = sortedOverdueData.filter((item: OverdueItem) => item.loanType === 'विनातारण');
+
   const totalLoss = sortedOverdueData.reduce((sum: number, item: OverdueItem) => sum + item.lossAmount, 0);
   const totalLoans = sortedOverdueData.length;
   const averageLoss = totalLoans > 0 ? totalLoss / totalLoans : 0;
   const totalAllLoans = (overdueData as OverdueItem[]).length;
   const filteredOutCount = totalAllLoans - totalLoans;
+
+  const securedTotalLoss = securedLoans.reduce((sum: number, item: OverdueItem) => sum + item.lossAmount, 0);
+  const unsecuredTotalLoss = unsecuredLoans.reduce((sum: number, item: OverdueItem) => sum + item.lossAmount, 0);
 
   const levelCounts = {
     loss: sortedOverdueData.filter(i => getSecurityLevel(i).level === 'loss').length,
@@ -1183,7 +1189,7 @@ export default function OverdueReport() {
                 
                 <div className="mt-6 pt-4 border-t border-gray-300">
                   <p className="text-sm sm:text-base md:text-lg font-semibold text-gray-700">
-                    Total Loans: {totalLoans} {viewMode === "default" && `(सुरक्षित वगळले: ${filteredOutCount})`} | Total Loss: {formatCurrency(totalLoss)} | Average Loss: {formatCurrency(averageLoss)}
+                    Total Loans: {totalLoans} (तारण: {securedLoans.length}, विनातारण: {unsecuredLoans.length}) {viewMode === "default" && `| सुरक्षित वगळले: ${filteredOutCount}`} | Total Loss: {formatCurrency(totalLoss)}
                   </p>
                   <div className="flex flex-wrap gap-2 justify-center mt-3">
                     {levelCounts.loss > 0 && (
@@ -1306,9 +1312,16 @@ export default function OverdueReport() {
                   </div>
                 </Card>
               ) : (
+                <>
+                {securedLoans.length > 0 && (
                 <Card className="overflow-hidden">
+                  {unsecuredLoans.length > 0 && (
+                    <div className="bg-gradient-to-r from-indigo-500 to-blue-500 text-white px-4 py-2 text-sm font-bold">
+                      तारण कर्ज ({securedLoans.length}) — नुकसान: {formatCurrency(securedTotalLoss)}
+                    </div>
+                  )}
                   <div className="sm:hidden divide-y divide-gray-100">
-                    {sortedOverdueData.map((item: OverdueItem, index: number) => {
+                    {securedLoans.map((item: OverdueItem, index: number) => {
                       const security = getSecurityLevel(item);
                       return (
                         <div 
@@ -1348,16 +1361,16 @@ export default function OverdueReport() {
                           </div>
                           <div className="grid grid-cols-4 gap-2 text-xs mt-1">
                             <div>
-                              <span className="text-gray-500">{item.loanType === 'विनातारण' ? 'प्रकार' : 'वजन'}</span>
-                              <div className="font-semibold text-amber-700">{item.loanType === 'विनातारण' ? 'विनातारण' : (item.goldWeight ? `${item.goldWeight}g` : '—')}</div>
+                              <span className="text-gray-500">वजन</span>
+                              <div className="font-semibold text-amber-700">{item.goldWeight ? `${item.goldWeight}g` : '—'}</div>
                             </div>
                             <div>
-                              <span className="text-gray-500">{item.loanType === 'विनातारण' ? '—' : 'शुद्धता'}</span>
-                              <div className="font-semibold text-blue-700">{item.loanType === 'विनातारण' ? '—' : `${item.purityUsed}%`}</div>
+                              <span className="text-gray-500">शुद्धता</span>
+                              <div className="font-semibold text-blue-700">{`${item.purityUsed}%`}</div>
                             </div>
                             <div>
-                              <span className="text-gray-500">{item.loanType === 'विनातारण' ? '—' : 'तारण मूल्य'}</span>
-                              <div className="font-semibold text-green-700">{item.loanType === 'विनातारण' ? '—' : formatCurrency(item.currentGoldValue)}</div>
+                              <span className="text-gray-500">तारण मूल्य</span>
+                              <div className="font-semibold text-green-700">{formatCurrency(item.currentGoldValue)}</div>
                             </div>
                             <div>
                               <span className="text-gray-500">दिवस</span>
@@ -1388,7 +1401,7 @@ export default function OverdueReport() {
                         </tr>
                       </thead>
                       <tbody>
-                        {sortedOverdueData.map((item: OverdueItem, index: number) => {
+                        {securedLoans.map((item: OverdueItem, index: number) => {
                           const security = getSecurityLevel(item);
                           return (
                             <tr 
@@ -1414,9 +1427,9 @@ export default function OverdueReport() {
                               <td className="border border-gray-300 px-3 py-3 text-base text-center text-gray-700">{formatDate(item.loanDate)}</td>
                               <td className="border border-gray-300 px-3 py-3 text-base text-right font-semibold text-purple-700">{formatCurrency(item.principalAmount)}</td>
                               <td className="border border-gray-300 px-3 py-3 text-base text-right font-semibold text-orange-700">{formatCurrency(item.interestToDate)}</td>
-                              <td className="border border-gray-300 px-3 py-3 text-base text-center font-semibold text-amber-700">{item.loanType === 'विनातारण' ? 'विनातारण' : (item.goldWeight || '—')}</td>
-                              <td className="border border-gray-300 px-3 py-3 text-base text-center font-semibold text-blue-700">{item.loanType === 'विनातारण' ? '—' : `${item.purityUsed}%`}</td>
-                              <td className="border border-gray-300 px-3 py-3 text-base text-right font-semibold text-green-700">{item.loanType === 'विनातारण' ? '—' : formatCurrency(item.currentGoldValue)}</td>
+                              <td className="border border-gray-300 px-3 py-3 text-base text-center font-semibold text-amber-700">{item.goldWeight || '—'}</td>
+                              <td className="border border-gray-300 px-3 py-3 text-base text-center font-semibold text-blue-700">{`${item.purityUsed}%`}</td>
+                              <td className="border border-gray-300 px-3 py-3 text-base text-right font-semibold text-green-700">{formatCurrency(item.currentGoldValue)}</td>
                               <td className="border border-gray-300 px-3 py-3 text-base text-right font-bold text-indigo-700">{formatCurrency(item.totalAmount)}</td>
                               <td className={`border border-gray-300 px-3 py-3 text-base text-right font-bold ${security.bgColor}`}>
                                 <div className={`${security.color}`}>
@@ -1430,14 +1443,144 @@ export default function OverdueReport() {
                             </tr>
                           );
                         })}
+                        {securedLoans.length > 0 && (
+                          <tr className="bg-indigo-50 border-t-2 border-indigo-300">
+                            <td colSpan={5} className="border border-gray-300 px-3 py-2 text-sm font-bold text-indigo-800 text-right">तारण कर्ज एकूण ({securedLoans.length})</td>
+                            <td className="border border-gray-300 px-3 py-2 text-sm font-bold text-purple-700 text-right">{formatCurrency(securedLoans.reduce((s, i) => s + i.principalAmount, 0))}</td>
+                            <td className="border border-gray-300 px-3 py-2 text-sm font-bold text-orange-700 text-right">{formatCurrency(securedLoans.reduce((s, i) => s + i.interestToDate, 0))}</td>
+                            <td colSpan={3} className="border border-gray-300 px-3 py-2"></td>
+                            <td className="border border-gray-300 px-3 py-2 text-sm font-bold text-indigo-700 text-right">{formatCurrency(securedLoans.reduce((s, i) => s + i.totalAmount, 0))}</td>
+                            <td className="border border-gray-300 px-3 py-2 text-sm font-bold text-red-700 text-right">{formatCurrency(securedTotalLoss)}</td>
+                            <td className="border border-gray-300 px-3 py-2"></td>
+                          </tr>
+                        )}
                       </tbody>
                     </table>
                   </div>
                 </Card>
+                )}
+
+                {unsecuredLoans.length > 0 && (
+                <Card className="overflow-hidden mt-4">
+                  <div className="bg-gradient-to-r from-amber-500 to-orange-500 text-white px-4 py-2 text-sm font-bold">
+                    विनातारण कर्ज ({unsecuredLoans.length}) — एकूण थकबाकी: {formatCurrency(unsecuredTotalLoss)}
+                  </div>
+                  <div className="sm:hidden divide-y divide-gray-100">
+                    {unsecuredLoans.map((item: OverdueItem) => {
+                      return (
+                        <div 
+                          key={item.loanId}
+                          onClick={() => handleRowSelect(item)}
+                          className="p-3 cursor-pointer transition-colors active:bg-amber-50"
+                        >
+                          <div className="flex justify-between items-start mb-2">
+                            <div>
+                              <div className="font-bold text-gray-900 text-sm">{item.borrowerName}</div>
+                              <div className="text-xs text-gray-500">{item.accountNumber ? `${item.accountNumber} | ` : ''}{item.groupName} | {formatDate(item.loanDate)}</div>
+                              {item.goldItem && item.goldItem !== 'विनातारण' && (
+                                <div className="text-xs text-gray-400 mt-0.5">{item.goldItem}</div>
+                              )}
+                            </div>
+                            <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">
+                              विनातारण
+                            </span>
+                          </div>
+                          <div className="grid grid-cols-3 gap-2 text-xs">
+                            <div>
+                              <span className="text-gray-500">मुद्दल</span>
+                              <div className="font-semibold text-purple-700">{formatCurrency(item.principalAmount)}</div>
+                            </div>
+                            <div>
+                              <span className="text-gray-500">व्याज</span>
+                              <div className="font-semibold text-orange-700">{formatCurrency(item.interestToDate)}</div>
+                            </div>
+                            <div>
+                              <span className="text-gray-500">एकूण थकबाकी</span>
+                              <div className="font-semibold text-red-700">{formatCurrency(item.totalAmount)}</div>
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2 text-xs mt-1">
+                            <div>
+                              <span className="text-gray-500">दिवस</span>
+                              <div className="font-semibold text-gray-700">{item.daysOverdue}</div>
+                            </div>
+                            <div>
+                              <span className="text-gray-500">नुकसान</span>
+                              <div className="font-semibold text-red-700">{formatCurrency(item.lossAmount)}</div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div className="hidden sm:block overflow-x-auto">
+                    <table className="w-full border-collapse">
+                      <thead>
+                        <tr className="bg-gradient-to-r from-amber-50 to-orange-50 border-b-2 border-amber-200">
+                          <th className="border border-gray-300 px-3 py-3 text-left text-base font-bold text-gray-700">खाते नं.</th>
+                          <th className="border border-gray-300 px-3 py-3 text-left text-base font-bold text-gray-700">नाव</th>
+                          <th className="border border-gray-300 px-3 py-3 text-left text-base font-bold text-gray-700">फोन</th>
+                          <th className="border border-gray-300 px-3 py-3 text-left text-base font-bold text-gray-700">गट</th>
+                          <th className="border border-gray-300 px-3 py-3 text-center text-base font-bold text-gray-700">तारीख</th>
+                          <th className="border border-gray-300 px-3 py-3 text-right text-base font-bold text-gray-700">मुद्दल</th>
+                          <th className="border border-gray-300 px-3 py-3 text-right text-base font-bold text-gray-700">व्याज</th>
+                          <th className="border border-gray-300 px-3 py-3 text-right text-base font-bold text-gray-700">एकूण थकबाकी</th>
+                          <th className="border border-gray-300 px-3 py-3 text-center text-base font-bold text-gray-700">दिवस</th>
+                          <th className="border border-gray-300 px-3 py-3 text-right text-base font-bold text-gray-700">नुकसान</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {unsecuredLoans.map((item: OverdueItem, index: number) => (
+                          <tr 
+                            key={item.loanId}
+                            onClick={() => handleRowSelect(item)}
+                            className={cn(
+                              "cursor-pointer transition-colors",
+                              index % 2 === 0 ? 'bg-white' : 'bg-amber-50/30',
+                              "hover:bg-amber-50"
+                            )}>
+                            <td className="border border-gray-300 px-3 py-3 text-base font-medium text-gray-700">{item.accountNumber || '—'}</td>
+                            <td className="border border-gray-300 px-3 py-3">
+                              <div className="text-base font-bold text-gray-800">{item.borrowerName}</div>
+                              {item.goldItem && item.goldItem !== 'विनातारण' && (
+                                <div className="text-xs text-gray-400">{item.goldItem}</div>
+                              )}
+                            </td>
+                            <td className="border border-gray-300 px-3 py-3 text-base text-indigo-600 font-medium">{item.borrowerPhone}</td>
+                            <td className="border border-gray-300 px-3 py-3 text-base text-gray-600">{item.groupName}</td>
+                            <td className="border border-gray-300 px-3 py-3 text-base text-center text-gray-700">{formatDate(item.loanDate)}</td>
+                            <td className="border border-gray-300 px-3 py-3 text-base text-right font-semibold text-purple-700">{formatCurrency(item.principalAmount)}</td>
+                            <td className="border border-gray-300 px-3 py-3 text-base text-right font-semibold text-orange-700">{formatCurrency(item.interestToDate)}</td>
+                            <td className="border border-gray-300 px-3 py-3 text-base text-right font-bold text-red-700">{formatCurrency(item.totalAmount)}</td>
+                            <td className="border border-gray-300 px-3 py-3 text-base text-center text-gray-700">{item.daysOverdue}</td>
+                            <td className="border border-gray-300 px-3 py-3 text-base text-right font-bold text-red-700">{formatCurrency(item.lossAmount)}</td>
+                          </tr>
+                        ))}
+                        <tr className="bg-amber-50 border-t-2 border-amber-300">
+                          <td colSpan={5} className="border border-gray-300 px-3 py-2 text-sm font-bold text-amber-800 text-right">विनातारण एकूण ({unsecuredLoans.length})</td>
+                          <td className="border border-gray-300 px-3 py-2 text-sm font-bold text-purple-700 text-right">{formatCurrency(unsecuredLoans.reduce((s, i) => s + i.principalAmount, 0))}</td>
+                          <td className="border border-gray-300 px-3 py-2 text-sm font-bold text-orange-700 text-right">{formatCurrency(unsecuredLoans.reduce((s, i) => s + i.interestToDate, 0))}</td>
+                          <td className="border border-gray-300 px-3 py-2 text-sm font-bold text-red-700 text-right">{formatCurrency(unsecuredLoans.reduce((s, i) => s + i.totalAmount, 0))}</td>
+                          <td className="border border-gray-300 px-3 py-2"></td>
+                          <td className="border border-gray-300 px-3 py-2 text-sm font-bold text-red-700 text-right">{formatCurrency(unsecuredTotalLoss)}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </Card>
+                )}
+                </>
               )}
             </div>
 
             <div className="print-only" style={{display: 'none'}}>
+              {securedLoans.length > 0 && (
+              <>
+              {unsecuredLoans.length > 0 && (
+                <div style={{fontWeight: 'bold', fontSize: '10pt', color: 'black', marginBottom: '5px', padding: '4px 8px', backgroundColor: '#e8eaf6', border: '1px solid black'}}>
+                  तारण कर्ज ({securedLoans.length})
+                </div>
+              )}
               <table style={{
                 width: '100%',
                 borderCollapse: 'collapse',
@@ -1463,54 +1606,112 @@ export default function OverdueReport() {
                   </tr>
                 </thead>
                 <tbody>
-                  {sortedOverdueData.length === 0 ? (
-                    <tr>
-                      <td colSpan={13} style={{border: '1px solid black', padding: '10px', textAlign: 'center', color: 'black'}}>
-                        {isGenerating ? "डेटा लोड होत आहे..." : "सक्रिय कर्जे नाहीत / No Active Loans"}
+                  {securedLoans.map((item: OverdueItem) => (
+                    <tr key={item.loanId} style={{backgroundColor: 'white'}}>
+                      <td style={{border: '1px solid black', padding: '3px'}}>{item.accountNumber || '—'}</td>
+                      <td style={{border: '1px solid black', padding: '3px'}}>
+                        <div style={{fontWeight: 'bold'}}>{item.borrowerName}</div>
+                        {item.goldItem && (
+                          <div style={{fontSize: '11px', color: '#999'}}>{item.goldItem}</div>
+                        )}
                       </td>
-                    </tr>
-                  ) : (
-                    sortedOverdueData.map((item: OverdueItem) => (
-                      <tr key={item.loanId} style={{backgroundColor: 'white'}}>
-                        <td style={{border: '1px solid black', padding: '3px'}}>{item.accountNumber || '—'}</td>
-                        <td style={{border: '1px solid black', padding: '3px'}}>
-                          <div style={{fontWeight: 'bold'}}>{item.borrowerName}</div>
-                          {item.goldItem && (
-                            <div style={{fontSize: '11px', color: '#999'}}>{item.goldItem}</div>
-                          )}
-                        </td>
-                        <td style={{border: '1px solid black', padding: '3px'}}>{item.borrowerPhone}</td>
-                        <td style={{border: '1px solid black', padding: '3px'}}>{item.groupName}</td>
-                        <td style={{border: '1px solid black', padding: '3px', textAlign: 'center'}}>{formatDate(item.loanDate)}</td>
-                        <td style={{border: '1px solid black', padding: '3px', textAlign: 'right'}}>{formatCurrency(item.principalAmount)}</td>
-                        <td style={{border: '1px solid black', padding: '3px', textAlign: 'right'}}>{formatCurrency(item.interestToDate)}</td>
-                        <td style={{border: '1px solid black', padding: '3px', textAlign: 'center'}}>{item.loanType === 'विनातारण' ? 'विनातारण' : (item.goldWeight || '—')}</td>
-                        <td style={{border: '1px solid black', padding: '3px', textAlign: 'center'}}>{item.loanType === 'विनातारण' ? '—' : `${item.purityUsed}%`}</td>
-                        <td style={{border: '1px solid black', padding: '3px', textAlign: 'right'}}>{item.loanType === 'विनातारण' ? '—' : formatCurrency(item.currentGoldValue)}</td>
-                        <td style={{border: '1px solid black', padding: '3px', textAlign: 'right', fontWeight: 'bold'}}>{formatCurrency(item.totalAmount)}</td>
-                        <td style={{border: '1px solid black', padding: '3px', textAlign: 'right', fontWeight: 'bold', color: item.lossAmount > 0 ? 'red' : 'green'}}>
-                          {item.lossAmount > 0 ? formatCurrency(item.lossAmount) : '✓'}
-                        </td>
-                        <td style={{border: '1px solid black', padding: '3px', textAlign: 'center'}}>{item.daysOverdue}</td>
-                      </tr>
-                    ))
-                  )}
-                  {(overdueData as OverdueItem[]).length > 0 && (
-                    <tr style={{backgroundColor: '#f8f9fa', borderTop: '2px solid black'}}>
-                      <td colSpan={12} style={{
-                        border: '1px solid black', 
-                        padding: '8px', 
-                        textAlign: 'center', 
-                        fontWeight: 'bold', 
-                        fontSize: '9pt',
-                        color: 'black'
-                      }}>
-                        Total Loans: {totalLoans} {viewMode === "default" && `(सुरक्षित वगळले: ${filteredOutCount})`} | Total Loss: {formatCurrency(totalLoss)} | Average Loss: {formatCurrency(averageLoss)}
+                      <td style={{border: '1px solid black', padding: '3px'}}>{item.borrowerPhone}</td>
+                      <td style={{border: '1px solid black', padding: '3px'}}>{item.groupName}</td>
+                      <td style={{border: '1px solid black', padding: '3px', textAlign: 'center'}}>{formatDate(item.loanDate)}</td>
+                      <td style={{border: '1px solid black', padding: '3px', textAlign: 'right'}}>{formatCurrency(item.principalAmount)}</td>
+                      <td style={{border: '1px solid black', padding: '3px', textAlign: 'right'}}>{formatCurrency(item.interestToDate)}</td>
+                      <td style={{border: '1px solid black', padding: '3px', textAlign: 'center'}}>{item.goldWeight || '—'}</td>
+                      <td style={{border: '1px solid black', padding: '3px', textAlign: 'center'}}>{`${item.purityUsed}%`}</td>
+                      <td style={{border: '1px solid black', padding: '3px', textAlign: 'right'}}>{formatCurrency(item.currentGoldValue)}</td>
+                      <td style={{border: '1px solid black', padding: '3px', textAlign: 'right', fontWeight: 'bold'}}>{formatCurrency(item.totalAmount)}</td>
+                      <td style={{border: '1px solid black', padding: '3px', textAlign: 'right', fontWeight: 'bold', color: item.lossAmount > 0 ? 'red' : 'green'}}>
+                        {item.lossAmount > 0 ? formatCurrency(item.lossAmount) : '✓'}
                       </td>
+                      <td style={{border: '1px solid black', padding: '3px', textAlign: 'center'}}>{item.daysOverdue}</td>
                     </tr>
-                  )}
+                  ))}
+                  <tr style={{backgroundColor: '#e8eaf6', borderTop: '2px solid black'}}>
+                    <td colSpan={5} style={{border: '1px solid black', padding: '5px', textAlign: 'right', fontWeight: 'bold', fontSize: '8pt'}}>तारण कर्ज एकूण ({securedLoans.length})</td>
+                    <td style={{border: '1px solid black', padding: '5px', textAlign: 'right', fontWeight: 'bold'}}>{formatCurrency(securedLoans.reduce((s, i) => s + i.principalAmount, 0))}</td>
+                    <td style={{border: '1px solid black', padding: '5px', textAlign: 'right', fontWeight: 'bold'}}>{formatCurrency(securedLoans.reduce((s, i) => s + i.interestToDate, 0))}</td>
+                    <td colSpan={3} style={{border: '1px solid black', padding: '5px'}}></td>
+                    <td style={{border: '1px solid black', padding: '5px', textAlign: 'right', fontWeight: 'bold'}}>{formatCurrency(securedLoans.reduce((s, i) => s + i.totalAmount, 0))}</td>
+                    <td style={{border: '1px solid black', padding: '5px', textAlign: 'right', fontWeight: 'bold', color: 'red'}}>{formatCurrency(securedTotalLoss)}</td>
+                    <td style={{border: '1px solid black', padding: '5px'}}></td>
+                  </tr>
                 </tbody>
               </table>
+              </>
+              )}
+
+              {unsecuredLoans.length > 0 && (
+              <>
+              <div style={{fontWeight: 'bold', fontSize: '10pt', color: 'black', marginTop: '15px', marginBottom: '5px', padding: '4px 8px', backgroundColor: '#fff3e0', border: '1px solid black'}}>
+                विनातारण कर्ज ({unsecuredLoans.length})
+              </div>
+              <table style={{
+                width: '100%',
+                borderCollapse: 'collapse',
+                fontSize: '8pt',
+                color: 'black',
+                fontFamily: 'Arial, sans-serif'
+              }}>
+                <thead>
+                  <tr style={{backgroundColor: '#fff8e1'}}>
+                    <th style={{border: '1px solid black', padding: '5px', fontWeight: 'bold', textAlign: 'left', width: '10%'}}>खाते नं.</th>
+                    <th style={{border: '1px solid black', padding: '5px', fontWeight: 'bold', textAlign: 'left', width: '15%'}}>नाव</th>
+                    <th style={{border: '1px solid black', padding: '5px', fontWeight: 'bold', textAlign: 'left', width: '12%'}}>फोन</th>
+                    <th style={{border: '1px solid black', padding: '5px', fontWeight: 'bold', textAlign: 'left', width: '12%'}}>गट</th>
+                    <th style={{border: '1px solid black', padding: '5px', fontWeight: 'bold', textAlign: 'center', width: '10%'}}>तारीख</th>
+                    <th style={{border: '1px solid black', padding: '5px', fontWeight: 'bold', textAlign: 'right', width: '12%'}}>मुद्दल</th>
+                    <th style={{border: '1px solid black', padding: '5px', fontWeight: 'bold', textAlign: 'right', width: '12%'}}>व्याज</th>
+                    <th style={{border: '1px solid black', padding: '5px', fontWeight: 'bold', textAlign: 'right', width: '12%'}}>एकूण थकबाकी</th>
+                    <th style={{border: '1px solid black', padding: '5px', fontWeight: 'bold', textAlign: 'center', width: '8%'}}>दिवस</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {unsecuredLoans.map((item: OverdueItem) => (
+                    <tr key={item.loanId} style={{backgroundColor: 'white'}}>
+                      <td style={{border: '1px solid black', padding: '3px'}}>{item.accountNumber || '—'}</td>
+                      <td style={{border: '1px solid black', padding: '3px', fontWeight: 'bold'}}>{item.borrowerName}</td>
+                      <td style={{border: '1px solid black', padding: '3px'}}>{item.borrowerPhone}</td>
+                      <td style={{border: '1px solid black', padding: '3px'}}>{item.groupName}</td>
+                      <td style={{border: '1px solid black', padding: '3px', textAlign: 'center'}}>{formatDate(item.loanDate)}</td>
+                      <td style={{border: '1px solid black', padding: '3px', textAlign: 'right'}}>{formatCurrency(item.principalAmount)}</td>
+                      <td style={{border: '1px solid black', padding: '3px', textAlign: 'right'}}>{formatCurrency(item.interestToDate)}</td>
+                      <td style={{border: '1px solid black', padding: '3px', textAlign: 'right', fontWeight: 'bold', color: 'red'}}>{formatCurrency(item.totalAmount)}</td>
+                      <td style={{border: '1px solid black', padding: '3px', textAlign: 'center'}}>{item.daysOverdue}</td>
+                    </tr>
+                  ))}
+                  <tr style={{backgroundColor: '#fff3e0', borderTop: '2px solid black'}}>
+                    <td colSpan={5} style={{border: '1px solid black', padding: '5px', textAlign: 'right', fontWeight: 'bold', fontSize: '8pt'}}>विनातारण एकूण ({unsecuredLoans.length})</td>
+                    <td style={{border: '1px solid black', padding: '5px', textAlign: 'right', fontWeight: 'bold'}}>{formatCurrency(unsecuredLoans.reduce((s, i) => s + i.principalAmount, 0))}</td>
+                    <td style={{border: '1px solid black', padding: '5px', textAlign: 'right', fontWeight: 'bold'}}>{formatCurrency(unsecuredLoans.reduce((s, i) => s + i.interestToDate, 0))}</td>
+                    <td style={{border: '1px solid black', padding: '5px', textAlign: 'right', fontWeight: 'bold', color: 'red'}}>{formatCurrency(unsecuredLoans.reduce((s, i) => s + i.totalAmount, 0))}</td>
+                    <td style={{border: '1px solid black', padding: '5px'}}></td>
+                  </tr>
+                </tbody>
+              </table>
+              </>
+              )}
+
+              {sortedOverdueData.length === 0 && (
+              <table style={{width: '100%', borderCollapse: 'collapse', fontSize: '8pt', color: 'black'}}>
+                <tbody>
+                  <tr>
+                    <td style={{border: '1px solid black', padding: '10px', textAlign: 'center'}}>
+                      {isGenerating ? "डेटा लोड होत आहे..." : "सक्रिय कर्जे नाहीत / No Active Loans"}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+              )}
+
+              {sortedOverdueData.length > 0 && (
+              <div style={{marginTop: '10px', padding: '8px', textAlign: 'center', fontWeight: 'bold', fontSize: '9pt', color: 'black', border: '2px solid black', backgroundColor: '#f5f5f5'}}>
+                Total: तारण: {securedLoans.length}, विनातारण: {unsecuredLoans.length} | Total Loss: {formatCurrency(totalLoss)}
+              </div>
+              )}
             </div>
             
             <div className="mt-6 text-center print:hidden space-y-3">
