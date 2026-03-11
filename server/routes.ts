@@ -2771,9 +2771,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const collateralText = loan.collateralDetails || '';
         const isSilver = loan.metalType === 'silver';
         const dbPurity = loan.purity ? parseFloat(loan.purity.toString()) : 0;
-        const defaultPurityForMetal = isSilver ? 99.9 : defaultPurity;
-        const purityPercent = dbPurity > 0 ? dbPurity : (isSilver ? 99.9 : detectPurity(collateralText));
-        if (purityPercent !== defaultPurityForMetal) {
+        const purityPercent = dbPurity > 0 ? dbPurity : detectPurity(collateralText);
+        if (purityPercent !== defaultPurity) {
           console.log(`🔍 Purity ${purityPercent}% (${dbPurity > 0 ? 'DB' : 'keyword'}) for: "${collateralText}" (${loan.borrowerName})`);
         }
 
