@@ -78,6 +78,25 @@ export async function initializeDatabase() {
         console.warn("⚠️  purity migration warning (non-fatal):", migrationError instanceof Error ? migrationError.message : migrationError);
       }
 
+      // 6f. AUTO-MIGRATION: Interest rate warning toggle
+      try {
+        await db.execute(sql`ALTER TABLE companies ADD COLUMN IF NOT EXISTS interest_rate_warning_enabled BOOLEAN NOT NULL DEFAULT true`);
+        console.log("✅ Schema migration: interest_rate_warning_enabled column verified");
+      } catch (migrationError) {
+        console.warn("⚠️  interest_rate_warning_enabled migration warning (non-fatal):", migrationError instanceof Error ? migrationError.message : migrationError);
+      }
+
+      // 6g. AUTO-MIGRATION: Loan type and additional info columns
+      try {
+        await db.execute(sql`ALTER TABLE loans ADD COLUMN IF NOT EXISTS loan_type VARCHAR(20) NOT NULL DEFAULT 'तारण'`);
+        await db.execute(sql`ALTER TABLE loans ADD COLUMN IF NOT EXISTS document_details TEXT DEFAULT '—'`);
+        await db.execute(sql`ALTER TABLE loans ADD COLUMN IF NOT EXISTS special_conditions TEXT DEFAULT '—'`);
+        await db.execute(sql`ALTER TABLE loans ADD COLUMN IF NOT EXISTS other_info TEXT DEFAULT '—'`);
+        console.log("✅ Schema migration: loan_type, document_details, special_conditions, other_info columns verified");
+      } catch (migrationError) {
+        console.warn("⚠️  loan columns migration warning (non-fatal):", migrationError instanceof Error ? migrationError.message : migrationError);
+      }
+
       // 6c. AUTO-MIGRATION: Data entry mode and notification warnings
       try {
         await db.execute(sql`ALTER TABLE companies ADD COLUMN IF NOT EXISTS data_entry_mode BOOLEAN NOT NULL DEFAULT false`);
