@@ -2405,6 +2405,9 @@ function Loans() {
                             }
                             return { suggested: null, message: `⚠️ वार्षिक व्याजदर ${rateValue}% खूप जास्त वाटतो. कृपया तपासा.` };
                           }
+                          if (isYearly && rateValue > 0 && rateValue < 5) {
+                            return { suggested: rateValue, switchToMonthly: true, message: `वार्षिक व्याजदर ${rateValue}% खूप कमी वाटतो. तुम्हाला मासिक ${rateValue}% म्हणायचं आहे का?` };
+                          }
                           return null;
                         };
                         const suggestion = getSuggestedRate();
@@ -2433,9 +2436,18 @@ function Loans() {
                                   <button
                                     type="button"
                                     className="mt-1 px-3 py-1 text-sm font-semibold text-white bg-amber-600 hover:bg-amber-700 rounded-md transition-colors font-noto"
-                                    onClick={() => form.setValue('interestRate', String(suggestion.suggested))}
+                                    onClick={() => {
+                                      if ((suggestion as any).switchToMonthly) {
+                                        form.setValue('interestRateType', 'monthly');
+                                      } else {
+                                        form.setValue('interestRate', String(suggestion.suggested));
+                                      }
+                                    }}
                                   >
-                                    होय, {suggestion.suggested}% करा
+                                    {(suggestion as any).switchToMonthly 
+                                      ? `होय, मासिक ${suggestion.suggested}% मध्ये बदला`
+                                      : `होय, ${suggestion.suggested}% करा`
+                                    }
                                   </button>
                                 )}
                               </div>
