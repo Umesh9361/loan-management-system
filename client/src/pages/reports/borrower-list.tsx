@@ -1583,11 +1583,18 @@ export default function BorrowerListReports() {
 
     // Calculate totals
     const totalAmount = reportData.reduce((sum, loan) => sum + Math.round(loan.principalAmount), 0);
-    const totalWeight = reportData.reduce((sum, loan) => {
-      if (loan.loanType === 'विनातारण') return sum;
+    const totalGoldWeight = reportData.reduce((sum, loan) => {
+      if (loan.loanType === 'विनातारण' || loan.metalType === 'silver') return sum;
       const weight = (loan.weight || '10').toString().replace(/[^\d]/g, '') || '10';
       return sum + parseInt(weight);
     }, 0);
+    const totalSilverWeight = reportData.reduce((sum, loan) => {
+      if (loan.metalType !== 'silver') return sum;
+      const weight = (loan.weight || '0').toString().replace(/[^\d]/g, '') || '0';
+      return sum + parseInt(weight);
+    }, 0);
+    const totalWeight = totalGoldWeight + totalSilverWeight;
+    const weightDisplay = totalSilverWeight > 0 ? `सोने: ${totalGoldWeight}g | चांदी: ${totalSilverWeight}g` : `${totalWeight}`;
     
     // Calculate total interest for closing-wise report
     const totalInterest = activeTab === 'closing-wise' ? reportData.reduce((sum, loan) => {
@@ -1613,7 +1620,7 @@ export default function BorrowerListReports() {
           <td style="border-top: 2px solid #000; border-left: 1px solid #000; padding: 4px; vertical-align: middle; width: 250px;"></td>
           <td class="mobile-hide" style="border-top: 2px solid #000; border-left: 1px solid #000; padding: 4px; vertical-align: middle; width: 80px;"></td>
           <td class="mobile-hide" style="border-top: 2px solid #000; border-left: 1px solid #000; padding: 4px; vertical-align: middle; width: auto;"></td>
-          <td class="mobile-hide" style="border-top: 2px solid #000; border-left: 1px solid #000; padding: 4px; text-align: center; font-size: 14px; font-weight: bold; vertical-align: middle; width: 80px;">${totalWeight}</td>
+          <td class="mobile-hide" style="border-top: 2px solid #000; border-left: 1px solid #000; padding: 4px; text-align: center; font-size: 14px; font-weight: bold; vertical-align: middle; width: 80px;">${weightDisplay}</td>
         </tr>
       `;
     } else if (activeTab === 'maturity-wise') {
@@ -1626,7 +1633,7 @@ export default function BorrowerListReports() {
           <td class="maturity-total-space" style="border-top: 2px solid #1e40af; border-left: 1px solid #60a5fa; padding: 8px 4px; vertical-align: middle; width: 200px;"></td>
           <td class="maturity-total-code mobile-hide" style="border-top: 2px solid #1e40af; border-left: 1px solid #60a5fa; padding: 8px 4px; vertical-align: middle; width: 50px;"></td>
           <td class="maturity-total-details mobile-hide" style="border-top: 2px solid #1e40af; border-left: 1px solid #60a5fa; padding: 8px 4px; vertical-align: middle; width: auto;"></td>
-          <td class="maturity-total-weight mobile-hide" style="border-top: 2px solid #1e40af; border-left: 1px solid #60a5fa; padding: 8px 4px; text-align: center; font-size: 16px; font-weight: bold; vertical-align: middle; width: 50px; color: #fef3c7;">${totalWeight}</td>
+          <td class="maturity-total-weight mobile-hide" style="border-top: 2px solid #1e40af; border-left: 1px solid #60a5fa; padding: 8px 4px; text-align: center; font-size: 16px; font-weight: bold; vertical-align: middle; width: 50px; color: #fef3c7;">${weightDisplay}</td>
           <td class="maturity-total-maturity mobile-hide" style="border-top: 2px solid #1e40af; border-left: 1px solid #60a5fa; padding: 8px 4px; text-align: center; font-size: 14px; font-weight: 600; vertical-align: middle; width: 60px; color: #fbbf24;">कुल: ${reportData.length}</td>
         </tr>
       `;
@@ -1640,7 +1647,7 @@ export default function BorrowerListReports() {
           <td style="border-top: 2px solid #000; border-left: 1px solid #000; padding: 4px; vertical-align: middle; width: 200px;"></td>
           <td class="mobile-hide" style="border-top: 2px solid #000; border-left: 1px solid #000; padding: 4px; vertical-align: middle; width: 70px;"></td>
           <td class="mobile-hide" style="border-top: 2px solid #000; border-left: 1px solid #000; padding: 4px; vertical-align: middle; width: auto;"></td>
-          <td class="mobile-hide" style="border-top: 2px solid #000; border-left: 1px solid #000; padding: 4px; text-align: center; font-size: 14px; font-weight: bold; vertical-align: middle; width: 70px;">${totalWeight}</td>
+          <td class="mobile-hide" style="border-top: 2px solid #000; border-left: 1px solid #000; padding: 4px; text-align: center; font-size: 14px; font-weight: bold; vertical-align: middle; width: 70px;">${weightDisplay}</td>
         </tr>
       `;
     }

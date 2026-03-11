@@ -18,6 +18,10 @@ interface SummaryRow {
   closedLoans: number;
   totalWeight: number;
   totalFineWeight: number;
+  goldWeight: number;
+  goldFineWeight: number;
+  silverWeight: number;
+  silverFineWeight: number;
   totalAmount: number;
   closedAmount: number;
   activeBalance: number;
@@ -248,6 +252,13 @@ export default function AccountSummaryReport() {
       return sum + (wt * pu / 100);
     }, 0);
 
+    const goldLoans = periodLoans.filter((l: any) => l.metalType !== 'silver' && l.loanType !== 'विनातारण');
+    const silverLoans = periodLoans.filter((l: any) => l.metalType === 'silver');
+    const goldWeight = goldLoans.reduce((s: number, l: any) => s + (parseFloat(String(l.weight || '0').replace(/[^\d.]/g, '')) || 0), 0);
+    const goldFineWeight = goldLoans.reduce((s: number, l: any) => { const w = parseFloat(String(l.weight || '0').replace(/[^\d.]/g, '')) || 0; const p = parseFloat(String(l.purity || '82')) || 82; return s + (w * p / 100); }, 0);
+    const silverWeight = silverLoans.reduce((s: number, l: any) => s + (parseFloat(String(l.weight || '0').replace(/[^\d.]/g, '')) || 0), 0);
+    const silverFineWeight = silverLoans.reduce((s: number, l: any) => { const w = parseFloat(String(l.weight || '0').replace(/[^\d.]/g, '')) || 0; const p = parseFloat(String(l.purity || '99.9')) || 99.9; return s + (w * p / 100); }, 0);
+
     return {
       name: group.name,
       totalLoans: totalLoansInPeriod,
@@ -255,6 +266,10 @@ export default function AccountSummaryReport() {
       closedLoans: closedLoansInPeriod,
       totalWeight,
       totalFineWeight,
+      goldWeight,
+      goldFineWeight,
+      silverWeight,
+      silverFineWeight,
       totalAmount: totalAmountDisbursed,
       closedAmount,
       activeBalance,
@@ -303,6 +318,13 @@ export default function AccountSummaryReport() {
       return sum + (wt * pu / 100);
     }, 0);
 
+    const goldLoans = periodLoans.filter((l: any) => l.metalType !== 'silver' && l.loanType !== 'विनातारण');
+    const silverLoans = periodLoans.filter((l: any) => l.metalType === 'silver');
+    const goldWeight = goldLoans.reduce((s: number, l: any) => s + (parseFloat(String(l.weight || '0').replace(/[^\d.]/g, '')) || 0), 0);
+    const goldFineWeight = goldLoans.reduce((s: number, l: any) => { const w = parseFloat(String(l.weight || '0').replace(/[^\d.]/g, '')) || 0; const p = parseFloat(String(l.purity || '82')) || 82; return s + (w * p / 100); }, 0);
+    const silverWeight = silverLoans.reduce((s: number, l: any) => s + (parseFloat(String(l.weight || '0').replace(/[^\d.]/g, '')) || 0), 0);
+    const silverFineWeight = silverLoans.reduce((s: number, l: any) => { const w = parseFloat(String(l.weight || '0').replace(/[^\d.]/g, '')) || 0; const p = parseFloat(String(l.purity || '99.9')) || 99.9; return s + (w * p / 100); }, 0);
+
     return {
       name: customerName,
       totalLoans: totalLoansCount,
@@ -310,6 +332,10 @@ export default function AccountSummaryReport() {
       closedLoans: closedLoansCount,
       totalWeight,
       totalFineWeight,
+      goldWeight,
+      goldFineWeight,
+      silverWeight,
+      silverFineWeight,
       totalAmount,
       closedAmount,
       activeBalance,
@@ -377,12 +403,16 @@ export default function AccountSummaryReport() {
       closedLoans: totals.closedLoans + row.closedLoans,
       totalWeight: totals.totalWeight + row.totalWeight,
       totalFineWeight: totals.totalFineWeight + row.totalFineWeight,
+      goldWeight: totals.goldWeight + (row.goldWeight || 0),
+      goldFineWeight: totals.goldFineWeight + (row.goldFineWeight || 0),
+      silverWeight: totals.silverWeight + (row.silverWeight || 0),
+      silverFineWeight: totals.silverFineWeight + (row.silverFineWeight || 0),
       totalAmount: totals.totalAmount + row.totalAmount,
       closedAmount: totals.closedAmount + row.closedAmount,
       activeBalance: totals.activeBalance + row.activeBalance,
       totalInterest: totals.totalInterest + row.totalInterest,
     }),
-    { totalLoans: 0, activeLoans: 0, closedLoans: 0, totalWeight: 0, totalFineWeight: 0, totalAmount: 0, closedAmount: 0, activeBalance: 0, totalInterest: 0 }
+    { totalLoans: 0, activeLoans: 0, closedLoans: 0, totalWeight: 0, totalFineWeight: 0, goldWeight: 0, goldFineWeight: 0, silverWeight: 0, silverFineWeight: 0, totalAmount: 0, closedAmount: 0, activeBalance: 0, totalInterest: 0 }
   );
 
   const groupGrandTotals = calcGrandTotals(groupSummaries);
@@ -528,12 +558,24 @@ export default function AccountSummaryReport() {
             </div>
             <div className="grid grid-cols-2 gap-1 text-xs mb-2">
               <div className="bg-amber-50 rounded p-1.5 text-center">
-                <div className="text-amber-600">एकूण वजन</div>
-                <div className="font-bold text-amber-800">{row.totalWeight.toFixed(2)} ग्रॅ</div>
+                <div className="text-amber-600">सोने वजन</div>
+                <div className="font-bold text-amber-800">{(row.goldWeight || 0).toFixed(2)} ग्रॅ</div>
+                {(row.silverWeight || 0) > 0 && (
+                  <>
+                    <div className="text-gray-500 mt-0.5">चांदी</div>
+                    <div className="font-bold text-gray-700">{row.silverWeight.toFixed(2)} ग्रॅ</div>
+                  </>
+                )}
               </div>
               <div className="bg-yellow-50 rounded p-1.5 text-center">
-                <div className="text-yellow-600">शुद्ध वजन</div>
-                <div className="font-bold text-yellow-800">{row.totalFineWeight.toFixed(2)} ग्रॅ</div>
+                <div className="text-yellow-600">सोने शुद्ध</div>
+                <div className="font-bold text-yellow-800">{(row.goldFineWeight || 0).toFixed(2)} ग्रॅ</div>
+                {(row.silverFineWeight || 0) > 0 && (
+                  <>
+                    <div className="text-gray-500 mt-0.5">चांदी शुद्ध</div>
+                    <div className="font-bold text-gray-700">{row.silverFineWeight.toFixed(2)} ग्रॅ</div>
+                  </>
+                )}
               </div>
             </div>
             <div className="grid grid-cols-2 gap-2 text-sm">
@@ -576,12 +618,24 @@ export default function AccountSummaryReport() {
           </div>
           <div className="grid grid-cols-2 gap-1 text-xs mb-2">
             <div className="bg-amber-100 rounded p-1.5 text-center">
-              <div className="text-amber-700">एकूण वजन</div>
-              <div className="font-bold text-amber-900">{grandTotals.totalWeight.toFixed(2)} ग्रॅ</div>
+              <div className="text-amber-700">सोने वजन</div>
+              <div className="font-bold text-amber-900">{(grandTotals.goldWeight || 0).toFixed(2)} ग्रॅ</div>
+              {(grandTotals.silverWeight || 0) > 0 && (
+                <>
+                  <div className="text-gray-600 mt-0.5">चांदी</div>
+                  <div className="font-bold text-gray-800">{grandTotals.silverWeight.toFixed(2)} ग्रॅ</div>
+                </>
+              )}
             </div>
             <div className="bg-yellow-100 rounded p-1.5 text-center">
-              <div className="text-yellow-700">शुद्ध वजन</div>
-              <div className="font-bold text-yellow-900">{grandTotals.totalFineWeight.toFixed(2)} ग्रॅ</div>
+              <div className="text-yellow-700">सोने शुद्ध</div>
+              <div className="font-bold text-yellow-900">{(grandTotals.goldFineWeight || 0).toFixed(2)} ग्रॅ</div>
+              {(grandTotals.silverFineWeight || 0) > 0 && (
+                <>
+                  <div className="text-gray-600 mt-0.5">चांदी शुद्ध</div>
+                  <div className="font-bold text-gray-800">{grandTotals.silverFineWeight.toFixed(2)} ग्रॅ</div>
+                </>
+              )}
             </div>
           </div>
           <div className="grid grid-cols-2 gap-2 text-sm">

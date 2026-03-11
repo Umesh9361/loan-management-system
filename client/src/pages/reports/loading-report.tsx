@@ -19,6 +19,7 @@ interface LoadingItem {
   groupName: string;
   loanDate: string;
   collateralDetails: string;
+  metalType: string;
   weight: number;
   fineWeight: number;
   marketValue: number;
@@ -97,6 +98,8 @@ export default function LoadingReport() {
   const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1);
   const [goldRateInput, setGoldRateInput] = useState("");
   const [goldRateManuallyEdited, setGoldRateManuallyEdited] = useState(false);
+  const [silverRateInput, setSilverRateInput] = useState("");
+  const [silverRateManuallyEdited, setSilverRateManuallyEdited] = useState(false);
   const customerInputRef = useRef<HTMLInputElement>(null);
   const customerSuggestionsRef = useRef<HTMLDivElement>(null);
 
@@ -112,11 +115,27 @@ export default function LoadingReport() {
     staleTime: 4 * 60 * 60 * 1000,
   });
 
+  const { data: silverRateData } = useQuery<any>({
+    queryKey: ['/api/silver-rate'],
+    queryFn: async () => {
+      const res = await fetch('/api/silver-rate', { credentials: 'include' });
+      if (!res.ok) throw new Error('Failed');
+      return res.json();
+    },
+    staleTime: 4 * 60 * 60 * 1000,
+  });
+
   useEffect(() => {
     if (goldRateData?.perGram && !goldRateManuallyEdited) {
       setGoldRateInput(String(goldRateData.perGram));
     }
   }, [goldRateData, goldRateManuallyEdited]);
+
+  useEffect(() => {
+    if (silverRateData?.perGram && !silverRateManuallyEdited) {
+      setSilverRateInput(String(silverRateData.perGram));
+    }
+  }, [silverRateData, silverRateManuallyEdited]);
 
   const { data: customerAutocompleteSuggestions = [] } = useQuery<any[]>({
     queryKey: ["/api/borrowers/autocomplete", customerSearchTerm],
@@ -165,11 +184,14 @@ export default function LoadingReport() {
   if (goldRateInput) {
     queryParams.append('goldRate', goldRateInput);
   }
+  if (silverRateInput) {
+    queryParams.append('silverRate', silverRateInput);
+  }
 
   const shouldFetch = activeTab === "group" || (activeTab === "customer" && !!selectedCustomerName);
 
   const { data: reportData, isLoading } = useQuery<LoadingReportData>({
-    queryKey: ['/api/loading-report', activeTab, groupId, selectedCustomerName, goldRateInput],
+    queryKey: ['/api/loading-report', activeTab, groupId, selectedCustomerName, goldRateInput, silverRateInput],
     queryFn: async () => {
       const res = await fetch(`/api/loading-report?${queryParams.toString()}`, { credentials: 'include' });
       if (!res.ok) throw new Error('Failed to fetch loading report');
@@ -181,6 +203,7 @@ export default function LoadingReport() {
 
   const items = reportData?.items || [];
   const summary = reportData?.summary;
+  const hasSilverLoans = items.some(item => item.metalType === 'silver');
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -216,6 +239,7 @@ export default function LoadingReport() {
       'गट': item.groupName,
       'कर्ज दिनांक': formatDate(item.loanDate),
       'तारण वस्तू': item.collateralDetails,
+      'धातू': item.metalType === 'silver' ? 'चांदी' : 'सोने',
       'वजन (ग्रॅम)': item.weight,
       'शुद्धता %': (item as any).purityUsed,
       'व्याजदर': `${item.interestRate}%${item.interestRateType === 'yearly' ? ' वार्षिक' : ''}`,
@@ -523,6 +547,45 @@ export default function LoadingReport() {
                       </div>
                     )}
                   </div>
+
+                  {hasSilverLoans && (
+                  <div className="mt-3">
+                    <label className="text-sm font-semibold text-gray-600 block mb-1">🪙 चांदीचा दर (₹/ग्रॅम)</label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        step="0.01"
+                        placeholder="उदा: 95"
+                        value={silverRateInput}
+                        onChange={(e) => {
+                          setSilverRateInput(e.target.value);
+                          setSilverRateManuallyEdited(true);
+                        }}
+                        className="w-40 px-3 py-1.5 text-sm border-2 border-gray-300 rounded-md focus:border-gray-500 focus:outline-none bg-white"
+                      />
+                      <span className="text-xs text-gray-500">प्रति ग्रॅम</span>
+                      {silverRateData?.success && !silverRateManuallyEdited && (
+                        <span className="text-[10px] text-green-600">✅ ₹{silverRateData.perGram}/g ({silverRateData.source})</span>
+                      )}
+                      {silverRateManuallyEdited && (
+                        <button
+                          onClick={() => {
+                            setSilverRateManuallyEdited(false);
+                            if (silverRateData?.perGram) setSilverRateInput(String(silverRateData.perGram));
+                          }}
+                          className="text-[10px] text-blue-600 underline"
+                        >
+                          ऑनलाईन दर वापरा
+                        </button>
+                      )}
+                    </div>
+                    {silverRateInput && (
+                      <div className="text-[10px] text-gray-400 mt-0.5">
+                        प्रति किलो: ₹{(parseFloat(silverRateInput) * 1000).toLocaleString('en-IN')} | शुद्धता: 99.9%
+                      </div>
+                    )}
+                  </div>
+                  )}
                 </CardContent>
               </Card>
 
@@ -627,7 +690,10 @@ export default function LoadingReport() {
                                   <div className="font-bold text-gray-900 text-sm">{item.borrowerName}</div>
                                   <div className="text-xs text-gray-500">{item.accountNumber} | {item.groupName} | {formatDate(item.loanDate)}</div>
                                   {item.collateralDetails && (
-                                    <div className="text-[10px] text-gray-400 mt-0.5">{item.collateralDetails}</div>
+                                    <div className="text-[10px] text-gray-400 mt-0.5">
+                                      {item.collateralDetails}
+                                      {item.metalType === 'silver' && <span className="ml-1 bg-gray-200 text-gray-700 px-1 rounded">चांदी</span>}
+                                    </div>
                                   )}
                                 </div>
                                 <span className={cn("text-[10px] px-2 py-0.5 rounded-full font-semibold whitespace-nowrap", style.bgColor, style.color, "border", style.borderColor)}>

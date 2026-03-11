@@ -27,6 +27,7 @@ interface OverdueReportFilters {
   dateTo: string;
   groupId: string;
   currentGoldRate: string;
+  currentSilverRate: string;
   finePurityPercentage: string;
   monthlyInterestRate: string;
   interestRateMode: 'loan-wise' | 'manual';
@@ -57,6 +58,7 @@ interface OverdueItem {
   riskLevel: 'low' | 'medium' | 'high';
   daysOverdue: number;
   loanType?: string;
+  metalType?: string;
 }
 
 function getSecurityLevel(item: OverdueItem): { level: string; label: string; color: string; bgColor: string; order: number } {
@@ -100,6 +102,7 @@ export default function OverdueReport() {
     dateTo: new Date().toISOString().split('T')[0],
     groupId: "all",
     currentGoldRate: "",
+    currentSilverRate: "",
     finePurityPercentage: "82",
     monthlyInterestRate: "",
     interestRateMode: 'loan-wise',
@@ -182,8 +185,15 @@ export default function OverdueReport() {
     queryKey: ['/api/groups'],
   });
 
+  const [silverRateManuallyEdited, setSilverRateManuallyEdited] = useState(false);
+
   const { data: goldRateData } = useQuery<any>({
     queryKey: ['/api/gold-rate'],
+    staleTime: 4 * 60 * 60 * 1000,
+  });
+
+  const { data: silverRateData } = useQuery<any>({
+    queryKey: ['/api/silver-rate'],
     staleTime: 4 * 60 * 60 * 1000,
   });
 
@@ -193,6 +203,12 @@ export default function OverdueReport() {
     }
   }, [goldRateData]);
 
+  useEffect(() => {
+    if (silverRateData && silverRateData.success && silverRateData.perGram && !filters.currentSilverRate && !silverRateManuallyEdited) {
+      setFilters(prev => ({ ...prev, currentSilverRate: silverRateData.perGram.toString() }));
+    }
+  }, [silverRateData]);
+
   const { data: overdueData = [], isLoading: isGenerating, refetch: generateReport } = useQuery({
     queryKey: ['/api/overdue-report', filters, activeTab, selectedCustomerName],
     queryFn: async () => {
@@ -201,6 +217,7 @@ export default function OverdueReport() {
         dateTo: filters.dateTo,
         groupId: filters.groupId,
         currentGoldRate: filters.currentGoldRate,
+        currentSilverRate: filters.currentSilverRate,
         finePurityPercentage: filters.finePurityPercentage,
         monthlyInterestRate: filters.monthlyInterestRate,
         interestRateMode: filters.interestRateMode,
@@ -599,12 +616,13 @@ export default function OverdueReport() {
       'गट': item.groupName,
       'तारीख': formatDate(item.loanDate),
       'प्रकार': item.loanType === 'विनातारण' ? 'विनातारण' : 'तारण',
+      'धातू': item.loanType === 'विनातारण' ? '—' : (item.metalType === 'silver' ? 'चांदी' : 'सोने'),
       'तारणाचा तपशील': item.goldItem,
       'मुद्दल': item.principalAmount,
       'व्याज': item.interestToDate,
       'एकूण': item.totalAmount,
       'वजन (ग्राम)': item.loanType === 'विनातारण' ? '—' : (item.goldWeight || '—'),
-      'सोन्याची किंमत': item.loanType === 'विनातारण' ? '—' : item.currentGoldValue,
+      'तारण मूल्य': item.loanType === 'विनातारण' ? '—' : item.currentGoldValue,
       'नुकसान': item.lossAmount,
       'नुकसान %': `${item.lossPercentage}%`,
       'दिवस': item.daysOverdue,
@@ -951,8 +969,34 @@ export default function OverdueReport() {
             )}
           </div>
 
+          {(overdueData as OverdueItem[]).some((item: OverdueItem) => item.metalType === 'silver') && (
           <div>
-            <Label className="text-green-700 font-medium">⭐ सोन्याची शुद्धता (%)</Label>
+            <Label className="text-gray-700 font-medium">
+              {silverRateData?.success ? '🪙 चांदीचा दर (₹/ग्राम) - ऑनलाईन' : '🪙 चांदीचा दर (₹/ग्राम)'}
+            </Label>
+            <Input
+              type="number"
+              step="0.01"
+              placeholder="उदा: 95"
+              value={filters.currentSilverRate || ''}
+              onChange={(e) => {
+                setFilters(prev => ({ ...prev, currentSilverRate: e.target.value }));
+                setSilverRateManuallyEdited(true);
+              }}
+              className="mt-1 bg-white border-2 border-gray-300 focus:border-gray-500"
+            />
+            {silverRateData?.success ? (
+              <div className="text-[10px] text-green-600 mt-0.5">
+                ✅ ₹{silverRateData.perGram}/g ({silverRateData.source})
+              </div>
+            ) : (
+              <div className="text-xs text-gray-600 mt-1">प्रति ग्राम दर</div>
+            )}
+          </div>
+          )}
+
+          <div>
+            <Label className="text-green-700 font-medium">⭐ शुद्धता (%)</Label>
             <Input
               type="number"
               step="0.1"
@@ -1303,7 +1347,7 @@ export default function OverdueReport() {
                               <div className="font-semibold text-amber-700">{item.loanType === 'विनातारण' ? 'विनातारण' : (item.goldWeight ? `${item.goldWeight}g` : '—')}</div>
                             </div>
                             <div>
-                              <span className="text-gray-500">{item.loanType === 'विनातारण' ? '—' : 'सोन्याची किंमत'}</span>
+                              <span className="text-gray-500">{item.loanType === 'विनातारण' ? '—' : 'तारण मूल्य'}</span>
                               <div className="font-semibold text-green-700">{item.loanType === 'विनातारण' ? '—' : formatCurrency(item.currentGoldValue)}</div>
                             </div>
                             <div>
@@ -1327,7 +1371,7 @@ export default function OverdueReport() {
                           <th className="border border-gray-300 px-3 py-3 text-right text-base font-bold text-gray-700">मुद्दल</th>
                           <th className="border border-gray-300 px-3 py-3 text-right text-base font-bold text-gray-700">व्याज</th>
                           <th className="border border-gray-300 px-3 py-3 text-center text-base font-bold text-gray-700">वजन</th>
-                          <th className="border border-gray-300 px-3 py-3 text-right text-base font-bold text-gray-700">सोन्याची किंमत</th>
+                          <th className="border border-gray-300 px-3 py-3 text-right text-base font-bold text-gray-700">तारण मूल्य</th>
                           <th className="border border-gray-300 px-3 py-3 text-right text-base font-bold text-gray-700">एकूण</th>
                           <th className="border border-gray-300 px-3 py-3 text-right text-base font-bold text-gray-700">नुकसान</th>
                           <th className="border border-gray-300 px-3 py-3 text-center text-base font-bold text-gray-700">दिवस</th>
@@ -1400,7 +1444,7 @@ export default function OverdueReport() {
                     <th style={{border: '1px solid black', padding: '5px', fontWeight: 'bold', textAlign: 'right', width: '8%'}}>मुद्दल</th>
                     <th style={{border: '1px solid black', padding: '5px', fontWeight: 'bold', textAlign: 'right', width: '8%'}}>व्याज</th>
                     <th style={{border: '1px solid black', padding: '5px', fontWeight: 'bold', textAlign: 'center', width: '6%'}}>वजन</th>
-                    <th style={{border: '1px solid black', padding: '5px', fontWeight: 'bold', textAlign: 'right', width: '8%'}}>सोन्याची किंमत</th>
+                    <th style={{border: '1px solid black', padding: '5px', fontWeight: 'bold', textAlign: 'right', width: '8%'}}>तारण मूल्य</th>
                     <th style={{border: '1px solid black', padding: '5px', fontWeight: 'bold', textAlign: 'right', width: '8%'}}>एकूण</th>
                     <th style={{border: '1px solid black', padding: '5px', fontWeight: 'bold', textAlign: 'right', width: '8%'}}>नुकसान</th>
                     <th style={{border: '1px solid black', padding: '5px', fontWeight: 'bold', textAlign: 'center', width: '6%'}}>दिवस</th>

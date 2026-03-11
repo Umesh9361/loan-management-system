@@ -2288,6 +2288,7 @@ export class DatabaseStorage implements IStorage {
       dateTo: string;
       groupId: string;
       currentGoldRate: number;
+      currentSilverRate?: number;
       finePurityPercentage: number;
       monthlyInterestRate: number;
       interestRateMode?: string;
@@ -2332,6 +2333,7 @@ export class DatabaseStorage implements IStorage {
           purity: loans.purity,
           status: loans.status,
           loanType: loans.loanType,
+          metalType: loans.metalType,
           specialConditions: loans.specialConditions,
           documentDetails: loans.documentDetails,
           otherInfo: loans.otherInfo,
@@ -2416,13 +2418,13 @@ export class DatabaseStorage implements IStorage {
         const totalAmountDue = principal + interestToDate;
         const outstandingAmount = totalAmountDue - totalPaid;
 
-        // Gold value calculation — DB purity first, filter fallback
+        const isSilverLoan = loan.metalType === 'silver';
         const goldWeightNum = parseFloat(loan.weight?.toString() || '0');
         const dbPurity = loan.purity ? parseFloat(loan.purity.toString()) : 0;
-        const purityPercentage = dbPurity > 0 ? dbPurity : filters.finePurityPercentage;
-        const goldRate = filters.currentGoldRate;
+        const purityPercentage = dbPurity > 0 ? dbPurity : (isSilverLoan ? 99.9 : filters.finePurityPercentage);
+        const rateForLoan = isSilverLoan ? (filters.currentSilverRate || 0) : filters.currentGoldRate;
         const fineGoldWeight = goldWeightNum * (purityPercentage / 100);
-        const currentGoldValue = fineGoldWeight * goldRate;
+        const currentGoldValue = fineGoldWeight * rateForLoan;
 
         // Loss calculation
         const lossAmount = outstandingAmount > currentGoldValue ? outstandingAmount - currentGoldValue : 0;
@@ -2459,6 +2461,7 @@ export class DatabaseStorage implements IStorage {
           riskLevel: isUnsecured ? 'high' as const : riskLevel,
           daysOverdue: daysDiff,
           loanType: loan.loanType || 'तारण',
+          metalType: loan.metalType || 'gold',
         });
       }
 

@@ -174,6 +174,7 @@ export const loans = pgTable("loans", {
   
   // Loan details
   loanType: varchar("loan_type", { length: 20 }).notNull(), // तारण, विनातारण
+  metalType: varchar("metal_type", { length: 20 }).notNull().default('gold'), // gold, silver
   accountNumber: varchar("account_number", { length: 50 }).notNull(),
   principalAmount: decimal("principal_amount", { precision: 12, scale: 2 }).notNull(),
   loanDate: date("loan_date").notNull(),

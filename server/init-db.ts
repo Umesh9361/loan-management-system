@@ -92,7 +92,8 @@ export async function initializeDatabase() {
         await db.execute(sql`ALTER TABLE loans ADD COLUMN IF NOT EXISTS document_details TEXT DEFAULT '—'`);
         await db.execute(sql`ALTER TABLE loans ADD COLUMN IF NOT EXISTS special_conditions TEXT DEFAULT '—'`);
         await db.execute(sql`ALTER TABLE loans ADD COLUMN IF NOT EXISTS other_info TEXT DEFAULT '—'`);
-        console.log("✅ Schema migration: loan_type, document_details, special_conditions, other_info columns verified");
+        await db.execute(sql`ALTER TABLE loans ADD COLUMN IF NOT EXISTS metal_type VARCHAR(20) NOT NULL DEFAULT 'gold'`);
+        console.log("✅ Schema migration: loan_type, document_details, special_conditions, other_info, metal_type columns verified");
       } catch (migrationError) {
         console.warn("⚠️  loan columns migration warning (non-fatal):", migrationError instanceof Error ? migrationError.message : migrationError);
       }

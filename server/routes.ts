@@ -2617,8 +2617,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Loading Report API - Dual-Logic LTV Overloading Analysis
   app.get("/api/loading-report", requireAuth, async (req: any, res: any) => {
     try {
-      const { groupId, customerName, goldRate } = req.query;
+      const { groupId, customerName, goldRate, silverRate } = req.query;
       const tenantId = req.session.tenantId!;
+
+      let silverRatePerGram = 0;
+      if (silverRate && parseFloat(silverRate as string) > 0) {
+        silverRatePerGram = parseFloat(silverRate as string);
+      } else if (silverRateCache.perGram && silverRateCache.perGram > 0) {
+        silverRatePerGram = silverRateCache.perGram;
+      }
 
       let goldRatePerGram = 0;
       let goldRateSource = '';
@@ -2746,6 +2753,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           marketValue: loans.marketValue,
           interestRate: loans.interestRate,
           interestRateType: loans.interestRateType,
+          metalType: loans.metalType,
         })
         .from(loans)
         .leftJoin(groups, eq(loans.groupId, groups.id))
@@ -2761,16 +2769,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const weightStr = loan.weight?.toString() || '0';
         const weightNum = parseFloat(weightStr.replace(/[^\d.]/g, '')) || 0;
         const collateralText = loan.collateralDetails || '';
+        const isSilver = loan.metalType === 'silver';
         const dbPurity = loan.purity ? parseFloat(loan.purity.toString()) : 0;
-        const purityPercent = dbPurity > 0 ? dbPurity : detectPurity(collateralText);
-        if (purityPercent !== defaultPurity) {
+        const defaultPurityForMetal = isSilver ? 99.9 : defaultPurity;
+        const purityPercent = dbPurity > 0 ? dbPurity : (isSilver ? 99.9 : detectPurity(collateralText));
+        if (purityPercent !== defaultPurityForMetal) {
           console.log(`🔍 Purity ${purityPercent}% (${dbPurity > 0 ? 'DB' : 'keyword'}) for: "${collateralText}" (${loan.borrowerName})`);
         }
 
+        const rateForLoan = isSilver ? silverRatePerGram : goldRatePerGram;
         let calcMarketValue = 0;
-        if (weightNum > 0 && goldRatePerGram > 0) {
+        if (weightNum > 0 && rateForLoan > 0) {
           const fineWeight = weightNum * (purityPercent / 100);
-          calcMarketValue = fineWeight * goldRatePerGram;
+          calcMarketValue = fineWeight * rateForLoan;
         }
 
         if (calcMarketValue <= 0) {
@@ -2818,6 +2829,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           groupName: loan.groupName || 'सर्व गट',
           loanDate: loan.loanDate,
           collateralDetails: loan.collateralDetails || '',
+          metalType: loan.metalType || 'gold',
           purityUsed: purityPercent,
           weight: weightNum,
           fineWeight: Math.round(fineWeight * 100) / 100,
@@ -2930,7 +2942,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     try {
       console.log('🔍 OVERDUE: Parsing parameters...');
-      const { dateFrom, dateTo, groupId, currentGoldRate, finePurityPercentage, monthlyInterestRate, interestRateMode, projectionMode, futureProjectionPeriod, customerName } = req.query;
+      const { dateFrom, dateTo, groupId, currentGoldRate, currentSilverRate, finePurityPercentage, monthlyInterestRate, interestRateMode, projectionMode, futureProjectionPeriod, customerName } = req.query;
       
       console.log('🔍 PROJECTION PARAMS:', { projectionMode, futureProjectionPeriod, customerName });
       
@@ -2944,6 +2956,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         interestRateMode: interestRateMode as string || 'manual',
         projectionMode: projectionMode as string || 'current',
         futureProjectionPeriod: futureProjectionPeriod as string || '3months',
+        currentSilverRate: parseFloat(currentSilverRate as string || "0"),
       };
       if (customerName) {
         filters.customerName = customerName as string;
@@ -5634,6 +5647,166 @@ export async function registerRoutes(app: Express): Promise<Server> {
         perGram: null,
         source: 'manual',
         message: 'ऑनलाईन दर उपलब्ध नाही'
+      });
+    }
+  });
+
+  // ==================== Silver Rate Auto-Fetch ====================
+  const silverRateCache: { rate: number | null; source: string; timestamp: number; perGram: number | null } = {
+    rate: null,
+    source: '',
+    timestamp: 0,
+    perGram: null
+  };
+  const SILVER_CACHE_DURATION = 4 * 60 * 60 * 1000;
+
+  async function fetchSilverRateFromIBJA(): Promise<{ rate: number; slot: string } | null> {
+    try {
+      const response = await fetch('https://ibjarates.com/', {
+        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
+        signal: AbortSignal.timeout(10000)
+      });
+      if (!response.ok) return null;
+      const html = await response.text();
+
+      const matchAM = html.match(/lblSilver_AM[^>]*>([\d,]{3,})/);
+      if (matchAM) {
+        const rate = parseInt(matchAM[1].replace(/,/g, ''));
+        if (rate > 0) {
+          console.log(`✅ IBJA Silver AM: ₹${rate}/kg`);
+          return { rate, slot: 'AM' };
+        }
+      }
+
+      const matchPM = html.match(/lblSilver_PM[^>]*>([\d,]{3,})/);
+      if (matchPM) {
+        const rate = parseInt(matchPM[1].replace(/,/g, ''));
+        if (rate > 0) {
+          console.log(`✅ IBJA Silver PM: ₹${rate}/kg`);
+          return { rate, slot: 'PM' };
+        }
+      }
+
+      return null;
+    } catch (error) {
+      console.log('⚠️ IBJA Silver fetch failed:', (error as Error).message);
+      return null;
+    }
+  }
+
+  async function fetchSilverRateFromGoodReturns(): Promise<number | null> {
+    try {
+      const response = await fetch('https://www.goodreturns.in/silver-rates/', {
+        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
+        signal: AbortSignal.timeout(10000)
+      });
+      if (!response.ok) return null;
+      const html = await response.text();
+
+      const matchPerKg = html.match(/(?:Silver\s*Rate|चांदी)[^₹]*₹\s*([\d,]+(?:\.\d+)?)\s*(?:per\s*)?(?:\/)?kg/i);
+      if (matchPerKg) {
+        const rate = parseFloat(matchPerKg[1].replace(/,/g, ''));
+        if (rate > 1000) {
+          console.log(`✅ GoodReturns Silver: ₹${rate}/kg`);
+          return rate;
+        }
+      }
+
+      const priceMatch = html.match(/id="silver-price"[^>]*>[^0-9]*([\d,]{4,})/);
+      if (priceMatch) {
+        const rate = parseInt(priceMatch[1].replace(/,/g, ''));
+        if (rate > 1000) {
+          console.log(`✅ GoodReturns Silver price: ₹${rate}/kg`);
+          return rate;
+        }
+      }
+
+      const anyPrice = html.match(/₹\s*([\d,]{4,}(?:\.\d+)?)\s*(?:per\s*kg|\/\s*kg)/i);
+      if (anyPrice) {
+        const rate = parseFloat(anyPrice[1].replace(/,/g, ''));
+        if (rate > 1000) {
+          console.log(`✅ GoodReturns Silver (fallback): ₹${rate}/kg`);
+          return rate;
+        }
+      }
+
+      return null;
+    } catch (error) {
+      console.log('⚠️ GoodReturns Silver fetch failed:', (error as Error).message);
+      return null;
+    }
+  }
+
+  app.get("/api/silver-rate", async (req, res) => {
+    try {
+      const now = Date.now();
+      if (silverRateCache.rate && (now - silverRateCache.timestamp) < SILVER_CACHE_DURATION) {
+        return res.json({
+          success: true,
+          rate: silverRateCache.rate,
+          perGram: silverRateCache.perGram,
+          source: silverRateCache.source,
+          cached: true,
+          timestamp: new Date(silverRateCache.timestamp).toISOString()
+        });
+      }
+
+      const [ibjaData, grRate] = await Promise.all([
+        fetchSilverRateFromIBJA().catch(() => null),
+        fetchSilverRateFromGoodReturns().catch(() => null),
+      ]);
+
+      const candidates: { ratePerKg: number; source: string }[] = [];
+
+      if (ibjaData && ibjaData.rate > 0) {
+        candidates.push({ ratePerKg: ibjaData.rate, source: `IBJA ${ibjaData.slot}` });
+      }
+
+      if (grRate && grRate > 0) {
+        candidates.push({ ratePerKg: grRate, source: 'GoodReturns' });
+      }
+
+      if (candidates.length === 0) {
+        return res.json({
+          success: false, rate: null, perGram: null, source: 'manual',
+          message: 'चांदीचा ऑनलाईन दर उपलब्ध नाही, कृपया मॅन्युअल दर टाका'
+        });
+      }
+
+      let best = candidates[0];
+      if (candidates.length >= 2) {
+        const rates = candidates.map(c => c.ratePerKg);
+        const median = rates.sort((a, b) => a - b)[Math.floor(rates.length / 2)];
+        best = candidates.reduce((a, b) => Math.abs(a.ratePerKg - median) < Math.abs(b.ratePerKg - median) ? a : b);
+      }
+
+      const perGram = Math.round(best.ratePerKg / 1000 * 100) / 100;
+
+      const allSources = candidates.map(c => `${c.source}: ₹${c.ratePerKg.toLocaleString('en-IN')}/kg`).join(' | ');
+      console.log(`✅ Silver Rate: ${allSources} → Best: ${best.source} (₹${perGram}/g)`);
+
+      silverRateCache.rate = best.ratePerKg;
+      silverRateCache.perGram = perGram;
+      silverRateCache.source = best.source;
+      silverRateCache.timestamp = now;
+
+      return res.json({
+        success: true,
+        rate: best.ratePerKg,
+        perGram,
+        source: best.source,
+        allSources: candidates.map(c => ({ source: c.source, ratePerKg: c.ratePerKg, perGram: Math.round(c.ratePerKg / 1000 * 100) / 100 })),
+        cached: false
+      });
+
+    } catch (error) {
+      console.error("Silver rate fetch error:", error);
+      return res.json({
+        success: false,
+        rate: null,
+        perGram: null,
+        source: 'manual',
+        message: 'चांदीचा ऑनलाईन दर उपलब्ध नाही'
       });
     }
   });

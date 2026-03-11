@@ -46,6 +46,7 @@ const loanSchema = z.object({
   isFarmer: z.boolean().default(false),
   isBackwardClass: z.boolean().default(false),
   loanType: z.string().min(1, "कर्जाचा प्रकार निवडा"),
+  metalType: z.string().default("gold"),
   accountNumber: z.string().min(1, "खाते क्रमांक आवश्यक आहे"),
   principalAmount: z.string().min(1, "कर्जाची रक्कम आवश्यक आहे"),
   loanDate: z.string().min(1, "कर्जाची तारीख आवश्यक आहे"),
@@ -164,6 +165,7 @@ function Loans() {
       isFarmer: false,
       isBackwardClass: false,
       loanType: "तारण",
+      metalType: "gold",
       accountNumber: "",
       principalAmount: "",
       loanDate: DateUtils.getCurrentIndianDate(),
@@ -182,7 +184,10 @@ function Loans() {
     },
   });
 
-  // Fetch live gold rate on mount
+  const [liveSilverRate, setLiveSilverRate] = useState<number>(0);
+  const [silverRateSource, setSilverRateSource] = useState<string>('');
+  const [silverRateStatus, setSilverRateStatus] = useState<'loading' | 'success' | 'failed'>('loading');
+
   useEffect(() => {
     fetch('/api/gold-rate')
       .then(r => r.json())
@@ -197,6 +202,20 @@ function Loans() {
       })
       .catch(() => {
         setGoldRateStatus('failed');
+      });
+    fetch('/api/silver-rate')
+      .then(r => r.json())
+      .then(data => {
+        if (data.success && data.perGram > 0) {
+          setLiveSilverRate(data.perGram);
+          setSilverRateSource(data.source || 'Live');
+          setSilverRateStatus('success');
+        } else {
+          setSilverRateStatus('failed');
+        }
+      })
+      .catch(() => {
+        setSilverRateStatus('failed');
       });
   }, []);
 
@@ -218,28 +237,35 @@ function Loans() {
     }
   }, [watchedLoanType]);
 
-  // Auto-calculate market value when weight or purity changes
+  const watchedMetalType = form.watch("metalType");
+
+  const currentLiveRate = watchedMetalType === 'silver' ? liveSilverRate : liveGoldRate;
+  const currentRateSource = watchedMetalType === 'silver' ? silverRateSource : goldRateSource;
+  const currentRateStatus = watchedMetalType === 'silver' ? silverRateStatus : goldRateStatus;
+  const currentRateLabel = watchedMetalType === 'silver' ? 'चांदीचा दर' : 'सोन्याचा दर';
+
   useEffect(() => {
     const subscription = form.watch((value, { name }) => {
-      if (name === 'weight' || name === 'purity') {
+      if (name === 'weight' || name === 'purity' || name === 'metalType') {
         if (value.loanType === 'विनातारण') return;
         const weightStr = (value.weight || '0').replace(/[^\d.]/g, '');
         const weightNum = parseFloat(weightStr) || 0;
         const purityNum = parseFloat(value.purity || '82') || 82;
         if (weightNum > 0) {
           const fineWeight = weightNum * (purityNum / 100);
+          const activeRate = value.metalType === 'silver' ? liveSilverRate : liveGoldRate;
           if (editOriginalRate > 0) {
             const marketVal = smartRound(fineWeight * editOriginalRate);
             form.setValue('marketValue', String(marketVal), { shouldValidate: false });
-          } else if (!marketValueManual && liveGoldRate > 0) {
-            const marketVal = smartRound(fineWeight * liveGoldRate);
+          } else if (!marketValueManual && activeRate > 0) {
+            const marketVal = smartRound(fineWeight * activeRate);
             form.setValue('marketValue', String(marketVal), { shouldValidate: false });
           }
         }
       }
     });
     return () => subscription.unsubscribe();
-  }, [form, liveGoldRate, marketValueManual, editOriginalRate]);
+  }, [form, liveGoldRate, liveSilverRate, marketValueManual, editOriginalRate]);
 
   // Auto-calculate maturity date when loanDate changes (reactive)
   useEffect(() => {
@@ -288,6 +314,7 @@ function Loans() {
       isFarmer: loan.isFarmer ?? false,
       isBackwardClass: loan.isBackwardClass ?? false,
       loanType: loan.loanType || "gold_loan",
+      metalType: loan.metalType || "gold",
       accountNumber: loan.accountNumber || "",
       principalAmount: loan.principalAmount ? String(loan.principalAmount).replace('.00', '') : "",
       loanDate: loan.loanDate || DateUtils.formatForInput(new Date()),
@@ -564,6 +591,7 @@ function Loans() {
           isFarmer: false,
           isBackwardClass: false,
           loanType: "तारण",
+          metalType: "gold",
           accountNumber: "",
           principalAmount: "",
           loanDate: todayDate,
@@ -657,6 +685,7 @@ function Loans() {
           isFarmer: false,
           isBackwardClass: false,
           loanType: "तारण",
+          metalType: "gold",
           accountNumber: "",
           principalAmount: "",
           loanDate: todayDate,
@@ -2492,6 +2521,39 @@ function Loans() {
                 <div className="space-y-3">
                   <h3 className="text-lg font-semibold border-b pb-1 text-orange-700">तारणाची माहिती</h3>
                   
+                  <FormField
+                    control={form.control}
+                    name="metalType"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-base font-medium">धातूचा प्रकार</FormLabel>
+                        <Select
+                          onValueChange={(val) => {
+                            field.onChange(val);
+                            if (val === 'silver') {
+                              form.setValue('purity', '99.9', { shouldValidate: false });
+                            } else {
+                              form.setValue('purity', '82', { shouldValidate: false });
+                            }
+                            setMarketValueManual(false);
+                            setEditOriginalRate(0);
+                          }}
+                          value={field.value || 'gold'}
+                        >
+                          <FormControl>
+                            <SelectTrigger className="text-base">
+                              <SelectValue />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="gold">सोने (Gold)</SelectItem>
+                            <SelectItem value="silver">चांदी (Silver)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </FormItem>
+                    )}
+                  />
+
                   {/* Collateral Details */}
                   <FormField
                     control={form.control}
@@ -2578,33 +2640,33 @@ function Loans() {
                           {editOriginalRate > 0 && (
                             <span className="text-xs text-indigo-600 ml-1">(मूळ दर — ₹{Math.round(editOriginalRate).toLocaleString('en-IN')}/ग्रॅम)</span>
                           )}
-                          {editOriginalRate === 0 && goldRateStatus === 'success' && !marketValueManual && (
-                            <span className="text-xs text-green-600 ml-1">(ऑटो — ₹{liveGoldRate.toLocaleString('en-IN')}/ग्रॅम • {goldRateSource})</span>
+                          {editOriginalRate === 0 && currentRateStatus === 'success' && !marketValueManual && (
+                            <span className="text-xs text-green-600 ml-1">(ऑटो — ₹{currentLiveRate.toLocaleString('en-IN')}/ग्रॅम • {currentRateLabel} • {currentRateSource})</span>
                           )}
-                          {editOriginalRate === 0 && goldRateStatus === 'failed' && (
+                          {editOriginalRate === 0 && currentRateStatus === 'failed' && (
                             <span className="text-xs text-red-600 ml-1">(दर उपलब्ध नाही — स्वतः भरा)</span>
                           )}
-                          {editOriginalRate === 0 && goldRateStatus === 'loading' && (
+                          {editOriginalRate === 0 && currentRateStatus === 'loading' && (
                             <span className="text-xs text-gray-500 ml-1">(दर लोड होत आहे...)</span>
                           )}
-                          {editOriginalRate > 0 && goldRateStatus === 'success' && (
+                          {editOriginalRate > 0 && currentRateStatus === 'success' && (
                             <button type="button" className="text-xs text-blue-600 ml-1 underline" onClick={() => {
                               setEditOriginalRate(0);
                               setMarketValueManual(false);
                               const w = parseFloat((form.getValues('weight') || '0').replace(/[^\d.]/g, '')) || 0;
                               const p = parseFloat(form.getValues('purity') || '82') || 82;
-                              if (w > 0 && liveGoldRate > 0) {
-                                form.setValue('marketValue', String(smartRound(w * (p / 100) * liveGoldRate)), { shouldValidate: false });
+                              if (w > 0 && currentLiveRate > 0) {
+                                form.setValue('marketValue', String(smartRound(w * (p / 100) * currentLiveRate)), { shouldValidate: false });
                               }
                             }}>(आजचा दर लावा)</button>
                           )}
-                          {editOriginalRate === 0 && marketValueManual && goldRateStatus === 'success' && (
+                          {editOriginalRate === 0 && marketValueManual && currentRateStatus === 'success' && (
                             <button type="button" className="text-xs text-blue-600 ml-1 underline" onClick={() => {
                               setMarketValueManual(false);
                               const w = parseFloat((form.getValues('weight') || '0').replace(/[^\d.]/g, '')) || 0;
                               const p = parseFloat(form.getValues('purity') || '82') || 82;
-                              if (w > 0 && liveGoldRate > 0) {
-                                form.setValue('marketValue', String(smartRound(w * (p / 100) * liveGoldRate)), { shouldValidate: false });
+                              if (w > 0 && currentLiveRate > 0) {
+                                form.setValue('marketValue', String(smartRound(w * (p / 100) * currentLiveRate)), { shouldValidate: false });
                               }
                             }}>(ऑटो करा)</button>
                           )}
@@ -3237,6 +3299,9 @@ function Loans() {
                       </TableCell>
                       <TableCell className="text-sm text-gray-600 py-3 px-4">
                         {loan.loanType === 'विनातारण' ? "—" : (loan.weight || "—")}
+                        {loan.loanType !== 'विनातारण' && loan.metalType === 'silver' && (
+                          <span className="ml-1 text-xs bg-gray-200 text-gray-700 px-1 rounded">चांदी</span>
+                        )}
                       </TableCell>
                       <TableCell className="text-sm text-gray-700 py-3 px-4 text-center tabular-nums font-medium">
                         {loan.interestRate ? `${loan.interestRate}%` : "—"}
@@ -3462,6 +3527,9 @@ function Loans() {
                         <p className="text-gray-600">{loan.loanType === 'विनातारण' ? 'प्रकार' : 'वजन'}</p>
                         <p className="font-medium font-inter">
                           {loan.loanType === 'विनातारण' ? 'विनातारण' : (loan.weight || "—")}
+                          {loan.loanType !== 'विनातारण' && loan.metalType === 'silver' && (
+                            <span className="ml-1 text-xs bg-gray-200 text-gray-700 px-1 rounded">चांदी</span>
+                          )}
                           {loan.interestRate ? <span className="ml-6 text-gray-500">{loan.interestRate}%</span> : null}
                         </p>
                       </div>
@@ -3746,6 +3814,10 @@ function Loans() {
                   🏺 तारण / गहाण तपशील
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-gray-600">धातूचा प्रकार</label>
+                    <p className="text-base font-medium">{selectedLoanDetails.metalType === 'silver' ? 'चांदी (Silver)' : 'सोने (Gold)'}</p>
+                  </div>
                   <div className="lg:col-span-2">
                     <label className="text-sm font-medium text-gray-600">वस्तूचा तपशील</label>
                     <p className="text-base font-medium font-noto">{selectedLoanDetails.collateralDetails || "—"}</p>
