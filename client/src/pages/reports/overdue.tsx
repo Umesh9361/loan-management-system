@@ -1009,7 +1009,7 @@ export default function OverdueReport() {
             />
             <div className="text-xs text-green-600 mt-1">सोने: 82%, 90%, 91.6% etc</div>
             {(overdueData as OverdueItem[]).some((item: OverdueItem) => item.metalType === 'silver') && (
-              <div className="text-xs text-gray-500 mt-0.5">🪙 चांदी: प्रत्येक कर्जाची नोंदणीतील शुद्धता वापरली जाते (डीफॉल्ट 99.9%)</div>
+              <div className="text-xs text-gray-500 mt-0.5">🪙 चांदी: प्रत्येक कर्जाच्या नोंदणीतील शुद्धता वापरली जाते</div>
             )}
           </div>
         </div>
