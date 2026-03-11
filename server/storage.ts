@@ -2324,6 +2324,10 @@ export class DatabaseStorage implements IStorage {
           weight: loans.weight,
           purity: loans.purity,
           status: loans.status,
+          loanType: loans.loanType,
+          specialConditions: loans.specialConditions,
+          documentDetails: loans.documentDetails,
+          otherInfo: loans.otherInfo,
         })
         .from(loans)
         .leftJoin(groups, eq(loans.groupId, groups.id))
@@ -2422,7 +2426,9 @@ export class DatabaseStorage implements IStorage {
         if (lossPercentage > 50) riskLevel = 'high';
         else if (lossPercentage > 20) riskLevel = 'medium';
 
-        // Include all active loans (not just overdue ones)
+        const isUnsecured = loan.loanType === 'विनातारण';
+        const unsecuredInfo = isUnsecured ? [loan.specialConditions, loan.documentDetails, loan.otherInfo].filter((v: any) => v && v !== '—' && String(v).trim() !== '').join(' | ') : '';
+
         overdueResults.push({
           loanId: loan.loanId,
           accountNumber: loan.accountNumber,
@@ -2430,7 +2436,7 @@ export class DatabaseStorage implements IStorage {
           borrowerPhone: loan.borrowerPhone || 'N/A',
           groupName: loan.groupName || 'सर्व गट',
           loanDate: loan.loanDate,
-          goldItem: loan.collateralDetails || 'N/A',
+          goldItem: isUnsecured ? (unsecuredInfo || 'विनातारण') : (loan.collateralDetails || 'N/A'),
           principalAmount: principal,
           interestRate: parseFloat(loan.interestRate?.toString() || '0'),
           interestRateType: loan.interestRateType || 'monthly',
@@ -2438,13 +2444,14 @@ export class DatabaseStorage implements IStorage {
           totalAmount: totalAmountDue,
           totalPaid: totalPaid,
           outstandingAmount: outstandingAmount,
-          goldWeight: goldWeightNum,
-          fineGoldWeight: fineGoldWeight,
-          currentGoldValue: currentGoldValue,
-          lossAmount: lossAmount,
-          lossPercentage: lossPercentage,
-          riskLevel: riskLevel,
+          goldWeight: isUnsecured ? 0 : goldWeightNum,
+          fineGoldWeight: isUnsecured ? 0 : fineGoldWeight,
+          currentGoldValue: isUnsecured ? 0 : currentGoldValue,
+          lossAmount: isUnsecured ? outstandingAmount : lossAmount,
+          lossPercentage: isUnsecured ? 100 : lossPercentage,
+          riskLevel: isUnsecured ? 'high' as const : riskLevel,
           daysOverdue: daysDiff,
+          loanType: loan.loanType || 'तारण',
         });
       }
 

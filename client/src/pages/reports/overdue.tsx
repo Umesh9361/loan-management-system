@@ -56,6 +56,7 @@ interface OverdueItem {
   lossPercentage: number;
   riskLevel: 'low' | 'medium' | 'high';
   daysOverdue: number;
+  loanType?: string;
 }
 
 function getSecurityLevel(item: OverdueItem): { level: string; label: string; color: string; bgColor: string; order: number } {
@@ -597,12 +598,13 @@ export default function OverdueReport() {
       'फोन': item.borrowerPhone,
       'गट': item.groupName,
       'तारीख': formatDate(item.loanDate),
+      'प्रकार': item.loanType === 'विनातारण' ? 'विनातारण' : 'तारण',
       'तारणाचा तपशील': item.goldItem,
       'मुद्दल': item.principalAmount,
       'व्याज': item.interestToDate,
       'एकूण': item.totalAmount,
-      'वजन (ग्राम)': item.goldWeight || '—',
-      'सोन्याची किंमत': item.currentGoldValue,
+      'वजन (ग्राम)': item.loanType === 'विनातारण' ? '—' : (item.goldWeight || '—'),
+      'सोन्याची किंमत': item.loanType === 'विनातारण' ? '—' : item.currentGoldValue,
       'नुकसान': item.lossAmount,
       'नुकसान %': `${item.lossPercentage}%`,
       'दिवस': item.daysOverdue,
@@ -1297,12 +1299,12 @@ export default function OverdueReport() {
                           </div>
                           <div className="grid grid-cols-3 gap-2 text-xs mt-1">
                             <div>
-                              <span className="text-gray-500">वजन</span>
-                              <div className="font-semibold text-amber-700">{item.goldWeight ? `${item.goldWeight}g` : '—'}</div>
+                              <span className="text-gray-500">{item.loanType === 'विनातारण' ? 'प्रकार' : 'वजन'}</span>
+                              <div className="font-semibold text-amber-700">{item.loanType === 'विनातारण' ? 'विनातारण' : (item.goldWeight ? `${item.goldWeight}g` : '—')}</div>
                             </div>
                             <div>
-                              <span className="text-gray-500">सोन्याची किंमत</span>
-                              <div className="font-semibold text-green-700">{formatCurrency(item.currentGoldValue)}</div>
+                              <span className="text-gray-500">{item.loanType === 'विनातारण' ? '—' : 'सोन्याची किंमत'}</span>
+                              <div className="font-semibold text-green-700">{item.loanType === 'विनातारण' ? '—' : formatCurrency(item.currentGoldValue)}</div>
                             </div>
                             <div>
                               <span className="text-gray-500">दिवस</span>
@@ -1358,8 +1360,8 @@ export default function OverdueReport() {
                               <td className="border border-gray-300 px-3 py-3 text-base text-center text-gray-700">{formatDate(item.loanDate)}</td>
                               <td className="border border-gray-300 px-3 py-3 text-base text-right font-semibold text-purple-700">{formatCurrency(item.principalAmount)}</td>
                               <td className="border border-gray-300 px-3 py-3 text-base text-right font-semibold text-orange-700">{formatCurrency(item.interestToDate)}</td>
-                              <td className="border border-gray-300 px-3 py-3 text-base text-center font-semibold text-amber-700">{item.goldWeight || '—'}</td>
-                              <td className="border border-gray-300 px-3 py-3 text-base text-right font-semibold text-green-700">{formatCurrency(item.currentGoldValue)}</td>
+                              <td className="border border-gray-300 px-3 py-3 text-base text-center font-semibold text-amber-700">{item.loanType === 'विनातारण' ? 'विनातारण' : (item.goldWeight || '—')}</td>
+                              <td className="border border-gray-300 px-3 py-3 text-base text-right font-semibold text-green-700">{item.loanType === 'विनातारण' ? '—' : formatCurrency(item.currentGoldValue)}</td>
                               <td className="border border-gray-300 px-3 py-3 text-base text-right font-bold text-indigo-700">{formatCurrency(item.totalAmount)}</td>
                               <td className={`border border-gray-300 px-3 py-3 text-base text-right font-bold ${security.bgColor}`}>
                                 <div className={`${security.color}`}>
@@ -1426,8 +1428,8 @@ export default function OverdueReport() {
                         <td style={{border: '1px solid black', padding: '3px', textAlign: 'center'}}>{formatDate(item.loanDate)}</td>
                         <td style={{border: '1px solid black', padding: '3px', textAlign: 'right'}}>{formatCurrency(item.principalAmount)}</td>
                         <td style={{border: '1px solid black', padding: '3px', textAlign: 'right'}}>{formatCurrency(item.interestToDate)}</td>
-                        <td style={{border: '1px solid black', padding: '3px', textAlign: 'center'}}>{item.goldWeight || '—'}</td>
-                        <td style={{border: '1px solid black', padding: '3px', textAlign: 'right'}}>{formatCurrency(item.currentGoldValue)}</td>
+                        <td style={{border: '1px solid black', padding: '3px', textAlign: 'center'}}>{item.loanType === 'विनातारण' ? 'विनातारण' : (item.goldWeight || '—')}</td>
+                        <td style={{border: '1px solid black', padding: '3px', textAlign: 'right'}}>{item.loanType === 'विनातारण' ? '—' : formatCurrency(item.currentGoldValue)}</td>
                         <td style={{border: '1px solid black', padding: '3px', textAlign: 'right', fontWeight: 'bold'}}>{formatCurrency(item.totalAmount)}</td>
                         <td style={{border: '1px solid black', padding: '3px', textAlign: 'right', fontWeight: 'bold', color: item.lossAmount > 0 ? 'red' : 'green'}}>
                           {item.lossAmount > 0 ? formatCurrency(item.lossAmount) : '✓'}
@@ -1488,7 +1490,7 @@ export default function OverdueReport() {
               <div className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-gradient-to-r from-indigo-50 to-indigo-50 rounded-lg border border-indigo-200">
                   <div>
-                    <Label className="text-sm font-semibold text-indigo-700">तारणाचा तपशील</Label>
+                    <Label className="text-sm font-semibold text-indigo-700">{selectedLoan.loanType === 'विनातारण' ? 'कर्ज तपशील' : 'तारणाचा तपशील'}</Label>
                     <p className="text-base font-medium text-gray-800 mt-1">{selectedLoan.goldItem}</p>
                   </div>
                   <div>
