@@ -325,7 +325,7 @@ function Loans() {
       interestRateType: loan.interestRateType || "monthly",
       collateralDetails: loan.collateralDetails || "",
       weight: loan.weight || "",
-      purity: loan.purity ? String(loan.purity).replace('.00', '') : "82",
+      purity: loan.purity ? String(loan.purity).replace('.00', '') : (loan.metalType === 'silver' ? "99.9" : "82"),
       marketValue: loan.marketValue ? String(loan.marketValue).replace('.00', '') : "",
       documentDetails: loan.documentDetails || "",
       specialConditions: loan.specialConditions || "",
@@ -457,7 +457,7 @@ function Loans() {
         borrowerId: data.borrowerId || undefined,
         principalAmount: data.principalAmount,
         interestRate: data.interestRate,
-        purity: data.purity || "82",
+        purity: data.purity || (data.metalType === 'silver' ? "99.9" : "82"),
         marketValue: data.marketValue || undefined,
         maturityMonths: data.maturityMonths ? parseInt(data.maturityMonths) : undefined,
       };
@@ -2610,14 +2610,14 @@ function Loans() {
                     name="purity"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-base font-medium">शुद्धता %</FormLabel>
+                        <FormLabel className="text-base font-medium">शुद्धता % {watchedMetalType === 'silver' ? '(चांदी: 99.9%)' : '(सोने: 82%)'}</FormLabel>
                         <FormControl>
                           <Input
                             {...field}
-                            placeholder="82"
+                            placeholder={watchedMetalType === 'silver' ? '99.9' : '82'}
                             tabIndex={16}
                             className="text-base"
-                            value={field.value || '82'}
+                            value={field.value ?? ''}
                             onChange={(e) => {
                               const converted = e.target.value.replace(/[०-९]/g, (d: string) => String('०१२३४५६७८९'.indexOf(d)));
                               field.onChange(converted);
@@ -3828,7 +3828,7 @@ function Loans() {
                   </div>
                   <div>
                     <label className="text-sm font-medium text-gray-600">शुद्धता %</label>
-                    <p className="text-base font-medium">{selectedLoanDetails.purity ? String(selectedLoanDetails.purity).replace('.00', '') : "82"}%</p>
+                    <p className="text-base font-medium">{selectedLoanDetails.purity ? String(selectedLoanDetails.purity).replace('.00', '') : (selectedLoanDetails.metalType === 'silver' ? "99.9" : "82")}%</p>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-gray-600">अंदाजे बाजार मूल्य</label>
