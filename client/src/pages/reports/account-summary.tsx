@@ -257,7 +257,7 @@ export default function AccountSummaryReport() {
     const goldWeight = goldLoans.reduce((s: number, l: any) => s + (parseFloat(String(l.weight || '0').replace(/[^\d.]/g, '')) || 0), 0);
     const goldFineWeight = goldLoans.reduce((s: number, l: any) => { const w = parseFloat(String(l.weight || '0').replace(/[^\d.]/g, '')) || 0; const p = parseFloat(String(l.purity || '82')) || 82; return s + (w * p / 100); }, 0);
     const silverWeight = silverLoans.reduce((s: number, l: any) => s + (parseFloat(String(l.weight || '0').replace(/[^\d.]/g, '')) || 0), 0);
-    const silverFineWeight = silverLoans.reduce((s: number, l: any) => { const w = parseFloat(String(l.weight || '0').replace(/[^\d.]/g, '')) || 0; const p = parseFloat(String(l.purity || '99.9')) || 99.9; return s + (w * p / 100); }, 0);
+    const silverFineWeight = silverLoans.reduce((s: number, l: any) => { const w = parseFloat(String(l.weight || '0').replace(/[^\d.]/g, '')) || 0; const p = parseFloat(String(l.purity || '82')) || 82; return s + (w * p / 100); }, 0);
 
     return {
       name: group.name,
@@ -323,7 +323,7 @@ export default function AccountSummaryReport() {
     const goldWeight = goldLoans.reduce((s: number, l: any) => s + (parseFloat(String(l.weight || '0').replace(/[^\d.]/g, '')) || 0), 0);
     const goldFineWeight = goldLoans.reduce((s: number, l: any) => { const w = parseFloat(String(l.weight || '0').replace(/[^\d.]/g, '')) || 0; const p = parseFloat(String(l.purity || '82')) || 82; return s + (w * p / 100); }, 0);
     const silverWeight = silverLoans.reduce((s: number, l: any) => s + (parseFloat(String(l.weight || '0').replace(/[^\d.]/g, '')) || 0), 0);
-    const silverFineWeight = silverLoans.reduce((s: number, l: any) => { const w = parseFloat(String(l.weight || '0').replace(/[^\d.]/g, '')) || 0; const p = parseFloat(String(l.purity || '99.9')) || 99.9; return s + (w * p / 100); }, 0);
+    const silverFineWeight = silverLoans.reduce((s: number, l: any) => { const w = parseFloat(String(l.weight || '0').replace(/[^\d.]/g, '')) || 0; const p = parseFloat(String(l.purity || '82')) || 82; return s + (w * p / 100); }, 0);
 
     return {
       name: customerName,
