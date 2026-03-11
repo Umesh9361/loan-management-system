@@ -1267,6 +1267,7 @@ export default function OverdueReport() {
                     </td>
                     <td style={{padding: '4px 8px', border: '1px solid #666'}}>
                       ₹{filters.currentGoldRate}/gram
+                      {filters.currentSilverRate && ` | Silver: ₹${filters.currentSilverRate}/gram`}
                     </td>
                   </tr>
                   <tr>

@@ -2419,15 +2419,15 @@ export class DatabaseStorage implements IStorage {
         const outstandingAmount = totalAmountDue - totalPaid;
 
         const isSilverLoan = loan.metalType === 'silver';
-        const goldWeightNum = parseFloat(loan.weight?.toString() || '0');
+        const metalWeightNum = parseFloat(loan.weight?.toString() || '0');
         const dbPurity = loan.purity ? parseFloat(loan.purity.toString()) : 0;
         const purityPercentage = dbPurity > 0 ? dbPurity : (isSilverLoan ? 99.9 : filters.finePurityPercentage);
         const rateForLoan = isSilverLoan ? (filters.currentSilverRate || 0) : filters.currentGoldRate;
-        const fineGoldWeight = goldWeightNum * (purityPercentage / 100);
-        const currentGoldValue = fineGoldWeight * rateForLoan;
+        const fineMetalWeight = metalWeightNum * (purityPercentage / 100);
+        const currentMetalValue = fineMetalWeight * rateForLoan;
 
         // Loss calculation
-        const lossAmount = outstandingAmount > currentGoldValue ? outstandingAmount - currentGoldValue : 0;
+        const lossAmount = outstandingAmount > currentMetalValue ? outstandingAmount - currentMetalValue : 0;
 
         // Risk level
         let riskLevel: 'low' | 'medium' | 'high' = 'low';
@@ -2453,9 +2453,9 @@ export class DatabaseStorage implements IStorage {
           totalAmount: totalAmountDue,
           totalPaid: totalPaid,
           outstandingAmount: outstandingAmount,
-          goldWeight: isUnsecured ? 0 : goldWeightNum,
-          fineGoldWeight: isUnsecured ? 0 : fineGoldWeight,
-          currentGoldValue: isUnsecured ? 0 : currentGoldValue,
+          goldWeight: isUnsecured ? 0 : metalWeightNum,
+          fineGoldWeight: isUnsecured ? 0 : fineMetalWeight,
+          currentGoldValue: isUnsecured ? 0 : currentMetalValue,
           lossAmount: isUnsecured ? outstandingAmount : lossAmount,
           lossPercentage: isUnsecured ? 100 : lossPercentage,
           riskLevel: isUnsecured ? 'high' as const : riskLevel,

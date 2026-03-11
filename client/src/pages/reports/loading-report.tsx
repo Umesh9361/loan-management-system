@@ -300,6 +300,7 @@ export default function LoadingReport() {
       <div class="info">
         <span>दिनांक: ${new Date().toLocaleDateString('en-GB')}</span>
         <span>सोन्याचा दर: ₹${summary?.goldRateUsed?.toLocaleString('en-IN')}/ग्रॅम</span>
+        ${silverRateInput ? `<span>चांदीचा दर: ₹${parseFloat(silverRateInput).toLocaleString('en-IN')}/ग्रॅम</span>` : ''}
         <span>शुद्धता: 82% | पाटली/बांगडी: 90% | वेडण: 95% | चोख: 99.50%</span>
         <span>सरासरी LTV: ${summary?.avgLTV}%</span>
       </div>
@@ -315,7 +316,7 @@ export default function LoadingReport() {
       <table>
         <thead><tr>
           <th>क्र.</th><th>कर्जदार नाव</th><th>खाते</th><th>दिनांक</th><th>गट</th>
-          <th>वजन</th><th>शुद्धता</th><th>व्याजदर</th><th>बाजार मूल्य</th><th>व्याजासहित</th><th>80% मानक</th><th>प्रत्यक्ष कर्ज</th>
+          <th>धातू</th><th>वजन</th><th>शुद्धता</th><th>व्याजदर</th><th>बाजार मूल्य</th><th>व्याजासहित</th><th>80% मानक</th><th>प्रत्यक्ष कर्ज</th>
           <th>लोडिंग</th><th>LTV%</th><th>जोखीम</th>
         </tr></thead>
         <tbody>
@@ -326,6 +327,7 @@ export default function LoadingReport() {
               <td>${item.accountNumber}</td>
               <td>${formatDate(item.loanDate)}</td>
               <td>${item.groupName}</td>
+              <td>${item.metalType === 'silver' ? 'चांदी' : 'सोने'}</td>
               <td>${item.weight}g</td>
               <td style="${(item as any).purityUsed !== 82 ? 'color:#1d4ed8;font-weight:bold' : ''}">${(item as any).purityUsed}%</td>
               <td style="color:#c2410c;font-weight:bold">${item.interestRate}%${item.interestRateType === 'yearly' ? ' वा.' : ''}</td>
