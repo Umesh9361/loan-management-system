@@ -2425,7 +2425,27 @@ export class DatabaseStorage implements IStorage {
         const isSilverLoan = loan.metalType === 'silver';
         const metalWeightNum = parseFloat(loan.weight?.toString() || '0');
         const dbPurity = loan.purity ? parseFloat(loan.purity.toString()) : 0;
-        const purityPercentage = dbPurity > 0 ? dbPurity : (parseFloat(String(filters.finePurityPercentage)) || 100);
+
+        function detectPurityFromCollateral(collateral: string): number {
+          if (!collateral) return 82;
+          const lower = collateral.toLowerCase();
+          const words = lower.split(/[\s,;|()]+/).filter(w => w.length > 0);
+          const fineSubstring = ['चोख', 'फाईन', 'फाइन', 'शिक्का', 'शिका', 'बिस्कीट', 'बुलियन', 'इंगॉट', 'गिन्नी', 'कॉइन', 'वाळा', 'वाळे', 'fine gold', 'pure gold', 'gold bar', 'gold coin', 'gold biscuit', 'tola bar', 'bullion', 'ingot', 'guinea', 'सोन्याचे नाणे', 'सोन्याची बिस्कीट', 'सोन्याची बार', 'सोन्याचा बार', 'गोल्ड गिन्नी', 'hallmark 999', 'bis 999', '24k', '24kt', '24 karat', '24कॅरेट'];
+          const fineExact = ['fine', 'pure', 'coin', 'biscuit', 'bar', 'ginni', 'नाणे', 'बार', '999', '995', '9950', '99.50', '99.9', '99.5'];
+          const vedanSubstring = ['वेडण', 'वेडन', 'वेडणी'];
+          const vedanExact = ['vedan', 'vedun', 'vedani'];
+          const patliSubstring = ['पाटली', 'पाटल्या', 'बांगडी', 'बांगड्या'];
+          const patliExact = ['patli', 'bangdi', 'bangadi'];
+          for (const kw of fineSubstring) { if (lower.includes(kw.toLowerCase())) return 99.50; }
+          for (const kw of fineExact) { if (words.some(w => w === kw.toLowerCase())) return 99.50; }
+          for (const kw of vedanSubstring) { if (lower.includes(kw.toLowerCase())) return 95; }
+          for (const kw of vedanExact) { if (words.some(w => w === kw.toLowerCase())) return 95; }
+          for (const kw of patliSubstring) { if (lower.includes(kw.toLowerCase())) return 90; }
+          for (const kw of patliExact) { if (words.some(w => w === kw.toLowerCase())) return 90; }
+          return 82;
+        }
+
+        const purityPercentage = dbPurity > 0 ? dbPurity : detectPurityFromCollateral(loan.collateralDetails || '');
         const rateForLoan = isSilverLoan ? (filters.currentSilverRate || 0) : filters.currentGoldRate;
         const fineMetalWeight = metalWeightNum * (purityPercentage / 100);
         const currentMetalValue = fineMetalWeight * rateForLoan;
