@@ -464,7 +464,7 @@ export class DatabaseStorage implements IStorage {
         // Ensure proper type conversion for decimal fields
         principalAmount: loan.principalAmount ? String(loan.principalAmount) : "0",
         interestRate: loan.interestRate ? String(loan.interestRate) : "0",
-        purity: loan.purity ? String(loan.purity) : "82",
+        purity: loan.purity ? String(loan.purity) : (loan.metalType === 'silver' ? "99.9" : "82"),
         marketValue: loan.marketValue ? String(loan.marketValue) : null
       })
       .returning();
