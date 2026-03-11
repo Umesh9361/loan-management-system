@@ -2611,11 +2611,10 @@ function Loans() {
                     name="purity"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-base font-medium">शुद्धता % {watchedMetalType === 'silver' ? '(चांदी: 99.9%)' : '(सोने: 82%)'}</FormLabel>
+                        <FormLabel className="text-base font-medium">शुद्धता % ({watchedMetalType === 'silver' ? 'चांदी' : 'सोने'})</FormLabel>
                         <FormControl>
                           <Input
                             {...field}
-                            placeholder={watchedMetalType === 'silver' ? '99.9' : '82'}
                             tabIndex={16}
                             className="text-base"
                             value={field.value ?? ''}
