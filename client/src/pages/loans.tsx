@@ -220,10 +220,6 @@ function Loans() {
   }, []);
 
   const smartRound = (val: number): number => {
-    if (val >= 100000) return Math.round(val / 1000) * 1000;
-    if (val >= 10000) return Math.round(val / 500) * 500;
-    if (val >= 1000) return Math.round(val / 100) * 100;
-    if (val >= 100) return Math.round(val / 10) * 10;
     return Math.round(val);
   };
 
