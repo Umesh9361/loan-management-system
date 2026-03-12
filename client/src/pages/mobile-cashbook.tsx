@@ -1358,46 +1358,6 @@ function MobileCashbook() {
                               </div>
                             )}
                           </div>
-                          {isLoanTransaction ? (
-                            <div className="bg-amber-100 text-amber-700 rounded px-2 py-0.5 text-xs font-medium inline-block">
-                              {transaction.category === 'loan_disbursement' ? 'कर्ज वाटप' : 'कर्ज बंद'}
-                            </div>
-                          ) : isTransferTransaction ? (
-                            <div className="space-y-1">
-                              <div className="bg-indigo-100 text-indigo-700 rounded px-2 py-0.5 text-xs font-medium inline-block">
-                                खाते ट्रान्सफर
-                              </div>
-                              <div className="flex gap-2">
-                                <button
-                                  onClick={() => handleEditTransaction(transaction)}
-                                  className="flex items-center gap-1 px-2 py-1 text-xs text-indigo-600 bg-indigo-50 rounded-md active:bg-indigo-100"
-                                >
-                                  <Edit2 className="h-3 w-3" /> बदला
-                                </button>
-                                <button
-                                  onClick={() => handleDeleteTransaction(transaction)}
-                                  className="flex items-center gap-1 px-2 py-1 text-xs text-red-600 bg-red-50 rounded-md active:bg-red-100"
-                                >
-                                  <Trash2 className="h-3 w-3" /> हटवा
-                                </button>
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="flex gap-2 mt-1">
-                              <button
-                                onClick={() => handleEditTransaction(transaction)}
-                                className="flex items-center gap-1 px-2 py-1 text-xs text-indigo-600 bg-indigo-50 rounded-md active:bg-indigo-100"
-                              >
-                                <Edit2 className="h-3 w-3" /> बदला
-                              </button>
-                              <button
-                                onClick={() => handleDeleteTransaction(transaction)}
-                                className="flex items-center gap-1 px-2 py-1 text-xs text-red-600 bg-red-50 rounded-md active:bg-red-100"
-                              >
-                                <Trash2 className="h-3 w-3" /> हटवा
-                              </button>
-                            </div>
-                          )}
                         </div>
                         
                         <div className="text-center self-center">
@@ -1419,9 +1379,54 @@ function MobileCashbook() {
                             <div></div>
                           )}
                         </div>
-                      </div>
-                      <div className={`text-right text-xs whitespace-nowrap ${runningBalance < 0 ? 'text-red-500' : 'text-green-600'}`}>
-                        शिल्लक {runningBalance < 0 ? `-₹${Math.abs(runningBalance).toLocaleString('en-IN')}` : `₹${runningBalance.toLocaleString('en-IN')}`}
+
+                        <div className="flex justify-between items-center" style={{ gridColumn: '1 / -1' }}>
+                          <div>
+                            {isLoanTransaction ? (
+                              <div className="bg-amber-100 text-amber-700 rounded px-2 py-0.5 text-xs font-medium inline-block">
+                                {transaction.category === 'loan_disbursement' ? 'कर्ज वाटप' : 'कर्ज बंद'}
+                              </div>
+                            ) : isTransferTransaction ? (
+                              <div className="space-y-1">
+                                <div className="bg-indigo-100 text-indigo-700 rounded px-2 py-0.5 text-xs font-medium inline-block">
+                                  खाते ट्रान्सफर
+                                </div>
+                                <div className="flex gap-2">
+                                  <button
+                                    onClick={() => handleEditTransaction(transaction)}
+                                    className="flex items-center gap-1 px-2 py-1 text-xs text-indigo-600 bg-indigo-50 rounded-md active:bg-indigo-100"
+                                  >
+                                    <Edit2 className="h-3 w-3" /> बदला
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteTransaction(transaction)}
+                                    className="flex items-center gap-1 px-2 py-1 text-xs text-red-600 bg-red-50 rounded-md active:bg-red-100"
+                                  >
+                                    <Trash2 className="h-3 w-3" /> हटवा
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() => handleEditTransaction(transaction)}
+                                  className="flex items-center gap-1 px-2 py-1 text-xs text-indigo-600 bg-indigo-50 rounded-md active:bg-indigo-100"
+                                >
+                                  <Edit2 className="h-3 w-3" /> बदला
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteTransaction(transaction)}
+                                  className="flex items-center gap-1 px-2 py-1 text-xs text-red-600 bg-red-50 rounded-md active:bg-red-100"
+                                >
+                                  <Trash2 className="h-3 w-3" /> हटवा
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                          <span className={`text-xs whitespace-nowrap ${runningBalance < 0 ? 'text-red-500' : 'text-green-600'}`}>
+                            शिल्लक {runningBalance < 0 ? `-₹${Math.abs(runningBalance).toLocaleString('en-IN')}` : `₹${runningBalance.toLocaleString('en-IN')}`}
+                          </span>
+                        </div>
                       </div>
                     </div>
                   );
