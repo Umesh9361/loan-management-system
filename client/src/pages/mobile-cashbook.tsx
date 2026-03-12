@@ -1408,6 +1408,11 @@ function MobileCashbook() {
                           ) : (
                             <div></div>
                           )}
+                          <div className={`text-xs mt-1 ${runningBalance < 0 ? 'text-red-500' : 'text-green-600'}`}>
+                            {transaction.transactionType === 'cash_in' && (
+                              <>शिल्लक {runningBalance < 0 ? `-₹${Math.abs(runningBalance).toLocaleString('en-IN')}` : `₹${runningBalance.toLocaleString('en-IN')}`}</>
+                            )}
+                          </div>
                         </div>
                         
                         <div className="text-center self-center">
@@ -1418,10 +1423,12 @@ function MobileCashbook() {
                           ) : (
                             <div></div>
                           )}
+                          <div className={`text-xs mt-1 ${runningBalance < 0 ? 'text-red-500' : 'text-green-600'}`}>
+                            {transaction.transactionType === 'cash_out' && (
+                              <>शिल्लक {runningBalance < 0 ? `-₹${Math.abs(runningBalance).toLocaleString('en-IN')}` : `₹${runningBalance.toLocaleString('en-IN')}`}</>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                      <div className={`text-right text-xs ${runningBalance < 0 ? 'text-red-500' : 'text-green-600'}`}>
-                        शिल्लक {runningBalance < 0 ? `-₹${Math.abs(runningBalance).toLocaleString('en-IN')}` : `₹${runningBalance.toLocaleString('en-IN')}`}
                       </div>
                     </div>
                   );
