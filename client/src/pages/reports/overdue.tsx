@@ -202,16 +202,16 @@ export default function OverdueReport() {
   });
 
   useEffect(() => {
-    if (goldRateData && goldRateData.success && goldRateData.perGram && !filters.currentGoldRate && !goldRateManuallyEdited) {
+    if (goldRateData && goldRateData.success && goldRateData.perGram && !goldRateManuallyEdited) {
       setFilters(prev => ({ ...prev, currentGoldRate: goldRateData.perGram.toString() }));
     }
-  }, [goldRateData]);
+  }, [goldRateData, goldRateManuallyEdited]);
 
   useEffect(() => {
-    if (silverRateData && silverRateData.success && silverRateData.perGram && !filters.currentSilverRate && !silverRateManuallyEdited) {
+    if (silverRateData && silverRateData.success && silverRateData.perGram && !silverRateManuallyEdited) {
       setFilters(prev => ({ ...prev, currentSilverRate: silverRateData.perGram.toString() }));
     }
-  }, [silverRateData]);
+  }, [silverRateData, silverRateManuallyEdited]);
 
   const { data: overdueData = [], isLoading: isGenerating, refetch: generateReport } = useQuery({
     queryKey: ['/api/overdue-report', filters, activeTab, selectedCustomerName],
