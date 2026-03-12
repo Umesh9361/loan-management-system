@@ -58,6 +58,7 @@ import ActivityLogPage from "@/pages/activity-log";
 import UserManagement from "@/pages/user-management";
 import PartyManagement from "@/pages/party-management";
 import QrScan from "@/pages/qr-scan";
+import InventoryScan from "@/pages/inventory-scan";
 
 function normalizeRole(role: string | undefined): string {
   if (!role) return '';
@@ -200,6 +201,7 @@ function AppContent() {
         <Route path="/party-management" component={PartyManagement} />
         <Route path="/mobile-cashbook" component={MobileCashbook} />
         <Route path="/calculator" component={InterestCalculator} />
+        <Route path="/inventory-scan" component={InventoryScan} />
         
         {/* Administration Routes */}
         <Route path="/user-management" component={UserManagement} />
@@ -270,6 +272,7 @@ function AppContent() {
         {perms.canAccessPartyManagement && <Route path="/party-management" component={PartyManagement} />}
         {perms.canAccessMobileCashbook && <Route path="/mobile-cashbook" component={MobileCashbook} />}
         {perms.canAccessInterestCalculator && <Route path="/calculator" component={InterestCalculator} />}
+        {perms.canAccessLoanRegistration && <Route path="/inventory-scan" component={InventoryScan} />}
         
         {/* Admin Functions - REMOVED: Regular users should never access admin panels */}
         {/* User Management और Data Management admin-only features हैं */}
@@ -319,6 +322,7 @@ function AppContent() {
         <Route path="/party-management" component={PartyManagement} />
         <Route path="/mobile-cashbook" component={MobileCashbook} />
         <Route path="/calculator" component={InterestCalculator} />
+        <Route path="/inventory-scan" component={InventoryScan} />
         <Route path="/user-management" component={UserManagement} />
         <Route path="/data-management" component={DataManagement} />
         <Route path="/activity-log" component={ActivityLogPage} />

@@ -29,7 +29,8 @@ import {
   ClipboardList,
   AlertTriangle,
   Scale,
-  Settings
+  Settings,
+  PackageSearch
 } from "lucide-react";
 
 const navigation = [
@@ -86,6 +87,12 @@ const navigation = [
     href: "/calculator",
     icon: Calculator,
     permission: "canAccessInterestCalculator",
+  },
+  {
+    name: "वस्तू तपासणी",
+    href: "/inventory-scan",
+    icon: PackageSearch,
+    permission: "canAccessLoanRegistration",
   },
 ];
 
