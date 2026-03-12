@@ -1304,7 +1304,7 @@ function MobileCashbook() {
                   <div></div>
                   <div></div>
                 </div>
-                <div className={`text-right text-[11px] mt-1 ${correctOpeningBalance < 0 ? 'text-red-400' : 'text-gray-400'}`}>
+                <div className="text-right text-xs text-gray-400 mt-1">
                   शिल्लक {correctOpeningBalance < 0 ? `-₹${Math.abs(correctOpeningBalance).toLocaleString('en-IN')}` : `₹${correctOpeningBalance.toLocaleString('en-IN')}`}
                 </div>
               </div>
@@ -1359,13 +1359,23 @@ function MobileCashbook() {
                             )}
                           </div>
                           {isLoanTransaction ? (
-                            <div className="bg-amber-100 text-amber-700 rounded px-2 py-0.5 text-xs font-medium inline-block">
-                              {transaction.category === 'loan_disbursement' ? 'कर्ज वाटप' : 'कर्ज बंद'}
+                            <div className="flex justify-between items-center">
+                              <div className="bg-amber-100 text-amber-700 rounded px-2 py-0.5 text-xs font-medium inline-block">
+                                {transaction.category === 'loan_disbursement' ? 'कर्ज वाटप' : 'कर्ज बंद'}
+                              </div>
+                              <span className="text-xs text-gray-400">
+                                शिल्लक {runningBalance < 0 ? `-₹${Math.abs(runningBalance).toLocaleString('en-IN')}` : `₹${runningBalance.toLocaleString('en-IN')}`}
+                              </span>
                             </div>
                           ) : isTransferTransaction ? (
                             <div className="space-y-1">
-                              <div className="bg-indigo-100 text-indigo-700 rounded px-2 py-0.5 text-xs font-medium inline-block">
-                                खाते ट्रान्सफर
+                              <div className="flex justify-between items-center">
+                                <div className="bg-indigo-100 text-indigo-700 rounded px-2 py-0.5 text-xs font-medium inline-block">
+                                  खाते ट्रान्सफर
+                                </div>
+                                <span className="text-xs text-gray-400">
+                                  शिल्लक {runningBalance < 0 ? `-₹${Math.abs(runningBalance).toLocaleString('en-IN')}` : `₹${runningBalance.toLocaleString('en-IN')}`}
+                                </span>
                               </div>
                               <div className="flex gap-2">
                                 <button
@@ -1383,19 +1393,24 @@ function MobileCashbook() {
                               </div>
                             </div>
                           ) : (
-                            <div className="flex gap-2 mt-1">
-                              <button
-                                onClick={() => handleEditTransaction(transaction)}
-                                className="flex items-center gap-1 px-2 py-1 text-xs text-indigo-600 bg-indigo-50 rounded-md active:bg-indigo-100"
-                              >
-                                <Edit2 className="h-3 w-3" /> बदला
-                              </button>
-                              <button
-                                onClick={() => handleDeleteTransaction(transaction)}
-                                className="flex items-center gap-1 px-2 py-1 text-xs text-red-600 bg-red-50 rounded-md active:bg-red-100"
-                              >
-                                <Trash2 className="h-3 w-3" /> हटवा
-                              </button>
+                            <div className="flex justify-between items-center mt-1">
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() => handleEditTransaction(transaction)}
+                                  className="flex items-center gap-1 px-2 py-1 text-xs text-indigo-600 bg-indigo-50 rounded-md active:bg-indigo-100"
+                                >
+                                  <Edit2 className="h-3 w-3" /> बदला
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteTransaction(transaction)}
+                                  className="flex items-center gap-1 px-2 py-1 text-xs text-red-600 bg-red-50 rounded-md active:bg-red-100"
+                                >
+                                  <Trash2 className="h-3 w-3" /> हटवा
+                                </button>
+                              </div>
+                              <span className="text-xs text-gray-400">
+                                शिल्लक {runningBalance < 0 ? `-₹${Math.abs(runningBalance).toLocaleString('en-IN')}` : `₹${runningBalance.toLocaleString('en-IN')}`}
+                              </span>
                             </div>
                           )}
                         </div>
@@ -1419,9 +1434,6 @@ function MobileCashbook() {
                             <div></div>
                           )}
                         </div>
-                      </div>
-                      <div className={`text-right text-[11px] mt-1 ${runningBalance < 0 ? 'text-red-400' : 'text-gray-400'}`}>
-                        शिल्लक {runningBalance < 0 ? `-₹${Math.abs(runningBalance).toLocaleString('en-IN')}` : `₹${runningBalance.toLocaleString('en-IN')}`}
                       </div>
                     </div>
                   );
