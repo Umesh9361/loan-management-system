@@ -2294,6 +2294,7 @@ export class DatabaseStorage implements IStorage {
       currentGoldRate: number;
       currentSilverRate?: number;
       finePurityPercentage: number;
+      purityMode?: string;
       monthlyInterestRate: number;
       interestRateMode?: string;
       projectionMode?: string;
@@ -2445,7 +2446,12 @@ export class DatabaseStorage implements IStorage {
           return 82;
         }
 
-        const purityPercentage = dbPurity > 0 ? dbPurity : detectPurityFromCollateral(loan.collateralDetails || '');
+        let purityPercentage: number;
+        if (filters.purityMode === 'manual' && !isSilverLoan) {
+          purityPercentage = filters.finePurityPercentage || 82;
+        } else {
+          purityPercentage = dbPurity > 0 ? dbPurity : detectPurityFromCollateral(loan.collateralDetails || '');
+        }
         const rateForLoan = isSilverLoan ? (filters.currentSilverRate || 0) : filters.currentGoldRate;
         const fineMetalWeight = metalWeightNum * (purityPercentage / 100);
         const currentMetalValue = fineMetalWeight * rateForLoan;

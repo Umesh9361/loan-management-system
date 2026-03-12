@@ -29,6 +29,7 @@ interface OverdueReportFilters {
   currentGoldRate: string;
   currentSilverRate: string;
   finePurityPercentage: string;
+  purityMode: 'loan-wise' | 'manual';
   monthlyInterestRate: string;
   interestRateMode: 'loan-wise' | 'manual';
   projectionMode: 'current' | 'future';
@@ -105,6 +106,7 @@ export default function OverdueReport() {
     currentGoldRate: "",
     currentSilverRate: "",
     finePurityPercentage: "82",
+    purityMode: 'loan-wise',
     monthlyInterestRate: "",
     interestRateMode: 'loan-wise',
     projectionMode: 'current',
@@ -220,6 +222,7 @@ export default function OverdueReport() {
         currentGoldRate: filters.currentGoldRate,
         currentSilverRate: filters.currentSilverRate,
         finePurityPercentage: filters.finePurityPercentage,
+        purityMode: filters.purityMode,
         monthlyInterestRate: filters.monthlyInterestRate,
         interestRateMode: filters.interestRateMode,
         projectionMode: filters.projectionMode,
@@ -698,7 +701,7 @@ export default function OverdueReport() {
   };
 
   const handleGenerateReport = () => {
-    if (!filters.dateFrom || !filters.dateTo || !filters.currentGoldRate || !filters.finePurityPercentage) {
+    if (!filters.dateFrom || !filters.dateTo || !filters.currentGoldRate || (filters.purityMode === 'manual' && !filters.finePurityPercentage)) {
       alert("कृपया सर्व आवश्यक फील्ड भरा / Please fill all required fields");
       return;
     }
@@ -1002,20 +1005,39 @@ export default function OverdueReport() {
           </div>
           )}
 
-          <div>
-            <Label className="text-green-700 font-medium">⭐ शुद्धता % (सोने)</Label>
-            <Input
-              type="number"
-              step="0.1"
-              min="50"
-              max="100"
-              value={filters.finePurityPercentage || ''}
-              onChange={(e) => setFilters(prev => ({ ...prev, finePurityPercentage: e.target.value }))}
-              className="mt-1 bg-white border-2 border-green-300 focus:border-green-500"
-            />
-            <div className="text-xs text-green-600 mt-1">सोने: 82%, 90%, 91.6% etc</div>
+          <div className="space-y-2">
+            <Label className="text-green-700 font-medium">⭐ शुद्धता पद्धत (सोने)</Label>
+            <Select value={filters.purityMode} onValueChange={(value: 'loan-wise' | 'manual') => 
+              setFilters(prev => ({ ...prev, purityMode: value }))}>
+              <SelectTrigger className="bg-white border-2 border-green-300 focus:border-green-500">
+                <SelectValue placeholder="शुद्धता पद्धत निवडा" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="loan-wise">📋 कर्ज नोंदणीतील शुद्धता</SelectItem>
+                <SelectItem value="manual">✏️ सर्वांना एकच शुद्धता</SelectItem>
+              </SelectContent>
+            </Select>
+            <div className="text-xs text-green-600">
+              {filters.purityMode === 'loan-wise' 
+                ? 'प्रत्येक कर्जाची नोंदणी केलेली शुद्धता वापरेल' 
+                : 'खाली दिलेली शुद्धता सर्व सोने कर्जांना लागू होईल'}
+            </div>
+            {filters.purityMode === 'manual' && (
+              <div>
+                <Input
+                  type="number"
+                  step="0.1"
+                  min="50"
+                  max="100"
+                  value={filters.finePurityPercentage || ''}
+                  onChange={(e) => setFilters(prev => ({ ...prev, finePurityPercentage: e.target.value }))}
+                  className="bg-white border-2 border-green-300 focus:border-green-500"
+                />
+                <div className="text-xs text-green-600 mt-1">सोने: 82%, 90%, 91.6% etc</div>
+              </div>
+            )}
             {(overdueData as OverdueItem[]).some((item: OverdueItem) => item.metalType === 'silver') && (
-              <div className="text-xs text-gray-500 mt-0.5">🪙 चांदी: प्रत्येक कर्जाच्या नोंदणीतील शुद्धता वापरली जाते</div>
+              <div className="text-xs text-gray-500 mt-0.5">🪙 चांदी: नेहमी कर्ज नोंदणीतील शुद्धता वापरली जाते</div>
             )}
           </div>
         </div>
@@ -1070,7 +1092,9 @@ export default function OverdueReport() {
                 dateTo: new Date().toISOString().split('T')[0],
                 groupId: "all",
                 currentGoldRate: "",
+                currentSilverRate: "",
                 finePurityPercentage: "82",
+                purityMode: 'loan-wise',
                 monthlyInterestRate: "",
                 interestRateMode: 'loan-wise',
                 projectionMode: 'current',
@@ -1182,7 +1206,7 @@ export default function OverdueReport() {
                   </div>
                   <div className="text-left">
                     <p><strong>Gold Rate:</strong> ₹{filters.currentGoldRate}/gram</p>
-                    <p><strong>Purity:</strong> {filters.finePurityPercentage}%</p>
+                    <p><strong>Purity:</strong> {filters.purityMode === 'loan-wise' ? 'कर्ज नोंदणीतील शुद्धता' : `${filters.finePurityPercentage}% (सर्वांना एकच)`}</p>
                     <p><strong>Interest Mode:</strong> {filters.interestRateMode === 'loan-wise' ? 'कर्ज नोंदणी दरानुसार' : `${filters.monthlyInterestRate}%/month (manual)`}</p>
                   </div>
                 </div>
@@ -1285,7 +1309,7 @@ export default function OverdueReport() {
                       Purity:
                     </td>
                     <td style={{padding: '4px 8px', border: '1px solid #666'}}>
-                      {filters.finePurityPercentage}%
+                      {filters.purityMode === 'loan-wise' ? 'कर्ज नोंदणीतील' : `${filters.finePurityPercentage}% (एकच)`}
                     </td>
                     <td style={{fontWeight: 'bold', padding: '4px 8px', border: '1px solid #666', backgroundColor: '#f5f5f5'}}>
                       Interest Mode:

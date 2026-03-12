@@ -2941,7 +2941,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     try {
       console.log('🔍 OVERDUE: Parsing parameters...');
-      const { dateFrom, dateTo, groupId, currentGoldRate, currentSilverRate, finePurityPercentage, monthlyInterestRate, interestRateMode, projectionMode, futureProjectionPeriod, customerName } = req.query;
+      const { dateFrom, dateTo, groupId, currentGoldRate, currentSilverRate, finePurityPercentage, purityMode, monthlyInterestRate, interestRateMode, projectionMode, futureProjectionPeriod, customerName } = req.query;
       
       console.log('🔍 PROJECTION PARAMS:', { projectionMode, futureProjectionPeriod, customerName });
       
@@ -2950,7 +2950,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         dateTo: dateTo as string || new Date().toISOString().split('T')[0],
         groupId: groupId as string === "all" ? "all" : groupId as string || "all",
         currentGoldRate: parseFloat(currentGoldRate as string || "70"),
-        finePurityPercentage: parseFloat(finePurityPercentage as string || "80"),
+        finePurityPercentage: parseFloat(finePurityPercentage as string || "82"),
+        purityMode: purityMode as string || 'loan-wise',
         monthlyInterestRate: parseFloat(monthlyInterestRate as string || "8"),
         interestRateMode: interestRateMode as string || 'manual',
         projectionMode: projectionMode as string || 'current',
