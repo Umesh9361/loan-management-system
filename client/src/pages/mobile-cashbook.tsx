@@ -1274,37 +1274,38 @@ function MobileCashbook() {
           {viewMode === 'cashbook' ? (
             <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
               {/* Table Header */}
-              <div className="bg-gray-100 text-gray-700 p-3 grid gap-1 font-semibold sticky top-0 z-10" style={{ gridTemplateColumns: '2.5fr 1fr 1fr 1fr' }}>
+              <div className="bg-gray-100 text-gray-700 p-3 grid gap-1 font-semibold sticky top-0 z-10" style={{ gridTemplateColumns: '2fr 1fr 1fr' }}>
                 <div className="text-xs">तारीख</div>
                 <div className="text-center text-green-700 text-sm font-bold">जमा</div>
                 <div className="text-center text-red-700 text-sm font-bold">नावे</div>
-                <div className="text-center text-gray-400 text-[10px] font-normal">शिल्लक</div>
               </div>
             
               {/* Opening Balance Row */}
-              <div className="p-3 border-b border-gray-200 bg-indigo-50 grid gap-1 text-sm" style={{ gridTemplateColumns: '2.5fr 1fr 1fr 1fr' }}>
-                <div className="text-xs font-medium text-indigo-700">
-                  आरंभिक शिल्लक
-                  <div className="text-xs text-gray-500 mt-0.5">
-                    {(() => {
-                      if (searchFilters.dateFrom && searchFilters.dateTo) {
-                        return '(कस्टम कालावधी)';
-                      } else if (viewPeriod === 'weekly') {
-                        return '(मागील आठवडा)';
-                      } else if (viewPeriod === 'monthly') {
-                        return '(मागील महिना)';
-                      } else if (viewPeriod === 'yearly') {
-                        return '(मागील वर्ष)';
-                      } else {
-                        return '(मागील दिवस)';
-                      }
-                    })()}
+              <div className="p-3 border-b border-gray-200 bg-indigo-50">
+                <div className="grid gap-1 text-sm" style={{ gridTemplateColumns: '2fr 1fr 1fr' }}>
+                  <div className="text-xs font-medium text-indigo-700">
+                    आरंभिक शिल्लक
+                    <div className="text-xs text-gray-500 mt-0.5">
+                      {(() => {
+                        if (searchFilters.dateFrom && searchFilters.dateTo) {
+                          return '(कस्टम कालावधी)';
+                        } else if (viewPeriod === 'weekly') {
+                          return '(मागील आठवडा)';
+                        } else if (viewPeriod === 'monthly') {
+                          return '(मागील महिना)';
+                        } else if (viewPeriod === 'yearly') {
+                          return '(मागील वर्ष)';
+                        } else {
+                          return '(मागील दिवस)';
+                        }
+                      })()}
+                    </div>
                   </div>
+                  <div></div>
+                  <div></div>
                 </div>
-                <div></div>
-                <div></div>
-                <div className={`text-center text-[10px] ${correctOpeningBalance < 0 ? 'text-red-400' : 'text-gray-400'}`}>
-                  {correctOpeningBalance < 0 ? `-₹${Math.abs(correctOpeningBalance).toLocaleString('en-IN')}` : `₹${correctOpeningBalance.toLocaleString('en-IN')}`}
+                <div className={`text-right text-[11px] mt-1 ${correctOpeningBalance < 0 ? 'text-red-400' : 'text-gray-400'}`}>
+                  शिल्लक {correctOpeningBalance < 0 ? `-₹${Math.abs(correctOpeningBalance).toLocaleString('en-IN')}` : `₹${correctOpeningBalance.toLocaleString('en-IN')}`}
                 </div>
               </div>
 
@@ -1336,7 +1337,7 @@ function MobileCashbook() {
                           : 'bg-white border-b border-gray-100'
                       }`}
                     >
-                      <div className="grid gap-2 text-sm" style={{ gridTemplateColumns: '2.5fr 1fr 1fr 1fr' }}>
+                      <div className="grid gap-2 text-sm" style={{ gridTemplateColumns: '2fr 1fr 1fr' }}>
                         <div className="space-y-1 min-w-0">
                           <div className="text-xs font-medium text-gray-600">
                             {DateUtils.isoToShortDate(transaction.transactionDate)}
@@ -1418,14 +1419,9 @@ function MobileCashbook() {
                             <div></div>
                           )}
                         </div>
-                        
-                        <div className="text-center self-center text-[10px]">
-                          {runningBalance < 0 ? (
-                            <span className="text-red-400">-₹{Math.abs(runningBalance).toLocaleString('en-IN')}</span>
-                          ) : (
-                            <span className="text-gray-400">₹{runningBalance.toLocaleString('en-IN')}</span>
-                          )}
-                        </div>
+                      </div>
+                      <div className={`text-right text-[11px] mt-1 ${runningBalance < 0 ? 'text-red-400' : 'text-gray-400'}`}>
+                        शिल्लक {runningBalance < 0 ? `-₹${Math.abs(runningBalance).toLocaleString('en-IN')}` : `₹${runningBalance.toLocaleString('en-IN')}`}
                       </div>
                     </div>
                   );
