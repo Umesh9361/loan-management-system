@@ -1090,12 +1090,14 @@ export default function OverdueReport() {
             type="button" 
             variant="outline" 
             onClick={() => {
+              const restoredGoldRate = goldRateData?.success && goldRateData?.perGram ? goldRateData.perGram.toString() : "";
+              const restoredSilverRate = silverRateData?.success && silverRateData?.perGram ? silverRateData.perGram.toString() : "";
               setFilters({
                 dateFrom: new Date().toISOString().split('T')[0],
                 dateTo: new Date().toISOString().split('T')[0],
                 groupId: "all",
-                currentGoldRate: "",
-                currentSilverRate: "",
+                currentGoldRate: restoredGoldRate,
+                currentSilverRate: restoredSilverRate,
                 finePurityPercentage: "82",
                 purityMode: 'loan-wise',
                 monthlyInterestRate: "",
@@ -1107,6 +1109,7 @@ export default function OverdueReport() {
               setCustomerSearchTerm("");
               setSelectedCustomerName("");
               setGoldRateManuallyEdited(false);
+              setSilverRateManuallyEdited(false);
             }}
             className="text-orange-600 border-orange-300 hover:bg-orange-50"
           >
