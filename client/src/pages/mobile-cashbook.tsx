@@ -1274,11 +1274,11 @@ function MobileCashbook() {
           {viewMode === 'cashbook' ? (
             <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
               {/* Table Header */}
-              <div className="bg-gray-100 text-gray-700 p-3 grid gap-1 text-xs font-semibold sticky top-0 z-10" style={{ gridTemplateColumns: '2.5fr 1fr 1fr 1fr' }}>
-                <div>तारीख</div>
-                <div className="text-center text-green-600">जमा</div>
-                <div className="text-center text-red-600">नावे</div>
-                <div className="text-center text-indigo-600">शिल्लक</div>
+              <div className="bg-gray-100 text-gray-700 p-3 grid gap-1 font-semibold sticky top-0 z-10" style={{ gridTemplateColumns: '2.5fr 1fr 1fr 1fr' }}>
+                <div className="text-xs">तारीख</div>
+                <div className="text-center text-green-700 text-sm font-bold">जमा</div>
+                <div className="text-center text-red-700 text-sm font-bold">नावे</div>
+                <div className="text-center text-gray-400 text-[10px] font-normal">शिल्लक</div>
               </div>
             
               {/* Opening Balance Row */}
@@ -1303,7 +1303,7 @@ function MobileCashbook() {
                 </div>
                 <div></div>
                 <div></div>
-                <div className={`font-semibold text-center text-sm ${correctOpeningBalance < 0 ? 'text-red-600' : 'text-indigo-600'}`}>
+                <div className={`text-center text-[10px] ${correctOpeningBalance < 0 ? 'text-red-400' : 'text-gray-400'}`}>
                   {correctOpeningBalance < 0 ? `-₹${Math.abs(correctOpeningBalance).toLocaleString('en-IN')}` : `₹${correctOpeningBalance.toLocaleString('en-IN')}`}
                 </div>
               </div>
@@ -1401,7 +1401,7 @@ function MobileCashbook() {
                         
                         <div className="text-center self-center">
                           {transaction.transactionType === 'cash_in' ? (
-                            <div className="text-green-600 font-semibold text-sm">
+                            <div className="text-green-700 font-bold text-base">
                               ₹{Number(transaction.amount).toLocaleString('en-IN')}
                             </div>
                           ) : (
@@ -1411,7 +1411,7 @@ function MobileCashbook() {
                         
                         <div className="text-center self-center">
                           {transaction.transactionType === 'cash_out' ? (
-                            <div className="text-red-600 font-semibold text-sm">
+                            <div className="text-red-700 font-bold text-base">
                               ₹{Number(transaction.amount).toLocaleString('en-IN')}
                             </div>
                           ) : (
@@ -1419,11 +1419,11 @@ function MobileCashbook() {
                           )}
                         </div>
                         
-                        <div className="text-center self-center font-semibold text-sm">
+                        <div className="text-center self-center text-[10px]">
                           {runningBalance < 0 ? (
-                            <span className="text-red-600">-₹{Math.abs(runningBalance).toLocaleString('en-IN')}</span>
+                            <span className="text-red-400">-₹{Math.abs(runningBalance).toLocaleString('en-IN')}</span>
                           ) : (
-                            <span className="text-gray-800">₹{runningBalance.toLocaleString('en-IN')}</span>
+                            <span className="text-gray-400">₹{runningBalance.toLocaleString('en-IN')}</span>
                           )}
                         </div>
                       </div>
