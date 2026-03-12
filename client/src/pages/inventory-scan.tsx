@@ -10,9 +10,8 @@ import { Badge } from "@/components/ui/badge";
 import { Sidebar } from "@/components/ui/sidebar";
 import { MobileNav } from "@/components/ui/mobile-nav";
 import { useToast } from "@/hooks/use-toast";
-import { DateUtils } from "@/lib/date-utils";
 import {
-  Search, Calendar, ScanLine, Square, CheckSquare, Trash2,
+  Search, Calendar, ScanLine, CheckSquare, Trash2,
   ChevronDown, ChevronUp, AlertTriangle, CheckCircle, XCircle,
   PackageSearch, RotateCcw, Printer, StopCircle, Play
 } from "lucide-react";
@@ -65,6 +64,7 @@ function playBeep() {
     osc.stop(ctx.currentTime + 0.12);
     setTimeout(() => ctx.close(), 200);
   } catch {}
+  try { navigator.vibrate?.(100); } catch {}
 }
 
 function playErrorBeep() {
@@ -81,6 +81,7 @@ function playErrorBeep() {
     osc.stop(ctx.currentTime + 0.3);
     setTimeout(() => ctx.close(), 400);
   } catch {}
+  try { navigator.vibrate?.([50, 50, 50]); } catch {}
 }
 
 interface ScanSession {
@@ -114,7 +115,7 @@ function loadSession(): ScanSession | null {
   }
 }
 
-function clearSession() {
+function clearSessionStorage() {
   try {
     localStorage.removeItem(STORAGE_KEY);
   } catch {}
@@ -144,6 +145,12 @@ export default function InventoryScan() {
   const mountedRef = useRef(true);
   const containerId = "inventory-scanner-container";
 
+  const filteredLoanIdsRef = useRef<Set<string>>(new Set());
+  const loanMapByIdRef = useRef<Record<string, any>>({});
+  const scannedIdsRef = useRef<Set<string>>(new Set());
+  const filterSettingsRef = useRef({ searchQuery, groupId, dateFrom, dateTo, statusFilter, accountFrom, accountTo });
+  const filteredCountRef = useRef(0);
+
   const { data: loans = [], isLoading: loansLoading } = useQuery<any[]>({
     queryKey: ["/api/loans"],
   });
@@ -168,7 +175,7 @@ export default function InventoryScan() {
         if (statusFilter === "closed" && loan.status !== "closed") return false;
       }
 
-      if (groupId !== "all" && loan.groupId !== groupId) return false;
+      if (groupId !== "all" && String(loan.groupId) !== String(groupId)) return false;
 
       if (dateFrom) {
         const loanDate = new Date(loan.loanDate);
@@ -214,6 +221,14 @@ export default function InventoryScan() {
 
   const filteredLoanIds = useMemo(() => new Set(filteredLoans.map((l: any) => String(l.id))), [filteredLoans]);
 
+  useEffect(() => { filteredLoanIdsRef.current = filteredLoanIds; }, [filteredLoanIds]);
+  useEffect(() => { loanMapByIdRef.current = loanMapById; }, [loanMapById]);
+  useEffect(() => { scannedIdsRef.current = scannedIds; }, [scannedIds]);
+  useEffect(() => { filteredCountRef.current = filteredLoans.length; }, [filteredLoans.length]);
+  useEffect(() => {
+    filterSettingsRef.current = { searchQuery, groupId, dateFrom, dateTo, statusFilter, accountFrom, accountTo };
+  }, [searchQuery, groupId, dateFrom, dateTo, statusFilter, accountFrom, accountTo]);
+
   const missingLoans = useMemo(() => {
     return filteredLoans.filter((l: any) => !scannedIds.has(String(l.id)));
   }, [filteredLoans, scannedIds]);
@@ -241,55 +256,57 @@ export default function InventoryScan() {
     try {
       const url = new URL(decodedText);
       const match = url.pathname.match(/^\/qr\/([a-zA-Z0-9\-]+)$/);
-      if (match) {
-        const loanId = match[1];
-
-        setScannedIds(prev => {
-          if (prev.has(loanId)) {
-            setDuplicateFlash(true);
-            playErrorBeep();
-            setTimeout(() => setDuplicateFlash(false), 800);
-            return prev;
-          }
-
-          if (!filteredLoanIds.has(loanId)) {
-            toast({
-              title: "फिल्टर बाहेरील वस्तू",
-              description: loanMapById[loanId]?.borrowerName
-                ? `${loanMapById[loanId].borrowerName} (खाते ${loanMapById[loanId].accountNumber}) — सध्याच्या फिल्टरमध्ये नाही`
-                : "ही वस्तू सध्याच्या फिल्टर मध्ये नाही",
-              variant: "destructive",
-            });
-            playErrorBeep();
-            return prev;
-          }
-
-          const newSet = new Set(prev);
-          newSet.add(loanId);
-          playBeep();
-
-          const loan = loanMapById[loanId];
-          if (loan) setLastScanned(loan);
-
-          const session: ScanSession = {
-            filterSettings: { searchQuery, groupId, dateFrom, dateTo, statusFilter, accountFrom, accountTo },
-            scannedLoanIds: Array.from(newSet),
-            startedAt: new Date().toISOString(),
-            expectedCount: filteredLoans.length,
-          };
-          saveSession(session);
-
-          return newSet;
-        });
-      } else {
+      if (!match) {
         toast({ title: "अज्ञात QR", description: "हे आपल्या app चे QR नाही", variant: "destructive" });
         playErrorBeep();
+        return;
       }
+
+      const loanId = match[1];
+      const currentScanned = scannedIdsRef.current;
+      const currentFilteredIds = filteredLoanIdsRef.current;
+      const currentLoanMap = loanMapByIdRef.current;
+
+      if (currentScanned.has(loanId)) {
+        setDuplicateFlash(true);
+        playErrorBeep();
+        setTimeout(() => setDuplicateFlash(false), 800);
+        return;
+      }
+
+      if (!currentFilteredIds.has(loanId)) {
+        const loan = currentLoanMap[loanId];
+        toast({
+          title: "फिल्टर बाहेरील वस्तू",
+          description: loan?.borrowerName
+            ? `${loan.borrowerName} (खाते ${loan.accountNumber}) — सध्याच्या फिल्टरमध्ये नाही`
+            : "ही वस्तू सध्याच्या फिल्टर मध्ये नाही",
+          variant: "destructive",
+        });
+        playErrorBeep();
+        return;
+      }
+
+      const newSet = new Set(currentScanned);
+      newSet.add(loanId);
+      setScannedIds(newSet);
+      playBeep();
+
+      const loan = currentLoanMap[loanId];
+      if (loan) setLastScanned(loan);
+
+      const session: ScanSession = {
+        filterSettings: filterSettingsRef.current,
+        scannedLoanIds: Array.from(newSet),
+        startedAt: new Date().toISOString(),
+        expectedCount: filteredCountRef.current,
+      };
+      saveSession(session);
     } catch {
       toast({ title: "QR वाचता आला नाही", variant: "destructive" });
       playErrorBeep();
     }
-  }, [filteredLoanIds, loanMapById, searchQuery, groupId, dateFrom, dateTo, statusFilter, accountFrom, accountTo, filteredLoans.length, toast]);
+  }, [toast]);
 
   const tryStartCamera = useCallback(async (scanner: any, boxSize: number): Promise<boolean> => {
     const scanConfig = { fps: 10, qrbox: { width: boxSize, height: boxSize } };
@@ -308,6 +325,7 @@ export default function InventoryScan() {
   }, [onQrDecoded]);
 
   const startScanning = useCallback(async () => {
+    stopScanner();
     setPhase("scanning");
     setScanStatus("loading");
     setScanError("");
@@ -334,7 +352,6 @@ export default function InventoryScan() {
         return;
       }
 
-      stopScanner();
       const scanner = new Html5Qrcode(containerId, { verbose: false });
       scannerRef.current = scanner;
 
@@ -370,13 +387,20 @@ export default function InventoryScan() {
 
   const handleClearSession = useCallback(() => {
     stopScanner();
-    clearSession();
+    clearSessionStorage();
     setScannedIds(new Set());
     setLastScanned(null);
     setPhase("filter");
     setScanStatus("idle");
     setResumePrompt(null);
     setShowFound(false);
+    setSearchQuery("");
+    setGroupId("all");
+    setDateFrom("");
+    setDateTo("");
+    setStatusFilter("active");
+    setAccountFrom("");
+    setAccountTo("");
     toast({ title: "साफ केले", description: "Scan session clear झाले — नव्याने सुरू करा" });
   }, [stopScanner, toast]);
 
@@ -465,7 +489,7 @@ export default function InventoryScan() {
               <PackageSearch className="h-6 w-6 text-indigo-600" />
               <h1 className="text-lg md:text-xl font-bold text-indigo-900">वस्तू तपासणी</h1>
             </div>
-            {scannedIds.size > 0 && (
+            {scannedIds.size > 0 && phase !== "scanning" && (
               <Button onClick={handleClearSession} variant="outline" size="sm" className="text-red-600 border-red-300 hover:bg-red-50">
                 <Trash2 className="h-3.5 w-3.5 mr-1" />
                 साफ करा
@@ -499,7 +523,7 @@ export default function InventoryScan() {
                       <SelectContent>
                         <SelectItem value="all">सर्व ग्रुप</SelectItem>
                         {Array.isArray(groups) && groups.map((g: any) => (
-                          <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>
+                          <SelectItem key={g.id} value={String(g.id)}>{g.name}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -625,6 +649,11 @@ export default function InventoryScan() {
                       Camera सुरू होत आहे...
                     </div>
                   )}
+                  {scanStatus === "active" && (
+                    <div className="text-center text-sm text-indigo-600 font-medium py-1">
+                      QR code camera समोर धरा
+                    </div>
+                  )}
                   {scanStatus === "error" && (
                     <div className="space-y-2">
                       <div className="text-center text-sm text-red-600 py-1">{scanError}</div>
@@ -637,17 +666,27 @@ export default function InventoryScan() {
                 </CardContent>
               </Card>
 
-              <div className={`rounded-xl p-4 text-center transition-colors ${duplicateFlash ? 'bg-yellow-100 border border-yellow-400' : 'bg-indigo-50 border border-indigo-200'}`}>
+              <div className={`rounded-xl p-4 text-center transition-colors duration-300 ${duplicateFlash ? 'bg-yellow-100 border-2 border-yellow-400' : 'bg-indigo-50 border border-indigo-200'}`}>
                 <div className="text-3xl font-black text-indigo-700">
                   {scannedCount} <span className="text-lg font-medium text-gray-500">/ {filteredLoans.length}</span>
                 </div>
                 <div className="text-sm text-gray-600 mt-1">
                   {duplicateFlash ? (
                     <span className="text-yellow-700 font-medium">आधीच scan झाले!</span>
+                  ) : scannedCount === filteredLoans.length && filteredLoans.length > 0 ? (
+                    <span className="text-green-700 font-bold">सर्व scan पूर्ण!</span>
                   ) : (
                     "scan झाले"
                   )}
                 </div>
+                {filteredLoans.length > 0 && (
+                  <div className="mt-2 h-2 bg-gray-200 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-indigo-600 rounded-full transition-all duration-300"
+                      style={{ width: `${Math.round((scannedCount / filteredLoans.length) * 100)}%` }}
+                    />
+                  </div>
+                )}
               </div>
 
               {lastScanned && (
@@ -678,7 +717,7 @@ export default function InventoryScan() {
                 @media print {
                   body * { visibility: hidden; }
                   .print-section, .print-section * { visibility: visible; }
-                  .print-section { position: absolute; left: 0; top: 0; width: 100%; }
+                  .print-section { position: absolute; left: 0; top: 0; width: 100%; padding: 20px; }
                   .no-print { display: none !important; }
                 }
               `}</style>
@@ -686,6 +725,7 @@ export default function InventoryScan() {
               <Card className="shadow-lg border-2 border-indigo-300">
                 <CardContent className="pt-5 space-y-4">
                   <h2 className="text-lg font-bold text-indigo-900 text-center">तपासणी अहवाल</h2>
+                  <p className="text-xs text-gray-400 text-center">{new Date().toLocaleString('mr-IN')}</p>
 
                   <div className="grid grid-cols-3 gap-3 text-center">
                     <div className="bg-blue-50 rounded-lg p-3">
@@ -712,7 +752,7 @@ export default function InventoryScan() {
                       </div>
                       <div className="space-y-2 max-h-[40vh] overflow-y-auto">
                         {missingLoans.map((loan: any) => {
-                          const groupName = Array.isArray(groups) ? groups.find((g: any) => g.id === loan.groupId)?.name : "";
+                          const groupName = Array.isArray(groups) ? groups.find((g: any) => String(g.id) === String(loan.groupId))?.name : "";
                           return (
                             <div key={loan.id} className="bg-red-50 border border-red-200 rounded-lg p-3">
                               <div className="flex justify-between items-start">
