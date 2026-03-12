@@ -870,9 +870,9 @@ function CashBookReport() {
                           <TableRow>
                             <TableHead className="w-16 sm:w-24 text-center border border-indigo-300 bg-indigo-50 text-xs sm:text-sm md:text-base px-1 sm:px-3 md:px-4 md:py-3">तारीख</TableHead>
                             <TableHead className="text-center border border-indigo-300 bg-indigo-50 text-xs sm:text-sm md:text-base px-1 sm:px-3 md:px-4 md:py-3">तपशील</TableHead>
-                            <TableHead className="w-16 sm:w-28 text-center border border-indigo-300 bg-indigo-50 text-xs sm:text-sm md:text-base px-1 sm:px-3 md:px-4 md:py-3">जमा</TableHead>
-                            <TableHead className="w-16 sm:w-28 text-center border border-indigo-300 bg-indigo-50 text-xs sm:text-sm md:text-base px-1 sm:px-3 md:px-4 md:py-3">नावे</TableHead>
-                            <TableHead className="w-20 sm:w-32 text-center border border-indigo-300 bg-indigo-50 text-xs sm:text-sm md:text-base px-1 sm:px-3 md:px-4 md:py-3">शिल्लक</TableHead>
+                            <TableHead className="w-[72px] sm:w-28 text-center border border-indigo-300 bg-indigo-50 text-sm sm:text-sm md:text-base font-bold px-1 sm:px-3 md:px-4 md:py-3">जमा</TableHead>
+                            <TableHead className="w-[72px] sm:w-28 text-center border border-indigo-300 bg-indigo-50 text-sm sm:text-sm md:text-base font-bold px-1 sm:px-3 md:px-4 md:py-3">नावे</TableHead>
+                            <TableHead className="w-[60px] sm:w-32 text-center border border-indigo-300 bg-indigo-50/60 text-[10px] sm:text-sm md:text-base font-normal text-indigo-400 px-0.5 sm:px-3 md:px-4 md:py-3">शिल्लक</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -884,13 +884,13 @@ function CashBookReport() {
                               <TableCell className="text-left text-xs sm:text-sm md:text-base border border-indigo-200 px-1 sm:px-3 md:px-4 py-1.5 sm:py-2 md:py-3">
                                 {row.description}
                               </TableCell>
-                              <TableCell className="text-right text-xs sm:text-sm md:text-base border border-indigo-200 px-1 sm:px-3 md:px-4 py-1.5 sm:py-2 md:py-3">
+                              <TableCell className="text-right text-sm sm:text-sm md:text-base font-medium border border-indigo-200 px-1 sm:px-3 md:px-4 py-1.5 sm:py-2 md:py-3">
                                 {row.credit ? `${LoanCalculations.formatAmount(row.credit)}` : "-"}
                               </TableCell>
-                              <TableCell className="text-right text-xs sm:text-sm md:text-base border border-indigo-200 px-1 sm:px-3 md:px-4 py-1.5 sm:py-2 md:py-3">
+                              <TableCell className="text-right text-sm sm:text-sm md:text-base font-medium border border-indigo-200 px-1 sm:px-3 md:px-4 py-1.5 sm:py-2 md:py-3">
                                 {row.debit ? `${LoanCalculations.formatAmount(row.debit)}` : "-"}
                               </TableCell>
-                              <TableCell className="text-right text-xs sm:text-sm md:text-base border border-indigo-200 px-1 sm:px-3 md:px-4 py-1.5 sm:py-2 md:py-3 font-semibold">
+                              <TableCell className="text-right text-[10px] sm:text-sm md:text-base border border-indigo-200 px-0.5 sm:px-3 md:px-4 py-1.5 sm:py-2 md:py-3 text-gray-400 sm:text-gray-700 sm:font-semibold">
                                 {LoanCalculations.formatAmount(row.balance)}
                               </TableCell>
                             </TableRow>
