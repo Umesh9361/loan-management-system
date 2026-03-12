@@ -1304,7 +1304,7 @@ function MobileCashbook() {
                   <div></div>
                   <div></div>
                 </div>
-                <div className="text-right text-xs text-gray-400 mt-1">
+                <div className={`text-right text-xs mt-1 ${correctOpeningBalance < 0 ? 'text-red-500' : 'text-green-600'}`}>
                   शिल्लक {correctOpeningBalance < 0 ? `-₹${Math.abs(correctOpeningBalance).toLocaleString('en-IN')}` : `₹${correctOpeningBalance.toLocaleString('en-IN')}`}
                 </div>
               </div>
@@ -1363,7 +1363,7 @@ function MobileCashbook() {
                               <div className="bg-amber-100 text-amber-700 rounded px-2 py-0.5 text-xs font-medium inline-block">
                                 {transaction.category === 'loan_disbursement' ? 'कर्ज वाटप' : 'कर्ज बंद'}
                               </div>
-                              <span className="text-xs text-gray-400">
+                              <span className={`text-xs ${runningBalance < 0 ? 'text-red-500' : 'text-green-600'}`}>
                                 शिल्लक {runningBalance < 0 ? `-₹${Math.abs(runningBalance).toLocaleString('en-IN')}` : `₹${runningBalance.toLocaleString('en-IN')}`}
                               </span>
                             </div>
@@ -1373,7 +1373,7 @@ function MobileCashbook() {
                                 <div className="bg-indigo-100 text-indigo-700 rounded px-2 py-0.5 text-xs font-medium inline-block">
                                   खाते ट्रान्सफर
                                 </div>
-                                <span className="text-xs text-gray-400">
+                                <span className={`text-xs ${runningBalance < 0 ? 'text-red-500' : 'text-green-600'}`}>
                                   शिल्लक {runningBalance < 0 ? `-₹${Math.abs(runningBalance).toLocaleString('en-IN')}` : `₹${runningBalance.toLocaleString('en-IN')}`}
                                 </span>
                               </div>
@@ -1408,7 +1408,7 @@ function MobileCashbook() {
                                   <Trash2 className="h-3 w-3" /> हटवा
                                 </button>
                               </div>
-                              <span className="text-xs text-gray-400">
+                              <span className={`text-xs ${runningBalance < 0 ? 'text-red-500' : 'text-green-600'}`}>
                                 शिल्लक {runningBalance < 0 ? `-₹${Math.abs(runningBalance).toLocaleString('en-IN')}` : `₹${runningBalance.toLocaleString('en-IN')}`}
                               </span>
                             </div>
