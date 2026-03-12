@@ -114,6 +114,7 @@ export default function OverdueReport() {
   });
 
   const [reportGenerated, setReportGenerated] = useState(false);
+  const [shouldScrollToReport, setShouldScrollToReport] = useState(false);
   const [selectedRowIndex, setSelectedRowIndex] = useState<number>(-1);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [selectedLoan, setSelectedLoan] = useState<OverdueItem | null>(null);
@@ -711,19 +712,21 @@ export default function OverdueReport() {
     }
     generateReport();
     setReportGenerated(true);
+    setShouldScrollToReport(true);
   };
 
   useEffect(() => {
-    if (reportGenerated && !isGenerating && overdueData.length >= 0 && dataTableRef.current) {
+    if (shouldScrollToReport && reportGenerated && !isGenerating && overdueData.length >= 0 && dataTableRef.current) {
       setTimeout(() => {
         dataTableRef.current?.scrollIntoView({ 
           behavior: 'smooth', 
           block: 'start',
           inline: 'nearest'
         });
+        setShouldScrollToReport(false);
       }, 300);
     }
-  }, [reportGenerated, isGenerating, overdueData, dataTableRef]);
+  }, [shouldScrollToReport, reportGenerated, isGenerating, overdueData, dataTableRef]);
 
   const filteredOverdueData = viewMode === "default" 
     ? [...(overdueData as OverdueItem[])].filter(item => {
