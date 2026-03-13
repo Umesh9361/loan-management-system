@@ -13,7 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import {
   Search, Calendar, ScanLine, CheckSquare, Trash2,
   ChevronDown, ChevronUp, AlertTriangle, CheckCircle, XCircle,
-  PackageSearch, RotateCcw, Printer, StopCircle, Play, X, FilterX, ArrowLeft
+  PackageSearch, RotateCcw, Printer, StopCircle, Play, X, FilterX
 } from "lucide-react";
 
 const CDN_URL = "https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js";
@@ -548,17 +548,7 @@ export default function InventoryScan() {
 
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              {phase === "scanning" ? (
-                <button
-                  onClick={handleBackFromScanning}
-                  className="p-1.5 rounded-full hover:bg-indigo-100 transition-colors"
-                  title="मागे जा"
-                >
-                  <ArrowLeft className="h-5 w-5 text-indigo-600" />
-                </button>
-              ) : (
-                <PackageSearch className="h-6 w-6 text-indigo-600" />
-              )}
+              <PackageSearch className="h-6 w-6 text-indigo-600" />
               <h1 className="text-lg md:text-xl font-bold text-indigo-900">
                 {phase === "scanning" ? "Scan चालू आहे" : phase === "report" ? "तपासणी अहवाल" : "वस्तू तपासणी"}
               </h1>
@@ -567,7 +557,7 @@ export default function InventoryScan() {
               {phase === "scanning" && (
                 <button
                   onClick={handleBackFromScanning}
-                  className="p-2 rounded-full bg-white border border-gray-300 shadow-sm hover:bg-gray-100 transition-colors"
+                  className="p-2 rounded-full bg-white border border-gray-300 shadow-sm hover:bg-gray-100 active:bg-gray-200 transition-colors"
                   title="बंद करा"
                 >
                   <X className="h-5 w-5 text-gray-700" />
@@ -903,16 +893,10 @@ export default function InventoryScan() {
                 </div>
               )}
 
-              <div className="flex gap-3">
-                <Button onClick={handleBackFromScanning} variant="outline" className="border-indigo-300 text-indigo-700 py-5">
-                  <ArrowLeft className="h-4 w-4 mr-1.5" />
-                  मागे
-                </Button>
-                <Button onClick={handleStopScan} className="flex-1 bg-red-600 hover:bg-red-700 text-white py-5 font-bold">
-                  <StopCircle className="h-5 w-5 mr-2" />
-                  Scan थांबवा — अहवाल
-                </Button>
-              </div>
+              <Button onClick={handleStopScan} className="w-full bg-red-600 hover:bg-red-700 text-white py-5 font-bold">
+                <StopCircle className="h-5 w-5 mr-2" />
+                Scan थांबवा — अहवाल पहा
+              </Button>
             </>
           )}
 
