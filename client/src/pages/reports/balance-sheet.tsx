@@ -156,7 +156,29 @@ export default function BalanceSheet() {
   });
 
   const handlePrint = () => {
-    window.print();
+    if (!balanceSheet) return;
+    const html = buildBalanceSheetHTML(balanceSheet, company, fyStartDate, asOfDate);
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) return;
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8" />
+        <title>ताळेबंद - ${company?.name || "Balance Sheet"}</title>
+        <style>
+          @page { size: A4; margin: 15mm; }
+          body { margin: 0; padding: 0; }
+        </style>
+      </head>
+      <body>${html}</body>
+      </html>
+    `);
+    printWindow.document.close();
+    setTimeout(() => {
+      printWindow.print();
+      printWindow.close();
+    }, 400);
   };
 
   const quickFY = (yearsBack: number) => {
