@@ -158,27 +158,27 @@ export default function BalanceSheet() {
   const handlePrint = () => {
     if (!balanceSheet) return;
     const html = buildBalanceSheetHTML(balanceSheet, company, fyStartDate, asOfDate);
-    const printWindow = window.open("", "_blank");
-    if (!printWindow) return;
-    printWindow.document.write(`
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8" />
-        <title>ताळेबंद - ${company?.name || "Balance Sheet"}</title>
-        <style>
-          @page { size: A4; margin: 15mm; }
-          body { margin: 0; padding: 0; }
-        </style>
-      </head>
-      <body>${html}</body>
-      </html>
-    `);
-    printWindow.document.close();
+    const iframe = document.createElement("iframe");
+    iframe.style.position = "fixed";
+    iframe.style.left = "-9999px";
+    iframe.style.top = "-9999px";
+    iframe.style.width = "794px";
+    iframe.style.height = "1123px";
+    document.body.appendChild(iframe);
+    const doc = iframe.contentDocument || iframe.contentWindow?.document;
+    if (!doc) { document.body.removeChild(iframe); return; }
+    doc.open();
+    doc.write(`<!DOCTYPE html><html><head><meta charset="utf-8"/><title>ताळेबंद</title><style>@page{size:A4;margin:15mm;}body{margin:0;padding:0;}</style></head><body>${html}</body></html>`);
+    doc.close();
     setTimeout(() => {
-      printWindow.print();
-      printWindow.close();
-    }, 400);
+      try {
+        iframe.contentWindow?.focus();
+        iframe.contentWindow?.print();
+      } catch(e) {
+        window.print();
+      }
+      setTimeout(() => { document.body.removeChild(iframe); }, 1000);
+    }, 500);
   };
 
   const quickFY = (yearsBack: number) => {
