@@ -13,7 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import {
   Search, Calendar, ScanLine, CheckSquare, Trash2,
   ChevronDown, ChevronUp, AlertTriangle, CheckCircle, XCircle,
-  PackageSearch, RotateCcw, Printer, StopCircle, Play
+  PackageSearch, RotateCcw, Printer, StopCircle, Play, X, FilterX, ArrowLeft
 } from "lucide-react";
 
 const CDN_URL = "https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js";
@@ -423,6 +423,27 @@ export default function InventoryScan() {
     setPhase("report");
   }, [stopScanner]);
 
+  const handleBackFromScanning = useCallback(() => {
+    stopScanner();
+    setScanStatus("idle");
+    setPhase("filter");
+  }, [stopScanner]);
+
+  const hasAnyFilter = searchQuery || groupId !== "all" || dateFrom || dateTo || statusFilter !== "active" || accountFrom || accountTo;
+
+  const handleClearAllFilters = useCallback(() => {
+    setSearchQuery("");
+    setGroupId("all");
+    setDateFrom("");
+    setDateTo("");
+    setStatusFilter("active");
+    setAccountFrom("");
+    setAccountTo("");
+    setBorrowerSearchTerm("");
+    setShowBorrowerSuggestions(false);
+    setSelectedSuggestionIndex(-1);
+  }, []);
+
   const handleClearSession = useCallback(() => {
     stopScanner();
     clearSessionStorage();
@@ -527,15 +548,44 @@ export default function InventoryScan() {
 
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <PackageSearch className="h-6 w-6 text-indigo-600" />
-              <h1 className="text-lg md:text-xl font-bold text-indigo-900">वस्तू तपासणी</h1>
+              {phase === "scanning" ? (
+                <button
+                  onClick={handleBackFromScanning}
+                  className="p-1.5 rounded-full hover:bg-indigo-100 transition-colors"
+                  title="मागे जा"
+                >
+                  <ArrowLeft className="h-5 w-5 text-indigo-600" />
+                </button>
+              ) : (
+                <PackageSearch className="h-6 w-6 text-indigo-600" />
+              )}
+              <h1 className="text-lg md:text-xl font-bold text-indigo-900">
+                {phase === "scanning" ? "Scan चालू आहे" : phase === "report" ? "तपासणी अहवाल" : "वस्तू तपासणी"}
+              </h1>
             </div>
-            {scannedIds.size > 0 && phase !== "scanning" && (
-              <Button onClick={handleClearSession} variant="outline" size="sm" className="text-red-600 border-red-300 hover:bg-red-50">
-                <Trash2 className="h-3.5 w-3.5 mr-1" />
-                साफ करा
-              </Button>
-            )}
+            <div className="flex items-center gap-2">
+              {phase === "scanning" && (
+                <button
+                  onClick={handleBackFromScanning}
+                  className="p-2 rounded-full bg-white border border-gray-300 shadow-sm hover:bg-gray-100 transition-colors"
+                  title="बंद करा"
+                >
+                  <X className="h-5 w-5 text-gray-700" />
+                </button>
+              )}
+              {phase === "filter" && hasAnyFilter && (
+                <Button onClick={handleClearAllFilters} variant="outline" size="sm" className="text-amber-700 border-amber-300 hover:bg-amber-50">
+                  <FilterX className="h-3.5 w-3.5 mr-1" />
+                  फिल्टर साफ
+                </Button>
+              )}
+              {scannedIds.size > 0 && phase !== "scanning" && (
+                <Button onClick={handleClearSession} variant="outline" size="sm" className="text-red-600 border-red-300 hover:bg-red-50">
+                  <Trash2 className="h-3.5 w-3.5 mr-1" />
+                  साफ करा
+                </Button>
+              )}
+            </div>
           </div>
 
           {phase === "filter" && (
@@ -854,12 +904,13 @@ export default function InventoryScan() {
               )}
 
               <div className="flex gap-3">
+                <Button onClick={handleBackFromScanning} variant="outline" className="border-indigo-300 text-indigo-700 py-5">
+                  <ArrowLeft className="h-4 w-4 mr-1.5" />
+                  मागे
+                </Button>
                 <Button onClick={handleStopScan} className="flex-1 bg-red-600 hover:bg-red-700 text-white py-5 font-bold">
                   <StopCircle className="h-5 w-5 mr-2" />
-                  Scan थांबवा
-                </Button>
-                <Button onClick={handleClearSession} variant="outline" className="border-gray-300 text-gray-600 py-5">
-                  <Trash2 className="h-4 w-4" />
+                  Scan थांबवा — अहवाल
                 </Button>
               </div>
             </>
