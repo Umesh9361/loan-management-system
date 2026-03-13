@@ -132,6 +132,44 @@ export default function InventoryScan() {
   const [accountFrom, setAccountFrom] = useState("");
   const [accountTo, setAccountTo] = useState("");
 
+  const [borrowerSearchTerm, setBorrowerSearchTerm] = useState("");
+  const [showBorrowerSuggestions, setShowBorrowerSuggestions] = useState(false);
+  const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1);
+  const borrowerInputRef = useRef<HTMLInputElement>(null);
+  const suggestionsRef = useRef<HTMLDivElement>(null);
+
+  const { data: borrowerAutocompleteSuggestions = [] } = useQuery<any[]>({
+    queryKey: ["/api/borrowers/autocomplete", borrowerSearchTerm],
+    queryFn: async () => {
+      const res = await fetch(`/api/borrowers/autocomplete?search=${encodeURIComponent(borrowerSearchTerm)}`, {
+        credentials: 'include',
+      });
+      if (!res.ok) throw new Error('Failed to fetch');
+      return res.json();
+    },
+    enabled: borrowerSearchTerm.length >= 2,
+    staleTime: 30 * 1000,
+    gcTime: 2 * 60 * 1000,
+  });
+
+  useEffect(() => {
+    if (borrowerAutocompleteSuggestions.length > 0 && borrowerSearchTerm.length >= 2) {
+      setShowBorrowerSuggestions(true);
+    }
+  }, [borrowerAutocompleteSuggestions, borrowerSearchTerm]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (suggestionsRef.current && !suggestionsRef.current.contains(event.target as Node) &&
+          borrowerInputRef.current && !borrowerInputRef.current.contains(event.target as Node)) {
+        setShowBorrowerSuggestions(false);
+        setSelectedSuggestionIndex(-1);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   const [phase, setPhase] = useState<"filter" | "scanning" | "report">("filter");
   const [scannedIds, setScannedIds] = useState<Set<string>>(new Set());
   const [lastScanned, setLastScanned] = useState<any>(null);
@@ -401,6 +439,9 @@ export default function InventoryScan() {
     setStatusFilter("active");
     setAccountFrom("");
     setAccountTo("");
+    setBorrowerSearchTerm("");
+    setShowBorrowerSuggestions(false);
+    setSelectedSuggestionIndex(-1);
     toast({ title: "साफ केले", description: "Scan session clear झाले — नव्याने सुरू करा" });
   }, [stopScanner, toast]);
 
@@ -502,21 +543,130 @@ export default function InventoryScan() {
               <Card className="shadow-sm border border-indigo-200">
                 <CardContent className="space-y-4 pt-4">
                   <div>
-                    <Label className="text-indigo-700 font-medium text-sm mb-1.5">नाव किंवा खाते क्रमांक शोधा</Label>
+                    <Label className="text-indigo-700 font-medium text-sm mb-1.5">कर्जदाराचे नाव शोधा</Label>
                     <div className="relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4 z-10" />
                       <Input
-                        placeholder="नाव, खाते क्रमांक टाका..."
+                        ref={borrowerInputRef}
+                        placeholder="नाव टाइप करा (2 अक्षरे)..."
                         value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          setSearchQuery(value);
+                          const trimmedVal = value.trimStart();
+                          const firstWord = trimmedVal.split(/\s/)[0] || '';
+                          const smartTrim = (firstWord.length <= 1 && trimmedVal.length > firstWord.length) ? trimmedVal : value.trim();
+                          setBorrowerSearchTerm(smartTrim);
+                          setSelectedSuggestionIndex(-1);
+                          if (smartTrim.length >= 2) {
+                            setShowBorrowerSuggestions(true);
+                          } else {
+                            setShowBorrowerSuggestions(false);
+                          }
+                        }}
+                        onKeyDown={(e) => {
+                          if (!showBorrowerSuggestions || borrowerAutocompleteSuggestions.length === 0) return;
+                          switch (e.key) {
+                            case 'ArrowDown':
+                              e.preventDefault();
+                              setSelectedSuggestionIndex(prev =>
+                                prev < borrowerAutocompleteSuggestions.length - 1 ? prev + 1 : 0
+                              );
+                              break;
+                            case 'ArrowUp':
+                              e.preventDefault();
+                              setSelectedSuggestionIndex(prev =>
+                                prev > 0 ? prev - 1 : borrowerAutocompleteSuggestions.length - 1
+                              );
+                              break;
+                            case 'Enter':
+                              e.preventDefault();
+                              if (selectedSuggestionIndex >= 0) {
+                                const selected = borrowerAutocompleteSuggestions[selectedSuggestionIndex];
+                                setSearchQuery(selected.borrowerName);
+                                setBorrowerSearchTerm("");
+                                setShowBorrowerSuggestions(false);
+                                setSelectedSuggestionIndex(-1);
+                              }
+                              break;
+                            case 'Escape':
+                              setShowBorrowerSuggestions(false);
+                              setSelectedSuggestionIndex(-1);
+                              break;
+                          }
+                        }}
+                        onFocus={() => {
+                          if (borrowerAutocompleteSuggestions.length > 0 && borrowerSearchTerm.length >= 2) {
+                            setShowBorrowerSuggestions(true);
+                          }
+                        }}
+                        onBlur={() => {
+                          setTimeout(() => {
+                            setShowBorrowerSuggestions(false);
+                            setSelectedSuggestionIndex(-1);
+                          }, 300);
+                        }}
                         className="pl-10 border-gray-300"
                       />
+                      {searchQuery && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSearchQuery("");
+                            setBorrowerSearchTerm("");
+                            setShowBorrowerSuggestions(false);
+                            borrowerInputRef.current?.focus();
+                          }}
+                          className="absolute right-2 top-1/2 transform -translate-y-1/2 p-1 hover:bg-gray-100 rounded transition-colors z-10"
+                        >
+                          <XCircle className="h-4 w-4 text-gray-400" />
+                        </button>
+                      )}
+                      {showBorrowerSuggestions && borrowerAutocompleteSuggestions.length > 0 && (
+                        <div ref={suggestionsRef} className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                          {borrowerAutocompleteSuggestions.filter((borrower: any, index: number, arr: any[]) => {
+                            const normalizedName = (borrower.borrowerName || '').normalize('NFC').trim().replace(/\s+/g, ' ');
+                            return arr.findIndex((b: any) => (b.borrowerName || '').normalize('NFC').trim().replace(/\s+/g, ' ') === normalizedName) === index;
+                          }).map((borrower: any, index: number) => (
+                            <div
+                              key={index}
+                              className={`p-3 cursor-pointer border-b border-gray-100 last:border-b-0 transition-colors ${
+                                index === selectedSuggestionIndex
+                                  ? 'bg-indigo-100 border-indigo-200'
+                                  : 'hover:bg-indigo-50'
+                              }`}
+                              onMouseEnter={() => setSelectedSuggestionIndex(index)}
+                              onMouseDown={(e) => e.preventDefault()}
+                              onClick={() => {
+                                setSearchQuery(borrower.borrowerName);
+                                setBorrowerSearchTerm("");
+                                setShowBorrowerSuggestions(false);
+                                setSelectedSuggestionIndex(-1);
+                              }}
+                            >
+                              <div className="font-medium text-gray-900">{borrower.borrowerName}</div>
+                              {borrower.borrowerMobile && (
+                                <div className="text-xs text-gray-500">{borrower.borrowerMobile}</div>
+                              )}
+                              {borrower.borrowerAddress && (
+                                <div className="text-xs text-gray-400 truncate">{borrower.borrowerAddress}</div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
 
                   <div>
                     <Label className="text-gray-700 font-medium text-sm mb-1.5">ग्रुप निवडा</Label>
-                    <Select value={groupId} onValueChange={setGroupId}>
+                    <Select value={groupId} onValueChange={(val) => {
+                      setGroupId(val);
+                      if (val === "all") {
+                        setAccountFrom("");
+                        setAccountTo("");
+                      }
+                    }}>
                       <SelectTrigger>
                         <SelectValue placeholder="सर्व ग्रुप" />
                       </SelectTrigger>
@@ -546,25 +696,29 @@ export default function InventoryScan() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <Label className="text-gray-700 font-medium text-sm">खाते क्र. पासून</Label>
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <Label className="text-gray-700 font-medium text-sm">खाते क्र. पासून — पर्यंत</Label>
+                      {groupId === "all" && (
+                        <span className="text-xs text-amber-600 font-medium">ग्रुप निवडा</span>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
                       <Input
                         type="number"
                         placeholder="उदा. 100"
                         value={accountFrom}
                         onChange={(e) => setAccountFrom(e.target.value)}
-                        className="border-gray-300"
+                        disabled={groupId === "all"}
+                        className={`border-gray-300 ${groupId === "all" ? "opacity-50 bg-gray-100 cursor-not-allowed" : ""}`}
                       />
-                    </div>
-                    <div>
-                      <Label className="text-gray-700 font-medium text-sm">खाते क्र. पर्यंत</Label>
                       <Input
                         type="number"
                         placeholder="उदा. 200"
                         value={accountTo}
                         onChange={(e) => setAccountTo(e.target.value)}
-                        className="border-gray-300"
+                        disabled={groupId === "all"}
+                        className={`border-gray-300 ${groupId === "all" ? "opacity-50 bg-gray-100 cursor-not-allowed" : ""}`}
                       />
                     </div>
                   </div>
