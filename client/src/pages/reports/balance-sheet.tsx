@@ -21,7 +21,8 @@ function getDefaultFY() {
 
 function formatCurrency(amount: number): string {
   if (amount === 0) return "0";
-  return Math.abs(amount).toLocaleString("en-IN", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+  const formatted = Math.abs(amount).toLocaleString("en-IN", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+  return amount < 0 ? `- ${formatted}` : formatted;
 }
 
 function formatDateDisplay(dateStr: string): string {
@@ -33,7 +34,8 @@ function formatDateDisplay(dateStr: string): string {
 function buildBalanceSheetHTML(balanceSheet: any, company: any, fyStartDate: string, asOfDate: string): string {
   const fc = (amount: number) => {
     if (amount === 0) return "0";
-    return Math.abs(amount).toLocaleString("en-IN", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+    const formatted = Math.abs(amount).toLocaleString("en-IN", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+    return amount < 0 ? `- ${formatted}` : formatted;
   };
   const fd = (dateStr: string) => {
     if (!dateStr) return "";
@@ -44,7 +46,8 @@ function buildBalanceSheetHTML(balanceSheet: any, company: any, fyStartDate: str
   let assetsRows = "";
   assetsRows += `<tr><td style="padding:6px 8px;border-bottom:1px solid #ddd;font-weight:600;">कर्ज व अग्रिम</td><td style="padding:6px 8px;border-bottom:1px solid #ddd;text-align:right;font-weight:600;">${fc(balanceSheet.assets.loansAndAdvances.total)}</td></tr>`;
   assetsRows += `<tr><td style="padding:4px 8px 4px 20px;border-bottom:1px solid #eee;font-size:9pt;color:#555;">${balanceSheet.assets.loansAndAdvances.loanCount} कर्जे (मूळ: ₹${fc(balanceSheet.assets.loansAndAdvances.principalTotal)})</td><td></td></tr>`;
-  assetsRows += `<tr><td style="padding:6px 8px;border-bottom:1px solid #ddd;font-weight:600;">रोकड शिल्लक</td><td style="padding:6px 8px;border-bottom:1px solid #ddd;text-align:right;font-weight:600;">${fc(balanceSheet.assets.cashBalance)}</td></tr>`;
+  const cashColor = balanceSheet.assets.cashBalance < 0 ? 'color:red;' : '';
+  assetsRows += `<tr><td style="padding:6px 8px;border-bottom:1px solid #ddd;font-weight:600;">रोकड शिल्लक</td><td style="padding:6px 8px;border-bottom:1px solid #ddd;text-align:right;font-weight:600;${cashColor}">${fc(balanceSheet.assets.cashBalance)}</td></tr>`;
 
   if (balanceSheet.assets.bankAccounts?.length > 0) {
     for (const bank of balanceSheet.assets.bankAccounts) {
@@ -352,10 +355,10 @@ export default function BalanceSheet() {
                   <p className="text-xs text-gray-500">कर्ज शिल्लक</p>
                   <p className="text-sm font-bold text-indigo-700">₹ {formatCurrency(balanceSheet.assets.loansAndAdvances.total)}</p>
                 </div>
-                <div className="bg-green-50 border border-green-100 rounded-lg p-2.5 text-center">
-                  <Wallet className="w-4 h-4 mx-auto mb-0.5 text-green-500" />
+                <div className={`rounded-lg p-2.5 text-center ${balanceSheet.assets.cashBalance < 0 ? 'bg-red-50 border border-red-100' : 'bg-green-50 border border-green-100'}`}>
+                  <Wallet className={`w-4 h-4 mx-auto mb-0.5 ${balanceSheet.assets.cashBalance < 0 ? 'text-red-500' : 'text-green-500'}`} />
                   <p className="text-xs text-gray-500">रोकड शिल्लक</p>
-                  <p className="text-sm font-bold text-green-700">₹ {formatCurrency(balanceSheet.assets.cashBalance)}</p>
+                  <p className={`text-sm font-bold ${balanceSheet.assets.cashBalance < 0 ? 'text-red-700' : 'text-green-700'}`}>₹ {formatCurrency(balanceSheet.assets.cashBalance)}</p>
                 </div>
                 <div className="bg-blue-50 border border-blue-100 rounded-lg p-2.5 text-center">
                   <Scale className="w-4 h-4 mx-auto mb-0.5 text-blue-500" />
@@ -424,7 +427,7 @@ export default function BalanceSheet() {
                                   <span className="font-medium print:text-[10pt]">रोकड शिल्लक</span>
                                 </div>
                               </td>
-                              <td className="text-right px-3 py-2 font-semibold md:px-4 md:py-3 print:px-2 print:py-1.5 print:text-[10pt]">{formatCurrency(balanceSheet.assets.cashBalance)}</td>
+                              <td className={`text-right px-3 py-2 font-semibold md:px-4 md:py-3 print:px-2 print:py-1.5 print:text-[10pt] ${balanceSheet.assets.cashBalance < 0 ? 'text-red-600' : ''}`}>{formatCurrency(balanceSheet.assets.cashBalance)}</td>
                             </tr>
 
                             {balanceSheet.assets.bankAccounts.map((bank: any, i: number) => (
