@@ -84,6 +84,26 @@ function playErrorBeep() {
   try { navigator.vibrate?.([50, 50, 50]); } catch {}
 }
 
+function playCelebrationSound() {
+  try {
+    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const notes = [523, 659, 784, 1047];
+    notes.forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.frequency.value = freq;
+      osc.type = "sine";
+      gain.gain.value = 0.25;
+      osc.start(ctx.currentTime + i * 0.12);
+      osc.stop(ctx.currentTime + i * 0.12 + 0.15);
+    });
+    setTimeout(() => ctx.close(), 800);
+  } catch {}
+  try { navigator.vibrate?.([100, 50, 100, 50, 200]); } catch {}
+}
+
 interface ScanSession {
   filterSettings: {
     searchQuery: string;
@@ -176,6 +196,7 @@ export default function InventoryScan() {
   const [scanStatus, setScanStatus] = useState<"idle" | "loading" | "active" | "error">("idle");
   const [scanError, setScanError] = useState("");
   const [duplicateFlash, setDuplicateFlash] = useState(false);
+  const [autoStopFlash, setAutoStopFlash] = useState(false);
   const [showFound, setShowFound] = useState(false);
   const [resumePrompt, setResumePrompt] = useState<ScanSession | null>(null);
 
@@ -328,7 +349,6 @@ export default function InventoryScan() {
       const newSet = new Set(currentScanned);
       newSet.add(loanId);
       setScannedIds(newSet);
-      playBeep();
 
       const loan = currentLoanMap[loanId];
       if (loan) setLastScanned(loan);
@@ -340,11 +360,28 @@ export default function InventoryScan() {
         expectedCount: filteredCountRef.current,
       };
       saveSession(session);
+
+      let scannedInFilter = 0;
+      newSet.forEach(id => { if (currentFilteredIds.has(id)) scannedInFilter++; });
+      const totalFiltered = filteredCountRef.current;
+
+      if (totalFiltered > 0 && scannedInFilter >= totalFiltered) {
+        playCelebrationSound();
+        setAutoStopFlash(true);
+        setTimeout(() => {
+          setAutoStopFlash(false);
+          stopScanner();
+          setScanStatus("idle");
+          setPhase("report");
+        }, 1800);
+      } else {
+        playBeep();
+      }
     } catch {
       toast({ title: "QR वाचता आला नाही", variant: "destructive" });
       playErrorBeep();
     }
-  }, [toast]);
+  }, [toast, stopScanner]);
 
   const tryStartCamera = useCallback(async (scanner: any, boxSize: number): Promise<boolean> => {
     const scanConfig = { fps: 10, qrbox: { width: boxSize, height: boxSize } };
@@ -860,28 +897,36 @@ export default function InventoryScan() {
                 </CardContent>
               </Card>
 
-              <div className={`rounded-xl p-4 text-center transition-colors duration-300 ${duplicateFlash ? 'bg-yellow-100 border-2 border-yellow-400' : 'bg-indigo-50 border border-indigo-200'}`}>
-                <div className="text-3xl font-black text-indigo-700">
-                  {scannedCount} <span className="text-lg font-medium text-gray-500">/ {filteredLoans.length}</span>
+              {autoStopFlash ? (
+                <div className="rounded-xl p-6 text-center bg-green-100 border-2 border-green-400 animate-pulse">
+                  <CheckCircle className="h-12 w-12 text-green-600 mx-auto mb-2" />
+                  <div className="text-xl font-black text-green-700">सर्व वस्तू सापडल्या!</div>
+                  <div className="text-sm text-green-600 mt-1">{scannedCount}/{filteredLoans.length} — अहवाल तयार होत आहे...</div>
                 </div>
-                <div className="text-sm text-gray-600 mt-1">
-                  {duplicateFlash ? (
-                    <span className="text-yellow-700 font-medium">आधीच scan झाले!</span>
-                  ) : scannedCount === filteredLoans.length && filteredLoans.length > 0 ? (
-                    <span className="text-green-700 font-bold">सर्व scan पूर्ण!</span>
-                  ) : (
-                    "scan झाले"
+              ) : (
+                <div className={`rounded-xl p-4 text-center transition-colors duration-300 ${duplicateFlash ? 'bg-yellow-100 border-2 border-yellow-400' : 'bg-indigo-50 border border-indigo-200'}`}>
+                  <div className="text-3xl font-black text-indigo-700">
+                    {scannedCount} <span className="text-lg font-medium text-gray-500">/ {filteredLoans.length}</span>
+                  </div>
+                  <div className="text-sm text-gray-600 mt-1">
+                    {duplicateFlash ? (
+                      <span className="text-yellow-700 font-medium">आधीच scan झाले!</span>
+                    ) : scannedCount === filteredLoans.length && filteredLoans.length > 0 ? (
+                      <span className="text-green-700 font-bold">सर्व scan पूर्ण!</span>
+                    ) : (
+                      "scan झाले"
+                    )}
+                  </div>
+                  {filteredLoans.length > 0 && (
+                    <div className="mt-2 h-2 bg-gray-200 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-indigo-600 rounded-full transition-all duration-300"
+                        style={{ width: `${Math.round((scannedCount / filteredLoans.length) * 100)}%` }}
+                      />
+                    </div>
                   )}
                 </div>
-                {filteredLoans.length > 0 && (
-                  <div className="mt-2 h-2 bg-gray-200 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-indigo-600 rounded-full transition-all duration-300"
-                      style={{ width: `${Math.round((scannedCount / filteredLoans.length) * 100)}%` }}
-                    />
-                  </div>
-                )}
-              </div>
+              )}
 
               {lastScanned && (
                 <div className="bg-green-50 border border-green-200 rounded-lg p-3 flex items-center gap-3">
