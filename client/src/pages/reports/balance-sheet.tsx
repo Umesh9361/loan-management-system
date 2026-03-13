@@ -279,35 +279,40 @@ export default function BalanceSheet() {
 
         <main className="flex-1 w-full lg:pl-72 pb-16 lg:pb-0">
           <div className="px-4 sm:px-6 lg:px-8 py-6 max-w-5xl md:max-w-7xl mx-auto w-full print:p-0 print:max-w-none">
-            <div className="print:hidden mb-6">
-              <h1 className="text-xl sm:text-2xl md:text-3xl font-semibold text-indigo-900 mb-1">ताळेबंद</h1>
-              <p className="text-sm text-gray-500">Balance Sheet</p>
-            </div>
-
-            <Card className="print:hidden mb-6">
-              <CardContent className="p-3 sm:p-4 md:p-6">
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-3 md:gap-4">
-                  <div>
-                    <Label className="text-xs md:text-sm text-gray-600">आर्थिक वर्ष सुरू</Label>
-                    <Input type="date" value={fyStartDate} onChange={(e) => setFyStartDate(e.target.value)} className="h-9 md:h-10 text-sm" />
-                  </div>
-                  <div>
-                    <Label className="text-xs md:text-sm text-gray-600">दिनांक पर्यंत</Label>
-                    <Input type="date" value={asOfDate} onChange={(e) => setAsOfDate(e.target.value)} className="h-9 md:h-10 text-sm" />
-                  </div>
-                  <div className="flex items-end">
-                    <Button onClick={() => refetch()} size="sm" className="bg-indigo-600 hover:bg-indigo-700 h-9 md:h-10 w-full md:w-auto">
-                      <Search className="w-4 h-4 mr-1" /> शोधा
-                    </Button>
-                  </div>
-                  <div className="flex items-end gap-2 flex-wrap">
-                    <Button variant="ghost" size="sm" className="text-xs h-7 md:h-8" onClick={() => quickFY(0)}>चालू वर्ष</Button>
-                    <Button variant="ghost" size="sm" className="text-xs h-7 md:h-8" onClick={() => quickFY(1)}>मागील वर्ष</Button>
-                    <Button variant="ghost" size="sm" className="text-xs h-7 md:h-8" onClick={() => quickFY(2)}>२ वर्षांपूर्वी</Button>
-                  </div>
+            <div className="print:hidden mb-4">
+              <div className="flex items-center gap-2 mb-3">
+                <Scale className="h-6 w-6 text-indigo-600" />
+                <div>
+                  <h1 className="text-lg md:text-xl font-bold text-indigo-900 leading-tight">ताळेबंद</h1>
+                  <p className="text-xs text-gray-400">Balance Sheet</p>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+
+              <Card className="shadow-sm border border-indigo-100">
+                <CardContent className="p-3">
+                  <div className="grid grid-cols-2 gap-2 mb-2">
+                    <div>
+                      <Label className="text-[10px] text-gray-500 mb-0.5 block">आर्थिक वर्ष सुरू</Label>
+                      <Input type="date" value={fyStartDate} onChange={(e) => setFyStartDate(e.target.value)} className="h-8 text-xs" />
+                    </div>
+                    <div>
+                      <Label className="text-[10px] text-gray-500 mb-0.5 block">दिनांक पर्यंत</Label>
+                      <Input type="date" value={asOfDate} onChange={(e) => setAsOfDate(e.target.value)} className="h-8 text-xs" />
+                    </div>
+                  </div>
+                  <Button onClick={() => refetch()} size="sm" className="bg-indigo-600 hover:bg-indigo-700 h-8 w-full text-sm font-medium">
+                    <Search className="w-3.5 h-3.5 mr-1.5" /> शोधा
+                  </Button>
+                  <div className="flex items-center justify-center gap-1 mt-2">
+                    <Button variant="ghost" size="sm" className="text-[11px] h-6 px-2 text-indigo-600 hover:bg-indigo-50" onClick={() => quickFY(0)}>चालू वर्ष</Button>
+                    <span className="text-gray-300">|</span>
+                    <Button variant="ghost" size="sm" className="text-[11px] h-6 px-2 text-indigo-600 hover:bg-indigo-50" onClick={() => quickFY(1)}>मागील वर्ष</Button>
+                    <span className="text-gray-300">|</span>
+                    <Button variant="ghost" size="sm" className="text-[11px] h-6 px-2 text-indigo-600 hover:bg-indigo-50" onClick={() => quickFY(2)}>२ वर्षांपूर्वी</Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
 
           {isLoading && (
             <div className="text-center py-12 print:hidden">
@@ -318,65 +323,56 @@ export default function BalanceSheet() {
 
           {balanceSheet && (
             <>
-              <div className="print:hidden mb-3">
-                <div className="flex flex-wrap gap-2">
-                  <Button onClick={downloadAsPDF} size="sm" disabled={isGeneratingPDF} className="bg-red-600 hover:bg-red-700 h-9">
-                    <FileText className="w-4 h-4 mr-1" />
-                    {isGeneratingPDF ? "PDF तयार होत आहे..." : "PDF डाउनलोड"}
+              <div className="print:hidden mb-3 flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                  <Button onClick={downloadAsPDF} size="sm" disabled={isGeneratingPDF} className="bg-red-600 hover:bg-red-700 h-7 text-xs px-2.5">
+                    <FileText className="w-3.5 h-3.5 mr-1" />
+                    {isGeneratingPDF ? "PDF..." : "PDF डाउनलोड"}
                   </Button>
-                  <Button onClick={handlePrint} size="sm" variant="outline" className="h-9">
-                    <Printer className="w-4 h-4 mr-1" /> प्रिंट
+                  <Button onClick={handlePrint} size="sm" variant="outline" className="h-7 text-xs px-2.5">
+                    <Printer className="w-3.5 h-3.5 mr-1" /> प्रिंट
                   </Button>
                 </div>
+                {balanceSheet.isTallied ? (
+                  <div className="flex items-center gap-1.5 bg-green-50 border border-green-200 rounded-full px-2.5 py-1">
+                    <CheckCircle className="w-3.5 h-3.5 text-green-600" />
+                    <span className="text-[10px] font-medium text-green-700">ताळेबंद जुळतो</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1.5 bg-yellow-50 border border-yellow-200 rounded-full px-2.5 py-1">
+                    <AlertTriangle className="w-3.5 h-3.5 text-yellow-600" />
+                    <span className="text-[10px] font-medium text-yellow-700">फरक: ₹ {formatCurrency(balanceSheet.difference)}</span>
+                  </div>
+                )}
               </div>
 
-              {balanceSheet.isTallied ? (
-                <div className="print:hidden mb-3 flex items-center gap-2 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
-                  <CheckCircle className="w-5 h-5 text-green-600" />
-                  <span className="text-sm font-medium text-green-700">ताळेबंद जुळतो (Assets = Liabilities + Capital)</span>
+              <div className="grid grid-cols-2 gap-2 mb-3 print:hidden">
+                <div className="bg-indigo-50 border border-indigo-100 rounded-lg p-2.5 text-center">
+                  <Landmark className="w-4 h-4 mx-auto mb-0.5 text-indigo-500" />
+                  <p className="text-[10px] text-gray-500">कर्ज शिल्लक</p>
+                  <p className="text-sm font-bold text-indigo-700">₹ {formatCurrency(balanceSheet.assets.loansAndAdvances.total)}</p>
                 </div>
-              ) : (
-                <div className="print:hidden mb-3 flex items-center gap-2 bg-yellow-50 border border-yellow-200 rounded-lg px-3 py-2">
-                  <AlertTriangle className="w-5 h-5 text-yellow-600" />
-                  <span className="text-sm font-medium text-yellow-700">फरक: ₹ {formatCurrency(balanceSheet.difference)}</span>
+                <div className="bg-green-50 border border-green-100 rounded-lg p-2.5 text-center">
+                  <Wallet className="w-4 h-4 mx-auto mb-0.5 text-green-500" />
+                  <p className="text-[10px] text-gray-500">रोकड शिल्लक</p>
+                  <p className="text-sm font-bold text-green-700">₹ {formatCurrency(balanceSheet.assets.cashBalance)}</p>
                 </div>
-              )}
-
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4 print:hidden">
-                <Card className="border-indigo-200">
-                  <CardContent className="p-3 text-center">
-                    <Landmark className="w-5 h-5 mx-auto mb-1 text-indigo-500" />
-                    <p className="text-xs text-gray-500">कर्ज शिल्लक</p>
-                    <p className="text-sm font-bold text-indigo-700">₹ {formatCurrency(balanceSheet.assets.loansAndAdvances.total)}</p>
-                  </CardContent>
-                </Card>
-                <Card className="border-green-200">
-                  <CardContent className="p-3 text-center">
-                    <Wallet className="w-5 h-5 mx-auto mb-1 text-green-500" />
-                    <p className="text-xs text-gray-500">रोकड शिल्लक</p>
-                    <p className="text-sm font-bold text-green-700">₹ {formatCurrency(balanceSheet.assets.cashBalance)}</p>
-                  </CardContent>
-                </Card>
-                <Card className="border-blue-200">
-                  <CardContent className="p-3 text-center">
-                    <Scale className="w-5 h-5 mx-auto mb-1 text-blue-500" />
-                    <p className="text-xs text-gray-500">भांडवल</p>
-                    <p className="text-sm font-bold text-blue-700">₹ {formatCurrency(balanceSheet.liabilities.capitalAccount.closingCapital)}</p>
-                  </CardContent>
-                </Card>
-                <Card className={balanceSheet.liabilities.capitalAccount.netProfit >= 0 ? "border-green-200" : "border-red-200"}>
-                  <CardContent className="p-3 text-center">
-                    {balanceSheet.liabilities.capitalAccount.netProfit >= 0 ? (
-                      <TrendingUp className="w-5 h-5 mx-auto mb-1 text-green-500" />
-                    ) : (
-                      <TrendingDown className="w-5 h-5 mx-auto mb-1 text-red-500" />
-                    )}
-                    <p className="text-xs text-gray-500">निव्वळ नफा/तोटा</p>
-                    <p className={`text-sm font-bold ${balanceSheet.liabilities.capitalAccount.netProfit >= 0 ? 'text-green-700' : 'text-red-700'}`}>
-                      {balanceSheet.liabilities.capitalAccount.netProfit >= 0 ? '+' : '-'} ₹ {formatCurrency(balanceSheet.liabilities.capitalAccount.netProfit)}
-                    </p>
-                  </CardContent>
-                </Card>
+                <div className="bg-blue-50 border border-blue-100 rounded-lg p-2.5 text-center">
+                  <Scale className="w-4 h-4 mx-auto mb-0.5 text-blue-500" />
+                  <p className="text-[10px] text-gray-500">भांडवल</p>
+                  <p className="text-sm font-bold text-blue-700">₹ {formatCurrency(balanceSheet.liabilities.capitalAccount.closingCapital)}</p>
+                </div>
+                <div className={`rounded-lg p-2.5 text-center ${balanceSheet.liabilities.capitalAccount.netProfit >= 0 ? 'bg-green-50 border border-green-100' : 'bg-red-50 border border-red-100'}`}>
+                  {balanceSheet.liabilities.capitalAccount.netProfit >= 0 ? (
+                    <TrendingUp className="w-4 h-4 mx-auto mb-0.5 text-green-500" />
+                  ) : (
+                    <TrendingDown className="w-4 h-4 mx-auto mb-0.5 text-red-500" />
+                  )}
+                  <p className="text-[10px] text-gray-500">निव्वळ नफा/तोटा</p>
+                  <p className={`text-sm font-bold ${balanceSheet.liabilities.capitalAccount.netProfit >= 0 ? 'text-green-700' : 'text-red-700'}`}>
+                    {balanceSheet.liabilities.capitalAccount.netProfit >= 0 ? '+' : '-'} ₹ {formatCurrency(balanceSheet.liabilities.capitalAccount.netProfit)}
+                  </p>
+                </div>
               </div>
 
               <div className="bs-print-area">
