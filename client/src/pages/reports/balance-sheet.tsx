@@ -37,6 +37,7 @@ function buildBalanceSheetHTML(balanceSheet: any, company: any, fyStartDate: str
     const formatted = Math.abs(amount).toLocaleString("en-IN", { minimumFractionDigits: 0, maximumFractionDigits: 0 });
     return amount < 0 ? `- ${formatted}` : formatted;
   };
+  const negStyle = (amount: number) => amount < 0 ? 'color:red;' : '';
   const fd = (dateStr: string) => {
     if (!dateStr) return "";
     const [y, m, d] = dateStr.split("-");
@@ -44,36 +45,35 @@ function buildBalanceSheetHTML(balanceSheet: any, company: any, fyStartDate: str
   };
 
   let assetsRows = "";
-  assetsRows += `<tr><td style="padding:6px 8px;border-bottom:1px solid #ddd;font-weight:600;">कर्ज व अग्रिम</td><td style="padding:6px 8px;border-bottom:1px solid #ddd;text-align:right;font-weight:600;">${fc(balanceSheet.assets.loansAndAdvances.total)}</td></tr>`;
+  assetsRows += `<tr><td style="padding:6px 8px;border-bottom:1px solid #ddd;font-weight:600;">कर्ज व अग्रिम</td><td style="padding:6px 8px;border-bottom:1px solid #ddd;text-align:right;font-weight:600;${negStyle(balanceSheet.assets.loansAndAdvances.total)}">${fc(balanceSheet.assets.loansAndAdvances.total)}</td></tr>`;
   assetsRows += `<tr><td style="padding:4px 8px 4px 20px;border-bottom:1px solid #eee;font-size:9pt;color:#555;">${balanceSheet.assets.loansAndAdvances.loanCount} कर्जे (मूळ: ₹${fc(balanceSheet.assets.loansAndAdvances.principalTotal)})</td><td></td></tr>`;
-  const cashColor = balanceSheet.assets.cashBalance < 0 ? 'color:red;' : '';
-  assetsRows += `<tr><td style="padding:6px 8px;border-bottom:1px solid #ddd;font-weight:600;">रोकड शिल्लक</td><td style="padding:6px 8px;border-bottom:1px solid #ddd;text-align:right;font-weight:600;${cashColor}">${fc(balanceSheet.assets.cashBalance)}</td></tr>`;
+  assetsRows += `<tr><td style="padding:6px 8px;border-bottom:1px solid #ddd;font-weight:600;">रोकड शिल्लक</td><td style="padding:6px 8px;border-bottom:1px solid #ddd;text-align:right;font-weight:600;${negStyle(balanceSheet.assets.cashBalance)}">${fc(balanceSheet.assets.cashBalance)}</td></tr>`;
 
   if (balanceSheet.assets.bankAccounts?.length > 0) {
     for (const bank of balanceSheet.assets.bankAccounts) {
-      assetsRows += `<tr><td style="padding:5px 8px;border-bottom:1px solid #ddd;">${bank.name}</td><td style="padding:5px 8px;border-bottom:1px solid #ddd;text-align:right;">${fc(bank.balance)}</td></tr>`;
+      assetsRows += `<tr><td style="padding:5px 8px;border-bottom:1px solid #ddd;">${bank.name}</td><td style="padding:5px 8px;border-bottom:1px solid #ddd;text-align:right;${negStyle(bank.balance)}">${fc(bank.balance)}</td></tr>`;
     }
   }
 
   if (balanceSheet.assets.fixedAssets?.length > 0) {
     assetsRows += `<tr><td colspan="2" style="padding:4px 8px;border-bottom:1px solid #ccc;font-weight:700;font-size:9pt;background:#f5f5f5;">स्थिर मालमत्ता (Fixed Assets)</td></tr>`;
     for (const asset of balanceSheet.assets.fixedAssets) {
-      assetsRows += `<tr><td style="padding:5px 8px 5px 20px;border-bottom:1px solid #ddd;">${asset.name}</td><td style="padding:5px 8px;border-bottom:1px solid #ddd;text-align:right;">${fc(asset.balance)}</td></tr>`;
+      assetsRows += `<tr><td style="padding:5px 8px 5px 20px;border-bottom:1px solid #ddd;">${asset.name}</td><td style="padding:5px 8px;border-bottom:1px solid #ddd;text-align:right;${negStyle(asset.balance)}">${fc(asset.balance)}</td></tr>`;
     }
   }
 
   if (balanceSheet.assets.debtors?.length > 0) {
     assetsRows += `<tr><td colspan="2" style="padding:4px 8px;border-bottom:1px solid #ccc;font-weight:700;font-size:9pt;background:#f5f5f5;">देणेदार (Debtors)</td></tr>`;
     for (const d of balanceSheet.assets.debtors) {
-      assetsRows += `<tr><td style="padding:5px 8px 5px 20px;border-bottom:1px solid #ddd;">${d.name}</td><td style="padding:5px 8px;border-bottom:1px solid #ddd;text-align:right;">${fc(d.balance)}</td></tr>`;
+      assetsRows += `<tr><td style="padding:5px 8px 5px 20px;border-bottom:1px solid #ddd;">${d.name}</td><td style="padding:5px 8px;border-bottom:1px solid #ddd;text-align:right;${negStyle(d.balance)}">${fc(d.balance)}</td></tr>`;
     }
   }
 
-  assetsRows += `<tr style="border-top:2px solid #000;font-weight:bold;background:#f0f0f0;"><td style="padding:8px;">एकूण मालमत्ता</td><td style="padding:8px;text-align:right;">${fc(balanceSheet.assets.totalAssets)}</td></tr>`;
+  assetsRows += `<tr style="border-top:2px solid #000;font-weight:bold;background:#f0f0f0;"><td style="padding:8px;">एकूण मालमत्ता</td><td style="padding:8px;text-align:right;${negStyle(balanceSheet.assets.totalAssets)}">${fc(balanceSheet.assets.totalAssets)}</td></tr>`;
 
   let liabRows = "";
   liabRows += `<tr><td colspan="2" style="padding:4px 8px;border-bottom:1px solid #ccc;font-weight:700;font-size:9pt;background:#f5f5f5;">भांडवल खाते (Capital Account)</td></tr>`;
-  liabRows += `<tr><td style="padding:5px 8px 5px 20px;border-bottom:1px solid #ddd;">प्रारंभिक भांडवल</td><td style="padding:5px 8px;border-bottom:1px solid #ddd;text-align:right;">${fc(balanceSheet.liabilities.capitalAccount.openingCapital)}</td></tr>`;
+  liabRows += `<tr><td style="padding:5px 8px 5px 20px;border-bottom:1px solid #ddd;">प्रारंभिक भांडवल</td><td style="padding:5px 8px;border-bottom:1px solid #ddd;text-align:right;${negStyle(balanceSheet.liabilities.capitalAccount.openingCapital)}">${fc(balanceSheet.liabilities.capitalAccount.openingCapital)}</td></tr>`;
 
   if (balanceSheet.liabilities.capitalAccount.capitalAdded > 0) {
     liabRows += `<tr><td style="padding:5px 8px 5px 20px;border-bottom:1px solid #ddd;">(+) भांडवल जमा</td><td style="padding:5px 8px;border-bottom:1px solid #ddd;text-align:right;">${fc(balanceSheet.liabilities.capitalAccount.capitalAdded)}</td></tr>`;
@@ -83,17 +83,18 @@ function buildBalanceSheetHTML(balanceSheet: any, company: any, fyStartDate: str
   }
 
   const npLabel = balanceSheet.liabilities.capitalAccount.netProfit >= 0 ? "(+) निव्वळ नफा" : "(-) निव्वळ तोटा";
-  liabRows += `<tr><td style="padding:5px 8px 5px 20px;border-bottom:1px solid #ddd;">${npLabel}</td><td style="padding:5px 8px;border-bottom:1px solid #ddd;text-align:right;">${fc(balanceSheet.liabilities.capitalAccount.netProfit)}</td></tr>`;
-  liabRows += `<tr><td style="padding:6px 8px 6px 20px;border-bottom:2px solid #999;font-weight:600;">अंतिम भांडवल</td><td style="padding:6px 8px;border-bottom:2px solid #999;text-align:right;font-weight:600;">${fc(balanceSheet.liabilities.capitalAccount.closingCapital)}</td></tr>`;
+  const npColor = balanceSheet.liabilities.capitalAccount.netProfit < 0 ? 'color:red;' : 'color:green;';
+  liabRows += `<tr><td style="padding:5px 8px 5px 20px;border-bottom:1px solid #ddd;">${npLabel}</td><td style="padding:5px 8px;border-bottom:1px solid #ddd;text-align:right;${npColor}">${fc(balanceSheet.liabilities.capitalAccount.netProfit)}</td></tr>`;
+  liabRows += `<tr><td style="padding:6px 8px 6px 20px;border-bottom:2px solid #999;font-weight:600;">अंतिम भांडवल</td><td style="padding:6px 8px;border-bottom:2px solid #999;text-align:right;font-weight:600;${negStyle(balanceSheet.liabilities.capitalAccount.closingCapital)}">${fc(balanceSheet.liabilities.capitalAccount.closingCapital)}</td></tr>`;
 
   if (balanceSheet.liabilities.creditors?.length > 0) {
     liabRows += `<tr><td colspan="2" style="padding:4px 8px;border-bottom:1px solid #ccc;font-weight:700;font-size:9pt;background:#f5f5f5;">धनको (Creditors)</td></tr>`;
     for (const c of balanceSheet.liabilities.creditors) {
-      liabRows += `<tr><td style="padding:5px 8px 5px 20px;border-bottom:1px solid #ddd;">${c.name}</td><td style="padding:5px 8px;border-bottom:1px solid #ddd;text-align:right;">${fc(c.balance)}</td></tr>`;
+      liabRows += `<tr><td style="padding:5px 8px 5px 20px;border-bottom:1px solid #ddd;">${c.name}</td><td style="padding:5px 8px;border-bottom:1px solid #ddd;text-align:right;${negStyle(c.balance)}">${fc(c.balance)}</td></tr>`;
     }
   }
 
-  liabRows += `<tr style="border-top:2px solid #000;font-weight:bold;background:#f0f0f0;"><td style="padding:8px;">एकूण दायित्व (Liabilities)</td><td style="padding:8px;text-align:right;">${fc(balanceSheet.liabilities.totalLiabilities)}</td></tr>`;
+  liabRows += `<tr style="border-top:2px solid #000;font-weight:bold;background:#f0f0f0;"><td style="padding:8px;">एकूण दायित्व (Liabilities)</td><td style="padding:8px;text-align:right;${negStyle(balanceSheet.liabilities.totalLiabilities)}">${fc(balanceSheet.liabilities.totalLiabilities)}</td></tr>`;
 
   return `
     <div style="font-family:'Noto Sans Devanagari',sans-serif;color:#000;background:#fff;padding:20px 15px;box-sizing:border-box;width:100%;">
@@ -417,7 +418,7 @@ export default function BalanceSheet() {
                                   </div>
                                 </div>
                               </td>
-                              <td className="text-right px-3 py-2 font-semibold md:px-4 md:py-3 print:px-2 print:py-1.5 print:text-[10pt]">{formatCurrency(balanceSheet.assets.loansAndAdvances.total)}</td>
+                              <td className={`text-right px-3 py-2 font-semibold md:px-4 md:py-3 print:px-2 print:py-1.5 print:text-[10pt] ${balanceSheet.assets.loansAndAdvances.total < 0 ? 'text-red-600' : ''}`}>{formatCurrency(balanceSheet.assets.loansAndAdvances.total)}</td>
                             </tr>
 
                             <tr className="border-b hover:bg-indigo-50/30 md:border-b md:border-gray-200">
@@ -438,7 +439,7 @@ export default function BalanceSheet() {
                                     <span className="print:text-[10pt]">{bank.name}</span>
                                   </div>
                                 </td>
-                                <td className="text-right px-3 py-2 md:px-4 md:py-3 print:px-2 print:py-1.5 print:text-[10pt]">{formatCurrency(bank.balance)}</td>
+                                <td className={`text-right px-3 py-2 md:px-4 md:py-3 print:px-2 print:py-1.5 print:text-[10pt] ${bank.balance < 0 ? 'text-red-600' : ''}`}>{formatCurrency(bank.balance)}</td>
                               </tr>
                             ))}
 
@@ -453,7 +454,7 @@ export default function BalanceSheet() {
                                 {balanceSheet.assets.fixedAssets.map((asset: any, i: number) => (
                                   <tr key={`asset-${i}`} className="border-b hover:bg-indigo-50/30 md:border-b md:border-gray-200">
                                     <td className="px-3 py-2 pl-6 md:px-4 md:py-3 md:pl-8 print:px-2 print:py-1.5 print:pl-4 print:text-[10pt]">{asset.name}</td>
-                                    <td className="text-right px-3 py-2 md:px-4 md:py-3 print:px-2 print:py-1.5 print:text-[10pt]">{formatCurrency(asset.balance)}</td>
+                                    <td className={`text-right px-3 py-2 md:px-4 md:py-3 print:px-2 print:py-1.5 print:text-[10pt] ${asset.balance < 0 ? 'text-red-600' : ''}`}>{formatCurrency(asset.balance)}</td>
                                   </tr>
                                 ))}
                               </>
@@ -470,7 +471,7 @@ export default function BalanceSheet() {
                                 {balanceSheet.assets.debtors.map((d: any, i: number) => (
                                   <tr key={`debtor-${i}`} className="border-b hover:bg-indigo-50/30 md:border-b md:border-gray-200">
                                     <td className="px-3 py-2 pl-6 md:px-4 md:py-3 md:pl-8 print:px-2 print:py-1.5 print:pl-4 print:text-[10pt]">{d.name}</td>
-                                    <td className="text-right px-3 py-2 md:px-4 md:py-3 print:px-2 print:py-1.5 print:text-[10pt]">{formatCurrency(d.balance)}</td>
+                                    <td className={`text-right px-3 py-2 md:px-4 md:py-3 print:px-2 print:py-1.5 print:text-[10pt] ${d.balance < 0 ? 'text-red-600' : ''}`}>{formatCurrency(d.balance)}</td>
                                   </tr>
                                 ))}
                               </>
@@ -478,7 +479,7 @@ export default function BalanceSheet() {
 
                             <tr className="border-t-2 border-indigo-300 bg-indigo-50 font-bold md:border-t-2 md:border-indigo-600 md:bg-indigo-50 print:bg-white print:border-t-2 print:border-black">
                               <td className="px-3 py-2.5 md:px-4 md:py-3 md:text-base print:px-2 print:py-2 print:text-[11pt] print:font-bold">एकूण मालमत्ता</td>
-                              <td className="text-right px-3 py-2.5 text-indigo-700 md:px-4 md:py-3 md:text-base print:text-black print:px-2 print:py-2 print:text-[11pt] print:font-bold">{formatCurrency(balanceSheet.assets.totalAssets)}</td>
+                              <td className={`text-right px-3 py-2.5 md:px-4 md:py-3 md:text-base print:text-black print:px-2 print:py-2 print:text-[11pt] print:font-bold ${balanceSheet.assets.totalAssets < 0 ? 'text-red-700' : 'text-indigo-700'}`}>{formatCurrency(balanceSheet.assets.totalAssets)}</td>
                             </tr>
                           </tbody>
                         </table>
@@ -511,7 +512,7 @@ export default function BalanceSheet() {
                             </tr>
                             <tr className="border-b hover:bg-rose-50/30 md:border-b md:border-gray-200">
                               <td className="px-3 py-1.5 pl-6 text-gray-700 md:px-4 md:py-3 md:pl-8 print:px-2 print:py-1 print:pl-4 print:text-[10pt]">प्रारंभिक भांडवल</td>
-                              <td className="text-right px-3 py-1.5 md:px-4 md:py-3 print:px-2 print:py-1 print:text-[10pt]">{formatCurrency(balanceSheet.liabilities.capitalAccount.openingCapital)}</td>
+                              <td className={`text-right px-3 py-1.5 md:px-4 md:py-3 print:px-2 print:py-1 print:text-[10pt] ${balanceSheet.liabilities.capitalAccount.openingCapital < 0 ? 'text-red-600' : ''}`}>{formatCurrency(balanceSheet.liabilities.capitalAccount.openingCapital)}</td>
                             </tr>
                             {balanceSheet.liabilities.capitalAccount.capitalAdded > 0 && (
                               <tr className="border-b hover:bg-rose-50/30 md:border-b md:border-gray-200">
@@ -533,11 +534,11 @@ export default function BalanceSheet() {
                                   <span className="text-red-700 print:text-black">(-) निव्वळ तोटा</span>
                                 )}
                               </td>
-                              <td className="text-right px-3 py-1.5 md:px-4 md:py-3 print:px-2 print:py-1 print:text-[10pt]">{formatCurrency(balanceSheet.liabilities.capitalAccount.netProfit)}</td>
+                              <td className={`text-right px-3 py-1.5 md:px-4 md:py-3 print:px-2 print:py-1 print:text-[10pt] ${balanceSheet.liabilities.capitalAccount.netProfit < 0 ? 'text-red-600' : 'text-green-600'}`}>{formatCurrency(balanceSheet.liabilities.capitalAccount.netProfit)}</td>
                             </tr>
                             <tr className="border-b border-indigo-200 bg-indigo-50/50 font-semibold md:border-b-2 md:border-gray-400 md:bg-indigo-50 print:bg-white print:border-b-2 print:border-gray-400">
                               <td className="px-3 py-2 pl-6 md:px-4 md:py-3 md:pl-8 print:px-2 print:py-1.5 print:pl-4 print:text-[10pt] print:font-bold">अंतिम भांडवल</td>
-                              <td className="text-right px-3 py-2 md:px-4 md:py-3 print:px-2 print:py-1.5 print:text-[10pt] print:font-bold">{formatCurrency(balanceSheet.liabilities.capitalAccount.closingCapital)}</td>
+                              <td className={`text-right px-3 py-2 md:px-4 md:py-3 print:px-2 print:py-1.5 print:text-[10pt] print:font-bold ${balanceSheet.liabilities.capitalAccount.closingCapital < 0 ? 'text-red-600' : ''}`}>{formatCurrency(balanceSheet.liabilities.capitalAccount.closingCapital)}</td>
                             </tr>
 
                             {balanceSheet.liabilities.creditors.length > 0 && (
@@ -551,7 +552,7 @@ export default function BalanceSheet() {
                                 {balanceSheet.liabilities.creditors.map((c: any, i: number) => (
                                   <tr key={`cred-${i}`} className="border-b hover:bg-rose-50/30 md:border-b md:border-gray-200">
                                     <td className="px-3 py-2 pl-6 md:px-4 md:py-3 md:pl-8 print:px-2 print:py-1.5 print:pl-4 print:text-[10pt]">{c.name}</td>
-                                    <td className="text-right px-3 py-2 md:px-4 md:py-3 print:px-2 print:py-1.5 print:text-[10pt]">{formatCurrency(c.balance)}</td>
+                                    <td className={`text-right px-3 py-2 md:px-4 md:py-3 print:px-2 print:py-1.5 print:text-[10pt] ${c.balance < 0 ? 'text-red-600' : ''}`}>{formatCurrency(c.balance)}</td>
                                   </tr>
                                 ))}
                               </>
@@ -559,7 +560,7 @@ export default function BalanceSheet() {
 
                             <tr className="border-t-2 border-rose-300 bg-rose-50 font-bold md:border-t-2 md:border-rose-600 md:bg-rose-50 print:bg-white print:border-t-2 print:border-black">
                               <td className="px-3 py-2.5 md:px-4 md:py-3 md:text-base print:px-2 print:py-2 print:text-[11pt] print:font-bold">एकूण दायित्व (Liabilities)</td>
-                              <td className="text-right px-3 py-2.5 text-rose-700 md:px-4 md:py-3 md:text-base print:text-black print:px-2 print:py-2 print:text-[11pt] print:font-bold">{formatCurrency(balanceSheet.liabilities.totalLiabilities)}</td>
+                              <td className={`text-right px-3 py-2.5 md:px-4 md:py-3 md:text-base print:text-black print:px-2 print:py-2 print:text-[11pt] print:font-bold ${balanceSheet.liabilities.totalLiabilities < 0 ? 'text-red-700' : 'text-rose-700'}`}>{formatCurrency(balanceSheet.liabilities.totalLiabilities)}</td>
                             </tr>
                           </tbody>
                         </table>
