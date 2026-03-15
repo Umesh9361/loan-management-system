@@ -4,7 +4,7 @@ import session, { SessionOptions } from "express-session";
 import { storage } from "./storage";
 import { db } from "./db";
 import bcrypt from "bcrypt";
-import { insertUserSchema, insertCompanySchema, insertGroupSchema, insertLoanSchema, insertTransactionSchema, insertLoanClosureSchema, insertPartySchema, insertCashTransactionSchema, cashTransactions, loans, groups, loanPhotos, loanClosures, transactions, insertLoanPhotoSchema, systemSettings, tenantStorageSettings, userActivityLogs, users, companies, notificationWarnings } from "@shared/schema";
+import { insertUserSchema, insertCompanySchema, insertGroupSchema, insertLoanSchema, insertTransactionSchema, insertLoanClosureSchema, insertPartySchema, insertCashTransactionSchema, cashTransactions, loans, groups, loanPhotos, loanClosures, transactions, insertLoanPhotoSchema, systemSettings, tenantStorageSettings, userActivityLogs, users, companies, notificationWarnings, userPermissions } from "@shared/schema";
 import { photoUpload, PhotoService } from "./photo-service";
 import { PhotoStorageFactory, CloudinaryStorageProvider } from "./photo-storage-provider";
 import path from 'path';
@@ -3919,10 +3919,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const tenantId = rawTenantId.toString().toUpperCase().trim();
       const adminUsername = rawAdminUsername.toString().trim();
       
-      // Check if tenant already exists
+      // Check if tenant already exists — check both user AND company
       const existingUser = await storage.getUserByCredentials(tenantId, adminUsername);
       if (existingUser) {
-        return res.status(409).json({ message: "Tenant or admin user already exists" });
+        return res.status(409).json({ message: "हा Tenant ID किंवा admin user आधीपासूनच अस्तित्वात आहे" });
+      }
+      
+      const existingCompany = await storage.getCompany(tenantId);
+      if (existingCompany) {
+        return res.status(409).json({ message: "या Tenant ID साठी कंपनी आधीपासूनच नोंदणीकृत आहे" });
       }
       
       // CRITICAL PROTECTION: Use Super Admin Guardian for user creation validation
@@ -3937,94 +3942,100 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.warn(`🛡️  GUARDIAN PROTECTION (CREATE TENANT): ${validation.reason}`);
       }
       
-      // Create admin user for new tenant with Guardian-validated role
-      // NOTE: Do NOT pre-hash password here - storage.createUser() already handles hashing
-      const newAdmin = await storage.createUser({
-        username: adminUsername,
-        password: adminPassword,
-        tenantId: tenantId,
-        role: validation.correctedRole || 'admin', // Use Guardian-validated role
-        fullName: `${companyName} Administrator`,
-        email: null,
-        isActive: true,
-        isTemporaryDisabled: false,
-        createdBy: req.session.userId // Super admin who created this
-      });
-      
-      // Create company record for new tenant with subscription info
-      const now = new Date();
-      const subType = subscriptionType || 'lifetime';
-      const subMonths = subType === 'time_limited' ? (parseInt(subscriptionMonths) || 12) : null;
-      const subStartDate = subType === 'time_limited' ? now : null;
-      const subEndDate = subType === 'time_limited' && subMonths ? new Date(now.getFullYear(), now.getMonth() + subMonths, now.getDate()) : null;
-      
-      const company = await storage.createCompany({
-        name: companyName,
-        address: companyAddress || '',
-        tenantId: tenantId,
-        contactNumber: '',
-        email: '',
-        licenseNumber: '',
-        subscriptionType: subType,
-        subscriptionMonths: subMonths,
-        subscriptionStartDate: subStartDate,
-        subscriptionEndDate: subEndDate,
-      });
-      
-      // Create COMPLETE permissions for new tenant admin - FULL SYSTEM ACCESS
-      await storage.createUserPermissions({
-        userId: newAdmin.id,
-        tenantId: tenantId,
-        canViewDashboard: true,
-        canAccessCompanyRegistration: true,
-        canAccessGroupManagement: true,
-        canAccessLoanRegistration: true,
-        canAccessLoanClosure: true,
-        canAccessCashTransactions: true,
-        canAccessPartyManagement: true,
-        canAccessMobileCashbook: true,
-        canAccessInterestCalculator: true,
-        canViewReceiptGenerator: true,
-        canViewCashBookReport: true,
-        canViewCapitalReport: true,
-        canViewLedgerReport: true,
-        canViewBorrowerListReport: true,
-        canViewOverdueReport: true,
-        // Date-wise, Name-wise, Closing-wise, and Maturity-wise reports removed from schema
-        canViewAccountSummaryReport: true,
-        canViewInformationRegister: true,
-        canViewNoticeGenerator: true,
-        canViewBalanceSheet: true,
-        canViewProfitLoss: true,
-        canManageBorrowers: true,
-        canDeleteBorrowers: true,
-        // Group management permissions removed from schema
-        // Party management permissions removed from schema
-        // Cashbook and report permissions removed from schema
-        // Note: User Management and Data Management are admin-only features
-        // Super Admin Panel access - role-based, not tenant-based
-        // Super Admin Panel access removed from regular tenant creation
+      // Use database transaction — all 3 operations succeed or all rollback
+      const { db: txDb } = await import("./db");
+      const result = await txDb.transaction(async (tx: any) => {
+        const bcrypt = await import("bcrypt");
+        const hashedPassword = await bcrypt.hash(adminPassword, 10);
+        
+        const [newAdmin] = await tx
+          .insert(users)
+          .values({
+            username: adminUsername,
+            password: hashedPassword,
+            tenantId: tenantId,
+            role: validation.correctedRole || 'admin',
+            fullName: `${companyName} Administrator`,
+            email: null,
+            isActive: true,
+            isTemporaryDisabled: false,
+            createdBy: req.session.userId
+          })
+          .returning();
+        
+        const now = new Date();
+        const subType = subscriptionType || 'lifetime';
+        const subMonths = subType === 'time_limited' ? (parseInt(subscriptionMonths) || 12) : null;
+        const subStartDate = subType === 'time_limited' ? now : null;
+        const subEndDate = subType === 'time_limited' && subMonths ? new Date(now.getFullYear(), now.getMonth() + subMonths, now.getDate()) : null;
+        
+        const [company] = await tx
+          .insert(companies)
+          .values({
+            name: companyName,
+            address: companyAddress || '',
+            tenantId: tenantId,
+            contactNumber: '',
+            email: '',
+            licenseNumber: '',
+            subscriptionType: subType,
+            subscriptionMonths: subMonths,
+            subscriptionStartDate: subStartDate,
+            subscriptionEndDate: subEndDate,
+          })
+          .returning();
+        
+        await tx
+          .insert(userPermissions)
+          .values({
+            userId: newAdmin.id,
+            tenantId: tenantId,
+            canViewDashboard: true,
+            canAccessCompanyRegistration: true,
+            canAccessGroupManagement: true,
+            canAccessLoanRegistration: true,
+            canAccessLoanClosure: true,
+            canAccessCashTransactions: true,
+            canAccessPartyManagement: true,
+            canAccessMobileCashbook: true,
+            canAccessInterestCalculator: true,
+            canViewReceiptGenerator: true,
+            canViewCashBookReport: true,
+            canViewCapitalReport: true,
+            canViewLedgerReport: true,
+            canViewBorrowerListReport: true,
+            canViewOverdueReport: true,
+            canViewAccountSummaryReport: true,
+            canViewInformationRegister: true,
+            canViewNoticeGenerator: true,
+            canViewBalanceSheet: true,
+            canViewProfitLoss: true,
+            canManageBorrowers: true,
+            canDeleteBorrowers: true,
+          });
+        
+        return { newAdmin, company };
       });
       
       res.json({ 
-        message: "New tenant created successfully with complete admin permissions",
+        message: "नवीन टेनंट यशस्वीपणे तयार झाले",
         tenant: {
           tenantId: tenantId,
           adminUser: {
-            id: newAdmin.id,
-            username: newAdmin.username,
-            role: newAdmin.role,
+            id: result.newAdmin.id,
+            username: result.newAdmin.username,
+            role: result.newAdmin.role,
             hasFullAccess: true
           },
           company: {
-            id: company.id,
-            name: company.name
+            id: result.company.id,
+            name: result.company.name
           }
         }
       });
     } catch (error) {
       console.error("Error creating new tenant:", error);
-      res.status(500).json({ message: "Failed to create new tenant" });
+      res.status(500).json({ message: "टेनंट तयार करण्यात अपयश आले. कृपया पुन्हा प्रयत्न करा." });
     }
   });
 
