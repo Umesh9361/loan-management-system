@@ -241,28 +241,37 @@ function Loans() {
   const currentRateStatus = watchedMetalType === 'silver' ? silverRateStatus : goldRateStatus;
   const currentRateLabel = watchedMetalType === 'silver' ? 'चांदीचा दर' : 'सोन्याचा दर';
 
+  const recalcMarketValue = useCallback((weightStr?: string, purityStr?: string, metalType?: string) => {
+    const vals = form.getValues();
+    const loanType = vals.loanType;
+    if (loanType === 'विनातारण') return;
+    const w = parseFloat(((weightStr ?? vals.weight) || '0').replace(/[^\d.]/g, '')) || 0;
+    const p = parseFloat((purityStr ?? vals.purity) || '82') || 82;
+    if (w <= 0) return;
+    const fineWeight = w * (p / 100);
+    const mt = metalType ?? vals.metalType;
+    const activeRate = mt === 'silver' ? liveSilverRate : liveGoldRate;
+    if (editOriginalRate > 0) {
+      form.setValue('marketValue', String(smartRound(fineWeight * editOriginalRate)), { shouldValidate: false });
+    } else if (!marketValueManual && activeRate > 0) {
+      form.setValue('marketValue', String(smartRound(fineWeight * activeRate)), { shouldValidate: false });
+    }
+  }, [form, liveGoldRate, liveSilverRate, marketValueManual, editOriginalRate]);
+
   useEffect(() => {
     const subscription = form.watch((value, { name }) => {
       if (name === 'weight' || name === 'purity' || name === 'metalType') {
-        if (value.loanType === 'विनातारण') return;
-        const weightStr = (value.weight || '0').replace(/[^\d.]/g, '');
-        const weightNum = parseFloat(weightStr) || 0;
-        const purityNum = parseFloat(value.purity || '82') || 82;
-        if (weightNum > 0) {
-          const fineWeight = weightNum * (purityNum / 100);
-          const activeRate = value.metalType === 'silver' ? liveSilverRate : liveGoldRate;
-          if (editOriginalRate > 0) {
-            const marketVal = smartRound(fineWeight * editOriginalRate);
-            form.setValue('marketValue', String(marketVal), { shouldValidate: false });
-          } else if (!marketValueManual && activeRate > 0) {
-            const marketVal = smartRound(fineWeight * activeRate);
-            form.setValue('marketValue', String(marketVal), { shouldValidate: false });
-          }
-        }
+        recalcMarketValue(value.weight ?? undefined, value.purity ?? undefined, value.metalType ?? undefined);
       }
     });
     return () => subscription.unsubscribe();
-  }, [form, liveGoldRate, liveSilverRate, marketValueManual, editOriginalRate]);
+  }, [form, recalcMarketValue]);
+
+  useEffect(() => {
+    if ((liveGoldRate > 0 || liveSilverRate > 0) && !marketValueManual && editOriginalRate === 0) {
+      recalcMarketValue();
+    }
+  }, [liveGoldRate, liveSilverRate, recalcMarketValue, marketValueManual, editOriginalRate]);
 
   // Auto-calculate maturity date when loanDate changes (reactive)
   useEffect(() => {
@@ -2400,11 +2409,10 @@ function Loans() {
                             <RadioGroup
                               onValueChange={(value) => {
                                 field.onChange(value);
-                                // Auto-fill interest rate based on type
                                 if (value === 'monthly') {
-                                  form.setValue('interestRate', '1.5');
+                                  form.setValue('interestRate', '1.5', { shouldDirty: true, shouldValidate: true });
                                 } else if (value === 'yearly') {
-                                  form.setValue('interestRate', '12');
+                                  form.setValue('interestRate', '12', { shouldDirty: true, shouldValidate: true });
                                 }
                               }}
                               value={field.value}
