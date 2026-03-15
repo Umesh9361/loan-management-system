@@ -3,8 +3,12 @@ import { z } from "zod";
 import { 
   insertUserSchema, 
   insertUserPermissionsSchema,
+  users,
+  userPermissions,
 } from "@shared/schema";
 import { storage } from "../storage";
+import { db } from "../db";
+import bcrypt from "bcrypt";
 
 const router = Router();
 
@@ -43,7 +47,7 @@ router.get("/users", requireAuth, adminOnlyMiddleware, async (req: any, res) => 
   }
 });
 
-// Create new user with permissions (admin only)
+// Create new user with permissions (admin only) — uses DB transaction
 router.post("/users", requireAuth, adminOnlyMiddleware, async (req: any, res) => {
   try {
     const { userData, permissions } = req.body;
@@ -53,41 +57,59 @@ router.post("/users", requireAuth, adminOnlyMiddleware, async (req: any, res) =>
       ...userData,
       tenantId: req.user.tenantId,
       createdBy: req.user.id,
-      role: userData.role || 'user' // Default to 'user' role
+      role: userData.role || 'user'
     });
 
     // Check if username already exists in this tenant
     const existingUser = await storage.getUserByCredentials(req.user.tenantId, userData.username);
     if (existingUser) {
-      return res.status(400).json({ message: "Username already exists" });
+      return res.status(400).json({ message: "हे username आधीपासूनच अस्तित्वात आहे" });
     }
 
-    // Create user first
-    const newUser = await storage.createUser(validatedUserData);
-    
-    // Then create permissions with the new user ID
-    const validatedPermissionsWithUserId = insertUserPermissionsSchema.parse({
-      ...permissions,
-      userId: newUser.id,
-      tenantId: req.user.tenantId
-    });
-    
-    await storage.createUserPermissions(validatedPermissionsWithUserId);
+    // Validate permissions
+    const validatedPermissions = insertUserPermissionsSchema.partial().parse(permissions || {});
 
-    // Log activity
-    await storage.logUserActivity({
-      userId: req.user.id,
-      tenantId: req.user.tenantId,
-      activityType: 'create_user',
-      description: `Created new user: ${userData.username}`,
-      ipAddress: req.ip,
-      userAgent: req.get('User-Agent'),
-      metadata: JSON.stringify({ newUserId: newUser.id })
+    // Use DB transaction — user + permissions both succeed or both rollback
+    const hashedPassword = await bcrypt.hash(validatedUserData.password, 10);
+
+    const result = await db.transaction(async (tx: any) => {
+      const [newUser] = await tx
+        .insert(users)
+        .values({
+          ...validatedUserData,
+          password: hashedPassword,
+        })
+        .returning();
+
+      await tx
+        .insert(userPermissions)
+        .values({
+          ...validatedPermissions,
+          userId: newUser.id,
+          tenantId: req.user.tenantId,
+        });
+
+      return newUser;
     });
+
+    // Log activity (outside transaction — non-critical)
+    try {
+      await storage.logUserActivity({
+        userId: req.user.id,
+        tenantId: req.user.tenantId,
+        activityType: 'create_user',
+        description: `Created new user: ${userData.username}`,
+        ipAddress: req.ip,
+        userAgent: req.get('User-Agent'),
+        metadata: JSON.stringify({ newUserId: result.id })
+      });
+    } catch (logErr) {
+      console.warn("Activity log failed (non-critical):", logErr);
+    }
 
     res.status(201).json({ 
-      message: "User created successfully", 
-      userId: newUser.id 
+      message: "User यशस्वीपणे तयार झाला", 
+      userId: result.id 
     });
   } catch (error) {
     console.error("Error creating user:", error);
@@ -97,7 +119,7 @@ router.post("/users", requireAuth, adminOnlyMiddleware, async (req: any, res) =>
         errors: error.errors 
       });
     }
-    res.status(500).json({ message: "Failed to create user" });
+    res.status(500).json({ message: "User तयार करण्यात अपयश आले. कृपया पुन्हा प्रयत्न करा." });
   }
 });
 
