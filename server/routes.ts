@@ -6114,6 +6114,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       performanceCache.invalidatePattern(`loans:${tenantId}`);
+      performanceCache.invalidatePattern(`cash:${tenantId}`);
+      performanceCache.invalidatePattern(`journal:${tenantId}`);
 
       try {
         const changeDetails = renumberPlan.map(p => `${p.oldNumber}→${p.newNumber}`).join(', ');
