@@ -229,6 +229,185 @@ function LtvWarningToggle() {
   );
 }
 
+function AccountNumberSetting() {
+  const { toast } = useToast();
+  const qc = useQueryClient();
+  const [showDialog, setShowDialog] = useState(false);
+  const [selectedGroupId, setSelectedGroupId] = useState("");
+  const [startingNumber, setStartingNumber] = useState("");
+  const [preview, setPreview] = useState<any[]>([]);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [arranging, setArranging] = useState(false);
+  const [changedCount, setChangedCount] = useState(0);
+
+  const { data: groups = [] } = useQuery<any[]>({
+    queryKey: ["/api/groups"],
+  });
+
+  const handlePreview = async () => {
+    if (!selectedGroupId || !startingNumber) {
+      toast({ title: "त्रुटी", description: "ग्रुप आणि सुरुवातीचा क्रमांक निवडा", variant: "destructive" });
+      return;
+    }
+    setPreviewLoading(true);
+    try {
+      const res = await apiRequest("/api/loans/auto-arrange/preview", "POST", { groupId: selectedGroupId, startingNumber });
+      const data = await res.json();
+      setPreview(data.preview || []);
+      setChangedCount(data.changedCount || 0);
+    } catch (error) {
+      toast({ title: "त्रुटी", description: "Preview तयार करता आली नाही", variant: "destructive" });
+    }
+    setPreviewLoading(false);
+  };
+
+  const handleArrange = async () => {
+    if (!selectedGroupId || !startingNumber) return;
+    setArranging(true);
+    try {
+      const res = await apiRequest("/api/loans/auto-arrange", "POST", { groupId: selectedGroupId, startingNumber });
+      const data = await res.json();
+      toast({
+        title: "यशस्वी!",
+        description: data.message || `${data.updatedCount} कर्जांचे खाते क्रमांक बदलले`,
+      });
+      qc.invalidateQueries({ queryKey: ["/api/loans"], refetchType: 'all' });
+      qc.invalidateQueries({ queryKey: ["/api/cash-transactions"], refetchType: 'all' });
+      setShowDialog(false);
+      setPreview([]);
+      setSelectedGroupId("");
+      setStartingNumber("");
+    } catch (error) {
+      toast({ title: "त्रुटी", description: "खाते क्रमांक बदलताना त्रुटी आली", variant: "destructive" });
+    }
+    setArranging(false);
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between p-4 rounded-lg border border-gray-200 bg-gray-50">
+        <div className="flex-1">
+          <h3 className="font-medium text-sm">🔢 खाते नंबर सेटिंग</h3>
+          <p className="text-xs text-muted-foreground mt-1">
+            ग्रुपमधील सर्व कर्जांचे खाते क्रमांक तारखेनुसार ऑटो अरेंज करा.
+            <br />
+            <span className="text-indigo-600 font-medium">नंबर टाका → तारखेनुसार sort → sequential क्रमांक automatic!</span>
+          </p>
+        </div>
+        <Button
+          size="sm"
+          className="bg-indigo-600 hover:bg-indigo-700 text-white"
+          onClick={() => setShowDialog(true)}
+        >
+          ऑटो अरेंज करा
+        </Button>
+      </div>
+
+      <Dialog open={showDialog} onOpenChange={(open) => { setShowDialog(open); if (!open) { setPreview([]); setSelectedGroupId(""); setStartingNumber(""); } }}>
+        <DialogContent className="w-[95vw] max-w-2xl max-h-[85vh] overflow-y-auto p-4 sm:p-6">
+          <DialogHeader>
+            <DialogTitle className="text-base sm:text-lg">🔢 खाते क्रमांक ऑटो अरेंज</DialogTitle>
+            <DialogDescription>
+              ग्रुप निवडा, सुरुवातीचा क्रमांक टाका, preview बघा, आणि confirm करा.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 mt-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="text-sm font-medium mb-1 block">ग्रुप निवडा *</label>
+                <Select value={selectedGroupId} onValueChange={(v) => { setSelectedGroupId(v); setPreview([]); }}>
+                  <SelectTrigger><SelectValue placeholder="ग्रुप निवडा" /></SelectTrigger>
+                  <SelectContent>
+                    {groups.map((g: any) => (
+                      <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-1 block">सुरुवातीचा क्रमांक *</label>
+                <Input
+                  type="number"
+                  min="1"
+                  placeholder="उदा. 1, 34, 100"
+                  value={startingNumber}
+                  onChange={(e) => { setStartingNumber(e.target.value); setPreview([]); }}
+                />
+              </div>
+            </div>
+
+            <Button
+              onClick={handlePreview}
+              disabled={!selectedGroupId || !startingNumber || previewLoading}
+              className="w-full bg-indigo-600 hover:bg-indigo-700"
+            >
+              {previewLoading ? "Preview तयार होत आहे..." : "📋 Preview बघा"}
+            </Button>
+
+            {preview.length > 0 && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="font-medium">एकूण कर्ज: {preview.length}</span>
+                  <span className={changedCount > 0 ? "text-orange-600 font-medium" : "text-green-600 font-medium"}>
+                    {changedCount > 0 ? `${changedCount} बदल होतील` : "कोणताही बदल नाही"}
+                  </span>
+                </div>
+
+                <div className="border rounded-lg overflow-hidden max-h-[40vh] overflow-y-auto">
+                  <table className="w-full text-xs sm:text-sm">
+                    <thead className="bg-gray-100 sticky top-0">
+                      <tr>
+                        <th className="px-2 py-2 text-left">जुना क्र.</th>
+                        <th className="px-2 py-2 text-center">→</th>
+                        <th className="px-2 py-2 text-left">नवीन क्र.</th>
+                        <th className="px-2 py-2 text-left">कर्जदार</th>
+                        <th className="px-2 py-2 text-left">तारीख</th>
+                        <th className="px-2 py-2 text-right">रक्कम</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {preview.map((item: any, idx: number) => (
+                        <tr key={idx} className={item.changed ? "bg-amber-50 font-medium" : ""}>
+                          <td className="px-2 py-1.5">{item.oldNumber}</td>
+                          <td className="px-2 py-1.5 text-center">{item.changed ? "→" : "="}</td>
+                          <td className={`px-2 py-1.5 ${item.changed ? "text-indigo-700 font-bold" : ""}`}>{item.newNumber}</td>
+                          <td className="px-2 py-1.5 truncate max-w-[120px]">{item.borrowerName}</td>
+                          <td className="px-2 py-1.5">{item.loanDate ? item.loanDate.split('-').reverse().join('/') : ''}</td>
+                          <td className="px-2 py-1.5 text-right">₹{Number(item.principalAmount || 0).toLocaleString('en-IN')}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {changedCount > 0 && (
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      className="flex-1"
+                      onClick={() => { setShowDialog(false); setPreview([]); }}
+                    >
+                      रद्द करा
+                    </Button>
+                    <Button
+                      className="flex-1 bg-green-600 hover:bg-green-700"
+                      onClick={handleArrange}
+                      disabled={arranging}
+                    >
+                      {arranging ? "बदलत आहे..." : `✅ ${changedCount} बदल जतन करा`}
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
 export default function UserManagement() {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
@@ -675,6 +854,9 @@ export default function UserManagement() {
           </div>
           <div className="mt-4">
             <InterestRateWarningToggle />
+          </div>
+          <div className="mt-4">
+            <AccountNumberSetting />
           </div>
         </CardContent>
       </Card>
