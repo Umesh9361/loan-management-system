@@ -235,10 +235,12 @@ function AccountNumberSetting() {
   const [showDialog, setShowDialog] = useState(false);
   const [selectedGroupId, setSelectedGroupId] = useState("");
   const [startingNumber, setStartingNumber] = useState("");
+  const [fromDate, setFromDate] = useState("");
   const [preview, setPreview] = useState<any[]>([]);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [arranging, setArranging] = useState(false);
   const [changedCount, setChangedCount] = useState(0);
+  const [excludedCount, setExcludedCount] = useState(0);
 
   const { data: groups = [] } = useQuery<any[]>({
     queryKey: ["/api/groups"],
@@ -251,10 +253,13 @@ function AccountNumberSetting() {
     }
     setPreviewLoading(true);
     try {
-      const res = await apiRequest("/api/loans/auto-arrange/preview", "POST", { groupId: selectedGroupId, startingNumber });
+      const body: any = { groupId: selectedGroupId, startingNumber };
+      if (fromDate) body.fromDate = fromDate;
+      const res = await apiRequest("/api/loans/auto-arrange/preview", "POST", body);
       const data = await res.json();
       setPreview(data.preview || []);
       setChangedCount(data.changedCount || 0);
+      setExcludedCount(data.excludedCount || 0);
     } catch (error) {
       toast({ title: "त्रुटी", description: "Preview तयार करता आली नाही", variant: "destructive" });
     }
@@ -265,7 +270,9 @@ function AccountNumberSetting() {
     if (!selectedGroupId || !startingNumber) return;
     setArranging(true);
     try {
-      const res = await apiRequest("/api/loans/auto-arrange", "POST", { groupId: selectedGroupId, startingNumber });
+      const arrangeBody: any = { groupId: selectedGroupId, startingNumber };
+      if (fromDate) arrangeBody.fromDate = fromDate;
+      const res = await apiRequest("/api/loans/auto-arrange", "POST", arrangeBody);
       const data = await res.json();
       toast({
         title: "यशस्वी!",
@@ -277,6 +284,8 @@ function AccountNumberSetting() {
       setPreview([]);
       setSelectedGroupId("");
       setStartingNumber("");
+      setFromDate("");
+      setExcludedCount(0);
     } catch (error) {
       toast({ title: "त्रुटी", description: "खाते क्रमांक बदलताना त्रुटी आली", variant: "destructive" });
     }
@@ -303,7 +312,7 @@ function AccountNumberSetting() {
         </Button>
       </div>
 
-      <Dialog open={showDialog} onOpenChange={(open) => { setShowDialog(open); if (!open) { setPreview([]); setSelectedGroupId(""); setStartingNumber(""); } }}>
+      <Dialog open={showDialog} onOpenChange={(open) => { setShowDialog(open); if (!open) { setPreview([]); setSelectedGroupId(""); setStartingNumber(""); setFromDate(""); setExcludedCount(0); } }}>
         <DialogContent className="w-[95vw] max-w-2xl max-h-[85vh] overflow-y-auto p-4 sm:p-6">
           <DialogHeader>
             <DialogTitle className="text-base sm:text-lg">🔢 खाते क्रमांक ऑटो अरेंज</DialogTitle>
@@ -337,6 +346,18 @@ function AccountNumberSetting() {
               </div>
             </div>
 
+            <div>
+              <label className="text-sm font-medium mb-1 block">या तारखेपासून <span className="text-muted-foreground font-normal">(ऐच्छिक)</span></label>
+              <Input
+                type="date"
+                value={fromDate}
+                onChange={(e) => { setFromDate(e.target.value); setPreview([]); }}
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                रिकामी ठेवल्यास सगळे कर्ज अरेंज होतील. तारीख दिल्यास फक्त त्या तारखेपासून पुढचे कर्ज अरेंज होतील.
+              </p>
+            </div>
+
             <Button
               onClick={handlePreview}
               disabled={!selectedGroupId || !startingNumber || previewLoading}
@@ -347,11 +368,16 @@ function AccountNumberSetting() {
 
             {preview.length > 0 && (
               <div className="space-y-3">
-                <div className="flex items-center justify-between text-sm">
+                <div className="flex items-center justify-between text-sm flex-wrap gap-1">
                   <span className="font-medium">एकूण कर्ज: {preview.length}</span>
-                  <span className={changedCount > 0 ? "text-orange-600 font-medium" : "text-green-600 font-medium"}>
-                    {changedCount > 0 ? `${changedCount} बदल होतील` : "कोणताही बदल नाही"}
-                  </span>
+                  <div className="flex gap-2">
+                    {excludedCount > 0 && (
+                      <span className="text-gray-500 font-medium">वगळलेले: {excludedCount}</span>
+                    )}
+                    <span className={changedCount > 0 ? "text-orange-600 font-medium" : "text-green-600 font-medium"}>
+                      {changedCount > 0 ? `${changedCount} बदल होतील` : "कोणताही बदल नाही"}
+                    </span>
+                  </div>
                 </div>
 
                 <div className="border rounded-lg overflow-hidden max-h-[40vh] overflow-y-auto">
@@ -368,10 +394,12 @@ function AccountNumberSetting() {
                     </thead>
                     <tbody>
                       {preview.map((item: any, idx: number) => (
-                        <tr key={idx} className={item.changed ? "bg-amber-50 font-medium" : ""}>
+                        <tr key={idx} className={item.excluded ? "bg-gray-100 text-gray-400" : item.changed ? "bg-amber-50 font-medium" : ""}>
                           <td className="px-2 py-1.5">{item.oldNumber}</td>
-                          <td className="px-2 py-1.5 text-center">{item.changed ? "→" : "="}</td>
-                          <td className={`px-2 py-1.5 ${item.changed ? "text-indigo-700 font-bold" : ""}`}>{item.newNumber}</td>
+                          <td className="px-2 py-1.5 text-center">{item.excluded ? "—" : item.changed ? "→" : "="}</td>
+                          <td className={`px-2 py-1.5 ${item.excluded ? "text-gray-400" : item.changed ? "text-indigo-700 font-bold" : ""}`}>
+                            {item.excluded ? item.oldNumber : item.newNumber}
+                          </td>
                           <td className="px-2 py-1.5 truncate max-w-[120px]">{item.borrowerName}</td>
                           <td className="px-2 py-1.5">{item.loanDate ? item.loanDate.split('-').reverse().join('/') : ''}</td>
                           <td className="px-2 py-1.5 text-right">₹{Number(item.principalAmount || 0).toLocaleString('en-IN')}</td>
