@@ -4,7 +4,7 @@ import session, { SessionOptions } from "express-session";
 import { storage } from "./storage";
 import { db } from "./db";
 import bcrypt from "bcrypt";
-import { insertUserSchema, insertCompanySchema, insertGroupSchema, insertLoanSchema, insertTransactionSchema, insertLoanClosureSchema, insertPartySchema, insertCashTransactionSchema, cashTransactions, loans, groups, loanPhotos, loanClosures, transactions, insertLoanPhotoSchema, systemSettings, tenantStorageSettings, userActivityLogs, users, companies, notificationWarnings, userPermissions } from "@shared/schema";
+import { insertUserSchema, insertCompanySchema, insertGroupSchema, insertLoanSchema, insertTransactionSchema, insertLoanClosureSchema, insertPartySchema, insertCashTransactionSchema, cashTransactions, loans, groups, loanPhotos, loanClosures, transactions, insertLoanPhotoSchema, systemSettings, tenantStorageSettings, userActivityLogs, users, companies, notificationWarnings, userPermissions, journalEntries } from "@shared/schema";
 import { photoUpload, PhotoService } from "./photo-service";
 import { PhotoStorageFactory, CloudinaryStorageProvider } from "./photo-storage-provider";
 import path from 'path';
@@ -19,6 +19,7 @@ import dataManagementRoutes from "./routes/data-management";
 import userManagementRoutes from "./routes/user-management";
 import { ACCOUNT_TYPES } from "@shared/constants";
 import { createAutomaticPrevention } from "./automatic-duplicate-prevention";
+import { performanceCache } from "./performance-cache";
 
 async function invalidateOtherSessions(userId: string, currentSessionId: string): Promise<number> {
   try {
@@ -5927,6 +5928,166 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ dataUrl });
     } catch (e) {
       res.status(500).json({ error: 'QR generation failed' });
+    }
+  });
+
+  // ==================== Auto-Arrange Account Numbers ====================
+  app.post("/api/loans/auto-arrange/preview", requireAuth, async (req, res) => {
+    try {
+      const { groupId, startingNumber } = req.body;
+      const tenantId = req.session.tenantId!;
+
+      if (!groupId || !startingNumber) {
+        return res.status(400).json({ message: "ग्रुप आणि सुरुवातीचा क्रमांक आवश्यक आहे" });
+      }
+
+      const startNum = parseInt(startingNumber);
+      if (isNaN(startNum) || startNum < 1) {
+        return res.status(400).json({ message: "वैध खाते क्रमांक टाका (1 पासून)" });
+      }
+
+      const groupLoans = await db.select({
+        id: loans.id,
+        accountNumber: loans.accountNumber,
+        borrowerName: loans.borrowerName,
+        loanDate: loans.loanDate,
+        principalAmount: loans.principalAmount,
+        status: loans.status,
+      })
+      .from(loans)
+      .where(and(
+        eq(loans.tenantId, tenantId),
+        eq(loans.groupId, groupId)
+      ))
+      .orderBy(asc(loans.loanDate), asc(loans.accountNumber));
+
+      if (groupLoans.length === 0) {
+        return res.json({ preview: [], totalLoans: 0, changedCount: 0 });
+      }
+
+      const preview = groupLoans.map((loan, index) => {
+        const newNumber = String(startNum + index);
+        return {
+          id: loan.id,
+          oldNumber: loan.accountNumber,
+          newNumber,
+          borrowerName: loan.borrowerName,
+          loanDate: loan.loanDate,
+          principalAmount: loan.principalAmount,
+          status: loan.status,
+          changed: loan.accountNumber !== newNumber,
+        };
+      });
+
+      const changedCount = preview.filter(p => p.changed).length;
+
+      res.json({ preview, totalLoans: groupLoans.length, changedCount });
+    } catch (error) {
+      console.error("Auto-arrange preview error:", error);
+      res.status(500).json({ message: "Preview तयार करताना त्रुटी आली" });
+    }
+  });
+
+  app.post("/api/loans/auto-arrange", requireAuth, async (req, res) => {
+    try {
+      const { groupId, startingNumber } = req.body;
+      const tenantId = req.session.tenantId!;
+
+      if (!groupId || !startingNumber) {
+        return res.status(400).json({ message: "ग्रुप आणि सुरुवातीचा क्रमांक आवश्यक आहे" });
+      }
+
+      const startNum = parseInt(startingNumber);
+      if (isNaN(startNum) || startNum < 1) {
+        return res.status(400).json({ message: "वैध खाते क्रमांक टाका (1 पासून)" });
+      }
+
+      const groupLoans = await db.select({
+        id: loans.id,
+        accountNumber: loans.accountNumber,
+        borrowerName: loans.borrowerName,
+        loanDate: loans.loanDate,
+      })
+      .from(loans)
+      .where(and(
+        eq(loans.tenantId, tenantId),
+        eq(loans.groupId, groupId)
+      ))
+      .orderBy(asc(loans.loanDate), asc(loans.accountNumber));
+
+      if (groupLoans.length === 0) {
+        return res.json({ message: "या ग्रुपमध्ये कर्ज नाहीत", updatedCount: 0 });
+      }
+
+      const renumberPlan = groupLoans.map((loan, index) => ({
+        id: loan.id,
+        oldNumber: loan.accountNumber,
+        newNumber: String(startNum + index),
+        borrowerName: loan.borrowerName,
+      })).filter(p => p.oldNumber !== p.newNumber);
+
+      if (renumberPlan.length === 0) {
+        return res.json({ message: "सर्व खाते क्रमांक आधीच व्यवस्थित आहेत", updatedCount: 0 });
+      }
+
+      await db.transaction(async (tx) => {
+        const tempPrefix = `__TEMP_REARRANGE_${Date.now()}_`;
+        for (const plan of renumberPlan) {
+          await tx.update(loans)
+            .set({ accountNumber: tempPrefix + plan.newNumber, updatedAt: new Date() })
+            .where(and(eq(loans.id, plan.id), eq(loans.tenantId, tenantId)));
+        }
+
+        for (const plan of renumberPlan) {
+          await tx.update(loans)
+            .set({ accountNumber: plan.newNumber, updatedAt: new Date() })
+            .where(and(eq(loans.id, plan.id), eq(loans.tenantId, tenantId)));
+
+          const oldPattern = `खाते क्र. ${plan.oldNumber}`;
+          const newPattern = `खाते क्र. ${plan.newNumber}`;
+          await tx.update(cashTransactions)
+            .set({
+              narration: sql`REPLACE(${cashTransactions.narration}, ${oldPattern}, ${newPattern})`,
+              updatedAt: new Date()
+            })
+            .where(and(
+              eq(cashTransactions.tenantId, tenantId),
+              sql`${cashTransactions.narration} LIKE ${`%${oldPattern}%`}`
+            ));
+
+          await tx.update(journalEntries)
+            .set({
+              narration: sql`REPLACE(${journalEntries.narration}, ${oldPattern}, ${newPattern})`,
+              updatedAt: new Date()
+            })
+            .where(and(
+              eq(journalEntries.tenantId, tenantId),
+              sql`${journalEntries.narration} LIKE ${`%${oldPattern}%`}`
+            ));
+        }
+      });
+
+      performanceCache.invalidatePattern(`loans:${tenantId}`);
+
+      try {
+        const changeDetails = renumberPlan.map(p => `${p.oldNumber}→${p.newNumber}`).join(', ');
+        await storage.logUserActivity({
+          userId: req.session.userId!,
+          tenantId,
+          activityType: 'auto_arrange_accounts',
+          description: `खाते क्रमांक ऑटो अरेंज: ${renumberPlan.length} कर्ज बदलले (${changeDetails})`,
+          metadata: JSON.stringify({ groupId, startingNumber: startNum, changes: renumberPlan })
+        });
+      } catch(e) { console.error('Audit log error:', e); }
+
+      res.json({
+        message: `${renumberPlan.length} कर्जांचे खाते क्रमांक यशस्वीरित्या बदलले`,
+        updatedCount: renumberPlan.length,
+        changes: renumberPlan.map(p => ({ oldNumber: p.oldNumber, newNumber: p.newNumber, borrowerName: p.borrowerName }))
+      });
+    } catch (error) {
+      console.error("Auto-arrange error:", error);
+      res.status(500).json({ message: "खाते क्रमांक बदलताना त्रुटी आली. कोणताही बदल झालेला नाही." });
     }
   });
 
