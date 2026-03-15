@@ -5948,7 +5948,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (req.session.role !== 'admin' && req.session.role !== 'super_admin') {
         return res.status(403).json({ message: "फक्त admin ला खाते क्रमांक बदलण्याची परवानगी आहे" });
       }
-      const { groupId, startingNumber } = req.body;
+      const { groupId, startingNumber, fromDate } = req.body;
       const tenantId = req.session.tenantId!;
 
       if (!groupId || !startingNumber) {
@@ -5975,28 +5975,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
       ));
 
       if (groupLoans.length === 0) {
-        return res.json({ preview: [], totalLoans: 0, changedCount: 0 });
+        return res.json({ preview: [], totalLoans: 0, changedCount: 0, excludedCount: 0 });
       }
 
       const sorted = sortLoansByDateThenNumericAccount(groupLoans);
 
-      const preview = sorted.map((loan, index) => {
-        const newNumber = String(startNum + index);
-        return {
+      let excludedLoans: typeof sorted = [];
+      let loansToRenumber: typeof sorted;
+
+      if (fromDate) {
+        excludedLoans = sorted.filter(l => l.loanDate < fromDate);
+        loansToRenumber = sorted.filter(l => l.loanDate >= fromDate);
+      } else {
+        loansToRenumber = sorted;
+      }
+
+      const preview = [
+        ...excludedLoans.map(loan => ({
           id: loan.id,
           oldNumber: loan.accountNumber,
-          newNumber,
+          newNumber: loan.accountNumber,
           borrowerName: loan.borrowerName,
           loanDate: loan.loanDate,
           principalAmount: loan.principalAmount,
           status: loan.status,
-          changed: loan.accountNumber !== newNumber,
-        };
-      });
+          changed: false,
+          excluded: true,
+        })),
+        ...loansToRenumber.map((loan, index) => {
+          const newNumber = String(startNum + index);
+          return {
+            id: loan.id,
+            oldNumber: loan.accountNumber,
+            newNumber,
+            borrowerName: loan.borrowerName,
+            loanDate: loan.loanDate,
+            principalAmount: loan.principalAmount,
+            status: loan.status,
+            changed: loan.accountNumber !== newNumber,
+            excluded: false,
+          };
+        }),
+      ];
 
       const changedCount = preview.filter(p => p.changed).length;
 
-      res.json({ preview, totalLoans: sorted.length, changedCount });
+      res.json({ preview, totalLoans: sorted.length, changedCount, excludedCount: excludedLoans.length });
     } catch (error) {
       console.error("Auto-arrange preview error:", error);
       res.status(500).json({ message: "Preview तयार करताना त्रुटी आली" });
@@ -6008,7 +6032,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (req.session.role !== 'admin' && req.session.role !== 'super_admin') {
         return res.status(403).json({ message: "फक्त admin ला खाते क्रमांक बदलण्याची परवानगी आहे" });
       }
-      const { groupId, startingNumber } = req.body;
+      const { groupId, startingNumber, fromDate } = req.body;
       const tenantId = req.session.tenantId!;
 
       if (!groupId || !startingNumber) {
@@ -6037,9 +6061,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const sorted = sortLoansByDateThenNumericAccount(groupLoans);
-      const groupLoanIds = sorted.map(l => l.id);
+      const loansToRenumber = fromDate ? sorted.filter(l => l.loanDate >= fromDate) : sorted;
+      const affectedLoanIds = loansToRenumber.map(l => l.id);
 
-      const renumberPlan = sorted.map((loan, index) => ({
+      const renumberPlan = loansToRenumber.map((loan, index) => ({
         id: loan.id,
         oldNumber: loan.accountNumber,
         newNumber: String(startNum + index),
@@ -6051,7 +6076,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const txTimestamp = Date.now();
-      const loanIdsSql = groupLoanIds.map(id => `'${id.replace(/'/g, "''")}'`).join(',');
+      const loanIdsSql = affectedLoanIds.map(id => `'${id.replace(/'/g, "''")}'`).join(',');
 
       await db.transaction(async (tx) => {
         const tempPrefix = `__TEMP_REARRANGE_${txTimestamp}_`;
@@ -6123,8 +6148,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           userId: req.session.userId!,
           tenantId,
           activityType: 'auto_arrange_accounts',
-          description: `खाते क्रमांक ऑटो अरेंज: ${renumberPlan.length} कर्ज बदलले (${changeDetails})`,
-          metadata: JSON.stringify({ groupId, startingNumber: startNum, changes: renumberPlan })
+          description: `खाते क्रमांक ऑटो अरेंज: ${renumberPlan.length} कर्ज बदलले${fromDate ? ` (तारखेपासून: ${fromDate})` : ''} (${changeDetails})`,
+          metadata: JSON.stringify({ groupId, startingNumber: startNum, fromDate: fromDate || null, changes: renumberPlan })
         });
       } catch(e) { console.error('Audit log error:', e); }
 
