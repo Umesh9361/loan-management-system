@@ -5932,6 +5932,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ==================== Auto-Arrange Account Numbers ====================
+  function sortLoansByDateThenNumericAccount(loansList: { accountNumber: string; loanDate: string; [key: string]: any }[]) {
+    return [...loansList].sort((a, b) => {
+      const dateCmp = a.loanDate.localeCompare(b.loanDate);
+      if (dateCmp !== 0) return dateCmp;
+      const numA = parseInt(a.accountNumber) || 0;
+      const numB = parseInt(b.accountNumber) || 0;
+      if (numA !== 0 && numB !== 0) return numA - numB;
+      return a.accountNumber.localeCompare(b.accountNumber);
+    });
+  }
+
   app.post("/api/loans/auto-arrange/preview", requireAuth, async (req, res) => {
     try {
       const { groupId, startingNumber } = req.body;
@@ -5958,14 +5969,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       .where(and(
         eq(loans.tenantId, tenantId),
         eq(loans.groupId, groupId)
-      ))
-      .orderBy(asc(loans.loanDate), asc(loans.accountNumber));
+      ));
 
       if (groupLoans.length === 0) {
         return res.json({ preview: [], totalLoans: 0, changedCount: 0 });
       }
 
-      const preview = groupLoans.map((loan, index) => {
+      const sorted = sortLoansByDateThenNumericAccount(groupLoans);
+
+      const preview = sorted.map((loan, index) => {
         const newNumber = String(startNum + index);
         return {
           id: loan.id,
@@ -5981,7 +5993,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const changedCount = preview.filter(p => p.changed).length;
 
-      res.json({ preview, totalLoans: groupLoans.length, changedCount });
+      res.json({ preview, totalLoans: sorted.length, changedCount });
     } catch (error) {
       console.error("Auto-arrange preview error:", error);
       res.status(500).json({ message: "Preview तयार करताना त्रुटी आली" });
@@ -6012,14 +6024,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       .where(and(
         eq(loans.tenantId, tenantId),
         eq(loans.groupId, groupId)
-      ))
-      .orderBy(asc(loans.loanDate), asc(loans.accountNumber));
+      ));
 
       if (groupLoans.length === 0) {
         return res.json({ message: "या ग्रुपमध्ये कर्ज नाहीत", updatedCount: 0 });
       }
 
-      const renumberPlan = groupLoans.map((loan, index) => ({
+      const sorted = sortLoansByDateThenNumericAccount(groupLoans);
+      const groupLoanIds = sorted.map(l => l.id);
+
+      const renumberPlan = sorted.map((loan, index) => ({
         id: loan.id,
         oldNumber: loan.accountNumber,
         newNumber: String(startNum + index),
@@ -6030,39 +6044,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json({ message: "सर्व खाते क्रमांक आधीच व्यवस्थित आहेत", updatedCount: 0 });
       }
 
+      const txTimestamp = Date.now();
+      const loanIdsSql = groupLoanIds.map(id => `'${id.replace(/'/g, "''")}'`).join(',');
+
       await db.transaction(async (tx) => {
-        const tempPrefix = `__TEMP_REARRANGE_${Date.now()}_`;
+        const tempPrefix = `__TEMP_REARRANGE_${txTimestamp}_`;
+
         for (const plan of renumberPlan) {
           await tx.update(loans)
             .set({ accountNumber: tempPrefix + plan.newNumber, updatedAt: new Date() })
             .where(and(eq(loans.id, plan.id), eq(loans.tenantId, tenantId)));
         }
-
         for (const plan of renumberPlan) {
           await tx.update(loans)
             .set({ accountNumber: plan.newNumber, updatedAt: new Date() })
             .where(and(eq(loans.id, plan.id), eq(loans.tenantId, tenantId)));
+        }
 
+        const tempTokens = new Map<string, string>();
+        for (const plan of renumberPlan) {
+          tempTokens.set(plan.oldNumber, `__ARR_${plan.oldNumber}_${txTimestamp}__`);
+        }
+
+        for (const plan of renumberPlan) {
           const oldPattern = `खाते क्र. ${plan.oldNumber}`;
-          const newPattern = `खाते क्र. ${plan.newNumber}`;
+          const tempToken = `खाते क्र. ${tempTokens.get(plan.oldNumber)!}`;
           await tx.update(cashTransactions)
-            .set({
-              narration: sql`REPLACE(${cashTransactions.narration}, ${oldPattern}, ${newPattern})`,
-              updatedAt: new Date()
-            })
+            .set({ narration: sql`REPLACE(${cashTransactions.narration}, ${oldPattern}, ${tempToken})`, updatedAt: new Date() })
             .where(and(
               eq(cashTransactions.tenantId, tenantId),
+              sql`${cashTransactions.loanId} IN (${sql.raw(loanIdsSql)})`,
               sql`${cashTransactions.narration} LIKE ${`%${oldPattern}%`}`
             ));
-
           await tx.update(journalEntries)
-            .set({
-              narration: sql`REPLACE(${journalEntries.narration}, ${oldPattern}, ${newPattern})`,
-              updatedAt: new Date()
-            })
+            .set({ narration: sql`REPLACE(${journalEntries.narration}, ${oldPattern}, ${tempToken})`, updatedAt: new Date() })
             .where(and(
               eq(journalEntries.tenantId, tenantId),
+              sql`${journalEntries.sourceId} IN (SELECT id FROM cash_transactions WHERE ${sql.raw(`loan_id IN (${loanIdsSql})`)})`,
               sql`${journalEntries.narration} LIKE ${`%${oldPattern}%`}`
+            ));
+        }
+
+        for (const plan of renumberPlan) {
+          const tempToken = `खाते क्र. ${tempTokens.get(plan.oldNumber)!}`;
+          const newPattern = `खाते क्र. ${plan.newNumber}`;
+          await tx.update(cashTransactions)
+            .set({ narration: sql`REPLACE(${cashTransactions.narration}, ${tempToken}, ${newPattern})`, updatedAt: new Date() })
+            .where(and(
+              eq(cashTransactions.tenantId, tenantId),
+              sql`${cashTransactions.loanId} IN (${sql.raw(loanIdsSql)})`,
+              sql`${cashTransactions.narration} LIKE ${`%${tempToken}%`}`
+            ));
+          await tx.update(journalEntries)
+            .set({ narration: sql`REPLACE(${journalEntries.narration}, ${tempToken}, ${newPattern})`, updatedAt: new Date() })
+            .where(and(
+              eq(journalEntries.tenantId, tenantId),
+              sql`${journalEntries.sourceId} IN (SELECT id FROM cash_transactions WHERE ${sql.raw(`loan_id IN (${loanIdsSql})`)})`,
+              sql`${journalEntries.narration} LIKE ${`%${tempToken}%`}`
             ));
         }
       });
