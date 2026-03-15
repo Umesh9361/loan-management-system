@@ -18,10 +18,22 @@ import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import html2canvas from 'html2canvas';
 
+function getCurrentFinancialYear() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth();
+  if (month >= 3) {
+    return { start: `${year}-04-01`, end: `${year + 1}-03-31` };
+  } else {
+    return { start: `${year - 1}-04-01`, end: `${year}-03-31` };
+  }
+}
+
 function CashBookReport() {
+  const fy = getCurrentFinancialYear();
   const [dateFilters, setDateFilters] = useState({
-    dateFrom: new Date().toISOString().split('T')[0],
-    dateTo: new Date().toISOString().split('T')[0]
+    dateFrom: fy.start,
+    dateTo: fy.end
   });
   const [printFormat, setPrintFormat] = useState<'vertical' | 'horizontal'>('horizontal');
   const printRef = useRef<HTMLDivElement>(null);
