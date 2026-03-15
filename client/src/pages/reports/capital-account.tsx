@@ -13,10 +13,22 @@ import { MobileNav } from "@/components/ui/mobile-nav";
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
+function getCurrentFinancialYear() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth();
+  if (month >= 3) {
+    return { start: `${year}-04-01`, end: `${year + 1}-03-31` };
+  } else {
+    return { start: `${year - 1}-04-01`, end: `${year}-03-31` };
+  }
+}
+
 export default function CapitalAccountReport() {
   const { toast } = useToast();
-  const [dateFrom, setDateFrom] = useState("2025-08-01");
-  const [dateTo, setDateTo] = useState("2025-08-31");
+  const fy = getCurrentFinancialYear();
+  const [dateFrom, setDateFrom] = useState(fy.start);
+  const [dateTo, setDateTo] = useState(fy.end);
   const [isMobile, setIsMobile] = useState(false);
 
   // Mobile detection and navigation fix
