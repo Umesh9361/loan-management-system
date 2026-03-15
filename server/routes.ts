@@ -5945,6 +5945,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/loans/auto-arrange/preview", requireAuth, async (req, res) => {
     try {
+      if (req.session.role !== 'admin' && req.session.role !== 'super_admin') {
+        return res.status(403).json({ message: "फक्त admin ला खाते क्रमांक बदलण्याची परवानगी आहे" });
+      }
       const { groupId, startingNumber } = req.body;
       const tenantId = req.session.tenantId!;
 
@@ -6002,6 +6005,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/loans/auto-arrange", requireAuth, async (req, res) => {
     try {
+      if (req.session.role !== 'admin' && req.session.role !== 'super_admin') {
+        return res.status(403).json({ message: "फक्त admin ला खाते क्रमांक बदलण्याची परवानगी आहे" });
+      }
       const { groupId, startingNumber } = req.body;
       const tenantId = req.session.tenantId!;
 
@@ -6067,40 +6073,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
 
         for (const plan of renumberPlan) {
-          const oldPattern = `खाते क्र. ${plan.oldNumber}`;
-          const tempToken = `खाते क्र. ${tempTokens.get(plan.oldNumber)!}`;
+          const escapedOld = plan.oldNumber.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          const oldRegex = `खाते क्र\\. ${escapedOld}([^0-9]|$)`;
+          const tempReplacement = `खाते क्र. ${tempTokens.get(plan.oldNumber)!}\\1`;
+          const oldLike = `%खाते क्र. ${plan.oldNumber}%`;
           await tx.update(cashTransactions)
-            .set({ narration: sql`REPLACE(${cashTransactions.narration}, ${oldPattern}, ${tempToken})`, updatedAt: new Date() })
+            .set({ narration: sql`regexp_replace(${cashTransactions.narration}, ${oldRegex}, ${tempReplacement}, 'g')`, updatedAt: new Date() })
             .where(and(
               eq(cashTransactions.tenantId, tenantId),
               sql`${cashTransactions.loanId} IN (${sql.raw(loanIdsSql)})`,
-              sql`${cashTransactions.narration} LIKE ${`%${oldPattern}%`}`
+              sql`${cashTransactions.narration} LIKE ${oldLike}`
             ));
           await tx.update(journalEntries)
-            .set({ narration: sql`REPLACE(${journalEntries.narration}, ${oldPattern}, ${tempToken})`, updatedAt: new Date() })
+            .set({ narration: sql`regexp_replace(${journalEntries.narration}, ${oldRegex}, ${tempReplacement}, 'g')`, updatedAt: new Date() })
             .where(and(
               eq(journalEntries.tenantId, tenantId),
               sql`${journalEntries.sourceId} IN (SELECT id FROM cash_transactions WHERE ${sql.raw(`loan_id IN (${loanIdsSql})`)})`,
-              sql`${journalEntries.narration} LIKE ${`%${oldPattern}%`}`
+              sql`${journalEntries.narration} LIKE ${oldLike}`
             ));
         }
 
         for (const plan of renumberPlan) {
-          const tempToken = `खाते क्र. ${tempTokens.get(plan.oldNumber)!}`;
-          const newPattern = `खाते क्र. ${plan.newNumber}`;
+          const token = tempTokens.get(plan.oldNumber)!;
+          const tempLike = `%${token}%`;
           await tx.update(cashTransactions)
-            .set({ narration: sql`REPLACE(${cashTransactions.narration}, ${tempToken}, ${newPattern})`, updatedAt: new Date() })
+            .set({ narration: sql`REPLACE(${cashTransactions.narration}, ${token}, ${plan.newNumber})`, updatedAt: new Date() })
             .where(and(
               eq(cashTransactions.tenantId, tenantId),
               sql`${cashTransactions.loanId} IN (${sql.raw(loanIdsSql)})`,
-              sql`${cashTransactions.narration} LIKE ${`%${tempToken}%`}`
+              sql`${cashTransactions.narration} LIKE ${tempLike}`
             ));
           await tx.update(journalEntries)
-            .set({ narration: sql`REPLACE(${journalEntries.narration}, ${tempToken}, ${newPattern})`, updatedAt: new Date() })
+            .set({ narration: sql`REPLACE(${journalEntries.narration}, ${token}, ${plan.newNumber})`, updatedAt: new Date() })
             .where(and(
               eq(journalEntries.tenantId, tenantId),
               sql`${journalEntries.sourceId} IN (SELECT id FROM cash_transactions WHERE ${sql.raw(`loan_id IN (${loanIdsSql})`)})`,
-              sql`${journalEntries.narration} LIKE ${`%${tempToken}%`}`
+              sql`${journalEntries.narration} LIKE ${tempLike}`
             ));
         }
       });
