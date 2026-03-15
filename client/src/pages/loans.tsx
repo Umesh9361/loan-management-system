@@ -146,6 +146,8 @@ function Loans() {
   const [goldRateStatus, setGoldRateStatus] = useState<'loading' | 'success' | 'failed'>('loading');
   const [marketValueManual, setMarketValueManual] = useState(false);
   const [editOriginalRate, setEditOriginalRate] = useState<number>(0);
+  const lastRateTypeRef = useRef<'monthly' | 'yearly'>('monthly');
+  const lastRateValueRef = useRef<string>('');
   
   // Borrower autocomplete state
   const [showBorrowerSuggestions, setShowBorrowerSuggestions] = useState(false);
@@ -588,6 +590,8 @@ function Loans() {
         const currentGroupId = form.getValues('groupId');
         const currentGroupName = groupSearchTerm;
         const todayDate = DateUtils.getCurrentIndianDate();
+        const rateType = lastRateTypeRef.current;
+        const rateVal = lastRateValueRef.current || (rateType === 'yearly' ? '12' : '1.5');
         form.reset({
           groupId: currentGroupId,
           borrowerName: "",
@@ -604,8 +608,8 @@ function Loans() {
           maturityDate: DateUtils.addMonthsToIndianDate(todayDate, 12),
           hasMaturity: false,
           maturityMonths: "",
-          interestRate: "",
-          interestRateType: "monthly",
+          interestRate: rateVal,
+          interestRateType: rateType,
           collateralDetails: "",
           weight: "",
           purity: "82",
@@ -682,6 +686,8 @@ function Loans() {
         const currentGroupId = form.getValues('groupId');
         const currentGroupName = groupSearchTerm;
         const todayDate = DateUtils.getCurrentIndianDate();
+        const rateType = lastRateTypeRef.current;
+        const rateVal = lastRateValueRef.current || (rateType === 'yearly' ? '12' : '1.5');
         form.reset({
           groupId: currentGroupId,
           borrowerName: "",
@@ -698,8 +704,8 @@ function Loans() {
           maturityDate: DateUtils.addMonthsToIndianDate(todayDate, 12),
           hasMaturity: false,
           maturityMonths: "",
-          interestRate: "",
-          interestRateType: "monthly",
+          interestRate: rateVal,
+          interestRateType: rateType,
           collateralDetails: "",
           weight: "",
           purity: "82",
@@ -1499,7 +1505,8 @@ function Loans() {
   useEffect(() => {
     if (isDialogOpen && !editingLoan) {
       const todayDate = DateUtils.getCurrentIndianDate();
-      // Reset form with fresh values for new loan
+      const rateType = lastRateTypeRef.current;
+      const rateVal = lastRateValueRef.current || (rateType === 'yearly' ? '12' : '1.5');
       form.reset({
         groupId: "",
         borrowerName: "",
@@ -1515,8 +1522,8 @@ function Loans() {
         maturityDate: DateUtils.addMonthsToIndianDate(todayDate, 12),
         hasMaturity: false,
         maturityMonths: "",
-        interestRate: "",
-        interestRateType: "monthly",
+        interestRate: rateVal,
+        interestRateType: rateType,
         collateralDetails: "",
         weight: "",
         purity: "82",
@@ -2409,11 +2416,10 @@ function Loans() {
                             <RadioGroup
                               onValueChange={(value) => {
                                 field.onChange(value);
-                                if (value === 'monthly') {
-                                  form.setValue('interestRate', '1.5', { shouldDirty: true, shouldValidate: true });
-                                } else if (value === 'yearly') {
-                                  form.setValue('interestRate', '12', { shouldDirty: true, shouldValidate: true });
-                                }
+                                lastRateTypeRef.current = value as 'monthly' | 'yearly';
+                                const defaultRate = value === 'yearly' ? '12' : '1.5';
+                                form.setValue('interestRate', defaultRate, { shouldDirty: true, shouldValidate: true });
+                                lastRateValueRef.current = defaultRate;
                               }}
                               value={field.value}
                               className="flex space-x-6"
@@ -2838,6 +2844,8 @@ function Loans() {
                   variant="outline" 
                   onClick={() => {
                     const todayDate = DateUtils.getCurrentIndianDate();
+                    const rateType = lastRateTypeRef.current;
+                    const rateVal = lastRateValueRef.current || (rateType === 'yearly' ? '12' : '1.5');
                     form.reset({
                       groupId: "",
                       borrowerName: "",
@@ -2853,8 +2861,8 @@ function Loans() {
                       maturityDate: DateUtils.addMonthsToIndianDate(todayDate, 12),
                       hasMaturity: false,
                       maturityMonths: "",
-                      interestRate: "",
-                      interestRateType: "monthly",
+                      interestRate: rateVal,
+                      interestRateType: rateType,
                       collateralDetails: "",
                       weight: "",
                       purity: "82",
