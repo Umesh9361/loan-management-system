@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,7 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Printer, Search, FileText, User, Wallet, CreditCard, Download, FileDown } from "lucide-react";
+import { Printer, Search, FileText, User, Wallet, CreditCard, Download, FileDown, Loader2, Layers } from "lucide-react";
+import { ReceiptGenerator } from "@/components/receipt-generator";
 import { displayNarration } from "@/lib/utils";
 import { exportAccountLedgerToExcel } from "@/utils/excel-export";
 import { useLocation } from "wouter";
@@ -231,6 +232,70 @@ export default function AccountLedger() {
   const { data: closures = [] } = useQuery({
     queryKey: ["/api/loan-closures"],
   });
+
+  const { data: groups = [] } = useQuery({
+    queryKey: ["/api/groups"],
+  });
+
+  const [activeTab, setActiveTab] = useState<'single' | 'bulk'>('single');
+  const [bulkFY, setBulkFY] = useState('');
+  const [bulkStatusFilter, setBulkStatusFilter] = useState<'all' | 'active' | 'closed'>('all');
+  const [bulkData, setBulkData] = useState<any[]>([]);
+  const [isBulkLoading, setIsBulkLoading] = useState(false);
+  const [isBulkGenerating, setIsBulkGenerating] = useState(false);
+
+  const bulkFyOptions = useMemo(() => {
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+    const startYear = currentMonth >= 3 ? currentYear : currentYear - 1;
+    const options = [];
+    for (let i = 0; i < 10; i++) {
+      const y = startYear - i;
+      options.push({ value: y.toString(), label: `${y}-${y + 1}` });
+    }
+    return options;
+  }, []);
+
+  const handleBulkFetch = async (fy: string, status: string) => {
+    if (!fy) return;
+    setIsBulkLoading(true);
+    try {
+      const res = await fetch(`/api/account-ledger/bulk?year=${fy}&status=${status}`);
+      if (!res.ok) throw new Error('API error');
+      const data = await res.json();
+      const groupMap = new Map((groups as any[]).map((g: any) => [g.id, g.name || '']));
+      data.sort((a: any, b: any) => {
+        const gA = (groupMap.get(a.groupId) || '').localeCompare(groupMap.get(b.groupId) || '', 'mr');
+        if (gA !== 0) return gA;
+        return parseInt(a.accountNumber || '0') - parseInt(b.accountNumber || '0');
+      });
+      setBulkData(data);
+    } catch (err) {
+      console.error('Bulk fetch error:', err);
+      setBulkData([]);
+    } finally {
+      setIsBulkLoading(false);
+    }
+  };
+
+  const handleBulkPrint = () => {
+    if (bulkData.length === 0) return;
+    setIsBulkGenerating(true);
+    try {
+      const html = ReceiptGenerator.generateBulkLoanLedger(bulkData, company as any, groups as any[]);
+      const printWindow = window.open('', '_blank');
+      if (printWindow) {
+        printWindow.document.write(html);
+        printWindow.document.close();
+        printWindow.focus();
+      }
+    } catch (err) {
+      console.error('Bulk print error:', err);
+    } finally {
+      setIsBulkGenerating(false);
+    }
+  };
 
   const handleAccountTypeChange = (type: string) => {
     setFilters(prev => ({ 
@@ -825,20 +890,26 @@ export default function AccountLedger() {
       }
     });
 
-    // Process ALL closed loans (regardless of disbursement date)
-    const closedLoans = (loans as any[]).filter((loan: any) => {
-      if (loan.status !== 'closed' || !loan.closedAt) return false;
-      const closureDate = new Date(loan.closedAt);
+    const safeClosures = Array.isArray(closures) ? closures : [];
+    const closedLoansWithData = (loans as any[]).filter((loan: any) => {
+      if (loan.status !== 'closed') return false;
+      const loanClosure = safeClosures.find((c: any) => c.loanId === loan.id);
+      if (!loanClosure) return false;
+      const closureDate = new Date(loanClosure.closureDate);
       return closureDate >= fromDate && closureDate <= toDate;
     });
 
-    // Add loan closures from loans table
-    closedLoans.forEach((loan: any) => {
-      const totalRepayment = parseFloat(loan.principalAmount || 0) + parseFloat(loan.interest || 0);
+    closedLoansWithData.forEach((loan: any) => {
+      const loanClosure = safeClosures.find((c: any) => c.loanId === loan.id);
+      if (!loanClosure) return;
+      const principalPaid = parseFloat(loanClosure.principalPaid || '0');
+      const interestPaid = parseFloat(loanClosure.interestPaid || '0');
+      const totalRepayment = principalPaid + interestPaid;
+      const closureDate = typeof loanClosure.closureDate === 'string' ? loanClosure.closureDate.split('T')[0] : loanClosure.closureDate;
       if (totalRepayment > 0) {
         runningBalance -= totalRepayment;
         entries.push({
-          date: loan.closedAt.split('T')[0],
+          date: closureDate,
           description: `कर्ज बंद - ${loan.borrowerName} (खाते क्र. ${loan.accountNumber})`,
           debit: 0,
           credit: totalRepayment,
@@ -850,7 +921,7 @@ export default function AccountLedger() {
       }
     });
 
-    const loanRelatedTransactions = disbursedLoans.length + closedLoans.length;
+    const loanRelatedTransactions = disbursedLoans.length + closedLoansWithData.length;
 
     // Sort entries by date
     entries.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
@@ -1112,6 +1183,24 @@ export default function AccountLedger() {
                 <p className="text-muted-foreground">सर्व प्रकारचे खाते लेजर एकाच ठिकाणी</p>
               </div>
 
+              <div className="flex border-b mb-4 print:hidden">
+                <button
+                  onClick={() => setActiveTab('single')}
+                  className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'single' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+                >
+                  <FileText className="h-4 w-4 inline mr-1" />
+                  एकल लेजर
+                </button>
+                <button
+                  onClick={() => setActiveTab('bulk')}
+                  className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'bulk' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+                >
+                  <Layers className="h-4 w-4 inline mr-1" />
+                  बल्क प्रिंट (नमुना ८)
+                </button>
+              </div>
+
+              {activeTab === 'single' && (<>
               {/* Account Selection & Filters */}
               <Card className="card-professional print:hidden mb-6">
                 <CardHeader>
@@ -1564,6 +1653,127 @@ export default function AccountLedger() {
                     <div className="mt-6 text-sm text-gray-600 text-center no-print">
                       <p>अहवाल तयार केला: {new Date().toLocaleDateString('en-GB')}</p>
                     </div>
+                  </CardContent>
+                </Card>
+              )}
+              </>)}
+
+              {activeTab === 'bulk' && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-xl md:text-2xl">
+                      <Layers className="h-5 w-5" />
+                      बल्क प्रिंट — नमुना क्रमांक ८
+                    </CardTitle>
+                    <p className="text-sm text-gray-600">
+                      एका आर्थिक वर्षातील सर्व कर्जांचे वैयक्तिक लेजर (नमुना क्र. ८) एकदम प्रिंट करा (A4 portrait — प्रत्येक कर्ज स्वतंत्र पानावर)
+                    </p>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                      <div>
+                        <Label className="text-sm font-semibold mb-1 block">आर्थिक वर्ष निवडा</Label>
+                        <Select value={bulkFY} onValueChange={(val) => { setBulkFY(val); handleBulkFetch(val, bulkStatusFilter); }}>
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="आर्थिक वर्ष निवडा..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {bulkFyOptions.map(fy => (
+                              <SelectItem key={fy.value} value={fy.value}>{fy.label}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label className="text-sm font-semibold mb-1 block">कर्ज स्थिती</Label>
+                        <div className="flex gap-4 mt-2">
+                          {([
+                            { value: 'all', label: 'सर्व' },
+                            { value: 'active', label: 'फक्त चालू' },
+                            { value: 'closed', label: 'फक्त बंद' },
+                          ] as const).map(opt => (
+                            <div key={opt.value} className="flex items-center space-x-2">
+                              <input type="radio" id={`bulk8-status-${opt.value}`} name="bulk8StatusFilter" value={opt.value} checked={bulkStatusFilter === opt.value} onChange={(e) => { const v = e.target.value as any; setBulkStatusFilter(v); if (bulkFY) handleBulkFetch(bulkFY, v); }} className="h-4 w-4" autoComplete="off" />
+                              <Label htmlFor={`bulk8-status-${opt.value}`} className="text-sm cursor-pointer">{opt.label}</Label>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="text-xs text-gray-500 mb-4 p-2 bg-gray-50 rounded">
+                      • A4 portrait — प्रत्येक कर्जाचा लेजर स्वतंत्र पानावर | गट नाव → खाते क्रमांक क्रमवारी
+                    </div>
+
+                    {isBulkLoading && (
+                      <div className="text-center py-8">
+                        <Loader2 className="h-8 w-8 animate-spin mx-auto text-indigo-500 mb-2" />
+                        <p className="text-gray-500">डेटा लोड होत आहे...</p>
+                      </div>
+                    )}
+
+                    {bulkFY && !isBulkLoading && (
+                      <>
+                        <div className="flex items-center gap-3 mb-3">
+                          <span className="bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full text-sm font-semibold">
+                            {bulkData.length} कर्जे
+                          </span>
+                          <span className="text-sm text-gray-500">
+                            ({bulkData.length} A4 पृष्ठे)
+                          </span>
+                        </div>
+
+                        {bulkData.length > 0 && (
+                          <div className="max-h-60 overflow-y-auto border rounded-lg mb-4 bg-white">
+                            {bulkData.map((item: any, idx: number) => {
+                              const groupName = (groups as any[]).find((g: any) => g.id === item.groupId)?.name || '';
+                              return (
+                                <div key={item.loanId || idx} className="flex items-center justify-between px-3 py-2 border-b last:border-b-0 hover:bg-gray-50">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-xs text-gray-400 w-6 text-right">{idx + 1}</span>
+                                    <div>
+                                      <div className="text-sm font-medium">{item.borrowerName}</div>
+                                      <div className="text-xs text-gray-500">
+                                        {groupName && <span className="text-indigo-600">{groupName}</span>}
+                                        {groupName && ' | '}खाते: {item.accountNumber} | मुद्दल: ₹{Math.round(item.principalAmount || 0).toLocaleString('en-IN')} | शिल्लक: ₹{Math.round(Math.abs(item.finalBalance || 0)).toLocaleString('en-IN')}
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <span className={`text-xs px-2 py-0.5 rounded-full ${item.status === 'closed' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
+                                    {item.status === 'closed' ? 'बंद' : 'चालू'}
+                                  </span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+
+                        {bulkData.length === 0 && (
+                          <div className="text-center py-8 text-gray-500 border rounded-lg mb-4">
+                            या आर्थिक वर्षात निवडलेल्या स्थितीचे कोणतेही कर्ज नाही
+                          </div>
+                        )}
+
+                        <Button
+                          onClick={handleBulkPrint}
+                          disabled={bulkData.length === 0 || isBulkGenerating}
+                          className="w-full h-12 text-base"
+                        >
+                          {isBulkGenerating ? (
+                            <><Loader2 className="mr-2 h-5 w-5 animate-spin" />प्रिंट तयार होत आहे...</>
+                          ) : (
+                            <><Printer className="mr-2 h-5 w-5" />सर्व प्रिंट करा ({bulkData.length} लेजर)</>
+                          )}
+                        </Button>
+                      </>
+                    )}
+
+                    {!bulkFY && (
+                      <div className="text-center py-8 text-gray-500">
+                        <Layers className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+                        <p>बल्क प्रिंट साठी आर्थिक वर्ष निवडा</p>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               )}
