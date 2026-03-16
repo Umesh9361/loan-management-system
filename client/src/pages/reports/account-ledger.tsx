@@ -79,13 +79,25 @@ export default function AccountLedger() {
     };
   }, []);
   
+  const getFYDates = () => {
+    const today = new Date();
+    const month = today.getMonth();
+    const year = today.getFullYear();
+    const fyStartYear = month >= 3 ? year : year - 1;
+    return {
+      from: `${fyStartYear}-04-01`,
+      to: `${fyStartYear + 1}-03-31`
+    };
+  };
+  const fyDates = getFYDates();
+
   const [filters, setFilters] = useState({
-    accountType: '', // 'party', 'cash', 'loan', or 'individual_loan'
+    accountType: '',
     partyId: '',
     loanId: '',
     borrowerId: '',
-    dateFrom: new Date().toISOString().split('T')[0],
-    dateTo: new Date().toISOString().split('T')[0]
+    dateFrom: fyDates.from,
+    dateTo: fyDates.to
   });
 
   const [statementData, setStatementData] = useState<any>(null);
