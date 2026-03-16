@@ -29,7 +29,13 @@ export default function AccountLedger() {
       @media print {
         @page {
           size: A4 portrait !important;
-          margin: 0.5in;
+          margin: 10mm 8mm;
+        }
+        html, body {
+          height: auto !important;
+          overflow: visible !important;
+          margin: 0 !important;
+          padding: 0 !important;
         }
         body * {
           visibility: hidden;
@@ -41,12 +47,23 @@ export default function AccountLedger() {
           position: absolute;
           left: 0;
           top: 0;
-          width: 100%;
+          width: 100% !important;
+          max-width: 100% !important;
+          overflow: visible !important;
+          page-break-inside: auto;
         }
-        .no-print {
+        .print-area table {
+          page-break-inside: auto;
+        }
+        .print-area tr {
+          page-break-inside: avoid;
+        }
+        .no-print, .print:hidden, nav, aside, footer, .mobile-nav, .sidebar-modern {
           display: none !important;
+          visibility: hidden !important;
+          height: 0 !important;
+          overflow: hidden !important;
         }
-        /* ✅ PROFESSIONAL PRINT: Force horizontal layout for account info */
         .print-horizontal-layout {
           display: flex !important;
           flex-wrap: wrap !important;
@@ -1027,11 +1044,11 @@ export default function AccountLedger() {
       const contentHeight = targetEl.scrollHeight;
 
       const canvas = await html2canvas(targetEl, {
-        scale: 3,
+        scale: 2,
         useCORS: true,
         logging: false,
         backgroundColor: '#ffffff',
-        imageTimeout: 0,
+        imageTimeout: 5000,
         width: renderWidthPx,
         height: contentHeight,
         windowWidth: renderWidthPx,
@@ -1040,7 +1057,7 @@ export default function AccountLedger() {
 
       document.body.removeChild(iframe);
 
-      const imgData = canvas.toDataURL('image/png');
+      const imgData = canvas.toDataURL('image/jpeg', 0.92);
       const pageWidth = 210;
       const pageHeight = 297;
       const marginTop = 8;
@@ -1059,7 +1076,7 @@ export default function AccountLedger() {
       for (let page = 0; page < totalPages; page++) {
         if (page > 0) doc.addPage();
         const yOffset = marginTop - (page * usableHeight);
-        doc.addImage(imgData, 'PNG', 0, yOffset, pageWidth, imgTotalHeight);
+        doc.addImage(imgData, 'JPEG', 0, yOffset, pageWidth, imgTotalHeight);
       }
 
       const safeAccountName = (accountName || 'खाते').replace(/[/\\?%*:|"<>]/g, '_');
