@@ -268,7 +268,7 @@ export default function AccountLedger() {
       data.sort((a: any, b: any) => {
         const gA = (groupMap.get(a.groupId) || '').localeCompare(groupMap.get(b.groupId) || '', 'mr');
         if (gA !== 0) return gA;
-        return parseInt(a.accountNumber || '0') - parseInt(b.accountNumber || '0');
+        return (a.accountNumber || '').localeCompare(b.accountNumber || '', undefined, { numeric: true });
       });
       setBulkData(data);
     } catch (err) {
@@ -283,12 +283,15 @@ export default function AccountLedger() {
     if (bulkData.length === 0) return;
     setIsBulkGenerating(true);
     try {
-      const html = ReceiptGenerator.generateBulkLoanLedger(bulkData, company as any, groups as any[]);
+      const html = ReceiptGenerator.generateBulkLoanLedger(bulkData, company ? { name: company.name, licenseNumber: company.licenseNumber ?? undefined } : null, groups as { id?: string; name?: string }[]);
       const printWindow = window.open('', '_blank');
       if (printWindow) {
         printWindow.document.write(html);
         printWindow.document.close();
-        printWindow.focus();
+        printWindow.onload = () => {
+          printWindow.focus();
+          printWindow.print();
+        };
       }
     } catch (err) {
       console.error('Bulk print error:', err);
@@ -1693,7 +1696,7 @@ export default function AccountLedger() {
                             { value: 'closed', label: 'फक्त बंद' },
                           ] as const).map(opt => (
                             <div key={opt.value} className="flex items-center space-x-2">
-                              <input type="radio" id={`bulk8-status-${opt.value}`} name="bulk8StatusFilter" value={opt.value} checked={bulkStatusFilter === opt.value} onChange={(e) => { const v = e.target.value as any; setBulkStatusFilter(v); if (bulkFY) handleBulkFetch(bulkFY, v); }} className="h-4 w-4" autoComplete="off" />
+                              <input type="radio" id={`bulk8-status-${opt.value}`} name="bulk8StatusFilter" value={opt.value} checked={bulkStatusFilter === opt.value} onChange={(e) => { const v = e.target.value as 'all' | 'active' | 'closed'; setBulkStatusFilter(v); if (bulkFY) handleBulkFetch(bulkFY, v); }} className="h-4 w-4" autoComplete="off" />
                               <Label htmlFor={`bulk8-status-${opt.value}`} className="text-sm cursor-pointer">{opt.label}</Label>
                             </div>
                           ))}
