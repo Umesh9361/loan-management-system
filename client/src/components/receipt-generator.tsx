@@ -929,6 +929,163 @@ export class ReceiptGenerator {
     `;
   }
 
+  static cleanCSSForBulk(css: string): string {
+    css = css.replace(/@page\s*\{[^}]*\}/g, '');
+    const removeBlock = (src: string, marker: string): string => {
+      let idx = src.indexOf(marker);
+      while (idx !== -1) {
+        let depth = 0, end = -1, started = false;
+        for (let i = idx; i < src.length; i++) {
+          if (src[i] === '{') { depth++; started = true; }
+          if (src[i] === '}') { depth--; if (started && depth <= 0) { end = i + 1; break; } }
+        }
+        if (end === -1) break;
+        src = src.substring(0, idx) + src.substring(end);
+        idx = src.indexOf(marker);
+      }
+      return src;
+    };
+    css = removeBlock(css, '@media print');
+    css = removeBlock(css, '@media screen');
+    css = removeBlock(css, '.receipt-container.export-mode');
+    return css;
+  }
+
+  static generateBulkReceipts(
+    loans: Loan[],
+    company: { name?: string; licenseNumber?: string } | null,
+    receiptType: 'combined' | 'disbursement' | 'closure' | 'blank' | 'form12' | 'combined10_12' | 'blank10_12',
+    showInterestRate: boolean = true
+  ): string {
+    if (loans.length === 0) return '';
+    const isFullA5 = ['combined', 'combined10_12', 'blank', 'blank10_12'].includes(receiptType);
+    const perPage = isFullA5 ? 2 : 4;
+
+    const sampleHtml = this.generateLoanReceipt(loans[0], company, receiptType, undefined, false, showInterestRate);
+    const styleMatch = sampleHtml.match(/<style[^>]*>([\s\S]*?)<\/style>/i);
+    const receiptCSS = this.cleanCSSForBulk(styleMatch ? styleMatch[1] : '');
+
+    const cellContents: string[] = [];
+    for (const loan of loans) {
+      const html = this.generateLoanReceipt(loan, company, receiptType, undefined, false, showInterestRate);
+      const bodyMatch = html.match(/<body[^>]*>([\s\S]*)<\/body>/i);
+      if (bodyMatch) {
+        let content = bodyMatch[1].trim();
+        content = content.replace(/<script[\s\S]*?<\/script>/gi, '');
+        cellContents.push(content);
+      }
+    }
+
+    let pagesHTML = '';
+    for (let i = 0; i < cellContents.length; i += perPage) {
+      const pageItems = cellContents.slice(i, i + perPage);
+      const needsBreak = (i + perPage) < cellContents.length;
+      pagesHTML += `<div class="bulk-page${needsBreak ? ' page-break-after' : ''}">`;
+      pageItems.forEach(content => {
+        pagesHTML += `<div class="bulk-cell">${content}</div>`;
+      });
+      pagesHTML += '</div>\n';
+    }
+
+    const cellHeight = isFullA5 ? '202mm' : '100mm';
+
+    return `<!DOCTYPE html>
+<html lang="mr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>बल्क पावती प्रिंट - ${loans.length} कर्जे</title>
+<style>
+  ${receiptCSS}
+
+  @page { size: A4 landscape; margin: 3mm; }
+  @media print {
+    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
+    html, body { width: 291mm !important; margin: 0 !important; padding: 0 !important; }
+    .bulk-page { page-break-inside: avoid; }
+    .bulk-cell { border-color: #ccc !important; }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: white; }
+  body { font-family: 'Noto Sans Devanagari', Arial, sans-serif; font-size: 11px; line-height: 1.3; padding: 0; width: 100%; }
+
+  .bulk-page {
+    width: 291mm;
+    height: 204mm;
+    display: flex;
+    flex-wrap: wrap;
+    align-content: flex-start;
+    gap: 2mm;
+    padding: 0;
+    margin: 0 auto;
+  }
+  .page-break-after { page-break-after: always; }
+
+  .bulk-cell {
+    width: 144mm;
+    height: ${cellHeight};
+    border: 1px dashed #aaa;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .bulk-cell .receipt-container {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: 100% !important;
+    max-height: 100% !important;
+    padding: 1mm 2mm !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  .bulk-cell .loan-receipt,
+  .bulk-cell .closure-receipt,
+  .bulk-cell .form12-receipt {
+    flex: 1 !important;
+    height: auto !important;
+    min-height: auto !important;
+    max-height: none !important;
+    overflow: hidden !important;
+    padding: 2mm !important;
+    margin: 1mm 0 !important;
+    border: 1px solid #333 !important;
+  }
+
+  .bulk-cell .cutting-line {
+    height: 4mm !important;
+    min-height: 4mm !important;
+    max-height: 4mm !important;
+    flex: 0 0 4mm !important;
+    margin: 0 !important;
+  }
+
+  .bulk-cell .hamipatra-page { display: none !important; }
+
+  .bulk-cell .field-row { margin: 2px 0 !important; font-size: 10px !important; }
+  .bulk-cell .field-label { font-size: 10px !important; }
+  .bulk-cell .field-value { font-size: 10px !important; min-height: 14px !important; padding: 0 3px 2px 3px !important; }
+  .bulk-cell .receipt-header { margin-bottom: 2px !important; padding-bottom: 1px !important; }
+  .bulk-cell .form-number { font-size: 10px !important; margin-bottom: 2px !important; padding: 1px 0 !important; }
+  .bulk-cell .receipt-title { font-size: 12px !important; margin: 0 !important; }
+  .bulk-cell .receipt-title.yearly-statement { font-size: 9px !important; }
+  .bulk-cell .company-info { font-size: 8px !important; padding: 2px !important; margin: 2px 0 !important; }
+  .bulk-cell .calculation-section { margin: 2px 0 !important; padding: 2px !important; }
+  .bulk-cell .calculation-title { font-size: 10px !important; margin-bottom: 2px !important; }
+  .bulk-cell .calc-row { margin: 2px 0 !important; font-size: 10px !important; }
+  .bulk-cell .calc-label { font-size: 10px !important; }
+  .bulk-cell .calc-value { font-size: 10px !important; }
+  .bulk-cell .signature-section { margin-top: 4px !important; }
+</style>
+</head>
+<body>
+${pagesHTML}
+</body>
+</html>`;
+  }
+
   static openReceiptWindow(
     loan: Loan, 
     company: { name?: string; licenseNumber?: string } | null,
@@ -1405,5 +1562,231 @@ export class ReceiptGenerator {
 </body>
 </html>
     `;
+  }
+
+  static generateBulkLoanLedger(
+    dataArray: any[],
+    company: { name?: string; licenseNumber?: string } | null,
+    groups: any[]
+  ): string {
+    if (dataArray.length === 0) return '';
+
+    const companyName = company?.name || '';
+    const groupMap = new Map((groups || []).map((g: any) => [g.id, g.name]));
+
+    const formatDate = (d: string) => {
+      if (!d) return '';
+      const parts = d.split('T')[0].split('-');
+      if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
+      return d;
+    };
+
+    let pagesHTML = '';
+    dataArray.forEach((loan, idx) => {
+      const groupName = groupMap.get(loan.groupId) || '';
+      const rateLabel = loan.interestRateType === 'monthly' ? 'मासिक' : 'वार्षिक';
+      const needsBreak = idx < dataArray.length - 1;
+
+      let rows = '';
+      (loan.entries || []).forEach((entry: any) => {
+        const bal = entry.balance || 0;
+        const drLabel = bal >= 0 ? ' (Dr.)' : ' (Cr.)';
+        const dateDisplay = entry.type === 'opening' ? 'प्रारंभिक' : formatDate(entry.date);
+        const rowBg = entry.type === 'opening' ? 'background:#fff4e6;' : '';
+
+        rows += `<tr style="${rowBg}">
+          <td style="border:1px solid #333;padding:3px 4px;text-align:center;font-size:9px;">${dateDisplay}</td>
+          <td style="border:1px solid #333;padding:3px 4px;text-align:left;font-size:9px;">${entry.description || ''}</td>
+          <td style="border:1px solid #333;padding:3px 4px;text-align:right;font-size:9px;">${entry.debit > 0 ? '₹' + Math.round(entry.debit).toLocaleString('en-IN') : ''}</td>
+          <td style="border:1px solid #333;padding:3px 4px;text-align:right;font-size:9px;">${entry.credit > 0 ? '₹' + Math.round(entry.credit).toLocaleString('en-IN') : ''}</td>
+          <td style="border:1px solid #333;padding:3px 4px;text-align:right;font-size:9px;font-weight:bold;color:red;">${bal < 0 ? '-' : ''}₹${Math.round(Math.abs(bal)).toLocaleString('en-IN')}${drLabel}</td>
+        </tr>`;
+      });
+
+      const finalBal = loan.finalBalance || 0;
+      const finalDrLabel = finalBal >= 0 ? ' (Dr.)' : ' (Cr.)';
+      rows += `<tr style="background:#e3f2fd;font-weight:bold;">
+        <td style="border:1px solid #333;padding:4px;text-align:center;font-size:9px;" colspan="2">एकूण</td>
+        <td style="border:1px solid #333;padding:4px;text-align:right;font-size:9px;">₹${Math.round(loan.totalDebit || 0).toLocaleString('en-IN')}</td>
+        <td style="border:1px solid #333;padding:4px;text-align:right;font-size:9px;">₹${Math.round(loan.totalCredit || 0).toLocaleString('en-IN')}</td>
+        <td style="border:1px solid #333;padding:4px;text-align:right;font-size:10px;color:red;">${finalBal < 0 ? '-' : ''}₹${Math.round(Math.abs(finalBal)).toLocaleString('en-IN')}${finalDrLabel}</td>
+      </tr>`;
+
+      pagesHTML += `<div class="ledger-page${needsBreak ? ' page-break-after' : ''}">
+        <div style="text-align:center;margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid #333;">
+          <p style="font-size:14px;font-weight:bold;margin:0 0 3px 0;">${companyName}</p>
+          <p style="font-size:12px;font-weight:bold;margin:0 0 2px 0;">नमुना क्रमांक आठ</p>
+          <p style="font-size:9px;color:#555;margin:0;">(नियम १८ पहा)</p>
+        </div>
+        <div style="margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid #ddd;">
+          <p style="font-size:10px;font-weight:600;margin:0 0 3px 0;">खाते: ${loan.borrowerName}${groupName ? ' | गट: ' + groupName : ''}</p>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;font-size:9px;">
+            <span>खाते क्र.: ${loan.accountNumber}</span>
+            <span>मुद्दल: ₹${Math.round(loan.principalAmount).toLocaleString('en-IN')}</span>
+            <span>व्याज दर: ${loan.interestRate}% ${rateLabel}</span>
+            <span>कर्ज दिनांक: ${formatDate(loan.loanDate)}</span>
+          </div>
+          <p style="font-size:9px;color:#555;margin-top:2px;">कालावधी: ${formatDate(loan.dateFrom)} ते ${formatDate(loan.dateTo)}</p>
+        </div>
+        <table style="width:100%;border-collapse:collapse;">
+          <colgroup><col style="width:12%;"><col style="width:34%;"><col style="width:16%;"><col style="width:16%;"><col style="width:22%;"></colgroup>
+          <thead>
+            <tr style="background:#f0f0f0;">
+              <th style="border:1px solid #333;padding:4px;text-align:center;font-size:9px;">दिनांक</th>
+              <th style="border:1px solid #333;padding:4px;text-align:center;font-size:9px;">तपशील</th>
+              <th style="border:1px solid #333;padding:4px;text-align:center;font-size:9px;">नावे (Dr.)</th>
+              <th style="border:1px solid #333;padding:4px;text-align:center;font-size:9px;">जमा (Cr.)</th>
+              <th style="border:1px solid #333;padding:4px;text-align:center;font-size:9px;background:#dbeafe;">शिल्लक</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+        <div style="margin-top:8px;text-align:right;font-size:8px;color:#888;">
+          ${loan.status === 'closed' ? '<span style="color:red;font-weight:bold;">बंद</span> | ' : ''}अहवाल तयार केला: ${new Date().toLocaleDateString('en-GB')}
+        </div>
+      </div>\n`;
+    });
+
+    return `<!DOCTYPE html>
+<html lang="mr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>बल्क कर्ज लेजर (नमुना क्र. ८) - ${dataArray.length} कर्जे</title>
+<style>
+  @page { size: A4 portrait; margin: 10mm 8mm; }
+  @media print {
+    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    .ledger-page { page-break-inside: avoid; }
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: white; font-family: 'Noto Sans Devanagari', Arial, sans-serif; }
+  .ledger-page { padding: 15px 20px; }
+  .page-break-after { page-break-after: always; }
+  table { width: 100%; border-collapse: collapse; }
+</style>
+</head>
+<body>
+${pagesHTML}
+</body>
+</html>`;
+  }
+
+  static generateBulkAnnualStatements(
+    dataArray: any[],
+    company: { name?: string; licenseNumber?: string } | null
+  ): string {
+    if (dataArray.length === 0) return '';
+    const perPage = 4;
+
+    const sampleHtml = this.generateAnnualStatement(dataArray[0], company);
+    const styleMatch = sampleHtml.match(/<style[^>]*>([\s\S]*?)<\/style>/i);
+    const receiptCSS = this.cleanCSSForBulk(styleMatch ? styleMatch[1] : '');
+
+    const cellContents: string[] = [];
+    for (const data of dataArray) {
+      const html = this.generateAnnualStatement(data, company);
+      const bodyMatch = html.match(/<body[^>]*>([\s\S]*)<\/body>/i);
+      if (bodyMatch) {
+        let content = bodyMatch[1].trim();
+        content = content.replace(/<script[\s\S]*?<\/script>/gi, '');
+        cellContents.push(content);
+      }
+    }
+
+    let pagesHTML = '';
+    for (let i = 0; i < cellContents.length; i += perPage) {
+      const pageItems = cellContents.slice(i, i + perPage);
+      const needsBreak = (i + perPage) < cellContents.length;
+      pagesHTML += `<div class="bulk-page${needsBreak ? ' page-break-after' : ''}">`;
+      pageItems.forEach(content => {
+        pagesHTML += `<div class="bulk-cell">${content}</div>`;
+      });
+      pagesHTML += '</div>\n';
+    }
+
+    return `<!DOCTYPE html>
+<html lang="mr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>बल्क वार्षिक लेखा विवरणपत्र - ${dataArray.length} कर्जे</title>
+<style>
+  ${receiptCSS}
+
+  @page { size: A4 landscape; margin: 3mm; }
+  @media print {
+    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
+    html, body { width: 291mm !important; margin: 0 !important; padding: 0 !important; }
+    .bulk-page { page-break-inside: avoid; }
+    .bulk-cell { border-color: #ccc !important; }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: white; }
+  body { font-family: 'Noto Sans Devanagari', Arial, sans-serif; font-size: 10px; line-height: 1.2; padding: 0; width: 100%; }
+
+  .bulk-page {
+    width: 291mm;
+    height: 204mm;
+    display: grid;
+    grid-template-columns: 144mm 144mm;
+    grid-template-rows: 100mm 100mm;
+    gap: 1.5mm 3mm;
+    padding: 0;
+    margin: 0 auto;
+  }
+  .page-break-after { page-break-after: always; }
+
+  .bulk-cell {
+    width: 144mm;
+    height: 100mm;
+    border: 1px dashed #aaa;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .bulk-cell .receipt-container {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: 100% !important;
+    max-height: 100% !important;
+    padding: 1mm 2mm !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+  }
+
+  .bulk-cell .annual-receipt {
+    height: auto !important;
+    max-height: none !important;
+    overflow: hidden !important;
+    padding: 2mm !important;
+    margin: 1mm 0 !important;
+    border: 1px solid #333 !important;
+  }
+
+  .bulk-cell .receipt-header { margin-bottom: 1px !important; padding-bottom: 1px !important; }
+  .bulk-cell .form-number { font-size: 9px !important; margin-bottom: 1px !important; padding: 0 !important; }
+  .bulk-cell .receipt-title { font-size: 8px !important; margin: 0 !important; }
+  .bulk-cell .field-row { margin: 1px 0 !important; font-size: 9px !important; }
+  .bulk-cell .field-label { font-size: 9px !important; }
+  .bulk-cell .field-value { font-size: 9px !important; min-height: 12px !important; padding: 0 3px 1px 3px !important; }
+  .bulk-cell .radio-row { font-size: 8px !important; margin: 1px 0 !important; gap: 4px !important; }
+  .bulk-cell .radio-label { font-size: 8px !important; }
+  .bulk-cell .radio-option { font-size: 8px !important; }
+  .bulk-cell .radio-option input[type="radio"] { width: 8px !important; height: 8px !important; }
+  .bulk-cell .table-section { margin: 2px 0 !important; font-size: 8px !important; }
+  .bulk-cell .table-row { }
+  .bulk-cell .table-cell-label { padding: 1px 3px !important; font-size: 8px !important; line-height: 1.2 !important; }
+  .bulk-cell .table-cell-value { padding: 1px 3px !important; font-size: 8px !important; width: 70px !important; line-height: 1.2 !important; }
+  .bulk-cell .company-info { font-size: 7px !important; padding: 1px !important; margin: 2px 0 !important; }
+  .bulk-cell .signature-section { margin-top: 2px !important; font-size: 8px !important; }
+  .bulk-cell .signature-line { width: 60px !important; height: 10px !important; }
+  .bulk-cell .date-field { font-size: 8px !important; }
+</style>
+</head>
+<body>
+${pagesHTML}
+</body>
+</html>`;
   }
 }
