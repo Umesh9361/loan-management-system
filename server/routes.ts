@@ -5373,21 +5373,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const filteredLoans = eligibleLoans.filter(loan => {
         const closure = closureMap.get(loan.id);
         if (closure && new Date(closure.closureDate) < yearStart) return false;
-        const isClosed = !!closure;
-        if (statusFilter === 'active' && isClosed) return false;
-        if (statusFilter === 'closed' && !isClosed) return false;
+        const closedBeforeFYEnd = closure && new Date(closure.closureDate) <= yearEnd;
+        if (statusFilter === 'active' && closedBeforeFYEnd) return false;
+        if (statusFilter === 'closed' && !closedBeforeFYEnd) return false;
         return true;
       });
 
-      const allTransactions = await db.select()
-        .from(transactions)
-        .where(eq(transactions.tenantId, tenantId))
-        .orderBy(transactions.transactionDate);
+      const allCashTxns = await db.select()
+        .from(cashTransactions)
+        .where(eq(cashTransactions.tenantId, tenantId))
+        .orderBy(cashTransactions.transactionDate);
 
-      const txnsByLoan = new Map<string, typeof allTransactions>();
-      for (const txn of allTransactions) {
-        if (!txnsByLoan.has(txn.loanId)) txnsByLoan.set(txn.loanId, []);
-        txnsByLoan.get(txn.loanId)!.push(txn);
+      const cashTxnsByLoan = new Map<string, (typeof allCashTxns)>();
+      for (const txn of allCashTxns) {
+        if (!txn.loanId) continue;
+        if (!cashTxnsByLoan.has(txn.loanId)) cashTxnsByLoan.set(txn.loanId, []);
+        cashTxnsByLoan.get(txn.loanId)!.push(txn);
       }
 
       const results: any[] = [];
@@ -5397,33 +5398,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const rate = parseFloat(loan.interestRate || '0');
         const rateType = loan.interestRateType || 'monthly';
         const closure = closureMap.get(loan.id) || null;
-        const loanTxns = txnsByLoan.get(loan.id) || [];
+        const loanDate = new Date(loan.loanDate);
+        const loanCashTxns = cashTxnsByLoan.get(loan.id) || [];
 
-        const entries: any[] = [];
-        let runningBalance = 0;
-
-        runningBalance = principal;
-        entries.push({
-          date: loan.loanDate,
-          description: `कर्ज वितरण - खाते क्र. ${loan.accountNumber || ''}`,
-          debit: principal,
-          credit: 0,
-          balance: runningBalance,
-          type: 'loan_disbursement'
-        });
-
-        const paymentTxns = loanTxns.filter(t => {
+        const paymentTxns = loanCashTxns.filter(t => {
           const narration = t.narration || '';
           if (narration.includes('कर्ज बंद') || narration.includes('मुद्दल') || narration.includes('व्याज') || t.isSystemGenerated) return false;
           return true;
         });
 
-        paymentTxns.forEach(txn => {
+        const preFYPayments = paymentTxns.filter(t => new Date(t.transactionDate) < yearStart);
+        let openingBalance = 0;
+        if (loanDate < yearStart) {
+          openingBalance = principal;
+          for (const txn of preFYPayments) {
+            openingBalance -= parseFloat(txn.amount || '0');
+          }
+        }
+
+        const entries: any[] = [];
+        let runningBalance = openingBalance;
+
+        if (loanDate < yearStart && openingBalance > 0) {
+          entries.push({
+            date: yearStartISO,
+            description: 'प्रारंभिक शिल्लक',
+            debit: openingBalance,
+            credit: 0,
+            balance: runningBalance,
+            type: 'opening'
+          });
+        }
+
+        if (loanDate >= yearStart && loanDate <= yearEnd) {
+          runningBalance = principal;
+          entries.push({
+            date: loan.loanDate,
+            description: `कर्ज वितरण - खाते क्र. ${loan.accountNumber || ''}`,
+            debit: principal,
+            credit: 0,
+            balance: runningBalance,
+            type: 'loan_disbursement'
+          });
+        }
+
+        const fyPayments = paymentTxns.filter(t => {
+          const txnDate = new Date(t.transactionDate);
+          return txnDate >= yearStart && txnDate <= yearEnd;
+        });
+
+        fyPayments.forEach(txn => {
           const amount = parseFloat(txn.amount || '0');
           runningBalance -= amount;
           entries.push({
             date: txn.transactionDate,
-            description: `${txn.description || 'Payment'} - ${txn.narration || ''}`,
+            description: `${txn.category || 'Payment'} - ${txn.narration || ''}`,
             debit: 0,
             credit: amount,
             balance: runningBalance,
@@ -5431,54 +5460,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         });
 
-        if (loan.status === 'closed' && closure) {
-          const principalPaid = parseFloat(closure.principalPaid || '0');
-          const interestPaid = parseFloat(closure.interestPaid || '0');
-          const closureDate = typeof closure.closureDate === 'string' ? closure.closureDate.split('T')[0] : closure.closureDate;
+        if (closure) {
+          const closureDate = new Date(closure.closureDate);
+          if (closureDate >= yearStart && closureDate <= yearEnd) {
+            const principalPaid = parseFloat(closure.principalPaid || '0');
+            const interestPaid = parseFloat(closure.interestPaid || '0');
+            const closureDateStr = typeof closure.closureDate === 'string' ? closure.closureDate.split('T')[0] : closure.closureDate;
 
-          if (interestPaid > 0) {
-            runningBalance += interestPaid;
+            if (interestPaid > 0) {
+              runningBalance += interestPaid;
+              entries.push({
+                date: closureDateStr,
+                description: 'व्याज',
+                debit: interestPaid,
+                credit: 0,
+                balance: runningBalance,
+                type: 'interest_charge'
+              });
+              runningBalance -= interestPaid;
+              entries.push({
+                date: closureDateStr,
+                description: 'व्याज परतफेड',
+                debit: 0,
+                credit: interestPaid,
+                balance: runningBalance,
+                type: 'interest_payment'
+              });
+            }
+            runningBalance -= principalPaid;
             entries.push({
-              date: closureDate,
-              description: 'व्याज',
-              debit: interestPaid,
+              date: closureDateStr,
+              description: 'मुद्दल परतफेड',
+              debit: 0,
+              credit: principalPaid,
+              balance: runningBalance,
+              type: 'principal_payment'
+            });
+            entries.push({
+              date: closureDateStr,
+              description: 'कर्ज संपूर्ण बंद',
+              debit: 0,
               credit: 0,
               balance: runningBalance,
-              type: 'interest_charge'
-            });
-            runningBalance -= interestPaid;
-            entries.push({
-              date: closureDate,
-              description: 'व्याज परतफेड',
-              debit: 0,
-              credit: interestPaid,
-              balance: runningBalance,
-              type: 'interest_payment'
+              type: 'loan_closure_final'
             });
           }
-          runningBalance -= principalPaid;
-          entries.push({
-            date: closureDate,
-            description: 'मुद्दल परतफेड',
-            debit: 0,
-            credit: principalPaid,
-            balance: runningBalance,
-            type: 'principal_payment'
-          });
-          entries.push({
-            date: closureDate,
-            description: 'कर्ज संपूर्ण बंद',
-            debit: 0,
-            credit: 0,
-            balance: runningBalance,
-            type: 'loan_closure_final'
-          });
         }
 
         entries.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
         const totalDebit = entries.reduce((sum: number, e: any) => sum + e.debit, 0);
         const totalCredit = entries.reduce((sum: number, e: any) => sum + e.credit, 0);
+
+        const closedBeforeFYEnd = closure && new Date(closure.closureDate) <= yearEnd;
 
         results.push({
           loanId: loan.id,
@@ -5489,7 +5523,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           interestRate: rate,
           interestRateType: rateType,
           groupId: loan.groupId,
-          status: closure ? 'closed' : 'active',
+          status: closedBeforeFYEnd ? 'closed' : 'active',
           entries,
           totalDebit: Math.round(totalDebit * 100) / 100,
           totalCredit: Math.round(totalCredit * 100) / 100,
