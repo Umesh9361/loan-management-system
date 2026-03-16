@@ -292,6 +292,69 @@ function AccountNumberSetting() {
     setArranging(false);
   };
 
+  const [showInsertDialog, setShowInsertDialog] = useState(false);
+  const [insertGroupId, setInsertGroupId] = useState("");
+  const [insertLoanId, setInsertLoanId] = useState("");
+  const [insertPosition, setInsertPosition] = useState("");
+  const [insertPreview, setInsertPreview] = useState<any[]>([]);
+  const [insertPreviewLoading, setInsertPreviewLoading] = useState(false);
+  const [inserting, setInserting] = useState(false);
+  const [insertChangedCount, setInsertChangedCount] = useState(0);
+
+  const { data: insertGroupLoans = [] } = useQuery<any[]>({
+    queryKey: ["/api/loans", { groupId: insertGroupId }],
+    queryFn: async () => {
+      if (!insertGroupId) return [];
+      const res = await apiRequest(`/api/loans?groupId=${insertGroupId}`, "GET");
+      return res.json();
+    },
+    enabled: !!insertGroupId,
+  });
+
+  const handleInsertPreview = async () => {
+    if (!insertGroupId || !insertLoanId || !insertPosition) {
+      toast({ title: "त्रुटी", description: "ग्रुप, कर्ज आणि क्रमांक निवडा", variant: "destructive" });
+      return;
+    }
+    setInsertPreviewLoading(true);
+    try {
+      const res = await apiRequest("/api/loans/insert-at-position/preview", "POST", {
+        groupId: insertGroupId, loanId: insertLoanId, position: insertPosition
+      });
+      const data = await res.json();
+      setInsertPreview(data.preview || []);
+      setInsertChangedCount(data.changedCount || 0);
+    } catch (error) {
+      toast({ title: "त्रुटी", description: "Preview तयार करता आली नाही", variant: "destructive" });
+    }
+    setInsertPreviewLoading(false);
+  };
+
+  const handleInsertExecute = async () => {
+    if (!insertGroupId || !insertLoanId || !insertPosition) return;
+    setInserting(true);
+    try {
+      const res = await apiRequest("/api/loans/insert-at-position", "POST", {
+        groupId: insertGroupId, loanId: insertLoanId, position: insertPosition
+      });
+      const data = await res.json();
+      toast({
+        title: "यशस्वी!",
+        description: data.message || `${data.updatedCount} कर्जांचे खाते क्रमांक बदलले`,
+      });
+      qc.invalidateQueries({ queryKey: ["/api/loans"], refetchType: 'all' });
+      qc.invalidateQueries({ queryKey: ["/api/cash-transactions"], refetchType: 'all' });
+      setShowInsertDialog(false);
+      setInsertPreview([]);
+      setInsertGroupId("");
+      setInsertLoanId("");
+      setInsertPosition("");
+    } catch (error) {
+      toast({ title: "त्रुटी", description: "खाते क्रमांक बदलताना त्रुटी आली", variant: "destructive" });
+    }
+    setInserting(false);
+  };
+
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between p-4 rounded-lg border border-gray-200 bg-gray-50">
@@ -309,6 +372,24 @@ function AccountNumberSetting() {
           onClick={() => setShowDialog(true)}
         >
           ऑटो अरेंज करा
+        </Button>
+      </div>
+
+      <div className="flex items-center justify-between p-4 rounded-lg border border-green-200 bg-green-50">
+        <div className="flex-1">
+          <h3 className="font-medium text-sm">🔀 ठिकाणी Insert करा</h3>
+          <p className="text-xs text-muted-foreground mt-1">
+            एका कर्जाला specific खाते क्रमांक द्या, बाकीचे automatic पुढे shift होतील.
+            <br />
+            <span className="text-green-600 font-medium">कर्ज निवडा → क्रमांक द्या → बाकीचे automatic shift!</span>
+          </p>
+        </div>
+        <Button
+          size="sm"
+          className="bg-green-600 hover:bg-green-700 text-white"
+          onClick={() => setShowInsertDialog(true)}
+        >
+          Insert करा
         </Button>
       </div>
 
@@ -424,6 +505,155 @@ function AccountNumberSetting() {
                       disabled={arranging}
                     >
                       {arranging ? "बदलत आहे..." : `✅ ${changedCount} बदल जतन करा`}
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showInsertDialog} onOpenChange={(open) => { setShowInsertDialog(open); if (!open) { setInsertPreview([]); setInsertGroupId(""); setInsertLoanId(""); setInsertPosition(""); } }}>
+        <DialogContent className="w-[95vw] max-w-2xl max-h-[85vh] overflow-y-auto p-4 sm:p-6">
+          <DialogHeader>
+            <DialogTitle className="text-base sm:text-lg">🔀 ठिकाणी Insert करा</DialogTitle>
+            <DialogDescription>
+              कर्ज निवडा, क्रमांक द्या — बाकीचे कर्ज automatic पुढे shift होतील.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 mt-2">
+            <div>
+              <label className="text-sm font-medium mb-1 block">ग्रुप निवडा *</label>
+              <Select value={insertGroupId} onValueChange={(v) => { setInsertGroupId(v); setInsertLoanId(""); setInsertPreview([]); }}>
+                <SelectTrigger><SelectValue placeholder="ग्रुप निवडा" /></SelectTrigger>
+                <SelectContent>
+                  {groups.map((g: any) => (
+                    <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {insertGroupId && (
+              <div>
+                <label className="text-sm font-medium mb-1 block">कर्ज निवडा *</label>
+                <Select value={insertLoanId} onValueChange={(v) => { setInsertLoanId(v); setInsertPreview([]); }}>
+                  <SelectTrigger><SelectValue placeholder="कर्ज निवडा" /></SelectTrigger>
+                  <SelectContent>
+                    {(insertGroupLoans as any[])
+                      .sort((a: any, b: any) => {
+                        const numA = parseInt(a.accountNumber) || 99999;
+                        const numB = parseInt(b.accountNumber) || 99999;
+                        return numA - numB;
+                      })
+                      .map((l: any) => (
+                        <SelectItem key={l.id} value={l.id}>
+                          क्र. {l.accountNumber} - {l.borrowerName} ({l.loanDate ? l.loanDate.split('-').reverse().join('/') : ''})
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {insertLoanId && (
+              <div>
+                <label className="text-sm font-medium mb-1 block">या क्रमांकावर ठेवा *</label>
+                <Input
+                  type="number"
+                  min="1"
+                  placeholder="उदा. 35"
+                  value={insertPosition}
+                  onChange={(e) => { setInsertPosition(e.target.value); setInsertPreview([]); }}
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  या क्रमांकावर निवडलेलं कर्ज ठेवलं जाईल. बाकीचे कर्ज (या क्रमांकापासून पुढचे) +1 ने shift होतील.
+                </p>
+              </div>
+            )}
+
+            <Button
+              onClick={handleInsertPreview}
+              disabled={!insertGroupId || !insertLoanId || !insertPosition || insertPreviewLoading}
+              className="w-full bg-green-600 hover:bg-green-700"
+            >
+              {insertPreviewLoading ? "Preview तयार होत आहे..." : "📋 Preview बघा"}
+            </Button>
+
+            {insertPreview.length > 0 && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between text-sm flex-wrap gap-1">
+                  <span className="font-medium">एकूण कर्ज: {insertPreview.length}</span>
+                  <span className={insertChangedCount > 0 ? "text-orange-600 font-medium" : "text-green-600 font-medium"}>
+                    {insertChangedCount > 0 ? `${insertChangedCount} बदल होतील` : "कोणताही बदल नाही"}
+                  </span>
+                </div>
+
+                <div className="border rounded-lg overflow-hidden max-h-[40vh] overflow-y-auto">
+                  <table className="w-full text-xs sm:text-sm">
+                    <thead className="bg-gray-100 sticky top-0">
+                      <tr>
+                        <th className="px-2 py-2 text-left">जुना क्र.</th>
+                        <th className="px-2 py-2 text-center">→</th>
+                        <th className="px-2 py-2 text-left">नवीन क्र.</th>
+                        <th className="px-2 py-2 text-left">कर्जदार</th>
+                        <th className="px-2 py-2 text-left">तारीख</th>
+                        <th className="px-2 py-2 text-right">रक्कम</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {insertPreview.map((item: any, idx: number) => (
+                        <tr key={idx} className={
+                          item.type === 'insert' ? "bg-green-50 font-medium" :
+                          item.type === 'shift' ? "bg-amber-50 font-medium" : ""
+                        }>
+                          <td className="px-2 py-1.5">{item.oldNumber}</td>
+                          <td className="px-2 py-1.5 text-center">
+                            {item.type === 'insert' ? "⬅" : item.changed ? "→" : "="}
+                          </td>
+                          <td className={`px-2 py-1.5 ${
+                            item.type === 'insert' ? "text-green-700 font-bold" :
+                            item.type === 'shift' ? "text-orange-700 font-bold" : ""
+                          }`}>
+                            {item.newNumber}
+                          </td>
+                          <td className="px-2 py-1.5 truncate max-w-[120px]">{item.borrowerName}</td>
+                          <td className="px-2 py-1.5">{item.loanDate ? item.loanDate.split('-').reverse().join('/') : ''}</td>
+                          <td className="px-2 py-1.5 text-right">₹{Number(item.principalAmount || 0).toLocaleString('en-IN')}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="text-xs space-y-1 p-2 bg-gray-50 rounded-lg">
+                  <div className="flex items-center gap-2">
+                    <span className="inline-block w-3 h-3 bg-green-100 border border-green-300 rounded"></span>
+                    <span>Insert होणारं कर्ज (निवडलेलं)</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="inline-block w-3 h-3 bg-amber-100 border border-amber-300 rounded"></span>
+                    <span>Shift होणारे कर्ज (+1)</span>
+                  </div>
+                </div>
+
+                {insertChangedCount > 0 && (
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      className="flex-1"
+                      onClick={() => { setShowInsertDialog(false); setInsertPreview([]); }}
+                    >
+                      रद्द करा
+                    </Button>
+                    <Button
+                      className="flex-1 bg-green-600 hover:bg-green-700"
+                      onClick={handleInsertExecute}
+                      disabled={inserting}
+                    >
+                      {inserting ? "बदलत आहे..." : `✅ ${insertChangedCount} बदल जतन करा`}
                     </Button>
                   </div>
                 )}
