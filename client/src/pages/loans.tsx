@@ -1263,18 +1263,31 @@ function Loans() {
     if (!query || query.trim() === "") return 0;
     
     const searchTerm = normalizeMarathiVowels(query.toLowerCase().trim());
+    const isNumericSearch = /^\d+$/.test(searchTerm);
     let score = 0;
     
-    
-    
-    // Field definitions with weights
-    const searchFields = [
-      { field: loan.borrowerName, weight: 10, label: 'name' },           // Name gets highest priority
-      { field: loan.accountNumber, weight: 8, label: 'account' },        // Account number high priority  
-      { field: loan.collateralDetails, weight: 6, label: 'item' },       // Items/collateral medium priority
-      { field: loan.borrowerMobile, weight: 4, label: 'mobile' },        // Mobile lower priority
-      { field: loan.businessType, weight: 3, label: 'business' },        // Business type lowest
-      { field: loan.otherInfo, weight: 5, label: 'other' },              // इतर माहिती - third party tracking
+    if (isNumericSearch && loan.accountNumber) {
+      const accNum = loan.accountNumber.toString().trim();
+      if (accNum === searchTerm) {
+        return 1000;
+      }
+      if (accNum.startsWith(searchTerm)) {
+        score += 500;
+      }
+    }
+
+    const searchFields = isNumericSearch ? [
+      { field: loan.accountNumber, weight: 15, label: 'account' },
+      { field: loan.borrowerMobile, weight: 4, label: 'mobile' },
+      { field: loan.borrowerName, weight: 2, label: 'name' },
+      { field: loan.otherInfo, weight: 2, label: 'other' },
+    ] : [
+      { field: loan.borrowerName, weight: 10, label: 'name' },
+      { field: loan.accountNumber, weight: 8, label: 'account' },
+      { field: loan.collateralDetails, weight: 6, label: 'item' },
+      { field: loan.borrowerMobile, weight: 4, label: 'mobile' },
+      { field: loan.businessType, weight: 3, label: 'business' },
+      { field: loan.otherInfo, weight: 5, label: 'other' },
     ];
     
     searchFields.forEach(({ field, weight, label }) => {
@@ -1283,37 +1296,29 @@ function Loans() {
       const fieldValue = normalizeMarathiVowels(field.toString().toLowerCase());
       let fieldScore = 0;
       
-      // Exact match gets maximum score
       if (fieldValue === searchTerm) {
         fieldScore = weight * 10;
       }
-      // Starts with search term gets high score  
       else if (fieldValue.startsWith(searchTerm)) {
         fieldScore = weight * 8;
       }
-      // Contains search term gets medium score
       else if (fieldValue.includes(searchTerm)) {
         fieldScore = weight * 5;
       }
-      // Enhanced fuzzy matching for partial matches
       else {
         const words = fieldValue.split(' ');
         words.forEach((word: string) => {
-          // Direct word matching
           if (word.startsWith(searchTerm)) {
             fieldScore += weight * 3;
           } else if (word.includes(searchTerm)) {
             fieldScore += weight * 2;
           }
-          // Fuzzy similarity matching (mohit ↔ mohite)
           else if (searchTerm.length >= 3 && word.length >= 3) {
-            // Check if first 3-4 characters match (mohit vs mohite)
             const searchStart = searchTerm.substring(0, Math.min(4, searchTerm.length));
             const wordStart = word.substring(0, Math.min(4, word.length));
             if (searchStart === wordStart) {
-              fieldScore += weight * 2; // Similar names like mohit/mohite
+              fieldScore += weight * 2;
             }
-            // Check character similarity (at least 70% similar)
             else if (calculateSimilarity(searchTerm, word) >= 0.7) {
               fieldScore += weight * 1;
             }
@@ -1321,14 +1326,13 @@ function Loans() {
         });
       }
       
-      // Special handling for numbers (account numbers)
       if (label === 'account' && /\d/.test(searchTerm)) {
         const fieldNumbers = fieldValue.match(/\d+/g) || [];
         fieldNumbers.forEach((num: string) => {
-          if (num.startsWith(searchTerm)) {
+          if (num === searchTerm) {
+            fieldScore += weight * 10;
+          } else if (num.startsWith(searchTerm)) {
             fieldScore += weight * 6;
-          } else if (num.includes(searchTerm)) {
-            fieldScore += weight * 4;
           }
         });
       }
