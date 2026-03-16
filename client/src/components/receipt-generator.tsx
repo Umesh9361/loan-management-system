@@ -1566,8 +1566,8 @@ ${pagesHTML}
 
   static generateBulkLoanLedger(
     dataArray: any[],
-    company: { name?: string; licenseNumber?: string } | null,
-    groups: any[]
+    company: { name?: string; licenseNumber?: string } | null | undefined,
+    groups: { id?: string; name?: string }[]
   ): string {
     if (dataArray.length === 0) return '';
 
