@@ -5154,6 +5154,360 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Bulk Annual Statement API - नमुना क्रमांक १४ (all loans for a FY)
+  app.get("/api/annual-statement/bulk", requireAuth, async (req, res) => {
+    try {
+      const { year, status } = req.query;
+      const tenantId = req.session.tenantId!;
+
+      if (!year) {
+        return res.status(400).json({ error: 'Year is required' });
+      }
+
+      const financialYear = parseInt(year as string);
+      const statusFilter = (status as string) || 'all';
+      const yearStart = new Date(financialYear, 3, 1);
+      const yearEnd = new Date(financialYear + 1, 2, 31);
+
+      console.log(`📊 BULK ANNUAL STATEMENT: FY ${financialYear}-${financialYear+1}, status=${statusFilter}`);
+
+      const allLoans = await db.select()
+        .from(loans)
+        .where(eq(loans.tenantId, tenantId))
+        .orderBy(loans.loanDate);
+
+      const eligibleLoans = allLoans.filter(loan => {
+        const loanDate = new Date(loan.loanDate);
+        if (loanDate > yearEnd) return false;
+        return true;
+      });
+
+      const allClosures = await db.select()
+        .from(loanClosures)
+        .where(eq(loanClosures.tenantId, tenantId));
+      const closureMap = new Map(allClosures.map(c => [c.loanId, c]));
+
+      const filteredLoans = eligibleLoans.filter(loan => {
+        const closure = closureMap.get(loan.id);
+        if (closure && new Date(closure.closureDate) < yearStart) return false;
+        const isClosed = !!closure;
+        if (statusFilter === 'active' && isClosed) return false;
+        if (statusFilter === 'closed' && !isClosed) return false;
+        return true;
+      });
+
+      const allTransactions = await db.select()
+        .from(transactions)
+        .where(eq(transactions.tenantId, tenantId))
+        .orderBy(transactions.transactionDate);
+
+      const txnsByLoan = new Map<string, typeof allTransactions>();
+      for (const txn of allTransactions) {
+        if (!txnsByLoan.has(txn.loanId)) txnsByLoan.set(txn.loanId, []);
+        txnsByLoan.get(txn.loanId)!.push(txn);
+      }
+
+      const results: any[] = [];
+
+      for (const loan of filteredLoans) {
+        const loanDate = new Date(loan.loanDate);
+        const principal = parseFloat(loan.principalAmount || '0');
+        const rate = parseFloat(loan.interestRate || '0');
+        const rateType = loan.interestRateType || 'monthly';
+        const yearlyRate = rateType === 'monthly' ? 12 : rate;
+        const closure = closureMap.get(loan.id) || null;
+
+        const loanTxns = (txnsByLoan.get(loan.id) || []);
+        const priorTxns = loanTxns.filter(t => new Date(t.transactionDate) < yearStart);
+
+        let openingPrincipal = 0;
+        let openingInterest = 0;
+
+        if (loanDate < yearStart) {
+          if (closure && new Date(closure.closureDate) < yearStart) {
+            openingPrincipal = 0;
+            openingInterest = 0;
+          } else {
+            let currentPrincipal = principal;
+            let lastDate = loanDate;
+            let accumulatedInterest = 0;
+
+            for (const txn of priorTxns) {
+              const txnDate = new Date(txn.transactionDate);
+              const days = Math.floor((txnDate.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24));
+              if (days > 0 && currentPrincipal > 0) {
+                accumulatedInterest += (currentPrincipal * yearlyRate * days) / (365 * 100);
+              }
+              if (txn.type === 'payment' || txn.type === 'closure') {
+                currentPrincipal -= parseFloat(txn.amount || '0');
+                if (currentPrincipal < 0) currentPrincipal = 0;
+              }
+              lastDate = txnDate;
+            }
+
+            const remainingDays = Math.floor((yearStart.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24));
+            if (remainingDays > 0 && currentPrincipal > 0) {
+              accumulatedInterest += (currentPrincipal * yearlyRate * remainingDays) / (365 * 100);
+            }
+
+            openingPrincipal = currentPrincipal;
+            openingInterest = accumulatedInterest;
+          }
+        }
+
+        let yearDisbursement = 0;
+        if (loanDate >= yearStart && loanDate <= yearEnd) {
+          yearDisbursement = principal;
+        }
+
+        let yearPrincipalRepayment = 0;
+        let yearInterestRepayment = 0;
+        if (closure) {
+          const closureDate = new Date(closure.closureDate);
+          if (closureDate >= yearStart && closureDate <= yearEnd) {
+            yearPrincipalRepayment = parseFloat(closure.principalPaid || '0');
+            yearInterestRepayment = parseFloat(closure.interestPaid || '0');
+          }
+        }
+
+        let closingPrincipal = 0;
+        let closingInterest = 0;
+        let thisYearInterest = 0;
+
+        const isClosedDuringYear = closure && new Date(closure.closureDate) >= yearStart && new Date(closure.closureDate) <= yearEnd;
+        const isClosedBeforeYear = closure && new Date(closure.closureDate) < yearStart;
+
+        if (isClosedDuringYear || isClosedBeforeYear) {
+          closingPrincipal = 0;
+          closingInterest = 0;
+          if (isClosedDuringYear) {
+            const interestStartDate = loanDate > yearStart ? loanDate : yearStart;
+            const closureDateObj = new Date(closure!.closureDate);
+            const days = Math.floor((closureDateObj.getTime() - interestStartDate.getTime()) / (1000 * 60 * 60 * 24));
+            if (days > 0 && principal > 0) {
+              thisYearInterest = (principal * yearlyRate * days) / (365 * 100);
+            }
+          }
+        } else {
+          closingPrincipal = openingPrincipal + yearDisbursement - yearPrincipalRepayment;
+          const interestStartDate = loanDate > yearStart ? loanDate : yearStart;
+          const days = Math.floor((yearEnd.getTime() - interestStartDate.getTime()) / (1000 * 60 * 60 * 24));
+          if (days > 0 && closingPrincipal > 0) {
+            thisYearInterest = (closingPrincipal * yearlyRate * days) / (365 * 100);
+          }
+          closingInterest = openingInterest + thisYearInterest - yearInterestRepayment;
+          if (closingInterest < 0) closingInterest = 0;
+        }
+
+        results.push({
+          loanId: loan.id,
+          borrowerName: loan.borrowerName,
+          occupation: loan.borrowerOccupation || '',
+          address: loan.borrowerAddress || '',
+          isBackwardClass: loan.isBackwardClass ?? false,
+          isFarmer: loan.isFarmer ?? false,
+          accountNumber: loan.accountNumber || '',
+          loanDate: loan.loanDate || '',
+          groupId: loan.groupId,
+          status: closure ? 'closed' : 'active',
+          financialYear: `${financialYear}-${financialYear + 1}`,
+          openingPrincipal: Math.round(openingPrincipal * 100) / 100,
+          openingInterest: Math.round(openingInterest),
+          openingTotal: Math.round(openingPrincipal + openingInterest),
+          yearDisbursement: Math.round(yearDisbursement * 100) / 100,
+          yearPrincipalRepayment: Math.round(yearPrincipalRepayment * 100) / 100,
+          yearInterestRepayment: Math.round(yearInterestRepayment),
+          thisYearInterest: Math.round(thisYearInterest),
+          interestRate: rate,
+          interestRateType: rateType,
+          yearlyRate: yearlyRate,
+          closingPrincipal: Math.round(closingPrincipal * 100) / 100,
+          closingInterest: Math.round(closingInterest),
+          closingTotal: Math.round(closingPrincipal + closingInterest),
+          principalAmount: principal
+        });
+      }
+
+      console.log(`📊 BULK ANNUAL STATEMENT: Generated ${results.length} statements`);
+      res.json(results);
+    } catch (error) {
+      console.error('Bulk annual statement error:', error);
+      res.status(500).json({ error: 'बल्क वार्षिक विवरणपत्र तयार करताना त्रुटी झाली' });
+    }
+  });
+
+  app.get("/api/account-ledger/bulk", requireAuth, async (req, res) => {
+    try {
+      const { year, status } = req.query;
+      const tenantId = req.session.tenantId!;
+
+      if (!year) {
+        return res.status(400).json({ error: 'Year is required' });
+      }
+
+      const financialYear = parseInt(year as string);
+      const statusFilter = (status as string) || 'all';
+      const yearStart = new Date(financialYear, 3, 1);
+      const yearEnd = new Date(financialYear + 1, 2, 31);
+      const yearStartISO = `${financialYear}-04-01`;
+      const yearEndISO = `${financialYear + 1}-03-31`;
+
+      console.log(`📊 BULK LOAN LEDGER: FY ${financialYear}-${financialYear+1}, status=${statusFilter}`);
+
+      const allLoans = await db.select()
+        .from(loans)
+        .where(eq(loans.tenantId, tenantId))
+        .orderBy(loans.loanDate);
+
+      const eligibleLoans = allLoans.filter(loan => {
+        const loanDate = new Date(loan.loanDate);
+        if (loanDate > yearEnd) return false;
+        return true;
+      });
+
+      const allClosures = await db.select()
+        .from(loanClosures)
+        .where(eq(loanClosures.tenantId, tenantId));
+      const closureMap = new Map(allClosures.map(c => [c.loanId, c]));
+
+      const filteredLoans = eligibleLoans.filter(loan => {
+        const closure = closureMap.get(loan.id);
+        if (closure && new Date(closure.closureDate) < yearStart) return false;
+        const isClosed = !!closure;
+        if (statusFilter === 'active' && isClosed) return false;
+        if (statusFilter === 'closed' && !isClosed) return false;
+        return true;
+      });
+
+      const allTransactions = await db.select()
+        .from(transactions)
+        .where(eq(transactions.tenantId, tenantId))
+        .orderBy(transactions.transactionDate);
+
+      const txnsByLoan = new Map<string, typeof allTransactions>();
+      for (const txn of allTransactions) {
+        if (!txnsByLoan.has(txn.loanId)) txnsByLoan.set(txn.loanId, []);
+        txnsByLoan.get(txn.loanId)!.push(txn);
+      }
+
+      const results: any[] = [];
+
+      for (const loan of filteredLoans) {
+        const principal = parseFloat(loan.principalAmount || '0');
+        const rate = parseFloat(loan.interestRate || '0');
+        const rateType = loan.interestRateType || 'monthly';
+        const closure = closureMap.get(loan.id) || null;
+        const loanTxns = txnsByLoan.get(loan.id) || [];
+
+        const entries: any[] = [];
+        let runningBalance = 0;
+
+        runningBalance = principal;
+        entries.push({
+          date: loan.loanDate,
+          description: `कर्ज वितरण - खाते क्र. ${loan.accountNumber || ''}`,
+          debit: principal,
+          credit: 0,
+          balance: runningBalance,
+          type: 'loan_disbursement'
+        });
+
+        const paymentTxns = loanTxns.filter(t => {
+          const narration = t.narration || '';
+          if (narration.includes('कर्ज बंद') || narration.includes('मुद्दल') || narration.includes('व्याज') || t.isSystemGenerated) return false;
+          return true;
+        });
+
+        paymentTxns.forEach(txn => {
+          const amount = parseFloat(txn.amount || '0');
+          runningBalance -= amount;
+          entries.push({
+            date: txn.transactionDate,
+            description: `${txn.description || 'Payment'} - ${txn.narration || ''}`,
+            debit: 0,
+            credit: amount,
+            balance: runningBalance,
+            type: 'payment'
+          });
+        });
+
+        if (loan.status === 'closed' && closure) {
+          const principalPaid = parseFloat(closure.principalPaid || '0');
+          const interestPaid = parseFloat(closure.interestPaid || '0');
+          const closureDate = typeof closure.closureDate === 'string' ? closure.closureDate.split('T')[0] : closure.closureDate;
+
+          if (interestPaid > 0) {
+            runningBalance += interestPaid;
+            entries.push({
+              date: closureDate,
+              description: 'व्याज',
+              debit: interestPaid,
+              credit: 0,
+              balance: runningBalance,
+              type: 'interest_charge'
+            });
+            runningBalance -= interestPaid;
+            entries.push({
+              date: closureDate,
+              description: 'व्याज परतफेड',
+              debit: 0,
+              credit: interestPaid,
+              balance: runningBalance,
+              type: 'interest_payment'
+            });
+          }
+          runningBalance -= principalPaid;
+          entries.push({
+            date: closureDate,
+            description: 'मुद्दल परतफेड',
+            debit: 0,
+            credit: principalPaid,
+            balance: runningBalance,
+            type: 'principal_payment'
+          });
+          entries.push({
+            date: closureDate,
+            description: 'कर्ज संपूर्ण बंद',
+            debit: 0,
+            credit: 0,
+            balance: runningBalance,
+            type: 'loan_closure_final'
+          });
+        }
+
+        entries.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+        const totalDebit = entries.reduce((sum: number, e: any) => sum + e.debit, 0);
+        const totalCredit = entries.reduce((sum: number, e: any) => sum + e.credit, 0);
+
+        results.push({
+          loanId: loan.id,
+          borrowerName: loan.borrowerName,
+          accountNumber: loan.accountNumber || '',
+          loanDate: loan.loanDate || '',
+          principalAmount: principal,
+          interestRate: rate,
+          interestRateType: rateType,
+          groupId: loan.groupId,
+          status: closure ? 'closed' : 'active',
+          entries,
+          totalDebit: Math.round(totalDebit * 100) / 100,
+          totalCredit: Math.round(totalCredit * 100) / 100,
+          finalBalance: Math.round(runningBalance * 100) / 100,
+          financialYear: `${financialYear}-${financialYear + 1}`,
+          dateFrom: yearStartISO,
+          dateTo: yearEndISO
+        });
+      }
+
+      console.log(`📊 BULK LOAN LEDGER: Generated ${results.length} ledgers`);
+      res.json(results);
+    } catch (error) {
+      console.error('Bulk loan ledger error:', error);
+      res.status(500).json({ error: 'बल्क कर्ज लेजर तयार करताना त्रुटी झाली' });
+    }
+  });
+
   // =================================
   // STORAGE SETTINGS API ROUTES
   // =================================
