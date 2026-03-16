@@ -6164,6 +6164,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  function buildInsertAtPositionPlan(
+    groupLoans: { id: any; accountNumber: string; borrowerName: string; loanDate: string; principalAmount?: any; status?: any }[],
+    loanId: string,
+    posNum: number
+  ) {
+    const targetLoan = groupLoans.find(l => l.id === loanId)!;
+
+    const loansToShift = groupLoans.filter(l => {
+      const num = parseInt(l.accountNumber);
+      return !isNaN(num) && num >= posNum && l.id !== loanId;
+    }).sort((a, b) => parseInt(a.accountNumber) - parseInt(b.accountNumber));
+
+    const insertEntry = {
+      id: targetLoan.id,
+      oldNumber: targetLoan.accountNumber,
+      newNumber: String(posNum),
+      borrowerName: targetLoan.borrowerName,
+      loanDate: targetLoan.loanDate,
+      principalAmount: targetLoan.principalAmount,
+      status: targetLoan.status,
+      changed: targetLoan.accountNumber !== String(posNum),
+      type: 'insert' as const,
+    };
+
+    const shiftPlan = loansToShift.map(loan => ({
+      id: loan.id,
+      oldNumber: loan.accountNumber,
+      newNumber: String(parseInt(loan.accountNumber) + 1),
+      borrowerName: loan.borrowerName,
+      loanDate: loan.loanDate,
+      principalAmount: loan.principalAmount,
+      status: loan.status,
+      changed: true,
+      type: 'shift' as const,
+    }));
+
+    const unchangedEntries = groupLoans.filter(l => {
+      if (l.id === loanId) return false;
+      const num = parseInt(l.accountNumber);
+      return isNaN(num) || num < posNum;
+    }).map(loan => ({
+      id: loan.id,
+      oldNumber: loan.accountNumber,
+      newNumber: loan.accountNumber,
+      borrowerName: loan.borrowerName,
+      loanDate: loan.loanDate,
+      principalAmount: loan.principalAmount,
+      status: loan.status,
+      changed: false,
+      type: 'unchanged' as const,
+    }));
+
+    return { insertEntry, shiftPlan, unchangedEntries };
+  }
+
   app.post("/api/loans/insert-at-position/preview", requireAuth, async (req, res) => {
     try {
       if (req.session.role !== 'admin' && req.session.role !== 'super_admin') {
@@ -6214,70 +6269,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json({ preview: allPreview, totalLoans: groupLoans.length, changedCount: 0 });
       }
 
-      const targetOldNum = parseInt(targetLoan.accountNumber);
-      const movingDown = !isNaN(targetOldNum) && targetOldNum > posNum;
+      const { shiftPlan, insertEntry, unchangedEntries } = buildInsertAtPositionPlan(groupLoans, loanId, posNum);
 
-      const loansToShift = groupLoans.filter(l => {
-        const num = parseInt(l.accountNumber);
-        if (isNaN(num) || l.id === loanId) return false;
-        if (movingDown) {
-          return num >= posNum && num < targetOldNum;
-        }
-        return num >= posNum;
-      }).sort((a, b) => parseInt(a.accountNumber) - parseInt(b.accountNumber));
-
-      const preview: any[] = [];
-
-      const targetNewNumber = String(posNum);
-      preview.push({
-        id: targetLoan.id,
-        oldNumber: targetLoan.accountNumber,
-        newNumber: targetNewNumber,
-        borrowerName: targetLoan.borrowerName,
-        loanDate: targetLoan.loanDate,
-        principalAmount: targetLoan.principalAmount,
-        status: targetLoan.status,
-        changed: true,
-        type: 'insert',
-      });
-
-      for (const loan of loansToShift) {
-        const newNum = String(parseInt(loan.accountNumber) + 1);
-        preview.push({
-          id: loan.id,
-          oldNumber: loan.accountNumber,
-          newNumber: newNum,
-          borrowerName: loan.borrowerName,
-          loanDate: loan.loanDate,
-          principalAmount: loan.principalAmount,
-          status: loan.status,
-          changed: true,
-          type: 'shift',
-        });
-      }
-
-      const unchangedLoans = groupLoans.filter(l => {
-        if (l.id === loanId) return false;
-        const num = parseInt(l.accountNumber);
-        if (isNaN(num)) return true;
-        if (movingDown) {
-          return num < posNum || num >= targetOldNum;
-        }
-        return num < posNum;
-      });
-      for (const loan of unchangedLoans) {
-        preview.push({
-          id: loan.id,
-          oldNumber: loan.accountNumber,
-          newNumber: loan.accountNumber,
-          borrowerName: loan.borrowerName,
-          loanDate: loan.loanDate,
-          principalAmount: loan.principalAmount,
-          status: loan.status,
-          changed: false,
-          type: 'unchanged',
-        });
-      }
+      const preview: any[] = [insertEntry, ...shiftPlan, ...unchangedEntries];
 
       preview.sort((a, b) => {
         const numA = parseInt(a.newNumber) || 99999;
@@ -6336,38 +6330,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json({ message: "कोणताही बदल आवश्यक नाही — कर्ज आधीच या क्रमांकावर आहे", updatedCount: 0 });
       }
 
-      const targetOldNum = parseInt(targetLoan.accountNumber);
-      const movingDown = !isNaN(targetOldNum) && targetOldNum > posNum;
+      const { insertEntry, shiftPlan } = buildInsertAtPositionPlan(groupLoans, loanId, posNum);
 
-      const loansToShift = groupLoans.filter(l => {
-        const num = parseInt(l.accountNumber);
-        if (isNaN(num) || l.id === loanId) return false;
-        if (movingDown) {
-          return num >= posNum && num < targetOldNum;
-        }
-        return num >= posNum;
-      }).sort((a, b) => parseInt(a.accountNumber) - parseInt(b.accountNumber));
-
-      const renumberPlan: { id: any; oldNumber: string; newNumber: string; borrowerName: string }[] = [];
-
-      renumberPlan.push({
-        id: targetLoan.id,
-        oldNumber: targetLoan.accountNumber,
-        newNumber: String(posNum),
-        borrowerName: targetLoan.borrowerName,
-      });
-
-      for (const loan of loansToShift) {
-        const newNum = String(parseInt(loan.accountNumber) + 1);
-        if (loan.accountNumber !== newNum) {
-          renumberPlan.push({
-            id: loan.id,
-            oldNumber: loan.accountNumber,
-            newNumber: newNum,
-            borrowerName: loan.borrowerName,
-          });
-        }
-      }
+      const renumberPlan = [insertEntry, ...shiftPlan]
+        .filter(p => p.changed)
+        .map(p => ({ id: p.id, oldNumber: p.oldNumber, newNumber: p.newNumber, borrowerName: p.borrowerName }));
 
       if (renumberPlan.length === 0) {
         return res.json({ message: "कोणताही बदल आवश्यक नाही", updatedCount: 0 });
