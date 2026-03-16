@@ -6164,6 +6164,275 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/loans/insert-at-position/preview", requireAuth, async (req, res) => {
+    try {
+      if (req.session.role !== 'admin' && req.session.role !== 'super_admin') {
+        return res.status(403).json({ message: "फक्त admin ला खाते क्रमांक बदलण्याची परवानगी आहे" });
+      }
+      const { groupId, loanId, position } = req.body;
+      const tenantId = req.session.tenantId!;
+
+      if (!groupId || !loanId || !position) {
+        return res.status(400).json({ message: "ग्रुप, कर्ज आणि क्रमांक आवश्यक आहे" });
+      }
+
+      const posNum = parseInt(position);
+      if (isNaN(posNum) || posNum < 1) {
+        return res.status(400).json({ message: "वैध खाते क्रमांक टाका (1 पासून)" });
+      }
+
+      const groupLoans = await db.select({
+        id: loans.id,
+        accountNumber: loans.accountNumber,
+        borrowerName: loans.borrowerName,
+        loanDate: loans.loanDate,
+        principalAmount: loans.principalAmount,
+        status: loans.status,
+      })
+      .from(loans)
+      .where(and(
+        eq(loans.tenantId, tenantId),
+        eq(loans.groupId, groupId)
+      ));
+
+      if (groupLoans.length === 0) {
+        return res.json({ preview: [], totalLoans: 0, changedCount: 0 });
+      }
+
+      const targetLoan = groupLoans.find(l => l.id === loanId);
+      if (!targetLoan) {
+        return res.status(400).json({ message: "निवडलेलं कर्ज या ग्रुपमध्ये सापडलं नाही" });
+      }
+
+      const loansToShift = groupLoans.filter(l => {
+        const num = parseInt(l.accountNumber);
+        return !isNaN(num) && num >= posNum && l.id !== loanId;
+      }).sort((a, b) => parseInt(a.accountNumber) - parseInt(b.accountNumber));
+
+      const preview: any[] = [];
+
+      const targetNewNumber = String(posNum);
+      preview.push({
+        id: targetLoan.id,
+        oldNumber: targetLoan.accountNumber,
+        newNumber: targetNewNumber,
+        borrowerName: targetLoan.borrowerName,
+        loanDate: targetLoan.loanDate,
+        principalAmount: targetLoan.principalAmount,
+        status: targetLoan.status,
+        changed: targetLoan.accountNumber !== targetNewNumber,
+        type: 'insert',
+      });
+
+      for (const loan of loansToShift) {
+        const newNum = String(parseInt(loan.accountNumber) + 1);
+        preview.push({
+          id: loan.id,
+          oldNumber: loan.accountNumber,
+          newNumber: newNum,
+          borrowerName: loan.borrowerName,
+          loanDate: loan.loanDate,
+          principalAmount: loan.principalAmount,
+          status: loan.status,
+          changed: true,
+          type: 'shift',
+        });
+      }
+
+      const unchangedLoans = groupLoans.filter(l => {
+        if (l.id === loanId) return false;
+        const num = parseInt(l.accountNumber);
+        return isNaN(num) || num < posNum;
+      });
+      for (const loan of unchangedLoans) {
+        preview.push({
+          id: loan.id,
+          oldNumber: loan.accountNumber,
+          newNumber: loan.accountNumber,
+          borrowerName: loan.borrowerName,
+          loanDate: loan.loanDate,
+          principalAmount: loan.principalAmount,
+          status: loan.status,
+          changed: false,
+          type: 'unchanged',
+        });
+      }
+
+      preview.sort((a, b) => {
+        const numA = parseInt(a.newNumber) || 99999;
+        const numB = parseInt(b.newNumber) || 99999;
+        return numA - numB;
+      });
+
+      const changedCount = preview.filter(p => p.changed).length;
+
+      res.json({ preview, totalLoans: groupLoans.length, changedCount });
+    } catch (error) {
+      console.error("Insert-at-position preview error:", error);
+      res.status(500).json({ message: "Preview तयार करताना त्रुटी आली" });
+    }
+  });
+
+  app.post("/api/loans/insert-at-position", requireAuth, async (req, res) => {
+    try {
+      if (req.session.role !== 'admin' && req.session.role !== 'super_admin') {
+        return res.status(403).json({ message: "फक्त admin ला खाते क्रमांक बदलण्याची परवानगी आहे" });
+      }
+      const { groupId, loanId, position } = req.body;
+      const tenantId = req.session.tenantId!;
+
+      if (!groupId || !loanId || !position) {
+        return res.status(400).json({ message: "ग्रुप, कर्ज आणि क्रमांक आवश्यक आहे" });
+      }
+
+      const posNum = parseInt(position);
+      if (isNaN(posNum) || posNum < 1) {
+        return res.status(400).json({ message: "वैध खाते क्रमांक टाका (1 पासून)" });
+      }
+
+      const groupLoans = await db.select({
+        id: loans.id,
+        accountNumber: loans.accountNumber,
+        borrowerName: loans.borrowerName,
+        loanDate: loans.loanDate,
+      })
+      .from(loans)
+      .where(and(
+        eq(loans.tenantId, tenantId),
+        eq(loans.groupId, groupId)
+      ));
+
+      if (groupLoans.length === 0) {
+        return res.json({ message: "या ग्रुपमध्ये कर्ज नाहीत", updatedCount: 0 });
+      }
+
+      const targetLoan = groupLoans.find(l => l.id === loanId);
+      if (!targetLoan) {
+        return res.status(400).json({ message: "निवडलेलं कर्ज या ग्रुपमध्ये सापडलं नाही" });
+      }
+
+      const loansToShift = groupLoans.filter(l => {
+        const num = parseInt(l.accountNumber);
+        return !isNaN(num) && num >= posNum && l.id !== loanId;
+      }).sort((a, b) => parseInt(a.accountNumber) - parseInt(b.accountNumber));
+
+      const renumberPlan: { id: any; oldNumber: string; newNumber: string; borrowerName: string }[] = [];
+
+      if (targetLoan.accountNumber !== String(posNum)) {
+        renumberPlan.push({
+          id: targetLoan.id,
+          oldNumber: targetLoan.accountNumber,
+          newNumber: String(posNum),
+          borrowerName: targetLoan.borrowerName,
+        });
+      }
+
+      for (const loan of loansToShift) {
+        const newNum = String(parseInt(loan.accountNumber) + 1);
+        if (loan.accountNumber !== newNum) {
+          renumberPlan.push({
+            id: loan.id,
+            oldNumber: loan.accountNumber,
+            newNumber: newNum,
+            borrowerName: loan.borrowerName,
+          });
+        }
+      }
+
+      if (renumberPlan.length === 0) {
+        return res.json({ message: "कोणताही बदल आवश्यक नाही — कर्ज आधीच या क्रमांकावर आहे", updatedCount: 0 });
+      }
+
+      const allAffectedIds = groupLoans.map(l => l.id);
+      const loanIdsSql = allAffectedIds.map(id => `'${id.replace(/'/g, "''")}'`).join(',');
+      const txTimestamp = Date.now();
+
+      await db.transaction(async (tx) => {
+        const tempPrefix = `__TEMP_INSERT_${txTimestamp}_`;
+
+        for (const plan of renumberPlan) {
+          await tx.update(loans)
+            .set({ accountNumber: tempPrefix + plan.newNumber, updatedAt: new Date() })
+            .where(and(eq(loans.id, plan.id), eq(loans.tenantId, tenantId)));
+        }
+        for (const plan of renumberPlan) {
+          await tx.update(loans)
+            .set({ accountNumber: plan.newNumber, updatedAt: new Date() })
+            .where(and(eq(loans.id, plan.id), eq(loans.tenantId, tenantId)));
+        }
+
+        const tempTokens = new Map<string, string>();
+        for (const plan of renumberPlan) {
+          tempTokens.set(plan.oldNumber, `__INS_${plan.oldNumber}_${txTimestamp}__`);
+        }
+
+        for (const plan of renumberPlan) {
+          const escapedOld = plan.oldNumber.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          const oldRegex = `खाते क्र\\. ${escapedOld}([^0-9]|$)`;
+          const tempReplacement = `खाते क्र. ${tempTokens.get(plan.oldNumber)!}\\1`;
+          const oldLike = `%खाते क्र. ${plan.oldNumber}%`;
+          await tx.update(cashTransactions)
+            .set({ narration: sql`regexp_replace(${cashTransactions.narration}, ${oldRegex}, ${tempReplacement}, 'g')`, updatedAt: new Date() })
+            .where(and(
+              eq(cashTransactions.tenantId, tenantId),
+              sql`${cashTransactions.loanId} IN (${sql.raw(loanIdsSql)})`,
+              sql`${cashTransactions.narration} LIKE ${oldLike}`
+            ));
+          await tx.update(journalEntries)
+            .set({ narration: sql`regexp_replace(${journalEntries.narration}, ${oldRegex}, ${tempReplacement}, 'g')`, updatedAt: new Date() })
+            .where(and(
+              eq(journalEntries.tenantId, tenantId),
+              sql`${journalEntries.sourceId} IN (SELECT id FROM cash_transactions WHERE ${sql.raw(`loan_id IN (${loanIdsSql})`)})`,
+              sql`${journalEntries.narration} LIKE ${oldLike}`
+            ));
+        }
+
+        for (const plan of renumberPlan) {
+          const token = tempTokens.get(plan.oldNumber)!;
+          const tempLike = `%${token}%`;
+          await tx.update(cashTransactions)
+            .set({ narration: sql`REPLACE(${cashTransactions.narration}, ${token}, ${plan.newNumber})`, updatedAt: new Date() })
+            .where(and(
+              eq(cashTransactions.tenantId, tenantId),
+              sql`${cashTransactions.loanId} IN (${sql.raw(loanIdsSql)})`,
+              sql`${cashTransactions.narration} LIKE ${tempLike}`
+            ));
+          await tx.update(journalEntries)
+            .set({ narration: sql`REPLACE(${journalEntries.narration}, ${token}, ${plan.newNumber})`, updatedAt: new Date() })
+            .where(and(
+              eq(journalEntries.tenantId, tenantId),
+              sql`${journalEntries.sourceId} IN (SELECT id FROM cash_transactions WHERE ${sql.raw(`loan_id IN (${loanIdsSql})`)})`,
+              sql`${journalEntries.narration} LIKE ${tempLike}`
+            ));
+        }
+      });
+
+      performanceCache.invalidatePattern(`loans:${tenantId}`);
+      performanceCache.invalidatePattern(`cash:${tenantId}`);
+      performanceCache.invalidatePattern(`journal:${tenantId}`);
+
+      try {
+        const changeDetails = renumberPlan.map(p => `${p.oldNumber}→${p.newNumber}`).join(', ');
+        await storage.logUserActivity({
+          userId: req.session.userId!,
+          tenantId,
+          activityType: 'insert_at_position',
+          description: `खाते क्रमांक Insert: कर्ज "${targetLoan.borrowerName}" ला क्र. ${posNum} वर ठेवले, ${renumberPlan.length} कर्ज बदलले (${changeDetails})`,
+          metadata: JSON.stringify({ groupId, loanId, position: posNum, changes: renumberPlan })
+        });
+      } catch(e) { console.error('Audit log error:', e); }
+
+      res.json({
+        message: `कर्ज "${targetLoan.borrowerName}" क्र. ${posNum} वर ठेवले, ${renumberPlan.length} कर्जांचे क्रमांक बदलले`,
+        updatedCount: renumberPlan.length,
+        changes: renumberPlan.map(p => ({ oldNumber: p.oldNumber, newNumber: p.newNumber, borrowerName: p.borrowerName }))
+      });
+    } catch (error) {
+      console.error("Insert-at-position error:", error);
+      res.status(500).json({ message: "खाते क्रमांक बदलताना त्रुटी आली. कोणताही बदल झालेला नाही." });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
