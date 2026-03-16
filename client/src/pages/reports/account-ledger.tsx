@@ -901,6 +901,7 @@ export default function AccountLedger() {
       const renderWidthPx = 794;
       const companyName = company?.name || 'कंपनी नाव';
       const accountName = statementData.account?.borrowerName || statementData.account?.name || 'खाते';
+      const cleanAccountName = accountName.includes(' - ') ? accountName.split(' - ').pop()?.trim() || accountName : accountName;
       const accountType = statementData.account?.type || '';
       const isCashAccount = accountType === 'cash';
       const isLoanAccount = accountType === 'individual_loan' || accountType === 'loan';
@@ -984,11 +985,13 @@ export default function AccountLedger() {
         body { font-family: Arial, sans-serif; background: white; width: ${renderWidthPx}px; padding: 20px 30px; }
         table { width: 100%; border-collapse: collapse; table-layout: fixed; }
       </style></head><body>
-        <div style="text-align:center;margin-bottom:18px;padding-bottom:12px;border-bottom:1px solid #ddd;">
+        <div style="text-align:center;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid #ddd;">
           <p style="font-size:18px;font-weight:bold;margin-bottom:6px;">${companyName}</p>
           <p style="font-size:15px;font-weight:bold;margin-bottom:4px;">${headerTitle}</p>
           ${subTitle ? `<p style="font-size:11px;color:#555;margin-bottom:3px;">${subTitle}</p>` : ''}
-          <p style="font-size:13px;font-weight:600;margin-bottom:4px;">खाते: ${accountName}</p>
+        </div>
+        <div style="text-align:left;margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid #eee;">
+          <p style="font-size:13px;font-weight:600;margin-bottom:4px;">खाते: ${cleanAccountName}</p>
           ${accountInfoHTML ? `<p style="margin-bottom:3px;">${accountInfoHTML}</p>` : ''}
           <p style="font-size:11px;color:#555;">कालावधी: ${DateUtils.isoToIndianDate(filters.dateFrom)} ते ${DateUtils.isoToIndianDate(filters.dateTo)}</p>
         </div>
@@ -1316,7 +1319,7 @@ export default function AccountLedger() {
                       <div className="text-sm text-gray-600 text-left">
                         {/* ✅ PROFESSIONAL PRINT: Account info in horizontal layout for print only */}
                         <div className="print-hidden flex flex-col gap-1">
-                          <p><strong>खाते:</strong> {statementData.account.borrowerName || statementData.account.name}</p>
+                          <p><strong>खाते:</strong> {(() => { const n = statementData.account.borrowerName || statementData.account.name || ''; return n.includes(' - ') ? n.split(' - ').pop()?.trim() || n : n; })()}</p>
                           {(statementData.account.mobile || statementData.account.borrowerMobile) && (
                             <p><strong>मोबाईल:</strong> {statementData.account.mobile || statementData.account.borrowerMobile}</p>
                           )}
@@ -1351,7 +1354,7 @@ export default function AccountLedger() {
                         {/* ✅ PRINT ONLY: Professional horizontal layout */}
                         <div className="print-only print-horizontal-layout">
                           <div>
-                            <p><strong>खाते:</strong> {statementData.account.borrowerName || statementData.account.name}</p>
+                            <p><strong>खाते:</strong> {(() => { const n = statementData.account.borrowerName || statementData.account.name || ''; return n.includes(' - ') ? n.split(' - ').pop()?.trim() || n : n; })()}</p>
                             {(statementData.account.mobile || statementData.account.borrowerMobile) && (
                               <p><strong>मोबाईल:</strong> {statementData.account.mobile || statementData.account.borrowerMobile}</p>
                             )}
