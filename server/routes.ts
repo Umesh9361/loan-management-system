@@ -6204,9 +6204,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "निवडलेलं कर्ज या ग्रुपमध्ये सापडलं नाही" });
       }
 
+      if (targetLoan.accountNumber === String(posNum)) {
+        const allPreview = groupLoans.map(l => ({
+          id: l.id, oldNumber: l.accountNumber, newNumber: l.accountNumber,
+          borrowerName: l.borrowerName, loanDate: l.loanDate,
+          principalAmount: l.principalAmount, status: l.status,
+          changed: false, type: l.id === loanId ? 'insert' : 'unchanged',
+        })).sort((a, b) => (parseInt(a.newNumber) || 99999) - (parseInt(b.newNumber) || 99999));
+        return res.json({ preview: allPreview, totalLoans: groupLoans.length, changedCount: 0 });
+      }
+
+      const targetOldNum = parseInt(targetLoan.accountNumber);
+      const movingDown = !isNaN(targetOldNum) && targetOldNum > posNum;
+
       const loansToShift = groupLoans.filter(l => {
         const num = parseInt(l.accountNumber);
-        return !isNaN(num) && num >= posNum && l.id !== loanId;
+        if (isNaN(num) || l.id === loanId) return false;
+        if (movingDown) {
+          return num >= posNum && num < targetOldNum;
+        }
+        return num >= posNum;
       }).sort((a, b) => parseInt(a.accountNumber) - parseInt(b.accountNumber));
 
       const preview: any[] = [];
@@ -6220,7 +6237,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         loanDate: targetLoan.loanDate,
         principalAmount: targetLoan.principalAmount,
         status: targetLoan.status,
-        changed: targetLoan.accountNumber !== targetNewNumber,
+        changed: true,
         type: 'insert',
       });
 
@@ -6242,7 +6259,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const unchangedLoans = groupLoans.filter(l => {
         if (l.id === loanId) return false;
         const num = parseInt(l.accountNumber);
-        return isNaN(num) || num < posNum;
+        if (isNaN(num)) return true;
+        if (movingDown) {
+          return num < posNum || num >= targetOldNum;
+        }
+        return num < posNum;
       });
       for (const loan of unchangedLoans) {
         preview.push({
@@ -6311,21 +6332,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "निवडलेलं कर्ज या ग्रुपमध्ये सापडलं नाही" });
       }
 
+      if (targetLoan.accountNumber === String(posNum)) {
+        return res.json({ message: "कोणताही बदल आवश्यक नाही — कर्ज आधीच या क्रमांकावर आहे", updatedCount: 0 });
+      }
+
+      const targetOldNum = parseInt(targetLoan.accountNumber);
+      const movingDown = !isNaN(targetOldNum) && targetOldNum > posNum;
+
       const loansToShift = groupLoans.filter(l => {
         const num = parseInt(l.accountNumber);
-        return !isNaN(num) && num >= posNum && l.id !== loanId;
+        if (isNaN(num) || l.id === loanId) return false;
+        if (movingDown) {
+          return num >= posNum && num < targetOldNum;
+        }
+        return num >= posNum;
       }).sort((a, b) => parseInt(a.accountNumber) - parseInt(b.accountNumber));
 
       const renumberPlan: { id: any; oldNumber: string; newNumber: string; borrowerName: string }[] = [];
 
-      if (targetLoan.accountNumber !== String(posNum)) {
-        renumberPlan.push({
-          id: targetLoan.id,
-          oldNumber: targetLoan.accountNumber,
-          newNumber: String(posNum),
-          borrowerName: targetLoan.borrowerName,
-        });
-      }
+      renumberPlan.push({
+        id: targetLoan.id,
+        oldNumber: targetLoan.accountNumber,
+        newNumber: String(posNum),
+        borrowerName: targetLoan.borrowerName,
+      });
 
       for (const loan of loansToShift) {
         const newNum = String(parseInt(loan.accountNumber) + 1);
@@ -6340,7 +6370,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       if (renumberPlan.length === 0) {
-        return res.json({ message: "कोणताही बदल आवश्यक नाही — कर्ज आधीच या क्रमांकावर आहे", updatedCount: 0 });
+        return res.json({ message: "कोणताही बदल आवश्यक नाही", updatedCount: 0 });
       }
 
       const allAffectedIds = groupLoans.map(l => l.id);
