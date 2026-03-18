@@ -1585,16 +1585,17 @@ export default function BorrowerListReports() {
     const totalAmount = reportData.reduce((sum, loan) => sum + Math.round(loan.principalAmount), 0);
     const totalGoldWeight = reportData.reduce((sum, loan) => {
       if (loan.loanType === 'विनातारण' || loan.metalType === 'silver') return sum;
-      const weight = (loan.weight || '10').toString().replace(/[^\d]/g, '') || '10';
-      return sum + parseInt(weight);
+      const w = parseFloat((loan.weight || '0').toString().replace(/[^0-9.]/g, '')) || 0;
+      return sum + w;
     }, 0);
     const totalSilverWeight = reportData.reduce((sum, loan) => {
       if (loan.metalType !== 'silver') return sum;
-      const weight = (loan.weight || '0').toString().replace(/[^\d]/g, '') || '0';
-      return sum + parseInt(weight);
+      const w = parseFloat((loan.weight || '0').toString().replace(/[^0-9.]/g, '')) || 0;
+      return sum + w;
     }, 0);
     const totalWeight = totalGoldWeight + totalSilverWeight;
-    const weightDisplay = totalSilverWeight > 0 ? `सोने: ${totalGoldWeight}g | चांदी: ${totalSilverWeight}g` : `${totalWeight}`;
+    const formatWeight = (w: number) => w % 1 === 0 ? w.toString() : w.toFixed(2);
+    const weightDisplay = totalSilverWeight > 0 ? `सोने: ${formatWeight(totalGoldWeight)}g | चांदी: ${formatWeight(totalSilverWeight)}g` : `${formatWeight(totalWeight)}`;
     
     // Calculate total interest for closing-wise report
     const totalInterest = activeTab === 'closing-wise' ? reportData.reduce((sum, loan) => {
