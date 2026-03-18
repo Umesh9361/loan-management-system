@@ -6374,6 +6374,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (fromDate) {
         excludedLoans = sorted.filter(l => l.loanDate < fromDate);
         loansToRenumber = sorted.filter(l => l.loanDate >= fromDate);
+      } else if (startNum > 1) {
+        const startIndex = sorted.findIndex(l => {
+          const num = parseInt(l.accountNumber);
+          return !isNaN(num) && num >= startNum;
+        });
+        if (startIndex > 0) {
+          excludedLoans = sorted.slice(0, startIndex);
+          loansToRenumber = sorted.slice(startIndex);
+        } else if (startIndex === -1) {
+          excludedLoans = sorted;
+          loansToRenumber = [];
+        } else {
+          loansToRenumber = sorted;
+        }
       } else {
         loansToRenumber = sorted;
       }
@@ -6449,7 +6463,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const sorted = sortLoansByDateThenNumericAccount(groupLoans);
-      const loansToRenumber = fromDate ? sorted.filter(l => l.loanDate >= fromDate) : sorted;
+      let loansToRenumber: typeof sorted;
+      if (fromDate) {
+        loansToRenumber = sorted.filter(l => l.loanDate >= fromDate);
+      } else if (startNum > 1) {
+        const startIndex = sorted.findIndex(l => {
+          const num = parseInt(l.accountNumber);
+          return !isNaN(num) && num >= startNum;
+        });
+        if (startIndex > 0) {
+          loansToRenumber = sorted.slice(startIndex);
+        } else if (startIndex === -1) {
+          loansToRenumber = [];
+        } else {
+          loansToRenumber = sorted;
+        }
+      } else {
+        loansToRenumber = sorted;
+      }
       const affectedLoanIds = loansToRenumber.map(l => l.id);
 
       const renumberPlan = loansToRenumber.map((loan, index) => ({
@@ -6464,7 +6495,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const txTimestamp = Date.now();
-      const loanIdsSql = affectedLoanIds.map(id => `'${id.replace(/'/g, "''")}'`).join(',');
 
       await db.transaction(async (tx) => {
         const tempPrefix = `__TEMP_REARRANGE_${txTimestamp}_`;
@@ -6480,49 +6510,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
             .where(and(eq(loans.id, plan.id), eq(loans.tenantId, tenantId)));
         }
 
-        const tempTokens = new Map<string, string>();
         for (const plan of renumberPlan) {
-          tempTokens.set(plan.oldNumber, `__ARR_${plan.oldNumber}_${txTimestamp}__`);
-        }
+          const oldPattern = `खाते क्र. ${plan.oldNumber} `;
+          const newPattern = `खाते क्र. ${plan.newNumber} `;
 
-        for (const plan of renumberPlan) {
-          const escapedOld = plan.oldNumber.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-          const oldRegex = `खाते क्र\\. ${escapedOld}([^0-9]|$)`;
-          const tempReplacement = `खाते क्र. ${tempTokens.get(plan.oldNumber)!}\\1`;
-          const oldLike = `%खाते क्र. ${plan.oldNumber}%`;
-          await tx.update(cashTransactions)
-            .set({ narration: sql`regexp_replace(${cashTransactions.narration}, ${oldRegex}, ${tempReplacement}, 'g')`, updatedAt: new Date() })
+          const loanCashTxs = await tx.select({ id: cashTransactions.id })
+            .from(cashTransactions)
             .where(and(
               eq(cashTransactions.tenantId, tenantId),
-              sql`${cashTransactions.loanId} IN (${sql.raw(loanIdsSql)})`,
-              sql`${cashTransactions.narration} LIKE ${oldLike}`
+              eq(cashTransactions.loanId, plan.id)
             ));
-          await tx.update(journalEntries)
-            .set({ narration: sql`regexp_replace(${journalEntries.narration}, ${oldRegex}, ${tempReplacement}, 'g')`, updatedAt: new Date() })
-            .where(and(
-              eq(journalEntries.tenantId, tenantId),
-              sql`${journalEntries.sourceId} IN (SELECT id FROM cash_transactions WHERE ${sql.raw(`loan_id IN (${loanIdsSql})`)})`,
-              sql`${journalEntries.narration} LIKE ${oldLike}`
-            ));
-        }
+          const loanCashTxIds = loanCashTxs.map(r => r.id);
 
-        for (const plan of renumberPlan) {
-          const token = tempTokens.get(plan.oldNumber)!;
-          const tempLike = `%${token}%`;
-          await tx.update(cashTransactions)
-            .set({ narration: sql`REPLACE(${cashTransactions.narration}, ${token}, ${plan.newNumber})`, updatedAt: new Date() })
-            .where(and(
-              eq(cashTransactions.tenantId, tenantId),
-              sql`${cashTransactions.loanId} IN (${sql.raw(loanIdsSql)})`,
-              sql`${cashTransactions.narration} LIKE ${tempLike}`
-            ));
-          await tx.update(journalEntries)
-            .set({ narration: sql`REPLACE(${journalEntries.narration}, ${token}, ${plan.newNumber})`, updatedAt: new Date() })
-            .where(and(
-              eq(journalEntries.tenantId, tenantId),
-              sql`${journalEntries.sourceId} IN (SELECT id FROM cash_transactions WHERE ${sql.raw(`loan_id IN (${loanIdsSql})`)})`,
-              sql`${journalEntries.narration} LIKE ${tempLike}`
-            ));
+          if (loanCashTxIds.length > 0) {
+            await tx.update(cashTransactions)
+              .set({ narration: sql`replace(${cashTransactions.narration}, ${oldPattern}, ${newPattern})`, updatedAt: new Date() })
+              .where(and(
+                eq(cashTransactions.tenantId, tenantId),
+                inArray(cashTransactions.id, loanCashTxIds)
+              ));
+
+            await tx.update(journalEntries)
+              .set({ narration: sql`replace(${journalEntries.narration}, ${oldPattern}, ${newPattern})`, updatedAt: new Date() })
+              .where(and(
+                eq(journalEntries.tenantId, tenantId),
+                inArray(journalEntries.sourceId, loanCashTxIds)
+              ));
+          }
         }
       });
 
@@ -6546,8 +6560,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         updatedCount: renumberPlan.length,
         changes: renumberPlan.map(p => ({ oldNumber: p.oldNumber, newNumber: p.newNumber, borrowerName: p.borrowerName }))
       });
-    } catch (error) {
-      console.error("Auto-arrange error:", error);
+    } catch (error: any) {
+      console.error("Auto-arrange error:", error?.message || error);
+      console.error("Auto-arrange stack:", error?.stack);
       res.status(500).json({ message: "खाते क्रमांक बदलताना त्रुटी आली. कोणताही बदल झालेला नाही." });
     }
   });
@@ -6728,8 +6743,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json({ message: "कोणताही बदल आवश्यक नाही", updatedCount: 0 });
       }
 
-      const allAffectedIds = groupLoans.map(l => l.id);
-      const loanIdsSql = allAffectedIds.map(id => `'${id.replace(/'/g, "''")}'`).join(',');
       const txTimestamp = Date.now();
 
       await db.transaction(async (tx) => {
@@ -6746,49 +6759,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
             .where(and(eq(loans.id, plan.id), eq(loans.tenantId, tenantId)));
         }
 
-        const tempTokens = new Map<string, string>();
         for (const plan of renumberPlan) {
-          tempTokens.set(plan.oldNumber, `__INS_${plan.oldNumber}_${txTimestamp}__`);
-        }
+          const oldPattern = `खाते क्र. ${plan.oldNumber} `;
+          const newPattern = `खाते क्र. ${plan.newNumber} `;
 
-        for (const plan of renumberPlan) {
-          const escapedOld = plan.oldNumber.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-          const oldRegex = `खाते क्र\\. ${escapedOld}([^0-9]|$)`;
-          const tempReplacement = `खाते क्र. ${tempTokens.get(plan.oldNumber)!}\\1`;
-          const oldLike = `%खाते क्र. ${plan.oldNumber}%`;
-          await tx.update(cashTransactions)
-            .set({ narration: sql`regexp_replace(${cashTransactions.narration}, ${oldRegex}, ${tempReplacement}, 'g')`, updatedAt: new Date() })
+          const loanCashTxs = await tx.select({ id: cashTransactions.id })
+            .from(cashTransactions)
             .where(and(
               eq(cashTransactions.tenantId, tenantId),
-              sql`${cashTransactions.loanId} IN (${sql.raw(loanIdsSql)})`,
-              sql`${cashTransactions.narration} LIKE ${oldLike}`
+              eq(cashTransactions.loanId, plan.id)
             ));
-          await tx.update(journalEntries)
-            .set({ narration: sql`regexp_replace(${journalEntries.narration}, ${oldRegex}, ${tempReplacement}, 'g')`, updatedAt: new Date() })
-            .where(and(
-              eq(journalEntries.tenantId, tenantId),
-              sql`${journalEntries.sourceId} IN (SELECT id FROM cash_transactions WHERE ${sql.raw(`loan_id IN (${loanIdsSql})`)})`,
-              sql`${journalEntries.narration} LIKE ${oldLike}`
-            ));
-        }
+          const loanCashTxIds = loanCashTxs.map(r => r.id);
 
-        for (const plan of renumberPlan) {
-          const token = tempTokens.get(plan.oldNumber)!;
-          const tempLike = `%${token}%`;
-          await tx.update(cashTransactions)
-            .set({ narration: sql`REPLACE(${cashTransactions.narration}, ${token}, ${plan.newNumber})`, updatedAt: new Date() })
-            .where(and(
-              eq(cashTransactions.tenantId, tenantId),
-              sql`${cashTransactions.loanId} IN (${sql.raw(loanIdsSql)})`,
-              sql`${cashTransactions.narration} LIKE ${tempLike}`
-            ));
-          await tx.update(journalEntries)
-            .set({ narration: sql`REPLACE(${journalEntries.narration}, ${token}, ${plan.newNumber})`, updatedAt: new Date() })
-            .where(and(
-              eq(journalEntries.tenantId, tenantId),
-              sql`${journalEntries.sourceId} IN (SELECT id FROM cash_transactions WHERE ${sql.raw(`loan_id IN (${loanIdsSql})`)})`,
-              sql`${journalEntries.narration} LIKE ${tempLike}`
-            ));
+          if (loanCashTxIds.length > 0) {
+            await tx.update(cashTransactions)
+              .set({ narration: sql`replace(${cashTransactions.narration}, ${oldPattern}, ${newPattern})`, updatedAt: new Date() })
+              .where(and(
+                eq(cashTransactions.tenantId, tenantId),
+                inArray(cashTransactions.id, loanCashTxIds)
+              ));
+
+            await tx.update(journalEntries)
+              .set({ narration: sql`replace(${journalEntries.narration}, ${oldPattern}, ${newPattern})`, updatedAt: new Date() })
+              .where(and(
+                eq(journalEntries.tenantId, tenantId),
+                inArray(journalEntries.sourceId, loanCashTxIds)
+              ));
+          }
         }
       });
 
@@ -6812,8 +6809,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         updatedCount: renumberPlan.length,
         changes: renumberPlan.map(p => ({ oldNumber: p.oldNumber, newNumber: p.newNumber, borrowerName: p.borrowerName }))
       });
-    } catch (error) {
-      console.error("Insert-at-position error:", error);
+    } catch (error: any) {
+      console.error("Insert-at-position error:", error?.message || error);
+      console.error("Insert-at-position stack:", error?.stack);
       res.status(500).json({ message: "खाते क्रमांक बदलताना त्रुटी आली. कोणताही बदल झालेला नाही." });
     }
   });
