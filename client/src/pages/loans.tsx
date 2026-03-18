@@ -1331,9 +1331,9 @@ function Loans() {
     return Array.from(variations);
   }, [nameTranslationsMap]);
 
-  const scoreTermAgainstField = (term: string, fieldValue: string, weight: number, label: string): number => {
+  const scoreTermAgainstField = (term: string, fieldValue: string, weight: number, label: string, precomputedVariations?: string[]): number => {
     let fieldScore = 0;
-    const allTermVariations = getTranslationVariations(term);
+    const allTermVariations = precomputedVariations || getTranslationVariations(term);
 
     for (const searchVariation of allTermVariations) {
       const sv = normalizeMarathiVowels(searchVariation);
@@ -1381,19 +1381,30 @@ function Loans() {
     return fieldScore;
   };
 
-  const getSearchScore = (loan: any, query: string): number => {
-    if (!query || query.trim() === "") return 0;
+  const cachedSearchVariations = useMemo(() => {
+    if (!debouncedSearchQuery || debouncedSearchQuery.trim() === "") return null;
+    const fullTerm = normalizeMarathiVowels(debouncedSearchQuery.toLowerCase().trim());
+    const words = fullTerm.split(/\s+/).filter(w => w.length > 0);
+    return {
+      fullTerm,
+      isNumeric: /^\d+$/.test(fullTerm),
+      words,
+      wordVariations: words.map(w => getTranslationVariations(w)),
+    };
+  }, [debouncedSearchQuery, getTranslationVariations]);
 
-    const fullSearchTerm = normalizeMarathiVowels(query.toLowerCase().trim());
-    const isNumericSearch = /^\d+$/.test(fullSearchTerm);
+  const getSearchScore = (loan: any): number => {
+    if (!cachedSearchVariations) return 0;
 
-    if (isNumericSearch && loan.accountNumber) {
+    const { fullTerm, isNumeric, words, wordVariations } = cachedSearchVariations;
+
+    if (isNumeric && loan.accountNumber) {
       const accNum = loan.accountNumber.toString().trim();
-      if (accNum === fullSearchTerm) return 1000;
-      if (accNum.startsWith(fullSearchTerm)) return 500;
+      if (accNum === fullTerm) return 1000;
+      if (accNum.startsWith(fullTerm)) return 500;
     }
 
-    const searchFields = isNumericSearch ? [
+    const searchFields = isNumeric ? [
       { field: loan.accountNumber, weight: 15, label: 'account' },
       { field: loan.borrowerMobile, weight: 4, label: 'mobile' },
       { field: loan.borrowerName, weight: 2, label: 'name' },
@@ -1407,26 +1418,27 @@ function Loans() {
       { field: loan.otherInfo, weight: 5, label: 'other' },
     ];
 
-    const searchWords = fullSearchTerm.split(/\s+/).filter(w => w.length > 0);
-
-    if (searchWords.length <= 1) {
+    if (words.length <= 1) {
       let score = 0;
+      const variations = wordVariations[0] || [fullTerm];
       searchFields.forEach(({ field, weight, label }) => {
         if (!field) return;
         const fieldValue = normalizeMarathiVowels(field.toString().toLowerCase());
-        score += scoreTermAgainstField(fullSearchTerm, fieldValue, weight, label);
+        score += scoreTermAgainstField(fullTerm, fieldValue, weight, label, variations);
       });
       return score;
     }
 
     let totalScore = 0;
     let wordsMatched = 0;
-    for (const word of searchWords) {
+    for (let i = 0; i < words.length; i++) {
+      const word = words[i];
+      const variations = wordVariations[i];
       let wordBestScore = 0;
       searchFields.forEach(({ field, weight, label }) => {
         if (!field) return;
         const fieldValue = normalizeMarathiVowels(field.toString().toLowerCase());
-        const s = scoreTermAgainstField(word, fieldValue, weight, label);
+        const s = scoreTermAgainstField(word, fieldValue, weight, label, variations);
         wordBestScore = Math.max(wordBestScore, s);
       });
       if (wordBestScore > 0) {
@@ -1436,7 +1448,7 @@ function Loans() {
     }
 
     if (wordsMatched === 0) return 0;
-    const matchRatio = wordsMatched / searchWords.length;
+    const matchRatio = wordsMatched / words.length;
     return Math.round(totalScore * matchRatio);
   };
 
@@ -1446,7 +1458,7 @@ function Loans() {
   const filteredLoans = Array.isArray(loans) ? loans.map((loan: any) => {
     
     // Calculate search score
-    const searchScore = debouncedSearchQuery ? getSearchScore(loan, debouncedSearchQuery) : 1;
+    const searchScore = debouncedSearchQuery ? getSearchScore(loan) : 1;
     
     // Apply all filters - FIXED: Allow search to work independently
     let passesFilters = true;
