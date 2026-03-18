@@ -239,11 +239,11 @@ export default function InformationRegister() {
       }).join('');
 
       const pdfHTML = `
-        <link href="https://fonts.googleapis.com/css2?family=Mukta:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+        <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
         <style>
           * { margin: 0; padding: 0; box-sizing: border-box; }
           body, div, table, td, th, p, strong {
-            font-family: 'Mukta', 'Noto Sans Devanagari', sans-serif !important;
+            font-family: 'Noto Sans Devanagari', Arial, sans-serif !important;
           }
           .pdf-header {
             text-align: center;
@@ -512,7 +512,7 @@ export default function InformationRegister() {
     <>
     <style>{`
       .ir-page-root {
-        font-family: 'Mukta', 'Noto Sans Devanagari', sans-serif;
+        font-family: 'Noto Sans Devanagari', Arial, sans-serif;
       }
       .ir-page-content {
         padding: 12px;
@@ -711,7 +711,7 @@ export default function InformationRegister() {
           size: A4 landscape;
           margin: 15mm 10mm 10mm 10mm;
         }
-        body { font-family: 'Mukta', 'Noto Sans Devanagari', sans-serif !important; }
+        body { font-family: 'Noto Sans Devanagari', Arial, sans-serif !important; }
         body * { visibility: hidden; }
         .ir-selected-print[style*="display: block"],
         .ir-selected-print[style*="display: block"] * {
