@@ -599,6 +599,10 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   .font-noto {
     font-family: 'Noto Sans Devanagari', sans-serif;
   }
+  
+  .font-mukta {
+    font-family: 'Mukta', 'Noto Sans Devanagari', sans-serif;
+  }
 
   /* Modern Banking Theme Components */
   .card-professional {

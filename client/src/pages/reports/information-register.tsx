@@ -410,6 +410,9 @@ export default function InformationRegister() {
   return (
     <>
     <style>{`
+      .ir-page-root {
+        font-family: 'Mukta', 'Noto Sans Devanagari', sans-serif;
+      }
       .ir-page-content {
         padding: 12px;
       }
@@ -607,6 +610,7 @@ export default function InformationRegister() {
           size: A4 landscape;
           margin: 15mm 10mm 10mm 10mm;
         }
+        body { font-family: 'Mukta', 'Noto Sans Devanagari', sans-serif !important; }
         body * { visibility: hidden; }
         .ir-selected-print[style*="display: block"],
         .ir-selected-print[style*="display: block"] * {
@@ -651,7 +655,7 @@ export default function InformationRegister() {
       }
     `}</style>
 
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 ir-page-root">
       <MobileNav />
 
       <div className="lg:flex">
