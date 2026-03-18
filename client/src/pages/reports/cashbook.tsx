@@ -622,7 +622,15 @@ function CashBookReport() {
       const transDate = transaction.transactionDate?.split('T')[0] || transaction.transactionDate;
       return transDate >= dateFilters.dateFrom && transDate <= dateFilters.dateTo;
     })
-    .sort((a: any, b: any) => new Date(a.transactionDate).getTime() - new Date(b.transactionDate).getTime())
+    .sort((a: any, b: any) => {
+      const dateCompare = new Date(a.transactionDate).getTime() - new Date(b.transactionDate).getTime();
+      if (dateCompare !== 0) return dateCompare;
+      const getAccNum = (t: any) => {
+        const match = (t.narration || '').match(/खाते\s*क्र[.॰]?\s*(\d+)/);
+        return match ? parseInt(match[1]) : 9999;
+      };
+      return getAccNum(a) - getAccNum(b);
+    })
     .reduce((acc: any[], transaction: any, index: number) => {
       // Skip duplicate "राज पटेल" entries (keep only the first one)
       if (transaction.partyName === 'राज पटेल') {
@@ -691,21 +699,33 @@ function CashBookReport() {
       rajPatelEntries: processedTransactions.filter((t: any) => t.partyName === 'राज पटेल').length
     });
 
-    const creditRows = processedTransactions
+    const sortByDateAndAccount = (rows: any[]) => {
+      return rows.sort((a: any, b: any) => {
+        const dateCompare = new Date(a.date).getTime() - new Date(b.date).getTime();
+        if (dateCompare !== 0) return dateCompare;
+        const getAccNum = (t: any) => {
+          const match = (t.description || '').match(/खाते\s*क्र[.॰]?\s*(\d+)/);
+          return match ? parseInt(match[1]) : 9999;
+        };
+        return getAccNum(a) - getAccNum(b);
+      });
+    };
+
+    const creditRows = sortByDateAndAccount(processedTransactions
       .filter((t: any) => t.credit > 0)
       .map((t: any) => ({
         date: t.date,
         description: t.description.replace('जमा: ', ''),
         amount: t.credit
-      }));
+      })));
 
-    const debitRows = processedTransactions
+    const debitRows = sortByDateAndAccount(processedTransactions
       .filter((t: any) => t.debit > 0)
       .map((t: any) => ({
         date: t.date,
         description: t.description.replace('नावे: ', ''),
         amount: t.debit
-      }));
+      })));
 
     // Add opening balance to appropriate side - Always show opening balance
     if (openingBalance > 0) {
