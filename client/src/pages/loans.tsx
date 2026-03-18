@@ -1309,21 +1309,42 @@ function Loans() {
   const getTranslationVariations = useCallback((term: string): string[] => {
     const variations = new Set<string>([term]);
     const termLower = term.toLowerCase();
+    const maxVariations = termLower.length <= 2 ? 5 : termLower.length === 3 ? 8 : 15;
+    let count = 0;
+
     if (Object.keys(nameTranslationsMap).length > 0) {
       if (nameTranslationsMap[termLower]) {
-        nameTranslationsMap[termLower].forEach(t => variations.add(t.toLowerCase()));
-      }
-      for (const key of Object.keys(nameTranslationsMap)) {
-        if (key.startsWith(termLower) && key !== termLower) {
-          variations.add(key);
-          nameTranslationsMap[key].forEach(t => variations.add(t.toLowerCase()));
+        for (const t of nameTranslationsMap[termLower]) {
+          if (count >= maxVariations) break;
+          variations.add(t.toLowerCase());
+          count++;
         }
       }
-      if (termLower.length >= 3) {
+      if (count < maxVariations) {
         for (const key of Object.keys(nameTranslationsMap)) {
+          if (count >= maxVariations) break;
+          if (key.startsWith(termLower) && key !== termLower) {
+            variations.add(key);
+            count++;
+            for (const t of nameTranslationsMap[key]) {
+              if (count >= maxVariations) break;
+              variations.add(t.toLowerCase());
+              count++;
+            }
+          }
+        }
+      }
+      if (termLower.length >= 3 && count < maxVariations) {
+        for (const key of Object.keys(nameTranslationsMap)) {
+          if (count >= maxVariations) break;
           if (key.includes(termLower) && !key.startsWith(termLower) && key !== termLower) {
             variations.add(key);
-            nameTranslationsMap[key].forEach(t => variations.add(t.toLowerCase()));
+            count++;
+            for (const t of nameTranslationsMap[key]) {
+              if (count >= maxVariations) break;
+              variations.add(t.toLowerCase());
+              count++;
+            }
           }
         }
       }
