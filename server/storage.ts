@@ -75,6 +75,7 @@ export interface IStorage {
   getAllLoanClosures(tenantId: string): Promise<LoanClosure[]>;
   getLoanClosures(tenantId: string, loanId?: string): Promise<LoanClosure[]>;
   deleteLoanClosure(id: string, tenantId: string): Promise<boolean>;
+  updateLoanClosure(id: string, tenantId: string, data: Partial<InsertLoanClosure>): Promise<LoanClosure | null>;
   
   // Dashboard statistics
   getDashboardStats(tenantId: string): Promise<{
@@ -852,6 +853,15 @@ export class DatabaseStorage implements IStorage {
     return result.rowCount! > 0;
   }
 
+  async updateLoanClosure(id: string, tenantId: string, data: Partial<InsertLoanClosure>): Promise<LoanClosure | null> {
+    const [updated] = await db
+      .update(loanClosures)
+      .set(data)
+      .where(and(eq(loanClosures.id, id), eq(loanClosures.tenantId, tenantId)))
+      .returning();
+    return updated || null;
+  }
+
   async getDashboardStats(tenantId: string): Promise<any> {
     
     // Current month dates
@@ -1138,109 +1148,56 @@ export class DatabaseStorage implements IStorage {
       const isAmountSearch = !isNaN(Number(searchTerm)) && searchTerm.length > 0;
       
       
-      let searchConditions = [];
-      
-      if (isAmountSearch) {
-        // 💰 SMART AMOUNT DETECTION: User typed numbers - prioritize amount matching
-        const amount = Number(searchTerm);
-        
-        // Primary: Exact and fuzzy amount matching
-        searchConditions.push(
-          sql`${cashTransactions.amount} = ${amount}`,
-          sql`${cashTransactions.amount} >= ${amount * 0.99} AND ${cashTransactions.amount} <= ${amount * 1.01}`
-        );
-        
-        // Secondary: Search amount as text in narration and party names (account numbers)
-        const amountPatterns = [
-          `%${searchTerm}%`,                    // Partial number match in text
-          `${searchTerm}%`,                     // Starts with number
-          `%${searchTerm}`,                     // Ends with number
-        ];
-        
-        amountPatterns.forEach(pattern => {
-          searchConditions.push(
-            sql`${parties.name} ILIKE ${pattern}`,
-            sql`${cashTransactions.narration} ILIKE ${pattern}`,
-            sql`${parties.mobile} ILIKE ${pattern}`
-          );
-        });
-        
-      } else {
-        const normalizedTerm = normalizeMarathiVowels(searchTerm);
-        
+      let searchConditions: any[] = [];
+
+      const addTextSearchForWord = (word: string) => {
+        const normalizedTerm = normalizeMarathiVowels(word);
         const vowelFrom = 'ीूैौॅॉआईऊऐऔ';
         const vowelTo   = 'िुेोेोअइउएओ';
-        if (normalizedTerm !== searchTerm) {
+        if (normalizedTerm !== word) {
           searchConditions.push(
             sql`translate(${parties.name}, ${vowelFrom}, ${vowelTo}) ILIKE ${`%${normalizedTerm}%`}`,
             sql`translate(${cashTransactions.narration}, ${vowelFrom}, ${vowelTo}) ILIKE ${`%${normalizedTerm}%`}`
           );
         }
-        
-        const searchQueries = getNameTranslations(searchTerm);
-        if (normalizedTerm !== searchTerm) {
+        const searchQueries = getNameTranslations(word);
+        if (normalizedTerm !== word) {
           const normalizedVariations = getNameTranslations(normalizedTerm);
           normalizedVariations.forEach(v => {
             if (!searchQueries.includes(v)) searchQueries.push(v);
           });
         }
-        
         searchQueries.forEach(query => {
-          const queryPatterns = [
-            `%${query}%`,
-            `${query}%`,
-            `% ${query}%`,
-            `%${query.toLowerCase()}%`,
-            `%${query.toUpperCase()}%`,
-          ];
-          
-          queryPatterns.forEach(pattern => {
-            searchConditions.push(
-              sql`${parties.name} ILIKE ${pattern}`,
-              sql`${cashTransactions.narration} ILIKE ${pattern}`,
-              sql`${cashTransactions.category} ILIKE ${pattern}`,
-              sql`${parties.mobile} ILIKE ${pattern}`,
-              sql`${parties.address} ILIKE ${pattern}`
-            );
-          });
+          searchConditions.push(
+            sql`${parties.name} ILIKE ${`%${query}%`}`,
+            sql`${cashTransactions.narration} ILIKE ${`%${query}%`}`,
+            sql`${cashTransactions.category} ILIKE ${`%${query}%`}`,
+            sql`${parties.mobile} ILIKE ${`%${query}%`}`,
+            sql`${parties.address} ILIKE ${`%${query}%`}`
+          );
         });
-        
-        if (searchTerm.length >= 2) {
-          const fuzzyPatterns = [
-            `%${searchTerm.slice(0, -1)}%`,
-            `%${searchTerm.slice(1)}%`,
-          ];
-          
-          if (searchTerm.length >= 3) {
-            fuzzyPatterns.push(
-              `%${searchTerm.slice(0, 2)}%`,
-              `%${searchTerm.slice(-2)}%`,
-              `${searchTerm.slice(0, 3)}%`,
-            );
-          }
-          
-          for (let i = 0; i < searchTerm.length - 1; i++) {
-            const partial = searchTerm.slice(i, i + 2);
-            fuzzyPatterns.push(`%${partial}%`);
-          }
-          
-          fuzzyPatterns.forEach(pattern => {
-            searchConditions.push(
-              sql`${parties.name} ILIKE ${pattern}`,
-              sql`${cashTransactions.narration} ILIKE ${pattern}`
-            );
-          });
+      };
+
+      if (isAmountSearch) {
+        const amount = Number(searchTerm);
+        searchConditions.push(
+          sql`${cashTransactions.amount} = ${amount}`,
+          sql`${cashTransactions.amount} >= ${amount * 0.99} AND ${cashTransactions.amount} <= ${amount * 1.01}`
+        );
+        searchConditions.push(
+          sql`${parties.name} ILIKE ${`%${searchTerm}%`}`,
+          sql`${cashTransactions.narration} ILIKE ${`%${searchTerm}%`}`,
+          sql`${parties.mobile} ILIKE ${`%${searchTerm}%`}`
+        );
+      } else {
+        const words = searchTerm.split(/\s+/).filter(w => w.length > 0);
+        for (const word of words) {
+          addTextSearchForWord(word);
         }
       }
-      
-      // Apply unified search conditions with OR logic
+
       if (searchConditions.length > 0) {
         conditions.push(or(...searchConditions) as any);
-        // console.log('🔍 UNIFIED SEARCH APPLIED:', { 
-        //   searchType: isAmountSearch ? 'AMOUNT' : 'TEXT',
-        //   conditionCount: searchConditions.length,
-        //   totalConditions: conditions.length 
-        // });
       }
     }
     
