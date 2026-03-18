@@ -116,6 +116,7 @@ function Loans() {
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [selectedGroup, setSelectedGroup] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [dateFilter, setDateFilter] = useState({
     groupId: "all",
@@ -155,6 +156,25 @@ function Loans() {
   const [borrowerSearchQuery, setBorrowerSearchQuery] = useState("");
   const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1);
   const borrowerDropdownRef = useRef<HTMLDivElement>(null);
+  const [nameTranslationsMap, setNameTranslationsMap] = useState<Record<string, string[]>>({});
+
+  useEffect(() => {
+    fetch("/api/name-translations", { credentials: "include" })
+      .then(res => res.json())
+      .then(data => {
+        if (data && typeof data === 'object' && !data.message) {
+          setNameTranslationsMap(data);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   // Simple form setup for basic functionality
   const form = useForm<LoanFormData>({
@@ -1255,8 +1275,8 @@ function Loans() {
   // FIXED: Search should work independently without requiring date filters
   const hasDateFilters = dateFilter.groupId !== "all" || dateFilter.dateFrom || dateFilter.dateTo;
   const hasStatusFilter = statusFilter !== "all";
-  const hasActiveFilters = searchQuery || hasStatusFilter || hasDateFilters;
-  const hasSearchQuery = searchQuery && searchQuery.trim() !== "";
+  const hasActiveFilters = debouncedSearchQuery || hasStatusFilter || hasDateFilters;
+  const hasSearchQuery = debouncedSearchQuery && debouncedSearchQuery.trim() !== "";
   
   
   // Calculate string similarity (Levenshtein distance based)
@@ -1286,22 +1306,91 @@ function Loans() {
     return 1 - matrix[len1][len2] / Math.max(len1, len2);
   };
 
-  // 🔍 SMART SEARCH SYSTEM - Advanced fuzzy matching with ranking
+  const getTranslationVariations = useCallback((term: string): string[] => {
+    const variations = new Set<string>([term]);
+    const termLower = term.toLowerCase();
+    if (Object.keys(nameTranslationsMap).length > 0) {
+      if (nameTranslationsMap[termLower]) {
+        nameTranslationsMap[termLower].forEach(t => variations.add(t.toLowerCase()));
+      }
+      for (const key of Object.keys(nameTranslationsMap)) {
+        if (key.startsWith(termLower) && key !== termLower) {
+          variations.add(key);
+          nameTranslationsMap[key].forEach(t => variations.add(t.toLowerCase()));
+        }
+      }
+      if (termLower.length >= 3) {
+        for (const key of Object.keys(nameTranslationsMap)) {
+          if (key.includes(termLower) && !key.startsWith(termLower) && key !== termLower) {
+            variations.add(key);
+            nameTranslationsMap[key].forEach(t => variations.add(t.toLowerCase()));
+          }
+        }
+      }
+    }
+    return Array.from(variations);
+  }, [nameTranslationsMap]);
+
+  const scoreTermAgainstField = (term: string, fieldValue: string, weight: number, label: string): number => {
+    let fieldScore = 0;
+    const allTermVariations = getTranslationVariations(term);
+
+    for (const searchVariation of allTermVariations) {
+      const sv = normalizeMarathiVowels(searchVariation);
+      let varScore = 0;
+
+      if (fieldValue === sv) {
+        varScore = weight * 10;
+      } else if (fieldValue.startsWith(sv)) {
+        varScore = weight * 8;
+      } else if (fieldValue.includes(sv)) {
+        varScore = weight * 5;
+      } else {
+        const words = fieldValue.split(' ');
+        words.forEach((word: string) => {
+          if (word.startsWith(sv)) {
+            varScore = Math.max(varScore, weight * 3);
+          } else if (word.includes(sv)) {
+            varScore = Math.max(varScore, weight * 2);
+          } else if (sv.length >= 3 && word.length >= 3) {
+            const searchStart = sv.substring(0, Math.min(4, sv.length));
+            const wordStart = word.substring(0, Math.min(4, word.length));
+            if (searchStart === wordStart) {
+              varScore = Math.max(varScore, weight * 2);
+            } else if (calculateSimilarity(sv, word) >= 0.7) {
+              varScore = Math.max(varScore, weight * 1);
+            }
+          }
+        });
+      }
+
+      fieldScore = Math.max(fieldScore, varScore);
+    }
+
+    if (label === 'account' && /\d/.test(term)) {
+      const fieldNumbers = fieldValue.match(/\d+/g) || [];
+      fieldNumbers.forEach((num: string) => {
+        if (num === term) {
+          fieldScore = Math.max(fieldScore, weight * 10);
+        } else if (num.startsWith(term)) {
+          fieldScore = Math.max(fieldScore, weight * 6);
+        }
+      });
+    }
+
+    return fieldScore;
+  };
+
   const getSearchScore = (loan: any, query: string): number => {
     if (!query || query.trim() === "") return 0;
-    
-    const searchTerm = normalizeMarathiVowels(query.toLowerCase().trim());
-    const isNumericSearch = /^\d+$/.test(searchTerm);
-    let score = 0;
-    
+
+    const fullSearchTerm = normalizeMarathiVowels(query.toLowerCase().trim());
+    const isNumericSearch = /^\d+$/.test(fullSearchTerm);
+
     if (isNumericSearch && loan.accountNumber) {
       const accNum = loan.accountNumber.toString().trim();
-      if (accNum === searchTerm) {
-        return 1000;
-      }
-      if (accNum.startsWith(searchTerm)) {
-        score += 500;
-      }
+      if (accNum === fullSearchTerm) return 1000;
+      if (accNum.startsWith(fullSearchTerm)) return 500;
     }
 
     const searchFields = isNumericSearch ? [
@@ -1317,59 +1406,38 @@ function Loans() {
       { field: loan.businessType, weight: 3, label: 'business' },
       { field: loan.otherInfo, weight: 5, label: 'other' },
     ];
-    
-    searchFields.forEach(({ field, weight, label }) => {
-      if (!field) return;
-      
-      const fieldValue = normalizeMarathiVowels(field.toString().toLowerCase());
-      let fieldScore = 0;
-      
-      if (fieldValue === searchTerm) {
-        fieldScore = weight * 10;
+
+    const searchWords = fullSearchTerm.split(/\s+/).filter(w => w.length > 0);
+
+    if (searchWords.length <= 1) {
+      let score = 0;
+      searchFields.forEach(({ field, weight, label }) => {
+        if (!field) return;
+        const fieldValue = normalizeMarathiVowels(field.toString().toLowerCase());
+        score += scoreTermAgainstField(fullSearchTerm, fieldValue, weight, label);
+      });
+      return score;
+    }
+
+    let totalScore = 0;
+    let wordsMatched = 0;
+    for (const word of searchWords) {
+      let wordBestScore = 0;
+      searchFields.forEach(({ field, weight, label }) => {
+        if (!field) return;
+        const fieldValue = normalizeMarathiVowels(field.toString().toLowerCase());
+        const s = scoreTermAgainstField(word, fieldValue, weight, label);
+        wordBestScore = Math.max(wordBestScore, s);
+      });
+      if (wordBestScore > 0) {
+        wordsMatched++;
+        totalScore += wordBestScore;
       }
-      else if (fieldValue.startsWith(searchTerm)) {
-        fieldScore = weight * 8;
-      }
-      else if (fieldValue.includes(searchTerm)) {
-        fieldScore = weight * 5;
-      }
-      else {
-        const words = fieldValue.split(' ');
-        words.forEach((word: string) => {
-          if (word.startsWith(searchTerm)) {
-            fieldScore += weight * 3;
-          } else if (word.includes(searchTerm)) {
-            fieldScore += weight * 2;
-          }
-          else if (searchTerm.length >= 3 && word.length >= 3) {
-            const searchStart = searchTerm.substring(0, Math.min(4, searchTerm.length));
-            const wordStart = word.substring(0, Math.min(4, word.length));
-            if (searchStart === wordStart) {
-              fieldScore += weight * 2;
-            }
-            else if (calculateSimilarity(searchTerm, word) >= 0.7) {
-              fieldScore += weight * 1;
-            }
-          }
-        });
-      }
-      
-      if (label === 'account' && /\d/.test(searchTerm)) {
-        const fieldNumbers = fieldValue.match(/\d+/g) || [];
-        fieldNumbers.forEach((num: string) => {
-          if (num === searchTerm) {
-            fieldScore += weight * 10;
-          } else if (num.startsWith(searchTerm)) {
-            fieldScore += weight * 6;
-          }
-        });
-      }
-      
-      score += fieldScore;
-      
-    });
-    
-    return score;
+    }
+
+    if (wordsMatched === 0) return 0;
+    const matchRatio = wordsMatched / searchWords.length;
+    return Math.round(totalScore * matchRatio);
   };
 
 
@@ -1378,7 +1446,7 @@ function Loans() {
   const filteredLoans = Array.isArray(loans) ? loans.map((loan: any) => {
     
     // Calculate search score
-    const searchScore = searchQuery ? getSearchScore(loan, searchQuery) : 1;
+    const searchScore = debouncedSearchQuery ? getSearchScore(loan, debouncedSearchQuery) : 1;
     
     // Apply all filters - FIXED: Allow search to work independently
     let passesFilters = true;
@@ -1401,7 +1469,7 @@ function Loans() {
     }
     
     // 4. Date Range Filter - COMPLETELY SKIP during search-only queries
-    if (searchQuery && searchQuery.trim() !== "") {
+    if (debouncedSearchQuery && debouncedSearchQuery.trim() !== "") {
       // SKIP all date filters during search - search works completely independently
     } else if (dateFilter.dateFrom || dateFilter.dateTo) {
       const loanDate = new Date(loan.loanDate);
@@ -1452,7 +1520,7 @@ function Loans() {
     setCurrentPage(1);
     setSelectedRowIndex(-1);
     setSelectedLoanId(null);
-  }, [searchQuery, statusFilter, dateFilter]);
+  }, [debouncedSearchQuery, statusFilter, dateFilter]);
 
   // Enhanced Keyboard navigation and auto-scroll effects - FIXED
   useEffect(() => {

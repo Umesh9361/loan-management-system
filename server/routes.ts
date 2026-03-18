@@ -37,7 +37,7 @@ async function invalidateOtherSessions(userId: string, currentSessionId: string)
     return 0;
   }
 }
-import { getNameTranslations, normalizeMarathiVowels, transliterateToDevanagari } from "./name-translations";
+import { nameMap, getNameTranslations, normalizeMarathiVowels, transliterateToDevanagari } from "./name-translations";
 import { automaticDuplicatePrevention } from "./middleware/automatic-duplicate-prevention";
 import { apiCache, cacheBuster, invalidateTenantCache, invalidateCache, getCacheStats, cache } from "./middleware/cache";
 import { triggerLoanSync } from "./real-time-sync-engine";
@@ -919,6 +919,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ success: true });
     } catch (error) {
       res.status(500).json({ message: "लेबल सेटिंग्ज सेव्ह करताना त्रुटी" });
+    }
+  });
+
+  app.get("/api/name-translations", requireAuth, (req, res) => {
+    try {
+      res.set({ 'Cache-Control': 'public, max-age=86400' });
+      res.json(nameMap);
+    } catch (error) {
+      console.error("Error loading name translations:", error);
+      res.status(500).json({ message: "Failed to load translations" });
     }
   });
 
