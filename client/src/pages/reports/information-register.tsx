@@ -337,7 +337,7 @@ export default function InformationRegister() {
               <th rowspan="2" class="col-date">कर्जाची<br/>तारीख</th>
               <th rowspan="2" class="col-amount">कर्जाची<br/>रक्कम<br/>रुपये</th>
               <th colspan="3" style="text-align:center;">वसूल रक्कम रुपये</th>
-              <th rowspan="2" class="col-rate">व्याज<br/>दर %</th>
+              <th rowspan="2" class="col-rate">व्याजदर %</th>
               <th rowspan="2" class="col-type">तारणी की<br/>बिगर<br/>तारणी</th>
               <th rowspan="2" class="col-acc">खाते<br/>नं.</th>
               <th rowspan="2" class="col-status">तारण माल<br/>परत केला<br/>आहे का?</th>
@@ -623,7 +623,7 @@ export default function InformationRegister() {
       .ir-col-rdate { width: 85px; min-width: 80px; }
       .ir-col-rprincipal { width: 105px; min-width: 92px; }
       .ir-col-rinterest { width: 90px; min-width: 80px; }
-      .ir-col-rate { width: 55px; min-width: 50px; }
+      .ir-col-rate { width: 65px; min-width: 60px; }
       .ir-col-type { width: 75px; min-width: 68px; }
       .ir-col-acc { width: 50px; min-width: 44px; }
       .ir-col-status { width: 82px; min-width: 75px; }
@@ -899,7 +899,7 @@ export default function InformationRegister() {
                         <th rowSpan={2} className="ir-col-date">कर्जाची<br/>तारीख</th>
                         <th rowSpan={2} className="ir-col-amount">कर्जाची<br/>रक्कम<br/>रुपये</th>
                         <th colSpan={3} className="ir-col-recovery-header">वसूल रक्कम रुपये</th>
-                        <th rowSpan={2} className="ir-col-rate">व्याज<br/>दर %</th>
+                        <th rowSpan={2} className="ir-col-rate">व्याजदर %</th>
                         <th rowSpan={2} className="ir-col-type">तारणी की<br/>बिगर<br/>तारणी</th>
                         <th rowSpan={2} className="ir-col-acc">खाते<br/>नं.</th>
                         <th rowSpan={2} className="ir-col-status">तारण माल<br/>परत केला<br/>आहे का?</th>
@@ -973,7 +973,7 @@ export default function InformationRegister() {
                         <th rowSpan={2} className="ir-col-date">कर्जाची<br/>तारीख</th>
                         <th rowSpan={2} className="ir-col-amount">कर्जाची<br/>रक्कम<br/>रुपये</th>
                         <th colSpan={3} className="ir-col-recovery-header">वसूल रक्कम रुपये</th>
-                        <th rowSpan={2} className="ir-col-rate">व्याज<br/>दर %</th>
+                        <th rowSpan={2} className="ir-col-rate">व्याजदर %</th>
                         <th rowSpan={2} className="ir-col-type">तारणी की<br/>बिगर<br/>तारणी</th>
                         <th rowSpan={2} className="ir-col-acc">खाते<br/>नं.</th>
                         <th rowSpan={2} className="ir-col-status">तारण माल<br/>परत केला<br/>आहे का?</th>
