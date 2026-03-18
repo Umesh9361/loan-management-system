@@ -464,11 +464,11 @@ export default function CapitalAccountReport() {
       <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;500;600;700&display=swap" rel="stylesheet">
       <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Noto Sans Devanagari', Arial, sans-serif; background: white; width: ${renderWidthPx}px; padding: 18px 14px 18px 60px; }
+        body { font-family: 'Noto Sans Devanagari', Arial, sans-serif; background: white; width: ${renderWidthPx}px; padding: 18px 14px 18px 83px; }
         table { width: 100%; border-collapse: collapse; table-layout: fixed; }
       </style></head><body>
         <div style="text-align:center;margin-bottom:16px;">
-          <p style="font-size:16px;font-weight:700;margin-bottom:4px;">${companyName}</p>
+          <p style="font-size:15px;font-weight:700;margin-bottom:4px;">${companyName}</p>
           <p style="font-size:14px;font-weight:700;margin-bottom:2px;">भांडवल खाते</p>
           <p style="font-size:11px;color:#333;margin-bottom:2px;">नमुना क्रमांक १३ (नियम १९ पहा)</p>
           <p style="font-size:11px;color:#333;">कालावधी: ${new Date(dateFrom).toLocaleDateString('en-GB')} ते ${new Date(dateTo).toLocaleDateString('en-GB')}</p>
@@ -527,7 +527,11 @@ export default function CapitalAccountReport() {
       iframeDoc.write(fullHTML);
       iframeDoc.close();
 
-      await new Promise(resolve => setTimeout(resolve, 400));
+      await new Promise(resolve => setTimeout(resolve, 300));
+      if (iframeDoc.fonts && iframeDoc.fonts.ready) {
+        await iframeDoc.fonts.ready;
+      }
+      await new Promise(resolve => setTimeout(resolve, 100));
 
       const targetEl = iframeDoc.body;
       const contentHeight = targetEl.scrollHeight;
@@ -673,11 +677,11 @@ export default function CapitalAccountReport() {
               <CardContent className="p-0">
                 <div className="print-content" style={{ fontFamily: "'Noto Sans Devanagari', Arial, sans-serif" }}>
                 <div className="capital-header" style={{ textAlign: 'center', marginBottom: '16px', fontWeight: 'bold' }}>
-                  <h1 style={{ fontSize: '18px', marginBottom: '4px' }}>भांडवल खाते</h1>
-                  <p style={{ fontSize: '14px', marginBottom: '2px' }}>नमुना क्रमांक १३</p>
-                  <p style={{ fontSize: '12px', marginBottom: '10px', color: '#333' }}>(नियम १९ पहा)</p>
+                  <p style={{ fontSize: '15px', fontWeight: 700, marginBottom: '4px' }}>{(company as any)?.name || 'कंपनी नाव'}</p>
+                  <p style={{ fontSize: '14px', fontWeight: 700, marginBottom: '2px' }}>भांडवल खाते</p>
+                  <p style={{ fontSize: '11px', color: '#333', marginBottom: '2px' }}>नमुना क्रमांक १३ (नियम १९ पहा)</p>
                   {dateFrom && dateTo && (
-                    <p style={{ fontSize: '13px', marginBottom: '10px' }}>
+                    <p style={{ fontSize: '11px', color: '#333' }}>
                       कालावधी: {new Date(dateFrom).toLocaleDateString('en-GB')} ते {new Date(dateTo).toLocaleDateString('en-GB')}
                     </p>
                   )}
