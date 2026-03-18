@@ -80,6 +80,9 @@ export default function CashbookLedger() {
           size: A4;
           margin: 10mm;
         }
+        body {
+          font-family: 'Noto Sans Devanagari', Arial, sans-serif !important;
+        }
         body * {
           visibility: hidden !important;
         }

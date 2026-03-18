@@ -125,6 +125,7 @@ function CashBookReport() {
           z-index: 9999 !important;
         }
         body {
+          font-family: 'Noto Sans Devanagari', Arial, sans-serif !important;
           font-size: 11px;
           line-height: 1.3;
         }
@@ -510,9 +511,11 @@ function CashBookReport() {
         `;
       }
 
-      const fullHTML = `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
+      const fullHTML = `<!DOCTYPE html><html><head><meta charset="utf-8">
+      <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;500;600;700&display=swap" rel="stylesheet">
+      <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: Arial, sans-serif; background: white; width: ${renderWidthPx}px; padding: 20px 30px; }
+        body { font-family: 'Noto Sans Devanagari', Arial, sans-serif; background: white; width: ${renderWidthPx}px; padding: 20px 30px; }
         table { width: 100%; border-collapse: collapse; table-layout: fixed; }
       </style></head><body>
         <div style="text-align:center;margin-bottom:18px;padding-bottom:12px;border-bottom:1px solid #ddd;">
@@ -549,7 +552,11 @@ function CashBookReport() {
       iframeDoc.write(fullHTML);
       iframeDoc.close();
 
-      await new Promise(resolve => setTimeout(resolve, 400));
+      await new Promise(resolve => setTimeout(resolve, 300));
+      if (iframeDoc.fonts && iframeDoc.fonts.ready) {
+        await iframeDoc.fonts.ready;
+      }
+      await new Promise(resolve => setTimeout(resolve, 100));
 
       const targetEl = iframeDoc.body;
       const contentHeight = targetEl.scrollHeight;

@@ -387,7 +387,7 @@ export default function WorkingSummary() {
           
           /* Remove all margins and padding */
           * { margin: 0 !important; padding: 0 !important; }
-          html, body { margin: 0 !important; padding: 0 !important; height: auto !important; }
+          html, body { font-family: 'Noto Sans Devanagari', Arial, sans-serif !important; margin: 0 !important; padding: 0 !important; height: auto !important; }
           
           /* Fit to page */
           @page {

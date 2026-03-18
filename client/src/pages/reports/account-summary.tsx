@@ -143,6 +143,7 @@ export default function AccountSummaryReport() {
           z-index: 9999 !important;
         }
         body {
+          font-family: 'Noto Sans Devanagari', Arial, sans-serif !important;
           font-size: 11px;
           line-height: 1.3;
         }
@@ -177,7 +178,6 @@ export default function AccountSummaryReport() {
         }
         .amount-col {
           text-align: right;
-          font-family: 'Courier New', monospace;
         }
         .total-row {
           background: #e3f2fd !important;

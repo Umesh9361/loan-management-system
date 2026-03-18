@@ -33,6 +33,7 @@ export default function AccountLedger() {
           margin: 10mm 8mm;
         }
         html, body {
+          font-family: 'Noto Sans Devanagari', Arial, sans-serif !important;
           height: auto !important;
           overflow: visible !important;
           margin: 0 !important;
@@ -1054,9 +1055,11 @@ export default function AccountLedger() {
         <td style="${totTd}text-align:right;font-size:12px;background:#c7d2fe;color:#1e40af;white-space:nowrap;${finalBalColor}"><span style="font-size:12px;">${finalBal < 0 ? '-' : ''}${Math.round(Math.abs(finalBal)).toLocaleString('en-IN')}</span> <span style="font-size:9px;">${finalDrLabel.trim()}</span></td>
       </tr>`;
 
-      const fullHTML = `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
+      const fullHTML = `<!DOCTYPE html><html><head><meta charset="utf-8">
+      <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;500;600;700&display=swap" rel="stylesheet">
+      <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: Arial, sans-serif; background: white; width: ${renderWidthPx}px; padding: 20px 30px; }
+        body { font-family: 'Noto Sans Devanagari', Arial, sans-serif; background: white; width: ${renderWidthPx}px; padding: 20px 30px; }
         table { width: 100%; border-collapse: collapse; table-layout: fixed; }
       </style></head><body>
         <div style="text-align:center;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid #ddd;">
@@ -1115,7 +1118,11 @@ export default function AccountLedger() {
       iframeDoc.write(fullHTML);
       iframeDoc.close();
 
-      await new Promise(resolve => setTimeout(resolve, 400));
+      await new Promise(resolve => setTimeout(resolve, 300));
+      if (iframeDoc.fonts && iframeDoc.fonts.ready) {
+        await iframeDoc.fonts.ready;
+      }
+      await new Promise(resolve => setTimeout(resolve, 100));
 
       const targetEl = iframeDoc.body;
       const contentHeight = targetEl.scrollHeight;

@@ -1618,7 +1618,7 @@ export default function OverdueReport() {
                 borderCollapse: 'collapse',
                 fontSize: '8pt',
                 color: 'black',
-                fontFamily: 'Arial, sans-serif'
+                fontFamily: "'Noto Sans Devanagari', Arial, sans-serif"
               }}>
                 <thead>
                   <tr style={{backgroundColor: '#f5f5f5'}}>
@@ -1686,7 +1686,7 @@ export default function OverdueReport() {
                 borderCollapse: 'collapse',
                 fontSize: '8pt',
                 color: 'black',
-                fontFamily: 'Arial, sans-serif'
+                fontFamily: "'Noto Sans Devanagari', Arial, sans-serif"
               }}>
                 <thead>
                   <tr style={{backgroundColor: '#fff8e1'}}>
@@ -1827,6 +1827,11 @@ export default function OverdueReport() {
           </div>
         </main>
       </div>
+      <style>{`
+        @media print {
+          body { font-family: 'Noto Sans Devanagari', Arial, sans-serif !important; }
+        }
+      `}</style>
     </>
   );
 }

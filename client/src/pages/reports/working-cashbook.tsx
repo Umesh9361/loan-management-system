@@ -264,8 +264,12 @@ export default function WorkingCashBook() {
     }
     
     try {
+      const style = document.createElement('style');
+      style.textContent = `@media print { body { font-family: 'Noto Sans Devanagari', Arial, sans-serif !important; } }`;
+      document.head.appendChild(style);
       setTimeout(() => {
         window.print();
+        setTimeout(() => document.head.removeChild(style), 1000);
       }, 100);
     } catch (error) {
       alert('प्रिंट करताना त्रुटी झाली');

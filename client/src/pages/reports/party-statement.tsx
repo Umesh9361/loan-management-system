@@ -134,7 +134,11 @@ export default function PartyStatement() {
   };
 
   const handlePrint = () => {
+    const style = document.createElement('style');
+    style.textContent = `@media print { body { font-family: 'Noto Sans Devanagari', Arial, sans-serif !important; } }`;
+    document.head.appendChild(style);
     window.print();
+    setTimeout(() => document.head.removeChild(style), 1000);
   };
 
   return (
