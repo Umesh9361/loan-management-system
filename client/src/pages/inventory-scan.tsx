@@ -949,6 +949,7 @@ export default function InventoryScan() {
             <div className="space-y-4 print-section">
               <style>{`
                 @media print {
+                  body { font-family: 'Noto Sans Devanagari', Arial, sans-serif !important; }
                   body * { visibility: hidden; }
                   .print-section, .print-section * { visibility: visible; }
                   .print-section { position: absolute; left: 0; top: 0; width: 100%; padding: 20px; }

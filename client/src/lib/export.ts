@@ -1,5 +1,6 @@
 import jsPDF from "jspdf";
 import "jspdf-autotable";
+import { initDevanagariFont } from "./pdf-text-generator";
 
 export interface ExportData {
   title: string;
@@ -16,8 +17,7 @@ export class ExportService {
   static exportToPDF(data: ExportData, filename: string = "report.pdf"): void {
     const doc = new jsPDF();
     
-    // Set font for Devanagari text (if available)
-    doc.setFont("helvetica", "normal");
+    initDevanagariFont(doc);
     
     // Title
     doc.setFontSize(16);
@@ -35,7 +35,7 @@ export class ExportService {
       body: data.rows,
       startY: data.subtitle ? 40 : 30,
       styles: {
-        font: "helvetica",
+        font: "NotoDevanagari",
         fontSize: 10,
         cellPadding: 3,
       },

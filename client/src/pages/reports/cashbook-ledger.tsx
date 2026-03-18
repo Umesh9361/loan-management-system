@@ -12,6 +12,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useReactToPrint } from 'react-to-print';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+import { initDevanagariFont } from '@/lib/pdf-text-generator';
 
 export default function CashbookLedger() {
   const [dateFrom, setDateFrom] = useState(
@@ -150,8 +151,8 @@ export default function CashbookLedger() {
   // Export to PDF function
   const exportToPDF = () => {
     const pdf = new jsPDF('landscape', 'mm', 'a4');
+    initDevanagariFont(pdf);
     
-    // Add header
     pdf.setFontSize(16);
     pdf.text('नमुना क्रमांक ७', pdf.internal.pageSize.width / 2, 20, { align: 'center' });
     pdf.setFontSize(12);
@@ -177,7 +178,7 @@ export default function CashbookLedger() {
       startY: 45,
       theme: 'grid',
       styles: {
-        font: 'helvetica',
+        font: 'NotoDevanagari',
         fontSize: 10,
         cellPadding: 3,
         halign: 'left'

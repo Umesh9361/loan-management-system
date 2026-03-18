@@ -147,6 +147,7 @@ export default function ClosureReceiptPage() {
           }
           
           body {
+            font-family: 'Noto Sans Devanagari', Arial, sans-serif !important;
             margin: 0;
             padding: 0;
           }

@@ -179,6 +179,9 @@ export default function CapitalReport() {
             size: A4;
             margin: 15mm;
           }
+          body {
+            font-family: 'Noto Sans Devanagari', Arial, sans-serif !important;
+          }
           body * {
             visibility: hidden;
           }
