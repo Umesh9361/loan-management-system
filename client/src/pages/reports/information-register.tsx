@@ -12,8 +12,7 @@ import { Printer, FileDown, ClipboardList, ArrowLeft, CheckSquare, FileSpreadshe
 import { useToast } from "@/hooks/use-toast";
 import { useSafeNavigation } from "@/hooks/use-safe-navigation";
 import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
-import { initDevanagariFont } from "@/lib/pdf-text-generator";
+import html2canvas from "html2canvas";
 
 interface RegisterEntry {
   srNo: number;
@@ -212,130 +211,229 @@ export default function InformationRegister() {
     }
 
     setPdfLoading(true);
+    toast({ title: "PDF तयार करत आहे...", description: "कृपया थांबा, A4 PDF डाउनलोड होईल" });
+
     try {
-      const doc = new jsPDF({
+      const companyName = company?.name || '';
+      const licenseNo = company?.licenseNumber || '';
+
+      const tableRows = data.map((entry, idx) => {
+        const rowBg = idx % 2 === 0 ? '#ffffff' : '#f8fafc';
+        const statusClass = entry.isClosed ? 'color:#16a34a;font-weight:700;' : 'color:#9ca3af;font-size:11px;';
+        return `<tr style="background:${rowBg};">
+          <td style="text-align:center;">${entry.srNo}</td>
+          <td style="text-align:left;line-height:1.3;">
+            <strong style="font-weight:700;font-size:13px;">${entry.borrowerName}</strong>
+            ${entry.borrowerAddress ? `<div style="font-size:10.5px;color:#555;margin-top:1px;">${entry.borrowerAddress}</div>` : ''}
+          </td>
+          <td style="text-align:center;white-space:nowrap;">${formatDate(entry.loanDate)}</td>
+          <td style="text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;">${formatAmount(entry.principalAmount)}</td>
+          <td style="text-align:center;white-space:nowrap;">${entry.isClosed ? formatDate(entry.closureDate) : '.......'}</td>
+          <td style="text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;">${entry.isClosed ? formatAmount(entry.principalPaid) : '.......'}</td>
+          <td style="text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;">${entry.isClosed ? formatAmount(entry.interestPaid) : '.......'}</td>
+          <td style="text-align:center;white-space:nowrap;">${getInterestDisplay(entry.interestRate, entry.interestRateType)}</td>
+          <td style="text-align:center;">${getLoanTypeLabel(entry.loanType)}</td>
+          <td style="text-align:center;">${entry.accountNumber}</td>
+          <td style="text-align:center;${statusClass}">${entry.isClosed ? 'होय' : 'लागू नाही'}</td>
+        </tr>`;
+      }).join('');
+
+      const pdfHTML = `
+        <link href="https://fonts.googleapis.com/css2?family=Mukta:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+        <style>
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body, div, table, td, th, p, strong {
+            font-family: 'Mukta', 'Noto Sans Devanagari', sans-serif !important;
+          }
+          .pdf-header {
+            text-align: center;
+            margin-bottom: 8px;
+            padding: 8px 10px;
+          }
+          .pdf-header-title {
+            font-size: 17px;
+            font-weight: 800;
+            color: #1a1a1a;
+            letter-spacing: 0.3px;
+            line-height: 1.5;
+          }
+          .pdf-header-prop {
+            font-size: 13px;
+            font-weight: 600;
+            color: #333;
+            margin-top: 14px;
+          }
+          .pdf-prop-line {
+            display: inline-block;
+            min-width: 200px;
+            border-bottom: 1px solid #555;
+          }
+          .pdf-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+            table-layout: fixed;
+            line-height: 1.4;
+          }
+          .pdf-table th, .pdf-table td {
+            border: 1px solid #777;
+            padding: 6px 6px 7px 6px;
+            vertical-align: middle;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+          }
+          .pdf-table thead th {
+            background: #eef2ff;
+            font-weight: 800;
+            text-align: center;
+            font-size: 11px;
+            line-height: 1.3;
+            color: #312e81;
+            white-space: normal;
+          }
+          .col-sr { width: 35px; }
+          .col-name { width: 210px; }
+          .col-date { width: 82px; }
+          .col-amount { width: 90px; }
+          .col-rdate { width: 82px; }
+          .col-rprincipal { width: 90px; }
+          .col-rinterest { width: 80px; }
+          .col-rate { width: 48px; }
+          .col-type { width: 68px; }
+          .col-acc { width: 42px; }
+          .col-status { width: 72px; }
+          .pdf-footer {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 30px;
+            padding: 0 14px;
+            font-size: 13px;
+            font-weight: 700;
+            color: #333;
+          }
+          .pdf-footer p { margin: 3px 0; }
+          .pdf-footer-right { text-align: right; margin-right: 5%; }
+          .pdf-underline {
+            border-bottom: 1px solid #333;
+            display: inline-block;
+            min-width: 180px;
+          }
+        </style>
+
+        <div class="pdf-header">
+          <p class="pdf-header-title">
+            सावकाराचे नांव :- ${companyName} &nbsp;&nbsp;&nbsp; सावकारी लायसन नंबर :- ${licenseNo}
+          </p>
+          <p class="pdf-header-prop">
+            प्रोप्रायटर :- <span class="pdf-prop-line">&nbsp;</span>
+          </p>
+        </div>
+
+        <table class="pdf-table">
+          <thead>
+            <tr>
+              <th rowspan="2" class="col-sr">अ.<br/>नं.</th>
+              <th rowspan="2" class="col-name">कर्जदाराचे पूर्ण नांव व<br/>पत्ता</th>
+              <th rowspan="2" class="col-date">कर्जाची<br/>तारीख</th>
+              <th rowspan="2" class="col-amount">कर्जाची<br/>रक्कम<br/>रुपये</th>
+              <th colspan="3" style="text-align:center;">वसूल रक्कम रुपये</th>
+              <th rowspan="2" class="col-rate">व्याज<br/>दर %</th>
+              <th rowspan="2" class="col-type">तारणी की<br/>बिगर<br/>तारणी</th>
+              <th rowspan="2" class="col-acc">खाते<br/>नं.</th>
+              <th rowspan="2" class="col-status">तारण माल<br/>परत केला<br/>आहे का?</th>
+            </tr>
+            <tr>
+              <th class="col-rdate">तारीख</th>
+              <th class="col-rprincipal">मुद्दल</th>
+              <th class="col-rinterest">व्याज</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${tableRows}
+          </tbody>
+        </table>
+
+        <div class="pdf-footer">
+          <div>
+            <p>सावकाराचे सहा. निबंधक तथा उपनिबंधक</p>
+            <p>सह. संस्था, <span class="pdf-underline">&nbsp;</span></p>
+          </div>
+          <div class="pdf-footer-right">
+            <p>सावकाराची सही</p>
+          </div>
+        </div>
+      `;
+
+      const container = document.createElement('div');
+      container.style.position = 'absolute';
+      container.style.left = '-9999px';
+      container.style.top = '0';
+      container.style.width = '1123px';
+      container.style.background = '#ffffff';
+      container.style.padding = '20px 24px';
+      container.innerHTML = pdfHTML;
+      document.body.appendChild(container);
+
+      if (document.fonts && document.fonts.ready) {
+        await document.fonts.ready;
+      }
+      await new Promise(resolve => setTimeout(resolve, 800));
+
+      const canvas = await html2canvas(container, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff',
+        width: 1123,
+        windowWidth: 1123,
+      });
+
+      document.body.removeChild(container);
+
+      const a4Width = 297;
+      const a4Height = 210;
+      const margin = 5;
+      const contentWidth = a4Width - (margin * 2);
+      const contentHeight = a4Height - (margin * 2);
+
+      const imgWidth = canvas.width;
+      const imgHeight = canvas.height;
+      const ratio = contentWidth / imgWidth;
+      const scaledHeight = imgHeight * ratio;
+
+      const totalPages = Math.ceil(scaledHeight / contentHeight);
+
+      const pdf = new jsPDF({
         orientation: 'landscape',
         unit: 'mm',
         format: 'a4',
       });
 
-      initDevanagariFont(doc);
+      for (let page = 0; page < totalPages; page++) {
+        if (page > 0) pdf.addPage();
 
-      const pageWidth = doc.internal.pageSize.getWidth();
+        const sourceY = (page * contentHeight) / ratio;
+        const sourceHeight = Math.min(contentHeight / ratio, imgHeight - sourceY);
 
-      const companyName = company?.name || '';
-      const licenseNo = company?.licenseNumber || '';
-      const headerText = `सावकाराचे नांव :- ${companyName}     सावकारी लायसन नंबर :- ${licenseNo}`;
-      const proprietorText = `प्रोप्रायटर :- ___________________________`;
+        const pageCanvas = document.createElement('canvas');
+        pageCanvas.width = imgWidth;
+        pageCanvas.height = sourceHeight;
+        const ctx = pageCanvas.getContext('2d');
+        if (ctx) {
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
+          ctx.drawImage(canvas, 0, sourceY, imgWidth, sourceHeight, 0, 0, imgWidth, sourceHeight);
+        }
 
-      const tableBody = data.map((entry) => [
-        String(entry.srNo),
-        entry.borrowerName + (entry.borrowerAddress ? `\n${entry.borrowerAddress}` : ''),
-        formatDate(entry.loanDate),
-        formatAmount(entry.principalAmount),
-        entry.isClosed ? formatDate(entry.closureDate) : '.......',
-        entry.isClosed ? formatAmount(entry.principalPaid) : '.......',
-        entry.isClosed ? formatAmount(entry.interestPaid) : '.......',
-        getInterestDisplay(entry.interestRate, entry.interestRateType),
-        getLoanTypeLabel(entry.loanType),
-        entry.accountNumber,
-        entry.isClosed ? 'होय' : 'लागू नाही',
-      ]);
-
-      autoTable(doc, {
-        head: [
-          [
-            { content: 'अ.\nनं.', rowSpan: 2, styles: { halign: 'center', valign: 'middle' } },
-            { content: 'कर्जदाराचे पूर्ण नांव व\nपत्ता', rowSpan: 2, styles: { halign: 'center', valign: 'middle' } },
-            { content: 'कर्जाची\nतारीख', rowSpan: 2, styles: { halign: 'center', valign: 'middle' } },
-            { content: 'कर्जाची\nरक्कम\nरुपये', rowSpan: 2, styles: { halign: 'center', valign: 'middle' } },
-            { content: 'वसूल रक्कम रुपये', colSpan: 3, styles: { halign: 'center', valign: 'middle' } },
-            { content: 'व्याज\nदर %', rowSpan: 2, styles: { halign: 'center', valign: 'middle' } },
-            { content: 'तारणी की\nबिगर\nतारणी', rowSpan: 2, styles: { halign: 'center', valign: 'middle' } },
-            { content: 'खाते\nनं.', rowSpan: 2, styles: { halign: 'center', valign: 'middle' } },
-            { content: 'तारण माल\nपरत केला\nआहे का?', rowSpan: 2, styles: { halign: 'center', valign: 'middle' } },
-          ],
-          [
-            { content: 'तारीख', styles: { halign: 'center' } },
-            { content: 'मुद्दल', styles: { halign: 'center' } },
-            { content: 'व्याज', styles: { halign: 'center' } },
-          ],
-        ],
-        body: tableBody,
-        startY: 28,
-        margin: { top: 28, right: 10, bottom: 15, left: 10 },
-        styles: {
-          font: 'NotoDevanagari',
-          fontSize: 9,
-          cellPadding: { top: 3, right: 4, bottom: 3, left: 4 },
-          lineWidth: 0.3,
-          lineColor: [80, 80, 80],
-          textColor: [30, 30, 30],
-          overflow: 'linebreak',
-          valign: 'middle',
-        },
-        headStyles: {
-          fillColor: [230, 235, 255],
-          textColor: [40, 40, 100],
-          fontStyle: 'bold',
-          fontSize: 8,
-          lineWidth: 0.4,
-          lineColor: [80, 80, 80],
-        },
-        columnStyles: {
-          0: { cellWidth: 12, halign: 'center' },
-          1: { cellWidth: 65 },
-          2: { cellWidth: 22, halign: 'center' },
-          3: { cellWidth: 28, halign: 'right' },
-          4: { cellWidth: 22, halign: 'center' },
-          5: { cellWidth: 28, halign: 'right' },
-          6: { cellWidth: 24, halign: 'right' },
-          7: { cellWidth: 16, halign: 'center' },
-          8: { cellWidth: 22, halign: 'center' },
-          9: { cellWidth: 16, halign: 'center' },
-          10: { cellWidth: 22, halign: 'center' },
-        },
-        alternateRowStyles: {
-          fillColor: [248, 250, 252],
-        },
-        didDrawPage: (hookData: any) => {
-          doc.setFontSize(13);
-          doc.setFont('NotoDevanagari', 'normal');
-          doc.text(headerText, pageWidth / 2, 12, { align: 'center' });
-          doc.setFontSize(10);
-          doc.setFont('NotoDevanagari', 'normal');
-          doc.text(proprietorText, pageWidth / 2, 20, { align: 'center' });
-
-          const pageCount = doc.getNumberOfPages();
-          const currentPage = hookData.pageNumber;
-          doc.setFontSize(8);
-          doc.setFont('NotoDevanagari', 'normal');
-          doc.text(`पृष्ठ ${currentPage} / ${pageCount}`, pageWidth - 15, doc.internal.pageSize.getHeight() - 8, { align: 'right' });
-        },
-      });
-
-      const finalY = (doc as any).lastAutoTable?.finalY || 180;
-      const pageHeight = doc.internal.pageSize.getHeight();
-
-      if (finalY + 30 > pageHeight) {
-        doc.addPage();
-        doc.setFontSize(10);
-        doc.setFont('NotoDevanagari', 'normal');
-        doc.text('सावकाराचे सहा. निबंधक तथा उपनिबंधक', 15, 25);
-        doc.text('सह. संस्था, ___________________________', 15, 32);
-        doc.text('सावकाराची सही', pageWidth - 50, 25);
-      } else {
-        doc.setFontSize(10);
-        doc.setFont('NotoDevanagari', 'normal');
-        doc.text('सावकाराचे सहा. निबंधक तथा उपनिबंधक', 15, finalY + 18);
-        doc.text('सह. संस्था, ___________________________', 15, finalY + 25);
-        doc.text('सावकाराची सही', pageWidth - 50, finalY + 18);
+        const pageImgData = pageCanvas.toDataURL('image/jpeg', 0.95);
+        const drawHeight = sourceHeight * ratio;
+        pdf.addImage(pageImgData, 'JPEG', margin, margin, contentWidth, drawHeight);
       }
 
       const fileName = `माहिती_तक्ता_${DateUtils.formatDate(dateFilters.dateFrom)}_ते_${DateUtils.formatDate(dateFilters.dateTo)}.pdf`;
-      doc.save(fileName);
+      pdf.save(fileName);
 
-      toast({ title: "PDF तयार झाला", description: "फाइल डाउनलोड होत आहे" });
+      toast({ title: "PDF तयार झाला", description: `${data.length} नोंदी सह A4 PDF डाउनलोड होत आहे` });
     } catch (error) {
       console.error("PDF generation error:", error);
       toast({ title: "PDF त्रुटी", description: "PDF तयार करताना समस्या आली", variant: "destructive" });
