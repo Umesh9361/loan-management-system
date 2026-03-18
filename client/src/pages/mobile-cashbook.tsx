@@ -531,6 +531,14 @@ function MobileCashbook() {
       queryClient.invalidateQueries({ queryKey: ["/api/parties"], refetchType: 'all' });
       queryClient.invalidateQueries({ queryKey: ["/api/date-wise-balance"], refetchType: 'all' });
       
+      try {
+        const params = buildFetchParams();
+        params.append('_t', Date.now().toString());
+        const res = await fetch(`/api/cash-transactions?${params}`, { credentials: 'include', cache: 'no-cache' });
+        const data = await res.json();
+        if (Array.isArray(data)) setRawTransactions(data);
+      } catch (_) {}
+
       setIsEditDialogOpen(false);
       setEditingTransaction(null);
       toast({
@@ -571,11 +579,17 @@ function MobileCashbook() {
       queryClient.invalidateQueries({ queryKey: ["/api/reports"], refetchType: 'all' });
       queryClient.invalidateQueries({ queryKey: ["/api/parties"], refetchType: 'all' });
       
-      // Close edit dialog if transaction was being edited
+      try {
+        const params = buildFetchParams();
+        params.append('_t', Date.now().toString());
+        const res = await fetch(`/api/cash-transactions?${params}`, { credentials: 'include', cache: 'no-cache' });
+        const data = await res.json();
+        if (Array.isArray(data)) setRawTransactions(data);
+      } catch (_) {}
+
       setIsEditDialogOpen(false);
       setEditingTransaction(null);
       
-      // Show appropriate success message
       const description = isDualEntry 
         ? "दोन्ही नोंदी डिलीट झाल्या - रोकड व व्यक्ती दोन्ही अकाउंट मधून"
         : "व्यवहार डिलीट केला";
