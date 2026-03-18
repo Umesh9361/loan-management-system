@@ -2169,6 +2169,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (updateData.returnOfArticles !== undefined) allowedFields.returnOfArticles = updateData.returnOfArticles;
       if (updateData.interestVariance !== undefined) allowedFields.interestVariance = updateData.interestVariance;
       if (updateData.varianceReason !== undefined) allowedFields.varianceReason = updateData.varianceReason;
+      if (updateData.interestType !== undefined) allowedFields.interestType = updateData.interestType;
+      if (updateData.calculationMode !== undefined) allowedFields.calculationMode = updateData.calculationMode;
 
       if (Object.keys(allowedFields).length === 0) {
         return res.status(400).json({ message: "No valid fields to update" });

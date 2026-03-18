@@ -140,17 +140,6 @@ function Loans() {
   const [selectedLoanDetails, setSelectedLoanDetails] = useState<any>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
 
-  // Closure edit dialog state
-  const [editClosureDialogOpen, setEditClosureDialogOpen] = useState(false);
-  const [editClosureLoan, setEditClosureLoan] = useState<any>(null);
-  const [editClosureData, setEditClosureData] = useState<any>(null);
-  const [editClosureForm, setEditClosureForm] = useState({
-    closureDate: '',
-    principalPaid: '',
-    interestPaid: '',
-    totalAmount: '',
-    returnOfArticles: '',
-  });
 
   // Live gold rate for auto market value calculation
   const [liveGoldRate, setLiveGoldRate] = useState<number>(0);
@@ -402,81 +391,8 @@ function Loans() {
     }
   };
 
-  const editClosureMutation = useMutation({
-    mutationFn: async ({ closureId, data }: { closureId: string; data: any }) => {
-      const response = await apiRequest(`/api/loan-closures/${closureId}`, "PATCH", data);
-      return response.json();
-    },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["/api/loans"], refetchType: 'all' });
-      queryClient.invalidateQueries({ queryKey: ["/api/cash-transactions"], refetchType: 'all' });
-      queryClient.invalidateQueries({ queryKey: ["/api/loan-closures"], refetchType: 'all' });
-      setEditClosureDialogOpen(false);
-      setEditClosureLoan(null);
-      setEditClosureData(null);
-      toast({
-        title: "बंद माहिती अपडेट झाली",
-        description: "कर्ज बंद माहिती यशस्वीपणे संपादित केली गेली.",
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "त्रुटी",
-        description: error?.message || "बंद माहिती अपडेट करताना समस्या आली.",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const handleEditClosure = async (loan: any) => {
-    try {
-      const response = await fetch(`/api/loan-closures?loanId=${loan.id}`, { credentials: 'include' });
-      const closures = await response.json();
-      if (closures && closures.length > 0) {
-        const closure = closures[0];
-        setEditClosureLoan(loan);
-        setEditClosureData(closure);
-        setEditClosureForm({
-          closureDate: closure.closureDate || '',
-          principalPaid: closure.principalPaid || '',
-          interestPaid: closure.interestPaid || '',
-          totalAmount: closure.totalAmount || '',
-          returnOfArticles: closure.returnOfArticles || '',
-        });
-        setEditClosureDialogOpen(true);
-      } else {
-        toast({
-          title: "माहिती सापडली नाही",
-          description: "या कर्जाची बंद माहिती सापडली नाही.",
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      console.error("Error fetching closure:", error);
-      toast({
-        title: "त्रुटी",
-        description: "बंद माहिती लोड करताना समस्या आली.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleSaveClosureEdit = () => {
-    if (!editClosureData) return;
-    const principal = parseFloat(editClosureForm.principalPaid) || 0;
-    const interest = parseFloat(editClosureForm.interestPaid) || 0;
-    const total = principal + interest;
-    editClosureMutation.mutate({
-      closureId: editClosureData.id,
-      data: {
-        closureDate: editClosureForm.closureDate,
-        principalPaid: editClosureForm.principalPaid,
-        interestPaid: editClosureForm.interestPaid,
-        totalAmount: String(total),
-        actualPaidAmount: String(total),
-        returnOfArticles: editClosureForm.returnOfArticles,
-      },
-    });
+  const handleEditClosure = (loan: any) => {
+    setLocation(`/closure?loanId=${loan.id}&edit=true`);
   };
 
   const deleteLoanMutation = useMutation({
@@ -4226,81 +4142,6 @@ function Loans() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={editClosureDialogOpen} onOpenChange={(open) => { if (!open) { setEditClosureDialogOpen(false); setEditClosureLoan(null); setEditClosureData(null); } }}>
-        <DialogContent className="w-[95%] max-w-lg">
-          <DialogHeader>
-            <DialogTitle className="text-lg font-bold text-blue-800">
-              🔒 बंद माहिती संपादन
-            </DialogTitle>
-            <DialogDescription className="text-sm text-gray-600">
-              {editClosureLoan && `खाते क्र. ${editClosureLoan.accountNumber} - ${editClosureLoan.borrowerName}`}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 pt-2">
-            <div>
-              <Label className="text-sm font-medium text-gray-700">बंद तारीख</Label>
-              <DateInput
-                value={editClosureForm.closureDate}
-                onChange={(val) => setEditClosureForm(prev => ({ ...prev, closureDate: val }))}
-                className="mt-1"
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label className="text-sm font-medium text-gray-700">मुद्दल रक्कम (₹)</Label>
-                <Input
-                  type="number"
-                  value={editClosureForm.principalPaid}
-                  onChange={(e) => setEditClosureForm(prev => ({ ...prev, principalPaid: e.target.value }))}
-                  className="mt-1"
-                />
-              </div>
-              <div>
-                <Label className="text-sm font-medium text-gray-700">व्याज रक्कम (₹)</Label>
-                <Input
-                  type="number"
-                  value={editClosureForm.interestPaid}
-                  onChange={(e) => setEditClosureForm(prev => ({ ...prev, interestPaid: e.target.value }))}
-                  className="mt-1"
-                />
-              </div>
-            </div>
-            <div className="bg-indigo-50 p-3 rounded-lg">
-              <div className="flex justify-between items-center">
-                <span className="text-sm font-medium text-gray-700">एकूण रक्कम:</span>
-                <span className="text-lg font-bold text-indigo-800">
-                  ₹ {LoanCalculations.formatAmount((parseFloat(editClosureForm.principalPaid) || 0) + (parseFloat(editClosureForm.interestPaid) || 0))}
-                </span>
-              </div>
-            </div>
-            <div>
-              <Label className="text-sm font-medium text-gray-700">परतावा / टिप्पणी</Label>
-              <Textarea
-                value={editClosureForm.returnOfArticles || ''}
-                onChange={(e) => setEditClosureForm(prev => ({ ...prev, returnOfArticles: e.target.value }))}
-                className="mt-1"
-                rows={2}
-                placeholder="वस्तू परतावा किंवा इतर टिप्पणी"
-              />
-            </div>
-            <div className="flex gap-3 justify-end pt-2">
-              <Button
-                variant="outline"
-                onClick={() => { setEditClosureDialogOpen(false); setEditClosureLoan(null); setEditClosureData(null); }}
-              >
-                रद्द करा
-              </Button>
-              <Button
-                onClick={handleSaveClosureEdit}
-                disabled={editClosureMutation.isPending}
-                className="bg-blue-600 hover:bg-blue-700 text-white"
-              >
-                {editClosureMutation.isPending ? "सेव्ह होत आहे..." : "सेव्ह करा"}
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
 
       <LabelPrintDialog
         open={labelPrintDialogOpen}

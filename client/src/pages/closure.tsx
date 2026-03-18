@@ -126,7 +126,9 @@ export default function Closure() {
   
   const urlParams = new URLSearchParams(window.location.search);
   const loanIdFromUrl = urlParams.get('loanId');
+  const isEditMode = urlParams.get('edit') === 'true';
   const hideSearch = !!loanIdFromUrl;
+  const [existingClosureData, setExistingClosureData] = useState<any>(null);
 
   useEffect(() => {
     summaryEntriesRef.current = summaryEntries;
@@ -142,9 +144,9 @@ export default function Closure() {
   }, [summaryCounter]);
 
   const { data: activeLoans, isLoading } = useQuery({
-    queryKey: ["/api/loans"],
+    queryKey: ["/api/loans", isEditMode ? "all" : "active"],
     queryFn: () => 
-      fetch("/api/loans?status=active", {
+      fetch(isEditMode ? "/api/loans" : "/api/loans?status=active", {
         credentials: "include",
       }).then(res => res.json()),
   });
@@ -214,6 +216,20 @@ export default function Closure() {
 
   const closureMutation = useMutation({
     mutationFn: async (data: any) => {
+      if (isEditMode && existingClosureData) {
+        const response = await apiRequest(`/api/loan-closures/${existingClosureData.id}`, "PATCH", {
+          closureDate: data.closureDate,
+          interestPaid: data.finalInterestAmount,
+          principalPaid: String(selectedLoan?.principalAmount || '0'),
+          totalAmount: String((parseFloat(selectedLoan?.principalAmount || '0') + parseFloat(data.finalInterestAmount || '0'))),
+          actualPaidAmount: String((parseFloat(selectedLoan?.principalAmount || '0') + parseFloat(data.finalInterestAmount || '0'))),
+          returnOfArticles: data.returnOfArticles || '',
+          interestType: data.interestType,
+          calculationMode: data.advancedCalculationMode,
+          loanId: data.loanId,
+        });
+        return response.json();
+      }
       const response = await apiRequest(`/api/loans/${data.loanId}/close`, "POST", data);
       const result = await response.json();
       if (result.dateWarning) {
@@ -235,24 +251,33 @@ export default function Closure() {
       queryClient.invalidateQueries({ queryKey: ["/api/cash-balance"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
       queryClient.invalidateQueries({ queryKey: ["/api/borrowers"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/loan-closures"] });
       queryClient.refetchQueries({ queryKey: ["/api/cash-transactions"] });
       queryClient.refetchQueries({ queryKey: ["/api/cash-balance"] });
       
-      toast({
-        title: "यशस्वी",
-        description: "कर्ज बंद केले - रोकड वही तुरंत अपडेट झाली",
-      });
-      form.reset();
-      setSelectedLoan(null);
-      setCalculationResult(null);
-      setSearchQuery("");
-      setShowLoanList(false);
-      setEditableLoanDate("");
+      if (isEditMode) {
+        toast({
+          title: "यशस्वी",
+          description: "बंद माहिती अपडेट झाली - रोकड वही अपडेट झाली",
+        });
+        window.history.back();
+      } else {
+        toast({
+          title: "यशस्वी",
+          description: "कर्ज बंद केले - रोकड वही तुरंत अपडेट झाली",
+        });
+        form.reset();
+        setSelectedLoan(null);
+        setCalculationResult(null);
+        setSearchQuery("");
+        setShowLoanList(false);
+        setEditableLoanDate("");
+      }
     },
     onError: () => {
       toast({
         title: "त्रुटी",
-        description: "कर्ज बंद करताना त्रुटी झाली",
+        description: isEditMode ? "बंद माहिती अपडेट करताना त्रुटी झाली" : "कर्ज बंद करताना त्रुटी झाली",
         variant: "destructive",
       });
     },
@@ -269,7 +294,6 @@ export default function Closure() {
     setDateWarningDialog({ open: false, title: '', message: '', severity: '', closureData: null });
   };
 
-  // Auto-select loan from URL
   useEffect(() => {
     if (loanIdFromUrl && activeLoans) {
       const loan = activeLoans.find((l: any) => l.id === loanIdFromUrl);
@@ -279,9 +303,36 @@ export default function Closure() {
         setSearchQuery(`${loan.borrowerName} - ${loan.accountNumber}`);
         setEditableLoanDate(loan.loanDate || "");
         autoCalculateRef.current = true;
+
+        if (isEditMode) {
+          fetch(`/api/loan-closures?loanId=${loan.id}`, { credentials: 'include' })
+            .then(res => res.json())
+            .then(closures => {
+              if (closures && closures.length > 0) {
+                const closure = closures[0];
+                setExistingClosureData(closure);
+                if (closure.closureDate) {
+                  form.setValue("closureDate", closure.closureDate);
+                }
+                if (closure.interestPaid) {
+                  form.setValue("finalInterestAmount", String(closure.interestPaid));
+                }
+                if (closure.returnOfArticles) {
+                  form.setValue("returnOfArticles", closure.returnOfArticles);
+                }
+                if (closure.interestType) {
+                  form.setValue("interestType", closure.interestType as any);
+                }
+                if (closure.calculationMode) {
+                  form.setValue("advancedCalculationMode", closure.calculationMode as any);
+                }
+              }
+            })
+            .catch(err => console.error("Error fetching closure data:", err));
+        }
       }
     }
-  }, [loanIdFromUrl, activeLoans, form]);
+  }, [loanIdFromUrl, activeLoans, form, isEditMode]);
 
   const calculateInterest = useCallback(() => {
     if (!selectedLoan) return;
@@ -1401,8 +1452,8 @@ export default function Closure() {
                   </Button>
                 </Link>
               </div>
-              <h1 className="text-xl sm:text-2xl md:text-3xl font-semibold text-indigo-900 mb-1">कर्ज बंद करा</h1>
-              <p className="text-sm text-gray-500">Loan Closure & Interest Calculation</p>
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-semibold text-indigo-900 mb-1">{isEditMode ? "बंद माहिती संपादन" : "कर्ज बंद करा"}</h1>
+              <p className="text-sm text-gray-500">{isEditMode ? "Edit Closure Details & Recalculate" : "Loan Closure & Interest Calculation"}</p>
             </div>
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -2082,12 +2133,12 @@ export default function Closure() {
                         {(closureMutation.isPending || cleanupMutation.isPending) ? (
                           <>
                             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                            {cleanupMutation.isPending ? "मॅन्युअल इंट्री साफ करत आहे..." : "कर्ज बंद करत आहे..."}
+                            {cleanupMutation.isPending ? "मॅन्युअल इंट्री साफ करत आहे..." : isEditMode ? "अपडेट करत आहे..." : "कर्ज बंद करत आहे..."}
                           </>
                         ) : (
                           <>
                             <CheckCircle className="h-4 w-4 mr-2" />
-                            कर्ज बंद करा
+                            {isEditMode ? "बंद माहिती अपडेट करा" : "कर्ज बंद करा"}
                           </>
                         )}
                       </Button>
