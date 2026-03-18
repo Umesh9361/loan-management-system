@@ -18,6 +18,7 @@ GitHub Push Policy: NEVER push the full project. Only push changed/modified file
 - **Date Format**: Consistent DD/MM/YYYY.
 - **Reporting UI**: Clean statement-only printing for reports, cross-device date picker compatibility, A4 print layout with user-specified column measurements and specific header/footer formatting.
 - **Label Printing**: Customizable barcode/sticker label printing system with 5 presets + custom size, field visibility toggle, arrow-button reordering, per-field font size, bold/oval toggles, custom text, margin controls, and dynamic preview. Settings panel starts collapsed showing preview first. Settings persisted in database (labelSettings column in companies table) with localStorage fallback, isDirty flag to prevent overwrites on load, debounced 800ms save.
+- **Font Standard**: ALL Print and PDF outputs use `'Noto Sans Devanagari', Arial, sans-serif` font — enforced across every report, receipt, and export. Google Fonts CDN link used in HTML templates; `initDevanagariFont()` from `pdf-text-generator.ts` used for jsPDF-based exports. Font loaded via `document.fonts.ready` before html2canvas rendering.
 
 ### Backend Architecture
 - **Runtime & Language**: Node.js with Express.js and TypeScript.
@@ -37,7 +38,7 @@ GitHub Push Policy: NEVER push the full project. Only push changed/modified file
 - **Financial Management**: Comprehensive cash transaction system with party accounts, automated integration with loan disbursements/closures, real-time balance calculations, and professional print systems for statements and reports following a "Lender Perspective" accounting convention (Format 8).
 - **Loan Management**: Flexible loan creation, intelligent search, simple interest calculations with manual adjustments, variance tracking, and critical loan-to-cash transaction synchronization. Includes a maturity reminder system with smart notification logic.
 - **Data Management & Cleanup**: Enhanced cleanup for closed loans, activity logs, and cashbook entries. Features comprehensive PhotoService integration for loan photos, and date-range based cleanup of general cash transactions with a 3-layer loan protection system and preview mode.
-- **Reporting**: Provides cash book, capital reports, ledger management, unified account ledger, comprehensive borrower list reports, individual loan statements (नमुना नंबर आठ), and Loading Report (LTV overloading analysis with dual-logic: 80% standard + data-driven average).
+- **Reporting**: Provides cash book, capital reports, ledger management, unified account ledger, comprehensive borrower list reports, individual loan statements (नमुना नंबर आठ), Loading Report (LTV overloading analysis with dual-logic: 80% standard + data-driven average), Bulk Print (FY-wise batch receipt generation with status filter — सर्व/चालू/बंद — supporting all 7 receipt types on A4 landscape grid layout), and Annual Statement Bulk Print (नमुना क्रमांक १४ — FY-wise batch generation with bulk API, status filter, 4 per A4 landscape 2×2 grid).
 - **Photo Management**: Professional multi-provider photo storage system with Cloudinary integration and a PhotoStorageProvider abstraction for tenant-wise provider selection and deletion.
 - **Localization**: Dual language support (English and Marathi) with default Marathi interface and bilingual search.
 - **Audit Logging**: Comprehensive activity logging for all CRUD operations on key entities with Marathi descriptions, user info, timestamps, and detailed change tracking. Accessible via an admin-only Activity Log page with filtering and clear functionality.
@@ -50,6 +51,7 @@ GitHub Push Policy: NEVER push the full project. Only push changed/modified file
 - **Unified Transaction System & Duplicate Prevention**: Centralized cash synchronization and intelligent duplicate prevention for all loan operations.
 - **Calculator Interface**: Interest calculator with conditional display based on calculation method.
 - **Name Translations**: Extensive dual-language search system with 5000+ name translations covering various regions, traditional names, and phonetic variations using fuzzy search logic.
+- **Weight Handling**: Loan weight defaults to 0 (not 10) when not specified. Weight totals in borrower list reports show separate gold/silver totals when different metal types exist. Uses parseFloat for decimal weight accuracy.
 
 ## External Dependencies
 
@@ -81,3 +83,4 @@ GitHub Push Policy: NEVER push the full project. Only push changed/modified file
 ### Export and Reporting
 - `jspdf`
 - `jspdf-autotable`
+- `html2canvas`
