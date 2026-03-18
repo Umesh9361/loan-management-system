@@ -231,7 +231,7 @@ export default function InformationRegister() {
           <td style="text-align:center;white-space:nowrap;">${entry.isClosed ? formatDate(entry.closureDate) : '.......'}</td>
           <td style="text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;">${entry.isClosed ? formatAmount(entry.principalPaid) : '.......'}</td>
           <td style="text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;">${entry.isClosed ? formatAmount(entry.interestPaid) : '.......'}</td>
-          <td style="text-align:center;white-space:nowrap;">${getInterestDisplay(entry.interestRate, entry.interestRateType)}</td>
+          <td style="text-align:center;white-space:nowrap;font-size:12px;">${getInterestDisplay(entry.interestRate, entry.interestRateType)}</td>
           <td style="text-align:center;">${getLoanTypeLabel(entry.loanType)}</td>
           <td style="text-align:center;">${entry.accountNumber}</td>
           <td style="text-align:center;${statusClass}">${entry.isClosed ? 'होय' : 'लागू नाही'}</td>
@@ -298,7 +298,7 @@ export default function InformationRegister() {
           .col-rdate { width: 82px; }
           .col-rprincipal { width: 90px; }
           .col-rinterest { width: 80px; }
-          .col-rate { width: 48px; }
+          .col-rate { width: 58px; }
           .col-type { width: 68px; }
           .col-acc { width: 42px; }
           .col-status { width: 72px; }
