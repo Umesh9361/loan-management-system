@@ -1306,11 +1306,83 @@ function Loans() {
     return 1 - matrix[len1][len2] / Math.max(len1, len2);
   };
 
+  const transliterateToDevanagari = useCallback((input: string): string[] => {
+    const t = input.toLowerCase().trim();
+    if (!t || !/^[a-z]+$/.test(t)) return [];
+    const charMap: [string, string][] = [
+      ['shri', 'श्री'], ['shr', 'श्र'], ['ksh', 'क्ष'], ['gya', 'ज्ञा'], ['dny', 'ज्ञ'],
+      ['tha', 'था'], ['thi', 'थि'], ['thu', 'थु'], ['the', 'थे'], ['tho', 'थो'], ['th', 'थ'],
+      ['dha', 'धा'], ['dhi', 'धि'], ['dhu', 'धु'], ['dhe', 'धे'], ['dho', 'धो'], ['dh', 'ध'],
+      ['cha', 'चा'], ['chi', 'चि'], ['chu', 'चु'], ['che', 'चे'], ['cho', 'चो'], ['ch', 'च'],
+      ['sha', 'शा'], ['shi', 'शि'], ['shu', 'शु'], ['she', 'शे'], ['sho', 'शो'], ['sh', 'श'],
+      ['bha', 'भा'], ['bhi', 'भि'], ['bhu', 'भु'], ['bhe', 'भे'], ['bho', 'भो'], ['bh', 'भ'],
+      ['kha', 'खा'], ['khi', 'खि'], ['khu', 'खु'], ['khe', 'खे'], ['kho', 'खो'], ['kh', 'ख'],
+      ['gha', 'घा'], ['ghi', 'घि'], ['ghu', 'घु'], ['ghe', 'घे'], ['gho', 'घो'], ['gh', 'घ'],
+      ['pha', 'फा'], ['phi', 'फि'], ['phu', 'फु'], ['phe', 'फे'], ['pho', 'फो'], ['ph', 'फ'],
+      ['jha', 'झा'], ['jhi', 'झि'], ['jhu', 'झु'], ['jhe', 'झे'], ['jho', 'झो'], ['jh', 'झ'],
+      ['aa', 'आ'], ['ee', 'ई'], ['oo', 'ऊ'], ['ai', 'ऐ'], ['au', 'औ'],
+      ['ka', 'का'], ['ki', 'कि'], ['ku', 'कु'], ['ke', 'के'], ['ko', 'को'],
+      ['ga', 'गा'], ['gi', 'गि'], ['gu', 'गु'], ['ge', 'गे'], ['go', 'गो'],
+      ['ja', 'जा'], ['ji', 'जि'], ['ju', 'जु'], ['je', 'जे'], ['jo', 'जो'],
+      ['ta', 'ता'], ['ti', 'ति'], ['tu', 'तु'], ['te', 'ते'], ['to', 'तो'],
+      ['da', 'दा'], ['di', 'दि'], ['du', 'दु'], ['de', 'दे'], ['do', 'दो'],
+      ['na', 'ना'], ['ni', 'नि'], ['nu', 'नु'], ['ne', 'ने'], ['no', 'नो'],
+      ['pa', 'पा'], ['pi', 'पि'], ['pu', 'पु'], ['pe', 'पे'], ['po', 'पो'],
+      ['ba', 'बा'], ['bi', 'बि'], ['bu', 'बु'], ['be', 'बे'], ['bo', 'बो'],
+      ['ma', 'मा'], ['mi', 'मि'], ['mu', 'मु'], ['me', 'मे'], ['mo', 'मो'],
+      ['ya', 'या'], ['yi', 'यि'], ['yu', 'यु'], ['ye', 'ये'], ['yo', 'यो'],
+      ['ra', 'रा'], ['ri', 'रि'], ['ru', 'रु'], ['re', 'रे'], ['ro', 'रो'],
+      ['la', 'ला'], ['li', 'लि'], ['lu', 'लु'], ['le', 'ले'], ['lo', 'लो'],
+      ['va', 'वा'], ['vi', 'वि'], ['ve', 'वे'], ['vo', 'वो'],
+      ['sa', 'सा'], ['si', 'सि'], ['su', 'सु'], ['se', 'से'], ['so', 'सो'],
+      ['ha', 'हा'], ['hi', 'हि'], ['hu', 'हु'], ['he', 'हे'], ['ho', 'हो'],
+      ['a', 'अ'], ['i', 'इ'], ['u', 'उ'], ['e', 'ए'], ['o', 'ओ'],
+      ['k', 'क'], ['g', 'ग'], ['j', 'ज'], ['t', 'त'], ['d', 'द'],
+      ['n', 'न'], ['p', 'प'], ['b', 'ब'], ['m', 'म'], ['y', 'य'],
+      ['r', 'र'], ['l', 'ल'], ['v', 'व'], ['w', 'व'], ['s', 'स'], ['h', 'ह'],
+    ];
+    let result = '';
+    let i = 0;
+    while (i < t.length) {
+      let matched = false;
+      for (const [eng, dev] of charMap) {
+        if (t.substring(i, i + eng.length) === eng) {
+          result += dev;
+          i += eng.length;
+          matched = true;
+          break;
+        }
+      }
+      if (!matched) { result += t[i]; i++; }
+    }
+    const results = new Set<string>();
+    if (result) results.add(result);
+    const altMap: Record<string, string[]> = {
+      'an': ['अन', 'आन'], 'am': ['अम', 'आम'], 'um': ['उम', 'ऊम'],
+      'su': ['सु', 'सू', 'शु'], 'sha': ['शा', 'षा'], 'sh': ['श', 'ष'],
+      'ra': ['रा', 'र'], 'ri': ['रि', 'री'], 'ka': ['का', 'क'],
+      'ki': ['कि', 'की'], 'ni': ['नि', 'नी'], 'na': ['ना', 'न'],
+      'vi': ['वि', 'वी'], 'ma': ['मा', 'म'], 'sa': ['सा', 'स'],
+      'pa': ['पा', 'प'], 'ba': ['बा', 'ब'], 'da': ['दा', 'द'],
+      'ja': ['जा', 'ज'], 'ga': ['गा', 'ग'], 'ha': ['हा', 'ह'],
+    };
+    if (altMap[t]) altMap[t].forEach(v => results.add(v));
+    return Array.from(results);
+  }, []);
+
   const getTranslationVariations = useCallback((term: string): string[] => {
     const variations = new Set<string>([term]);
     const termLower = term.toLowerCase();
-    const maxVariations = termLower.length <= 2 ? 5 : termLower.length === 3 ? 8 : 15;
+    const maxVariations = termLower.length <= 2 ? 10 : termLower.length === 3 ? 12 : 15;
     let count = 0;
+
+    if (/^[a-z]+$/i.test(termLower)) {
+      const devVariations = transliterateToDevanagari(termLower);
+      devVariations.forEach(dv => {
+        variations.add(dv);
+        count++;
+      });
+    }
 
     if (Object.keys(nameTranslationsMap).length > 0) {
       if (nameTranslationsMap[termLower]) {
@@ -1350,7 +1422,7 @@ function Loans() {
       }
     }
     return Array.from(variations);
-  }, [nameTranslationsMap]);
+  }, [nameTranslationsMap, transliterateToDevanagari]);
 
   const scoreTermAgainstField = (term: string, fieldValue: string, weight: number, label: string, precomputedVariations?: string[]): number => {
     let fieldScore = 0;
