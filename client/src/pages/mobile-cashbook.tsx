@@ -236,21 +236,7 @@ function MobileCashbook() {
   };
   
   const performCrossLanguageSearch = (searchTerm: string) => {
-    const trimmed = searchTerm.trim();
-    if (!trimmed) {
-      return searchTerm;
-    }
-    
-    const searchQueries = createDualLanguageQuery(trimmed);
-    
-    const normalizedVariant = normalizeMarathiVowels(trimmed);
-    if (normalizedVariant !== trimmed && !searchQueries.includes(normalizedVariant)) {
-      searchQueries.push(normalizedVariant);
-    }
-    
-    const combinedSearch = searchQueries.join(' ');
-    
-    return combinedSearch;
+    return searchTerm.trim();
   };
   
   const buildFetchParams = React.useCallback(() => {
