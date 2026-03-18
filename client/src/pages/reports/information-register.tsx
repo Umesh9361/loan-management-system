@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useSafeNavigation } from "@/hooks/use-safe-navigation";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { initDevanagariFont } from "@/lib/pdf-text-generator";
 
 interface RegisterEntry {
   srNo: number;
@@ -218,6 +219,8 @@ export default function InformationRegister() {
         format: 'a4',
       });
 
+      initDevanagariFont(doc);
+
       const pageWidth = doc.internal.pageSize.getWidth();
 
       const companyName = company?.name || '';
@@ -262,7 +265,7 @@ export default function InformationRegister() {
         startY: 28,
         margin: { top: 28, right: 10, bottom: 15, left: 10 },
         styles: {
-          font: 'helvetica',
+          font: 'NotoDevanagari',
           fontSize: 9,
           cellPadding: { top: 3, right: 4, bottom: 3, left: 4 },
           lineWidth: 0.3,
@@ -297,16 +300,16 @@ export default function InformationRegister() {
         },
         didDrawPage: (hookData: any) => {
           doc.setFontSize(13);
-          doc.setFont('helvetica', 'bold');
+          doc.setFont('NotoDevanagari', 'normal');
           doc.text(headerText, pageWidth / 2, 12, { align: 'center' });
           doc.setFontSize(10);
-          doc.setFont('helvetica', 'normal');
+          doc.setFont('NotoDevanagari', 'normal');
           doc.text(proprietorText, pageWidth / 2, 20, { align: 'center' });
 
           const pageCount = doc.getNumberOfPages();
           const currentPage = hookData.pageNumber;
           doc.setFontSize(8);
-          doc.setFont('helvetica', 'normal');
+          doc.setFont('NotoDevanagari', 'normal');
           doc.text(`पृष्ठ ${currentPage} / ${pageCount}`, pageWidth - 15, doc.internal.pageSize.getHeight() - 8, { align: 'right' });
         },
       });
@@ -317,13 +320,13 @@ export default function InformationRegister() {
       if (finalY + 30 > pageHeight) {
         doc.addPage();
         doc.setFontSize(10);
-        doc.setFont('helvetica', 'bold');
+        doc.setFont('NotoDevanagari', 'normal');
         doc.text('सावकाराचे सहा. निबंधक तथा उपनिबंधक', 15, 25);
         doc.text('सह. संस्था, ___________________________', 15, 32);
         doc.text('सावकाराची सही', pageWidth - 50, 25);
       } else {
         doc.setFontSize(10);
-        doc.setFont('helvetica', 'bold');
+        doc.setFont('NotoDevanagari', 'normal');
         doc.text('सावकाराचे सहा. निबंधक तथा उपनिबंधक', 15, finalY + 18);
         doc.text('सह. संस्था, ___________________________', 15, finalY + 25);
         doc.text('सावकाराची सही', pageWidth - 50, finalY + 18);
