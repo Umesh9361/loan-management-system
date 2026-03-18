@@ -2145,6 +2145,95 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.patch("/api/loan-closures/:id", requireAuth, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const tenantId = req.session.tenantId!;
+      const updateData = req.body;
+
+      const allClosures = await storage.getLoanClosures(tenantId);
+      const existing = allClosures.find(c => c.id === id);
+      if (!existing) {
+        return res.status(404).json({ message: "Closure record not found" });
+      }
+
+      const allowedFields: any = {};
+      if (updateData.closureDate !== undefined) allowedFields.closureDate = updateData.closureDate;
+      if (updateData.interestPaid !== undefined) allowedFields.interestPaid = updateData.interestPaid;
+      if (updateData.principalPaid !== undefined) allowedFields.principalPaid = updateData.principalPaid;
+      if (updateData.totalAmount !== undefined) allowedFields.totalAmount = updateData.totalAmount;
+      if (updateData.actualPaidAmount !== undefined) allowedFields.actualPaidAmount = updateData.actualPaidAmount;
+      if (updateData.calculatedInterest !== undefined) allowedFields.calculatedInterest = updateData.calculatedInterest;
+      if (updateData.durationInMonths !== undefined) allowedFields.durationInMonths = updateData.durationInMonths;
+      if (updateData.balanceRefund !== undefined) allowedFields.balanceRefund = updateData.balanceRefund;
+      if (updateData.returnOfArticles !== undefined) allowedFields.returnOfArticles = updateData.returnOfArticles;
+      if (updateData.interestVariance !== undefined) allowedFields.interestVariance = updateData.interestVariance;
+      if (updateData.varianceReason !== undefined) allowedFields.varianceReason = updateData.varianceReason;
+
+      if (Object.keys(allowedFields).length === 0) {
+        return res.status(400).json({ message: "No valid fields to update" });
+      }
+
+      const updated = await storage.updateLoanClosure(id, tenantId, allowedFields);
+      if (!updated) {
+        return res.status(500).json({ message: "Failed to update closure" });
+      }
+
+      if (allowedFields.closureDate || allowedFields.totalAmount || allowedFields.interestPaid || allowedFields.principalPaid) {
+        const loanId = existing.loanId;
+        const closureCashTxs = await db.select().from(cashTransactions)
+          .where(and(
+            eq(cashTransactions.tenantId, tenantId),
+            eq(cashTransactions.loanId, loanId),
+            eq(cashTransactions.transactionType, 'cash_in'),
+            eq(cashTransactions.isSystemGenerated, true)
+          ));
+
+        for (const tx of closureCashTxs) {
+          const cashUpdateData: any = {};
+          if (allowedFields.closureDate) cashUpdateData.transactionDate = allowedFields.closureDate;
+          if (allowedFields.totalAmount) cashUpdateData.amount = allowedFields.totalAmount;
+          if (Object.keys(cashUpdateData).length > 0) {
+            await db.update(cashTransactions)
+              .set(cashUpdateData)
+              .where(eq(cashTransactions.id, tx.id));
+          }
+
+          if (allowedFields.closureDate || allowedFields.totalAmount) {
+            const journalEntries_ = await db.select().from(journalEntries)
+              .where(and(
+                eq(journalEntries.tenantId, tenantId),
+                eq(journalEntries.sourceId, tx.id)
+              ));
+            for (const je of journalEntries_) {
+              const jeUpdate: any = {};
+              if (allowedFields.closureDate) jeUpdate.entryDate = allowedFields.closureDate;
+              if (allowedFields.totalAmount) jeUpdate.amount = allowedFields.totalAmount;
+              if (Object.keys(jeUpdate).length > 0) {
+                await db.update(journalEntries).set(jeUpdate).where(eq(journalEntries.id, je.id));
+              }
+            }
+          }
+        }
+      }
+
+      try {
+        await storage.logUserActivity({
+          userId: req.session.userId!,
+          tenantId,
+          activityType: 'edit_closure',
+          description: `कर्ज बंद माहिती संपादन: ${existing.loanId}`,
+          metadata: JSON.stringify({ closureId: id, loanId: existing.loanId, updatedFields: Object.keys(allowedFields) })
+        });
+      } catch(e) { console.error('Audit log error:', e); }
+
+      res.json({ message: "Closure updated successfully", closure: updated });
+    } catch (error: any) {
+      console.error("Closure update error:", error?.message, error?.stack);
+      res.status(500).json({ message: "Failed to update closure" });
+    }
+  });
+
   // Emergency duplicate cleanup endpoint
   app.post("/api/emergency-cleanup-duplicates", requireAuth, async (req, res) => {
     try {
