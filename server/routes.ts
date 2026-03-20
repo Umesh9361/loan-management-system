@@ -5473,17 +5473,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let totalYearDisbursement = 0;
       let totalYearPrincipalRepayment = 0;
       let totalYearInterestRepayment = 0;
+      let totalClosingPrincipal = 0;
 
       for (const loan of perLoanData) {
         totalOpeningPrincipal += loan.openingPrincipal;
         totalYearDisbursement += loan.yearDisbursement;
         totalYearPrincipalRepayment += loan.yearPrincipalRepayment;
         totalYearInterestRepayment += loan.yearInterestRepayment;
+        totalClosingPrincipal += loan.closingPrincipal;
       }
 
       const totalCollection = totalYearPrincipalRepayment + totalYearInterestRepayment;
       const totalAmount = totalOpeningPrincipal + totalYearDisbursement;
-      const closingBalance = totalAmount - totalCollection;
 
       const company = await db.select()
         .from(companies)
@@ -5499,7 +5500,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         yearDisbursement: Math.round(totalYearDisbursement),
         totalAmount: Math.round(totalAmount),
         yearCollection: Math.round(totalCollection),
-        closingBalance: Math.round(closingBalance),
+        closingBalance: Math.round(totalClosingPrincipal),
         interestCollected: Math.round(totalYearInterestRepayment),
       });
     } catch (error) {
