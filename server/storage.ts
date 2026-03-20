@@ -173,23 +173,16 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUserByCredentials(tenantId: string, username: string): Promise<User | undefined> {
-    // TRIM whitespace to fix space character issues
     const cleanTenantId = tenantId.trim();
     const cleanUsername = username.trim();
     
-    
     try {
       const [user] = await db.select().from(users)
-        .where(and(eq(users.tenantId, cleanTenantId), eq(users.username, cleanUsername), eq(users.isActive, true)));
-      
-      if (!user) {
-        // Debug: Check what users actually exist
-        const allUsers = await db.select({ 
-          username: users.username, 
-          tenantId: users.tenantId, 
-          isActive: users.isActive 
-        }).from(users);
-      }
+        .where(and(
+          eq(users.tenantId, cleanTenantId),
+          sql`LOWER(${users.username}) = LOWER(${cleanUsername})`,
+          eq(users.isActive, true)
+        ));
       
       return user || undefined;
     } catch (error) {
