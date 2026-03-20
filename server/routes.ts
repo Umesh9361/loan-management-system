@@ -352,19 +352,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const startTime = Date.now();
       const parsed = loginSchema.parse(req.body);
+      const rawUsername = parsed.username;
       const tenantId = parsed.tenantId.toUpperCase().trim();
-      const username = parsed.username.trim();
+      const username = parsed.username.toLowerCase().trim();
       const password = parsed.password;
+      
+      console.log(`🔑 LOGIN ATTEMPT: tenant=${tenantId}, rawUser="${rawUsername}", user=${username}, UA=${req.get('User-Agent')?.substring(0, 50)}`);
       
       const user = await storage.getUserByCredentials(tenantId, username);
       
       if (!user) {
+        console.log(`❌ LOGIN FAILED: No user found for tenant=${tenantId}, user=${username}`);
         return res.status(401).json({ message: "Invalid credentials" });
       }
 
       const isValid = await bcrypt.compare(password, user.password);
       
       if (!isValid) {
+        console.log(`❌ LOGIN FAILED: Wrong password for tenant=${tenantId}, user=${username}`);
         return res.status(401).json({ message: "Invalid credentials" });
       }
 
