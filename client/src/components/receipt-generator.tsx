@@ -1830,95 +1830,146 @@ ${pagesHTML}
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
     font-family: 'Noto Sans Devanagari', Arial, sans-serif;
-    font-size: 12px;
-    line-height: 1.6;
+    font-size: 13px;
+    line-height: 1.7;
     color: #000;
     background: white;
+    -webkit-text-size-adjust: 100%;
   }
   .jawab-page {
     width: 100%;
     max-width: 700px;
     margin: 0 auto;
-    padding: 10px 0;
-  }
-  .header-title {
-    text-align: center;
-    font-size: 16px;
-    font-weight: 700;
-    text-decoration: underline;
-    margin-bottom: 8px;
+    padding: 15px 10px;
   }
   .company-header {
     text-align: center;
-    font-size: 14px;
-    font-weight: 600;
-    margin-bottom: 4px;
+    font-size: 17px;
+    font-weight: 700;
+    margin-bottom: 2px;
+    letter-spacing: 0.5px;
+  }
+  .company-address {
+    text-align: center;
+    font-size: 11px;
+    font-weight: 400;
+    color: #333;
+    margin-bottom: 6px;
+  }
+  .header-title {
+    text-align: center;
+    font-size: 18px;
+    font-weight: 700;
+    text-decoration: underline;
+    margin-bottom: 12px;
+    letter-spacing: 1px;
+  }
+  .sub-title {
+    text-align: center;
+    font-size: 11px;
+    font-weight: 500;
+    margin-bottom: 10px;
+    color: #333;
   }
   .header-info {
-    font-size: 11px;
-    margin-bottom: 3px;
-    line-height: 1.5;
+    font-size: 12px;
+    margin-bottom: 5px;
+    line-height: 1.8;
+  }
+  .header-info div {
+    margin-bottom: 2px;
   }
   .legal-text {
-    font-size: 11px;
-    line-height: 1.7;
+    font-size: 12px;
+    line-height: 1.8;
     text-align: justify;
-    margin: 8px 0;
+    margin: 12px 0;
   }
   .legal-text p {
-    margin-bottom: 6px;
-    text-indent: 20px;
+    margin-bottom: 8px;
+    text-indent: 25px;
   }
   .data-table {
     width: 100%;
     border-collapse: collapse;
-    margin: 10px 0;
-    font-size: 11px;
+    margin: 14px 0;
+    font-size: 12px;
   }
   .data-table th, .data-table td {
-    border: 1px solid #000;
-    padding: 4px 8px;
+    border: 1.5px solid #000;
+    padding: 6px 10px;
     text-align: left;
   }
   .data-table th {
-    background: #f5f5f5;
-    font-weight: 600;
+    background: #f0f0f0;
+    font-weight: 700;
     text-align: center;
+    font-size: 13px;
   }
-  .data-table .sr-col { width: 40px; text-align: center; }
+  .data-table .sr-col { width: 50px; text-align: center; }
   .data-table .desc-col { width: auto; }
-  .data-table .amt-col { width: 140px; text-align: right; }
+  .data-table .amt-col { width: 150px; text-align: right; font-weight: 500; }
+  .data-table tr.total-row td { font-weight: 700; }
   .closing-text {
-    font-size: 11px;
-    line-height: 1.7;
+    font-size: 12px;
+    line-height: 1.8;
     text-align: justify;
-    margin: 10px 0;
+    margin: 14px 0;
   }
   .signature-section {
-    margin-top: 30px;
+    margin-top: 40px;
     display: flex;
     justify-content: space-between;
-    font-size: 11px;
+    font-size: 12px;
+    align-items: flex-end;
   }
-  .signature-left { text-align: left; }
-  .signature-right { text-align: right; }
-  .footer-text {
-    margin-top: 20px;
-    font-size: 10px;
+  .signature-left {
+    text-align: left;
+    line-height: 1.6;
+  }
+  .signature-right {
     text-align: center;
-    border-top: 1px solid #ccc;
-    padding-top: 8px;
+    min-width: 200px;
+  }
+  .footer-text {
+    margin-top: 30px;
+    font-size: 11px;
+    text-align: center;
+    border-top: 1px solid #999;
+    padding-top: 10px;
+    color: #333;
+  }
+  @media screen and (max-width: 480px) {
+    body { font-size: 11px; line-height: 1.5; }
+    .jawab-page { padding: 8px 6px; }
+    .company-header { font-size: 14px; }
+    .header-title { font-size: 15px; margin-bottom: 8px; }
+    .sub-title { font-size: 10px; margin-bottom: 6px; }
+    .header-info { font-size: 10px; line-height: 1.6; }
+    .legal-text { font-size: 10px; line-height: 1.6; margin: 8px 0; }
+    .legal-text p { margin-bottom: 5px; text-indent: 15px; }
+    .data-table { font-size: 10px; margin: 8px 0; }
+    .data-table th, .data-table td { padding: 4px 5px; }
+    .data-table th { font-size: 11px; }
+    .data-table .sr-col { width: 30px; }
+    .data-table .amt-col { width: 90px; }
+    .closing-text { font-size: 10px; line-height: 1.6; margin: 8px 0; }
+    .signature-section { margin-top: 20px; font-size: 10px; flex-direction: column; gap: 20px; align-items: stretch; }
+    .signature-right { min-width: auto; text-align: right; }
+    .footer-text { margin-top: 15px; font-size: 9px; }
   }
   @media print {
-    body { margin: 0; padding: 0; }
-    .jawab-page { max-width: 100%; }
+    body { margin: 0; padding: 0; font-size: 13px; line-height: 1.7; }
+    .jawab-page { max-width: 100%; padding: 0; }
   }
 </style>
 </head>
 <body>
 <div class="jawab-page">
   <div class="company-header">${companyName}</div>
+  <div class="company-address">${companyAddress ? companyAddress : ''}</div>
   <div class="header-title">जवाब</div>
+  <div class="sub-title">(सावकारी कायदा अधिनियम-2014, कलम 18, 25 व 26)</div>
 
   <div class="header-info">
     <div>मी, श्री/श्रीमती ________________________________________ वय ______ व. ________</div>
@@ -1975,20 +2026,20 @@ ${pagesHTML}
         <td>सन ${fy} मध्ये कर्ज वाटप केलेले कर्ज</td>
         <td class="amt-col">${formatAmt(data.yearDisbursement)} /-</td>
       </tr>
-      <tr>
+      <tr class="total-row">
         <td class="sr-col">3</td>
         <td>एकूण रक्कम</td>
-        <td class="amt-col"><strong>${formatAmt(data.totalAmount)} /-</strong></td>
+        <td class="amt-col">${formatAmt(data.totalAmount)} /-</td>
       </tr>
       <tr>
         <td class="sr-col">4</td>
         <td>फक्त सन ${fy} मध्ये आलेली वसुल</td>
         <td class="amt-col">${formatAmt(data.yearCollection)} /-</td>
       </tr>
-      <tr>
+      <tr class="total-row">
         <td class="sr-col">5</td>
         <td>दि. 31.03.${fyEnd} अखेर शिल्लक कर्ज</td>
-        <td class="amt-col"><strong>${formatAmt(data.closingBalance)} /-</strong></td>
+        <td class="amt-col">${formatAmt(data.closingBalance)} /-</td>
       </tr>
       <tr>
         <td class="sr-col">6</td>
@@ -2017,25 +2068,24 @@ ${pagesHTML}
 
   <div class="signature-section">
     <div class="signature-left">
-      <div style="margin-bottom: 40px;">
+      <div style="margin-bottom: 40px; line-height: 1.5;">
         <strong>${companyName}</strong><br>
         सा.ला.नं. ${licenseNumber}<br>
         ${companyAddress}
       </div>
       <div>दिनांक- ____/____/${fyEnd}</div>
-      <div>आज रोगी दिनांक ____/____/${fyEnd} रोगी जवाब लिहून दिला असे.</div>
+      <div style="margin-top: 4px;">आज रोगी दिनांक ____/____/${fyEnd} रोगी जवाब लिहून दिला असे.</div>
     </div>
     <div class="signature-right">
-      <div style="margin-bottom: 20px; border-bottom: 1px solid #000; padding-bottom: 30px; min-width: 180px; text-align: center;">
-        <br><br>
+      <div style="margin-bottom: 8px; border-bottom: 1.5px solid #000; padding-bottom: 40px; min-width: 200px;">
       </div>
-      <div style="text-align: center;">सावकाराचे नांव व सही</div>
+      <div style="font-weight: 600;">सावकाराचे नांव व सही</div>
     </div>
   </div>
 
   <div class="footer-text">
     सावकाराच्या सहाय्यक निबंधक तथा<br>
-    उपनिबंधक, सहकारी संस्था, कराड ता.कराड
+    उपनिबंधक, सहकारी संस्था
   </div>
 </div>
 </body>

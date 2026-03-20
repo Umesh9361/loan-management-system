@@ -83,22 +83,22 @@ export default function JawabGeneratorPage() {
       {!isMobile && <Sidebar />}
       {isMobile && <MobileNav />}
 
-      <main className={`flex-1 ${isMobile ? 'pb-20' : ''}`}>
-        <div className="p-4 md:p-6 max-w-4xl mx-auto">
-          <div className="flex items-center gap-3 mb-6">
-            <FileText className="h-6 w-6 text-indigo-600" />
-            <h1 className="text-xl md:text-2xl font-bold text-gray-900">जवाब जनरेटर</h1>
+      <main className={`flex-1 overflow-x-hidden ${isMobile ? 'pb-20 pt-2' : ''}`}>
+        <div className="px-3 py-3 md:p-6 max-w-4xl mx-auto w-full">
+          <div className="flex items-center gap-2 mb-4 md:mb-6">
+            <FileText className="h-5 w-5 md:h-6 md:w-6 text-indigo-600 flex-shrink-0" />
+            <h1 className="text-lg md:text-2xl font-bold text-gray-900 truncate">जवाब (घोषणापत्र)</h1>
           </div>
 
-          <Card className="mb-6">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base">आर्थिक वर्ष निवडा</CardTitle>
+          <Card className="mb-4 md:mb-6">
+            <CardHeader className="pb-2 px-3 md:px-6">
+              <CardTitle className="text-sm md:text-base">आर्थिक वर्ष निवडा</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-end">
+            <CardContent className="px-3 md:px-6">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
                 <div className="w-full sm:w-48">
                   <Select value={selectedYear} onValueChange={setSelectedYear}>
-                    <SelectTrigger>
+                    <SelectTrigger className="h-10">
                       <SelectValue placeholder="आर्थिक वर्ष निवडा" />
                     </SelectTrigger>
                     <SelectContent>
@@ -111,7 +111,7 @@ export default function JawabGeneratorPage() {
                 <Button
                   onClick={handlePrint}
                   disabled={isLoading || !jawabData}
-                  className="bg-indigo-600 hover:bg-indigo-700"
+                  className="bg-indigo-600 hover:bg-indigo-700 w-full sm:w-auto h-10"
                 >
                   <Printer className="h-4 w-4 mr-2" />
                   प्रिंट करा
@@ -121,35 +121,35 @@ export default function JawabGeneratorPage() {
           </Card>
 
           {isLoading && (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
-              <span className="ml-3 text-gray-600">डेटा लोड होत आहे...</span>
+            <div className="flex items-center justify-center py-10">
+              <Loader2 className="h-7 w-7 animate-spin text-indigo-600" />
+              <span className="ml-3 text-gray-600 text-sm">डेटा लोड होत आहे...</span>
             </div>
           )}
 
           {error && (
             <Card className="border-red-200 bg-red-50">
-              <CardContent className="py-4">
-                <p className="text-red-700">डेटा लोड करताना त्रुटी झाली. कृपया पुन्हा प्रयत्न करा.</p>
+              <CardContent className="py-3 px-3">
+                <p className="text-red-700 text-sm">डेटा लोड करताना त्रुटी झाली. कृपया पुन्हा प्रयत्न करा.</p>
               </CardContent>
             </Card>
           )}
 
           {jawabData && !isLoading && (
             <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base flex items-center justify-between">
-                  <span>जवाब प्रिव्ह्यू - आर्थिक वर्ष {jawabData.financialYear}</span>
-                  <span className="text-sm font-normal text-gray-500">एकूण कर्ज: {jawabData.totalLoans}</span>
+              <CardHeader className="pb-2 px-3 md:px-6">
+                <CardTitle className="text-sm md:text-base flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                  <span className="truncate">जवाब प्रिव्ह्यू - {jawabData.financialYear}</span>
+                  <span className="text-xs md:text-sm font-normal text-gray-500">एकूण कर्ज: {jawabData.totalLoans}</span>
                 </CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="px-2 md:px-6 pb-3">
                 <div className="border rounded-lg overflow-hidden bg-white">
                   <iframe
                     ref={previewRef}
                     title="जवाब प्रिव्ह्यू"
                     className="w-full border-0"
-                    style={{ minHeight: '900px', height: '100%' }}
+                    style={{ minHeight: isMobile ? '600px' : '900px', height: '100%' }}
                   />
                 </div>
               </CardContent>
