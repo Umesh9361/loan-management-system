@@ -5260,6 +5260,178 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  async function computeBulkAnnualStatements(tenantId: string, financialYear: number, statusFilter: string = 'all') {
+    const yearStart = new Date(financialYear, 3, 1);
+    const yearEnd = new Date(financialYear + 1, 2, 31);
+
+    const allLoans = await db.select()
+      .from(loans)
+      .where(eq(loans.tenantId, tenantId))
+      .orderBy(loans.loanDate);
+
+    const eligibleLoans = allLoans.filter(loan => {
+      const loanDate = new Date(loan.loanDate);
+      if (loanDate > yearEnd) return false;
+      return true;
+    });
+
+    const allClosures = await db.select()
+      .from(loanClosures)
+      .where(eq(loanClosures.tenantId, tenantId));
+    const closureMap = new Map(allClosures.map(c => [c.loanId, c]));
+
+    const filteredLoans = eligibleLoans.filter(loan => {
+      const closure = closureMap.get(loan.id);
+      if (closure && new Date(closure.closureDate) < yearStart) return false;
+      const isClosed = !!closure;
+      if (statusFilter === 'active' && isClosed) return false;
+      if (statusFilter === 'closed' && !isClosed) return false;
+      return true;
+    });
+
+    const allTransactions = await db.select()
+      .from(transactions)
+      .where(eq(transactions.tenantId, tenantId))
+      .orderBy(transactions.transactionDate);
+
+    const txnsByLoan = new Map<string, typeof allTransactions>();
+    for (const txn of allTransactions) {
+      if (!txnsByLoan.has(txn.loanId)) txnsByLoan.set(txn.loanId, []);
+      txnsByLoan.get(txn.loanId)!.push(txn);
+    }
+
+    const results: Array<{
+      loanId: string; borrowerName: string; occupation: string; address: string;
+      isBackwardClass: boolean; isFarmer: boolean; accountNumber: string; loanDate: string;
+      groupId: string | null; status: string; financialYear: string;
+      openingPrincipal: number; openingInterest: number; openingTotal: number;
+      yearDisbursement: number; yearPrincipalRepayment: number; yearInterestRepayment: number;
+      thisYearInterest: number; interestRate: number; interestRateType: string; yearlyRate: number;
+      closingPrincipal: number; closingInterest: number; closingTotal: number; principalAmount: number;
+    }> = [];
+
+    for (const loan of filteredLoans) {
+      const loanDate = new Date(loan.loanDate);
+      const principal = parseFloat(loan.principalAmount || '0');
+      const rate = parseFloat(loan.interestRate || '0');
+      const rateType = loan.interestRateType || 'monthly';
+      const yearlyRate = rateType === 'monthly' ? 12 : rate;
+      const closure = closureMap.get(loan.id) || null;
+
+      const loanTxns = (txnsByLoan.get(loan.id) || []);
+      const priorTxns = loanTxns.filter(t => new Date(t.transactionDate) < yearStart);
+
+      let openingPrincipal = 0;
+      let openingInterest = 0;
+
+      if (loanDate < yearStart) {
+        if (closure && new Date(closure.closureDate) < yearStart) {
+          openingPrincipal = 0;
+          openingInterest = 0;
+        } else {
+          let currentPrincipal = principal;
+          let lastDate = loanDate;
+          let accumulatedInterest = 0;
+
+          for (const txn of priorTxns) {
+            const txnDate = new Date(txn.transactionDate);
+            const days = Math.floor((txnDate.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24));
+            if (days > 0 && currentPrincipal > 0) {
+              accumulatedInterest += (currentPrincipal * yearlyRate * days) / (365 * 100);
+            }
+            if (txn.type === 'payment' || txn.type === 'closure') {
+              currentPrincipal -= parseFloat(txn.amount || '0');
+              if (currentPrincipal < 0) currentPrincipal = 0;
+            }
+            lastDate = txnDate;
+          }
+
+          const remainingDays = Math.floor((yearStart.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24));
+          if (remainingDays > 0 && currentPrincipal > 0) {
+            accumulatedInterest += (currentPrincipal * yearlyRate * remainingDays) / (365 * 100);
+          }
+
+          openingPrincipal = currentPrincipal;
+          openingInterest = accumulatedInterest;
+        }
+      }
+
+      let yearDisbursement = 0;
+      if (loanDate >= yearStart && loanDate <= yearEnd) {
+        yearDisbursement = principal;
+      }
+
+      let yearPrincipalRepayment = 0;
+      let yearInterestRepayment = 0;
+      if (closure) {
+        const closureDate = new Date(closure.closureDate);
+        if (closureDate >= yearStart && closureDate <= yearEnd) {
+          yearPrincipalRepayment = parseFloat(closure.principalPaid || '0');
+          yearInterestRepayment = parseFloat(closure.interestPaid || '0');
+        }
+      }
+
+      let closingPrincipal = 0;
+      let closingInterest = 0;
+      let thisYearInterest = 0;
+
+      const isClosedDuringYear = closure && new Date(closure.closureDate) >= yearStart && new Date(closure.closureDate) <= yearEnd;
+      const isClosedBeforeYear = closure && new Date(closure.closureDate) < yearStart;
+
+      if (isClosedDuringYear || isClosedBeforeYear) {
+        closingPrincipal = 0;
+        closingInterest = 0;
+        if (isClosedDuringYear) {
+          const interestStartDate = loanDate > yearStart ? loanDate : yearStart;
+          const closureDateObj = new Date(closure!.closureDate);
+          const days = Math.floor((closureDateObj.getTime() - interestStartDate.getTime()) / (1000 * 60 * 60 * 24));
+          if (days > 0 && principal > 0) {
+            thisYearInterest = (principal * yearlyRate * days) / (365 * 100);
+          }
+        }
+      } else {
+        closingPrincipal = openingPrincipal + yearDisbursement - yearPrincipalRepayment;
+        const interestStartDate = loanDate > yearStart ? loanDate : yearStart;
+        const days = Math.floor((yearEnd.getTime() - interestStartDate.getTime()) / (1000 * 60 * 60 * 24));
+        if (days > 0 && closingPrincipal > 0) {
+          thisYearInterest = (closingPrincipal * yearlyRate * days) / (365 * 100);
+        }
+        closingInterest = openingInterest + thisYearInterest - yearInterestRepayment;
+        if (closingInterest < 0) closingInterest = 0;
+      }
+
+      results.push({
+        loanId: loan.id,
+        borrowerName: loan.borrowerName,
+        occupation: loan.borrowerOccupation || '',
+        address: loan.borrowerAddress || '',
+        isBackwardClass: loan.isBackwardClass ?? false,
+        isFarmer: loan.isFarmer ?? false,
+        accountNumber: loan.accountNumber || '',
+        loanDate: loan.loanDate || '',
+        groupId: loan.groupId,
+        status: closure ? 'closed' : 'active',
+        financialYear: `${financialYear}-${financialYear + 1}`,
+        openingPrincipal: Math.round(openingPrincipal * 100) / 100,
+        openingInterest: Math.round(openingInterest),
+        openingTotal: Math.round(openingPrincipal + openingInterest),
+        yearDisbursement: Math.round(yearDisbursement * 100) / 100,
+        yearPrincipalRepayment: Math.round(yearPrincipalRepayment * 100) / 100,
+        yearInterestRepayment: Math.round(yearInterestRepayment),
+        thisYearInterest: Math.round(thisYearInterest),
+        interestRate: rate,
+        interestRateType: rateType,
+        yearlyRate: yearlyRate,
+        closingPrincipal: Math.round(closingPrincipal * 100) / 100,
+        closingInterest: Math.round(closingInterest),
+        closingTotal: Math.round(closingPrincipal + closingInterest),
+        principalAmount: principal
+      });
+    }
+
+    return results;
+  }
+
   // Bulk Annual Statement API - नमुना क्रमांक १४ (all loans for a FY)
   app.get("/api/annual-statement/bulk", requireAuth, async (req, res) => {
     try {
@@ -5272,173 +5444,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const financialYear = parseInt(year as string);
       const statusFilter = (status as string) || 'all';
-      const yearStart = new Date(financialYear, 3, 1);
-      const yearEnd = new Date(financialYear + 1, 2, 31);
 
       console.log(`📊 BULK ANNUAL STATEMENT: FY ${financialYear}-${financialYear+1}, status=${statusFilter}`);
 
-      const allLoans = await db.select()
-        .from(loans)
-        .where(eq(loans.tenantId, tenantId))
-        .orderBy(loans.loanDate);
-
-      const eligibleLoans = allLoans.filter(loan => {
-        const loanDate = new Date(loan.loanDate);
-        if (loanDate > yearEnd) return false;
-        return true;
-      });
-
-      const allClosures = await db.select()
-        .from(loanClosures)
-        .where(eq(loanClosures.tenantId, tenantId));
-      const closureMap = new Map(allClosures.map(c => [c.loanId, c]));
-
-      const filteredLoans = eligibleLoans.filter(loan => {
-        const closure = closureMap.get(loan.id);
-        if (closure && new Date(closure.closureDate) < yearStart) return false;
-        const isClosed = !!closure;
-        if (statusFilter === 'active' && isClosed) return false;
-        if (statusFilter === 'closed' && !isClosed) return false;
-        return true;
-      });
-
-      const allTransactions = await db.select()
-        .from(transactions)
-        .where(eq(transactions.tenantId, tenantId))
-        .orderBy(transactions.transactionDate);
-
-      const txnsByLoan = new Map<string, typeof allTransactions>();
-      for (const txn of allTransactions) {
-        if (!txnsByLoan.has(txn.loanId)) txnsByLoan.set(txn.loanId, []);
-        txnsByLoan.get(txn.loanId)!.push(txn);
-      }
-
-      const results: any[] = [];
-
-      for (const loan of filteredLoans) {
-        const loanDate = new Date(loan.loanDate);
-        const principal = parseFloat(loan.principalAmount || '0');
-        const rate = parseFloat(loan.interestRate || '0');
-        const rateType = loan.interestRateType || 'monthly';
-        const yearlyRate = rateType === 'monthly' ? 12 : rate;
-        const closure = closureMap.get(loan.id) || null;
-
-        const loanTxns = (txnsByLoan.get(loan.id) || []);
-        const priorTxns = loanTxns.filter(t => new Date(t.transactionDate) < yearStart);
-
-        let openingPrincipal = 0;
-        let openingInterest = 0;
-
-        if (loanDate < yearStart) {
-          if (closure && new Date(closure.closureDate) < yearStart) {
-            openingPrincipal = 0;
-            openingInterest = 0;
-          } else {
-            let currentPrincipal = principal;
-            let lastDate = loanDate;
-            let accumulatedInterest = 0;
-
-            for (const txn of priorTxns) {
-              const txnDate = new Date(txn.transactionDate);
-              const days = Math.floor((txnDate.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24));
-              if (days > 0 && currentPrincipal > 0) {
-                accumulatedInterest += (currentPrincipal * yearlyRate * days) / (365 * 100);
-              }
-              if (txn.type === 'payment' || txn.type === 'closure') {
-                currentPrincipal -= parseFloat(txn.amount || '0');
-                if (currentPrincipal < 0) currentPrincipal = 0;
-              }
-              lastDate = txnDate;
-            }
-
-            const remainingDays = Math.floor((yearStart.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24));
-            if (remainingDays > 0 && currentPrincipal > 0) {
-              accumulatedInterest += (currentPrincipal * yearlyRate * remainingDays) / (365 * 100);
-            }
-
-            openingPrincipal = currentPrincipal;
-            openingInterest = accumulatedInterest;
-          }
-        }
-
-        let yearDisbursement = 0;
-        if (loanDate >= yearStart && loanDate <= yearEnd) {
-          yearDisbursement = principal;
-        }
-
-        let yearPrincipalRepayment = 0;
-        let yearInterestRepayment = 0;
-        if (closure) {
-          const closureDate = new Date(closure.closureDate);
-          if (closureDate >= yearStart && closureDate <= yearEnd) {
-            yearPrincipalRepayment = parseFloat(closure.principalPaid || '0');
-            yearInterestRepayment = parseFloat(closure.interestPaid || '0');
-          }
-        }
-
-        let closingPrincipal = 0;
-        let closingInterest = 0;
-        let thisYearInterest = 0;
-
-        const isClosedDuringYear = closure && new Date(closure.closureDate) >= yearStart && new Date(closure.closureDate) <= yearEnd;
-        const isClosedBeforeYear = closure && new Date(closure.closureDate) < yearStart;
-
-        if (isClosedDuringYear || isClosedBeforeYear) {
-          closingPrincipal = 0;
-          closingInterest = 0;
-          if (isClosedDuringYear) {
-            const interestStartDate = loanDate > yearStart ? loanDate : yearStart;
-            const closureDateObj = new Date(closure!.closureDate);
-            const days = Math.floor((closureDateObj.getTime() - interestStartDate.getTime()) / (1000 * 60 * 60 * 24));
-            if (days > 0 && principal > 0) {
-              thisYearInterest = (principal * yearlyRate * days) / (365 * 100);
-            }
-          }
-        } else {
-          closingPrincipal = openingPrincipal + yearDisbursement - yearPrincipalRepayment;
-          const interestStartDate = loanDate > yearStart ? loanDate : yearStart;
-          const days = Math.floor((yearEnd.getTime() - interestStartDate.getTime()) / (1000 * 60 * 60 * 24));
-          if (days > 0 && closingPrincipal > 0) {
-            thisYearInterest = (closingPrincipal * yearlyRate * days) / (365 * 100);
-          }
-          closingInterest = openingInterest + thisYearInterest - yearInterestRepayment;
-          if (closingInterest < 0) closingInterest = 0;
-        }
-
-        results.push({
-          loanId: loan.id,
-          borrowerName: loan.borrowerName,
-          occupation: loan.borrowerOccupation || '',
-          address: loan.borrowerAddress || '',
-          isBackwardClass: loan.isBackwardClass ?? false,
-          isFarmer: loan.isFarmer ?? false,
-          accountNumber: loan.accountNumber || '',
-          loanDate: loan.loanDate || '',
-          groupId: loan.groupId,
-          status: closure ? 'closed' : 'active',
-          financialYear: `${financialYear}-${financialYear + 1}`,
-          openingPrincipal: Math.round(openingPrincipal * 100) / 100,
-          openingInterest: Math.round(openingInterest),
-          openingTotal: Math.round(openingPrincipal + openingInterest),
-          yearDisbursement: Math.round(yearDisbursement * 100) / 100,
-          yearPrincipalRepayment: Math.round(yearPrincipalRepayment * 100) / 100,
-          yearInterestRepayment: Math.round(yearInterestRepayment),
-          thisYearInterest: Math.round(thisYearInterest),
-          interestRate: rate,
-          interestRateType: rateType,
-          yearlyRate: yearlyRate,
-          closingPrincipal: Math.round(closingPrincipal * 100) / 100,
-          closingInterest: Math.round(closingInterest),
-          closingTotal: Math.round(closingPrincipal + closingInterest),
-          principalAmount: principal
-        });
-      }
+      const results = await computeBulkAnnualStatements(tenantId, financialYear, statusFilter);
 
       console.log(`📊 BULK ANNUAL STATEMENT: Generated ${results.length} statements`);
       res.json(results);
     } catch (error) {
       console.error('Bulk annual statement error:', error);
       res.status(500).json({ error: 'बल्क वार्षिक विवरणपत्र तयार करताना त्रुटी झाली' });
+    }
+  });
+
+  app.get("/api/jawab-report", requireAuth, async (req, res) => {
+    try {
+      const { year } = req.query;
+      const tenantId = req.session.tenantId!;
+
+      if (!year) {
+        return res.status(400).json({ error: 'Year is required' });
+      }
+
+      const financialYear = parseInt(year as string);
+      const perLoanData = await computeBulkAnnualStatements(tenantId, financialYear, 'all');
+
+      let totalOpeningPrincipal = 0;
+      let totalYearDisbursement = 0;
+      let totalYearPrincipalRepayment = 0;
+      let totalYearInterestRepayment = 0;
+
+      for (const loan of perLoanData) {
+        totalOpeningPrincipal += loan.openingPrincipal;
+        totalYearDisbursement += loan.yearDisbursement;
+        totalYearPrincipalRepayment += loan.yearPrincipalRepayment;
+        totalYearInterestRepayment += loan.yearInterestRepayment;
+      }
+
+      const totalCollection = totalYearPrincipalRepayment + totalYearInterestRepayment;
+      const totalAmount = totalOpeningPrincipal + totalYearDisbursement;
+      const closingBalance = totalAmount - totalCollection;
+
+      const company = await db.select()
+        .from(companies)
+        .where(eq(companies.tenantId, tenantId))
+        .limit(1);
+
+      res.json({
+        financialYear: `${financialYear}-${financialYear + 1}`,
+        prevYear: `${financialYear - 1}-${financialYear}`,
+        company: company[0] || null,
+        totalLoans: perLoanData.length,
+        openingBalance: Math.round(totalOpeningPrincipal),
+        yearDisbursement: Math.round(totalYearDisbursement),
+        totalAmount: Math.round(totalAmount),
+        yearCollection: Math.round(totalCollection),
+        closingBalance: Math.round(closingBalance),
+        interestCollected: Math.round(totalYearInterestRepayment),
+      });
+    } catch (error) {
+      console.error('Jawab report error:', error);
+      res.status(500).json({ error: 'जवाब रिपोर्ट तयार करताना त्रुटी झाली' });
     }
   });
 

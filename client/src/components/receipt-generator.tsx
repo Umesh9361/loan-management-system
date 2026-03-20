@@ -1789,4 +1789,256 @@ ${pagesHTML}
 </body>
 </html>`;
   }
+
+  static generateJawabForm(data: {
+    financialYear: string;
+    prevYear?: string;
+    company: { name?: string; licenseNumber?: string; address?: string } | null;
+    openingBalance: number;
+    yearDisbursement: number;
+    totalAmount: number;
+    yearCollection: number;
+    closingBalance: number;
+    interestCollected: number;
+  }): string {
+    const fy = data.financialYear || '';
+    const fyParts = fy.split('-');
+    const fyStart = fyParts[0] || '';
+    const fyEnd = fyParts[1] || '';
+    const prevFyEnd = String(parseInt(fyStart));
+    const company = data.company || { name: '', licenseNumber: '', address: '' };
+    const companyName = company.name || '';
+    const licenseNumber = company.licenseNumber || '';
+    const companyAddress = company.address || '';
+
+    const formatAmt = (amount: number) => {
+      if (!amount && amount !== 0) return '₹ 0';
+      return '₹ ' + Math.round(amount).toLocaleString('en-IN');
+    };
+
+    return `<!DOCTYPE html>
+<html lang="mr">
+<head>
+<meta charset="UTF-8">
+<title>जवाब - ${fy}</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  @page {
+    size: A4 portrait;
+    margin: 20mm 15mm 15mm 25.4mm;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Noto Sans Devanagari', Arial, sans-serif;
+    font-size: 12px;
+    line-height: 1.6;
+    color: #000;
+    background: white;
+  }
+  .jawab-page {
+    width: 100%;
+    max-width: 700px;
+    margin: 0 auto;
+    padding: 10px 0;
+  }
+  .header-title {
+    text-align: center;
+    font-size: 16px;
+    font-weight: 700;
+    text-decoration: underline;
+    margin-bottom: 8px;
+  }
+  .company-header {
+    text-align: center;
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+  .header-info {
+    font-size: 11px;
+    margin-bottom: 3px;
+    line-height: 1.5;
+  }
+  .legal-text {
+    font-size: 11px;
+    line-height: 1.7;
+    text-align: justify;
+    margin: 8px 0;
+  }
+  .legal-text p {
+    margin-bottom: 6px;
+    text-indent: 20px;
+  }
+  .data-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 10px 0;
+    font-size: 11px;
+  }
+  .data-table th, .data-table td {
+    border: 1px solid #000;
+    padding: 4px 8px;
+    text-align: left;
+  }
+  .data-table th {
+    background: #f5f5f5;
+    font-weight: 600;
+    text-align: center;
+  }
+  .data-table .sr-col { width: 40px; text-align: center; }
+  .data-table .desc-col { width: auto; }
+  .data-table .amt-col { width: 140px; text-align: right; }
+  .closing-text {
+    font-size: 11px;
+    line-height: 1.7;
+    text-align: justify;
+    margin: 10px 0;
+  }
+  .signature-section {
+    margin-top: 30px;
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+  }
+  .signature-left { text-align: left; }
+  .signature-right { text-align: right; }
+  .footer-text {
+    margin-top: 20px;
+    font-size: 10px;
+    text-align: center;
+    border-top: 1px solid #ccc;
+    padding-top: 8px;
+  }
+  @media print {
+    body { margin: 0; padding: 0; }
+    .jawab-page { max-width: 100%; }
+  }
+</style>
+</head>
+<body>
+<div class="jawab-page">
+  <div class="company-header">${companyName}</div>
+  <div class="header-title">जवाब</div>
+
+  <div class="header-info">
+    <div>मी, श्री/श्रीमती ________________________________________ वय ______ व. ________</div>
+    <div>सन ${fy} या सावकारी सावकारी परवाना क्र.क्रमांक/ ${licenseNumber} मिळालेला आहे. सदर परवान्याचा</div>
+    <div>वर्ष ${fy} या वर्षाकरिता उपनिबंधक कार्यालयाने दि. आमच्या कार्यालयातून दि.______/______/${fyEnd} रोगी तिसरा अर्ज</div>
+    <div>केलेला आहे. सदर अर्जासोबत दिनांक ______/______/${fyEnd} रोगी मराठा केलेले नुतनीकरण परवाना फी रु.500/- (दंडाचा रु. /-) चा</div>
+    <div>भरणा करण्यात आलेला आहे. परवाना फी मागणी अर्जास रु.10/- चा कोर्ट फी स्टॅम्प लावलेला आहे. अर्जित भरलेली सर्व माहिती बरोबर असल्याचे</div>
+    <div>मराठी प्रतिज्ञापत्रावर खा. म. सत्य. ________________________________________ व श्री. ____________________________ हे जवाबदार आहेत.</div>
+  </div>
+
+  <div class="legal-text">
+    <p>मी, सावकारी व्यवसायाशी संबंधित नमुना नं.7 व ठरलेला नमुना नं. 9 नमूने ठेवलेली आहे. कर्जदारास कर्ज देतेवेळी नमुना.12 ची
+    पावत्या देणे बंधनकारक असणारी नमुना नं.10 आणि प्रत. कर्जवसुलीच्या वेळच्या आयटमनुसार कार्यालयाने दुसूचित पावती नं.11 मध्ये आणि
+    सावकाराने भांडवली खात्याचे नमुना.13 मध्ये ठेवली आहे. सावकारी व्या संप्रगमाचा ज्या खातेदारांचे येणे बाकी आहे, त्या व खातेदारांचे
+    विवरणपत्र, नमुना नं.14 मधे सादर्याशी, मी सावकारी निशयमानुसार व्यापारी आवाडी करते/ करतो. सावकारी व्यवसायानुसार 01/04/${fyStart}
+    31/03/${fyEnd} आणि सावकारी सवलतीच्या दिनांक ____/____/${fyEnd.slice(-4)} रोजी रुपये ______/- झालेल्या जास्त भांडवल/कर्जरकमेनुसार
+    वित्तीय वर्षाकरिता कोर्ट फी . सदर शासकीय निर्णयातील शेड्यूल तक्त्या तसल्यात रु. ____/- शासकीय खजिन्यात भरणा
+    याबाबची मी आणि/किवा कार्यालयातील स्थिर रक्कम दाखला कार्ट आणि.</p>
+
+    <p>मी,सावकार/यांना नावाचा बोर्ड दुकानाच्या समोरी भागात दिसेल अशा ठिकाणी लावलेला आहे. मी कोणत्याही बेकायदेशीर
+    सावकारी आणि अन्य संघटित सावकारा नाही व कोणत्याही वैधानिक कर्ज देणेची नाही. मी शासकीय सेवेत किंवा कोणत्याही स्थानिक
+    संस्थेचा नोकरीस नाही. माझा अन्य व्यवसाय व विहित लागू असून दिनांक- 31/03/${fyEnd} अखेरच्या वर्षात मी आयकर रुपये /-
+    भरलेला/ विनातक्रार रुपये.</p>
+
+    <p>मी भरलेली आहे. मी व्यवसायकर असून माझा व्यापारासाठ्या कायमस्वरुपी.</p>
+
+    <p>या मुंबई सावकारी व्यवसाय 'कायदा हा तान किंवा गिरणीत असे कोणताही भेसळभाव करणार नाही सावकारी
+    कायदा/नियम यातील कोणदेही भावाचा अतिक्रमणाय करे. याकरी/आपले मी खे: यो आहे माझे धंद्याची कोडेही शाखा किंवा
+    व्यवसायाच्या जागा नाही.</p>
+
+    <p>मी सावकारी कायदा अधिनियम-2014 मधील कलम 18, 25 व 26 चे पालन करतो मी सावकारी कायद्यावरील कोणत्याही
+    कलम्याच्या वी केलेल्या नियमाचे मी कर्जदार/ना पदात्यांच्या पावत्यांची प्रत आपले कार्यालयास येथेमाझ्या पाठविला असल्याबद्दल. त्याची पोहोच
+    पावती माझे दफ्तरी आहे. मला माहितीद्वारे वित्त कर्जवाढच्ये कोणत्याही प्रकारचा 'इंद' अथ शिक्षा झालेली नाही.</p>
+
+    <p>सन ${fy} या वर्षात झालेले सावकारी व्यवसाय खालील प्रमाणे आहे.</p>
+  </div>
+
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th class="sr-col">अ.क्र.</th>
+        <th class="desc-col">तपशील</th>
+        <th class="amt-col">रक्कम रुपये</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="sr-col">1</td>
+        <td>दिनांक 31.03.${prevFyEnd} अखेरचे येणे बाकी</td>
+        <td class="amt-col">${formatAmt(data.openingBalance)} /-</td>
+      </tr>
+      <tr>
+        <td class="sr-col">2</td>
+        <td>सन ${fy} मध्ये कर्ज वाटप केलेले कर्ज</td>
+        <td class="amt-col">${formatAmt(data.yearDisbursement)} /-</td>
+      </tr>
+      <tr>
+        <td class="sr-col">3</td>
+        <td>एकूण रक्कम</td>
+        <td class="amt-col"><strong>${formatAmt(data.totalAmount)} /-</strong></td>
+      </tr>
+      <tr>
+        <td class="sr-col">4</td>
+        <td>फक्त सन ${fy} मध्ये आलेली वसुल</td>
+        <td class="amt-col">${formatAmt(data.yearCollection)} /-</td>
+      </tr>
+      <tr>
+        <td class="sr-col">5</td>
+        <td>दि. 31.03.${fyEnd} अखेर शिल्लक कर्ज</td>
+        <td class="amt-col"><strong>${formatAmt(data.closingBalance)} /-</strong></td>
+      </tr>
+      <tr>
+        <td class="sr-col">6</td>
+        <td>दि. 31.03.${fyEnd} अखेर वसुल व्याज</td>
+        <td class="amt-col">${formatAmt(data.interestCollected)} /-</td>
+      </tr>
+      <tr>
+        <td class="sr-col">7</td>
+        <td>सन ${fy} मध्ये दिलेल्या नमुना नं 11 च्या पावत्या</td>
+        <td class="amt-col"></td>
+      </tr>
+      <tr>
+        <td class="sr-col">8</td>
+        <td>सन ${fy} मध्ये दिलेल्या नमुना नं 12 च्या पावत्या</td>
+        <td class="amt-col"></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="closing-text">
+    <p>परवाना नुतनीकरणाकरिता लागणारे फोटो, रेशनिंग कार्ड, पॅनकार्ड, आधारकार्ड, घराचा उतारा या झेरॉक्स प्रत वेलज
+    कागदपत्रे मुळे अर्ज सोबत या पूर्वीच जोडलेली आहेत. नापासरती वेळी आपण मागणी केलेली सर्व सावकारचे दप्तर आपण/आमच्या
+    कार्यालयाकडे वा ते तपासनी मागत पत्र मिळलेले आहे. त्याची सर्व जवाबदारी माझी राहील. यामध्ये माझी कोणतीही तक्रार नाही. वरील मजकूर
+    प्रतिज्ञेचा जवाब दे म.स्व. आज दिनांक- ____/____/${fyEnd} रोगी लिहून असत व्यवहार माझी सही करी केली आहे.</p>
+  </div>
+
+  <div class="signature-section">
+    <div class="signature-left">
+      <div style="margin-bottom: 40px;">
+        <strong>${companyName}</strong><br>
+        सा.ला.नं. ${licenseNumber}<br>
+        ${companyAddress}
+      </div>
+      <div>दिनांक- ____/____/${fyEnd}</div>
+      <div>आज रोगी दिनांक ____/____/${fyEnd} रोगी जवाब लिहून दिला असे.</div>
+    </div>
+    <div class="signature-right">
+      <div style="margin-bottom: 20px; border-bottom: 1px solid #000; padding-bottom: 30px; min-width: 180px; text-align: center;">
+        <br><br>
+      </div>
+      <div style="text-align: center;">सावकाराचे नांव व सही</div>
+    </div>
+  </div>
+
+  <div class="footer-text">
+    सावकाराच्या सहाय्यक निबंधक तथा<br>
+    उपनिबंधक, सहकारी संस्था, कराड ता.कराड
+  </div>
+</div>
+</body>
+</html>`;
+  }
 }

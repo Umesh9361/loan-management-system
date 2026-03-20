@@ -218,6 +218,12 @@ const reports = [
     icon: ClipboardList,
     description: "सर्व कर्ज नोंदणी माहिती - कालावधीनुसार"
   },
+  {
+    name: "जवाब (घोषणापत्र)",
+    href: "/reports/jawab-generator",
+    icon: FileText,
+    description: "सावकारी कायदा - वार्षिक जवाब फॉर्म"
+  },
 
 ];
 
@@ -382,6 +388,7 @@ export function Sidebar({ className }: SidebarProps) {
                 '/reports/information-register': 'canViewInformationRegister',
                 '/reports/balance-sheet': 'canViewBalanceSheet',
                 '/reports/profit-loss': 'canViewProfitLoss',
+                '/reports/jawab-generator': 'canViewReceiptGenerator',
               };
               const requiredPermission = reportPermissionMap[item.href];
               if (requiredPermission && !(perms as any)[requiredPermission]) {
