@@ -2,7 +2,9 @@ import { useState, useRef, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Printer, Loader2, FileText } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Printer, Loader2, FileText, Calendar } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { Sidebar } from "@/components/ui/sidebar";
 import { MobileNav } from "@/components/ui/mobile-nav";
@@ -43,6 +45,10 @@ export default function JawabGeneratorPage() {
   const isMobile = useIsMobile();
   const currentFY = getCurrentFinancialYear();
   const [selectedYear, setSelectedYear] = useState<string>(String(currentFY));
+  const [applicationDate, setApplicationDate] = useState<string>('');
+  const [feeDate, setFeeDate] = useState<string>('');
+  const [proprietorName, setProprietorName] = useState<string>('');
+  const [proprietorAge, setProprietorAge] = useState<string>('');
   const fyOptions = getFinancialYearOptions();
   const previewRef = useRef<HTMLIFrameElement>(null);
 
@@ -56,7 +62,14 @@ export default function JawabGeneratorPage() {
     enabled: !!selectedYear,
   });
 
-  const jawabHTML = jawabData ? ReceiptGenerator.generateJawabForm(jawabData) : '';
+  const jawabHTML = jawabData ? ReceiptGenerator.generateJawabForm({
+    ...jawabData,
+    renewalDate: applicationDate || undefined,
+    feeDate: feeDate || undefined,
+    jawabDate: applicationDate || undefined,
+    proprietorName: proprietorName || undefined,
+    proprietorAge: proprietorAge || undefined,
+  }) : '';
 
   useEffect(() => {
     if (previewRef.current && jawabHTML) {
@@ -98,11 +111,12 @@ export default function JawabGeneratorPage() {
 
             <Card className="mb-4 md:mb-6">
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm md:text-base">आर्थिक वर्ष निवडा</CardTitle>
+                <CardTitle className="text-sm md:text-base">आर्थिक वर्ष व तारखा निवडा</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-end mb-4">
                   <div className="w-full sm:w-48">
+                    <Label className="text-xs text-gray-500 mb-1 block">आर्थिक वर्ष</Label>
                     <Select value={selectedYear} onValueChange={setSelectedYear}>
                       <SelectTrigger className="h-10">
                         <SelectValue placeholder="आर्थिक वर्ष निवडा" />
@@ -122,6 +136,52 @@ export default function JawabGeneratorPage() {
                     <Printer className="h-4 w-4 mr-2" />
                     प्रिंट करा
                   </Button>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div>
+                    <Label className="text-xs text-gray-500 mb-1 flex items-center gap-1">
+                      <Calendar className="h-3 w-3" />
+                      अर्ज / जवाब तारीख
+                    </Label>
+                    <Input
+                      type="date"
+                      value={applicationDate}
+                      onChange={(e) => setApplicationDate(e.target.value)}
+                      className="h-10"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs text-gray-500 mb-1 flex items-center gap-1">
+                      <Calendar className="h-3 w-3" />
+                      फी भरणा तारीख
+                    </Label>
+                    <Input
+                      type="date"
+                      value={feeDate}
+                      onChange={(e) => setFeeDate(e.target.value)}
+                      className="h-10"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs text-gray-500 mb-1 block">प्रोप्रायटर नाव</Label>
+                    <Input
+                      type="text"
+                      value={proprietorName}
+                      onChange={(e) => setProprietorName(e.target.value)}
+                      placeholder="नाव टाका"
+                      className="h-10"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs text-gray-500 mb-1 block">वय (वर्षे)</Label>
+                    <Input
+                      type="number"
+                      value={proprietorAge}
+                      onChange={(e) => setProprietorAge(e.target.value)}
+                      placeholder="वय"
+                      className="h-10"
+                    />
+                  </div>
                 </div>
               </CardContent>
             </Card>

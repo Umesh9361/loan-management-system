@@ -1803,6 +1803,11 @@ ${pagesHTML}
     maxCapitalAmount?: number;
     maxCapitalDate?: string;
     inspectionFee?: number;
+    renewalDate?: string;
+    feeDate?: string;
+    jawabDate?: string;
+    proprietorName?: string;
+    proprietorAge?: string;
   }): string {
     const fy = data.financialYear || '';
     const fyParts = fy.split('-');
@@ -1831,6 +1836,12 @@ ${pagesHTML}
     const maxCapitalAmt = data.maxCapitalAmount || 0;
     const maxCapitalDateFormatted = formatDateDDMMYYYY(data.maxCapitalDate);
     const inspectionFee = data.inspectionFee || 0;
+
+    const renewalDateFmt = data.renewalDate ? formatDateDDMMYYYY(data.renewalDate) : `______/______/${fyEnd}`;
+    const feeDateFmt = data.feeDate ? formatDateDDMMYYYY(data.feeDate) : `______/______/${fyEnd}`;
+    const jawabDateFmt = data.jawabDate ? formatDateDDMMYYYY(data.jawabDate) : `____/____/${fyEnd}`;
+    const proprietorName = data.proprietorName || '________________________________________';
+    const proprietorAge = data.proprietorAge || '______';
 
     return `<!DOCTYPE html>
 <html lang="mr">
@@ -1982,18 +1993,15 @@ ${pagesHTML}
 </head>
 <body>
 <div class="jawab-page">
-  <div class="company-header">${companyName}</div>
-  <div class="company-address">${companyAddress ? companyAddress : ''}</div>
   <div class="header-title">जवाब</div>
   <div class="sub-title">(सावकारी कायदा अधिनियम-2014, कलम 18, 25 व 26)</div>
 
   <div class="header-info">
-    <div>मी, श्री/श्रीमती ________________________________________ वय ______ वर्षे ________</div>
+    <div>मी, ${companyName}${companyAddress ? ', ' + companyAddress : ''} (प्रोप्रायटर - ${proprietorName}, वय ${proprietorAge} वर्षे) यांना</div>
     <div>सन ${fy} या वर्षाकरिता सावकारी परवाना क्रमांक ${licenseNumber} मिळालेला आहे. सदर परवान्याचे</div>
-    <div>वर्ष ${fy} या वर्षाकरिता उपनिबंधक कार्यालयामार्फत आमच्या कार्यालयातून दि. ______/______/${fyEnd} रोजी नूतनीकरण अर्ज</div>
-    <div>केलेला आहे. सदर अर्जासोबत दिनांक ______/______/${fyEnd} रोजी केलेले नूतनीकरण परवाना फी रु. 500/- (दंडाची रक्कम रु. /-) चा</div>
-    <div>भरणा करण्यात आलेला आहे. परवाना फी मागणी अर्जास रु. 10/- चा कोर्ट फी स्टॅम्प लावलेला आहे. अर्जात भरलेली सर्व माहिती बरोबर असल्याचे</div>
-    <div>मराठी प्रतिज्ञापत्रावर खा. म. सत्य. ________________________________________ व श्री. ____________________________ हे जबाबदार आहेत.</div>
+    <div>वर्ष ${fy} या वर्षाकरिता उपनिबंधक कार्यालयामार्फत आमच्या कार्यालयातून दि. ${renewalDateFmt} रोजी नूतनीकरण अर्ज</div>
+    <div>केलेला आहे. सदर अर्जासोबत दिनांक ${feeDateFmt} रोजी केलेले नूतनीकरण परवाना फी रु. 500/- (दंडाची रक्कम रु. /-) चा</div>
+    <div>भरणा करण्यात आलेला आहे. परवाना फी मागणी अर्जास रु. 10/- चा कोर्ट फी स्टॅम्प लावलेला आहे. अर्जात भरलेली सर्व माहिती बरोबर आहे.</div>
   </div>
 
   <div class="legal-text">
@@ -2008,10 +2016,9 @@ ${pagesHTML}
 
     <p>मी, सावकार/यांच्या नावाचा बोर्ड दुकानाच्या समोरील भागात दिसेल अशा ठिकाणी लावलेला आहे. मी कोणत्याही बेकायदेशीर
     सावकारी करत नाही व अन्य कोणत्याही संघटित सावकाराशी संबंधित नाही. कोणत्याही अवैध कर्ज व्यवहाराशी संबंध नाही. मी शासकीय सेवेत किंवा कोणत्याही स्थानिक
-    संस्थेत नोकरीस नाही. माझा अन्य व्यवसाय असल्यास विहित माहिती लागू असून दि. 31/03/${fyEnd} अखेर या वर्षात मी आयकर रु. /-
-    भरलेला आहे.</p>
+    संस्थेत नोकरीस नाही. माझा अन्य व्यवसाय असल्यास विहित माहिती लागू असून दि. 31/03/${fyEnd} अखेर या वर्षात मी आयकर रु. <span style="display:inline-block; min-width:120px; border-bottom:1px dotted #000;">&nbsp;</span>/- भरलेला आहे.</p>
 
-    <p>मी व्यवसायकर भरलेला आहे व माझा व्यवसाय कायमस्वरूपी आहे.</p>
+    <p>मी व्यवसायकर रु. <span style="display:inline-block; min-width:120px; border-bottom:1px dotted #000;">&nbsp;</span>/- भरलेला आहे व माझा व्यवसाय कायमस्वरूपी आहे.</p>
 
     <p>या महाराष्ट्र सावकारी व्यवसाय (नियमन) कायद्यातील कोणत्याही तरतुदींचा भंग करणार नाही. सावकारी
     कायदा/नियम यातील कोणत्याही तरतुदींचे उल्लंघन करणार नाही. माझ्या धंद्याची कोणतीही शाखा किंवा
@@ -2090,7 +2097,7 @@ ${pagesHTML}
     <p>परवाना नूतनीकरणाकरिता लागणारे फोटो, रेशन कार्ड, पॅनकार्ड, आधारकार्ड, घराचा उतारा या सर्व कागदपत्रांच्या
     छायांकित प्रती अर्जासोबत यापूर्वीच जोडलेल्या आहेत. आवश्यकता वाटल्यास आपण मागणी केलेले सर्व सावकाराचे दप्तर आपल्या
     कार्यालयाकडे तपासणीसाठी सादर करण्यास तयार आहे. त्याची सर्व जबाबदारी माझी राहील. यामध्ये माझी कोणतीही तक्रार नाही. वरील मजकूर
-    प्रतिज्ञेवर आज दि. ____/____/${fyEnd} रोजी लिहून स्वतःची सही केली आहे.</p>
+    प्रतिज्ञेवर आज दि. ${jawabDateFmt} रोजी लिहून स्वतःची सही केली आहे.</p>
   </div>
 
   <div class="signature-section">
@@ -2100,8 +2107,8 @@ ${pagesHTML}
         सा.ला.नं. ${licenseNumber}<br>
         ${companyAddress}
       </div>
-      <div>दिनांक: ____/____/${fyEnd}</div>
-      <div style="margin-top: 4px;">आज दिनांक ____/____/${fyEnd} रोजी जवाब लिहून दिला आहे.</div>
+      <div>दिनांक: ${jawabDateFmt}</div>
+      <div style="margin-top: 4px;">आज दिनांक ${jawabDateFmt} रोजी जवाब लिहून दिला आहे.</div>
     </div>
     <div class="signature-right">
       <div style="margin-bottom: 8px; border-bottom: 1.5px solid #000; padding-bottom: 40px; min-width: 200px;">
