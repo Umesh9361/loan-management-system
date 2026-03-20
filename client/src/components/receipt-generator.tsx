@@ -1902,6 +1902,7 @@ ${pagesHTML}
     font-size: 12px;
     margin-bottom: 5px;
     line-height: 1.8;
+    text-align: justify;
   }
   .header-info div {
     margin-bottom: 2px;
