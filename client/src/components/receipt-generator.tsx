@@ -1997,7 +1997,7 @@ ${pagesHTML}
   <div class="sub-title">(सावकारी कायदा अधिनियम-2014, कलम 18, 25 व 26)</div>
 
   <div class="header-info">
-    <div>मी, ${companyName}${companyAddress ? ', ' + companyAddress : ''} (प्रोप्रायटर - ${proprietorName}, वय ${proprietorAge} वर्षे) यांना</div>
+    <div>मी, <strong style="font-size:14px;">${companyName}</strong>${companyAddress ? ', ' + companyAddress : ''} (प्रोप्रायटर - ${proprietorName}, वय ${proprietorAge} वर्षे) यांना</div>
     <div>सन ${fy} या वर्षाकरिता सावकारी परवाना क्रमांक ${licenseNumber} मिळालेला आहे. सदर परवान्याचे</div>
     <div>वर्ष ${fy} या वर्षाकरिता उपनिबंधक कार्यालयामार्फत आमच्या कार्यालयातून दि. ${renewalDateFmt} रोजी नूतनीकरण अर्ज</div>
     <div>केलेला आहे. सदर अर्जासोबत दिनांक ${feeDateFmt} रोजी केलेले नूतनीकरण परवाना फी रु. 500/- (दंडाची रक्कम रु. /-) चा</div>
@@ -2016,9 +2016,9 @@ ${pagesHTML}
 
     <p>मी, सावकार/यांच्या नावाचा बोर्ड दुकानाच्या समोरील भागात दिसेल अशा ठिकाणी लावलेला आहे. मी कोणत्याही बेकायदेशीर
     सावकारी करत नाही व अन्य कोणत्याही संघटित सावकाराशी संबंधित नाही. कोणत्याही अवैध कर्ज व्यवहाराशी संबंध नाही. मी शासकीय सेवेत किंवा कोणत्याही स्थानिक
-    संस्थेत नोकरीस नाही. माझा अन्य व्यवसाय असल्यास विहित माहिती लागू असून दि. 31/03/${fyEnd} अखेर या वर्षात मी आयकर रु. <span style="display:inline-block; min-width:120px; border-bottom:1px dotted #000;">&nbsp;</span>/- भरलेला आहे.</p>
+    संस्थेत नोकरीस नाही. माझा अन्य व्यवसाय असल्यास विहित माहिती लागू असून दि. 31/03/${fyEnd} अखेर या वर्षात मी आयकर रु. <span style="display:inline-block; min-width:60px; border-bottom:1px dotted #000;">&nbsp;</span>/- भरलेला आहे.</p>
 
-    <p>मी व्यवसायकर रु. <span style="display:inline-block; min-width:120px; border-bottom:1px dotted #000;">&nbsp;</span>/- भरलेला आहे व माझा व्यवसाय कायमस्वरूपी आहे.</p>
+    <p>मी व्यवसायकर रु. <span style="display:inline-block; min-width:60px; border-bottom:1px dotted #000;">&nbsp;</span>/- भरलेला आहे व माझा व्यवसाय कायमस्वरूपी आहे.</p>
 
     <p>या महाराष्ट्र सावकारी व्यवसाय (नियमन) कायद्यातील कोणत्याही तरतुदींचा भंग करणार नाही. सावकारी
     कायदा/नियम यातील कोणत्याही तरतुदींचे उल्लंघन करणार नाही. माझ्या धंद्याची कोणतीही शाखा किंवा
@@ -2102,18 +2102,16 @@ ${pagesHTML}
 
   <div class="signature-section">
     <div class="signature-left">
-      <div style="margin-bottom: 40px; line-height: 1.5;">
-        <strong>${companyName}</strong><br>
+      <div style="line-height: 1.4;">
+        <strong style="font-size:14px;">${companyName}</strong><br>
         सा.ला.नं. ${licenseNumber}<br>
         ${companyAddress}
       </div>
-      <div>दिनांक: ${jawabDateFmt}</div>
-      <div style="margin-top: 4px;">आज दिनांक ${jawabDateFmt} रोजी जवाब लिहून दिला आहे.</div>
+      <div style="margin-top: 6px;">दिनांक: ${jawabDateFmt}</div>
     </div>
-    <div class="signature-right">
-      <div style="margin-bottom: 8px; border-bottom: 1.5px solid #000; padding-bottom: 40px; min-width: 200px;">
-      </div>
-      <div style="font-weight: 600;">सावकाराचे नाव व सही</div>
+    <div class="signature-right" style="text-align:center;">
+      <div style="border-bottom: 1.5px solid #000; padding-bottom: 30px; min-width: 180px;"></div>
+      <div style="font-weight: 600; margin-top: 4px;">सावकाराचे नाव व सही</div>
     </div>
   </div>
 
