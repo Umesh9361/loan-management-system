@@ -2080,16 +2080,6 @@ ${pagesHTML}
         <td>सन ${fy} मध्ये दिलेल्या नमुना नं. 12 च्या पावत्या</td>
         <td class="amt-col"></td>
       </tr>
-      <tr style="background: #f9f9f9;">
-        <td class="sr-col">9</td>
-        <td>जास्तीत जास्त भांडवल गुंतवणूक दि. ${maxCapitalDateFormatted} रोजी</td>
-        <td class="amt-col">${formatAmt(maxCapitalAmt)} /-</td>
-      </tr>
-      <tr style="background: #f9f9f9;">
-        <td class="sr-col">10</td>
-        <td>तपासणी शुल्क (1% भांडवलावर)</td>
-        <td class="amt-col">${formatAmt(inspectionFee)} /-</td>
-      </tr>
     </tbody>
   </table>
 
@@ -2109,9 +2099,9 @@ ${pagesHTML}
       </div>
       <div style="margin-top: 6px;">दिनांक: ${jawabDateFmt}</div>
     </div>
-    <div class="signature-right" style="text-align:center;">
-      <div style="border-bottom: 1.5px solid #000; padding-bottom: 30px; min-width: 180px;"></div>
-      <div style="font-weight: 600; margin-top: 4px;">सावकाराचे नाव व सही</div>
+    <div class="signature-right" style="text-align:right; margin-top: 0;">
+      <div style="font-weight: 600; margin-bottom: 4px;">सावकाराचे नाव व सही</div>
+      <div style="border-bottom: 1.5px solid #000; min-width: 180px; height: 30px;"></div>
     </div>
   </div>
 
