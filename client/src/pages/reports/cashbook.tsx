@@ -109,7 +109,7 @@ function CashBookReport() {
       @media print {
         @page {
           size: A4;
-          margin: 8mm;
+          margin: 8mm 8mm 8mm 25.4mm;
         }
         body * {
           visibility: hidden !important;
