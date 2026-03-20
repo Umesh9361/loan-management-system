@@ -5493,33 +5493,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .from(loans)
         .where(and(eq(loans.tenantId, tenantId)));
 
-      const fyLoans = allLoans.filter(l => {
-        const ld = l.loanDate;
-        return ld >= fyStart && ld <= fyEnd;
-      });
+      const allClosures = await db.select()
+        .from(loanClosures)
+        .where(eq(loanClosures.tenantId, tenantId));
 
-      const closedInFY = allLoans.filter(l =>
-        l.status === 'closed' && l.closureDate && l.closureDate >= fyStart && l.closureDate <= fyEnd
-      );
+      const openingDisbursement = allLoans
+        .filter(l => l.loanDate < fyStart)
+        .reduce((sum, l) => sum + parseFloat(String(l.principalAmount)), 0);
+
+      const openingRepayment = allClosures
+        .filter(c => c.closureDate < fyStart)
+        .reduce((sum, c) => {
+          const loan = allLoans.find(l => l.id === c.loanId);
+          return sum + (loan ? parseFloat(String(loan.principalAmount)) : 0);
+        }, 0);
+
+      const capitalOpeningBalance = openingDisbursement - openingRepayment;
 
       interface CapitalEvent { date: string; amount: number }
       const events: CapitalEvent[] = [];
 
-      for (const loan of fyLoans) {
+      const fyDisbursements = allLoans.filter(l => l.loanDate >= fyStart && l.loanDate <= fyEnd);
+      for (const loan of fyDisbursements) {
         events.push({ date: loan.loanDate, amount: parseFloat(String(loan.principalAmount)) });
       }
 
-      for (const loan of closedInFY) {
-        const principal = parseFloat(String(loan.principalAmount));
-        const interest = parseFloat(String(loan.finalInterest || '0'));
-        events.push({ date: loan.closureDate!, amount: -(principal + interest) });
+      const fyClosures = allClosures.filter(c => c.closureDate >= fyStart && c.closureDate <= fyEnd);
+      for (const closure of fyClosures) {
+        const loan = allLoans.find(l => l.id === closure.loanId);
+        const principalAmount = loan ? parseFloat(String(loan.principalAmount)) : 0;
+        events.push({ date: closure.closureDate, amount: -principalAmount });
       }
 
       events.sort((a, b) => a.date.localeCompare(b.date));
 
-      let maxCapital = totalOpeningPrincipal;
+      let maxCapital = capitalOpeningBalance;
       let maxCapitalDate = fyStart;
-      let cumulative = totalOpeningPrincipal;
+      let cumulative = capitalOpeningBalance;
 
       for (const evt of events) {
         cumulative += evt.amount;
