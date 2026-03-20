@@ -306,13 +306,13 @@ export default function CapitalPrint() {
           /* Fit to page */
           @page {
             size: A4;
-            margin: 5mm !important;
+            margin: 5mm 5mm 5mm 25.4mm !important;
           }
           
           /* Container adjustments */
           .min-h-screen { 
             min-height: auto !important; 
-            padding: 5mm !important;
+            padding: 5mm 5mm 5mm 0mm !important;
           }
           
           /* Remove screen elements */
