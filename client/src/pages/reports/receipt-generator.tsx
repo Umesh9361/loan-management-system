@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Sidebar } from "@/components/ui/sidebar";
 import { MobileNav } from "@/components/ui/mobile-nav";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Printer, FileText, Receipt, Search, X, Download } from "lucide-react";
+import { Printer, FileText, Receipt, Search, X, Download, Loader2, Layers } from "lucide-react";
 import { ReceiptGenerator } from "@/components/receipt-generator";
 import { useIsMobile } from "@/hooks/use-mobile";
 import jsPDF from "jspdf";
@@ -20,6 +20,12 @@ export default function ReceiptGeneratorPage() {
   const [receiptType, setReceiptType] = useState<'combined' | 'disbursement' | 'closure' | 'blank' | 'form12' | 'combined10_12' | 'blank10_12'>('combined');
   const [includeHamipatra, setIncludeHamipatra] = useState(false);
   const [showInterestRate, setShowInterestRate] = useState(true);
+  const [activeTab, setActiveTab] = useState<'single' | 'bulk'>('single');
+  const [bulkFY, setBulkFY] = useState('');
+  const [bulkStatusFilter, setBulkStatusFilter] = useState<'all' | 'active' | 'closed'>('all');
+  const [bulkReceiptType, setBulkReceiptType] = useState<'combined' | 'disbursement' | 'closure' | 'blank' | 'form12' | 'combined10_12' | 'blank10_12'>('combined');
+  const [bulkShowInterestRate, setBulkShowInterestRate] = useState(true);
+  const [isBulkGenerating, setIsBulkGenerating] = useState(false);
 
   // Fetch loans data first
   const { data: loans = [] } = useQuery({
@@ -29,6 +35,10 @@ export default function ReceiptGeneratorPage() {
   // Fetch company data
   const { data: company } = useQuery({
     queryKey: ["/api/company"],
+  });
+
+  const { data: groups = [] } = useQuery({
+    queryKey: ["/api/groups"],
   });
 
   // State for inline receipt preview (mobile)
@@ -181,6 +191,60 @@ export default function ReceiptGeneratorPage() {
     return matchesBorrowerName(loan.borrowerName || "", trimmedQuery) ||
            loan.accountNumber?.toLowerCase().includes(trimmedQuery.toLowerCase());
   });
+
+  const fyOptions = React.useMemo(() => {
+    const now = new Date();
+    const startYear = now.getMonth() >= 3 ? now.getFullYear() : now.getFullYear() - 1;
+    return Array.from({ length: 10 }, (_, i) => {
+      const y = startYear - i;
+      return { value: String(y), label: `${y}-${String(y + 1).slice(2)}`, startDate: `${y}-04-01`, endDate: `${y + 1}-03-31` };
+    });
+  }, []);
+
+  const bulkFilteredLoans = React.useMemo(() => {
+    if (!bulkFY) return [];
+    const fy = fyOptions.find(f => f.value === bulkFY);
+    if (!fy) return [];
+    const start = new Date(fy.startDate);
+    const end = new Date(fy.endDate);
+    end.setHours(23, 59, 59, 999);
+    let filtered = (loans as any[]).filter((loan: any) => {
+      const d = new Date(loan.loanDate);
+      return d >= start && d <= end;
+    });
+    if (bulkStatusFilter === 'active') filtered = filtered.filter((l: any) => l.status !== 'closed');
+    else if (bulkStatusFilter === 'closed') filtered = filtered.filter((l: any) => l.status === 'closed');
+    filtered.sort((a: any, b: any) => {
+      const gA = (groups as any[]).find((g: any) => g.id === a.groupId)?.name || '';
+      const gB = (groups as any[]).find((g: any) => g.id === b.groupId)?.name || '';
+      if (gA !== gB) return gA.localeCompare(gB, 'mr');
+      return (a.accountNumber || '').localeCompare(b.accountNumber || '', 'en', { numeric: true });
+    });
+    return filtered;
+  }, [loans, groups, bulkFY, bulkStatusFilter, fyOptions]);
+
+  const handleBulkPrint = async () => {
+    if (bulkFilteredLoans.length === 0) return;
+    setIsBulkGenerating(true);
+    try {
+      const bulkHTML = ReceiptGenerator.generateBulkReceipts(
+        bulkFilteredLoans, company as any, bulkReceiptType, bulkShowInterestRate
+      );
+      const printWindow = window.open('', '_blank');
+      if (printWindow) {
+        printWindow.document.write(bulkHTML);
+        printWindow.document.close();
+        setTimeout(() => { printWindow.focus(); }, 500);
+      } else {
+        alert('पॉपअप ब्लॉक झाले आहे. कृपया ब्राउझर सेटिंग्स तपासा.');
+      }
+    } catch (error) {
+      console.error('Bulk print error:', error);
+      alert('बल्क प्रिंट करण्यात समस्या आली.');
+    } finally {
+      setIsBulkGenerating(false);
+    }
+  };
 
   // Get selected loan details
   const selectedLoan = filteredLoans.find((loan: any) => loan.id === selectedLoanId);
@@ -499,6 +563,24 @@ export default function ReceiptGeneratorPage() {
               <p className="text-muted-foreground">नमुना क्रमांक १०/११ - कर्ज पावती तयार करा</p>
             </div>
 
+            <div className="flex border-b mb-6">
+              <button
+                className={`px-4 py-2.5 font-medium text-sm border-b-2 transition-colors ${activeTab === 'single' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+                onClick={() => setActiveTab('single')}
+              >
+                <Receipt className="inline h-4 w-4 mr-1.5 -mt-0.5" />
+                एकल पावती
+              </button>
+              <button
+                className={`px-4 py-2.5 font-medium text-sm border-b-2 transition-colors ${activeTab === 'bulk' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+                onClick={() => setActiveTab('bulk')}
+              >
+                <Layers className="inline h-4 w-4 mr-1.5 -mt-0.5" />
+                बल्क प्रिंट
+              </button>
+            </div>
+
+            {activeTab === 'single' && (<>
             {/* Desktop Full-Page Receipt Preview - keeps sidebar visible */}
             {showInlinePreview && !!inlineReceiptHTML && !isMobileFullPage && (
               <div className="fixed top-0 right-0 bottom-0 left-0 lg:left-64 z-40 bg-gray-100 flex flex-col">
@@ -955,6 +1037,142 @@ export default function ReceiptGeneratorPage() {
                   <p className="text-muted-foreground">
                     पावती तयार करण्यासाठी वरील ड्रॉपडाउनमधून कर्जदार निवडा
                   </p>
+                </CardContent>
+              </Card>
+            )}
+            </>)}
+
+            {activeTab === 'bulk' && (
+              <Card className="card-professional">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 heading-professional md:text-xl">
+                    <Layers className="h-5 w-5" />
+                    बल्क प्रिंट
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="md:p-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                      <Label className="text-sm font-semibold mb-1 block">आर्थिक वर्ष निवडा</Label>
+                      <Select value={bulkFY} onValueChange={setBulkFY}>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="आर्थिक वर्ष निवडा..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {fyOptions.map(fy => (
+                            <SelectItem key={fy.value} value={fy.value}>{fy.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label className="text-sm font-semibold mb-1 block">कर्ज स्थिती</Label>
+                      <div className="flex gap-4 mt-2">
+                        {([
+                          { value: 'all', label: 'सर्व' },
+                          { value: 'active', label: 'फक्त चालू' },
+                          { value: 'closed', label: 'फक्त बंद' },
+                        ] as const).map(opt => (
+                          <div key={opt.value} className="flex items-center space-x-2">
+                            <input type="radio" id={`bulk-status-${opt.value}`} name="bulkStatusFilter" value={opt.value} checked={bulkStatusFilter === opt.value} onChange={(e) => setBulkStatusFilter(e.target.value as any)} className="h-4 w-4" autoComplete="off" />
+                            <Label htmlFor={`bulk-status-${opt.value}`} className="text-sm cursor-pointer">{opt.label}</Label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="p-4 bg-gray-50 rounded-lg mb-4">
+                    <Label className="text-sm font-semibold mb-3 block">पावती प्रकार निवडा</Label>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      {([
+                        { value: 'combined', label: 'संयुक्त पावती (१०+११)' },
+                        { value: 'disbursement', label: 'फक्त नमुना नं. १०' },
+                        { value: 'closure', label: 'फक्त नमुना नं. ११ (मोकळी)' },
+                        { value: 'combined10_12', label: 'संयुक्त पावती (१०+१२)' },
+                        { value: 'form12', label: 'फक्त नमुना नं. १२' },
+                        { value: 'blank', label: 'मोकळी पावती (१०+११)' },
+                        { value: 'blank10_12', label: 'मोकळी पावती (१०+१२)' },
+                      ] as const).map(opt => (
+                        <div key={opt.value} className="flex items-center space-x-2">
+                          <input type="radio" id={`bulk-type-${opt.value}`} name="bulkReceiptType" value={opt.value} checked={bulkReceiptType === opt.value} onChange={(e) => setBulkReceiptType(e.target.value as any)} className="h-4 w-4" autoComplete="off" />
+                          <Label htmlFor={`bulk-type-${opt.value}`} className="text-sm font-medium cursor-pointer">{opt.label}</Label>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="mt-3 flex items-center space-x-2">
+                      <input type="checkbox" id="bulkShowInterestRate" checked={bulkShowInterestRate} onChange={(e) => setBulkShowInterestRate(e.target.checked)} className="h-4 w-4" autoComplete="off" />
+                      <Label htmlFor="bulkShowInterestRate" className="text-sm font-medium cursor-pointer">व्याजदर व खाते क्रमांक दाखवा</Label>
+                    </div>
+                    <div className="mt-2 text-xs text-gray-500">
+                      {['combined', 'combined10_12', 'blank', 'blank10_12'].includes(bulkReceiptType)
+                        ? '• A4 प्रत्येक पानावर २ पावत्या (A5 landscape)'
+                        : '• A4 प्रत्येक पानावर ४ पावत्या (2×2 grid)'}
+                    </div>
+                  </div>
+
+                  {bulkFY && (
+                    <>
+                      <div className="flex items-center gap-3 mb-3">
+                        <span className="bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full text-sm font-semibold">
+                          {bulkFilteredLoans.length} कर्जे
+                        </span>
+                        <span className="text-sm text-gray-500">
+                          ({Math.ceil(bulkFilteredLoans.length / (['combined', 'combined10_12', 'blank', 'blank10_12'].includes(bulkReceiptType) ? 2 : 4))} A4 पृष्ठे)
+                        </span>
+                      </div>
+
+                      {bulkFilteredLoans.length > 0 && (
+                        <div className="max-h-60 overflow-y-auto border rounded-lg mb-4 bg-white">
+                          {bulkFilteredLoans.map((loan: any, idx: number) => {
+                            const groupName = (groups as any[]).find((g: any) => g.id === loan.groupId)?.name || '';
+                            return (
+                              <div key={loan.id} className="flex items-center justify-between px-3 py-2 border-b last:border-b-0 hover:bg-gray-50">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-xs text-gray-400 w-6 text-right">{idx + 1}</span>
+                                  <div>
+                                    <div className="text-sm font-medium">{loan.borrowerName}</div>
+                                    <div className="text-xs text-gray-500">
+                                      {groupName && <span className="text-indigo-600">{groupName}</span>}
+                                      {groupName && ' | '}खाते: {loan.accountNumber} | ₹{parseFloat(loan.principalAmount || 0).toLocaleString('en-IN')}
+                                    </div>
+                                  </div>
+                                </div>
+                                <span className={`text-xs px-2 py-0.5 rounded-full ${loan.status === 'closed' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
+                                  {loan.status === 'closed' ? 'बंद' : 'चालू'}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+
+                      {bulkFilteredLoans.length === 0 && (
+                        <div className="text-center py-8 text-gray-500 border rounded-lg mb-4">
+                          या आर्थिक वर्षात निवडलेल्या स्थितीचे कोणतेही कर्ज नाही
+                        </div>
+                      )}
+
+                      <Button
+                        onClick={handleBulkPrint}
+                        disabled={bulkFilteredLoans.length === 0 || isBulkGenerating}
+                        className="w-full btn-professional btn-primary h-12 text-base"
+                      >
+                        {isBulkGenerating ? (
+                          <><Loader2 className="mr-2 h-5 w-5 animate-spin" />प्रिंट तयार होत आहे...</>
+                        ) : (
+                          <><Printer className="mr-2 h-5 w-5" />सर्व प्रिंट करा ({bulkFilteredLoans.length} पावत्या)</>
+                        )}
+                      </Button>
+                    </>
+                  )}
+
+                  {!bulkFY && (
+                    <div className="text-center py-8 text-gray-500">
+                      <Layers className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+                      <p>बल्क प्रिंट साठी आर्थिक वर्ष निवडा</p>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             )}
