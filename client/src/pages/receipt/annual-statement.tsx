@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Printer, CheckCircle, X, FileText, Download, Search } from "lucide-react";
+import { Printer, CheckCircle, X, FileText, Download, Search, Loader2, Layers } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { Sidebar } from "@/components/ui/sidebar";
 import { MobileNav } from "@/components/ui/mobile-nav";
@@ -87,6 +87,13 @@ export default function AnnualStatementPage() {
   const [receiptHTML, setReceiptHTML] = useState<string | null>(null);
   const [isMobileFullPage, setIsMobileFullPage] = useState(false);
 
+  const [activeTab, setActiveTab] = useState<'single' | 'bulk'>('single');
+  const [bulkFY, setBulkFY] = useState('');
+  const [bulkStatusFilter, setBulkStatusFilter] = useState<'all' | 'active' | 'closed'>('all');
+  const [bulkData, setBulkData] = useState<any[]>([]);
+  const [isBulkLoading, setIsBulkLoading] = useState(false);
+  const [isBulkGenerating, setIsBulkGenerating] = useState(false);
+
   // Fetch all loans
   const { data: loans = [] } = useQuery({
     queryKey: ["/api/loans"],
@@ -108,11 +115,13 @@ export default function AnnualStatementPage() {
   // Get unique borrower names
   const borrowerNames = Array.from(new Set((loans as any[]).map(loan => loan.borrowerName))).sort();
 
-  // Generate financial years (current year and past 5 years)
+  // Generate financial years (current year and past 9 years = 10 total)
   const currentYear = new Date().getFullYear();
+  const currentMonth = new Date().getMonth();
+  const currentFYStart = currentMonth >= 3 ? currentYear : currentYear - 1;
   const financialYears = [];
-  for (let i = 0; i < 6; i++) {
-    const year = currentYear - i;
+  for (let i = 0; i < 10; i++) {
+    const year = currentFYStart - i;
     financialYears.push({
       value: year.toString(),
       label: `${year}-${year + 1}`
@@ -406,6 +415,63 @@ export default function AnnualStatementPage() {
     }
   };
 
+  const bulkFyOptions = useMemo(() => {
+    const current = new Date().getFullYear();
+    const month = new Date().getMonth();
+    const currentFY = month >= 3 ? current : current - 1;
+    const options = [];
+    for (let i = 0; i < 10; i++) {
+      const y = currentFY - i;
+      options.push({ value: y.toString(), label: `${y}-${y + 1}` });
+    }
+    return options;
+  }, []);
+
+  const handleBulkFetch = async (fy: string, status: string) => {
+    if (!fy) return;
+    setIsBulkLoading(true);
+    try {
+      const response = await fetch(`/api/annual-statement/bulk?year=${fy}&status=${status}`);
+      if (!response.ok) throw new Error('Failed to fetch bulk data');
+      const data = await response.json();
+      const sorted = data.sort((a: any, b: any) => {
+        const gA = (groups as any[]).find((g: any) => g.id === a.groupId)?.name || '';
+        const gB = (groups as any[]).find((g: any) => g.id === b.groupId)?.name || '';
+        if (gA !== gB) return gA.localeCompare(gB, 'mr');
+        return (a.accountNumber || '').localeCompare(b.accountNumber || '', 'en', { numeric: true });
+      });
+      setBulkData(sorted);
+    } catch (error) {
+      console.error('Bulk fetch error:', error);
+      alert('बल्क डेटा आणताना त्रुटी झाली');
+      setBulkData([]);
+    } finally {
+      setIsBulkLoading(false);
+    }
+  };
+
+  const handleBulkPrint = async () => {
+    if (bulkData.length === 0) return;
+    setIsBulkGenerating(true);
+    try {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      const bulkHTML = ReceiptGenerator.generateBulkAnnualStatements(bulkData, company as any);
+      const printWindow = window.open('', '_blank');
+      if (printWindow) {
+        printWindow.document.write(bulkHTML);
+        printWindow.document.close();
+        printWindow.onload = () => {
+          setTimeout(() => { printWindow.focus(); printWindow.print(); }, 500);
+        };
+      }
+    } catch (error) {
+      console.error('Bulk print error:', error);
+      alert('बल्क प्रिंट तयार करताना त्रुटी झाली');
+    } finally {
+      setIsBulkGenerating(false);
+    }
+  };
+
   if (isMobileFullPage && receiptHTML && isMobile) {
     return (
       <div className="min-h-screen bg-white" style={{ display: 'flex', flexDirection: 'column' }}>
@@ -527,6 +593,24 @@ export default function AnnualStatementPage() {
               </div>
             )}
 
+            <div className="flex border-b mb-4">
+              <button
+                onClick={() => setActiveTab('single')}
+                className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'single' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+              >
+                <FileText className="h-4 w-4 inline mr-1" />
+                एकल विवरणपत्र
+              </button>
+              <button
+                onClick={() => setActiveTab('bulk')}
+                className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'bulk' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+              >
+                <Layers className="h-4 w-4 inline mr-1" />
+                बल्क प्रिंट
+              </button>
+            </div>
+
+            {activeTab === 'single' && (<>
             <Card>
               <CardHeader>
                 <CardTitle className="text-2xl md:text-3xl">
@@ -821,6 +905,127 @@ export default function AnnualStatementPage() {
               )}
             </CardContent>
           </Card>
+          </>)}
+
+            {activeTab === 'bulk' && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-xl md:text-2xl">
+                    <Layers className="h-5 w-5" />
+                    बल्क प्रिंट — नमुना क्रमांक १४
+                  </CardTitle>
+                  <p className="text-sm text-gray-600">
+                    एका आर्थिक वर्षातील सर्व कर्जांचे वार्षिक लेखा विवरणपत्र एकदम प्रिंट करा (A4 landscape — प्रत्येक पानावर ४)
+                  </p>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                      <Label className="text-sm font-semibold mb-1 block">आर्थिक वर्ष निवडा</Label>
+                      <Select value={bulkFY} onValueChange={(val) => { setBulkFY(val); handleBulkFetch(val, bulkStatusFilter); }}>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="आर्थिक वर्ष निवडा..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {bulkFyOptions.map(fy => (
+                            <SelectItem key={fy.value} value={fy.value}>{fy.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label className="text-sm font-semibold mb-1 block">कर्ज स्थिती</Label>
+                      <div className="flex gap-4 mt-2">
+                        {([
+                          { value: 'all', label: 'सर्व' },
+                          { value: 'active', label: 'फक्त चालू' },
+                          { value: 'closed', label: 'फक्त बंद' },
+                        ] as const).map(opt => (
+                          <div key={opt.value} className="flex items-center space-x-2">
+                            <input type="radio" id={`bulk14-status-${opt.value}`} name="bulk14StatusFilter" value={opt.value} checked={bulkStatusFilter === opt.value} onChange={(e) => { const v = e.target.value as any; setBulkStatusFilter(v); if (bulkFY) handleBulkFetch(bulkFY, v); }} className="h-4 w-4" autoComplete="off" />
+                            <Label htmlFor={`bulk14-status-${opt.value}`} className="text-sm cursor-pointer">{opt.label}</Label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="text-xs text-gray-500 mb-4 p-2 bg-gray-50 rounded">
+                    • A4 landscape — प्रत्येक पानावर ४ विवरणपत्रे (2×2 grid) | गट नाव → खाते क्रमांक क्रमवारी
+                  </div>
+
+                  {isBulkLoading && (
+                    <div className="text-center py-8">
+                      <Loader2 className="h-8 w-8 animate-spin mx-auto text-indigo-500 mb-2" />
+                      <p className="text-gray-500">डेटा लोड होत आहे...</p>
+                    </div>
+                  )}
+
+                  {bulkFY && !isBulkLoading && (
+                    <>
+                      <div className="flex items-center gap-3 mb-3">
+                        <span className="bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full text-sm font-semibold">
+                          {bulkData.length} कर्जे
+                        </span>
+                        <span className="text-sm text-gray-500">
+                          ({Math.ceil(bulkData.length / 4)} A4 पृष्ठे)
+                        </span>
+                      </div>
+
+                      {bulkData.length > 0 && (
+                        <div className="max-h-60 overflow-y-auto border rounded-lg mb-4 bg-white">
+                          {bulkData.map((item: any, idx: number) => {
+                            const groupName = (groups as any[]).find((g: any) => g.id === item.groupId)?.name || '';
+                            return (
+                              <div key={item.loanId || idx} className="flex items-center justify-between px-3 py-2 border-b last:border-b-0 hover:bg-gray-50">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-xs text-gray-400 w-6 text-right">{idx + 1}</span>
+                                  <div>
+                                    <div className="text-sm font-medium">{item.borrowerName}</div>
+                                    <div className="text-xs text-gray-500">
+                                      {groupName && <span className="text-indigo-600">{groupName}</span>}
+                                      {groupName && ' | '}खाते: {item.accountNumber} | मुद्दल: ₹{Math.round(item.closingPrincipal || 0).toLocaleString('en-IN')} | एकूण देय: ₹{Math.round(item.closingTotal || 0).toLocaleString('en-IN')}
+                                    </div>
+                                  </div>
+                                </div>
+                                <span className={`text-xs px-2 py-0.5 rounded-full ${item.status === 'closed' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
+                                  {item.status === 'closed' ? 'बंद' : 'चालू'}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+
+                      {bulkData.length === 0 && (
+                        <div className="text-center py-8 text-gray-500 border rounded-lg mb-4">
+                          या आर्थिक वर्षात निवडलेल्या स्थितीचे कोणतेही कर्ज नाही
+                        </div>
+                      )}
+
+                      <Button
+                        onClick={handleBulkPrint}
+                        disabled={bulkData.length === 0 || isBulkGenerating}
+                        className="w-full h-12 text-base"
+                      >
+                        {isBulkGenerating ? (
+                          <><Loader2 className="mr-2 h-5 w-5 animate-spin" />प्रिंट तयार होत आहे...</>
+                        ) : (
+                          <><Printer className="mr-2 h-5 w-5" />सर्व प्रिंट करा ({bulkData.length} विवरणपत्रे)</>
+                        )}
+                      </Button>
+                    </>
+                  )}
+
+                  {!bulkFY && (
+                    <div className="text-center py-8 text-gray-500">
+                      <Layers className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+                      <p>बल्क प्रिंट साठी आर्थिक वर्ष निवडा</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
           </div>
         </main>
       </div>
