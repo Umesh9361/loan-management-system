@@ -1944,11 +1944,11 @@ ${pagesHTML}
     margin: 14px 0;
   }
   .signature-section {
-    margin-top: 40px;
+    margin-top: 20px;
     display: flex;
     justify-content: space-between;
     font-size: 12px;
-    align-items: flex-end;
+    align-items: flex-start;
   }
   .signature-left {
     text-align: left;
@@ -2099,9 +2099,8 @@ ${pagesHTML}
       </div>
       <div style="margin-top: 6px;">दिनांक: ${jawabDateFmt}</div>
     </div>
-    <div class="signature-right" style="text-align:right; margin-top: 0;">
-      <div style="font-weight: 600; margin-bottom: 4px;">सावकाराचे नाव व सही</div>
-      <div style="border-bottom: 1.5px solid #000; min-width: 180px; height: 30px;"></div>
+    <div class="signature-right" style="text-align:right;">
+      <div style="font-weight: 600;">सावकाराचे नाव व सही</div>
     </div>
   </div>
 
