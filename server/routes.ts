@@ -5486,6 +5486,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const totalCollection = totalYearPrincipalRepayment + totalYearInterestRepayment;
       const totalAmount = totalOpeningPrincipal + totalYearDisbursement;
 
+      const fyStart = `${financialYear}-04-01`;
+      const fyEnd = `${financialYear + 1}-03-31`;
+
+      const allLoans = await db.select()
+        .from(loans)
+        .where(and(eq(loans.tenantId, tenantId)));
+
+      const fyLoans = allLoans.filter(l => {
+        const ld = l.loanDate;
+        return ld >= fyStart && ld <= fyEnd;
+      });
+
+      const closedInFY = allLoans.filter(l =>
+        l.status === 'closed' && l.closureDate && l.closureDate >= fyStart && l.closureDate <= fyEnd
+      );
+
+      interface CapitalEvent { date: string; amount: number }
+      const events: CapitalEvent[] = [];
+
+      for (const loan of fyLoans) {
+        events.push({ date: loan.loanDate, amount: parseFloat(String(loan.principalAmount)) });
+      }
+
+      for (const loan of closedInFY) {
+        const principal = parseFloat(String(loan.principalAmount));
+        const interest = parseFloat(String(loan.finalInterest || '0'));
+        events.push({ date: loan.closureDate!, amount: -(principal + interest) });
+      }
+
+      events.sort((a, b) => a.date.localeCompare(b.date));
+
+      let maxCapital = totalOpeningPrincipal;
+      let maxCapitalDate = fyStart;
+      let cumulative = totalOpeningPrincipal;
+
+      for (const evt of events) {
+        cumulative += evt.amount;
+        if (cumulative > maxCapital) {
+          maxCapital = cumulative;
+          maxCapitalDate = evt.date;
+        }
+      }
+
+      const inspectionFee = Math.round(maxCapital * 0.01);
+
       const company = await db.select()
         .from(companies)
         .where(eq(companies.tenantId, tenantId))
@@ -5502,6 +5547,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         yearCollection: Math.round(totalCollection),
         closingBalance: Math.round(totalClosingPrincipal),
         interestCollected: Math.round(totalYearInterestRepayment),
+        maxCapitalAmount: Math.round(maxCapital),
+        maxCapitalDate: maxCapitalDate,
+        inspectionFee: inspectionFee,
       });
     } catch (error) {
       console.error('Jawab report error:', error);

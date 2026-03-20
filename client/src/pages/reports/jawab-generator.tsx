@@ -20,6 +20,9 @@ interface JawabReportResponse {
   yearCollection: number;
   closingBalance: number;
   interestCollected: number;
+  maxCapitalAmount: number;
+  maxCapitalDate: string;
+  inspectionFee: number;
 }
 
 function getCurrentFinancialYear(): number {
