@@ -1926,25 +1926,25 @@ export default function BorrowerListReports() {
             }
             
             /* NUCLEAR CSS FIX - MAXIMUM SPECIFICITY - CANNOT BE OVERRIDDEN */
-            table[class*="borrower-report-table"] tbody tr td:nth-child(1) { 
+            table[class*="borrower-report-table"]:not(.closing-wise-table) tbody tr td:nth-child(1) { 
               width: 45px !important; 
               min-width: 45px !important; 
               max-width: 45px !important; 
               box-sizing: border-box !important;
             }
-            table[class*="borrower-report-table"] tbody tr td:nth-child(2) { 
+            table[class*="borrower-report-table"]:not(.closing-wise-table) tbody tr td:nth-child(2) { 
               width: 75px !important; 
               min-width: 75px !important; 
               max-width: 75px !important; 
               box-sizing: border-box !important;
             }
-            table[class*="borrower-report-table"] thead tr th:nth-child(1) { 
+            table[class*="borrower-report-table"]:not(.closing-wise-table) thead tr th:nth-child(1) { 
               width: 45px !important; 
               min-width: 45px !important; 
               max-width: 45px !important; 
               box-sizing: border-box !important;
             }
-            table[class*="borrower-report-table"] thead tr th:nth-child(2) { 
+            table[class*="borrower-report-table"]:not(.closing-wise-table) thead tr th:nth-child(2) { 
               width: 75px !important; 
               min-width: 75px !important; 
               max-width: 75px !important; 
@@ -1994,19 +1994,18 @@ export default function BorrowerListReports() {
                 background-image: none !important;
               }
               
-              table[class*="borrower-report-table"] tbody tr td,
-              table[class*="borrower-report-table"] thead tr th { 
+              table[class*="borrower-report-table"]:not(.closing-wise-table) tbody tr td,
+              table[class*="borrower-report-table"]:not(.closing-wise-table) thead tr th { 
                 text-align: right !important; 
                 vertical-align: top !important;
               }
-              /* Name and Particulars columns - Left justify */
-              table[class*="borrower-report-table"] tbody tr td:nth-child(4),
-              table[class*="borrower-report-table"] thead tr th:nth-child(4) { 
+              table[class*="borrower-report-table"]:not(.closing-wise-table) tbody tr td:nth-child(4),
+              table[class*="borrower-report-table"]:not(.closing-wise-table) thead tr th:nth-child(4) { 
                 text-align: left !important; 
                 vertical-align: top !important;
               }
-              table[class*="borrower-report-table"] tbody tr td:nth-child(6),
-              table[class*="borrower-report-table"] thead tr th:nth-child(6) { 
+              table[class*="borrower-report-table"]:not(.closing-wise-table) tbody tr td:nth-child(6),
+              table[class*="borrower-report-table"]:not(.closing-wise-table) thead tr th:nth-child(6) { 
                 text-align: left !important; 
                 vertical-align: top !important;
               }
