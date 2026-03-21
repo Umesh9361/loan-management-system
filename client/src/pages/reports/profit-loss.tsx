@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -65,48 +65,73 @@ function buildProfitLossHTML(plData: any, company: any, dateFrom: string, dateTo
 
   const netLabel = plData.isProfit ? "निव्वळ नफा (A - B)" : "निव्वळ तोटा (B - A)";
 
+  const bdr = '1.5px solid #333';
+  const thStyle = `border:${bdr};padding:6px 4px;text-align:left;font-size:11px;background:#f0f0f0;font-weight:700;color:#111;line-height:1.3;-webkit-print-color-adjust:exact;print-color-adjust:exact;`;
+  const tdCell = `border:${bdr};padding:6px 4px;font-size:11px;font-weight:600;line-height:1.3;`;
+
+  const parseRows = (html: string) => {
+    const rows: {label:string, amount:string, isTotal?:boolean}[] = [];
+    const trRegex = /<tr[^>]*>([\s\S]*?)<\/tr>/g;
+    let m;
+    while ((m = trRegex.exec(html)) !== null) {
+      const inner = m[1];
+      if (inner.includes('colspan')) continue;
+      const isTotal = inner.includes('एकूण');
+      const tdRegex = /<td[^>]*>([\s\S]*?)<\/td>/g;
+      const tds: string[] = [];
+      let tm;
+      while ((tm = tdRegex.exec(inner)) !== null) tds.push(tm[1].replace(/<[^>]*>/g,'').trim());
+      if (tds.length >= 2) rows.push({label: tds[0], amount: tds[1], isTotal});
+    }
+    return rows;
+  };
+
+  const iRows = parseRows(incomeRows);
+  const eRows = parseRows(expenseRows);
+
+  iRows.push({label: netLabel, amount: fc(plData.netProfit), isTotal: true});
+
+  const maxR = Math.max(iRows.length, eRows.length);
+  let tRows = '';
+  for (let i = 0; i < maxR; i++) {
+    const inc = iRows[i];
+    const exp = eRows[i];
+    const incBg = inc?.isTotal ? 'background:#e0e7ff;font-weight:700;-webkit-print-color-adjust:exact;print-color-adjust:exact;' : '';
+    const expBg = exp?.isTotal ? 'background:#e0e7ff;font-weight:700;-webkit-print-color-adjust:exact;print-color-adjust:exact;' : '';
+    tRows += '<tr>';
+    tRows += `<td style="${tdCell}text-align:left;${incBg}">${inc?.label || ''}</td>`;
+    tRows += `<td style="${tdCell}text-align:right;border-right:2px solid #333;${incBg}">${inc?.amount || ''}</td>`;
+    tRows += `<td style="${tdCell}text-align:left;${expBg}">${exp?.label || ''}</td>`;
+    tRows += `<td style="${tdCell}text-align:right;${expBg}">${exp?.amount || ''}</td>`;
+    tRows += '</tr>';
+  }
+
   return `
-    <div style="font-family:'Noto Sans Devanagari',sans-serif;color:#000;background:#fff;padding:20px 15px;box-sizing:border-box;width:100%;">
-      <div style="text-align:center;border-bottom:2px solid #000;padding-bottom:12px;margin-bottom:16px;">
-        <h2 style="font-size:16pt;font-weight:bold;margin:0 0 4px 0;">${company?.name || ""}</h2>
-        ${company?.address ? `<p style="font-size:10pt;margin:0 0 2px 0;">${company.address}</p>` : ""}
-        ${company?.registrationNumber ? `<p style="font-size:9pt;margin:0 0 6px 0;">नोंदणी क्र.: ${company.registrationNumber}</p>` : ""}
-        <div style="border-top:1px solid #999;padding-top:8px;margin-top:4px;">
-          <h3 style="font-size:14pt;font-weight:bold;margin:0 0 4px 0;">नफा-तोटा पत्रक (Profit & Loss Statement)</h3>
-          <p style="font-size:10pt;margin:0;">कालावधी: ${fd(dateFrom)} ते ${fd(dateTo)}</p>
-        </div>
+    <div style="font-family:'Noto Sans Devanagari',Arial,sans-serif;color:#000;background:#fff;width:100%;">
+      <div style="text-align:center;margin-bottom:12px;font-weight:bold;">
+        <p style="font-size:15px;font-weight:700;margin:0 0 4px 0;">${company?.name || ""}</p>
+        <p style="font-size:14px;font-weight:700;margin:0 0 2px 0;">नफा-तोटा पत्रक</p>
+        <p style="font-size:11px;color:#333;margin:0 0 2px 0;">कालावधी: ${fd(dateFrom)} ते ${fd(dateTo)}</p>
       </div>
 
-      <table style="width:100%;border-collapse:collapse;font-size:10pt;border:1px solid #000;margin-bottom:10px;">
-        <thead>
-          <tr style="border-bottom:2px solid #000;background:#f5f5f5;">
-            <th style="text-align:left;padding:6px 8px;font-weight:700;">तपशील (Particulars)</th>
-            <th style="text-align:right;padding:6px 8px;font-weight:700;width:120px;">रक्कम (₹)</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr style="background:#e8f5e9;border-bottom:2px solid #4caf50;"><td colspan="2" style="padding:6px 8px;font-weight:bold;font-size:11pt;">उत्पन्न (Income)</td></tr>
-          ${incomeRows}
-          <tr><td colspan="2" style="height:8px;"></td></tr>
-          <tr style="background:#ffebee;border-bottom:2px solid #ef5350;"><td colspan="2" style="padding:6px 8px;font-weight:bold;font-size:11pt;">खर्च (Expenses)</td></tr>
-          ${expenseRows}
-          <tr><td colspan="2" style="height:8px;"></td></tr>
-          <tr style="border-top:3px solid #000;border-bottom:3px solid #000;background:#f5f5f5;">
-            <td style="padding:10px 8px;">
-              <span style="font-size:12pt;font-weight:bold;">${netLabel}</span><br/>
-              <span style="font-size:8pt;color:#666;">₹ ${fc(plData.income.totalIncome)} - ₹ ${fc(plData.expenses.totalExpenses)}</span>
-            </td>
-            <td style="padding:10px 8px;text-align:right;font-size:14pt;font-weight:bold;">${fc(plData.netProfit)}</td>
-          </tr>
-        </tbody>
+      <div style="display:flex;width:100%;border:${bdr};border-bottom:none;">
+        <div style="width:50%;text-align:center;padding:5px 2px;font-size:11px;background:#f0f0f0;font-weight:700;border-right:2px solid #333;-webkit-print-color-adjust:exact;print-color-adjust:exact;">उत्पन्न (Income)</div>
+        <div style="width:50%;text-align:center;padding:5px 2px;font-size:11px;background:#f0f0f0;font-weight:700;-webkit-print-color-adjust:exact;print-color-adjust:exact;">खर्च (Expenses)</div>
+      </div>
+      <table style="width:100%;border-collapse:collapse;table-layout:fixed;font-size:11px;">
+        <colgroup><col style="width:35%"/><col style="width:15%"/><col style="width:35%"/><col style="width:15%"/></colgroup>
+        <thead><tr>
+          <th style="${thStyle}">तपशील</th>
+          <th style="${thStyle}text-align:right;border-right:2px solid #333;">रक्कम (₹)</th>
+          <th style="${thStyle}">तपशील</th>
+          <th style="${thStyle}text-align:right;">रक्कम (₹)</th>
+        </tr></thead>
+        <tbody>${tRows}</tbody>
       </table>
 
-      <div style="display:flex;justify-content:space-between;margin-top:50px;font-size:9pt;">
-        <div style="text-align:center;"><div style="border-top:1px solid #000;width:130px;padding-top:4px;">तपासणी अधिकारी</div></div>
-        <div style="text-align:center;"><div style="border-top:1px solid #000;width:130px;padding-top:4px;">व्यवस्थापक</div></div>
-        <div style="text-align:center;"><div style="border-top:1px solid #000;width:130px;padding-top:4px;">अध्यक्ष / संचालक</div></div>
+      <div style="margin-top:50px;display:flex;justify-content:flex-end;font-size:11px;font-weight:600;padding-right:25%;">
+        <span>सावकाराची सही</span>
       </div>
-      <p style="text-align:center;font-size:8pt;color:#999;margin-top:12px;">हा संगणकीय प्रत तयार केलेला अहवाल आहे | Generated by LonoPro</p>
     </div>
   `;
 }
@@ -117,28 +142,6 @@ export default function ProfitLoss() {
   const [dateTo, setDateTo] = useState(fy.dateTo);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
 
-  useEffect(() => {
-    const style = document.createElement('style');
-    style.textContent = `
-      @media print {
-        @page { size: A4; margin: 8mm; }
-        body {
-          font-family: 'Noto Sans Devanagari', Arial, sans-serif !important;
-          padding-left: 17.4mm !important;
-          box-sizing: border-box !important;
-        }
-        .lg\\:pl-72 { padding-left: 0 !important; }
-        aside, .sidebar-modern, .mobile-nav { display: none !important; }
-        .overflow-x-auto {
-          overflow: visible !important;
-          max-height: none !important;
-          height: auto !important;
-        }
-      }
-    `;
-    document.head.appendChild(style);
-    return () => { document.head.removeChild(style); };
-  }, []);
 
   const { data: company } = useQuery<any>({ queryKey: ["/api/company"] });
 
@@ -153,7 +156,34 @@ export default function ProfitLoss() {
   });
 
   const handlePrint = () => {
-    window.print();
+    if (!plData) return;
+    const html = buildProfitLossHTML(plData, company, dateFrom, dateTo);
+    const iframe = document.createElement("iframe");
+    iframe.style.position = "fixed";
+    iframe.style.left = "-9999px";
+    iframe.style.top = "-9999px";
+    iframe.style.width = "794px";
+    iframe.style.height = "1123px";
+    document.body.appendChild(iframe);
+    const doc = iframe.contentDocument || iframe.contentWindow?.document;
+    if (!doc) { document.body.removeChild(iframe); return; }
+    doc.open();
+    doc.write(`<!DOCTYPE html><html><head><meta charset="utf-8"/><title>नफा-तोटा पत्रक</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  @page { size: A4 portrait; margin: 12mm 5mm 12mm 5mm; }
+  body { font-family: 'Noto Sans Devanagari', Arial, sans-serif; margin: 0; padding: 3mm 5mm 3mm 20mm; box-sizing: border-box; }
+  table { width: 100%; border-collapse: collapse; table-layout: fixed; page-break-inside: auto; }
+  thead { display: table-header-group; }
+  tr { page-break-inside: avoid !important; break-inside: avoid !important; }
+</style></head><body>${html}</body></html>`);
+    doc.close();
+    iframe.onload = () => {
+      setTimeout(() => {
+        iframe.contentWindow?.print();
+        setTimeout(() => { document.body.removeChild(iframe); }, 2000);
+      }, 500);
+    };
   };
 
   const quickFY = (yearsBack: number) => {

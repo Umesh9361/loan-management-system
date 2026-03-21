@@ -96,43 +96,82 @@ function buildBalanceSheetHTML(balanceSheet: any, company: any, fyStartDate: str
 
   liabRows += `<tr style="border-top:2px solid #000;font-weight:bold;background:#f0f0f0;"><td style="padding:8px;">एकूण दायित्व (Liabilities)</td><td style="padding:8px;text-align:right;${negStyle(balanceSheet.liabilities.totalLiabilities)}">${fc(balanceSheet.liabilities.totalLiabilities)}</td></tr>`;
 
+  const bdr = '1.5px solid #333';
+  const thStyle = `border:${bdr};padding:6px 4px;text-align:left;font-size:11px;background:#f0f0f0;font-weight:700;color:#111;line-height:1.3;-webkit-print-color-adjust:exact;print-color-adjust:exact;`;
+
   return `
-    <div style="font-family:'Noto Sans Devanagari',sans-serif;color:#000;background:#fff;padding:20px 15px;box-sizing:border-box;width:100%;">
-      <div style="text-align:center;border-bottom:2px solid #000;padding-bottom:12px;margin-bottom:16px;">
-        <h2 style="font-size:16pt;font-weight:bold;margin:0 0 4px 0;">${company?.name || ""}</h2>
-        ${company?.address ? `<p style="font-size:10pt;margin:0 0 2px 0;">${company.address}</p>` : ""}
-        ${company?.registrationNumber ? `<p style="font-size:9pt;margin:0 0 6px 0;">नोंदणी क्र.: ${company.registrationNumber}</p>` : ""}
-        <div style="border-top:1px solid #999;padding-top:8px;margin-top:4px;">
-          <h3 style="font-size:14pt;font-weight:bold;margin:0 0 4px 0;">ताळेबंद (Balance Sheet)</h3>
-          <p style="font-size:10pt;margin:0;">दिनांक: ${fd(asOfDate)} पर्यंत | आर्थिक वर्ष: ${fd(fyStartDate)} ते ${fd(asOfDate)}</p>
-        </div>
+    <div style="font-family:'Noto Sans Devanagari',Arial,sans-serif;color:#000;background:#fff;width:100%;">
+      <div style="text-align:center;margin-bottom:12px;font-weight:bold;">
+        <p style="font-size:15px;font-weight:700;margin:0 0 4px 0;">${company?.name || ""}</p>
+        <p style="font-size:14px;font-weight:700;margin:0 0 2px 0;">ताळेबंद</p>
+        <p style="font-size:11px;color:#333;margin:0 0 2px 0;">कालावधी: ${fd(fyStartDate)} ते ${fd(asOfDate)}</p>
       </div>
 
-      <div style="display:flex;gap:10px;width:100%;">
-        <div style="flex:1;border:1px solid #000;">
-          <div style="text-align:center;font-weight:bold;font-size:11pt;padding:6px;border-bottom:2px solid #000;background:#f5f5f5;">मालमत्ता (Assets)</div>
-          <table style="width:100%;border-collapse:collapse;font-size:10pt;">
-            <thead><tr style="border-bottom:2px solid #000;"><th style="text-align:left;padding:5px 8px;font-weight:700;">तपशील</th><th style="text-align:right;padding:5px 8px;font-weight:700;width:110px;">रक्कम (₹)</th></tr></thead>
-            <tbody>${assetsRows}</tbody>
-          </table>
-        </div>
-        <div style="flex:1;border:1px solid #000;">
-          <div style="text-align:center;font-weight:bold;font-size:11pt;padding:6px;border-bottom:2px solid #000;background:#f5f5f5;">दायित्व (Liabilities)</div>
-          <table style="width:100%;border-collapse:collapse;font-size:10pt;">
-            <thead><tr style="border-bottom:2px solid #000;"><th style="text-align:left;padding:5px 8px;font-weight:700;">तपशील</th><th style="text-align:right;padding:5px 8px;font-weight:700;width:110px;">रक्कम (₹)</th></tr></thead>
-            <tbody>${liabRows}</tbody>
-          </table>
-        </div>
+      <div style="display:flex;width:100%;border:${bdr};border-bottom:none;">
+        <div style="width:50%;text-align:center;padding:5px 2px;font-size:11px;background:#f0f0f0;font-weight:700;border-right:2px solid #333;-webkit-print-color-adjust:exact;print-color-adjust:exact;">मालमत्ता (Assets)</div>
+        <div style="width:50%;text-align:center;padding:5px 2px;font-size:11px;background:#f0f0f0;font-weight:700;-webkit-print-color-adjust:exact;print-color-adjust:exact;">दायित्व (Liabilities)</div>
       </div>
+      <table style="width:100%;border-collapse:collapse;table-layout:fixed;font-size:11px;">
+        <colgroup><col style="width:35%"/><col style="width:15%"/><col style="width:35%"/><col style="width:15%"/></colgroup>
+        <thead><tr>
+          <th style="${thStyle}">तपशील</th>
+          <th style="${thStyle}text-align:right;border-right:2px solid #333;">रक्कम (₹)</th>
+          <th style="${thStyle}">तपशील</th>
+          <th style="${thStyle}text-align:right;">रक्कम (₹)</th>
+        </tr></thead>
+        <tbody>${(() => {
+          const aLines: string[] = [];
+          const lLines: string[] = [];
+          const parseRows = (html: string) => {
+            const rows: {label:string, amount:string, isSub?:boolean, isTotal?:boolean, isSection?:boolean}[] = [];
+            const trRegex = /<tr[^>]*>([\s\S]*?)<\/tr>/g;
+            let m;
+            while ((m = trRegex.exec(html)) !== null) {
+              const inner = m[1];
+              const isTotal = inner.includes('एकूण');
+              const isSection = inner.includes('colspan');
+              const tdRegex = /<td[^>]*>([\s\S]*?)<\/td>/g;
+              const tds: string[] = [];
+              let tm;
+              while ((tm = tdRegex.exec(inner)) !== null) tds.push(tm[1].replace(/<[^>]*>/g,'').trim());
+              if (isSection && tds.length === 1) rows.push({label: tds[0], amount: '', isSection: true});
+              else if (tds.length >= 2) rows.push({label: tds[0], amount: tds[1], isTotal, isSub: inner.includes('20px')});
+              else if (tds.length === 1) rows.push({label: tds[0], amount: '', isSub: true});
+            }
+            return rows;
+          };
+          const aRows = parseRows(assetsRows);
+          const lRows = parseRows(liabRows);
+          const maxR = Math.max(aRows.length, lRows.length);
+          const tdCell = `border:${bdr};padding:6px 4px;font-size:11px;font-weight:600;line-height:1.3;`;
+          let result = '';
+          for (let i = 0; i < maxR; i++) {
+            const a = aRows[i];
+            const l = lRows[i];
+            const aTotal = a?.isTotal;
+            const lTotal = l?.isTotal;
+            const aSec = a?.isSection;
+            const lSec = l?.isSection;
+            const aBg = aTotal ? 'background:#e0e7ff;font-weight:700;-webkit-print-color-adjust:exact;print-color-adjust:exact;' : (aSec ? 'background:#f5f5f5;font-weight:700;font-size:10px;-webkit-print-color-adjust:exact;print-color-adjust:exact;' : '');
+            const lBg = lTotal ? 'background:#e0e7ff;font-weight:700;-webkit-print-color-adjust:exact;print-color-adjust:exact;' : (lSec ? 'background:#f5f5f5;font-weight:700;font-size:10px;-webkit-print-color-adjust:exact;print-color-adjust:exact;' : '');
+            const aPl = a?.isSub ? 'padding-left:16px;' : '';
+            const lPl = l?.isSub ? 'padding-left:16px;' : '';
+            result += '<tr>';
+            result += `<td style="${tdCell}text-align:left;${aBg}${aPl}">${a?.label || ''}</td>`;
+            result += `<td style="${tdCell}text-align:right;border-right:2px solid #333;${aBg}">${a?.amount || ''}</td>`;
+            result += `<td style="${tdCell}text-align:left;${lBg}${lPl}">${l?.label || ''}</td>`;
+            result += `<td style="${tdCell}text-align:right;${lBg}">${l?.amount || ''}</td>`;
+            result += '</tr>';
+          }
+          return result;
+        })()}</tbody>
+      </table>
 
-      ${!balanceSheet.isTallied ? `<div style="text-align:center;margin-top:10px;font-size:9pt;color:#666;">फरक: ₹ ${fc(balanceSheet.difference)}</div>` : ""}
+      ${!balanceSheet.isTallied ? `<p style="text-align:center;margin-top:8px;font-size:11px;color:#666;">फरक: ₹ ${fc(balanceSheet.difference)}</p>` : ""}
 
-      <div style="display:flex;justify-content:space-between;margin-top:50px;font-size:9pt;">
-        <div style="text-align:center;"><div style="border-top:1px solid #000;width:130px;padding-top:4px;">तपासणी अधिकारी</div></div>
-        <div style="text-align:center;"><div style="border-top:1px solid #000;width:130px;padding-top:4px;">व्यवस्थापक</div></div>
-        <div style="text-align:center;"><div style="border-top:1px solid #000;width:130px;padding-top:4px;">अध्यक्ष / संचालक</div></div>
+      <div style="margin-top:50px;display:flex;justify-content:flex-end;font-size:11px;font-weight:600;padding-right:25%;">
+        <span>सावकाराची सही</span>
       </div>
-      <p style="text-align:center;font-size:8pt;color:#999;margin-top:12px;">हा संगणकीय प्रत तयार केलेला अहवाल आहे | Generated by LonoPro</p>
     </div>
   `;
 }
@@ -168,7 +207,15 @@ export default function BalanceSheet() {
     const doc = iframe.contentDocument || iframe.contentWindow?.document;
     if (!doc) { document.body.removeChild(iframe); return; }
     doc.open();
-    doc.write(`<!DOCTYPE html><html><head><meta charset="utf-8"/><title>ताळेबंद</title><style>@page{size:A4;margin:8mm;}body{margin:0;padding:0 0 0 17.4mm;box-sizing:border-box;}</style></head><body>${html}</body></html>`);
+    doc.write(`<!DOCTYPE html><html><head><meta charset="utf-8"/><title>ताळेबंद</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  @page { size: A4 portrait; margin: 12mm 5mm 12mm 5mm; }
+  body { font-family: 'Noto Sans Devanagari', Arial, sans-serif; margin: 0; padding: 3mm 5mm 3mm 20mm; box-sizing: border-box; }
+  table { width: 100%; border-collapse: collapse; table-layout: fixed; page-break-inside: auto; }
+  thead { display: table-header-group; }
+  tr { page-break-inside: avoid !important; break-inside: avoid !important; }
+</style></head><body>${html}</body></html>`);
     doc.close();
     setTimeout(() => {
       try {
