@@ -880,43 +880,9 @@ export default function AccountLedger() {
       }
     });
 
-    let runningBalance = openingBalance;
-
-    entries.push({
-      date: filters.dateFrom,
-      description: 'प्रारंभिक शिल्लक',
-      debit: 0,
-      credit: 0,
-      balance: openingBalance,
-      type: 'opening'
-    });
-
     const disbursedLoans = (loans as any[]).filter((loan: any) => {
       const loanDate = new Date(loan.loanDate);
       return loanDate >= fromDate && loanDate <= toDate;
-    });
-
-    // LENDER PERSPECTIVE (Format 8 standard):
-    // Disbursement = Dr.(नावे) = we gave the loan (our receivable increases)
-    // Closure = Cr.(जमा) = we received back (our receivable decreases)
-    // Using loans table as SINGLE authoritative source to prevent duplicates
-
-    // Add loan disbursements from loans table
-    disbursedLoans.forEach((loan: any) => {
-      const amount = parseFloat(loan.principalAmount || 0);
-      if (amount > 0) {
-        runningBalance += amount;
-        entries.push({
-          date: loan.loanDate,
-          description: `कर्ज वितरण - ${loan.borrowerName} (खाते क्र. ${loan.accountNumber})`,
-          debit: amount,
-          credit: 0,
-          balance: runningBalance,
-          type: 'loan_disbursement',
-          loanId: loan.id,
-          borrowerName: loan.borrowerName
-        });
-      }
     });
 
     const closedLoansWithData = (loans as any[]).filter((loan: any) => {
@@ -927,6 +893,22 @@ export default function AccountLedger() {
       return closureDate >= fromDate && closureDate <= toDate;
     });
 
+    disbursedLoans.forEach((loan: any) => {
+      const amount = parseFloat(loan.principalAmount || 0);
+      if (amount > 0) {
+        entries.push({
+          date: loan.loanDate,
+          description: `कर्ज वितरण - ${loan.borrowerName} (खाते क्र. ${loan.accountNumber})`,
+          debit: amount,
+          credit: 0,
+          balance: 0,
+          type: 'loan_disbursement',
+          loanId: loan.id,
+          borrowerName: loan.borrowerName
+        });
+      }
+    });
+
     closedLoansWithData.forEach((loan: any) => {
       const loanClosure = safeClosures.find((c: any) => c.loanId === loan.id);
       if (!loanClosure) return;
@@ -934,14 +916,13 @@ export default function AccountLedger() {
       const interestPaid = parseFloat(loanClosure.interestPaid || '0');
       const closureDate = typeof loanClosure.closureDate === 'string' ? loanClosure.closureDate.split('T')[0] : loanClosure.closureDate;
       if (principalPaid > 0) {
-        runningBalance -= principalPaid;
         entries.push({
           date: closureDate,
           description: `कर्ज बंद - ${loan.borrowerName} (खाते क्र. ${loan.accountNumber})`,
           debit: 0,
           credit: principalPaid,
           interest: interestPaid,
-          balance: runningBalance,
+          balance: 0,
           type: 'loan_closure',
           loanId: loan.id,
           borrowerName: loan.borrowerName
@@ -949,12 +930,26 @@ export default function AccountLedger() {
       }
     });
 
-    const loanRelatedTransactions = disbursedLoans.length + closedLoansWithData.length;
-
-    // Sort entries by date
     entries.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
-    // LENDER PERSPECTIVE: Disbursements in Dr.(debit) column, Closures in Cr.(credit) column
+    let runningBalance = openingBalance;
+    entries.forEach((entry) => {
+      runningBalance += entry.debit;
+      runningBalance -= entry.credit;
+      entry.balance = runningBalance;
+    });
+
+    entries.unshift({
+      date: filters.dateFrom,
+      description: 'प्रारंभिक शिल्लक',
+      debit: 0,
+      credit: 0,
+      balance: openingBalance,
+      type: 'opening'
+    });
+
+    const loanRelatedTransactions = disbursedLoans.length + closedLoansWithData.length;
+
     const totalLoanDisbursements = entries.filter(e => e.type === 'loan_disbursement').reduce((sum, entry) => sum + entry.debit, 0);
     const totalLoanClosures = entries.filter(e => e.type === 'loan_closure').reduce((sum, entry) => sum + entry.credit, 0);
 
