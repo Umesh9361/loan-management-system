@@ -521,10 +521,10 @@ function CashBookReport() {
         table { width: 100%; border-collapse: collapse; table-layout: fixed; }
       </style></head><body>
         <div style="text-align:center;margin-bottom:18px;padding-bottom:12px;border-bottom:1px solid #ddd;">
-          <p style="font-size:18px;font-weight:bold;margin-bottom:6px;">${companyName}</p>
-          <p style="font-size:15px;font-weight:bold;margin-bottom:4px;">रोकड वही</p>
-          <p style="font-size:11px;color:#555;margin-bottom:3px;">नमुना क्र. ७ (नियम १८ पहा)</p>
-          <p style="font-size:11px;color:#555;">कालावधी: ${DateUtils.isoToIndianDate(dateFilters.dateFrom)} ते ${DateUtils.isoToIndianDate(dateFilters.dateTo)}</p>
+          <p style="font-size:13px;font-weight:bold;margin-bottom:4px;">${companyName}</p>
+          <p style="font-size:11px;font-weight:bold;margin-bottom:3px;">रोकड वही</p>
+          <p style="font-size:9px;color:#555;margin-bottom:2px;">नमुना क्र. ७ (नियम १८ पहा)</p>
+          <p style="font-size:9px;color:#555;">कालावधी: ${DateUtils.isoToIndianDate(dateFilters.dateFrom)} ते ${DateUtils.isoToIndianDate(dateFilters.dateTo)}</p>
         </div>
         ${tableHTML}
       </body></html>`;
