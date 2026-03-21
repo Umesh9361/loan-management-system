@@ -310,7 +310,7 @@ export default function CapitalAccountReport() {
   th { background: #f0f0f0; color: #111; font-weight: 700; font-size: 11px; word-wrap: break-word; overflow-wrap: break-word; line-height: 1.3; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .opening-row td { background: #fef3c7; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .closing-row td { background: #e0e7ff; font-weight: 700; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  .footer { margin-top: 50px; display: flex; justify-content: space-between; font-size: 11px; font-weight: 600; }
+  .footer { margin-top: 50px; display: flex; justify-content: flex-end; font-size: 11px; font-weight: 600; padding-right: 25%; }
 </style></head><body>
 <div class="header">
   <p style="font-size:15px;font-weight:700;">${companyName}</p>
@@ -326,8 +326,7 @@ export default function CapitalAccountReport() {
   <tbody>${tableRows}</tbody>
 </table>
 <div class="footer">
-  <span>तयार केल्याची तारीख: ${new Date().toLocaleDateString('en-GB')}</span>
-  <span>अधिकृत स्वाक्षरी</span>
+  <span>सावकाराची सही</span>
 </div>
 </body></html>`;
 
@@ -481,9 +480,8 @@ export default function CapitalAccountReport() {
           </thead>
           <tbody>${rows}</tbody>
         </table>
-        <div style="margin-top:50px;display:flex;justify-content:space-between;font-size:11px;font-weight:600;">
-          <span>तयार केल्याची तारीख: ${new Date().toLocaleDateString('en-GB')}</span>
-          <span>अधिकृत स्वाक्षरी</span>
+        <div style="margin-top:50px;display:flex;justify-content:flex-end;font-size:11px;font-weight:600;padding-right:25%;">
+          <span>सावकाराची सही</span>
         </div>
       </body></html>`;
 
@@ -777,9 +775,8 @@ export default function CapitalAccountReport() {
                   </table>
                 </div>
 
-                <div className="capital-print-footer" style={{ marginTop: '50px', display: 'flex', justifyContent: 'space-between', fontSize: '11px', fontWeight: 600 }}>
-                  <span>तयार केल्याची तारीख: {new Date().toLocaleDateString('en-GB')}</span>
-                  <span>अधिकृत स्वाक्षरी</span>
+                <div className="capital-print-footer" style={{ marginTop: '50px', display: 'flex', justifyContent: 'flex-end', fontSize: '11px', fontWeight: 600, paddingRight: '25%' }}>
+                  <span>सावकाराची सही</span>
                 </div>
                 </div>
               </CardContent>

@@ -209,7 +209,7 @@ function CashBookReport() {
   .opening-row td { background: #fef3c7; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .balance-row td { background: #e8eaf6; font-weight: 700; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .total-row td { background: #e0e7ff; font-weight: 700; border-top: 1.5px solid #333; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  .footer { margin-top: 50px; display: flex; justify-content: space-between; font-size: 11px; font-weight: 600; }
+  .footer { margin-top: 50px; display: flex; justify-content: flex-end; font-size: 11px; font-weight: 600; padding-right: 25%; }
 </style></head><body>
 <div class="header">
   <p style="font-size:15px;font-weight:700;">${companyName}</p>
@@ -219,8 +219,7 @@ function CashBookReport() {
 </div>
 ${tableHTML}
 <div class="footer">
-  <span>तयार केल्याची तारीख: ${new Date().toLocaleDateString('en-GB')}</span>
-  <span>अधिकृत स्वाक्षरी</span>
+  <span>सावकाराची सही</span>
 </div>
 </body></html>`;
 
