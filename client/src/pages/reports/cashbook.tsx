@@ -410,7 +410,7 @@ function CashBookReport() {
       const renderWidthPx = 794;
       const companyName = (company as any)?.name || 'कंपनी नाव';
       const bdr = '0.5px solid #aaa';
-      const thStyle = `border:${bdr};padding:6px 4px;text-align:center;font-size:10px;background:#f5f5f5;font-weight:bold;line-height:1.5;`;
+      const thStyle = `border:${bdr};padding:5px 4px;text-align:center;font-size:9pt;background:#f5f5f5;font-weight:600;line-height:1.3;letter-spacing:0.3px;`;
       const tdBase = `border:${bdr};padding:6px 5px;font-size:10px;line-height:1.6;`;
 
       let tableHTML = '';
@@ -486,8 +486,8 @@ function CashBookReport() {
 
         tableHTML = `
           <div style="display:flex;width:100%;border:${bdr};">
-            <div style="width:50%;text-align:center;padding:5px 2px;font-size:10px;background:#eef2ff;font-weight:bold;border-right:1px solid #999;">जमा (Credit)</div>
-            <div style="width:50%;text-align:center;padding:5px 2px;font-size:10px;background:#fef2f2;font-weight:bold;">नावे (Debit)</div>
+            <div style="width:50%;text-align:center;padding:4px 2px;font-size:9pt;background:#eef2ff;font-weight:600;border-right:1px solid #999;">जमा (Credit)</div>
+            <div style="width:50%;text-align:center;padding:4px 2px;font-size:9pt;background:#fef2f2;font-weight:600;">नावे (Debit)</div>
           </div>
           <table style="width:100%;border-collapse:collapse;table-layout:fixed;">
             <colgroup>
@@ -500,12 +500,12 @@ function CashBookReport() {
             </colgroup>
             <thead>
               <tr>
-                <th style="${thStyle}font-size:9px;">दिनांक</th>
-                <th style="${thStyle}font-size:10px;">तपशील</th>
-                <th style="${thStyle}border-right:1px solid #999;font-size:10px;">रक्कम</th>
-                <th style="${thStyle}font-size:9px;">दिनांक</th>
-                <th style="${thStyle}font-size:10px;">तपशील</th>
-                <th style="${thStyle}font-size:10px;">रक्कम</th>
+                <th style="${thStyle}">दिनांक</th>
+                <th style="${thStyle}">तपशील</th>
+                <th style="${thStyle}border-right:1px solid #999;">रक्कम</th>
+                <th style="${thStyle}">दिनांक</th>
+                <th style="${thStyle}">तपशील</th>
+                <th style="${thStyle}">रक्कम</th>
               </tr>
             </thead>
             <tbody>${tRows}</tbody>
