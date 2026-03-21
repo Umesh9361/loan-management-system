@@ -1371,7 +1371,7 @@ export default function BorrowerListReports() {
     const commonHeaders = `
       <tr style="border-bottom: 2px solid #000; height: 35px;">
         <th style="border-bottom: 1px solid #000; padding: 2px; width: 26px; text-align: center; font-size: 12px; height: 35px; vertical-align: middle; font-weight: bold;">अ.क्र.</th>
-        <th style="border-bottom: 1px solid #000; border-left: 1px solid #000; padding: 2px; width: 40px; text-align: center; font-size: 12px; height: 35px; vertical-align: middle; font-weight: bold;">तारीख</th>
+        <th style="border-bottom: 1px solid #000; border-left: 1px solid #000; padding: 2px; width: 34px; text-align: center; font-size: 12px; height: 35px; vertical-align: middle; font-weight: bold;">तारीख</th>
         <th style="border-bottom: 1px solid #000; border-left: 1px solid #000; padding: 2px; width: 58px; font-size: 8px; text-align: center; line-height: 1.2; height: 35px; vertical-align: middle; font-weight: bold; white-space: nowrap;">अं.बा.<br/>मूल्य</th>
         <th style="border-bottom: 1px solid #000; border-left: 1px solid #000; padding: 2px; width: 250px; font-size: 12px; height: 35px; vertical-align: middle; font-weight: bold;">नाव</th>
         <th class="mobile-hide" style="border-bottom: 1px solid #000; border-left: 1px solid #000; padding: 2px; width: 48px; text-align: left; font-size: 12px; height: 35px; vertical-align: middle; font-weight: bold;">कोड नं</th>
@@ -1415,7 +1415,7 @@ export default function BorrowerListReports() {
         return `
           <tr data-row-index="${index}" data-loan='${JSON.stringify(loan).replace(/'/g, "&apos;")}' style="${rowStyle} border-bottom: 1px solid #ccc; height: 40px; min-height: 40px; cursor: pointer; transition: background-color 0.2s;" onmouseover="this.style.backgroundColor='#f3f4f6'" onmouseout="this.style.backgroundColor=''" class="loan-row">
             <td style="border-bottom: 1px solid #ccc; padding: 4px; text-align: center; width: 26px; font-size: 14px; vertical-align: middle; font-weight: 500;">${index + 1}</td>
-            <td style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 4px; text-align: center; width: 40px; font-size: 14px; vertical-align: middle; font-weight: 500;">${shortDate}</td>
+            <td style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 4px; text-align: center; width: 34px; font-size: 14px; vertical-align: middle; font-weight: 500;">${shortDate}</td>
             <td style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 4px; text-align: right; width: 58px; font-size: 14px; vertical-align: middle; font-weight: 500;" class="loan-amount">${Math.round(loan.principalAmount).toLocaleString('en-IN')}</td>
             <td style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 4px; width: 250px; font-size: 14px; vertical-align: middle; font-weight: 500;">${getPhotoIndicator(loan.id)}${loan.borrowerName.length > 30 ? loan.borrowerName.substring(0, 30) + '...' : loan.borrowerName}${isClosedLoan && dateWiseStatus === 'all' ? ' (बंद)' : ''}</td>
             <td class="mobile-hide" style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 4px; text-align: left; width: 48px; font-size: 14px; vertical-align: middle; font-weight: 500;">${(loan.accountNumber || loan.id.slice(0, 5)).toString().substring(0, 7)}</td>
@@ -1444,7 +1444,7 @@ export default function BorrowerListReports() {
         return `
           <tr data-row-index="${index}" data-loan='${JSON.stringify(loan).replace(/'/g, "&apos;")}' style="${rowStyle} border-bottom: 1px solid #ccc; height: 40px; min-height: 40px; cursor: pointer; transition: background-color 0.2s;" onmouseover="this.style.backgroundColor='#f3f4f6'" onmouseout="this.style.backgroundColor=''" class="loan-row">
             <td style="border-bottom: 1px solid #ccc; padding: 4px; text-align: center; width: 26px; font-size: 14px; vertical-align: middle; font-weight: 500;">${index + 1}</td>
-            <td style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 4px; text-align: center; width: 40px; font-size: 14px; vertical-align: middle; font-weight: 500;">${shortDate}</td>
+            <td style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 4px; text-align: center; width: 34px; font-size: 14px; vertical-align: middle; font-weight: 500;">${shortDate}</td>
             <td style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 4px; text-align: right; width: 58px; font-size: 14px; vertical-align: middle; font-weight: 500;" class="loan-amount">${Math.round(loan.principalAmount).toLocaleString('en-IN')}</td>
             <td style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 4px; width: 250px; font-size: 14px; vertical-align: middle; font-weight: 500;">${getPhotoIndicator(loan.id)}${loan.borrowerName.length > 30 ? loan.borrowerName.substring(0, 30) + '...' : loan.borrowerName}${isClosedLoan && nameWiseStatus === 'all' ? ' (बंद)' : ''}</td>
             <td class="mobile-hide" style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 4px; text-align: left; width: 48px; font-size: 14px; vertical-align: middle; font-weight: 500;">${(loan.accountNumber || loan.id.slice(0, 5)).toString().substring(0, 7)}</td>
@@ -1783,7 +1783,7 @@ export default function BorrowerListReports() {
               /* Data rows - 50% more height */
               tbody tr:not(.total-row):not(.summary-row) td { padding: 8px 2px !important; line-height: 1.6 !important; }
               th:nth-child(1), td:nth-child(1) { width: 26px !important; min-width: 26px !important; text-align: center !important; }    /* अनुक्रमांक */
-              th:nth-child(2), td:nth-child(2) { width: 40px !important; min-width: 40px !important; }    /* तारीख - कमी */
+              th:nth-child(2), td:nth-child(2) { width: 34px !important; min-width: 34px !important; }    /* तारीख - कमी */
               th:nth-child(3), td:nth-child(3) { width: 58px !important; min-width: 58px !important; }    /* रक्कम */
               th:nth-child(4), td:nth-child(4) { width: 250px !important; min-width: 250px !important; text-align: left !important; padding-left: 4px !important; }   /* नाव — 35-40 अक्षरे बसतील */
               tbody tr:not(.total-row):not(.summary-row) td:nth-child(4) { padding-left: 4px !important; }
@@ -2298,7 +2298,7 @@ export default function BorrowerListReports() {
               
               /* A4 Print Column Widths — th+td consistent (date-wise, name-wise, maturity) */
               th:nth-child(1), td:nth-child(1) { width: 26px !important; min-width: 26px !important; max-width: 30px !important; text-align: center !important; }
-              th:nth-child(2), td:nth-child(2) { width: 40px !important; min-width: 40px !important; max-width: 44px !important; text-align: center !important; }
+              th:nth-child(2), td:nth-child(2) { width: 34px !important; min-width: 34px !important; max-width: 38px !important; text-align: center !important; }
               th:nth-child(3), td:nth-child(3) { width: 58px !important; min-width: 58px !important; max-width: 62px !important; text-align: right !important; }
               th:nth-child(4), td:nth-child(4) { width: 250px !important; min-width: 250px !important; text-align: left !important; padding-left: 4px !important; }
               th:nth-child(5), td:nth-child(5) { width: 48px !important; min-width: 48px !important; max-width: 52px !important; text-align: center !important; }
