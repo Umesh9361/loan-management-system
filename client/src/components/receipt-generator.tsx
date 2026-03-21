@@ -1178,6 +1178,7 @@ ${pagesHTML}
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>वार्षिक लेखा विवरणपत्र - ${data.borrowerName}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         @page {
             size: 148mm 210mm;
@@ -1189,13 +1190,7 @@ ${pagesHTML}
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
             }
-            html {
-                width: 148mm !important;
-                height: 210mm !important;
-                margin: 0 !important;
-                padding: 0 !important;
-            }
-            body {
+            html, body {
                 width: 148mm !important;
                 height: 210mm !important;
                 margin: 0 !important;
@@ -1203,19 +1198,18 @@ ${pagesHTML}
                 background: white !important;
             }
             .receipt-container {
-                width: 144mm !important;
-                max-width: 144mm !important;
-                margin: 2mm auto !important;
+                width: 138mm !important;
+                max-width: 138mm !important;
+                margin: 5mm auto !important;
                 padding: 0 !important;
                 box-sizing: border-box !important;
                 background: white !important;
             }
             .annual-receipt {
                 width: 100% !important;
-                padding: 3mm !important;
-                border: 1px solid #333 !important;
+                padding: 6mm 5mm !important;
+                border: 1.5px solid #333 !important;
                 box-sizing: border-box !important;
-                margin-top: 3mm !important;
             }
             .control-panel, .no-print {
                 display: none !important;
@@ -1235,8 +1229,8 @@ ${pagesHTML}
             height: auto;
             margin: 0;
             padding: 8px;
-            font-size: 10px;
-            line-height: 1.2;
+            font-size: 12px;
+            line-height: 1.5;
             box-sizing: border-box;
         }
 
@@ -1245,7 +1239,7 @@ ${pagesHTML}
             max-width: 100%;
             height: auto;
             margin: 0 auto;
-            padding: 2mm;
+            padding: 3mm;
             background: white;
             box-sizing: border-box;
         }
@@ -1254,170 +1248,169 @@ ${pagesHTML}
             width: 148mm !important;
             max-width: 148mm !important;
             height: 210mm !important;
-            padding: 6mm 8mm !important;
+            padding: 5mm 5mm !important;
             box-shadow: none !important;
         }
 
         .receipt-container.export-mode .annual-receipt {
             height: auto !important;
-            max-height: 190mm !important;
+            max-height: 196mm !important;
             overflow: visible !important;
-            padding: 4mm 5mm !important;
-            margin-top: 4mm !important;
+            padding: 6mm 5mm !important;
         }
 
         .receipt-container.export-mode .field-row {
-            margin: 3px 0 !important;
-            font-size: 11px !important;
-        }
-
-        .receipt-container.export-mode .field-label {
-            font-size: 11px !important;
-        }
-
-        .receipt-container.export-mode .field-value {
-            font-size: 11px !important;
-            padding-bottom: 2px !important;
-            min-height: 16px !important;
-        }
-
-        .receipt-container.export-mode .table-cell-label {
-            padding: 3px 6px !important;
-            font-size: 10px !important;
-            line-height: 1.4 !important;
-        }
-
-        .receipt-container.export-mode .table-cell-value {
-            padding: 3px 6px !important;
-            font-size: 10px !important;
-            width: 90px !important;
-            line-height: 1.4 !important;
-        }
-
-        .receipt-container.export-mode .form-number {
+            margin: 5px 0 !important;
             font-size: 12px !important;
         }
 
+        .receipt-container.export-mode .field-label {
+            font-size: 12px !important;
+        }
+
+        .receipt-container.export-mode .field-value {
+            font-size: 12px !important;
+            padding-bottom: 3px !important;
+            min-height: 20px !important;
+        }
+
+        .receipt-container.export-mode .table-cell-label {
+            padding: 6px 8px !important;
+            font-size: 11px !important;
+            line-height: 1.5 !important;
+        }
+
+        .receipt-container.export-mode .table-cell-value {
+            padding: 6px 8px !important;
+            font-size: 11px !important;
+            width: 100px !important;
+            line-height: 1.5 !important;
+        }
+
+        .receipt-container.export-mode .form-number {
+            font-size: 14px !important;
+        }
+
         .receipt-container.export-mode .receipt-title {
-            font-size: 10px !important;
+            font-size: 12px !important;
         }
 
         .receipt-container.export-mode .company-info {
-            font-size: 9px !important;
+            font-size: 10px !important;
+            padding: 5px !important;
         }
 
         .receipt-container.export-mode .signature-section {
-            font-size: 10px !important;
-            margin-top: 6px !important;
+            font-size: 11px !important;
+            margin-top: 20px !important;
         }
 
         @media screen and (min-width: 600px) {
             body {
                 padding: 20px;
-                font-size: 11px;
+                font-size: 12px;
             }
             .receipt-container {
-                width: 144mm;
-                max-width: 144mm;
-                padding: 1mm 4mm;
+                width: 148mm;
+                max-width: 148mm;
+                padding: 2mm 4mm;
                 box-shadow: 0 0 10px rgba(0,0,0,0.1);
             }
         }
 
         .annual-receipt {
-            padding: 3mm;
-            border: 1px solid #333;
+            padding: 6mm 5mm;
+            border: 1.5px solid #333;
             background: white;
             box-sizing: border-box;
             overflow: visible;
-            margin-top: 2mm;
         }
 
         .receipt-header {
             text-align: center;
-            margin-bottom: 3px;
-            border-bottom: 1px solid #333;
-            padding-bottom: 2px;
+            margin-bottom: 10px;
+            border-bottom: 1.5px solid #333;
+            padding-bottom: 8px;
         }
 
         .form-number {
-            font-size: 11px;
-            font-weight: bold;
-            margin-bottom: 1px;
-            line-height: 1.2;
+            font-size: 14px;
+            font-weight: 700;
+            margin-bottom: 3px;
+            line-height: 1.4;
         }
 
         .receipt-title {
-            font-size: 9px;
-            font-weight: bold;
-            margin: 1px 0;
-            line-height: 1.3;
+            font-size: 11px;
+            font-weight: 700;
+            margin: 3px 0;
+            line-height: 1.4;
         }
 
         .field-row {
             display: flex;
             justify-content: space-between;
-            margin: 2px 0;
-            font-size: 10px;
+            margin: 5px 0;
+            font-size: 12px;
             align-items: baseline;
-            line-height: 1.3;
+            line-height: 1.5;
             padding: 0;
         }
 
         .field-label {
             font-weight: 600;
             min-width: fit-content;
-            font-size: 10px;
+            font-size: 12px;
             white-space: nowrap;
         }
 
         .field-value {
-            border-bottom: 1px solid #333;
+            border-bottom: 1px solid #555;
             flex: 1;
-            margin-left: 4px;
-            padding: 0px 4px 1px 4px;
-            min-height: 14px;
+            margin-left: 6px;
+            padding: 1px 6px 3px 6px;
+            min-height: 20px;
             font-weight: 500;
-            font-size: 10px;
-            line-height: 1.3;
+            font-size: 12px;
+            line-height: 1.5;
         }
 
         .radio-row {
             display: flex;
             align-items: center;
-            margin: 2px 0;
-            font-size: 9px;
-            line-height: 1.2;
-            gap: 6px;
+            margin: 6px 0;
+            font-size: 11px;
+            line-height: 1.4;
+            gap: 10px;
         }
 
         .radio-label {
             font-weight: 600;
-            font-size: 9px;
+            font-size: 11px;
         }
 
         .radio-option {
             display: inline-flex;
             align-items: center;
-            gap: 2px;
-            font-size: 9px;
+            gap: 4px;
+            font-size: 11px;
         }
 
         .radio-option input[type="radio"] {
-            width: 10px;
-            height: 10px;
+            width: 12px;
+            height: 12px;
             margin: 0;
         }
 
         .table-section {
-            margin: 3px 0;
-            border: 1px solid #000;
-            font-size: 9px;
+            margin: 10px 0;
+            border: 1.5px solid #333;
+            font-size: 11px;
         }
 
         .table-row {
             display: flex;
-            border-bottom: 1px solid #000;
+            border-bottom: 1px solid #333;
         }
 
         .table-row:last-child {
@@ -1426,41 +1419,44 @@ ${pagesHTML}
 
         .table-cell-label {
             flex: 1;
-            padding: 2px 4px;
-            border-right: 1px solid #000;
-            line-height: 1.3;
-            font-size: 9px;
+            padding: 6px 8px;
+            border-right: 1px solid #333;
+            line-height: 1.5;
+            font-size: 11px;
+            font-weight: 500;
         }
 
         .table-cell-value {
-            width: 80px;
-            padding: 2px 4px;
+            width: 100px;
+            padding: 6px 8px;
             text-align: right;
-            line-height: 1.3;
-            font-size: 9px;
+            line-height: 1.5;
+            font-size: 11px;
+            font-weight: 600;
         }
 
         .company-info {
             text-align: center;
-            margin: 3px 0;
-            font-size: 8px;
-            border: 1px solid #333;
-            padding: 2px;
+            margin: 10px 0;
+            font-size: 10px;
+            border: 1px solid #555;
+            padding: 5px 8px;
             background: #f9f9f9;
             font-weight: 500;
-            line-height: 1.2;
+            line-height: 1.4;
         }
 
         .signature-section {
             display: flex;
             justify-content: space-between;
             align-items: flex-end;
-            margin-top: 4px;
-            font-size: 9px;
+            margin-top: 25px;
+            font-size: 11px;
+            font-weight: 500;
         }
 
         .date-field {
-            font-size: 9px;
+            font-size: 11px;
         }
 
         .signature-box {
@@ -1469,9 +1465,9 @@ ${pagesHTML}
 
         .signature-line {
             border-bottom: 1px solid #333;
-            width: 80px;
-            height: 14px;
-            margin-bottom: 1px;
+            width: 100px;
+            height: 20px;
+            margin-bottom: 3px;
         }
     </style>
 </head>
@@ -1479,9 +1475,9 @@ ${pagesHTML}
     <div class="receipt-container">
         <div class="annual-receipt">
             <div class="receipt-header">
-                <div class="form-number">नमुना क्र १४ (नियम २० पहा)</div>
+                <div class="form-number">नमुना क्र. १४ (नियम २० पहा)</div>
                 <div class="receipt-title">वार्षिक लेखा विवरणपत्र</div>
-                <div style="font-size: 7px; line-height: 1.2; margin-top: 1px;">(वर्ष संपल्यानंतर ४५ दिवसांच्या आत सावकाराने कर्जदारास द्यावयाचे)</div>
+                <div style="font-size: 9px; line-height: 1.3; margin-top: 2px; color: #444;">(वर्ष संपल्यानंतर ४५ दिवसांच्या आत सावकाराने कर्जदारास द्यावयाचे)</div>
             </div>
 
             <div class="field-row">
