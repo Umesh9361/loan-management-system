@@ -302,9 +302,9 @@ export default function CapitalAccountReport() {
         }
         .capital-table th,
         .capital-table td {
-          border: 1.5px solid #333;
-          padding: 8px 6px;
-          text-align: center;
+          border: 1.5px solid #333 !important;
+          padding: 8px 6px !important;
+          text-align: center !important;
           font-family: 'Noto Sans Devanagari', Arial, sans-serif !important;
         }
         .capital-table th:nth-child(1), .capital-table td:nth-child(1) { width: 6% !important; }
@@ -318,17 +318,17 @@ export default function CapitalAccountReport() {
           background: #f0f0f0 !important;
           -webkit-print-color-adjust: exact !important;
           print-color-adjust: exact !important;
-          color: #111;
-          font-weight: 700;
-          font-size: 11px;
-          word-wrap: break-word;
-          overflow-wrap: break-word;
-          line-height: 1.3;
+          color: #111 !important;
+          font-weight: 700 !important;
+          font-size: 11px !important;
+          word-wrap: break-word !important;
+          overflow-wrap: break-word !important;
+          line-height: 1.3 !important;
         }
         .capital-table td {
-          background: white;
-          font-weight: 600;
-          font-size: 12px;
+          background: white !important;
+          font-weight: 600 !important;
+          font-size: 12px !important;
         }
         .capital-table .opening-row td {
           background: #fef3c7 !important;
@@ -711,7 +711,7 @@ export default function CapitalAccountReport() {
                         <th style={{ border: '1.5px solid #333', padding: '10px 8px', fontSize: '13px', background: '#f0f0f0', fontWeight: 700, textAlign: 'center', color: '#111' }}>रोकड वहीतील पान क्रमांक</th>
                         <th style={{ border: '1.5px solid #333', padding: '10px 8px', fontSize: '13px', background: '#f0f0f0', fontWeight: 700, textAlign: 'center', color: '#111' }}>कर्ज वाटपाची एकूण रक्कम</th>
                         <th style={{ border: '1.5px solid #333', padding: '10px 8px', fontSize: '13px', background: '#f0f0f0', fontWeight: 700, textAlign: 'center', color: '#111' }}>रोकड वहीतील पान क्रमांक</th>
-                        <th style={{ border: '1.5px solid #333', padding: '10px 8px', fontSize: '13px', background: '#f0f0f0', fontWeight: 700, textAlign: 'center', color: '#111' }}>व्यवसायात गुंतवलेली निव्वळ शिल्लक रक्कम</th>
+                        <th style={{ border: '1.5px solid #333', padding: '10px 8px', fontSize: '13px', background: '#f0f0f0', fontWeight: 700, textAlign: 'center', color: '#111' }}>व्यवसायात गुंतवलेली<br />निव्वळ शिल्लक रक्कम</th>
                       </tr>
                     </thead>
                     <tbody>
