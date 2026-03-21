@@ -1587,62 +1587,66 @@ ${pagesHTML}
       const rateLabel = loan.interestRateType === 'monthly' ? 'मासिक' : 'वार्षिक';
       const needsBreak = idx < dataArray.length - 1;
 
+      const bdr = '1.5px solid #333';
+      const thStyle = `border:${bdr};padding:8px 6px;text-align:center;font-size:11px;background:#f0f0f0;font-weight:700;color:#111;line-height:1.4;-webkit-print-color-adjust:exact;print-color-adjust:exact;`;
+      const tdBase = `border:${bdr};padding:8px 6px;font-size:11px;font-weight:600;line-height:1.4;`;
+
       let rows = '';
       (loan.entries || []).forEach((entry: any) => {
         const bal = entry.balance || 0;
         const drLabel = bal >= 0 ? ' (Dr.)' : ' (Cr.)';
         const dateDisplay = entry.type === 'opening' ? 'प्रारंभिक' : formatDate(entry.date);
-        const rowBg = entry.type === 'opening' ? 'background:#fff4e6;' : '';
+        const rowBg = entry.type === 'opening' ? 'background:#fef3c7;-webkit-print-color-adjust:exact;print-color-adjust:exact;' : '';
 
-        rows += `<tr style="${rowBg}">
-          <td style="border:1px solid #333;padding:3px 4px;text-align:center;font-size:9px;">${dateDisplay}</td>
-          <td style="border:1px solid #333;padding:3px 4px;text-align:left;font-size:9px;">${entry.description || ''}</td>
-          <td style="border:1px solid #333;padding:3px 4px;text-align:right;font-size:9px;">${entry.debit > 0 ? '₹' + Math.round(entry.debit).toLocaleString('en-IN') : ''}</td>
-          <td style="border:1px solid #333;padding:3px 4px;text-align:right;font-size:9px;">${entry.credit > 0 ? '₹' + Math.round(entry.credit).toLocaleString('en-IN') : ''}</td>
-          <td style="border:1px solid #333;padding:3px 4px;text-align:right;font-size:9px;font-weight:bold;color:red;">${bal < 0 ? '-' : ''}₹${Math.round(Math.abs(bal)).toLocaleString('en-IN')}${drLabel}</td>
+        rows += `<tr>
+          <td style="${tdBase}text-align:center;${rowBg}">${dateDisplay}</td>
+          <td style="${tdBase}text-align:left;${rowBg}">${entry.description || ''}</td>
+          <td style="${tdBase}text-align:right;${rowBg}">${entry.debit > 0 ? Math.round(entry.debit).toLocaleString('en-IN') : '-'}</td>
+          <td style="${tdBase}text-align:right;${rowBg}">${entry.credit > 0 ? Math.round(entry.credit).toLocaleString('en-IN') : '-'}</td>
+          <td style="${tdBase}text-align:right;font-weight:bold;color:red;${rowBg}">${bal < 0 ? '-' : ''}${Math.round(Math.abs(bal)).toLocaleString('en-IN')}${drLabel}</td>
         </tr>`;
       });
 
       const finalBal = loan.finalBalance || 0;
       const finalDrLabel = finalBal >= 0 ? ' (Dr.)' : ' (Cr.)';
-      rows += `<tr style="background:#e3f2fd;font-weight:bold;">
-        <td style="border:1px solid #333;padding:4px;text-align:center;font-size:9px;" colspan="2">एकूण</td>
-        <td style="border:1px solid #333;padding:4px;text-align:right;font-size:9px;">₹${Math.round(loan.totalDebit || 0).toLocaleString('en-IN')}</td>
-        <td style="border:1px solid #333;padding:4px;text-align:right;font-size:9px;">₹${Math.round(loan.totalCredit || 0).toLocaleString('en-IN')}</td>
-        <td style="border:1px solid #333;padding:4px;text-align:right;font-size:10px;color:red;">${finalBal < 0 ? '-' : ''}₹${Math.round(Math.abs(finalBal)).toLocaleString('en-IN')}${finalDrLabel}</td>
+      rows += `<tr>
+        <td style="${tdBase}text-align:center;background:#e0e7ff;-webkit-print-color-adjust:exact;print-color-adjust:exact;" colspan="2"><b>एकूण</b></td>
+        <td style="${tdBase}text-align:right;background:#e0e7ff;font-weight:bold;-webkit-print-color-adjust:exact;print-color-adjust:exact;">${Math.round(loan.totalDebit || 0).toLocaleString('en-IN')}</td>
+        <td style="${tdBase}text-align:right;background:#e0e7ff;font-weight:bold;-webkit-print-color-adjust:exact;print-color-adjust:exact;">${Math.round(loan.totalCredit || 0).toLocaleString('en-IN')}</td>
+        <td style="${tdBase}text-align:right;background:#e0e7ff;font-weight:bold;color:red;-webkit-print-color-adjust:exact;print-color-adjust:exact;">${finalBal < 0 ? '-' : ''}${Math.round(Math.abs(finalBal)).toLocaleString('en-IN')}${finalDrLabel}</td>
       </tr>`;
 
       pagesHTML += `<div class="ledger-page${needsBreak ? ' page-break-after' : ''}">
-        <div style="text-align:center;margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid #333;">
-          <p style="font-size:14px;font-weight:bold;margin:0 0 3px 0;">${companyName}</p>
-          <p style="font-size:12px;font-weight:bold;margin:0 0 2px 0;">नमुना क्रमांक आठ</p>
-          <p style="font-size:9px;color:#555;margin:0;">(नियम १८ पहा)</p>
+        <div style="text-align:center;margin-bottom:12px;font-weight:bold;">
+          <p style="font-size:15px;font-weight:700;margin:0 0 4px 0;">${companyName}</p>
+          <p style="font-size:14px;font-weight:700;margin:0 0 4px 0;">नमुना क्रमांक आठ</p>
+          <p style="font-size:11px;color:#333;margin:0 0 4px 0;">(नियम १८ पहा)</p>
+          <p style="font-size:11px;color:#333;margin:0 0 4px 0;">कालावधी: ${formatDate(loan.dateFrom)} ते ${formatDate(loan.dateTo)}</p>
         </div>
-        <div style="margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid #ddd;">
-          <p style="font-size:10px;font-weight:600;margin:0 0 3px 0;">खाते: ${loan.borrowerName}${groupName ? ' | गट: ' + groupName : ''}</p>
-          <div style="display:flex;flex-wrap:wrap;gap:8px;font-size:9px;">
+        <div style="margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid #ddd;">
+          <p style="font-size:12px;font-weight:600;margin:0 0 4px 0;">खाते: ${loan.borrowerName}${groupName ? ' | गट: ' + groupName : ''}</p>
+          <div style="display:flex;flex-wrap:wrap;gap:10px;font-size:11px;">
             <span>खाते क्र.: ${loan.accountNumber}</span>
             <span>मुद्दल: ₹${Math.round(loan.principalAmount).toLocaleString('en-IN')}</span>
             <span>व्याज दर: ${loan.interestRate}% ${rateLabel}</span>
             <span>कर्ज दिनांक: ${formatDate(loan.loanDate)}</span>
           </div>
-          <p style="font-size:9px;color:#555;margin-top:2px;">कालावधी: ${formatDate(loan.dateFrom)} ते ${formatDate(loan.dateTo)}</p>
         </div>
-        <table style="width:100%;border-collapse:collapse;">
+        <table style="width:100%;border-collapse:collapse;table-layout:fixed;">
           <colgroup><col style="width:12%;"><col style="width:34%;"><col style="width:16%;"><col style="width:16%;"><col style="width:22%;"></colgroup>
           <thead>
-            <tr style="background:#f0f0f0;">
-              <th style="border:1px solid #333;padding:4px;text-align:center;font-size:9px;">दिनांक</th>
-              <th style="border:1px solid #333;padding:4px;text-align:center;font-size:9px;">तपशील</th>
-              <th style="border:1px solid #333;padding:4px;text-align:center;font-size:9px;">नावे (Dr.)</th>
-              <th style="border:1px solid #333;padding:4px;text-align:center;font-size:9px;">जमा (Cr.)</th>
-              <th style="border:1px solid #333;padding:4px;text-align:center;font-size:9px;background:#dbeafe;">शिल्लक</th>
+            <tr>
+              <th style="${thStyle}">दिनांक</th>
+              <th style="${thStyle}">तपशील</th>
+              <th style="${thStyle}">नावे (Dr.)</th>
+              <th style="${thStyle}">जमा (Cr.)</th>
+              <th style="${thStyle}background:#dbeafe;">शिल्लक</th>
             </tr>
           </thead>
           <tbody>${rows}</tbody>
         </table>
-        <div style="margin-top:8px;text-align:right;font-size:8px;color:#888;">
-          ${loan.status === 'closed' ? '<span style="color:red;font-weight:bold;">बंद</span> | ' : ''}अहवाल तयार केला: ${new Date().toLocaleDateString('en-GB')}
+        <div style="margin-top:50px;display:flex;justify-content:flex-end;font-size:11px;font-weight:600;padding-right:25%;">
+          <span>सावकाराची सही</span>
         </div>
       </div>\n`;
     });
@@ -1654,16 +1658,16 @@ ${pagesHTML}
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>बल्क कर्ज लेजर (नमुना क्र. ८) - ${dataArray.length} कर्जे</title>
 <style>
-  @page { size: A4 portrait; margin: 8mm 8mm 8mm 25.4mm; }
+  @page { size: A4 portrait; margin: 12mm 5mm 12mm 5mm; }
   @media print {
     * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
     .ledger-page { page-break-inside: avoid; }
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  html, body { background: white; font-family: 'Noto Sans Devanagari', Arial, sans-serif; }
-  .ledger-page { padding: 15px 20px 15px 5mm; }
+  html, body { background: white; font-family: 'Noto Sans Devanagari', Arial, sans-serif; font-size: 11px; line-height: 1.4; }
+  .ledger-page { padding: 3mm 5mm 3mm 20mm; }
   .page-break-after { page-break-after: always; }
-  table { width: 100%; border-collapse: collapse; }
+  table { width: 100%; border-collapse: collapse; table-layout: fixed; }
 </style>
 </head>
 <body>

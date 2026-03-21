@@ -970,7 +970,149 @@ export default function AccountLedger() {
   };
 
   const handlePrint = () => {
-    window.print();
+    if (!statementData || !statementData.entries || statementData.entries.length === 0) {
+      alert("प्रथम खाते निवडा आणि लेजर तयार करा");
+      return;
+    }
+
+    const companyName = company?.name || 'कंपनी नाव';
+    const accountType = statementData.account?.type || '';
+    const isCashAccount = accountType === 'cash';
+    const isLoanAccount = accountType === 'individual_loan' || accountType === 'loan';
+
+    let headerTitle = 'खाते लेजर';
+    let subTitle = '';
+    if (accountType === 'individual_loan') {
+      headerTitle = 'नमुना क्रमांक आठ';
+      subTitle = '(नियम १८ पहा)';
+    } else if (accountType === 'cash') {
+      headerTitle = 'रोकड खाते लेजर';
+    } else if (accountType === 'party') {
+      headerTitle = 'व्यक्ती खाते लेजर';
+    } else if (accountType === 'loan') {
+      headerTitle = 'सर्व कर्ज खाते (एकत्रित) लेजर';
+    }
+
+    const accountName = statementData.account?.borrowerName || statementData.account?.name || 'खाते';
+    const cleanAccountName = accountName.includes(' - ') ? accountName.split(' - ').pop()?.trim() || accountName : accountName;
+
+    let accountInfoHTML = '';
+    if (statementData.account?.accountNumber) {
+      accountInfoHTML += `<span style="font-size:11px;margin-right:15px;">खाते क्र.: ${statementData.account.accountNumber}</span>`;
+    }
+    if (statementData.account?.principalAmount) {
+      const amt = parseFloat(statementData.account.principalAmount);
+      accountInfoHTML += `<span style="font-size:11px;margin-right:15px;">मुद्दल: ₹${isNaN(amt) ? '0' : amt.toLocaleString('en-IN')}</span>`;
+    }
+    if (statementData.account?.interestRate) {
+      accountInfoHTML += `<span style="font-size:11px;margin-right:15px;">व्याज दर: ${statementData.account.interestRate}% ${statementData.account.interestRateType === 'monthly' ? 'मासिक' : 'वार्षिक'}</span>`;
+    }
+    if (statementData.account?.loanDate) {
+      accountInfoHTML += `<span style="font-size:11px;">कर्ज दिनांक: ${DateUtils.isoToIndianDate(statementData.account.loanDate)}</span>`;
+    }
+
+    const bdr = '1.5px solid #333';
+    const thStyle = `border:${bdr};padding:8px 6px;text-align:center;font-size:11px;background:#f0f0f0;font-weight:700;color:#111;line-height:1.4;-webkit-print-color-adjust:exact;print-color-adjust:exact;`;
+    const tdBase = `border:${bdr};padding:8px 6px;font-size:11px;font-weight:600;line-height:1.4;`;
+
+    let rows = '';
+    statementData.entries.forEach((entry: any) => {
+      const bal = entry.balance || 0;
+      const drLabel = isCashAccount
+        ? (bal >= 0 ? ' (Cr.)' : ' (Dr.)')
+        : (bal >= 0 ? ' (Dr.)' : ' (Cr.)');
+      const balColor = isCashAccount
+        ? (bal >= 0 ? 'color:green;' : 'color:red;')
+        : isLoanAccount
+          ? 'color:red;'
+          : (bal >= 0 ? 'color:#1e40af;' : 'color:red;');
+
+      const dateDisplay = entry.type === 'opening' ? 'प्रारंभिक' : DateUtils.isoToIndianDate(entry.date);
+      const rowBg = entry.type === 'opening' ? 'background:#fef3c7;-webkit-print-color-adjust:exact;print-color-adjust:exact;' : '';
+
+      rows += `<tr>
+        <td style="${tdBase}text-align:center;${rowBg}">${dateDisplay}</td>
+        <td style="${tdBase}text-align:left;${rowBg}">${entry.description || ''}</td>
+        <td style="${tdBase}text-align:right;${rowBg}">${entry.debit > 0 ? Math.round(entry.debit).toLocaleString('en-IN') : '-'}</td>
+        <td style="${tdBase}text-align:right;${rowBg}">${entry.credit > 0 ? Math.round(entry.credit).toLocaleString('en-IN') : '-'}</td>
+        <td style="${tdBase}text-align:right;font-weight:bold;${rowBg}${balColor}">${bal < 0 ? '-' : ''}${Math.round(Math.abs(bal)).toLocaleString('en-IN')}${drLabel}</td>
+      </tr>`;
+    });
+
+    const finalBal = parseFloat(statementData.finalBalance || 0);
+    const finalDrLabel = isCashAccount
+      ? (finalBal >= 0 ? ' (Cr.)' : ' (Dr.)')
+      : (finalBal >= 0 ? ' (Dr.)' : ' (Cr.)');
+    const finalBalColor = isCashAccount
+      ? (finalBal >= 0 ? 'color:green;' : 'color:red;')
+      : isLoanAccount
+        ? 'color:red;'
+        : (finalBal >= 0 ? 'color:#1e40af;' : 'color:red;');
+
+    rows += `<tr>
+      <td style="${tdBase}text-align:center;background:#e0e7ff;-webkit-print-color-adjust:exact;print-color-adjust:exact;" colspan="2"><b>एकूण</b></td>
+      <td style="${tdBase}text-align:right;background:#e0e7ff;font-weight:bold;-webkit-print-color-adjust:exact;print-color-adjust:exact;">${Math.round(parseFloat(statementData.totalDebit || 0)).toLocaleString('en-IN')}</td>
+      <td style="${tdBase}text-align:right;background:#e0e7ff;font-weight:bold;-webkit-print-color-adjust:exact;print-color-adjust:exact;">${Math.round(parseFloat(statementData.totalCredit || 0)).toLocaleString('en-IN')}</td>
+      <td style="${tdBase}text-align:right;background:#e0e7ff;font-weight:bold;-webkit-print-color-adjust:exact;print-color-adjust:exact;${finalBalColor}">${finalBal < 0 ? '-' : ''}${Math.round(Math.abs(finalBal)).toLocaleString('en-IN')} ${finalDrLabel.trim()}</td>
+    </tr>`;
+
+    const printHTML = `<!DOCTYPE html><html><head><meta charset="utf-8"/><title>${headerTitle}</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  @page { size: A4 portrait; margin: 12mm 5mm 12mm 5mm; }
+  body { font-family: 'Noto Sans Devanagari', Arial, sans-serif; margin: 0; padding: 3mm 5mm 3mm 20mm; box-sizing: border-box; font-size: 11px; line-height: 1.4; }
+  .header { text-align: center; margin-bottom: 12px; font-weight: bold; }
+  .header p { margin: 0 0 4px 0; }
+  table { width: 100%; border-collapse: collapse; table-layout: fixed; page-break-inside: auto; }
+  thead { display: table-header-group; }
+  tr { page-break-inside: avoid !important; break-inside: avoid !important; }
+  .footer { margin-top: 50px; display: flex; justify-content: flex-end; font-size: 11px; font-weight: 600; padding-right: 25%; }
+</style></head><body>
+<div class="header">
+  <p style="font-size:15px;font-weight:700;">${companyName}</p>
+  <p style="font-size:14px;font-weight:700;">${headerTitle}</p>
+  ${subTitle ? `<p style="font-size:11px;color:#333;">${subTitle}</p>` : ''}
+  <p style="font-size:11px;color:#333;">कालावधी: ${DateUtils.isoToIndianDate(filters.dateFrom)} ते ${DateUtils.isoToIndianDate(filters.dateTo)}</p>
+</div>
+<div style="margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid #ddd;">
+  <p style="font-size:12px;font-weight:600;margin:0 0 4px 0;">खाते: ${cleanAccountName}</p>
+  ${accountInfoHTML ? `<p style="margin:0 0 3px 0;">${accountInfoHTML}</p>` : ''}
+</div>
+<table>
+  <colgroup><col style="width:12%;"><col style="width:34%;"><col style="width:16%;"><col style="width:16%;"><col style="width:22%;"></colgroup>
+  <thead><tr>
+    <th style="${thStyle}">दिनांक</th>
+    <th style="${thStyle}">तपशील</th>
+    <th style="${thStyle}">नावे (Dr.)</th>
+    <th style="${thStyle}">जमा (Cr.)</th>
+    <th style="${thStyle}background:#dbeafe;">शिल्लक</th>
+  </tr></thead>
+  <tbody>${rows}</tbody>
+</table>
+<div class="footer">
+  <span>सावकाराची सही</span>
+</div>
+</body></html>`;
+
+    const iframe = document.createElement("iframe");
+    iframe.style.position = "fixed";
+    iframe.style.left = "-9999px";
+    iframe.style.top = "-9999px";
+    iframe.style.width = "794px";
+    iframe.style.height = "1123px";
+    document.body.appendChild(iframe);
+    const doc = iframe.contentDocument || iframe.contentWindow?.document;
+    if (!doc) { document.body.removeChild(iframe); return; }
+    doc.open();
+    doc.write(printHTML);
+    doc.close();
+    setTimeout(() => {
+      try {
+        iframe.contentWindow?.focus();
+        iframe.contentWindow?.print();
+      } catch(e) { /* ignore */ }
+      setTimeout(() => { try { document.body.removeChild(iframe); } catch(e) {} }, 2000);
+    }, 500);
   };
 
   const handleMobilePdfDownload = async () => {
@@ -1016,8 +1158,8 @@ export default function AccountLedger() {
         accountInfoHTML += `<span style="font-size:11px;">कर्ज दिनांक: ${DateUtils.isoToIndianDate(statementData.account.loanDate)}</span>`;
       }
 
-      const thStyle = `border:none;border-top:1px solid #333;border-bottom:1px solid #333;padding:8px 4px;text-align:center;font-size:10px;background:#f0f0f0;font-weight:bold;line-height:1.4;`;
-      const tdBase = `border:none;border-bottom:0.5px solid #ddd;padding:7px 5px;font-size:10px;font-weight:600;line-height:1.5;`;
+      const thStyle = `border:1.5px solid #333;padding:8px 6px;text-align:center;font-size:11px;background:#f0f0f0;font-weight:700;color:#111;line-height:1.4;-webkit-print-color-adjust:exact;print-color-adjust:exact;`;
+      const tdBase = `border:1.5px solid #333;padding:8px 6px;font-size:11px;font-weight:600;line-height:1.4;`;
 
       let rows = '';
       statementData.entries.forEach((entry: any) => {
@@ -1069,15 +1211,15 @@ export default function AccountLedger() {
         body { font-family: 'Noto Sans Devanagari', Arial, sans-serif; background: white; width: ${renderWidthPx}px; padding: 20px 30px; }
         table { width: 100%; border-collapse: collapse; table-layout: fixed; }
       </style></head><body>
-        <div style="text-align:center;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid #ddd;">
-          <p style="font-size:18px;font-weight:bold;margin-bottom:6px;">${companyName}</p>
-          <p style="font-size:15px;font-weight:bold;margin-bottom:4px;">${headerTitle}</p>
-          ${subTitle ? `<p style="font-size:11px;color:#555;margin-bottom:3px;">${subTitle}</p>` : ''}
+        <div style="text-align:center;margin-bottom:12px;font-weight:bold;">
+          <p style="font-size:15px;font-weight:700;margin:0 0 4px 0;">${companyName}</p>
+          <p style="font-size:14px;font-weight:700;margin:0 0 4px 0;">${headerTitle}</p>
+          ${subTitle ? `<p style="font-size:11px;color:#333;margin:0 0 4px 0;">${subTitle}</p>` : ''}
+          <p style="font-size:11px;color:#333;margin:0 0 4px 0;">कालावधी: ${DateUtils.isoToIndianDate(filters.dateFrom)} ते ${DateUtils.isoToIndianDate(filters.dateTo)}</p>
         </div>
-        <div style="text-align:left;margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid #eee;">
-          <p style="font-size:13px;font-weight:600;margin-bottom:4px;">खाते: ${cleanAccountName}</p>
-          ${accountInfoHTML ? `<p style="margin-bottom:3px;">${accountInfoHTML}</p>` : ''}
-          <p style="font-size:11px;color:#555;">कालावधी: ${DateUtils.isoToIndianDate(filters.dateFrom)} ते ${DateUtils.isoToIndianDate(filters.dateTo)}</p>
+        <div style="margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid #ddd;">
+          <p style="font-size:12px;font-weight:600;margin:0 0 4px 0;">खाते: ${cleanAccountName}</p>
+          ${accountInfoHTML ? `<p style="margin:0 0 3px 0;">${accountInfoHTML}</p>` : ''}
         </div>
         <table>
           <colgroup>

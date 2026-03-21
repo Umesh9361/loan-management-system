@@ -191,19 +191,103 @@ export default function BorrowerLedger() {
   };
 
   const handlePrint = () => {
-    
     if (!ledgerData) {
       alert("प्रिंट करण्यासाठी प्रथम खाते वही तयार करा");
       return;
     }
-    
+
     try {
-      // Add a small delay to ensure DOM is ready  
+      const companyName = (company as any)?.name || 'कंपनी नाव';
+      const borrowerName = ledgerData.borrower?.borrowerName || 'कर्जदार';
+      const accountNumber = ledgerData.borrower?.accountNumber || '';
+      const fd = (d: string) => { const p = d.split('-'); return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : d; };
+
+      const bdr = '1.5px solid #333';
+      const thStyle = `border:${bdr};padding:8px 6px;text-align:center;font-size:11px;background:#f0f0f0;font-weight:700;color:#111;line-height:1.4;-webkit-print-color-adjust:exact;print-color-adjust:exact;`;
+      const tdBase = `border:${bdr};padding:8px 6px;font-size:11px;font-weight:600;line-height:1.4;`;
+
+      let rows = '';
+      ledgerData.entries.forEach((entry: any, index: number) => {
+        const bal = entry.balance || 0;
+        const drLabel = bal >= 0 ? ' (Dr.)' : ' (Cr.)';
+        const dateDisplay = entry.type === 'opening' ? 'प्रारंभिक' : new Date(entry.date).toLocaleDateString('en-GB');
+        const rowBg = entry.type === 'opening' ? 'background:#fef3c7;-webkit-print-color-adjust:exact;print-color-adjust:exact;' : '';
+
+        rows += `<tr>
+          <td style="${tdBase}text-align:center;${rowBg}">${index + 1}</td>
+          <td style="${tdBase}text-align:center;${rowBg}">${dateDisplay}</td>
+          <td style="${tdBase}text-align:left;${rowBg}">${entry.description || ''}</td>
+          <td style="${tdBase}text-align:right;${rowBg}">${entry.debit > 0 ? Math.round(entry.debit).toLocaleString('en-IN') : '-'}</td>
+          <td style="${tdBase}text-align:right;${rowBg}">${entry.credit > 0 ? Math.round(entry.credit).toLocaleString('en-IN') : '-'}</td>
+          <td style="${tdBase}text-align:right;font-weight:bold;color:red;${rowBg}">${bal < 0 ? '-' : ''}${Math.round(Math.abs(bal)).toLocaleString('en-IN')}${drLabel}</td>
+        </tr>`;
+      });
+
+      rows += `<tr>
+        <td colspan="3" style="${tdBase}text-align:center;background:#e0e7ff;font-weight:bold;-webkit-print-color-adjust:exact;print-color-adjust:exact;">एकूण</td>
+        <td style="${tdBase}text-align:right;background:#e0e7ff;font-weight:bold;-webkit-print-color-adjust:exact;print-color-adjust:exact;">${Math.round(ledgerData.totalDebit).toLocaleString('en-IN')}</td>
+        <td style="${tdBase}text-align:right;background:#e0e7ff;font-weight:bold;-webkit-print-color-adjust:exact;print-color-adjust:exact;">${Math.round(ledgerData.totalCredit).toLocaleString('en-IN')}</td>
+        <td style="${tdBase}text-align:right;background:#e0e7ff;font-weight:bold;color:red;-webkit-print-color-adjust:exact;print-color-adjust:exact;">${Math.round(Math.abs(ledgerData.finalBalance)).toLocaleString('en-IN')}${ledgerData.finalBalance >= 0 ? ' (Dr.)' : ' (Cr.)'}</td>
+      </tr>`;
+
+      const printHTML = `<!DOCTYPE html><html><head><meta charset="utf-8"/><title>कर्ज खातेवही - ${borrowerName}</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  @page { size: A4 portrait; margin: 12mm 5mm 12mm 5mm; }
+  body { font-family: 'Noto Sans Devanagari', Arial, sans-serif; margin: 0; padding: 3mm 5mm 3mm 20mm; box-sizing: border-box; font-size: 11px; line-height: 1.4; }
+  .header { text-align: center; margin-bottom: 12px; font-weight: bold; }
+  .header p { margin: 0 0 4px 0; }
+  table { width: 100%; border-collapse: collapse; table-layout: fixed; page-break-inside: auto; }
+  thead { display: table-header-group; }
+  tr { page-break-inside: avoid !important; break-inside: avoid !important; }
+  .footer { margin-top: 50px; display: flex; justify-content: flex-end; font-size: 11px; font-weight: 600; padding-right: 25%; }
+</style></head><body>
+<div class="header">
+  <p style="font-size:15px;font-weight:700;">${companyName}</p>
+  <p style="font-size:14px;font-weight:700;">नमुना क्रमांक आठ</p>
+  <p style="font-size:11px;color:#333;">(नियम १८ पहा)</p>
+  <p style="font-size:11px;color:#333;">कालावधी: ${fd(filters.dateFrom)} ते ${fd(filters.dateTo)}</p>
+</div>
+<div style="margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid #ddd;">
+  <p style="font-size:12px;font-weight:600;margin:0 0 4px 0;">कर्जदार: ${borrowerName}${accountNumber ? ' | खाते क्र.: ' + accountNumber : ''}</p>
+</div>
+<table>
+  <colgroup><col style="width:6%;"><col style="width:11%;"><col style="width:31%;"><col style="width:16%;"><col style="width:16%;"><col style="width:20%;"></colgroup>
+  <thead><tr>
+    <th style="${thStyle}">अ.क्र.</th>
+    <th style="${thStyle}">दिनांक</th>
+    <th style="${thStyle}">तपशील</th>
+    <th style="${thStyle}">नावे (Dr.)</th>
+    <th style="${thStyle}">जमा (Cr.)</th>
+    <th style="${thStyle}background:#dbeafe;">शिल्लक</th>
+  </tr></thead>
+  <tbody>${rows}</tbody>
+</table>
+<div class="footer">
+  <span>सावकाराची सही</span>
+</div>
+</body></html>`;
+
+      const iframe = document.createElement("iframe");
+      iframe.style.position = "fixed";
+      iframe.style.left = "-9999px";
+      iframe.style.top = "-9999px";
+      iframe.style.width = "794px";
+      iframe.style.height = "1123px";
+      document.body.appendChild(iframe);
+      const doc = iframe.contentDocument || iframe.contentWindow?.document;
+      if (!doc) { document.body.removeChild(iframe); return; }
+      doc.open();
+      doc.write(printHTML);
+      doc.close();
       setTimeout(() => {
-        window.print();
-      }, 100);
+        try {
+          iframe.contentWindow?.focus();
+          iframe.contentWindow?.print();
+        } catch(e) { /* ignore */ }
+        setTimeout(() => { try { document.body.removeChild(iframe); } catch(e) {} }, 2000);
+      }, 500);
     } catch (error) {
-      // console.error('Print error:', error);
       alert('प्रिंट करताना त्रुटी झाली');
     }
   };
@@ -244,115 +328,11 @@ export default function BorrowerLedger() {
 
 
   const handleExportPDF = () => {
-    try {
-      const printWindow = window.open('', '_blank', 'width=800,height=600');
-    if (printWindow) {
-      const printContent = `
-        <div style="display: flex; justify-content: space-between; margin-bottom: 30px;">
-          <!-- Left: Borrower Details -->
-          <div style="text-align: left; flex: 1;">
-            <h3 style="font-size: 16px; font-weight: bold; margin-bottom: 8px;">कर्जदाराचे तपशील:</h3>
-            <p style="font-size: 13px; font-weight: bold; margin: 2px 0;">नाव: ${ledgerData.borrower.borrowerName}</p>
-            <p style="font-size: 12px; margin: 2px 0;">खाते क्र.: ${ledgerData.borrower.accountNumber || ledgerData.borrower.id.slice(0, 8)}</p>
-            <p style="font-size: 12px; margin: 2px 0;">पत्ता: ${ledgerData.borrower.address || 'अज्ञात'}</p>
-            <p style="font-size: 12px; margin: 2px 0;">मोबाईल: ${ledgerData.borrower.mobileNumber || 'अज्ञात'}</p>
-          </div>
-          
-          <!-- Center: Company Header -->
-          <div style="text-align: center; flex: 2;">
-            <h1 style="font-size: 18px; margin-bottom: 5px; font-weight: bold;">नमुना क्रमांक ८</h1>
-            <h2 style="font-size: 16px; margin-bottom: 5px;">(नियम १८ पहा - कर्ज खातेवही)</h2>
-            <h3 style="font-size: 14px; margin-bottom: 10px; font-weight: bold;">${(company as any)?.name || 'कंपनीचे नाव'}</h3>
-            <p style="font-size: 12px; margin-bottom: 20px;">
-              कालावधी: ${new Date(filters.dateFrom).toLocaleDateString('en-GB')} ते ${new Date(filters.dateTo).toLocaleDateString('en-GB')}
-            </p>
-          </div>
-          
-          <!-- Right: Space for future use -->
-          <div style="flex: 1;"></div>
-        </div>
-        
-        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
-          <thead>
-            <tr>
-              <th style="border: 2px solid #000; padding: 8px; background: #f5f5f5;">अ.क्र.</th>
-              <th style="border: 2px solid #000; padding: 8px; background: #f5f5f5;">दिनांक</th>
-              <th style="border: 2px solid #000; padding: 8px; background: #f5f5f5;">तपशील</th>
-              <th style="border: 2px solid #000; padding: 8px; background: #f5f5f5;">नावे (₹)</th>
-              <th style="border: 2px solid #000; padding: 8px; background: #f5f5f5;">जमा (₹)</th>
-              <th style="border: 2px solid #000; padding: 8px; background: #f5f5f5;">शिल्लक (₹)</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${ledgerData.entries.map((entry: any, index: number) => `
-              <tr>
-                <td style="border: 2px solid #000; padding: 6px; text-align: center;">${index + 1}</td>
-                <td style="border: 2px solid #000; padding: 6px; text-align: center;">${new Date(entry.date).toLocaleDateString('en-GB')}</td>
-                <td style="border: 2px solid #000; padding: 6px;">${entry.description}</td>
-                <td style="border: 2px solid #000; padding: 6px; text-align: right;">${entry.debit > 0 ? '₹' + entry.debit.toLocaleString('en-IN') : '-'}</td>
-                <td style="border: 2px solid #000; padding: 6px; text-align: right;">${entry.credit > 0 ? '₹' + entry.credit.toLocaleString('en-IN') : '-'}</td>
-                <td style="border: 2px solid #000; padding: 6px; text-align: right; font-weight: bold;">₹${entry.balance.toLocaleString('en-IN')}</td>
-              </tr>
-            `).join('')}
-            <tr style="background: #f0f0f0; border-top: 3px solid #000;">
-              <td colspan="3" style="border: 2px solid #000; padding: 8px; text-align: center; font-weight: bold;">एकूण</td>
-              <td style="border: 2px solid #000; padding: 8px; text-align: right; font-weight: bold;">₹${ledgerData.totalDebit.toLocaleString('en-IN')}</td>
-              <td style="border: 2px solid #000; padding: 8px; text-align: right; font-weight: bold;">₹${ledgerData.totalCredit.toLocaleString('en-IN')}</td>
-              <td style="border: 2px solid #000; padding: 8px; text-align: right; font-weight: bold;">₹${ledgerData.finalBalance.toLocaleString('en-IN')}</td>
-            </tr>
-          </tbody>
-        </table>
-        
-        <div style="margin-top: 40px; display: flex; justify-content: space-between;">
-          <div style="text-align: center;">
-            <p style="font-weight: bold; margin-bottom: 20px;">तपासले</p>
-            <div style="border-bottom: 2px solid #000; width: 150px; margin-bottom: 10px;"></div>
-            <p>दिनांक: ___________</p>
-          </div>
-          <div style="text-align: center;">
-            <p style="font-weight: bold; margin-bottom: 20px;">अधिकृत सही</p>
-            <div style="border: 2px solid #000; width: 100px; height: 60px; margin: 0 auto 10px;"></div>
-            <p>दिनांक: ___________</p>
-          </div>
-        </div>
-        
-        <div style="margin-top: 20px; text-align: center; font-size: 10px; color: #666;">
-          अहवाल तयार केला: ${new Date().toLocaleDateString('hi-IN')} रोजी
-        </div>
-      `;
-      
-      printWindow.document.write(`
-        <!DOCTYPE html>
-        <html>
-          <head>
-            <title>कर्ज खातेवही - ${ledgerData.borrower.borrowerName}</title>
-            <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;500;600;700&display=swap" rel="stylesheet">
-            <style>
-              @page { size: A4; margin: 10mm 10mm 10mm 25.4mm; }
-              body { font-family: 'Noto Sans Devanagari', Arial, sans-serif; font-size: 14px; margin: 0; padding: 20px; }
-              table { width: 100%; border-collapse: collapse; }
-              th, td { border: 2px solid #000; padding: 8px; font-size: 13px; }
-              th { background: #f5f5f5; font-weight: bold; font-size: 14px; }
-              .text-center { text-align: center; }
-              .text-right { text-align: right; }
-              .font-bold { font-weight: bold; }
-            </style>
-          </head>
-          <body>
-            ${printContent}
-          </body>
-        </html>
-      `);
-      
-      printWindow.document.close();
-      setTimeout(() => {
-        printWindow.print();
-      }, 250);
+    if (!ledgerData) {
+      alert('प्रथम खाते वही तयार करा');
+      return;
     }
-    } catch (error) {
-      // console.error('Export PDF error:', error);
-      alert('PDF export करताना त्रुटी झाली');
-    }
+    handlePrint();
   };
 
 
