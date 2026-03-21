@@ -1793,11 +1793,11 @@ export default function BorrowerListReports() {
               th:nth-child(7), td:nth-child(7) { width: 42px !important; min-width: 42px !important; }    /* वजन */
               
               /* For closing-wise report with extra columns - portrait fit (9 cols) */
-              .closing-wise-table th:nth-child(1), .closing-wise-table td:nth-child(1) { width: 22px !important; min-width: 22px !important; max-width: 26px !important; }
-              .closing-wise-table th:nth-child(2), .closing-wise-table td:nth-child(2) { width: 58px !important; min-width: 58px !important; max-width: 62px !important; }
-              .closing-wise-table th:nth-child(3), .closing-wise-table td:nth-child(3) { width: 58px !important; min-width: 58px !important; max-width: 62px !important; }
-              .closing-wise-table th:nth-child(4), .closing-wise-table td:nth-child(4) { width: 60px !important; min-width: 60px !important; max-width: 65px !important; text-align: right !important; }
-              .closing-wise-table th:nth-child(5), .closing-wise-table td:nth-child(5) { width: 52px !important; min-width: 52px !important; max-width: 58px !important; text-align: right !important; }
+              .closing-wise-table th:nth-child(1), .closing-wise-table td:nth-child(1) { width: 22px !important; min-width: 22px !important; max-width: 26px !important; text-align: center !important; }
+              .closing-wise-table th:nth-child(2), .closing-wise-table td:nth-child(2) { width: 58px !important; min-width: 58px !important; max-width: 62px !important; text-align: center !important; }
+              .closing-wise-table th:nth-child(3), .closing-wise-table td:nth-child(3) { width: 58px !important; min-width: 58px !important; max-width: 62px !important; text-align: center !important; }
+              .closing-wise-table th:nth-child(4), .closing-wise-table td:nth-child(4) { width: 60px !important; min-width: 60px !important; max-width: 65px !important; text-align: left !important; padding-left: 3px !important; }
+              .closing-wise-table th:nth-child(5), .closing-wise-table td:nth-child(5) { width: 52px !important; min-width: 52px !important; max-width: 58px !important; text-align: left !important; padding-left: 3px !important; }
               .closing-wise-table th:nth-child(6), .closing-wise-table td:nth-child(6) { width: auto !important; min-width: 90px !important; text-align: left !important; padding-left: 4px !important; }
               .closing-wise-table th:nth-child(7), .closing-wise-table td:nth-child(7) { width: 42px !important; min-width: 42px !important; max-width: 48px !important; text-align: center !important; }
               .closing-wise-table th:nth-child(8), .closing-wise-table td:nth-child(8) { width: auto !important; min-width: 85px !important; text-align: left !important; }
@@ -2061,6 +2061,11 @@ export default function BorrowerListReports() {
                 text-align: left !important; 
                 vertical-align: top !important;
               }
+              /* CLOSING-WISE: रक्कम (col4) + व्याज (col5) = left align */
+              table.closing-wise-table tbody tr td:nth-child(4),
+              table.closing-wise-table thead tr th:nth-child(4) { text-align: left !important; padding-left: 3px !important; }
+              table.closing-wise-table tbody tr td:nth-child(5),
+              table.closing-wise-table thead tr th:nth-child(5) { text-align: left !important; padding-left: 3px !important; }
               
               /* Hide report title (डेट वाईज रिपोर्ट etc.) in print only */
               .report-info > div:first-child {
@@ -2366,8 +2371,8 @@ export default function BorrowerListReports() {
               body[data-report-type="closing-wise"] th:nth-child(1), body[data-report-type="closing-wise"] td:nth-child(1) { width: 22px !important; min-width: 22px !important; max-width: 26px !important; text-align: center !important; }
               body[data-report-type="closing-wise"] th:nth-child(2), body[data-report-type="closing-wise"] td:nth-child(2) { width: 58px !important; min-width: 58px !important; max-width: 62px !important; text-align: center !important; }
               body[data-report-type="closing-wise"] th:nth-child(3), body[data-report-type="closing-wise"] td:nth-child(3) { width: 58px !important; min-width: 58px !important; max-width: 62px !important; text-align: center !important; }
-              body[data-report-type="closing-wise"] th:nth-child(4), body[data-report-type="closing-wise"] td:nth-child(4) { width: 60px !important; min-width: 60px !important; max-width: 65px !important; text-align: right !important; }
-              body[data-report-type="closing-wise"] th:nth-child(5), body[data-report-type="closing-wise"] td:nth-child(5) { width: 52px !important; min-width: 52px !important; max-width: 58px !important; text-align: right !important; }
+              body[data-report-type="closing-wise"] th:nth-child(4), body[data-report-type="closing-wise"] td:nth-child(4) { width: 60px !important; min-width: 60px !important; max-width: 65px !important; text-align: left !important; padding-left: 3px !important; }
+              body[data-report-type="closing-wise"] th:nth-child(5), body[data-report-type="closing-wise"] td:nth-child(5) { width: 52px !important; min-width: 52px !important; max-width: 58px !important; text-align: left !important; padding-left: 3px !important; }
               body[data-report-type="closing-wise"] th:nth-child(6), body[data-report-type="closing-wise"] td:nth-child(6) { width: auto !important; min-width: 90px !important; text-align: left !important; padding-left: 4px !important; }
               body[data-report-type="closing-wise"] th:nth-child(7), body[data-report-type="closing-wise"] td:nth-child(7) { width: 42px !important; min-width: 42px !important; max-width: 48px !important; text-align: center !important; }
               body[data-report-type="closing-wise"] th:nth-child(8), body[data-report-type="closing-wise"] td:nth-child(8) { width: auto !important; min-width: 85px !important; text-align: left !important; }
