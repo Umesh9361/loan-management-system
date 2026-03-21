@@ -87,10 +87,11 @@ export default function OverdueReport() {
     const style = document.createElement('style');
     style.textContent = `
       @media print {
-        @page { size: A4; margin: 8mm; }
+        @page { size: A4 landscape; margin: 8mm; }
+        * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
         body {
           font-family: 'Noto Sans Devanagari', Arial, sans-serif !important;
-          padding-left: 17.4mm !important;
+          padding-left: 0 !important;
           box-sizing: border-box !important;
         }
         .lg\\:pl-72 { padding-left: 0 !important; }
@@ -100,6 +101,8 @@ export default function OverdueReport() {
           max-height: none !important;
           height: auto !important;
         }
+        table { width: 100% !important; table-layout: auto !important; }
+        th, td { font-size: 9px !important; padding: 4px 3px !important; white-space: nowrap; }
       }
     `;
     document.head.appendChild(style);
