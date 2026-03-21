@@ -262,132 +262,94 @@ export default function CapitalAccountReport() {
       alert("प्रिंट करण्यासाठी प्रथम तारीख निवडा आणि डेटा लोड करा");
       return;
     }
-    
-    const printStyles = `
-      @media print {
-        @page {
-          size: A4 portrait;
-          margin: 8mm;
-        }
-        body * {
-          visibility: hidden !important;
-        }
-        .print-content, .print-content * {
-          visibility: visible !important;
-          display: revert !important;
-        }
-        .print-content {
-          position: absolute !important;
-          left: 0 !important;
-          top: 0 !important;
-          width: 100% !important;
-          z-index: 9999 !important;
-          padding-left: 25mm !important;
-          box-sizing: border-box !important;
-          font-family: 'Noto Sans Devanagari', Arial, sans-serif !important;
-          display: block !important;
-        }
-        .print-content table {
-          display: table !important;
-          visibility: visible !important;
-          width: 100% !important;
-        }
-        .print-content thead { display: table-header-group !important; }
-        .print-content tbody { display: table-row-group !important; }
-        .print-content tr { display: table-row !important; }
-        .print-content th, .print-content td { display: table-cell !important; }
-        body {
-          font-family: 'Noto Sans Devanagari', Arial, sans-serif !important;
-          font-size: 11px;
-          line-height: 1.4;
-        }
-        .capital-header {
-          text-align: center;
-          margin-bottom: 16px;
-          font-weight: bold;
-        }
-        .capital-table {
-          width: 100%;
-          border-collapse: collapse;
-          table-layout: fixed;
-        }
-        .capital-table th,
-        .capital-table td {
-          border: 1.5px solid #333 !important;
-          padding: 8px 6px !important;
-          text-align: center !important;
-          font-family: 'Noto Sans Devanagari', Arial, sans-serif !important;
-        }
-        .capital-table th:nth-child(1), .capital-table td:nth-child(1) { width: 6% !important; }
-        .capital-table th:nth-child(2), .capital-table td:nth-child(2) { width: 12% !important; }
-        .capital-table th:nth-child(3), .capital-table td:nth-child(3) { width: 18% !important; }
-        .capital-table th:nth-child(4), .capital-table td:nth-child(4) { width: 10% !important; }
-        .capital-table th:nth-child(5), .capital-table td:nth-child(5) { width: 18% !important; }
-        .capital-table th:nth-child(6), .capital-table td:nth-child(6) { width: 10% !important; }
-        .capital-table th:nth-child(7), .capital-table td:nth-child(7) { width: 26% !important; }
-        .capital-table th {
-          background: #f0f0f0 !important;
-          -webkit-print-color-adjust: exact !important;
-          print-color-adjust: exact !important;
-          color: #111 !important;
-          font-weight: 700 !important;
-          font-size: 11px !important;
-          word-wrap: break-word !important;
-          overflow-wrap: break-word !important;
-          line-height: 1.3 !important;
-        }
-        .capital-table td {
-          background: white !important;
-          font-weight: 600 !important;
-          font-size: 12px !important;
-        }
-        .capital-table .opening-row td {
-          background: #fef3c7 !important;
-          -webkit-print-color-adjust: exact !important;
-          print-color-adjust: exact !important;
-        }
-        .capital-table .closing-row td {
-          background: #e0e7ff !important;
-          -webkit-print-color-adjust: exact !important;
-          print-color-adjust: exact !important;
-          font-weight: 700;
-        }
-        .amount-col {
-          text-align: right !important;
-        }
-        .overflow-x-auto {
-          overflow: visible !important;
-          max-height: none !important;
-          height: auto !important;
-        }
-        .capital-print-footer {
-          margin-top: 50px;
-          display: flex;
-          justify-content: space-between;
-          font-size: 11px;
-          font-weight: 600;
-        }
-      }
-    `;
-    
-    const styleSheet = document.createElement("style");
-    styleSheet.innerText = printStyles;
-    document.head.appendChild(styleSheet);
-    
-    // Show print content before printing
-    const printContentDiv = document.querySelector('.print-content') as HTMLElement;
-    if (printContentDiv) {
-      printContentDiv.style.display = 'block';
-      printContentDiv.style.visibility = 'visible';
+
+    const fd = (d: string) => new Date(d).toLocaleDateString('en-GB');
+    const companyName = (company as any)?.name || 'कंपनी नाव';
+
+    let tableRows = '';
+    tableRows += `<tr class="opening-row"><td style="text-align:center;">-</td><td style="text-align:center;white-space:nowrap;">${fd(dateFrom)}</td><td style="text-align:center;">-</td><td style="text-align:center;">-</td><td style="text-align:center;">-</td><td style="text-align:center;">-</td><td style="text-align:right;font-weight:700;white-space:nowrap;">${openingBalance.toLocaleString('en-IN')} (प्रारंभिक शिल्लक)</td></tr>`;
+
+    if (entries.length === 0 && openingBalance === 0) {
+      tableRows += `<tr><td colspan="7" style="text-align:center;padding:30px;font-weight:bold;">निवडलेल्या कालावधीत कोणतेही व्यवहार आढळले नाहीत</td></tr>`;
+    } else {
+      entries.forEach((entry: any, index: number) => {
+        tableRows += `<tr>
+          <td style="text-align:center;">${index + 1}</td>
+          <td style="text-align:center;white-space:nowrap;">${fd(entry.date)}</td>
+          <td style="text-align:right;">${entry.loanRepayment > 0 ? entry.loanRepayment.toLocaleString('en-IN') : '-'}</td>
+          <td style="text-align:center;">${entry.loanRepayment > 0 && entry.repaymentPageNo ? entry.repaymentPageNo : '-'}</td>
+          <td style="text-align:right;">${entry.loanDisbursement > 0 ? entry.loanDisbursement.toLocaleString('en-IN') : '-'}</td>
+          <td style="text-align:center;">${entry.loanDisbursement > 0 && entry.disbursementPageNo ? entry.disbursementPageNo : '-'}</td>
+          <td style="text-align:right;font-weight:700;">${entry.netBalance.toLocaleString('en-IN')}</td>
+        </tr>`;
+      });
     }
-    
+
+    if (entries.length > 0 || openingBalance !== 0) {
+      tableRows += `<tr class="closing-row"><td style="text-align:center;">-</td><td style="text-align:center;white-space:nowrap;">${fd(dateTo)}</td><td style="text-align:right;">${periodRepayment.toLocaleString('en-IN')}</td><td style="text-align:center;">एकूण</td><td style="text-align:right;">${periodDisbursement.toLocaleString('en-IN')}</td><td style="text-align:center;">एकूण</td><td style="text-align:right;font-weight:700;white-space:nowrap;">${closingBalance.toLocaleString('en-IN')} (अंतिम शिल्लक)</td></tr>`;
+    }
+
+    const printHTML = `<!DOCTYPE html><html><head><meta charset="utf-8"/><title>भांडवल खाते</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  @page { size: A4 portrait; margin: 8mm; }
+  body { font-family: 'Noto Sans Devanagari', Arial, sans-serif; margin: 0; padding: 10px 10px 10px 17.4mm; box-sizing: border-box; font-size: 11px; line-height: 1.4; }
+  .header { text-align: center; margin-bottom: 16px; font-weight: bold; }
+  .header p { margin: 0 0 4px 0; }
+  table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+  col:nth-child(1) { width: 6%; }
+  col:nth-child(2) { width: 12%; }
+  col:nth-child(3) { width: 18%; }
+  col:nth-child(4) { width: 10%; }
+  col:nth-child(5) { width: 18%; }
+  col:nth-child(6) { width: 10%; }
+  col:nth-child(7) { width: 26%; }
+  th, td { border: 1.5px solid #333; padding: 8px 6px; text-align: center; font-size: 12px; font-weight: 600; }
+  th { background: #f0f0f0; color: #111; font-weight: 700; font-size: 11px; word-wrap: break-word; overflow-wrap: break-word; line-height: 1.3; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .opening-row td { background: #fef3c7; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .closing-row td { background: #e0e7ff; font-weight: 700; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .footer { margin-top: 50px; display: flex; justify-content: space-between; font-size: 11px; font-weight: 600; }
+</style></head><body>
+<div class="header">
+  <p style="font-size:15px;font-weight:700;">${companyName}</p>
+  <p style="font-size:14px;font-weight:700;">भांडवल खाते</p>
+  <p style="font-size:11px;color:#333;">नमुना क्रमांक १३ (नियम १९ पहा)</p>
+  <p style="font-size:11px;color:#333;">कालावधी: ${fd(dateFrom)} ते ${fd(dateTo)}</p>
+</div>
+<table>
+  <colgroup><col/><col/><col/><col/><col/><col/><col/></colgroup>
+  <thead><tr>
+    <th>अ.क्र.</th><th>दिनांक</th><th>कर्जाची रकमेची एकूण परतफेड</th><th>रोकड वहीतील पान क्रमांक</th><th>कर्ज वाटपाची एकूण रक्कम</th><th>रोकड वहीतील पान क्रमांक</th><th>व्यवसायात गुंतवलेली<br/>निव्वळ शिल्लक रक्कम</th>
+  </tr></thead>
+  <tbody>${tableRows}</tbody>
+</table>
+<div class="footer">
+  <span>तयार केल्याची तारीख: ${new Date().toLocaleDateString('en-GB')}</span>
+  <span>अधिकृत स्वाक्षरी</span>
+</div>
+</body></html>`;
+
+    const iframe = document.createElement("iframe");
+    iframe.style.position = "fixed";
+    iframe.style.left = "-9999px";
+    iframe.style.top = "-9999px";
+    iframe.style.width = "794px";
+    iframe.style.height = "1123px";
+    document.body.appendChild(iframe);
+    const doc = iframe.contentDocument || iframe.contentWindow?.document;
+    if (!doc) { document.body.removeChild(iframe); return; }
+    doc.open();
+    doc.write(printHTML);
+    doc.close();
     setTimeout(() => {
-      window.print();
-      setTimeout(() => {
-        // Clean up - remove injected print styles
-        document.head.removeChild(styleSheet);
-      }, 1000);
-    }, 100);
+      try {
+        iframe.contentWindow?.focus();
+        iframe.contentWindow?.print();
+      } catch(e) {
+        window.print();
+      }
+      setTimeout(() => { document.body.removeChild(iframe); }, 2000);
+    }, 500);
   };
 
   // Excel Export Function  
