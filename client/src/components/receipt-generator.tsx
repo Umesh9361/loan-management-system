@@ -1654,14 +1654,14 @@ ${pagesHTML}
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>बल्क कर्ज लेजर (नमुना क्र. ८) - ${dataArray.length} कर्जे</title>
 <style>
-  @page { size: A4 portrait; margin: 10mm 8mm; }
+  @page { size: A4 portrait; margin: 8mm 8mm 8mm 25.4mm; }
   @media print {
     * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
     .ledger-page { page-break-inside: avoid; }
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body { background: white; font-family: 'Noto Sans Devanagari', Arial, sans-serif; }
-  .ledger-page { padding: 15px 20px; }
+  .ledger-page { padding: 15px 20px 15px 15mm; }
   .page-break-after { page-break-after: always; }
   table { width: 100%; border-collapse: collapse; }
 </style>
