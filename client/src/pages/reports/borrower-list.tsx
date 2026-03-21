@@ -1769,13 +1769,16 @@ export default function BorrowerListReports() {
               
               /* A4 Portrait Print Column Measurements - compressed for portrait fit */
               th, td { font-size: 10px !important; padding: 3px 2px !important; word-wrap: break-word !important; overflow-wrap: break-word !important; }
-              tbody tr:not(.total-row):not(.summary-row) td { padding: 5px 2px !important; }
+              /* Data rows - 50% more height */
+              tbody tr:not(.total-row):not(.summary-row) td { padding: 8px 2px !important; line-height: 1.6 !important; }
               th:nth-child(1), td:nth-child(1) { width: 26px !important; min-width: 26px !important; }    /* अनुक्रमांक */
               th:nth-child(2), td:nth-child(2) { width: 50px !important; min-width: 50px !important; }    /* तारीख */
               th:nth-child(3), td:nth-child(3) { width: 60px !important; min-width: 60px !important; }    /* रक्कम */
-              th:nth-child(4), td:nth-child(4) { width: 125px !important; min-width: 125px !important; }   /* नाव */
-              th:nth-child(5), td:nth-child(5) { width: 45px !important; min-width: 45px !important; text-align: left !important; }    /* कोड */
-              th:nth-child(6), td:nth-child(6) { width: auto !important; min-width: 120px !important; }    /* वस्तूचा तपशील */
+              th:nth-child(4), td:nth-child(4) { width: 125px !important; min-width: 125px !important; text-align: left !important; padding-left: 5px !important; }   /* नाव - left with padding */
+              tbody tr:not(.total-row):not(.summary-row) td:nth-child(4) { padding-left: 5px !important; }
+              th:nth-child(5), td:nth-child(5) { width: 35px !important; min-width: 35px !important; max-width: 40px !important; text-align: center !important; padding: 3px 1px !important; }    /* कोड - center, tight */
+              tbody tr:not(.total-row):not(.summary-row) td:nth-child(5) { padding: 8px 1px !important; text-align: center !important; }
+              th:nth-child(6), td:nth-child(6) { width: auto !important; min-width: 130px !important; text-align: left !important; padding-left: 5px !important; }    /* वस्तूचा तपशील */
               th:nth-child(7), td:nth-child(7) { width: 42px !important; min-width: 42px !important; }    /* वजन */
               
               /* For closing-wise report with extra columns - portrait fit */
@@ -1783,8 +1786,9 @@ export default function BorrowerListReports() {
               .closing-wise-table th:nth-child(3), .closing-wise-table td:nth-child(3) { width: 50px !important; min-width: 50px !important; }    /* बंद तारीख */
               .closing-wise-table th:nth-child(4), .closing-wise-table td:nth-child(4) { width: 55px !important; min-width: 55px !important; }    /* रक्कम */
               .closing-wise-table th:nth-child(5), .closing-wise-table td:nth-child(5) { width: 48px !important; min-width: 48px !important; }    /* चार्जेस */
-              .closing-wise-table th:nth-child(6), .closing-wise-table td:nth-child(6) { width: 115px !important; min-width: 115px !important; }   /* नाव */
-              .closing-wise-table th:nth-child(7), .closing-wise-table td:nth-child(7) { width: 42px !important; min-width: 42px !important; }      /* कोड नं */
+              .closing-wise-table th:nth-child(6), .closing-wise-table td:nth-child(6) { width: 115px !important; min-width: 115px !important; text-align: left !important; padding-left: 5px !important; }   /* नाव */
+              .closing-wise-table th:nth-child(7), .closing-wise-table td:nth-child(7) { width: 35px !important; min-width: 35px !important; max-width: 40px !important; text-align: center !important; padding: 3px 1px !important; }      /* कोड नं - center, tight */
+              .closing-wise-table tbody tr:not(.total-row):not(.summary-row) td:nth-child(7) { padding: 8px 1px !important; text-align: center !important; }
               .closing-wise-table th:nth-child(8), .closing-wise-table td:nth-child(8) { width: auto !important; min-width: 100px !important; }    /* वस्तूचा तपशील */
               .closing-wise-table th:nth-child(9), .closing-wise-table td:nth-child(9) { width: 40px !important; min-width: 40px !important; }    /* वजन */
               
@@ -1792,8 +1796,9 @@ export default function BorrowerListReports() {
               .maturity-wise-table th:nth-child(1), .maturity-wise-table td:nth-child(1) { width: 26px !important; min-width: 26px !important; max-width: 30px !important; }    /* अ.क्र. */
               .maturity-wise-table th:nth-child(2), .maturity-wise-table td:nth-child(2) { width: 55px !important; }    /* तारीख */
               .maturity-wise-table th:nth-child(3), .maturity-wise-table td:nth-child(3) { width: 55px !important; min-width: 55px !important; }    /* अंदाजे बाजार मूल्य */
-              .maturity-wise-table th:nth-child(4), .maturity-wise-table td:nth-child(4) { width: 125px !important; min-width: 125px !important; }   /* नाव */
-              .maturity-wise-table th:nth-child(5), .maturity-wise-table td:nth-child(5) { width: 42px !important; min-width: 42px !important; }      /* कोड नं */
+              .maturity-wise-table th:nth-child(4), .maturity-wise-table td:nth-child(4) { width: 125px !important; min-width: 125px !important; text-align: left !important; padding-left: 5px !important; }   /* नाव */
+              .maturity-wise-table th:nth-child(5), .maturity-wise-table td:nth-child(5) { width: 35px !important; min-width: 35px !important; max-width: 40px !important; text-align: center !important; padding: 3px 1px !important; }      /* कोड नं - center, tight */
+              .maturity-wise-table tbody tr:not(.total-row):not(.summary-row) td:nth-child(5) { padding: 8px 1px !important; text-align: center !important; }
               .maturity-wise-table th:nth-child(6), .maturity-wise-table td:nth-child(6) { width: auto !important; min-width: 110px !important; }    /* वस्तूचा तपशील */
               .maturity-wise-table th:nth-child(7), .maturity-wise-table td:nth-child(7) { width: 40px !important; min-width: 40px !important; }    /* वजन */
               .maturity-wise-table th:nth-child(8), .maturity-wise-table td:nth-child(8) { width: 48px !important; min-width: 48px !important; }    /* मुदत */
