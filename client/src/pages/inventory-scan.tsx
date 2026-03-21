@@ -537,51 +537,54 @@ export default function InventoryScan() {
 
   if (resumePrompt) {
     return (
-      <div className="flex min-h-screen">
-        <div className="hidden lg:block">
-          <Sidebar />
-        </div>
-        <div className="flex-1 flex flex-col">
-          <MobileNav />
-          <div className="flex-1 p-4 flex items-center justify-center">
-            <Card className="w-full max-w-md shadow-lg border-indigo-200">
-              <CardContent className="pt-6 space-y-4">
-                <div className="text-center">
-                  <PackageSearch className="h-12 w-12 text-indigo-600 mx-auto mb-3" />
-                  <h2 className="text-lg font-bold text-indigo-900">अपूर्ण Scan सापडले</h2>
-                  <p className="text-sm text-gray-600 mt-2">
-                    तुमचे <span className="font-bold text-indigo-700">{resumePrompt.scannedLoanIds.length}/{resumePrompt.expectedCount}</span> scan चालू आहे
-                  </p>
-                  <p className="text-xs text-gray-400 mt-1">
-                    {new Date(resumePrompt.startedAt).toLocaleString('mr-IN')}
-                  </p>
-                </div>
-                <div className="space-y-2">
-                  <Button onClick={() => handleResume(resumePrompt)} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white">
-                    <Play className="h-4 w-4 mr-2" />
-                    Continue करा
-                  </Button>
-                  <Button onClick={handleClearSession} variant="outline" className="w-full border-red-300 text-red-600 hover:bg-red-50">
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    साफ करा — नव्याने सुरू
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50/30 to-slate-50">
+        <MobileNav />
+        <div className="lg:flex">
+          <aside className="hidden lg:block lg:w-72 lg:fixed lg:inset-y-0 lg:h-screen">
+            <Sidebar />
+          </aside>
+          <main className="flex-1 w-full lg:pl-72 pb-16 lg:pb-0">
+            <div className="flex-1 p-4 flex items-center justify-center min-h-[60vh]">
+              <Card className="w-full max-w-md shadow-lg border-indigo-200">
+                <CardContent className="pt-6 space-y-4">
+                  <div className="text-center">
+                    <PackageSearch className="h-12 w-12 text-indigo-600 mx-auto mb-3" />
+                    <h2 className="text-lg font-bold text-indigo-900">अपूर्ण Scan सापडले</h2>
+                    <p className="text-sm text-gray-600 mt-2">
+                      तुमचे <span className="font-bold text-indigo-700">{resumePrompt.scannedLoanIds.length}/{resumePrompt.expectedCount}</span> scan चालू आहे
+                    </p>
+                    <p className="text-xs text-gray-400 mt-1">
+                      {new Date(resumePrompt.startedAt).toLocaleString('mr-IN')}
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    <Button onClick={() => handleResume(resumePrompt)} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white">
+                      <Play className="h-4 w-4 mr-2" />
+                      Continue करा
+                    </Button>
+                    <Button onClick={handleClearSession} variant="outline" className="w-full border-red-300 text-red-600 hover:bg-red-50">
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      साफ करा — नव्याने सुरू
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </main>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-screen">
-      <div className="hidden lg:block">
-        <Sidebar />
-      </div>
-      <div className="flex-1 flex flex-col">
-        <MobileNav />
-        <div className="flex-1 p-3 md:p-6 pb-24 space-y-4 max-w-4xl mx-auto w-full">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50/30 to-slate-50">
+      <MobileNav />
+      <div className="lg:flex">
+        <aside className="hidden lg:block lg:w-72 lg:fixed lg:inset-y-0 lg:h-screen">
+          <Sidebar />
+        </aside>
+        <main className="flex-1 w-full lg:pl-72 pb-16 lg:pb-0">
+          <div className="px-4 sm:px-6 lg:px-8 py-6 space-y-4 max-w-4xl mx-auto w-full">
 
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -1064,7 +1067,8 @@ export default function InventoryScan() {
               </div>
             </div>
           )}
-        </div>
+          </div>
+        </main>
       </div>
     </div>
   );
