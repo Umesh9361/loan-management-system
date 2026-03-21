@@ -66,8 +66,8 @@ function buildProfitLossHTML(plData: any, company: any, dateFrom: string, dateTo
   const netLabel = plData.isProfit ? "निव्वळ नफा (A - B)" : "निव्वळ तोटा (B - A)";
 
   const bdr = '1.5px solid #333';
-  const thStyle = `border:${bdr};padding:6px 4px;text-align:left;font-size:11px;background:#f0f0f0;font-weight:700;color:#111;line-height:1.3;-webkit-print-color-adjust:exact;print-color-adjust:exact;`;
-  const tdCell = `border:${bdr};padding:6px 4px;font-size:11px;font-weight:600;line-height:1.3;`;
+  const thStyle = `border:${bdr};padding:8px 6px;text-align:left;font-size:11px;background:#f0f0f0;font-weight:700;color:#111;line-height:1.4;-webkit-print-color-adjust:exact;print-color-adjust:exact;`;
+  const tdCell = `border:${bdr};padding:8px 6px;font-size:11px;font-weight:600;line-height:1.4;`;
 
   const parseRows = (html: string) => {
     const rows: {label:string, amount:string, isTotal?:boolean}[] = [];
