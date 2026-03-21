@@ -39,11 +39,59 @@ export default function CapitalReport() {
   };
 
   const handlePrint = () => {
-    window.print();
+    if (!capitalData) return;
+    const companyName = (company as any)?.name || 'कंपनी नाव';
+    const fmt = (v: number) => '₹' + (v || 0).toLocaleString('en-IN');
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"/>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  @page { size: A4 portrait; margin: 8mm 8mm 8mm 25.4mm; }
+  body { font-family: 'Noto Sans Devanagari', Arial, sans-serif; margin: 0; padding: 20px; }
+  .header { text-align: center; margin-bottom: 20px; }
+  .header h2 { font-size: 14px; font-weight: bold; margin: 0 0 4px; }
+  .header h3 { font-size: 12px; font-weight: bold; margin: 0 0 3px; }
+  .header p { font-size: 10px; color: #555; margin: 2px 0; }
+  table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+  th { background: #f5f5f5; font-weight: 600; font-size: 10px; padding: 6px 8px; border: 1px solid #999; text-align: left; }
+  td { font-size: 10px; padding: 6px 8px; border: 1px solid #ccc; }
+  .text-right { text-align: right; }
+  .bold { font-weight: bold; }
+  .footer { text-align: center; font-size: 8px; color: #999; margin-top: 15px; }
+</style></head><body>
+<div class="header">
+  <h2>${companyName}</h2>
+  <h3>भांडवल खाते</h3>
+  <p>नमुना क्रमांक १३ (नियम १९ पहा)</p>
+  <p>कालावधी: ${DateUtils.formatDate(dateFilters.dateFrom)} ते ${DateUtils.formatDate(dateFilters.dateTo)}</p>
+</div>
+<table>
+  <thead><tr><th>तपशील</th><th class="text-right">रक्कम</th></tr></thead>
+  <tbody>
+    <tr><td>प्रारंभिक शिल्लक</td><td class="text-right">${fmt(capitalData.openingBalance)}</td></tr>
+    <tr><td>कर्ज वाटप</td><td class="text-right">${fmt(capitalData.totalDisbursement)}</td></tr>
+    <tr><td>कर्ज संकलन</td><td class="text-right">${fmt(capitalData.totalCollection)}</td></tr>
+    <tr class="bold"><td>अंतिम शिल्लक</td><td class="text-right">${fmt(capitalData.closingBalance)}</td></tr>
+  </tbody>
+</table>
+<div class="footer">अहवाल तयार केला: ${new Date().toLocaleDateString('en-GB')}</div>
+</body></html>`;
+    const iframe = document.createElement('iframe');
+    iframe.style.position = 'fixed';
+    iframe.style.left = '-9999px';
+    iframe.style.width = '794px';
+    iframe.style.height = '1123px';
+    document.body.appendChild(iframe);
+    const doc = iframe.contentDocument || iframe.contentWindow?.document;
+    if (!doc) { document.body.removeChild(iframe); return; }
+    doc.open(); doc.write(html); doc.close();
+    setTimeout(() => {
+      try { iframe.contentWindow?.focus(); iframe.contentWindow?.print(); } catch(e) { window.print(); }
+      setTimeout(() => document.body.removeChild(iframe), 2000);
+    }, 500);
   };
 
   const handleExportPDF = () => {
-    window.print();
+    handlePrint();
   };
 
   const handleExportExcel = () => {
@@ -173,31 +221,6 @@ export default function CapitalReport() {
         </main>
       </div>
 
-      <style jsx>{`
-        @media print {
-          @page {
-            size: A4;
-            margin: 8mm 8mm 8mm 25.4mm;
-          }
-          body {
-            font-family: 'Noto Sans Devanagari', Arial, sans-serif !important;
-          }
-          body * {
-            visibility: hidden;
-          }
-          .print-content, .print-content * {
-            visibility: visible;
-          }
-          .print-content {
-            position: absolute !important;
-            left: 0 !important;
-            top: 0 !important;
-            width: 100% !important;
-            padding-left: 25mm !important;
-            box-sizing: border-box !important;
-          }
-        }
-      `}</style>
     </div>
   );
 }
