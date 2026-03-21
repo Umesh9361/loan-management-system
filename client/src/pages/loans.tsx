@@ -3515,7 +3515,7 @@ function Loans() {
                         {loan.collateralDetails || [loan.specialConditions, loan.documentDetails, loan.otherInfo].filter((v: string) => v && v !== '—').join(' | ') || "—"}
                       </TableCell>
                       <TableCell className="text-sm text-gray-600 py-3 px-4">
-                        {loan.loanType === 'विनातारण' ? "—" : (loan.weight || "—")}
+                        {loan.loanType === 'विनातारण' ? "—" : (loan.weight ? parseFloat(String(loan.weight)).toFixed(2) : "—")}
                         {loan.loanType !== 'विनातारण' && loan.metalType === 'silver' && (
                           <span className="ml-1 text-xs bg-gray-200 text-gray-700 px-1 rounded">चांदी</span>
                         )}
@@ -3752,7 +3752,7 @@ function Loans() {
                       <div>
                         <p className="text-gray-600">{loan.loanType === 'विनातारण' ? 'प्रकार' : 'वजन'}</p>
                         <p className="font-medium font-inter">
-                          {loan.loanType === 'विनातारण' ? 'विनातारण' : (loan.weight || "—")}
+                          {loan.loanType === 'विनातारण' ? 'विनातारण' : (loan.weight ? parseFloat(String(loan.weight)).toFixed(2) : "—")}
                           {loan.loanType !== 'विनातारण' && loan.metalType === 'silver' && (
                             <span className="ml-1 text-xs bg-gray-200 text-gray-700 px-1 rounded">चांदी</span>
                           )}
@@ -4091,7 +4091,7 @@ function Loans() {
                   </div>
                   <div>
                     <label className="text-sm font-medium text-gray-600">वजन</label>
-                    <p className="text-base font-medium">{selectedLoanDetails.weight || "—"}</p>
+                    <p className="text-base font-medium">{selectedLoanDetails.weight ? parseFloat(String(selectedLoanDetails.weight)).toFixed(2) : "—"}</p>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-gray-600">शुद्धता %</label>

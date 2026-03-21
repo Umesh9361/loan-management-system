@@ -8,7 +8,7 @@ export class ReceiptGenerator {
     if (!details) return '';
     
     // Format weight and value properly in Marathi
-    const weightText = weight ? `वजन: ${weight} ग्राम` : '';
+    const weightText = weight ? `वजन: ${parseFloat(String(weight)).toFixed(2)} ग्राम` : '';
     const valueText = value ? `अंदाजे मूल्य: ₹${ReceiptGenerator.cleanDisplayAmount(value)}` : '';
     
     return `
@@ -823,7 +823,7 @@ export class ReceiptGenerator {
 
             <div class="field-row">
                 <span class="field-label">४. ${(loan as any).loanType === 'विनातारण' ? 'कर्ज तपशील:' : 'तारणाचा तपशील:'}</span>
-                <div class="field-value" style="flex: 1; min-height: 36px;">${isBlankType ? '' : ((loan as any).loanType === 'विनातारण' ? [(loan as any).specialConditions, (loan as any).documentDetails, (loan as any).otherInfo].filter((v: string) => v && v !== '—' && String(v).trim() !== '').join(' | ') : (loan.collateralDetails ? (loan.collateralDetails + ((loan as any).weight ? ' | वजन: ' + (loan as any).weight + ' ग्राम' : '')) : ''))}</div>
+                <div class="field-value" style="flex: 1; min-height: 36px;">${isBlankType ? '' : ((loan as any).loanType === 'विनातारण' ? [(loan as any).specialConditions, (loan as any).documentDetails, (loan as any).otherInfo].filter((v: string) => v && v !== '—' && String(v).trim() !== '').join(' | ') : (loan.collateralDetails ? (loan.collateralDetails + ((loan as any).weight ? ' | वजन: ' + parseFloat(String((loan as any).weight)).toFixed(2) + ' ग्राम' : '')) : ''))}</div>
             </div>
             ${isBlankType ? '<div style="border-bottom: 1px solid #333; height: 18px; margin: 0 0 2px 0;"></div>' : ''}
 

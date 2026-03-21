@@ -1573,7 +1573,7 @@ export default function Closure() {
                                       {(loan.collateralDetails || loan.otherInfo || loan.specialConditions || loan.documentDetails) && (
                                         <div className="text-sm text-purple-600">
                                           {loan.collateralDetails ? (
-                                            <>वस्तू: {loan.collateralDetails} {loan.weight && `| वजन: ${loan.weight}`}</>
+                                            <>वस्तू: {loan.collateralDetails} {loan.weight && `| वजन: ${parseFloat(String(loan.weight)).toFixed(2)}`}</>
                                           ) : (
                                             <>माहिती: {[loan.specialConditions, loan.documentDetails, loan.otherInfo].filter((v: string) => v && v !== '—' && v.trim() !== '').join(' | ') || '—'}</>
                                           )}
@@ -1643,7 +1643,7 @@ export default function Closure() {
                                 </div>
                                 {selectedLoan.weight && (
                                   <div>
-                                    <span className="font-medium">वजन:</span> {selectedLoan.weight}
+                                    <span className="font-medium">वजन:</span> {selectedLoan.weight ? parseFloat(String(selectedLoan.weight)).toFixed(2) : selectedLoan.weight}
                                   </div>
                                 )}
                               </>

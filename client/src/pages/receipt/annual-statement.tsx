@@ -745,7 +745,7 @@ export default function AnnualStatementPage() {
                               {(loan.collateralDetails || loan.otherInfo || loan.specialConditions || loan.documentDetails) && (
                                 <div className="text-sm text-purple-700 mt-1">
                                   {loan.collateralDetails
-                                    ? <>वस्तू: {loan.collateralDetails} {loan.weight && `| वजन: ${loan.weight}`}</>
+                                    ? <>वस्तू: {loan.collateralDetails} {loan.weight && `| वजन: ${parseFloat(String(loan.weight)).toFixed(2)}`}</>
                                     : <>माहिती: {[loan.specialConditions, loan.documentDetails, loan.otherInfo].filter((v: string) => v && v !== '—' && v.trim() !== '').join(' | ') || '—'}</>
                                   }
                                 </div>

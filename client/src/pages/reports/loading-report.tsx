@@ -240,7 +240,7 @@ export default function LoadingReport() {
       'कर्ज दिनांक': formatDate(item.loanDate),
       'तारण वस्तू': item.collateralDetails,
       'धातू': item.metalType === 'silver' ? 'चांदी' : 'सोने',
-      'वजन (ग्रॅम)': item.weight,
+      'वजन (ग्रॅम)': item.weight ? parseFloat(String(item.weight)).toFixed(2) : '0',
       'शुद्धता %': (item as any).purityUsed,
       'व्याजदर': `${item.interestRate}%${item.interestRateType === 'yearly' ? ' वार्षिक' : ''}`,
       'शुद्ध वजन': item.fineWeight,
@@ -328,7 +328,7 @@ export default function LoadingReport() {
               <td>${formatDate(item.loanDate)}</td>
               <td>${item.groupName}</td>
               <td>${item.metalType === 'silver' ? 'चांदी' : 'सोने'}</td>
-              <td>${item.weight}g</td>
+              <td>${item.weight ? parseFloat(String(item.weight)).toFixed(2) : '0'}g</td>
               <td style="color:#1d4ed8;font-weight:bold">${(item as any).purityUsed}%</td>
               <td style="color:#c2410c;font-weight:bold">${item.interestRate}%${item.interestRateType === 'yearly' ? ' वा.' : ''}</td>
               <td>${formatCurrency(item.marketValue)}</td>
@@ -705,7 +705,7 @@ export default function LoadingReport() {
                               <div className="grid grid-cols-5 gap-2 text-xs">
                                 <div>
                                   <span className="text-gray-500">वजन</span>
-                                  <div className="font-semibold text-amber-700">{item.weight}g</div>
+                                  <div className="font-semibold text-amber-700">{item.weight ? parseFloat(String(item.weight)).toFixed(2) : '0'}g</div>
                                 </div>
                                 <div>
                                   <span className="text-gray-500">शुद्धता</span>
@@ -813,7 +813,7 @@ export default function LoadingReport() {
                                   <TableCell className="text-center text-xs">{item.accountNumber}</TableCell>
                                   <TableCell className="text-center text-xs">{formatDate(item.loanDate)}</TableCell>
                                   <TableCell className="text-center text-xs">{item.groupName}</TableCell>
-                                  <TableCell className="text-center text-xs">{item.weight}g</TableCell>
+                                  <TableCell className="text-center text-xs">{item.weight ? parseFloat(String(item.weight)).toFixed(2) : '0'}g</TableCell>
                                   <TableCell className="text-center text-xs font-semibold text-blue-700">{(item as any).purityUsed}%</TableCell>
                                   <TableCell className="text-center text-xs font-semibold text-orange-700">{item.interestRate}%{item.interestRateType === 'yearly' ? ' वा.' : ''}</TableCell>
                                   <TableCell className="text-center text-xs">{formatCurrency(item.marketValue)}</TableCell>

@@ -227,7 +227,7 @@ function getFieldValue(fieldId: string, loan: LabelLoan, displayMode?: string): 
       return g ? `${g} (${b})` : b;
     }
     case 'details': return loan.collateralDetails || "";
-    case 'weight': return loan.weight ? `वजन: ${loan.weight}` : "";
+    case 'weight': return loan.weight ? `वजन: ${parseFloat(String(loan.weight)).toFixed(2)}` : "";
     case 'date': return formatShortDate(loan.loanDate);
     case 'interestRate': {
       if (!loan.interestRate) return "";
@@ -600,7 +600,7 @@ function generateQrLabelHtml(loan: LabelLoan, qrDataUrl: string, settings: Label
     ? (loan.borrowerName || '')
     : (loan.groupName ? `${loan.groupName} (${loan.borrowerName})` : (loan.borrowerName || ''));
   const intStr = (show_int && loan.interestRate) ? `${loan.interestRate}` : '';
-  const wtStr  = (show_wt  && loan.weight)       ? `${loan.weight}g`      : '';
+  const wtStr  = (show_wt  && loan.weight)       ? `${parseFloat(String(loan.weight)).toFixed(2)}g`      : '';
   const hasExtra = !!(intStr || wtStr);
   const showRow1 = show_acct || show_amt;
 
@@ -1456,7 +1456,7 @@ export function LabelPrintDialog({ open, onOpenChange, loans }: LabelPrintDialog
                       const grpDM2 = settings.fields.find(f => f.id === 'groupBorrower')?.displayMode ?? 'groupBorrower';
                       const grpLine2 = grpDM2 === 'groupOnly' ? (loan.groupName || '') : grpDM2 === 'borrowerOnly' ? (loan.borrowerName || '') : (loan.groupName ? `${loan.groupName} (${loan.borrowerName})` : (loan.borrowerName || ''));
                       const intStr2 = (sv_int && loan.interestRate) ? `${loan.interestRate}` : '';
-                      const wtStr2  = (sv_wt && loan.weight) ? `${loan.weight}g` : '';
+                      const wtStr2  = (sv_wt && loan.weight) ? `${parseFloat(String(loan.weight)).toFixed(2)}g` : '';
                       const hasExtra2 = !!(intStr2 || wtStr2);
                       const showRow1v = sv_acct || sv_amt;
                       const panelWpx = realWPx - qrSizePx - Math.round(5 * 3.78);
