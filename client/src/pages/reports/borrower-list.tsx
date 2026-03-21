@@ -1670,7 +1670,7 @@ export default function BorrowerListReports() {
           <style>
             @page { size: A4 portrait; margin: 2mm 0mm 2mm 0mm; }
             @page:first { margin-top: 1mm; }
-            * { box-sizing: border-box; margin: 0; padding: 0; }
+            * { box-sizing: border-box; }
             html { margin: 0 !important; padding: 0 !important; width: 100% !important; }
             body { 
               font-family: 'Noto Sans Devanagari', 'Inter', 'Nirmala UI', 'Mangal', 'Segoe UI', 'Arial', sans-serif; 
@@ -1680,6 +1680,11 @@ export default function BorrowerListReports() {
               line-height: 1.4;
               background: #ffffff;
               width: 100% !important;
+            }
+            .print-content {
+              margin: 0;
+              padding: 0;
+              width: 100%;
             }
             .header { 
               text-align: center; 
@@ -2084,8 +2089,8 @@ export default function BorrowerListReports() {
                 display: flex !important;
                 justify-content: space-between !important;
                 align-items: center !important;
-                margin-bottom: 8px !important;
-                padding: 4px 8mm 6px 10mm !important; /* Left 10mm, Right 8mm padding */
+                margin-bottom: 4px !important;
+                padding: 2px 2px 4px 2px !important;
                 position: relative !important;
               }
               
@@ -2133,10 +2138,10 @@ export default function BorrowerListReports() {
                 print-color-adjust: exact; 
               }
               
-              /* Print-only: Zero margin setup with default padding */
+              /* Print-only: Zero margin setup */
               body {
                 margin: 0 !important;
-                padding: 10mm !important;
+                padding: 0 !important;
                 width: 100% !important;
                 box-sizing: border-box !important;
               }
@@ -2177,11 +2182,6 @@ export default function BorrowerListReports() {
                 font-size: 8.1pt !important; /* 10% smaller: 9pt - 10% = 8.1pt */
               }
               
-              /* Column width and alignment adjustments */
-              th:nth-child(1), td:nth-child(1) { width: 45px !important; min-width: 45px !important; max-width: 45px !important; text-align: left !important; } /* अ.क्र. - 45px (increased) */
-              th:nth-child(2), td:nth-child(2) { width: 75px !important; min-width: 75px !important; max-width: 75px !important; } /* तारीख - 75px (increased) */
-              th:nth-child(5), td:nth-child(5) { width: 85px !important; min-width: 85px !important; max-width: 85px !important; text-align: left !important; } /* कोड नं - increased, left justify */
-              th:nth-child(6), td:nth-child(6) { width: auto !important; min-width: 75px !important; } /* तपशील - reduced to compensate */
             }
             
             /* Hide company name on screen but show in print */
@@ -2268,8 +2268,8 @@ export default function BorrowerListReports() {
               }
               
               body { 
-                margin: 0; 
-                padding: 8mm; 
+                margin: 0 !important; 
+                padding: 0 !important; 
                 background: white !important;
                 color: black !important;
                 font-family: 'Noto Sans Devanagari', 'Inter', 'Nirmala UI', 'Mangal', 'Segoe UI', 'Arial', sans-serif !important;
@@ -2352,87 +2352,25 @@ export default function BorrowerListReports() {
                 border-right: none !important;
               }
               
-              /* A4 Print Column Widths - User specified measurements for all reports */
-              th:nth-child(1) { /* अनुक्रमांक - 30px as requested */
-                width: 30px !important;
-                min-width: 30px !important;
-                max-width: 30px !important;
-              }
-              th:nth-child(2) { /* तारीख - 60px as requested */
-                width: 60px !important;
-                min-width: 60px !important;
-                max-width: 60px !important;
-              }
-              th:nth-child(3) { /* रक्कम - 80px as requested */
-                width: 80px !important;
-                min-width: 80px !important;
-                max-width: 80px !important;
-              }
-              th:nth-child(4) { /* नाव - 180px as requested */
-                width: 180px !important;
-                min-width: 180px !important;
-                max-width: 180px !important;
-              }
-              th:nth-child(5) { /* कोड - 50px as requested */
-                width: 50px !important;
-                min-width: 50px !important;
-                max-width: 50px !important;
-              }
-              th:nth-child(6) { /* वस्तूचा तपशील - auto as requested */
-                width: auto !important;
-                min-width: 120px !important;
-              }
-              th:nth-child(7) { /* वजन - 50px as requested */
-                width: 50px !important;
-                min-width: 50px !important;
-                max-width: 50px !important;
-              }
+              /* A4 Print Column Widths — th+td consistent */
+              th:nth-child(1), td:nth-child(1) { width: 26px !important; min-width: 26px !important; max-width: 30px !important; text-align: center !important; }
+              th:nth-child(2), td:nth-child(2) { width: 50px !important; min-width: 50px !important; max-width: 55px !important; text-align: center !important; }
+              th:nth-child(3), td:nth-child(3) { width: 60px !important; min-width: 60px !important; max-width: 65px !important; text-align: right !important; }
+              th:nth-child(4), td:nth-child(4) { width: auto !important; min-width: 125px !important; text-align: left !important; padding-left: 5px !important; }
+              th:nth-child(5), td:nth-child(5) { width: 50px !important; min-width: 50px !important; max-width: 55px !important; text-align: center !important; }
+              th:nth-child(6), td:nth-child(6) { width: auto !important; min-width: 100px !important; text-align: left !important; padding-left: 5px !important; }
+              th:nth-child(7), td:nth-child(7) { width: 42px !important; min-width: 42px !important; max-width: 48px !important; text-align: center !important; }
               
-              /* Special widths for CLOSING-WISE reports (9 columns) - User specified measurements */
-              body[data-report-type="closing-wise"] th:nth-child(1) { /* अनुक्रमांक - 30px */
-                width: 30px !important;
-                min-width: 30px !important;
-                max-width: 30px !important;
-              }
-              body[data-report-type="closing-wise"] th:nth-child(2) { /* कर्ज तारीख - 60px */
-                width: 60px !important;
-                min-width: 60px !important;
-                max-width: 60px !important;
-              }
-              body[data-report-type="closing-wise"] th:nth-child(3) { /* बंद तारीख - 80px */
-                width: 80px !important;
-                min-width: 80px !important;
-                max-width: 80px !important;
-              }
-              body[data-report-type="closing-wise"] th:nth-child(4) { /* रक्कम - 80px */
-                width: 80px !important;
-                min-width: 80px !important;
-                max-width: 80px !important;
-              }
-              body[data-report-type="closing-wise"] th:nth-child(5) { /* चार्जेस - 80px */
-                width: 80px !important;
-                min-width: 80px !important;
-                max-width: 80px !important;
-              }
-              body[data-report-type="closing-wise"] th:nth-child(6) { /* नाव - 180px */
-                width: 180px !important;
-                min-width: 180px !important;
-                max-width: 180px !important;
-              }
-              body[data-report-type="closing-wise"] th:nth-child(7) { /* कोड - 50px */
-                width: 50px !important;
-                min-width: 50px !important;
-                max-width: 50px !important;
-              }
-              body[data-report-type="closing-wise"] th:nth-child(8) { /* वस्तूचा तपशील - auto */
-                width: auto !important;
-                min-width: 100px !important;
-              }
-              body[data-report-type="closing-wise"] th:nth-child(9) { /* वजन - 7 characters */
-                width: 45px !important;
-                min-width: 45px !important;
-                max-width: 45px !important;
-              }
+              /* CLOSING-WISE reports (9 columns) */
+              body[data-report-type="closing-wise"] th:nth-child(1), body[data-report-type="closing-wise"] td:nth-child(1) { width: 23px !important; min-width: 23px !important; max-width: 28px !important; }
+              body[data-report-type="closing-wise"] th:nth-child(2), body[data-report-type="closing-wise"] td:nth-child(2) { width: 50px !important; min-width: 50px !important; max-width: 55px !important; }
+              body[data-report-type="closing-wise"] th:nth-child(3), body[data-report-type="closing-wise"] td:nth-child(3) { width: 50px !important; min-width: 50px !important; max-width: 55px !important; }
+              body[data-report-type="closing-wise"] th:nth-child(4), body[data-report-type="closing-wise"] td:nth-child(4) { width: 55px !important; min-width: 55px !important; max-width: 60px !important; text-align: right !important; }
+              body[data-report-type="closing-wise"] th:nth-child(5), body[data-report-type="closing-wise"] td:nth-child(5) { width: 48px !important; min-width: 48px !important; max-width: 55px !important; text-align: right !important; }
+              body[data-report-type="closing-wise"] th:nth-child(6), body[data-report-type="closing-wise"] td:nth-child(6) { width: auto !important; min-width: 115px !important; text-align: left !important; padding-left: 5px !important; }
+              body[data-report-type="closing-wise"] th:nth-child(7), body[data-report-type="closing-wise"] td:nth-child(7) { width: 50px !important; min-width: 50px !important; max-width: 55px !important; text-align: center !important; }
+              body[data-report-type="closing-wise"] th:nth-child(8), body[data-report-type="closing-wise"] td:nth-child(8) { width: auto !important; min-width: 100px !important; text-align: left !important; }
+              body[data-report-type="closing-wise"] th:nth-child(9), body[data-report-type="closing-wise"] td:nth-child(9) { width: 40px !important; min-width: 40px !important; max-width: 45px !important; text-align: center !important; }
               
               /* Clean cell styling - Uniform professional black borders */
               td {
@@ -2441,16 +2379,14 @@ export default function BorrowerListReports() {
                 border-top: none !important;
                 border-bottom: 1px solid #000 !important;
                 border-left: none !important;
-                border-right: 1px solid #000 !important; /* Professional black dividers */
-                padding: 4px 5px !important;
+                border-right: 1px solid #000 !important;
+                padding: 4px 3px !important;
                 font-size: 10px !important;
                 vertical-align: middle !important;
                 line-height: 1.3 !important;
                 overflow: hidden !important;
                 text-overflow: ellipsis !important;
                 white-space: nowrap !important;
-                display: table-cell !important; /* FORCE ALL CELLS TO DISPLAY */
-                visibility: visible !important;
               }
               
               /* Force all maturity column cells to black & white for print */
@@ -2506,119 +2442,8 @@ export default function BorrowerListReports() {
                 border-right: none !important;
               }
               
-              /* A4 Print Data Column Widths - FIXED ALIGNMENT - User specified measurements matching headers */
-              td:nth-child(1) { /* अनुक्रमांक - 45px (increased) - FORCE VISIBLE */
-                width: 45px !important;
-                min-width: 45px !important;
-                max-width: 45px !important;
-                text-align: center !important;
-                display: table-cell !important;
-                visibility: visible !important;
-                opacity: 1 !important;
-              }
-              td:nth-child(2) { /* तारीख - 75px (increased) */
-                width: 75px !important;
-                min-width: 75px !important;
-                max-width: 75px !important;
-                text-align: center !important;
-                display: table-cell !important;
-              }
-              td:nth-child(3) { /* अंदाजे बाजार मूल्य - 80px */
-                width: 80px !important;
-                min-width: 80px !important;
-                max-width: 80px !important;
-                text-align: right !important;
-                white-space: nowrap !important;
-                display: table-cell !important;
-              }
-              td:nth-child(4) { /* नाव - 180px */
-                width: 180px !important;
-                min-width: 180px !important;
-                max-width: 180px !important;
-                white-space: nowrap !important;
-                overflow: hidden !important;
-                text-overflow: ellipsis !important;
-              }
-              td:nth-child(5) { /* कोड - 50px */
-                width: 50px !important;
-                min-width: 50px !important;
-                max-width: 50px !important;
-                text-align: center !important;
-              }
-              td:nth-child(6) { /* वस्तूचा तपशील - auto */
-                width: auto !important;
-                min-width: 120px !important;
-                white-space: normal !important;
-                word-wrap: break-word !important;
-                overflow-wrap: break-word !important;
-              }
-              td:nth-child(7) { /* वजन - 50px */
-                width: 50px !important;
-                min-width: 50px !important;
-                max-width: 50px !important;
-                text-align: center !important;
-              }
-              
-              /* Special widths for CLOSING-WISE reports (9 columns) - User specified measurements */
-              body[data-report-type="closing-wise"] td:nth-child(1) { /* अनुक्रमांक - 45px (increased) */
-                width: 45px !important;
-                min-width: 45px !important;
-                max-width: 45px !important;
-                text-align: center !important;
-              }
-              body[data-report-type="closing-wise"] td:nth-child(2) { /* कर्ज तारीख - 75px (increased) */
-                width: 75px !important;
-                min-width: 75px !important;
-                max-width: 75px !important;
-                text-align: center !important;
-              }
-              body[data-report-type="closing-wise"] td:nth-child(3) { /* बंद तारीख - 80px (consistent) */
-                width: 80px !important;
-                min-width: 80px !important;
-                max-width: 80px !important;
-                text-align: center !important;
-              }
-              body[data-report-type="closing-wise"] td:nth-child(4) { /* रक्कम - 80px */
-                width: 80px !important;
-                min-width: 80px !important;
-                max-width: 80px !important;
-                text-align: right !important;
-                white-space: nowrap !important;
-              }
-              body[data-report-type="closing-wise"] td:nth-child(5) { /* चार्जेस - 80px */
-                width: 80px !important;
-                min-width: 80px !important;
-                max-width: 80px !important;
-                text-align: right !important;
-                white-space: nowrap !important;
-              }
-              body[data-report-type="closing-wise"] td:nth-child(6) { /* नाव - 180px */
-                width: 180px !important;
-                min-width: 180px !important;
-                max-width: 180px !important;
-                white-space: nowrap !important;
-                overflow: hidden !important;
-                text-overflow: ellipsis !important;
-              }
-              body[data-report-type="closing-wise"] td:nth-child(7) { /* कोड - 50px */
-                width: 50px !important;
-                min-width: 50px !important;
-                max-width: 50px !important;
-                text-align: center !important;
-              }
-              body[data-report-type="closing-wise"] td:nth-child(8) { /* वस्तूचा तपशील - auto */
-                width: auto !important;
-                min-width: 100px !important;
-                white-space: normal !important;
-                word-wrap: break-word !important;
-                overflow-wrap: break-word !important;
-              }
-              body[data-report-type="closing-wise"] td:nth-child(9) { /* वजन - 50px */
-                width: 50px !important;
-                min-width: 50px !important;
-                max-width: 50px !important;
-                text-align: center !important;
-              }
+              /* td display enforcement */
+              td { display: table-cell !important; visibility: visible !important; }
               
               /* Hide rupee symbol in print - screen-only class */
               .screen-only {
