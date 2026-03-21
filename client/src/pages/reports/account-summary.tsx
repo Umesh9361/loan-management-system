@@ -123,100 +123,126 @@ export default function AccountSummaryReport() {
   });
 
   const handlePrint = () => {
-    const printStyles = `
-      @media print {
-        @page {
-          size: A4;
-          margin: 8mm;
-        }
-        body * {
-          visibility: hidden !important;
-        }
-        .print-content, .print-content * {
-          visibility: visible !important;
-        }
-        .print-content {
-          position: absolute !important;
-          left: 0 !important;
-          top: 0 !important;
-          width: 100% !important;
-          z-index: 9999 !important;
-          padding-left: 25mm !important;
-          box-sizing: border-box !important;
-        }
-        body {
-          font-family: 'Noto Sans Devanagari', Arial, sans-serif !important;
-          font-size: 11px;
-          line-height: 1.3;
-        }
-        .no-print {
-          display: none !important;
-        }
-        .overflow-x-auto {
-          overflow: visible !important;
-          max-height: none !important;
-          height: auto !important;
-        }
-        .summary-header {
-          text-align: center;
-          margin-bottom: 20px;
-          font-weight: bold;
-        }
-        .summary-table {
-          width: 100%;
-          border-collapse: collapse;
-          font-size: 11px;
-        }
-        .summary-table th,
-        .summary-table td {
-          border: 2px solid #1e40af;
-          padding: 8px 10px;
-          text-align: center;
-        }
-        .summary-table th {
-          background: #f0f0f0;
-          color: black;
-          font-weight: bold;
-          font-size: 12px;
-        }
-        .summary-table td {
-          background: white;
-          font-weight: 600;
-        }
-        .amount-col {
-          text-align: right;
-        }
-        .total-row {
-          background: #e3f2fd !important;
-          font-weight: bold;
-        }
-      }
-    `;
-    
-    const styleSheet = document.createElement("style");
-    styleSheet.innerText = printStyles;
-    document.head.appendChild(styleSheet);
-    
-    const printContentDiv = document.querySelector('.print-content') as HTMLElement;
-    if (printContentDiv) {
-      printContentDiv.style.display = 'block';
-      printContentDiv.style.visibility = 'visible';
+    const showRank = activeTab === "customer" && customerMode === "top50";
+    const data = activeTab === "group" ? groupSummaries : customerSummaries;
+    const totals = activeTab === "group" ? groupGrandTotals : customerGrandTotals;
+    const label = activeTab === "group" ? "गटाचे नाव" : "कस्टमर नाव";
+    const title = activeTab === "group" 
+      ? "गटनिहाय खाते सारांश अहवाल" 
+      : (customerMode === "specific" ? `कस्टमर सारांश - ${selectedCustomerName}` : "टॉप ५० कस्टमर सारांश अहवाल");
+    const fd = (d: string) => new Date(d).toLocaleDateString('en-GB');
+    const companyName = (company as any)?.name || 'कंपनी नाव';
+    const periodFrom = activeTab === "group" ? fromDate : customerFromDate;
+    const periodTo = activeTab === "group" ? toDate : customerToDate;
+
+    if (data.length === 0) {
+      alert("प्रिंट करण्यासाठी डेटा उपलब्ध नाही");
+      return;
     }
-    
-    const printElements = document.querySelectorAll('.print-content *');
-    printElements.forEach(el => {
-      (el as HTMLElement).style.visibility = 'visible';
+
+    let tableRows = '';
+    data.forEach((row: SummaryRow, index: number) => {
+      tableRows += `<tr>
+        ${showRank ? `<td style="text-align:center;font-weight:700;">${index + 1}</td>` : ''}
+        <td style="text-align:left;">${row.name}</td>
+        <td style="text-align:center;">${row.totalLoans}</td>
+        <td style="text-align:center;">${row.activeLoans}</td>
+        <td style="text-align:center;">${row.closedLoans}</td>
+        <td style="text-align:right;">₹${row.totalAmount.toLocaleString('en-IN')}</td>
+        <td style="text-align:right;">₹${row.closedAmount.toLocaleString('en-IN')}</td>
+        <td style="text-align:right;">₹${row.activeBalance.toLocaleString('en-IN')}</td>
+        <td style="text-align:right;">₹${row.totalInterest.toLocaleString('en-IN')}</td>
+      </tr>`;
     });
-    
+
+    tableRows += `<tr class="total-row">
+      ${showRank ? `<td style="text-align:center;">-</td>` : ''}
+      <td style="text-align:left;font-weight:700;">एकूण योग</td>
+      <td style="text-align:center;font-weight:700;">${totals.totalLoans}</td>
+      <td style="text-align:center;font-weight:700;">${totals.activeLoans}</td>
+      <td style="text-align:center;font-weight:700;">${totals.closedLoans}</td>
+      <td style="text-align:right;font-weight:700;">₹${totals.totalAmount.toLocaleString('en-IN')}</td>
+      <td style="text-align:right;font-weight:700;">₹${totals.closedAmount.toLocaleString('en-IN')}</td>
+      <td style="text-align:right;font-weight:700;">₹${totals.activeBalance.toLocaleString('en-IN')}</td>
+      <td style="text-align:right;font-weight:700;">₹${totals.totalInterest.toLocaleString('en-IN')}</td>
+    </tr>`;
+
+    const colCount = showRank ? 10 : 9;
+
+    const printHTML = `<!DOCTYPE html><html><head><meta charset="utf-8"/><title>खाते सारांश अहवाल</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  @page { size: A4 portrait; margin: 12mm 5mm 12mm 5mm; }
+  body { font-family: 'Noto Sans Devanagari', Arial, sans-serif; margin: 0; padding: 3mm 5mm 3mm 20mm; box-sizing: border-box; font-size: 11px; line-height: 1.4; }
+  .header { text-align: center; margin-bottom: 12px; font-weight: bold; }
+  .header p { margin: 0 0 4px 0; }
+  table { width: 100%; border-collapse: collapse; table-layout: fixed; page-break-inside: auto; }
+  thead { display: table-header-group; }
+  tr { page-break-inside: avoid !important; break-inside: avoid !important; }
+  ${showRank ? `
+  col:nth-child(1) { width: 4%; }
+  col:nth-child(2) { width: 18%; }
+  col:nth-child(3) { width: 7%; }
+  col:nth-child(4) { width: 7%; }
+  col:nth-child(5) { width: 6%; }
+  col:nth-child(6) { width: 15%; }
+  col:nth-child(7) { width: 14%; }
+  col:nth-child(8) { width: 15%; }
+  col:nth-child(9) { width: 14%; }
+  ` : `
+  col:nth-child(1) { width: 20%; }
+  col:nth-child(2) { width: 8%; }
+  col:nth-child(3) { width: 8%; }
+  col:nth-child(4) { width: 7%; }
+  col:nth-child(5) { width: 16%; }
+  col:nth-child(6) { width: 14%; }
+  col:nth-child(7) { width: 14%; }
+  col:nth-child(8) { width: 13%; }
+  `}
+  th, td { border: 1.5px solid #333; padding: 6px 4px; text-align: center; font-size: 11px; font-weight: 600; }
+  th { background: #f0f0f0; color: #111; font-weight: 700; font-size: 11px; word-wrap: break-word; overflow-wrap: break-word; line-height: 1.3; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .total-row td { background: #e0e7ff; font-weight: 700; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .footer { margin-top: 50px; display: flex; justify-content: flex-end; font-size: 11px; font-weight: 600; padding-right: 25%; }
+</style></head><body>
+<div class="header">
+  <p style="font-size:15px;font-weight:700;">${companyName}</p>
+  <p style="font-size:14px;font-weight:700;">${title}</p>
+  <p style="font-size:11px;color:#333;">कालावधी: ${fd(periodFrom)} ते ${fd(periodTo)}</p>
+</div>
+<table>
+  <colgroup>${'<col/>'.repeat(colCount)}</colgroup>
+  <thead><tr>
+    ${showRank ? '<th>#</th>' : ''}
+    <th>${label}</th><th>एकूण कर्ज</th><th>सक्रिय</th><th>बंद</th><th>एकूण वाटप</th><th>बंद रक्कम</th><th>सक्रिय शिल्लक</th><th>एकूण व्याज</th>
+  </tr></thead>
+  <tbody>${tableRows}</tbody>
+</table>
+<div class="footer">
+  <span>सावकाराची सही</span>
+</div>
+</body></html>`;
+
+    const iframe = document.createElement("iframe");
+    iframe.style.position = "fixed";
+    iframe.style.left = "-9999px";
+    iframe.style.top = "-9999px";
+    iframe.style.width = "794px";
+    iframe.style.height = "1123px";
+    document.body.appendChild(iframe);
+    const doc = iframe.contentDocument || iframe.contentWindow?.document;
+    if (!doc) { document.body.removeChild(iframe); return; }
+    doc.open();
+    doc.write(printHTML);
+    doc.close();
     setTimeout(() => {
-      window.print();
-      setTimeout(() => {
-        if (printContentDiv) {
-          printContentDiv.style.display = 'none';
-        }
-        document.head.removeChild(styleSheet);
-      }, 1000);
-    }, 100);
+      try {
+        iframe.contentWindow?.focus();
+        iframe.contentWindow?.print();
+      } catch(e) {
+        window.print();
+      }
+      setTimeout(() => { document.body.removeChild(iframe); }, 2000);
+    }, 500);
   };
 
   const groupSummaries: SummaryRow[] = (groups as any[]).map((group: any) => {
