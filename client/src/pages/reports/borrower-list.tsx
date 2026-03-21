@@ -1635,16 +1635,16 @@ export default function BorrowerListReports() {
         </tr>
       `;
     } else {
-      // Default totals row for date-wise and name-wise reports
+      // Default totals row for date-wise and name-wise reports — no vertical borders, only top+bottom lines
       totalsRow = `
-        <tr style="border-top: 2px solid #000; background-color: #f9f9f9; font-weight: bold; height: 40px;">
-          <td style="border-top: 2px solid #000; padding: 4px; text-align: center; vertical-align: middle; width: 39px;"></td>
-          <td style="border-top: 2px solid #000; border-left: 1px solid #000; padding: 4px; font-size: 14px; text-align: center; vertical-align: middle; font-weight: bold; width: 60px;">एकूण:</td>
-          <td style="border-top: 2px solid #000; border-left: 1px solid #000; padding: 4px; text-align: right; font-size: 14px; font-weight: bold; vertical-align: middle; width: 70px;">${totalAmount.toLocaleString('en-IN')}</td>
-          <td style="border-top: 2px solid #000; border-left: 1px solid #000; padding: 4px; vertical-align: middle; width: 200px;"></td>
-          <td class="mobile-hide" style="border-top: 2px solid #000; border-left: 1px solid #000; padding: 4px; vertical-align: middle; width: 70px;"></td>
-          <td class="mobile-hide" style="border-top: 2px solid #000; border-left: 1px solid #000; padding: 4px; vertical-align: middle; width: auto;"></td>
-          <td class="mobile-hide" style="border-top: 2px solid #000; border-left: 1px solid #000; padding: 4px; text-align: center; font-size: 14px; font-weight: bold; vertical-align: middle; width: 70px;">${weightDisplay}</td>
+        <tr class="total-row" style="border-top: 2px solid #000; border-bottom: 2px solid #000; background-color: #f9f9f9; font-weight: bold; height: 40px;">
+          <td style="border-top: 2px solid #000; border-bottom: 2px solid #000; padding: 4px; text-align: center; vertical-align: middle;"></td>
+          <td style="border-top: 2px solid #000; border-bottom: 2px solid #000; padding: 4px; font-size: 14px; text-align: center; vertical-align: middle; font-weight: bold;">एकूण:</td>
+          <td style="border-top: 2px solid #000; border-bottom: 2px solid #000; padding: 4px; text-align: left; font-size: 14px; font-weight: bold; vertical-align: middle; padding-left: 5px;">${totalAmount.toLocaleString('en-IN')}</td>
+          <td style="border-top: 2px solid #000; border-bottom: 2px solid #000; padding: 4px; vertical-align: middle;"></td>
+          <td class="mobile-hide" style="border-top: 2px solid #000; border-bottom: 2px solid #000; padding: 4px; vertical-align: middle;"></td>
+          <td class="mobile-hide" style="border-top: 2px solid #000; border-bottom: 2px solid #000; padding: 4px; vertical-align: middle;"></td>
+          <td class="mobile-hide" style="border-top: 2px solid #000; border-bottom: 2px solid #000; padding: 4px; text-align: center; font-size: 14px; font-weight: bold; vertical-align: middle;">${weightDisplay}</td>
         </tr>
       `;
     }
@@ -1787,6 +1787,9 @@ export default function BorrowerListReports() {
               tbody tr:not(.total-row):not(.summary-row) td:nth-child(5) { padding: 8px 2px !important; text-align: center !important; }
               th:nth-child(6), td:nth-child(6) { width: auto !important; min-width: 80px !important; text-align: left !important; padding-left: 5px !important; }    /* वस्तूचा तपशील — उरलेली जागा */
               th:nth-child(7), td:nth-child(7) { width: 50px !important; min-width: 50px !important; }    /* वजन */
+              
+              /* Date/Name-wise total row — no vertical borders, only top+bottom lines */
+              .total-row td { border-left: none !important; border-right: none !important; border-top: 2px solid #000 !important; border-bottom: 2px solid #000 !important; }
               
               /* MATURITY-WISE REPORT PRINT LAYOUT */
               .maturity-wise-table th:nth-child(1), .maturity-wise-table td:nth-child(1) { width: 26px !important; min-width: 26px !important; max-width: 30px !important; text-align: center !important; }    /* अ.क्र. */
@@ -2300,6 +2303,9 @@ export default function BorrowerListReports() {
               th:nth-child(5), td:nth-child(5) { width: 48px !important; min-width: 48px !important; max-width: 52px !important; text-align: center !important; }
               th:nth-child(6), td:nth-child(6) { width: auto !important; min-width: 80px !important; text-align: left !important; padding-left: 5px !important; }
               th:nth-child(7), td:nth-child(7) { width: 50px !important; min-width: 50px !important; max-width: 56px !important; text-align: center !important; }
+              
+              /* Date/Name-wise total row — no vertical borders, only top+bottom lines */
+              .total-row td { border-left: none !important; border-right: none !important; border-top: 2px solid #000 !important; border-bottom: 2px solid #000 !important; }
               
               /* ═══════════════════════════════════════════════════════════════
                  CLOSING-WISE PRINT — SINGLE CONSOLIDATED BLOCK (9 columns)
