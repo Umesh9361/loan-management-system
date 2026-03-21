@@ -1789,7 +1789,15 @@ export default function BorrowerListReports() {
               th:nth-child(7), td:nth-child(7) { width: 50px !important; min-width: 50px !important; }    /* वजन */
               
               /* Date/Name-wise total row — no vertical borders, only top+bottom lines */
-              .total-row td { border-left: none !important; border-right: none !important; border-top: 2px solid #000 !important; border-bottom: 2px solid #000 !important; }
+              tr.total-row > td { border-left: none !important; border-right: none !important; border-top: 2px solid #000 !important; border-bottom: 2px solid #000 !important; }
+              table tbody tr.total-row td { border-left: none !important; border-right: none !important; border-top: 2px solid #000 !important; border-bottom: 2px solid #000 !important; }
+              
+              /* Total row — remove fixed widths and overflow restrictions so amounts/weight never get cut */
+              tr.total-row td, table tbody tr.total-row td { 
+                width: auto !important; min-width: 0 !important; max-width: none !important; 
+                white-space: nowrap !important; overflow: visible !important; text-overflow: clip !important;
+                font-size: 11px !important; font-weight: bold !important;
+              }
               
               /* MATURITY-WISE REPORT PRINT LAYOUT */
               .maturity-wise-table th:nth-child(1), .maturity-wise-table td:nth-child(1) { width: 26px !important; min-width: 26px !important; max-width: 30px !important; text-align: center !important; }    /* अ.क्र. */
@@ -2304,9 +2312,6 @@ export default function BorrowerListReports() {
               th:nth-child(6), td:nth-child(6) { width: auto !important; min-width: 80px !important; text-align: left !important; padding-left: 5px !important; }
               th:nth-child(7), td:nth-child(7) { width: 50px !important; min-width: 50px !important; max-width: 56px !important; text-align: center !important; }
               
-              /* Date/Name-wise total row — no vertical borders, only top+bottom lines */
-              .total-row td { border-left: none !important; border-right: none !important; border-top: 2px solid #000 !important; border-bottom: 2px solid #000 !important; }
-              
               /* ═══════════════════════════════════════════════════════════════
                  CLOSING-WISE PRINT — SINGLE CONSOLIDATED BLOCK (9 columns)
                  This is the ONLY place closing-wise print widths are defined.
@@ -2342,6 +2347,22 @@ export default function BorrowerListReports() {
                 overflow: hidden !important;
                 text-overflow: ellipsis !important;
                 white-space: nowrap !important;
+              }
+              
+              /* ★ TOTAL ROW OVERRIDE — MUST come AFTER generic td rule to win cascade ★ */
+              tr.total-row > td,
+              table tbody tr.total-row td {
+                border-left: none !important;
+                border-right: none !important;
+                border-top: 2px solid #000 !important;
+                border-bottom: 2px solid #000 !important;
+                width: auto !important;
+                min-width: 0 !important;
+                max-width: none !important;
+                overflow: visible !important;
+                text-overflow: clip !important;
+                font-size: 11px !important;
+                font-weight: bold !important;
               }
               
               /* Force all maturity column cells to black & white for print */
