@@ -255,7 +255,7 @@ export default function ProfitLoss() {
           <Sidebar />
         </aside>
 
-        <main className="flex-1 w-full lg:pl-72 pb-16 lg:pb-0">
+        <main className="flex-1 w-full lg:pl-72 pb-16 lg:pb-0 print:pl-0 print:pb-0">
           <div className="px-4 sm:px-6 lg:px-8 py-6 max-w-4xl md:max-w-6xl mx-auto w-full print:p-0 print:max-w-none">
             <div className="print:hidden mb-6">
               <h1 className="text-xl sm:text-2xl md:text-3xl font-semibold text-indigo-900 mb-1">नफा-तोटा पत्रक</h1>
