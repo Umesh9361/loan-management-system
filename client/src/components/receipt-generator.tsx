@@ -1198,18 +1198,30 @@ ${pagesHTML}
                 background: white !important;
             }
             .receipt-container {
-                width: 138mm !important;
-                max-width: 138mm !important;
-                margin: 5mm auto !important;
+                width: 144mm !important;
+                max-width: 144mm !important;
+                height: auto !important;
+                max-height: 206mm !important;
+                margin: 2mm auto !important;
                 padding: 0 !important;
                 box-sizing: border-box !important;
+                display: flex !important;
+                flex-direction: column !important;
                 background: white !important;
             }
             .annual-receipt {
                 width: 100% !important;
-                padding: 6mm 5mm !important;
-                border: 1.5px solid #333 !important;
+                height: 98mm !important;
+                min-height: 98mm !important;
+                max-height: 98mm !important;
+                flex: 0 0 98mm !important;
+                padding: 4mm 5mm !important;
+                margin: 0 !important;
+                margin-top: 2mm !important;
+                border: 1px solid #333 !important;
                 box-sizing: border-box !important;
+                overflow: hidden !important;
+                page-break-inside: avoid !important;
             }
             .control-panel, .no-print {
                 display: none !important;
@@ -1229,8 +1241,8 @@ ${pagesHTML}
             height: auto;
             margin: 0;
             padding: 8px;
-            font-size: 12px;
-            line-height: 1.5;
+            font-size: 11px;
+            line-height: 1.4;
             box-sizing: border-box;
         }
 
@@ -1239,7 +1251,7 @@ ${pagesHTML}
             max-width: 100%;
             height: auto;
             margin: 0 auto;
-            padding: 3mm;
+            padding: 2mm;
             background: white;
             box-sizing: border-box;
         }
@@ -1248,67 +1260,68 @@ ${pagesHTML}
             width: 148mm !important;
             max-width: 148mm !important;
             height: 210mm !important;
-            padding: 5mm 5mm !important;
+            padding: 2mm !important;
             box-shadow: none !important;
         }
 
         .receipt-container.export-mode .annual-receipt {
-            height: auto !important;
-            max-height: 196mm !important;
-            overflow: visible !important;
-            padding: 6mm 5mm !important;
+            height: 98mm !important;
+            min-height: 98mm !important;
+            max-height: 98mm !important;
+            overflow: hidden !important;
+            padding: 4mm 5mm !important;
         }
 
         .receipt-container.export-mode .field-row {
-            margin: 5px 0 !important;
-            font-size: 12px !important;
+            margin: 3px 0 !important;
+            font-size: 11px !important;
         }
 
         .receipt-container.export-mode .field-label {
-            font-size: 12px !important;
+            font-size: 11px !important;
         }
 
         .receipt-container.export-mode .field-value {
-            font-size: 12px !important;
-            padding-bottom: 3px !important;
-            min-height: 20px !important;
+            font-size: 11px !important;
+            padding-bottom: 2px !important;
+            min-height: 16px !important;
         }
 
         .receipt-container.export-mode .table-cell-label {
-            padding: 6px 8px !important;
-            font-size: 11px !important;
-            line-height: 1.5 !important;
+            padding: 4px 6px !important;
+            font-size: 10px !important;
+            line-height: 1.3 !important;
         }
 
         .receipt-container.export-mode .table-cell-value {
-            padding: 6px 8px !important;
-            font-size: 11px !important;
-            width: 100px !important;
-            line-height: 1.5 !important;
+            padding: 4px 6px !important;
+            font-size: 10px !important;
+            width: 85px !important;
+            line-height: 1.3 !important;
         }
 
         .receipt-container.export-mode .form-number {
-            font-size: 14px !important;
-        }
-
-        .receipt-container.export-mode .receipt-title {
             font-size: 12px !important;
         }
 
-        .receipt-container.export-mode .company-info {
+        .receipt-container.export-mode .receipt-title {
             font-size: 10px !important;
-            padding: 5px !important;
+        }
+
+        .receipt-container.export-mode .company-info {
+            font-size: 9px !important;
+            padding: 3px !important;
         }
 
         .receipt-container.export-mode .signature-section {
-            font-size: 11px !important;
-            margin-top: 20px !important;
+            font-size: 10px !important;
+            margin-top: 8px !important;
         }
 
         @media screen and (min-width: 600px) {
             body {
                 padding: 20px;
-                font-size: 12px;
+                font-size: 11px;
             }
             .receipt-container {
                 width: 148mm;
@@ -1319,98 +1332,99 @@ ${pagesHTML}
         }
 
         .annual-receipt {
-            padding: 6mm 5mm;
-            border: 1.5px solid #333;
+            padding: 4mm 5mm;
+            border: 1px solid #333;
             background: white;
             box-sizing: border-box;
-            overflow: visible;
+            overflow: hidden;
+            height: 98mm;
         }
 
         .receipt-header {
             text-align: center;
-            margin-bottom: 10px;
-            border-bottom: 1.5px solid #333;
-            padding-bottom: 8px;
+            margin-bottom: 5px;
+            border-bottom: 1px solid #333;
+            padding-bottom: 4px;
         }
 
         .form-number {
-            font-size: 14px;
+            font-size: 12px;
             font-weight: 700;
-            margin-bottom: 3px;
-            line-height: 1.4;
+            margin-bottom: 2px;
+            line-height: 1.3;
         }
 
         .receipt-title {
-            font-size: 11px;
+            font-size: 10px;
             font-weight: 700;
-            margin: 3px 0;
-            line-height: 1.4;
+            margin: 2px 0;
+            line-height: 1.3;
         }
 
         .field-row {
             display: flex;
             justify-content: space-between;
-            margin: 5px 0;
-            font-size: 12px;
+            margin: 3px 0;
+            font-size: 11px;
             align-items: baseline;
-            line-height: 1.5;
+            line-height: 1.4;
             padding: 0;
         }
 
         .field-label {
             font-weight: 600;
             min-width: fit-content;
-            font-size: 12px;
+            font-size: 11px;
             white-space: nowrap;
         }
 
         .field-value {
             border-bottom: 1px solid #555;
             flex: 1;
-            margin-left: 6px;
-            padding: 1px 6px 3px 6px;
-            min-height: 20px;
+            margin-left: 5px;
+            padding: 0 4px 2px 4px;
+            min-height: 16px;
             font-weight: 500;
-            font-size: 12px;
-            line-height: 1.5;
+            font-size: 11px;
+            line-height: 1.4;
         }
 
         .radio-row {
             display: flex;
             align-items: center;
-            margin: 6px 0;
-            font-size: 11px;
-            line-height: 1.4;
-            gap: 10px;
+            margin: 3px 0;
+            font-size: 10px;
+            line-height: 1.3;
+            gap: 8px;
         }
 
         .radio-label {
             font-weight: 600;
-            font-size: 11px;
+            font-size: 10px;
         }
 
         .radio-option {
             display: inline-flex;
             align-items: center;
-            gap: 4px;
-            font-size: 11px;
+            gap: 3px;
+            font-size: 10px;
         }
 
         .radio-option input[type="radio"] {
-            width: 12px;
-            height: 12px;
+            width: 10px;
+            height: 10px;
             margin: 0;
         }
 
         .table-section {
-            margin: 10px 0;
-            border: 1.5px solid #333;
-            font-size: 11px;
+            margin: 4px 0;
+            border: 1px solid #333;
+            font-size: 10px;
         }
 
         .table-row {
             display: flex;
-            border-bottom: 1px solid #333;
+            border-bottom: 1px solid #ccc;
         }
 
         .table-row:last-child {
@@ -1419,44 +1433,44 @@ ${pagesHTML}
 
         .table-cell-label {
             flex: 1;
-            padding: 6px 8px;
-            border-right: 1px solid #333;
-            line-height: 1.5;
-            font-size: 11px;
+            padding: 3px 5px;
+            border-right: 1px solid #ccc;
+            line-height: 1.35;
+            font-size: 10px;
             font-weight: 500;
         }
 
         .table-cell-value {
-            width: 100px;
-            padding: 6px 8px;
+            width: 85px;
+            padding: 3px 5px;
             text-align: right;
-            line-height: 1.5;
-            font-size: 11px;
+            line-height: 1.35;
+            font-size: 10px;
             font-weight: 600;
         }
 
         .company-info {
             text-align: center;
-            margin: 10px 0;
-            font-size: 10px;
-            border: 1px solid #555;
-            padding: 5px 8px;
+            margin: 4px 0;
+            font-size: 9px;
+            border: 1px solid #999;
+            padding: 3px 6px;
             background: #f9f9f9;
             font-weight: 500;
-            line-height: 1.4;
+            line-height: 1.3;
         }
 
         .signature-section {
             display: flex;
             justify-content: space-between;
             align-items: flex-end;
-            margin-top: 25px;
-            font-size: 11px;
+            margin-top: 8px;
+            font-size: 10px;
             font-weight: 500;
         }
 
         .date-field {
-            font-size: 11px;
+            font-size: 10px;
         }
 
         .signature-box {
@@ -1465,9 +1479,9 @@ ${pagesHTML}
 
         .signature-line {
             border-bottom: 1px solid #333;
-            width: 100px;
-            height: 20px;
-            margin-bottom: 3px;
+            width: 80px;
+            height: 15px;
+            margin-bottom: 2px;
         }
     </style>
 </head>
@@ -1477,7 +1491,7 @@ ${pagesHTML}
             <div class="receipt-header">
                 <div class="form-number">नमुना क्र. १४ (नियम २० पहा)</div>
                 <div class="receipt-title">वार्षिक लेखा विवरणपत्र</div>
-                <div style="font-size: 9px; line-height: 1.3; margin-top: 2px; color: #444;">(वर्ष संपल्यानंतर ४५ दिवसांच्या आत सावकाराने कर्जदारास द्यावयाचे)</div>
+                <div style="font-size: 8px; line-height: 1.2; margin-top: 1px; color: #444;">(वर्ष संपल्यानंतर ४५ दिवसांच्या आत सावकाराने कर्जदारास द्यावयाचे)</div>
             </div>
 
             <div class="field-row">
@@ -1730,16 +1744,16 @@ ${pagesHTML}
     height: 204mm;
     display: grid;
     grid-template-columns: 144mm 144mm;
-    grid-template-rows: 100mm 100mm;
-    gap: 1.5mm 3mm;
-    padding: 0;
+    grid-template-rows: 98mm 98mm;
+    gap: 2mm 3mm;
+    padding: 1mm 0;
     margin: 0 auto;
   }
   .page-break-after { page-break-after: always; }
 
   .bulk-cell {
     width: 144mm;
-    height: 100mm;
+    height: 98mm;
     border: 1px dashed #aaa;
     overflow: hidden;
     position: relative;
@@ -1748,43 +1762,42 @@ ${pagesHTML}
   .bulk-cell .receipt-container {
     width: 100% !important;
     max-width: 100% !important;
-    height: 100% !important;
-    max-height: 100% !important;
-    padding: 1mm 2mm !important;
+    height: 98mm !important;
+    max-height: 98mm !important;
+    padding: 1mm !important;
     margin: 0 !important;
     box-shadow: none !important;
-    font-size: 9px !important;
-    line-height: 1.2 !important;
+    display: block !important;
   }
 
   .bulk-cell .annual-receipt {
-    height: auto !important;
-    max-height: none !important;
+    height: 94mm !important;
+    max-height: 94mm !important;
     overflow: hidden !important;
-    padding: 2mm 2.5mm !important;
+    padding: 3mm 4mm !important;
     margin: 0 !important;
     border: 1px solid #333 !important;
   }
 
-  .bulk-cell .receipt-header { margin-bottom: 2px !important; padding-bottom: 2px !important; border-bottom-width: 1px !important; }
-  .bulk-cell .form-number { font-size: 9px !important; margin-bottom: 1px !important; padding: 0 !important; line-height: 1.2 !important; }
-  .bulk-cell .receipt-title { font-size: 8px !important; margin: 1px 0 !important; line-height: 1.2 !important; }
-  .bulk-cell .receipt-header div[style*="font-size"] { font-size: 7px !important; line-height: 1.1 !important; margin-top: 1px !important; }
-  .bulk-cell .field-row { margin: 1.5px 0 !important; font-size: 9px !important; line-height: 1.2 !important; }
-  .bulk-cell .field-label { font-size: 9px !important; }
-  .bulk-cell .field-value { font-size: 9px !important; min-height: 12px !important; padding: 0 3px 1px 3px !important; margin-left: 3px !important; line-height: 1.2 !important; }
-  .bulk-cell .radio-row { font-size: 8px !important; margin: 1.5px 0 !important; gap: 5px !important; line-height: 1.2 !important; }
-  .bulk-cell .radio-label { font-size: 8px !important; }
-  .bulk-cell .radio-option { font-size: 8px !important; gap: 2px !important; }
-  .bulk-cell .radio-option input[type="radio"] { width: 8px !important; height: 8px !important; }
-  .bulk-cell .table-section { margin: 2px 0 !important; font-size: 8px !important; border-width: 1px !important; }
-  .bulk-cell .table-row { border-bottom-width: 1px !important; }
-  .bulk-cell .table-cell-label { padding: 1.5px 3px !important; font-size: 8px !important; line-height: 1.25 !important; font-weight: 500 !important; }
-  .bulk-cell .table-cell-value { padding: 1.5px 3px !important; font-size: 8px !important; width: 70px !important; line-height: 1.25 !important; }
-  .bulk-cell .company-info { font-size: 7px !important; padding: 1.5px 3px !important; margin: 2px 0 !important; line-height: 1.2 !important; }
-  .bulk-cell .signature-section { margin-top: 3px !important; font-size: 8px !important; }
-  .bulk-cell .signature-line { width: 55px !important; height: 10px !important; margin-bottom: 1px !important; }
-  .bulk-cell .date-field { font-size: 8px !important; }
+  .bulk-cell .receipt-header { margin-bottom: 3px !important; padding-bottom: 3px !important; border-bottom: 1px solid #333 !important; }
+  .bulk-cell .form-number { font-size: 10px !important; margin-bottom: 1px !important; padding: 0 !important; line-height: 1.3 !important; }
+  .bulk-cell .receipt-title { font-size: 9px !important; margin: 1px 0 !important; line-height: 1.3 !important; }
+  .bulk-cell .receipt-header div[style*="font-size"] { font-size: 7.5px !important; line-height: 1.2 !important; margin-top: 1px !important; }
+  .bulk-cell .field-row { margin: 2.5px 0 !important; font-size: 9.5px !important; line-height: 1.3 !important; }
+  .bulk-cell .field-label { font-size: 9.5px !important; }
+  .bulk-cell .field-value { font-size: 9.5px !important; min-height: 14px !important; padding: 0 3px 1px 3px !important; margin-left: 4px !important; line-height: 1.3 !important; }
+  .bulk-cell .radio-row { font-size: 8.5px !important; margin: 2px 0 !important; gap: 6px !important; line-height: 1.3 !important; }
+  .bulk-cell .radio-label { font-size: 8.5px !important; }
+  .bulk-cell .radio-option { font-size: 8.5px !important; gap: 2px !important; }
+  .bulk-cell .radio-option input[type="radio"] { width: 9px !important; height: 9px !important; }
+  .bulk-cell .table-section { margin: 3px 0 !important; font-size: 9px !important; border: 1px solid #333 !important; }
+  .bulk-cell .table-row { border-bottom: 1px solid #ccc !important; }
+  .bulk-cell .table-cell-label { padding: 2.5px 4px !important; font-size: 9px !important; line-height: 1.3 !important; font-weight: 500 !important; border-right: 1px solid #ccc !important; }
+  .bulk-cell .table-cell-value { padding: 2.5px 4px !important; font-size: 9px !important; width: 75px !important; line-height: 1.3 !important; }
+  .bulk-cell .company-info { font-size: 8px !important; padding: 2px 4px !important; margin: 3px 0 !important; line-height: 1.3 !important; }
+  .bulk-cell .signature-section { margin-top: 5px !important; font-size: 9px !important; }
+  .bulk-cell .signature-line { width: 60px !important; height: 12px !important; margin-bottom: 1px !important; }
+  .bulk-cell .date-field { font-size: 9px !important; }
 </style>
 </head>
 <body>
