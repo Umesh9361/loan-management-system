@@ -392,7 +392,7 @@ export default function WorkingSummary() {
           /* Fit to page */
           @page {
             size: A4 landscape;
-            margin: 5mm !important;
+            margin: 5mm 5mm 5mm 25.4mm !important;
           }
           
           /* Container adjustments */

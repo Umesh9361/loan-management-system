@@ -79,7 +79,7 @@ export default function CashbookLedger() {
       @media print {
         @page {
           size: A4;
-          margin: 10mm;
+          margin: 8mm 8mm 8mm 25.4mm;
         }
         body {
           font-family: 'Noto Sans Devanagari', Arial, sans-serif !important;

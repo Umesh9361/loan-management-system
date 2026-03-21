@@ -328,7 +328,7 @@ export default function BorrowerLedger() {
             <title>कर्ज खातेवही - ${ledgerData.borrower.borrowerName}</title>
             <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;500;600;700&display=swap" rel="stylesheet">
             <style>
-              @page { size: A4; margin: 10mm; }
+              @page { size: A4; margin: 10mm 10mm 10mm 25.4mm; }
               body { font-family: 'Noto Sans Devanagari', Arial, sans-serif; font-size: 14px; margin: 0; padding: 20px; }
               table { width: 100%; border-collapse: collapse; }
               th, td { border: 2px solid #000; padding: 8px; font-size: 13px; }

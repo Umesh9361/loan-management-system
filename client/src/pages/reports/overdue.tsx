@@ -82,6 +82,20 @@ export default function OverdueReport() {
   const [, setLocation] = useLocation();
   const reportSectionRef = useRef<HTMLDivElement>(null);
   const dataTableRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const style = document.createElement('style');
+    style.textContent = `
+      @media print {
+        @page { size: A4; margin: 8mm 8mm 8mm 25.4mm; }
+        body { font-family: 'Noto Sans Devanagari', Arial, sans-serif !important; }
+        .lg\\:pl-72 { padding-left: 0 !important; }
+        aside, .sidebar-modern, .mobile-nav { display: none !important; }
+      }
+    `;
+    document.head.appendChild(style);
+    return () => { document.head.removeChild(style); };
+  }, []);
   
   const handleBackNavigation = () => {
     try {
@@ -1827,15 +1841,6 @@ export default function OverdueReport() {
           </div>
         </main>
       </div>
-      <style>{`
-        @media print {
-          @page {
-            size: A4;
-            margin: 8mm 8mm 8mm 25.4mm;
-          }
-          body { font-family: 'Noto Sans Devanagari', Arial, sans-serif !important; }
-        }
-      `}</style>
     </>
   );
 }

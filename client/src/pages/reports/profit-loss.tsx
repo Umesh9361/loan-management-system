@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -116,6 +116,20 @@ export default function ProfitLoss() {
   const [dateFrom, setDateFrom] = useState(fy.dateFrom);
   const [dateTo, setDateTo] = useState(fy.dateTo);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+
+  useEffect(() => {
+    const style = document.createElement('style');
+    style.textContent = `
+      @media print {
+        @page { size: A4; margin: 8mm 8mm 8mm 25.4mm; }
+        body { font-family: 'Noto Sans Devanagari', Arial, sans-serif !important; }
+        .lg\\:pl-72 { padding-left: 0 !important; }
+        aside, .sidebar-modern, .mobile-nav { display: none !important; }
+      }
+    `;
+    document.head.appendChild(style);
+    return () => { document.head.removeChild(style); };
+  }, []);
 
   const { data: company } = useQuery<any>({ queryKey: ["/api/company"] });
 
@@ -457,14 +471,6 @@ export default function ProfitLoss() {
           </div>
         </main>
       </div>
-      <style>{`
-        @media print {
-          @page {
-            size: A4;
-            margin: 8mm 8mm 8mm 25.4mm;
-          }
-        }
-      `}</style>
     </div>
   );
 }

@@ -1668,7 +1668,7 @@ export default function BorrowerListReports() {
           <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
           <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
           <style>
-            @page { size: A4 landscape; margin: 10mm 5mm 8mm 5mm; }
+            @page { size: A4 landscape; margin: 10mm 5mm 8mm 25.4mm; }
             * { box-sizing: border-box; }
             body { 
               font-family: 'Noto Sans Devanagari', 'Inter', 'Nirmala UI', 'Mangal', 'Segoe UI', 'Arial', sans-serif; 
@@ -2686,7 +2686,7 @@ export default function BorrowerListReports() {
               /* Ensure proper page margins and professional appearance */
               @page {
                 size: A4 landscape;
-                margin: 10mm 5mm 8mm 5mm;
+                margin: 10mm 5mm 8mm 25.4mm;
               }
             }
           </style>

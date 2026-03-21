@@ -15,7 +15,7 @@ import jsPDF from "jspdf";
 const NOTICE_STYLES = `
   @page {
     size: A5;
-    margin: 0;
+    margin: 5mm 5mm 5mm 25.4mm;
   }
   * {
     margin: 0;
@@ -90,7 +90,7 @@ const NOTICE_STYLES = `
   @media print {
     @page {
       size: A5;
-      margin: 0;
+      margin: 5mm 5mm 5mm 25.4mm;
     }
     body {
       width: 148mm !important;

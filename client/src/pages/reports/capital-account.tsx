@@ -267,7 +267,7 @@ export default function CapitalAccountReport() {
       @media print {
         @page {
           size: A4 portrait;
-          margin: 10mm 8mm 10mm 22mm;
+          margin: 10mm 8mm 10mm 25.4mm;
         }
         body * {
           visibility: hidden !important;

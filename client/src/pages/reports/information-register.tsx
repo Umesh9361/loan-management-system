@@ -709,7 +709,7 @@ export default function InformationRegister() {
       @media print {
         @page {
           size: A4 landscape;
-          margin: 15mm 10mm 10mm 10mm;
+          margin: 15mm 10mm 10mm 25.4mm;
         }
         body { font-family: 'Noto Sans Devanagari', Arial, sans-serif !important; }
         body * { visibility: hidden; }

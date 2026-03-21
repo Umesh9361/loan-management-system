@@ -46,15 +46,15 @@ export default function AccountLedger() {
           visibility: visible;
         }
         .print-area {
-          position: absolute;
-          left: 0;
-          top: 0;
+          position: absolute !important;
+          left: 0 !important;
+          top: 0 !important;
           width: 100% !important;
           max-width: 100% !important;
           overflow: visible !important;
           page-break-inside: auto;
-          padding-left: 25mm;
-          box-sizing: border-box;
+          padding-left: 25mm !important;
+          box-sizing: border-box !important;
         }
         .print-area table {
           page-break-inside: auto;
