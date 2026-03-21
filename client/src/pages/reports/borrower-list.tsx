@@ -1794,13 +1794,13 @@ export default function BorrowerListReports() {
               
               /* For closing-wise report with extra columns - portrait fit (9 cols) */
               .closing-wise-table th:nth-child(1), .closing-wise-table td:nth-child(1) { width: 22px !important; min-width: 22px !important; max-width: 26px !important; }
-              .closing-wise-table th:nth-child(2), .closing-wise-table td:nth-child(2) { width: 52px !important; min-width: 52px !important; max-width: 56px !important; }
-              .closing-wise-table th:nth-child(3), .closing-wise-table td:nth-child(3) { width: 52px !important; min-width: 52px !important; max-width: 56px !important; }
-              .closing-wise-table th:nth-child(4), .closing-wise-table td:nth-child(4) { width: 52px !important; min-width: 52px !important; max-width: 58px !important; text-align: right !important; }
-              .closing-wise-table th:nth-child(5), .closing-wise-table td:nth-child(5) { width: 45px !important; min-width: 45px !important; max-width: 50px !important; text-align: right !important; }
-              .closing-wise-table th:nth-child(6), .closing-wise-table td:nth-child(6) { width: auto !important; min-width: 110px !important; text-align: left !important; padding-left: 4px !important; }
+              .closing-wise-table th:nth-child(2), .closing-wise-table td:nth-child(2) { width: 58px !important; min-width: 58px !important; max-width: 62px !important; }
+              .closing-wise-table th:nth-child(3), .closing-wise-table td:nth-child(3) { width: 58px !important; min-width: 58px !important; max-width: 62px !important; }
+              .closing-wise-table th:nth-child(4), .closing-wise-table td:nth-child(4) { width: 60px !important; min-width: 60px !important; max-width: 65px !important; text-align: right !important; }
+              .closing-wise-table th:nth-child(5), .closing-wise-table td:nth-child(5) { width: 52px !important; min-width: 52px !important; max-width: 58px !important; text-align: right !important; }
+              .closing-wise-table th:nth-child(6), .closing-wise-table td:nth-child(6) { width: auto !important; min-width: 90px !important; text-align: left !important; padding-left: 4px !important; }
               .closing-wise-table th:nth-child(7), .closing-wise-table td:nth-child(7) { width: 42px !important; min-width: 42px !important; max-width: 48px !important; text-align: center !important; }
-              .closing-wise-table th:nth-child(8), .closing-wise-table td:nth-child(8) { width: auto !important; min-width: 90px !important; text-align: left !important; }
+              .closing-wise-table th:nth-child(8), .closing-wise-table td:nth-child(8) { width: auto !important; min-width: 85px !important; text-align: left !important; }
               .closing-wise-table th:nth-child(9), .closing-wise-table td:nth-child(9) { width: 36px !important; min-width: 36px !important; max-width: 42px !important; text-align: center !important; }
               
               /* MATURITY-WISE REPORT PRINT LAYOUT */
@@ -2364,13 +2364,13 @@ export default function BorrowerListReports() {
               
               /* CLOSING-WISE reports (9 columns) — consistent widths */
               body[data-report-type="closing-wise"] th:nth-child(1), body[data-report-type="closing-wise"] td:nth-child(1) { width: 22px !important; min-width: 22px !important; max-width: 26px !important; text-align: center !important; }
-              body[data-report-type="closing-wise"] th:nth-child(2), body[data-report-type="closing-wise"] td:nth-child(2) { width: 52px !important; min-width: 52px !important; max-width: 56px !important; text-align: center !important; }
-              body[data-report-type="closing-wise"] th:nth-child(3), body[data-report-type="closing-wise"] td:nth-child(3) { width: 52px !important; min-width: 52px !important; max-width: 56px !important; text-align: center !important; }
-              body[data-report-type="closing-wise"] th:nth-child(4), body[data-report-type="closing-wise"] td:nth-child(4) { width: 52px !important; min-width: 52px !important; max-width: 58px !important; text-align: right !important; }
-              body[data-report-type="closing-wise"] th:nth-child(5), body[data-report-type="closing-wise"] td:nth-child(5) { width: 45px !important; min-width: 45px !important; max-width: 50px !important; text-align: right !important; }
-              body[data-report-type="closing-wise"] th:nth-child(6), body[data-report-type="closing-wise"] td:nth-child(6) { width: auto !important; min-width: 110px !important; text-align: left !important; padding-left: 4px !important; }
+              body[data-report-type="closing-wise"] th:nth-child(2), body[data-report-type="closing-wise"] td:nth-child(2) { width: 58px !important; min-width: 58px !important; max-width: 62px !important; text-align: center !important; }
+              body[data-report-type="closing-wise"] th:nth-child(3), body[data-report-type="closing-wise"] td:nth-child(3) { width: 58px !important; min-width: 58px !important; max-width: 62px !important; text-align: center !important; }
+              body[data-report-type="closing-wise"] th:nth-child(4), body[data-report-type="closing-wise"] td:nth-child(4) { width: 60px !important; min-width: 60px !important; max-width: 65px !important; text-align: right !important; }
+              body[data-report-type="closing-wise"] th:nth-child(5), body[data-report-type="closing-wise"] td:nth-child(5) { width: 52px !important; min-width: 52px !important; max-width: 58px !important; text-align: right !important; }
+              body[data-report-type="closing-wise"] th:nth-child(6), body[data-report-type="closing-wise"] td:nth-child(6) { width: auto !important; min-width: 90px !important; text-align: left !important; padding-left: 4px !important; }
               body[data-report-type="closing-wise"] th:nth-child(7), body[data-report-type="closing-wise"] td:nth-child(7) { width: 42px !important; min-width: 42px !important; max-width: 48px !important; text-align: center !important; }
-              body[data-report-type="closing-wise"] th:nth-child(8), body[data-report-type="closing-wise"] td:nth-child(8) { width: auto !important; min-width: 90px !important; text-align: left !important; }
+              body[data-report-type="closing-wise"] th:nth-child(8), body[data-report-type="closing-wise"] td:nth-child(8) { width: auto !important; min-width: 85px !important; text-align: left !important; }
               body[data-report-type="closing-wise"] th:nth-child(9), body[data-report-type="closing-wise"] td:nth-child(9) { width: 36px !important; min-width: 36px !important; max-width: 42px !important; text-align: center !important; }
               
               /* Clean cell styling - Uniform professional black borders */
