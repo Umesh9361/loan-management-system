@@ -858,21 +858,40 @@ export default function AccountLedger() {
     });
 
     const entries: any[] = [];
-    let runningBalance = 0;
     const fromDate = new Date(filters.dateFrom);
     const toDate = new Date(filters.dateTo);
+    const safeClosures = Array.isArray(closures) ? closures : [];
 
-    // Add opening balance entry
+    let openingBalance = 0;
+    (loans as any[]).forEach((loan: any) => {
+      const loanDate = new Date(loan.loanDate);
+      if (loanDate < fromDate) {
+        openingBalance += parseFloat(loan.principalAmount || 0);
+      }
+    });
+    (loans as any[]).forEach((loan: any) => {
+      if (loan.status !== 'closed') return;
+      const loanClosure = safeClosures.find((c: any) => c.loanId === loan.id);
+      if (!loanClosure) return;
+      const closureDate = new Date(loanClosure.closureDate);
+      if (closureDate < fromDate) {
+        const principalPaid = parseFloat(loanClosure.principalPaid || '0');
+        const interestPaid = parseFloat(loanClosure.interestPaid || '0');
+        openingBalance -= (principalPaid + interestPaid);
+      }
+    });
+
+    let runningBalance = openingBalance;
+
     entries.push({
       date: filters.dateFrom,
       description: 'प्रारंभिक शिल्लक',
       debit: 0,
       credit: 0,
-      balance: 0,
+      balance: openingBalance,
       type: 'opening'
     });
 
-    // Process loan disbursements in date range
     const disbursedLoans = (loans as any[]).filter((loan: any) => {
       const loanDate = new Date(loan.loanDate);
       return loanDate >= fromDate && loanDate <= toDate;
@@ -901,7 +920,6 @@ export default function AccountLedger() {
       }
     });
 
-    const safeClosures = Array.isArray(closures) ? closures : [];
     const closedLoansWithData = (loans as any[]).filter((loan: any) => {
       if (loan.status !== 'closed') return false;
       const loanClosure = safeClosures.find((c: any) => c.loanId === loan.id);
