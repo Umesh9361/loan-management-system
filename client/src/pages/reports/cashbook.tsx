@@ -185,10 +185,11 @@ function CashBookReport() {
         }
         .t-format-table td {
           border: 1px solid #000;
-          padding: 4px 6px;
+          padding: 3px 4px;
           vertical-align: top;
           background: white !important;
-          font-size: 9pt; /* Changed to 9pt for table data only */
+          font-size: 10px;
+          line-height: 1.3;
         }
         /* Remove all background colors in print */
         .print:hidden { display: none !important; }
@@ -211,7 +212,7 @@ function CashBookReport() {
         .t-format-table .bg-indigo-100 .amount-bold,
         .t-format-table .bg-indigo-50 .amount-bold {
           font-weight: 900 !important;
-          font-size: 12px !important;
+          font-size: 11px !important;
         }
         /* Total row styling */
         .border-t-2 {
@@ -226,14 +227,43 @@ function CashBookReport() {
         }
         /* Reduce header text size in print */
         .t-format-table h3 {
-          font-size: 12px !important;
+          font-size: 11px !important;
           font-weight: bold;
         }
         .t-format-table .text-lg {
-          font-size: 12px !important;
+          font-size: 11px !important;
         }
         .t-format-table .text-sm {
           font-size: 10px !important;
+        }
+        /* Compact vertical table in print */
+        .professional-vertical-table th {
+          font-size: 11px !important;
+          padding: 4px 4px !important;
+          font-weight: 700 !important;
+          line-height: 1.3 !important;
+        }
+        .professional-vertical-table td {
+          font-size: 10px !important;
+          padding: 3px 4px !important;
+          line-height: 1.3 !important;
+        }
+        /* Compact T-format main header (जमा/नावे) in print */
+        .professional-t-format > .flex > div {
+          padding-top: 3px !important;
+          padding-bottom: 3px !important;
+        }
+        .professional-t-format > .flex > div h3 {
+          font-size: 11px !important;
+        }
+        .professional-t-format > .flex > div h3 span {
+          font-size: 9px !important;
+        }
+        /* Compact T-format sub-headers (दिनांक/तपशील/रक्कम) in print */
+        .professional-t-format .flex.text-center.font-semibold {
+          font-size: 10px !important;
+          padding-top: 2px !important;
+          padding-bottom: 2px !important;
         }
       }
     `;
@@ -437,8 +467,8 @@ function CashBookReport() {
       const renderWidthPx = 794;
       const companyName = (company as any)?.name || 'कंपनी नाव';
       const bdr = '0.5px solid #aaa';
-      const thStyle = `border:${bdr};padding:5px 4px;text-align:center;font-size:9pt;background:#f5f5f5;font-weight:600;line-height:1.3;letter-spacing:0.3px;`;
-      const tdBase = `border:${bdr};padding:6px 5px;font-size:10px;line-height:1.6;`;
+      const thStyle = `border:${bdr};padding:4px 4px;text-align:center;font-size:11px;background:#f5f5f5;font-weight:700;line-height:1.3;`;
+      const tdBase = `border:${bdr};padding:4px 4px;font-size:10px;line-height:1.3;font-weight:600;`;
 
       let tableHTML = '';
       if (printFormat === 'vertical') {
@@ -484,12 +514,12 @@ function CashBookReport() {
           const rowBg = isBalRow ? 'background:#eef2ff;' : (i % 2 === 1 ? 'background:#fafafa;' : '');
           const balCellBg = isBalRow ? 'background:#eef2ff;' : '';
 
-          const crDtStyle = `border:${bdr};padding:4px 2px 5px;font-size:7px;line-height:1.4;color:#666;text-align:center;${balCellBg}${isCrBal ? 'font-weight:bold;color:#333;' : ''}`;
-          const crDescStyle = `border:${bdr};padding:5px 4px 6px;font-size:8.5px;line-height:1.5;text-align:left;${balCellBg}${isCrBal ? 'font-weight:bold;font-size:9px;color:#3730a3;' : ''}`;
-          const crAmtStyle = `border:${bdr};padding:5px 3px 6px;font-size:8px;line-height:1.5;text-align:right;border-right:1px solid #999;${balCellBg}${isCrBal ? 'font-weight:bold;font-size:9px;' : ''}`;
-          const drDtStyle = `border:${bdr};padding:4px 2px 5px;font-size:7px;line-height:1.4;color:#666;text-align:center;${balCellBg}${isDrBal ? 'font-weight:bold;color:#333;' : ''}`;
-          const drDescStyle = `border:${bdr};padding:5px 4px 6px;font-size:8.5px;line-height:1.5;text-align:left;${balCellBg}${isDrBal ? 'font-weight:bold;font-size:9px;color:#3730a3;' : ''}`;
-          const drAmtStyle = `border:${bdr};padding:5px 3px 6px;font-size:8px;line-height:1.5;text-align:right;${balCellBg}${isDrBal ? 'font-weight:bold;font-size:9px;' : ''}`;
+          const crDtStyle = `border:${bdr};padding:3px 2px;font-size:7px;line-height:1.3;color:#666;text-align:center;${balCellBg}${isCrBal ? 'font-weight:bold;color:#333;' : ''}`;
+          const crDescStyle = `border:${bdr};padding:3px 4px;font-size:8.5px;line-height:1.3;text-align:left;${balCellBg}${isCrBal ? 'font-weight:bold;font-size:9px;color:#3730a3;' : ''}`;
+          const crAmtStyle = `border:${bdr};padding:3px 3px;font-size:8px;line-height:1.3;text-align:right;border-right:1px solid #999;${balCellBg}${isCrBal ? 'font-weight:bold;font-size:9px;' : ''}`;
+          const drDtStyle = `border:${bdr};padding:3px 2px;font-size:7px;line-height:1.3;color:#666;text-align:center;${balCellBg}${isDrBal ? 'font-weight:bold;color:#333;' : ''}`;
+          const drDescStyle = `border:${bdr};padding:3px 4px;font-size:8.5px;line-height:1.3;text-align:left;${balCellBg}${isDrBal ? 'font-weight:bold;font-size:9px;color:#3730a3;' : ''}`;
+          const drAmtStyle = `border:${bdr};padding:3px 3px;font-size:8px;line-height:1.3;text-align:right;${balCellBg}${isDrBal ? 'font-weight:bold;font-size:9px;' : ''}`;
 
           tRows += `<tr style="${rowBg}">
             <td style="${crDtStyle}">${cr ? DateUtils.isoToIndianDate(cr.date).replace(/20(\d{2})/g, '$1') : ''}</td>
@@ -501,7 +531,7 @@ function CashBookReport() {
           </tr>`;
         }
 
-        const totStyle = `border:${bdr};padding:6px 3px;font-size:9px;font-weight:bold;line-height:1.5;border-top:1.5px solid #555;background:#e0e7ff;`;
+        const totStyle = `border:${bdr};padding:4px 3px;font-size:9px;font-weight:bold;line-height:1.3;border-top:1.5px solid #555;background:#e0e7ff;`;
         tRows += `<tr>
           <td style="${totStyle}text-align:center;"></td>
           <td style="${totStyle}text-align:center;">एकूण</td>
@@ -544,14 +574,16 @@ function CashBookReport() {
       <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;500;600;700&display=swap" rel="stylesheet">
       <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Noto Sans Devanagari', Arial, sans-serif; background: white; width: ${renderWidthPx}px; padding: 20px 30px; }
-        table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+        body { font-family: 'Noto Sans Devanagari', Arial, sans-serif; background: white; width: ${renderWidthPx}px; padding: 18px 14px 18px 83px; }
+        table { width: 100%; border-collapse: collapse; table-layout: fixed; page-break-inside: auto; }
+        thead { display: table-header-group; }
+        tr { page-break-inside: avoid !important; break-inside: avoid !important; }
       </style></head><body>
-        <div style="text-align:center;margin-bottom:18px;padding-bottom:12px;border-bottom:1px solid #ddd;">
-          <p style="font-size:13px;font-weight:bold;margin-bottom:4px;">${companyName}</p>
-          <p style="font-size:11px;font-weight:bold;margin-bottom:3px;">रोकड वही</p>
-          <p style="font-size:9px;color:#555;margin-bottom:2px;">नमुना क्र. ७ (नियम १८ पहा)</p>
-          <p style="font-size:9px;color:#555;">कालावधी: ${DateUtils.isoToIndianDate(dateFilters.dateFrom)} ते ${DateUtils.isoToIndianDate(dateFilters.dateTo)}</p>
+        <div style="text-align:center;margin-bottom:12px;font-weight:bold;">
+          <p style="font-size:15px;font-weight:700;margin-bottom:4px;">${companyName}</p>
+          <p style="font-size:14px;font-weight:700;margin-bottom:2px;">रोकड वही</p>
+          <p style="font-size:11px;color:#333;margin-bottom:2px;">नमुना क्र. ७ (नियम १८ पहा)</p>
+          <p style="font-size:11px;color:#333;">कालावधी: ${DateUtils.isoToIndianDate(dateFilters.dateFrom)} ते ${DateUtils.isoToIndianDate(dateFilters.dateTo)}</p>
         </div>
         ${tableHTML}
       </body></html>`;
