@@ -1668,14 +1668,15 @@ export default function BorrowerListReports() {
           <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
           <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
           <style>
-            @page { size: A4 portrait; margin: 3mm 0mm 3mm 0mm; }
-            @page:first { margin-top: 2mm; }
-            * { box-sizing: border-box; }
-            html, body { 
+            @page { size: A4 portrait; margin: 2mm 0mm 2mm 0mm; }
+            @page:first { margin-top: 1mm; }
+            * { box-sizing: border-box; margin: 0; padding: 0; }
+            html { margin: 0 !important; padding: 0 !important; width: 100% !important; }
+            body { 
               font-family: 'Noto Sans Devanagari', 'Inter', 'Nirmala UI', 'Mangal', 'Segoe UI', 'Arial', sans-serif; 
               font-size: 14px; 
               margin: 0 !important; 
-              padding: 0mm 1mm !important; 
+              padding: 0 !important; 
               line-height: 1.4;
               background: #ffffff;
               width: 100% !important;
@@ -1715,16 +1716,18 @@ export default function BorrowerListReports() {
               border: none;
             }
             @media print {
+              @page { margin: 0 !important; }
               * { 
                 -webkit-print-color-adjust: exact !important; 
                 print-color-adjust: exact !important; 
               }
               
-              body {
-                margin: 0;
-                padding: 0 1mm;
+              html, body {
+                margin: 0 !important;
+                padding: 0 !important;
                 font-size: 11px;
                 font-family: 'Noto Sans Devanagari', 'Inter', sans-serif !important;
+                width: 100% !important;
               }
               
               table {
@@ -1732,6 +1735,7 @@ export default function BorrowerListReports() {
                 width: 100% !important;
                 border: none !important;
                 page-break-inside: auto;
+                margin: 0 !important;
               }
               thead {
                 display: table-header-group !important;
@@ -1809,8 +1813,8 @@ export default function BorrowerListReports() {
                 border: none !important;
                 box-shadow: none !important;
                 background: none !important;
-                padding: 3px 5px !important;
-                margin-bottom: 3px !important;
+                padding: 2px 0 !important;
+                margin: 0 0 2px 0 !important;
                 border-bottom: 1.5px solid #333 !important;
                 border-radius: 0 !important;
               }
@@ -1821,8 +1825,8 @@ export default function BorrowerListReports() {
               }
               .report-info {
                 font-size: 11px !important;
-                padding: 3px 5px !important;
-                margin-bottom: 3px !important;
+                padding: 2px 0 !important;
+                margin: 0 0 2px 0 !important;
                 border: none !important;
                 background: none !important;
               }
