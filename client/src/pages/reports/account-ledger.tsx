@@ -1592,9 +1592,16 @@ export default function AccountLedger() {
                       <h3 className="text-lg md:text-xl font-semibold mt-4">
                         {statementData.account.type === 'individual_loan' 
                           ? statementData.account.formattedType || 'नमुना क्रमांक आठ (नियम 18 पहा)'
-                          : 'खाते लेजर'
+                          : statementData.account.type === 'loan'
+                            ? 'सर्व कर्ज खाते (एकत्रित) लेजर'
+                            : statementData.account.type === 'cash'
+                              ? 'रोकड खाते लेजर'
+                              : statementData.account.type === 'party'
+                                ? 'व्यक्ती खाते लेजर'
+                                : 'खाते लेजर'
                         }
                       </h3>
+                      <p className="text-sm text-gray-500 mt-1">कालावधी: {DateUtils.isoToIndianDate(filters.dateFrom)} ते {DateUtils.isoToIndianDate(filters.dateTo)}</p>
                       <div className="text-sm text-gray-600 text-left">
                         {/* ✅ PROFESSIONAL PRINT: Account info in horizontal layout for print only */}
                         <div className="print-hidden flex flex-col gap-1">
