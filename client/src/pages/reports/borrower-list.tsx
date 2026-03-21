@@ -1792,16 +1792,16 @@ export default function BorrowerListReports() {
               th:nth-child(6), td:nth-child(6) { width: auto !important; min-width: 130px !important; text-align: left !important; padding-left: 5px !important; }    /* वस्तूचा तपशील */
               th:nth-child(7), td:nth-child(7) { width: 42px !important; min-width: 42px !important; }    /* वजन */
               
-              /* For closing-wise report with extra columns - portrait fit */
-              .closing-wise-table th:nth-child(1), .closing-wise-table td:nth-child(1) { width: 23px !important; min-width: 23px !important; }    /* अनुक्रमांक */
-              .closing-wise-table th:nth-child(3), .closing-wise-table td:nth-child(3) { width: 50px !important; min-width: 50px !important; }    /* बंद तारीख */
-              .closing-wise-table th:nth-child(4), .closing-wise-table td:nth-child(4) { width: 55px !important; min-width: 55px !important; }    /* रक्कम */
-              .closing-wise-table th:nth-child(5), .closing-wise-table td:nth-child(5) { width: 48px !important; min-width: 48px !important; }    /* चार्जेस */
-              .closing-wise-table th:nth-child(6), .closing-wise-table td:nth-child(6) { width: 115px !important; min-width: 115px !important; text-align: left !important; padding-left: 5px !important; }   /* नाव */
-              .closing-wise-table th:nth-child(7), .closing-wise-table td:nth-child(7) { width: 50px !important; min-width: 50px !important; max-width: 55px !important; text-align: center !important; padding: 3px 2px !important; }      /* कोड नं - center, wider */
-              .closing-wise-table tbody tr:not(.total-row):not(.summary-row) td:nth-child(7) { padding: 8px 2px !important; text-align: center !important; }
-              .closing-wise-table th:nth-child(8), .closing-wise-table td:nth-child(8) { width: auto !important; min-width: 100px !important; }    /* वस्तूचा तपशील */
-              .closing-wise-table th:nth-child(9), .closing-wise-table td:nth-child(9) { width: 40px !important; min-width: 40px !important; }    /* वजन */
+              /* For closing-wise report with extra columns - portrait fit (9 cols) */
+              .closing-wise-table th:nth-child(1), .closing-wise-table td:nth-child(1) { width: 22px !important; min-width: 22px !important; max-width: 26px !important; }
+              .closing-wise-table th:nth-child(2), .closing-wise-table td:nth-child(2) { width: 52px !important; min-width: 52px !important; max-width: 56px !important; }
+              .closing-wise-table th:nth-child(3), .closing-wise-table td:nth-child(3) { width: 52px !important; min-width: 52px !important; max-width: 56px !important; }
+              .closing-wise-table th:nth-child(4), .closing-wise-table td:nth-child(4) { width: 52px !important; min-width: 52px !important; max-width: 58px !important; text-align: right !important; }
+              .closing-wise-table th:nth-child(5), .closing-wise-table td:nth-child(5) { width: 45px !important; min-width: 45px !important; max-width: 50px !important; text-align: right !important; }
+              .closing-wise-table th:nth-child(6), .closing-wise-table td:nth-child(6) { width: auto !important; min-width: 110px !important; text-align: left !important; padding-left: 4px !important; }
+              .closing-wise-table th:nth-child(7), .closing-wise-table td:nth-child(7) { width: 42px !important; min-width: 42px !important; max-width: 48px !important; text-align: center !important; }
+              .closing-wise-table th:nth-child(8), .closing-wise-table td:nth-child(8) { width: auto !important; min-width: 90px !important; text-align: left !important; }
+              .closing-wise-table th:nth-child(9), .closing-wise-table td:nth-child(9) { width: 36px !important; min-width: 36px !important; max-width: 42px !important; text-align: center !important; }
               
               /* MATURITY-WISE REPORT PRINT LAYOUT */
               .maturity-wise-table th:nth-child(1), .maturity-wise-table td:nth-child(1) { width: 26px !important; min-width: 26px !important; max-width: 30px !important; }    /* अ.क्र. */
@@ -2362,16 +2362,16 @@ export default function BorrowerListReports() {
               th:nth-child(6), td:nth-child(6) { width: auto !important; min-width: 100px !important; text-align: left !important; padding-left: 5px !important; }
               th:nth-child(7), td:nth-child(7) { width: 42px !important; min-width: 42px !important; max-width: 48px !important; text-align: center !important; }
               
-              /* CLOSING-WISE reports (9 columns) */
-              body[data-report-type="closing-wise"] th:nth-child(1), body[data-report-type="closing-wise"] td:nth-child(1) { width: 23px !important; min-width: 23px !important; max-width: 28px !important; }
-              body[data-report-type="closing-wise"] th:nth-child(2), body[data-report-type="closing-wise"] td:nth-child(2) { width: 50px !important; min-width: 50px !important; max-width: 55px !important; }
-              body[data-report-type="closing-wise"] th:nth-child(3), body[data-report-type="closing-wise"] td:nth-child(3) { width: 50px !important; min-width: 50px !important; max-width: 55px !important; }
-              body[data-report-type="closing-wise"] th:nth-child(4), body[data-report-type="closing-wise"] td:nth-child(4) { width: 55px !important; min-width: 55px !important; max-width: 60px !important; text-align: right !important; }
-              body[data-report-type="closing-wise"] th:nth-child(5), body[data-report-type="closing-wise"] td:nth-child(5) { width: 48px !important; min-width: 48px !important; max-width: 55px !important; text-align: right !important; }
-              body[data-report-type="closing-wise"] th:nth-child(6), body[data-report-type="closing-wise"] td:nth-child(6) { width: auto !important; min-width: 115px !important; text-align: left !important; padding-left: 5px !important; }
-              body[data-report-type="closing-wise"] th:nth-child(7), body[data-report-type="closing-wise"] td:nth-child(7) { width: 50px !important; min-width: 50px !important; max-width: 55px !important; text-align: center !important; }
-              body[data-report-type="closing-wise"] th:nth-child(8), body[data-report-type="closing-wise"] td:nth-child(8) { width: auto !important; min-width: 100px !important; text-align: left !important; }
-              body[data-report-type="closing-wise"] th:nth-child(9), body[data-report-type="closing-wise"] td:nth-child(9) { width: 40px !important; min-width: 40px !important; max-width: 45px !important; text-align: center !important; }
+              /* CLOSING-WISE reports (9 columns) — consistent widths */
+              body[data-report-type="closing-wise"] th:nth-child(1), body[data-report-type="closing-wise"] td:nth-child(1) { width: 22px !important; min-width: 22px !important; max-width: 26px !important; text-align: center !important; }
+              body[data-report-type="closing-wise"] th:nth-child(2), body[data-report-type="closing-wise"] td:nth-child(2) { width: 52px !important; min-width: 52px !important; max-width: 56px !important; text-align: center !important; }
+              body[data-report-type="closing-wise"] th:nth-child(3), body[data-report-type="closing-wise"] td:nth-child(3) { width: 52px !important; min-width: 52px !important; max-width: 56px !important; text-align: center !important; }
+              body[data-report-type="closing-wise"] th:nth-child(4), body[data-report-type="closing-wise"] td:nth-child(4) { width: 52px !important; min-width: 52px !important; max-width: 58px !important; text-align: right !important; }
+              body[data-report-type="closing-wise"] th:nth-child(5), body[data-report-type="closing-wise"] td:nth-child(5) { width: 45px !important; min-width: 45px !important; max-width: 50px !important; text-align: right !important; }
+              body[data-report-type="closing-wise"] th:nth-child(6), body[data-report-type="closing-wise"] td:nth-child(6) { width: auto !important; min-width: 110px !important; text-align: left !important; padding-left: 4px !important; }
+              body[data-report-type="closing-wise"] th:nth-child(7), body[data-report-type="closing-wise"] td:nth-child(7) { width: 42px !important; min-width: 42px !important; max-width: 48px !important; text-align: center !important; }
+              body[data-report-type="closing-wise"] th:nth-child(8), body[data-report-type="closing-wise"] td:nth-child(8) { width: auto !important; min-width: 90px !important; text-align: left !important; }
+              body[data-report-type="closing-wise"] th:nth-child(9), body[data-report-type="closing-wise"] td:nth-child(9) { width: 36px !important; min-width: 36px !important; max-width: 42px !important; text-align: center !important; }
               
               /* Clean cell styling - Uniform professional black borders */
               td {
