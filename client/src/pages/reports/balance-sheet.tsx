@@ -97,7 +97,7 @@ function buildBalanceSheetHTML(balanceSheet: any, company: any, fyStartDate: str
   liabRows += `<tr style="border-top:2px solid #000;font-weight:bold;background:#f0f0f0;"><td style="padding:8px;">एकूण दायित्व (Liabilities)</td><td style="padding:8px;text-align:right;${negStyle(balanceSheet.liabilities.totalLiabilities)}">${fc(balanceSheet.liabilities.totalLiabilities)}</td></tr>`;
 
   const bdr = '1.5px solid #333';
-  const thStyle = `border:${bdr};padding:6px 4px;text-align:left;font-size:11px;background:#f0f0f0;font-weight:700;color:#111;line-height:1.3;-webkit-print-color-adjust:exact;print-color-adjust:exact;`;
+  const thStyle = `border:${bdr};padding:8px 6px;text-align:left;font-size:11px;background:#f0f0f0;font-weight:700;color:#111;line-height:1.4;-webkit-print-color-adjust:exact;print-color-adjust:exact;`;
 
   return `
     <div style="font-family:'Noto Sans Devanagari',Arial,sans-serif;color:#000;background:#fff;width:100%;">
@@ -107,18 +107,20 @@ function buildBalanceSheetHTML(balanceSheet: any, company: any, fyStartDate: str
         <p style="font-size:11px;color:#333;margin:0 0 2px 0;">कालावधी: ${fd(fyStartDate)} ते ${fd(asOfDate)}</p>
       </div>
 
-      <div style="display:flex;width:100%;border:${bdr};border-bottom:none;">
-        <div style="width:50%;text-align:center;padding:5px 2px;font-size:11px;background:#f0f0f0;font-weight:700;border-right:2px solid #333;-webkit-print-color-adjust:exact;print-color-adjust:exact;">मालमत्ता (Assets)</div>
-        <div style="width:50%;text-align:center;padding:5px 2px;font-size:11px;background:#f0f0f0;font-weight:700;-webkit-print-color-adjust:exact;print-color-adjust:exact;">दायित्व (Liabilities)</div>
-      </div>
       <table style="width:100%;border-collapse:collapse;table-layout:fixed;font-size:11px;">
         <colgroup><col style="width:35%"/><col style="width:15%"/><col style="width:35%"/><col style="width:15%"/></colgroup>
-        <thead><tr>
-          <th style="${thStyle}">तपशील</th>
-          <th style="${thStyle}text-align:right;border-right:2px solid #333;">रक्कम (₹)</th>
-          <th style="${thStyle}">तपशील</th>
-          <th style="${thStyle}text-align:right;">रक्कम (₹)</th>
-        </tr></thead>
+        <thead>
+          <tr>
+            <th colspan="2" style="border:${bdr};padding:8px 4px;text-align:center;font-size:12px;background:#f0f0f0;font-weight:700;color:#111;border-right:2px solid #333;-webkit-print-color-adjust:exact;print-color-adjust:exact;">मालमत्ता (Assets)</th>
+            <th colspan="2" style="border:${bdr};padding:8px 4px;text-align:center;font-size:12px;background:#f0f0f0;font-weight:700;color:#111;-webkit-print-color-adjust:exact;print-color-adjust:exact;">दायित्व (Liabilities)</th>
+          </tr>
+          <tr>
+            <th style="${thStyle}">तपशील</th>
+            <th style="${thStyle}text-align:right;border-right:2px solid #333;">रक्कम (₹)</th>
+            <th style="${thStyle}">तपशील</th>
+            <th style="${thStyle}text-align:right;">रक्कम (₹)</th>
+          </tr>
+        </thead>
         <tbody>${(() => {
           const aLines: string[] = [];
           const lLines: string[] = [];
@@ -143,7 +145,7 @@ function buildBalanceSheetHTML(balanceSheet: any, company: any, fyStartDate: str
           const aRows = parseRows(assetsRows);
           const lRows = parseRows(liabRows);
           const maxR = Math.max(aRows.length, lRows.length);
-          const tdCell = `border:${bdr};padding:6px 4px;font-size:11px;font-weight:600;line-height:1.3;`;
+          const tdCell = `border:${bdr};padding:8px 6px;font-size:11px;font-weight:600;line-height:1.4;`;
           let result = '';
           for (let i = 0; i < maxR; i++) {
             const a = aRows[i];
