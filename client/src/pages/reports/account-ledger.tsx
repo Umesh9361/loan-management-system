@@ -30,7 +30,7 @@ export default function AccountLedger() {
       @media print {
         @page {
           size: A4 portrait !important;
-          margin: 8mm 8mm 8mm 25.4mm;
+          margin: 8mm;
         }
         html, body {
           font-family: 'Noto Sans Devanagari', Arial, sans-serif !important;
@@ -61,6 +61,11 @@ export default function AccountLedger() {
         }
         .print-area tr {
           page-break-inside: avoid;
+        }
+        .overflow-x-auto {
+          overflow: visible !important;
+          max-height: none !important;
+          height: auto !important;
         }
         .no-print, .print:hidden, nav, aside, footer, .mobile-nav, .sidebar-modern {
           display: none !important;

@@ -127,7 +127,7 @@ export default function AccountSummaryReport() {
       @media print {
         @page {
           size: A4;
-          margin: 8mm 8mm 8mm 25.4mm;
+          margin: 8mm;
         }
         body * {
           visibility: hidden !important;
@@ -151,6 +151,11 @@ export default function AccountSummaryReport() {
         }
         .no-print {
           display: none !important;
+        }
+        .overflow-x-auto {
+          overflow: visible !important;
+          max-height: none !important;
+          height: auto !important;
         }
         .summary-header {
           text-align: center;

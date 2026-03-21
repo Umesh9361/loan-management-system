@@ -274,8 +274,8 @@ export default function LoadingReport() {
       <!DOCTYPE html>
       <html><head><title>लोडिंग रिपोर्ट</title>
       <style>
-        @page { size: A4 portrait; margin: 8mm 8mm 8mm 25.4mm; }
-        body { font-family: 'Noto Sans Devanagari', sans-serif; font-size: 10px; margin: 0; padding: 0; }
+        @page { size: A4 portrait; margin: 8mm; }
+        body { font-family: 'Noto Sans Devanagari', sans-serif; font-size: 10px; margin: 0; padding: 0 0 0 17.4mm; box-sizing: border-box; }
         h1 { text-align: center; font-size: 16px; margin: 5px 0; }
         h2 { text-align: center; font-size: 12px; margin: 3px 0; color: #555; }
         .info { display: flex; justify-content: space-between; margin: 8px 0; font-size: 9px; border-bottom: 1px solid #ccc; padding-bottom: 5px; }

@@ -121,10 +121,19 @@ export default function ProfitLoss() {
     const style = document.createElement('style');
     style.textContent = `
       @media print {
-        @page { size: A4; margin: 8mm 8mm 8mm 25.4mm; }
-        body { font-family: 'Noto Sans Devanagari', Arial, sans-serif !important; }
+        @page { size: A4; margin: 8mm; }
+        body {
+          font-family: 'Noto Sans Devanagari', Arial, sans-serif !important;
+          padding-left: 17.4mm !important;
+          box-sizing: border-box !important;
+        }
         .lg\\:pl-72 { padding-left: 0 !important; }
         aside, .sidebar-modern, .mobile-nav { display: none !important; }
+        .overflow-x-auto {
+          overflow: visible !important;
+          max-height: none !important;
+          height: auto !important;
+        }
       }
     `;
     document.head.appendChild(style);

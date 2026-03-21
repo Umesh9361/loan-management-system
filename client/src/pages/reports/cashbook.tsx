@@ -109,7 +109,7 @@ function CashBookReport() {
       @media print {
         @page {
           size: A4;
-          margin: 8mm 8mm 8mm 25.4mm;
+          margin: 8mm;
         }
         body * {
           visibility: hidden !important;
@@ -130,6 +130,11 @@ function CashBookReport() {
           font-family: 'Noto Sans Devanagari', Arial, sans-serif !important;
           font-size: 11px;
           line-height: 1.3;
+        }
+        .overflow-x-auto {
+          overflow: visible !important;
+          max-height: none !important;
+          height: auto !important;
         }
         .cashbook-header {
           text-align: center;

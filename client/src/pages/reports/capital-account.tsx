@@ -267,13 +267,14 @@ export default function CapitalAccountReport() {
       @media print {
         @page {
           size: A4 portrait;
-          margin: 10mm 8mm 10mm 25.4mm;
+          margin: 8mm;
         }
         body * {
           visibility: hidden !important;
         }
         .print-content, .print-content * {
           visibility: visible !important;
+          display: revert !important;
         }
         .print-content {
           position: absolute !important;
@@ -284,7 +285,17 @@ export default function CapitalAccountReport() {
           padding-left: 25mm !important;
           box-sizing: border-box !important;
           font-family: 'Noto Sans Devanagari', Arial, sans-serif !important;
+          display: block !important;
         }
+        .print-content table {
+          display: table !important;
+          visibility: visible !important;
+          width: 100% !important;
+        }
+        .print-content thead { display: table-header-group !important; }
+        .print-content tbody { display: table-row-group !important; }
+        .print-content tr { display: table-row !important; }
+        .print-content th, .print-content td { display: table-cell !important; }
         body {
           font-family: 'Noto Sans Devanagari', Arial, sans-serif !important;
           font-size: 11px;
@@ -343,6 +354,11 @@ export default function CapitalAccountReport() {
         }
         .amount-col {
           text-align: right !important;
+        }
+        .overflow-x-auto {
+          overflow: visible !important;
+          max-height: none !important;
+          height: auto !important;
         }
         .capital-print-footer {
           margin-top: 50px;

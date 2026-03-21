@@ -45,8 +45,8 @@ export default function CapitalReport() {
     const html = `<!DOCTYPE html><html><head><meta charset="utf-8"/>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
-  @page { size: A4 portrait; margin: 8mm 8mm 8mm 25.4mm; }
-  body { font-family: 'Noto Sans Devanagari', Arial, sans-serif; margin: 0; padding: 20px; }
+  @page { size: A4 portrait; margin: 8mm; }
+  body { font-family: 'Noto Sans Devanagari', Arial, sans-serif; margin: 0; padding: 20px 20px 20px 17.4mm; box-sizing: border-box; }
   .header { text-align: center; margin-bottom: 20px; }
   .header h2 { font-size: 14px; font-weight: bold; margin: 0 0 4px; }
   .header h3 { font-size: 12px; font-weight: bold; margin: 0 0 3px; }
