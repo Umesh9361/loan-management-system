@@ -275,7 +275,7 @@ export default function LoadingReport() {
       <html><head><title>लोडिंग रिपोर्ट</title>
       <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;500;600;700&display=swap" rel="stylesheet">
       <style>
-        @page { size: A4 landscape; margin: 8mm; }
+        @page { size: A4 landscape; margin: 12mm 8mm 8mm 8mm; }
         * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
         body { font-family: 'Noto Sans Devanagari', Arial, sans-serif; font-size: 10px; margin: 0; padding: 0; box-sizing: border-box; }
         h1 { text-align: center; font-size: 15px; font-weight: 700; margin: 5px 0; }
