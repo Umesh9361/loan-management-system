@@ -1915,31 +1915,7 @@ export default function BorrowerListReports() {
               th:nth-child(7), td:nth-child(7) { text-align: center !important; }     /* वजन */
             }
             
-            /* NUCLEAR CSS FIX - MAXIMUM SPECIFICITY - CANNOT BE OVERRIDDEN */
-            table[class*="borrower-report-table"]:not(.closing-wise-table) tbody tr td:nth-child(1) { 
-              width: 45px !important; 
-              min-width: 45px !important; 
-              max-width: 45px !important; 
-              box-sizing: border-box !important;
-            }
-            table[class*="borrower-report-table"]:not(.closing-wise-table) tbody tr td:nth-child(2) { 
-              width: 75px !important; 
-              min-width: 75px !important; 
-              max-width: 75px !important; 
-              box-sizing: border-box !important;
-            }
-            table[class*="borrower-report-table"]:not(.closing-wise-table) thead tr th:nth-child(1) { 
-              width: 45px !important; 
-              min-width: 45px !important; 
-              max-width: 45px !important; 
-              box-sizing: border-box !important;
-            }
-            table[class*="borrower-report-table"]:not(.closing-wise-table) thead tr th:nth-child(2) { 
-              width: 75px !important; 
-              min-width: 75px !important; 
-              max-width: 75px !important; 
-              box-sizing: border-box !important;
-            }
+            /* Column widths controlled by colgroup + body[data-report-type] selectors in 4th print block */
             
             /* Print-only alignment: Right justify + Top align for all table content */
             @media print {
