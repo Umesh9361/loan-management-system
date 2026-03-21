@@ -191,17 +191,10 @@ function CashBookReport() {
           font-size: 10px;
           line-height: 1.3;
         }
-        /* Remove all background colors in print */
+        /* Remove data row background colors in print but keep header/highlight rows */
         .print:hidden { display: none !important; }
         .print\\:block { display: block !important; }
-        .t-format-table .bg-indigo-100,
-        .t-format-table .bg-indigo-50,
-        .t-format-table .bg-red-100,
-        .t-format-table .bg-yellow-50,
-        .bg-indigo-50,
-        .bg-indigo-100,
-        .bg-yellow-50,
-        .bg-red-100 {
+        .t-format-table .bg-yellow-50 {
           background: white !important;
         }
         /* Bold styling for balance rows in print */
@@ -255,25 +248,59 @@ function CashBookReport() {
         }
         .professional-vertical-table thead { display: table-header-group; }
         .professional-vertical-table tr { page-break-inside: avoid !important; break-inside: avoid !important; }
-        /* Compact T-format main header (जमा/नावे) in print */
+        /* Compact T-format main header (जमा/नावे) in print — grey background */
         .professional-t-format .flex > div,
         .professional-t-format > div > div {
           padding: 3px 2px !important;
+        }
+        .professional-t-format > .flex.border-b-4 > div {
+          background: #f0f0f0 !important;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+          border-bottom: 1.5px solid #333 !important;
         }
         .professional-t-format h3,
         .professional-t-format .font-bold {
           font-size: 11px !important;
           line-height: 1.3 !important;
+          color: #111 !important;
         }
         .professional-t-format h3 span {
           font-size: 9px !important;
         }
-        /* Compact T-format sub-headers (दिनांक/तपशील/रक्कम) in print */
+        /* Compact T-format sub-headers (दिनांक/तपशील/रक्कम) in print — grey background */
         .professional-t-format .flex.font-semibold,
         .professional-t-format .flex.font-semibold > div {
           font-size: 10px !important;
           padding: 2px 2px !important;
           line-height: 1.3 !important;
+        }
+        .professional-t-format > .flex.border-b-2 {
+          background: #f0f0f0 !important;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
+        /* शिल्लक पुढे / मागील शिल्लक rows — highlight in print */
+        .t-format-table .bg-indigo-50,
+        .t-format-table .bg-indigo-100 {
+          background: #e8eaf6 !important;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
+        /* एकूण total row — highlight in print */
+        .t-format-table .border-t-2.bg-indigo-50,
+        .professional-t-format .border-t-2.bg-indigo-50 {
+          background: #e0e7ff !important;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+          font-weight: 700 !important;
+          border-top: 1.5px solid #333 !important;
+        }
+        /* Vertical format — opening balance row highlight */
+        .professional-vertical-table .bg-yellow-50 {
+          background: #fef3c7 !important;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
         }
         /* Override all Tailwind responsive paddings/fonts in print */
         .print-content .py-2,
