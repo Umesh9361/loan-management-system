@@ -876,8 +876,7 @@ export default function AccountLedger() {
       const closureDate = new Date(loanClosure.closureDate);
       if (closureDate < fromDate) {
         const principalPaid = parseFloat(loanClosure.principalPaid || '0');
-        const interestPaid = parseFloat(loanClosure.interestPaid || '0');
-        openingBalance -= (principalPaid + interestPaid);
+        openingBalance -= principalPaid;
       }
     });
 
@@ -932,16 +931,14 @@ export default function AccountLedger() {
       const loanClosure = safeClosures.find((c: any) => c.loanId === loan.id);
       if (!loanClosure) return;
       const principalPaid = parseFloat(loanClosure.principalPaid || '0');
-      const interestPaid = parseFloat(loanClosure.interestPaid || '0');
-      const totalRepayment = principalPaid + interestPaid;
       const closureDate = typeof loanClosure.closureDate === 'string' ? loanClosure.closureDate.split('T')[0] : loanClosure.closureDate;
-      if (totalRepayment > 0) {
-        runningBalance -= totalRepayment;
+      if (principalPaid > 0) {
+        runningBalance -= principalPaid;
         entries.push({
           date: closureDate,
           description: `कर्ज बंद - ${loan.borrowerName} (खाते क्र. ${loan.accountNumber})`,
           debit: 0,
-          credit: totalRepayment,
+          credit: principalPaid,
           balance: runningBalance,
           type: 'loan_closure',
           loanId: loan.id,
