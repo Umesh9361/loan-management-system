@@ -2711,12 +2711,6 @@ export default function BorrowerListReports() {
               .mobile-hide {
                 display: table-cell !important;
               }
-              
-              /* Ensure proper page margins and professional appearance */
-              @page {
-                size: A4 landscape;
-                margin: 10mm 5mm 8mm 5mm;
-              }
             }
           </style>
         </head>
