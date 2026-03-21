@@ -2302,15 +2302,24 @@ export default function BorrowerListReports() {
                 border-right: none !important;
               }
               
-              /* A4 Print Column Widths — th+td consistent (date-wise, name-wise)
-                 ★ THIS IS THE MASTER BLOCK — Last in cascade, so these values WIN ★ */
-              th:nth-child(1), td:nth-child(1) { width: 26px !important; min-width: 26px !important; max-width: 30px !important; text-align: center !important; }
-              th:nth-child(2), td:nth-child(2) { width: 50px !important; min-width: 50px !important; max-width: 54px !important; text-align: center !important; }
-              th:nth-child(3), td:nth-child(3) { width: 65px !important; min-width: 65px !important; max-width: 70px !important; text-align: left !important; padding-left: 5px !important; }
-              th:nth-child(4), td:nth-child(4) { width: 173px !important; min-width: 173px !important; text-align: left !important; padding-left: 4px !important; }
-              th:nth-child(5), td:nth-child(5) { width: 54px !important; min-width: 54px !important; max-width: 58px !important; text-align: center !important; }
-              th:nth-child(6), td:nth-child(6) { width: auto !important; min-width: 80px !important; text-align: left !important; padding-left: 5px !important; }
-              th:nth-child(7), td:nth-child(7) { width: 50px !important; min-width: 50px !important; max-width: 56px !important; text-align: center !important; }
+              /* ═══════════════════════════════════════════════════════════════
+                 DATE-WISE & NAME-WISE PRINT — HIGHEST SPECIFICITY with body[data-report-type]
+                 ★ Uses body[] selector to GUARANTEE these values apply over ALL other rules ★
+                 ═══════════════════════════════════════════════════════════════ */
+              body[data-report-type="date-wise"] th:nth-child(1), body[data-report-type="date-wise"] td:nth-child(1),
+              body[data-report-type="name-wise"] th:nth-child(1), body[data-report-type="name-wise"] td:nth-child(1) { width: 26px !important; min-width: 26px !important; max-width: 30px !important; text-align: center !important; }
+              body[data-report-type="date-wise"] th:nth-child(2), body[data-report-type="date-wise"] td:nth-child(2),
+              body[data-report-type="name-wise"] th:nth-child(2), body[data-report-type="name-wise"] td:nth-child(2) { width: 50px !important; min-width: 50px !important; max-width: 54px !important; text-align: center !important; }
+              body[data-report-type="date-wise"] th:nth-child(3), body[data-report-type="date-wise"] td:nth-child(3),
+              body[data-report-type="name-wise"] th:nth-child(3), body[data-report-type="name-wise"] td:nth-child(3) { width: 65px !important; min-width: 65px !important; max-width: 70px !important; text-align: left !important; padding-left: 5px !important; }
+              body[data-report-type="date-wise"] th:nth-child(4), body[data-report-type="date-wise"] td:nth-child(4),
+              body[data-report-type="name-wise"] th:nth-child(4), body[data-report-type="name-wise"] td:nth-child(4) { width: 173px !important; min-width: 173px !important; text-align: left !important; padding-left: 4px !important; }
+              body[data-report-type="date-wise"] th:nth-child(5), body[data-report-type="date-wise"] td:nth-child(5),
+              body[data-report-type="name-wise"] th:nth-child(5), body[data-report-type="name-wise"] td:nth-child(5) { width: 54px !important; min-width: 54px !important; max-width: 58px !important; text-align: center !important; }
+              body[data-report-type="date-wise"] th:nth-child(6), body[data-report-type="date-wise"] td:nth-child(6),
+              body[data-report-type="name-wise"] th:nth-child(6), body[data-report-type="name-wise"] td:nth-child(6) { width: auto !important; min-width: 80px !important; text-align: left !important; padding-left: 5px !important; }
+              body[data-report-type="date-wise"] th:nth-child(7), body[data-report-type="date-wise"] td:nth-child(7),
+              body[data-report-type="name-wise"] th:nth-child(7), body[data-report-type="name-wise"] td:nth-child(7) { width: 50px !important; min-width: 50px !important; max-width: 56px !important; text-align: center !important; }
               
               /* ═══════════════════════════════════════════════════════════════
                  CLOSING-WISE PRINT — SINGLE CONSOLIDATED BLOCK (9 columns)
