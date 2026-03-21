@@ -1737,6 +1737,13 @@ export default function BorrowerListReports() {
               tr {
                 page-break-inside: avoid !important;
                 break-inside: avoid !important;
+                height: auto !important;
+                min-height: 0 !important;
+              }
+              td, th {
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+                height: auto !important;
               }
               
               /* Professional print appearance - remove all table borders */
@@ -2261,6 +2268,13 @@ export default function BorrowerListReports() {
                 box-shadow: none !important;
                 page-break-inside: avoid !important;
                 break-inside: avoid !important;
+                height: auto !important;
+                min-height: 0 !important;
+              }
+              td, th {
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+                height: auto !important;
               }
               thead {
                 display: table-header-group !important;
@@ -2581,6 +2595,8 @@ export default function BorrowerListReports() {
               tr { 
                 page-break-inside: avoid !important; 
                 break-inside: avoid !important;
+                height: auto !important;
+                min-height: 0 !important;
                 page-break-after: auto;
                 background: white !important;
               }
