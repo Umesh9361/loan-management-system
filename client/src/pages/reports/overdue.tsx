@@ -87,7 +87,7 @@ export default function OverdueReport() {
     const style = document.createElement('style');
     style.textContent = `
       @media print {
-        @page { size: A4 landscape; margin: 8mm; }
+        @page { size: A4 landscape; margin: 12mm 8mm 8mm 8mm; }
         * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
         body {
           font-family: 'Noto Sans Devanagari', Arial, sans-serif !important;
