@@ -303,7 +303,7 @@ export default function CapitalAccountReport() {
         .capital-table th,
         .capital-table td {
           border: 1.5px solid #333;
-          padding: 7px 6px;
+          padding: 8px 6px;
           text-align: center;
           font-family: 'Noto Sans Devanagari', Arial, sans-serif !important;
         }
@@ -320,7 +320,7 @@ export default function CapitalAccountReport() {
           print-color-adjust: exact !important;
           color: #111;
           font-weight: 700;
-          font-size: 9px;
+          font-size: 11px;
           word-wrap: break-word;
           overflow-wrap: break-word;
           line-height: 1.3;
@@ -328,7 +328,7 @@ export default function CapitalAccountReport() {
         .capital-table td {
           background: white;
           font-weight: 600;
-          font-size: 11px;
+          font-size: 12px;
         }
         .capital-table .opening-row td {
           background: #fef3c7 !important;
@@ -427,8 +427,8 @@ export default function CapitalAccountReport() {
       const renderWidthPx = 794;
       const companyName = (company as any)?.name || 'कंपनी नाव';
       const bdr = '1.5px solid #333';
-      const thStyle = `border:${bdr};padding:7px 4px;text-align:center;font-size:9px;background:#f0f0f0;font-weight:700;color:#111;line-height:1.3;word-wrap:break-word;overflow-wrap:break-word;`;
-      const tdBase = `border:${bdr};padding:7px 6px;font-size:11px;font-weight:600;line-height:1.4;`;
+      const thStyle = `border:${bdr};padding:8px 6px;text-align:center;font-size:11px;background:#f0f0f0;font-weight:700;color:#111;line-height:1.3;word-wrap:break-word;overflow-wrap:break-word;`;
+      const tdBase = `border:${bdr};padding:8px 6px;font-size:12px;font-weight:600;line-height:1.4;`;
 
       let rows = '';
       rows += `<tr>
