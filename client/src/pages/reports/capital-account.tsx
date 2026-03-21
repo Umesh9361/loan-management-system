@@ -292,21 +292,21 @@ export default function CapitalAccountReport() {
     const printHTML = `<!DOCTYPE html><html><head><meta charset="utf-8"/><title>भांडवल खाते</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
-  @page { size: A4 portrait; margin: 5mm; }
-  body { font-family: 'Noto Sans Devanagari', Arial, sans-serif; margin: 0; padding: 15mm 10mm 15mm 15mm; box-sizing: border-box; font-size: 11px; line-height: 1.4; }
-  .header { text-align: center; margin-bottom: 16px; font-weight: bold; }
+  @page { size: A4 portrait; margin: 12mm 5mm 12mm 5mm; }
+  body { font-family: 'Noto Sans Devanagari', Arial, sans-serif; margin: 0; padding: 3mm 5mm 3mm 20mm; box-sizing: border-box; font-size: 11px; line-height: 1.4; }
+  .header { text-align: center; margin-bottom: 12px; font-weight: bold; }
   .header p { margin: 0 0 4px 0; }
   table { width: 100%; border-collapse: collapse; table-layout: fixed; page-break-inside: auto; }
   thead { display: table-header-group; }
   tr { page-break-inside: avoid !important; break-inside: avoid !important; }
-  col:nth-child(1) { width: 6%; }
-  col:nth-child(2) { width: 12%; }
-  col:nth-child(3) { width: 18%; }
-  col:nth-child(4) { width: 10%; }
-  col:nth-child(5) { width: 18%; }
-  col:nth-child(6) { width: 10%; }
-  col:nth-child(7) { width: 26%; }
-  th, td { border: 1.5px solid #333; padding: 8px 6px; text-align: center; font-size: 12px; font-weight: 600; }
+  col:nth-child(1) { width: 5%; }
+  col:nth-child(2) { width: 11%; }
+  col:nth-child(3) { width: 17%; }
+  col:nth-child(4) { width: 9%; }
+  col:nth-child(5) { width: 17%; }
+  col:nth-child(6) { width: 9%; }
+  col:nth-child(7) { width: 20%; }
+  th, td { border: 1.5px solid #333; padding: 6px 4px; text-align: center; font-size: 11px; font-weight: 600; }
   th { background: #f0f0f0; color: #111; font-weight: 700; font-size: 11px; word-wrap: break-word; overflow-wrap: break-word; line-height: 1.3; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .opening-row td { background: #fef3c7; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .closing-row td { background: #e0e7ff; font-weight: 700; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
