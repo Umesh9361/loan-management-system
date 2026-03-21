@@ -705,13 +705,13 @@ export default function CapitalAccountReport() {
                     </colgroup>
                     <thead>
                       <tr>
-                        <th style={{ border: '1.5px solid #333', padding: '7px 6px', fontSize: '11px', background: '#f0f0f0', fontWeight: 700, textAlign: 'center', color: '#111' }}>अ.क्र.</th>
-                        <th style={{ border: '1.5px solid #333', padding: '7px 6px', fontSize: '11px', background: '#f0f0f0', fontWeight: 700, textAlign: 'center', color: '#111' }}>दिनांक</th>
-                        <th style={{ border: '1.5px solid #333', padding: '7px 6px', fontSize: '11px', background: '#f0f0f0', fontWeight: 700, textAlign: 'center', color: '#111' }}>कर्जाची रकमेची एकूण परतफेड</th>
-                        <th style={{ border: '1.5px solid #333', padding: '7px 6px', fontSize: '11px', background: '#f0f0f0', fontWeight: 700, textAlign: 'center', color: '#111' }}>रोकड वहीतील पान क्रमांक</th>
-                        <th style={{ border: '1.5px solid #333', padding: '7px 6px', fontSize: '11px', background: '#f0f0f0', fontWeight: 700, textAlign: 'center', color: '#111' }}>कर्ज वाटपाची एकूण रक्कम</th>
-                        <th style={{ border: '1.5px solid #333', padding: '7px 6px', fontSize: '11px', background: '#f0f0f0', fontWeight: 700, textAlign: 'center', color: '#111' }}>रोकड वहीतील पान क्रमांक</th>
-                        <th style={{ border: '1.5px solid #333', padding: '7px 6px', fontSize: '11px', background: '#f0f0f0', fontWeight: 700, textAlign: 'center', color: '#111' }}>व्यवसायात गुंतवलेली निव्वळ शिल्लक रक्कम</th>
+                        <th style={{ border: '1.5px solid #333', padding: '10px 8px', fontSize: '13px', background: '#f0f0f0', fontWeight: 700, textAlign: 'center', color: '#111' }}>अ.क्र.</th>
+                        <th style={{ border: '1.5px solid #333', padding: '10px 8px', fontSize: '13px', background: '#f0f0f0', fontWeight: 700, textAlign: 'center', color: '#111' }}>दिनांक</th>
+                        <th style={{ border: '1.5px solid #333', padding: '10px 8px', fontSize: '13px', background: '#f0f0f0', fontWeight: 700, textAlign: 'center', color: '#111' }}>कर्जाची रकमेची एकूण परतफेड</th>
+                        <th style={{ border: '1.5px solid #333', padding: '10px 8px', fontSize: '13px', background: '#f0f0f0', fontWeight: 700, textAlign: 'center', color: '#111' }}>रोकड वहीतील पान क्रमांक</th>
+                        <th style={{ border: '1.5px solid #333', padding: '10px 8px', fontSize: '13px', background: '#f0f0f0', fontWeight: 700, textAlign: 'center', color: '#111' }}>कर्ज वाटपाची एकूण रक्कम</th>
+                        <th style={{ border: '1.5px solid #333', padding: '10px 8px', fontSize: '13px', background: '#f0f0f0', fontWeight: 700, textAlign: 'center', color: '#111' }}>रोकड वहीतील पान क्रमांक</th>
+                        <th style={{ border: '1.5px solid #333', padding: '10px 8px', fontSize: '13px', background: '#f0f0f0', fontWeight: 700, textAlign: 'center', color: '#111' }}>व्यवसायात गुंतवलेली निव्वळ शिल्लक रक्कम</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -725,15 +725,15 @@ export default function CapitalAccountReport() {
                       ) : (
                         <>
                           <tr className="opening-row" style={{ background: '#fef3c7' }}>
-                            <td style={{ border: '1.5px solid #333', padding: '7px 6px', textAlign: 'center', fontSize: '11px', fontWeight: 600 }}>-</td>
-                            <td style={{ border: '1.5px solid #333', padding: '7px 6px', textAlign: 'center', fontSize: '11px', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                            <td style={{ border: '1.5px solid #333', padding: '10px 8px', textAlign: 'center', fontSize: '13px', fontWeight: 600 }}>-</td>
+                            <td style={{ border: '1.5px solid #333', padding: '10px 8px', textAlign: 'center', fontSize: '13px', fontWeight: 600, whiteSpace: 'nowrap' }}>
                               {new Date(dateFrom).toLocaleDateString('en-GB')}
                             </td>
-                            <td style={{ border: '1.5px solid #333', padding: '7px 6px', textAlign: 'center', fontSize: '11px', fontWeight: 600 }}>-</td>
-                            <td style={{ border: '1.5px solid #333', padding: '7px 6px', textAlign: 'center', fontSize: '11px', fontWeight: 600 }}>-</td>
-                            <td style={{ border: '1.5px solid #333', padding: '7px 6px', textAlign: 'center', fontSize: '11px', fontWeight: 600 }}>-</td>
-                            <td style={{ border: '1.5px solid #333', padding: '7px 6px', textAlign: 'center', fontSize: '11px', fontWeight: 600 }}>-</td>
-                            <td className="amount-col" style={{ border: '1.5px solid #333', padding: '7px 6px', textAlign: 'right', fontSize: '11px', fontWeight: 700, whiteSpace: 'nowrap' }}>
+                            <td style={{ border: '1.5px solid #333', padding: '10px 8px', textAlign: 'center', fontSize: '13px', fontWeight: 600 }}>-</td>
+                            <td style={{ border: '1.5px solid #333', padding: '10px 8px', textAlign: 'center', fontSize: '13px', fontWeight: 600 }}>-</td>
+                            <td style={{ border: '1.5px solid #333', padding: '10px 8px', textAlign: 'center', fontSize: '13px', fontWeight: 600 }}>-</td>
+                            <td style={{ border: '1.5px solid #333', padding: '10px 8px', textAlign: 'center', fontSize: '13px', fontWeight: 600 }}>-</td>
+                            <td className="amount-col" style={{ border: '1.5px solid #333', padding: '10px 8px', textAlign: 'right', fontSize: '13px', fontWeight: 700, whiteSpace: 'nowrap' }}>
                               {openingBalance.toLocaleString('en-IN')} (प्रारंभिक शिल्लक)
                             </td>
                           </tr>
@@ -747,25 +747,25 @@ export default function CapitalAccountReport() {
                           ) : (
                             entries.map((entry, index) => (
                               <tr key={index}>
-                                <td style={{ border: '1.5px solid #333', padding: '7px 6px', textAlign: 'center', fontSize: '11px', fontWeight: 600 }}>
+                                <td style={{ border: '1.5px solid #333', padding: '10px 8px', textAlign: 'center', fontSize: '13px', fontWeight: 600 }}>
                                   {index + 1}
                                 </td>
-                                <td style={{ border: '1.5px solid #333', padding: '7px 6px', textAlign: 'center', fontSize: '11px', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                                <td style={{ border: '1.5px solid #333', padding: '10px 8px', textAlign: 'center', fontSize: '13px', fontWeight: 600, whiteSpace: 'nowrap' }}>
                                   {new Date(entry.date).toLocaleDateString('en-GB')}
                                 </td>
-                                <td className="amount-col" style={{ border: '1.5px solid #333', padding: '7px 6px', textAlign: 'right', fontSize: '11px', fontWeight: 600 }}>
+                                <td className="amount-col" style={{ border: '1.5px solid #333', padding: '10px 8px', textAlign: 'right', fontSize: '13px', fontWeight: 600 }}>
                                   {entry.loanRepayment > 0 ? entry.loanRepayment.toLocaleString('en-IN') : '-'}
                                 </td>
-                                <td style={{ border: '1.5px solid #333', padding: '7px 6px', textAlign: 'center', fontSize: '11px', fontWeight: 600 }}>
+                                <td style={{ border: '1.5px solid #333', padding: '10px 8px', textAlign: 'center', fontSize: '13px', fontWeight: 600 }}>
                                   {entry.loanRepayment > 0 && entry.repaymentPageNo ? entry.repaymentPageNo : '-'}
                                 </td>
-                                <td className="amount-col" style={{ border: '1.5px solid #333', padding: '7px 6px', textAlign: 'right', fontSize: '11px', fontWeight: 600 }}>
+                                <td className="amount-col" style={{ border: '1.5px solid #333', padding: '10px 8px', textAlign: 'right', fontSize: '13px', fontWeight: 600 }}>
                                   {entry.loanDisbursement > 0 ? entry.loanDisbursement.toLocaleString('en-IN') : '-'}
                                 </td>
-                                <td style={{ border: '1.5px solid #333', padding: '7px 6px', textAlign: 'center', fontSize: '11px', fontWeight: 600 }}>
+                                <td style={{ border: '1.5px solid #333', padding: '10px 8px', textAlign: 'center', fontSize: '13px', fontWeight: 600 }}>
                                   {entry.loanDisbursement > 0 && entry.disbursementPageNo ? entry.disbursementPageNo : '-'}
                                 </td>
-                                <td className="amount-col" style={{ border: '1.5px solid #333', padding: '7px 6px', textAlign: 'right', fontSize: '11px', fontWeight: 700 }}>
+                                <td className="amount-col" style={{ border: '1.5px solid #333', padding: '10px 8px', textAlign: 'right', fontSize: '13px', fontWeight: 700 }}>
                                   {entry.netBalance.toLocaleString('en-IN')}
                                 </td>
                               </tr>
@@ -774,19 +774,19 @@ export default function CapitalAccountReport() {
                           
                           {(entries.length > 0 || openingBalance !== 0) && (
                             <tr className="closing-row" style={{ background: '#e0e7ff' }}>
-                              <td style={{ border: '1.5px solid #333', padding: '7px 6px', textAlign: 'center', fontSize: '11px', fontWeight: 700, background: '#e0e7ff' }}>-</td>
-                              <td style={{ border: '1.5px solid #333', padding: '7px 6px', textAlign: 'center', fontSize: '11px', fontWeight: 700, background: '#e0e7ff', whiteSpace: 'nowrap' }}>
+                              <td style={{ border: '1.5px solid #333', padding: '10px 8px', textAlign: 'center', fontSize: '13px', fontWeight: 700, background: '#e0e7ff' }}>-</td>
+                              <td style={{ border: '1.5px solid #333', padding: '10px 8px', textAlign: 'center', fontSize: '13px', fontWeight: 700, background: '#e0e7ff', whiteSpace: 'nowrap' }}>
                                 {new Date(dateTo).toLocaleDateString('en-GB')}
                               </td>
-                              <td className="amount-col" style={{ border: '1.5px solid #333', padding: '7px 6px', textAlign: 'right', fontSize: '11px', fontWeight: 700, background: '#e0e7ff' }}>
+                              <td className="amount-col" style={{ border: '1.5px solid #333', padding: '10px 8px', textAlign: 'right', fontSize: '13px', fontWeight: 700, background: '#e0e7ff' }}>
                                 {periodRepayment.toLocaleString('en-IN')}
                               </td>
-                              <td style={{ border: '1.5px solid #333', padding: '7px 6px', textAlign: 'center', fontSize: '11px', fontWeight: 700, background: '#e0e7ff' }}>एकूण</td>
-                              <td className="amount-col" style={{ border: '1.5px solid #333', padding: '7px 6px', textAlign: 'right', fontSize: '11px', fontWeight: 700, background: '#e0e7ff' }}>
+                              <td style={{ border: '1.5px solid #333', padding: '10px 8px', textAlign: 'center', fontSize: '13px', fontWeight: 700, background: '#e0e7ff' }}>एकूण</td>
+                              <td className="amount-col" style={{ border: '1.5px solid #333', padding: '10px 8px', textAlign: 'right', fontSize: '13px', fontWeight: 700, background: '#e0e7ff' }}>
                                 {periodDisbursement.toLocaleString('en-IN')}
                               </td>
-                              <td style={{ border: '1.5px solid #333', padding: '7px 6px', textAlign: 'center', fontSize: '11px', fontWeight: 700, background: '#e0e7ff' }}>एकूण</td>
-                              <td className="amount-col" style={{ border: '1.5px solid #333', padding: '7px 6px', textAlign: 'right', fontSize: '11px', fontWeight: 700, background: '#e0e7ff', whiteSpace: 'nowrap' }}>
+                              <td style={{ border: '1.5px solid #333', padding: '10px 8px', textAlign: 'center', fontSize: '13px', fontWeight: 700, background: '#e0e7ff' }}>एकूण</td>
+                              <td className="amount-col" style={{ border: '1.5px solid #333', padding: '10px 8px', textAlign: 'right', fontSize: '13px', fontWeight: 700, background: '#e0e7ff', whiteSpace: 'nowrap' }}>
                                 {closingBalance.toLocaleString('en-IN')} (अंतिम शिल्लक)
                               </td>
                             </tr>
