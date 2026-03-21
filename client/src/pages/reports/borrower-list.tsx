@@ -1668,8 +1668,8 @@ export default function BorrowerListReports() {
           <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
           <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
           <style>
-            @page { size: A4 portrait; margin: 2mm 0mm 2mm 0mm; }
-            @page:first { margin-top: 1mm; }
+            @page { size: A4 portrait; margin: 8mm 5mm 8mm 5mm; }
+            @page:first { margin-top: 5mm; }
             * { box-sizing: border-box; }
             html { margin: 0 !important; padding: 0 !important; width: 100% !important; }
             body { 
@@ -1721,7 +1721,8 @@ export default function BorrowerListReports() {
               border: none;
             }
             @media print {
-              @page { margin: 0 !important; }
+              @page { margin: 8mm 5mm 8mm 5mm !important; }
+              @page:first { margin-top: 5mm !important; }
               * { 
                 -webkit-print-color-adjust: exact !important; 
                 print-color-adjust: exact !important; 
