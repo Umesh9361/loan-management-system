@@ -1753,34 +1753,37 @@ ${pagesHTML}
     padding: 1mm 2mm !important;
     margin: 0 !important;
     box-shadow: none !important;
+    font-size: 9px !important;
+    line-height: 1.2 !important;
   }
 
   .bulk-cell .annual-receipt {
     height: auto !important;
     max-height: none !important;
     overflow: hidden !important;
-    padding: 2mm !important;
-    margin: 1mm 0 !important;
+    padding: 2mm 2.5mm !important;
+    margin: 0 !important;
     border: 1px solid #333 !important;
   }
 
-  .bulk-cell .receipt-header { margin-bottom: 1px !important; padding-bottom: 1px !important; }
-  .bulk-cell .form-number { font-size: 9px !important; margin-bottom: 1px !important; padding: 0 !important; }
-  .bulk-cell .receipt-title { font-size: 8px !important; margin: 0 !important; }
-  .bulk-cell .field-row { margin: 1px 0 !important; font-size: 9px !important; }
+  .bulk-cell .receipt-header { margin-bottom: 2px !important; padding-bottom: 2px !important; border-bottom-width: 1px !important; }
+  .bulk-cell .form-number { font-size: 9px !important; margin-bottom: 1px !important; padding: 0 !important; line-height: 1.2 !important; }
+  .bulk-cell .receipt-title { font-size: 8px !important; margin: 1px 0 !important; line-height: 1.2 !important; }
+  .bulk-cell .receipt-header div[style*="font-size"] { font-size: 7px !important; line-height: 1.1 !important; margin-top: 1px !important; }
+  .bulk-cell .field-row { margin: 1.5px 0 !important; font-size: 9px !important; line-height: 1.2 !important; }
   .bulk-cell .field-label { font-size: 9px !important; }
-  .bulk-cell .field-value { font-size: 9px !important; min-height: 12px !important; padding: 0 3px 1px 3px !important; }
-  .bulk-cell .radio-row { font-size: 8px !important; margin: 1px 0 !important; gap: 4px !important; }
+  .bulk-cell .field-value { font-size: 9px !important; min-height: 12px !important; padding: 0 3px 1px 3px !important; margin-left: 3px !important; line-height: 1.2 !important; }
+  .bulk-cell .radio-row { font-size: 8px !important; margin: 1.5px 0 !important; gap: 5px !important; line-height: 1.2 !important; }
   .bulk-cell .radio-label { font-size: 8px !important; }
-  .bulk-cell .radio-option { font-size: 8px !important; }
+  .bulk-cell .radio-option { font-size: 8px !important; gap: 2px !important; }
   .bulk-cell .radio-option input[type="radio"] { width: 8px !important; height: 8px !important; }
-  .bulk-cell .table-section { margin: 2px 0 !important; font-size: 8px !important; }
-  .bulk-cell .table-row { }
-  .bulk-cell .table-cell-label { padding: 1px 3px !important; font-size: 8px !important; line-height: 1.2 !important; }
-  .bulk-cell .table-cell-value { padding: 1px 3px !important; font-size: 8px !important; width: 70px !important; line-height: 1.2 !important; }
-  .bulk-cell .company-info { font-size: 7px !important; padding: 1px !important; margin: 2px 0 !important; }
-  .bulk-cell .signature-section { margin-top: 2px !important; font-size: 8px !important; }
-  .bulk-cell .signature-line { width: 60px !important; height: 10px !important; }
+  .bulk-cell .table-section { margin: 2px 0 !important; font-size: 8px !important; border-width: 1px !important; }
+  .bulk-cell .table-row { border-bottom-width: 1px !important; }
+  .bulk-cell .table-cell-label { padding: 1.5px 3px !important; font-size: 8px !important; line-height: 1.25 !important; font-weight: 500 !important; }
+  .bulk-cell .table-cell-value { padding: 1.5px 3px !important; font-size: 8px !important; width: 70px !important; line-height: 1.25 !important; }
+  .bulk-cell .company-info { font-size: 7px !important; padding: 1.5px 3px !important; margin: 2px 0 !important; line-height: 1.2 !important; }
+  .bulk-cell .signature-section { margin-top: 3px !important; font-size: 8px !important; }
+  .bulk-cell .signature-line { width: 55px !important; height: 10px !important; margin-bottom: 1px !important; }
   .bulk-cell .date-field { font-size: 8px !important; }
 </style>
 </head>
