@@ -177,7 +177,7 @@ export default function CapitalReport() {
         @media print {
           @page {
             size: A4;
-            margin: 15mm;
+            margin: 8mm 8mm 8mm 25.4mm;
           }
           body {
             font-family: 'Noto Sans Devanagari', Arial, sans-serif !important;
@@ -193,6 +193,8 @@ export default function CapitalReport() {
             left: 0;
             top: 0;
             width: 100%;
+            padding-left: 15mm;
+            box-sizing: border-box;
           }
         }
       `}</style>
