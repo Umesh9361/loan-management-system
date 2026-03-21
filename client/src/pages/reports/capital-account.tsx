@@ -267,7 +267,7 @@ export default function CapitalAccountReport() {
     const companyName = (company as any)?.name || 'कंपनी नाव';
 
     let tableRows = '';
-    tableRows += `<tr class="opening-row"><td style="text-align:center;">-</td><td style="text-align:center;white-space:nowrap;">${fd(dateFrom)}</td><td style="text-align:center;">-</td><td style="text-align:center;">-</td><td style="text-align:center;">-</td><td style="text-align:center;">-</td><td style="text-align:right;font-weight:700;white-space:nowrap;">${openingBalance.toLocaleString('en-IN')} (प्रारंभिक शिल्लक)</td></tr>`;
+    tableRows += `<tr class="opening-row"><td style="text-align:center;">-</td><td style="text-align:center;white-space:nowrap;">${fd(dateFrom)}</td><td style="text-align:center;">-</td><td style="text-align:center;">-</td><td style="text-align:center;">-</td><td style="text-align:center;">-</td><td style="text-align:right;font-weight:700;">${openingBalance.toLocaleString('en-IN')}<br/>(प्रारंभिक शिल्लक)</td></tr>`;
 
     if (entries.length === 0 && openingBalance === 0) {
       tableRows += `<tr><td colspan="7" style="text-align:center;padding:30px;font-weight:bold;">निवडलेल्या कालावधीत कोणतेही व्यवहार आढळले नाहीत</td></tr>`;
@@ -286,7 +286,7 @@ export default function CapitalAccountReport() {
     }
 
     if (entries.length > 0 || openingBalance !== 0) {
-      tableRows += `<tr class="closing-row"><td style="text-align:center;">-</td><td style="text-align:center;white-space:nowrap;">${fd(dateTo)}</td><td style="text-align:right;">${periodRepayment.toLocaleString('en-IN')}</td><td style="text-align:center;">एकूण</td><td style="text-align:right;">${periodDisbursement.toLocaleString('en-IN')}</td><td style="text-align:center;">एकूण</td><td style="text-align:right;font-weight:700;white-space:nowrap;">${closingBalance.toLocaleString('en-IN')} (अंतिम शिल्लक)</td></tr>`;
+      tableRows += `<tr class="closing-row"><td style="text-align:center;">-</td><td style="text-align:center;white-space:nowrap;">${fd(dateTo)}</td><td style="text-align:right;">${periodRepayment.toLocaleString('en-IN')}</td><td style="text-align:center;">एकूण</td><td style="text-align:right;">${periodDisbursement.toLocaleString('en-IN')}</td><td style="text-align:center;">एकूण</td><td style="text-align:right;font-weight:700;">${closingBalance.toLocaleString('en-IN')}<br/>(अंतिम शिल्लक)</td></tr>`;
     }
 
     const printHTML = `<!DOCTYPE html><html><head><meta charset="utf-8"/><title>भांडवल खाते</title>
