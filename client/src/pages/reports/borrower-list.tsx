@@ -2010,6 +2010,11 @@ export default function BorrowerListReports() {
                 text-align: left !important; 
                 vertical-align: top !important;
               }
+              table[class*="borrower-report-table"]:not(.closing-wise-table) tbody tr td:nth-child(5),
+              table[class*="borrower-report-table"]:not(.closing-wise-table) thead tr th:nth-child(5) { 
+                text-align: center !important; 
+                vertical-align: top !important;
+              }
               table[class*="borrower-report-table"]:not(.closing-wise-table) tbody tr td:nth-child(6),
               table[class*="borrower-report-table"]:not(.closing-wise-table) thead tr th:nth-child(6) { 
                 text-align: left !important; 
