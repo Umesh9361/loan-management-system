@@ -1782,7 +1782,7 @@ export default function BorrowerListReports() {
               th, td { font-size: 10px !important; padding: 3px 2px !important; word-wrap: break-word !important; overflow-wrap: break-word !important; }
               /* Data rows - 50% more height */
               tbody tr:not(.total-row):not(.summary-row) td { padding: 8px 2px !important; line-height: 1.6 !important; }
-              th:nth-child(1), td:nth-child(1) { width: 26px !important; min-width: 26px !important; }    /* अनुक्रमांक */
+              th:nth-child(1), td:nth-child(1) { width: 26px !important; min-width: 26px !important; text-align: center !important; }    /* अनुक्रमांक */
               th:nth-child(2), td:nth-child(2) { width: 44px !important; min-width: 44px !important; }    /* तारीख - कमी */
               th:nth-child(3), td:nth-child(3) { width: 58px !important; min-width: 58px !important; }    /* रक्कम */
               th:nth-child(4), td:nth-child(4) { width: 88px !important; min-width: 88px !important; text-align: left !important; padding-left: 4px !important; }   /* नाव - 30% कमी */
@@ -1804,7 +1804,7 @@ export default function BorrowerListReports() {
               .closing-wise-table th:nth-child(9), .closing-wise-table td:nth-child(9) { width: 36px !important; min-width: 36px !important; max-width: 42px !important; text-align: center !important; }
               
               /* MATURITY-WISE REPORT PRINT LAYOUT */
-              .maturity-wise-table th:nth-child(1), .maturity-wise-table td:nth-child(1) { width: 26px !important; min-width: 26px !important; max-width: 30px !important; }    /* अ.क्र. */
+              .maturity-wise-table th:nth-child(1), .maturity-wise-table td:nth-child(1) { width: 26px !important; min-width: 26px !important; max-width: 30px !important; text-align: center !important; }    /* अ.क्र. */
               .maturity-wise-table th:nth-child(2), .maturity-wise-table td:nth-child(2) { width: 44px !important; }    /* तारीख - कमी */
               .maturity-wise-table th:nth-child(3), .maturity-wise-table td:nth-child(3) { width: 55px !important; min-width: 55px !important; }    /* अंदाजे बाजार मूल्य */
               .maturity-wise-table th:nth-child(4), .maturity-wise-table td:nth-child(4) { width: 88px !important; min-width: 88px !important; text-align: left !important; padding-left: 4px !important; }   /* नाव - 30% कमी */
