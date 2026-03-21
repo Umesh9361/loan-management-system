@@ -1459,15 +1459,15 @@ export default function BorrowerListReports() {
       // Modified headers for closing-wise report with precise PRINT column measurements
       tableHeaders = `
         <tr style="border-bottom: 2px solid #000; height: 35px;">
-          <th style="border-bottom: 1px solid #000; padding: 2px; width: 22px; text-align: center; font-size: 12px; height: 35px; vertical-align: middle; font-weight: bold;">अ.क्र.</th>
-          <th style="border-bottom: 1px solid #000; border-left: 1px solid #000; padding: 2px; width: 58px; text-align: center; font-size: 12px; height: 35px; vertical-align: middle; font-weight: bold;">कर्ज तारीख</th>
-          <th style="border-bottom: 1px solid #000; border-left: 1px solid #000; padding: 2px; width: 58px; text-align: center; font-size: 12px; height: 35px; vertical-align: middle; font-weight: bold;">बंद तारीख</th>
-          <th style="border-bottom: 1px solid #000; border-left: 1px solid #000; padding: 2px; width: 60px; font-size: 8px; text-align: left; line-height: 1.2; height: 35px; vertical-align: middle; font-weight: bold; white-space: nowrap; padding-left: 3px;">अं.बा.<br/>मूल्य</th>
-          <th style="border-bottom: 1px solid #000; border-left: 1px solid #000; padding: 2px; width: 52px; text-align: left; font-size: 12px; height: 35px; vertical-align: middle; font-weight: bold; padding-left: 3px;">चार्जेस</th>
-          <th style="border-bottom: 1px solid #000; border-left: 1px solid #000; padding: 2px; width: auto; min-width: 90px; font-size: 12px; height: 35px; vertical-align: middle; font-weight: bold; text-align: left; padding-left: 4px;">कर्जदाराचे नाव</th>
-          <th class="mobile-hide" style="border-bottom: 1px solid #000; border-left: 1px solid #000; padding: 2px; width: 42px; text-align: center; font-size: 12px; height: 35px; vertical-align: middle; font-weight: bold;">कोड नं</th>
-          <th class="mobile-hide" style="border-bottom: 1px solid #000; border-left: 1px solid #000; padding: 2px; width: auto; min-width: 85px; font-size: 12px; height: 35px; vertical-align: middle; font-weight: bold; text-align: left;">वस्तूचा तपशील</th>
-          <th class="mobile-hide" style="border-bottom: 1px solid #000; border-left: 1px solid #000; padding: 2px; width: 36px; text-align: center; font-size: 12px; height: 35px; vertical-align: middle; font-weight: bold;">वजन</th>
+          <th style="border-bottom: 1px solid #000; padding: 2px; width: 20px; text-align: center; font-size: 11px; height: 35px; vertical-align: middle; font-weight: bold;">अ.क्र.</th>
+          <th style="border-bottom: 1px solid #000; border-left: 1px solid #000; padding: 2px; width: 50px; text-align: center; font-size: 11px; height: 35px; vertical-align: middle; font-weight: bold;">कर्ज तारीख</th>
+          <th style="border-bottom: 1px solid #000; border-left: 1px solid #000; padding: 2px; width: 50px; text-align: center; font-size: 11px; height: 35px; vertical-align: middle; font-weight: bold;">बंद तारीख</th>
+          <th style="border-bottom: 1px solid #000; border-left: 1px solid #000; padding: 2px; width: 65px; font-size: 8px; text-align: left; line-height: 1.2; height: 35px; vertical-align: middle; font-weight: bold; white-space: nowrap; padding-left: 3px;">अं.बा.<br/>मूल्य</th>
+          <th style="border-bottom: 1px solid #000; border-left: 1px solid #000; padding: 2px; width: 55px; text-align: left; font-size: 11px; height: 35px; vertical-align: middle; font-weight: bold; padding-left: 3px;">चार्जेस</th>
+          <th style="border-bottom: 1px solid #000; border-left: 1px solid #000; padding: 2px; width: auto; min-width: 80px; font-size: 11px; height: 35px; vertical-align: middle; font-weight: bold; text-align: left; padding-left: 4px;">कर्जदाराचे नाव</th>
+          <th class="mobile-hide" style="border-bottom: 1px solid #000; border-left: 1px solid #000; padding: 2px; width: 36px; text-align: center; font-size: 11px; height: 35px; vertical-align: middle; font-weight: bold;">कोड नं</th>
+          <th class="mobile-hide" style="border-bottom: 1px solid #000; border-left: 1px solid #000; padding: 2px; width: auto; min-width: 65px; font-size: 11px; height: 35px; vertical-align: middle; font-weight: bold; text-align: left;">वस्तूचा तपशील</th>
+          <th class="mobile-hide" style="border-bottom: 1px solid #000; border-left: 1px solid #000; padding: 2px; width: 32px; text-align: center; font-size: 11px; height: 35px; vertical-align: middle; font-weight: bold;">वजन</th>
         </tr>
       `;
       
@@ -1500,19 +1500,19 @@ export default function BorrowerListReports() {
         
         return `
           <tr data-row-index="${index}" data-loan='${JSON.stringify(loan).replace(/'/g, "&apos;")}' style="border-bottom: 1px solid #ccc; height: 40px; min-height: 40px; cursor: pointer; transition: background-color 0.2s;" onmouseover="this.style.backgroundColor='#f3f4f6'" onmouseout="this.style.backgroundColor=''" class="loan-row">
-            <td style="border-bottom: 1px solid #ccc; padding: 4px; text-align: center; width: 22px; font-size: 14px; vertical-align: middle; font-weight: 500;">${index + 1}</td>
-            <td style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 4px; text-align: center; width: 58px; font-size: 14px; vertical-align: middle; font-weight: 500;">${shortLoanDate}</td>
-            <td style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 4px; text-align: center; width: 58px; font-size: 14px; vertical-align: middle; font-weight: 500;">${shortClosureDate}</td>
-            <td style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 4px; text-align: left; width: 60px; font-size: 14px; vertical-align: middle; font-weight: 500; padding-left: 3px;" class="loan-amount">
+            <td style="border-bottom: 1px solid #ccc; padding: 3px 2px; text-align: center; width: 20px; font-size: 13px; vertical-align: middle; font-weight: 500;">${index + 1}</td>
+            <td style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 3px 2px; text-align: center; width: 50px; font-size: 13px; vertical-align: middle; font-weight: 500;">${shortLoanDate}</td>
+            <td style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 3px 2px; text-align: center; width: 50px; font-size: 13px; vertical-align: middle; font-weight: 500;">${shortClosureDate}</td>
+            <td style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 3px 2px; text-align: left; width: 65px; font-size: 13px; vertical-align: middle; font-weight: 500; padding-left: 3px;" class="loan-amount">
               ${Math.round(loan.principalAmount).toLocaleString('en-IN')}
             </td>
-            <td style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 4px; text-align: left; width: 52px; font-size: 14px; vertical-align: middle; font-weight: 500; padding-left: 3px;" class="interest-amount">
+            <td style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 3px 2px; text-align: left; width: 55px; font-size: 13px; vertical-align: middle; font-weight: 500; padding-left: 3px;" class="interest-amount">
               ${interestPaid}
             </td>
-            <td style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 4px; width: auto; min-width: 90px; font-size: 14px; vertical-align: middle; font-weight: 500; text-align: left; padding-left: 4px;">${getPhotoIndicator(loan.id)}${loan.borrowerName.length > 25 ? loan.borrowerName.substring(0, 25) + '...' : loan.borrowerName}</td>
-            <td class="mobile-hide" style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 4px; text-align: center; width: 42px; font-size: 14px; vertical-align: middle; font-weight: 500;">${(loan.accountNumber || loan.id.slice(0, 5)).toString().substring(0, 7)}</td>
-            <td class="mobile-hide" style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 4px; width: auto; min-width: 85px; font-size: 14px; word-wrap: break-word; white-space: normal; vertical-align: middle; line-height: 1.3; overflow-wrap: break-word; font-weight: 500; text-align: left;">${loan.loanType === 'विनातारण' ? getUnsecuredDetails(loan) : ((loan.itemDescription || loan.collateralDetails || 'सोन्याचे दागिने, अंगूठी, कंगन, नथ, हार इत्यादी').replace(/^\d+[\s-]*/, '').trim() || 'सोन्याचे दागिने, अंगूठी, कंगन, नथ, हार इत्यादी')}</td>
-            <td class="mobile-hide" style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 4px; text-align: center; width: 36px; font-size: 14px; vertical-align: middle; font-weight: 500;">${loan.loanType === 'विनातारण' ? '—' : (loan.weight ? parseFloat(loan.weight.toString()).toFixed(2) : '0')}</td>
+            <td style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 3px 2px; width: auto; min-width: 80px; font-size: 13px; vertical-align: middle; font-weight: 500; text-align: left; padding-left: 4px;">${getPhotoIndicator(loan.id)}${loan.borrowerName.length > 22 ? loan.borrowerName.substring(0, 22) + '...' : loan.borrowerName}</td>
+            <td class="mobile-hide" style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 3px 2px; text-align: center; width: 36px; font-size: 13px; vertical-align: middle; font-weight: 500;">${(loan.accountNumber || loan.id.slice(0, 5)).toString().substring(0, 5)}</td>
+            <td class="mobile-hide" style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 3px 2px; width: auto; min-width: 65px; font-size: 13px; word-wrap: break-word; white-space: normal; vertical-align: middle; line-height: 1.3; overflow-wrap: break-word; font-weight: 500; text-align: left;">${loan.loanType === 'विनातारण' ? getUnsecuredDetails(loan) : ((loan.itemDescription || loan.collateralDetails || 'सोन्याचे दागिने, अंगूठी, कंगन, नथ, हार इत्यादी').replace(/^\d+[\s-]*/, '').trim() || 'सोन्याचे दागिने, अंगूठी, कंगन, नथ, हार इत्यादी')}</td>
+            <td class="mobile-hide" style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 3px 2px; text-align: center; width: 32px; font-size: 13px; vertical-align: middle; font-weight: 500;">${loan.loanType === 'विनातारण' ? '—' : (loan.weight ? parseFloat(loan.weight.toString()).toFixed(2) : '0')}</td>
           </tr>
         `;
       }).join('');
@@ -1612,16 +1612,16 @@ export default function BorrowerListReports() {
     let totalsRow = '';
     if (activeTab === 'closing-wise') {
       totalsRow = `
-        <tr style="border-top: 2px solid #000; background-color: #f9f9f9; font-weight: bold; height: 40px;">
-          <td style="border-top: 2px solid #000; padding: 4px; text-align: center; vertical-align: middle; width: 50px;"></td>
-          <td style="border-top: 2px solid #000; border-left: 1px solid #000; padding: 4px; text-align: center; vertical-align: middle; width: 70px;"></td>
-          <td style="border-top: 2px solid #000; border-left: 1px solid #000; padding: 4px; font-size: 14px; text-align: center; vertical-align: middle; font-weight: bold; width: 70px;">एकूण:</td>
-          <td style="border-top: 2px solid #000; border-left: 1px solid #000; padding: 4px; text-align: right; font-size: 14px; font-weight: bold; vertical-align: middle; width: 100px;">${totalAmount.toLocaleString('en-IN')}</td>
-          <td style="border-top: 2px solid #000; border-left: 1px solid #000; padding: 4px; text-align: right; font-size: 14px; font-weight: bold; vertical-align: middle; width: 60px;">${totalInterest.toLocaleString('en-IN')}</td>
-          <td style="border-top: 2px solid #000; border-left: 1px solid #000; padding: 4px; vertical-align: middle; width: 250px;"></td>
-          <td class="mobile-hide" style="border-top: 2px solid #000; border-left: 1px solid #000; padding: 4px; vertical-align: middle; width: 80px;"></td>
-          <td class="mobile-hide" style="border-top: 2px solid #000; border-left: 1px solid #000; padding: 4px; vertical-align: middle; width: auto;"></td>
-          <td class="mobile-hide" style="border-top: 2px solid #000; border-left: 1px solid #000; padding: 4px; text-align: center; font-size: 14px; font-weight: bold; vertical-align: middle; width: 80px;">${weightDisplay}</td>
+        <tr class="total-row" style="border-top: 2px solid #000; background-color: #f9f9f9; font-weight: bold; height: 40px;">
+          <td style="border-top: 2px solid #000; padding: 3px 2px; text-align: center; vertical-align: middle; width: 20px;"></td>
+          <td style="border-top: 2px solid #000; padding: 3px 2px; text-align: center; vertical-align: middle; width: 50px;"></td>
+          <td style="border-top: 2px solid #000; border-left: 1px solid #000; padding: 3px 2px; font-size: 12px; text-align: center; vertical-align: middle; font-weight: bold; width: 50px;">एकूण:</td>
+          <td style="border-top: 2px solid #000; border-left: 1px solid #000; padding: 3px 2px; text-align: left; font-size: 12px; font-weight: bold; vertical-align: middle; width: 65px; padding-left: 3px;">${totalAmount.toLocaleString('en-IN')}</td>
+          <td style="border-top: 2px solid #000; border-left: 1px solid #000; padding: 3px 2px; text-align: left; font-size: 12px; font-weight: bold; vertical-align: middle; width: 55px; padding-left: 3px;">${totalInterest.toLocaleString('en-IN')}</td>
+          <td style="border-top: 2px solid #000; padding: 3px 2px; vertical-align: middle; width: auto;"></td>
+          <td class="mobile-hide" style="border-top: 2px solid #000; padding: 3px 2px; vertical-align: middle; width: 36px;"></td>
+          <td class="mobile-hide" style="border-top: 2px solid #000; padding: 3px 2px; vertical-align: middle; width: auto;"></td>
+          <td class="mobile-hide" style="border-top: 2px solid #000; padding: 3px 2px; text-align: center; font-size: 12px; font-weight: bold; vertical-align: middle; width: 32px;">${weightDisplay}</td>
         </tr>
       `;
     } else if (activeTab === 'maturity-wise') {
@@ -2310,16 +2310,19 @@ export default function BorrowerListReports() {
                  This is the ONLY place closing-wise print widths are defined.
                  Uses body[data-report-type] for highest specificity.
                  ═══════════════════════════════════════════════════════════════ */
-              body[data-report-type="closing-wise"] th:nth-child(1), body[data-report-type="closing-wise"] td:nth-child(1) { width: 22px !important; min-width: 22px !important; max-width: 26px !important; text-align: center !important; padding: 3px 1px !important; }
-              body[data-report-type="closing-wise"] th:nth-child(2), body[data-report-type="closing-wise"] td:nth-child(2) { width: 58px !important; min-width: 58px !important; max-width: 62px !important; text-align: center !important; }
-              body[data-report-type="closing-wise"] th:nth-child(3), body[data-report-type="closing-wise"] td:nth-child(3) { width: 58px !important; min-width: 58px !important; max-width: 62px !important; text-align: center !important; }
-              body[data-report-type="closing-wise"] th:nth-child(4), body[data-report-type="closing-wise"] td:nth-child(4) { width: 60px !important; min-width: 60px !important; max-width: 65px !important; text-align: left !important; padding-left: 3px !important; }
-              body[data-report-type="closing-wise"] th:nth-child(5), body[data-report-type="closing-wise"] td:nth-child(5) { width: 52px !important; min-width: 52px !important; max-width: 58px !important; text-align: left !important; padding-left: 3px !important; }
-              body[data-report-type="closing-wise"] th:nth-child(6), body[data-report-type="closing-wise"] td:nth-child(6) { width: auto !important; min-width: 90px !important; text-align: left !important; padding-left: 4px !important; }
-              body[data-report-type="closing-wise"] th:nth-child(7), body[data-report-type="closing-wise"] td:nth-child(7) { width: 42px !important; min-width: 42px !important; max-width: 48px !important; text-align: center !important; }
-              body[data-report-type="closing-wise"] th:nth-child(8), body[data-report-type="closing-wise"] td:nth-child(8) { width: auto !important; min-width: 85px !important; text-align: left !important; }
-              body[data-report-type="closing-wise"] th:nth-child(9), body[data-report-type="closing-wise"] td:nth-child(9) { width: 36px !important; min-width: 36px !important; max-width: 42px !important; text-align: center !important; }
-              body[data-report-type="closing-wise"] tbody td:nth-child(3) { font-size: 8.1pt !important; }
+              body[data-report-type="closing-wise"] th:nth-child(1), body[data-report-type="closing-wise"] td:nth-child(1) { width: 20px !important; min-width: 20px !important; max-width: 24px !important; text-align: center !important; padding: 3px 1px !important; }
+              body[data-report-type="closing-wise"] th:nth-child(2), body[data-report-type="closing-wise"] td:nth-child(2) { width: 50px !important; min-width: 50px !important; max-width: 54px !important; text-align: center !important; }
+              body[data-report-type="closing-wise"] th:nth-child(3), body[data-report-type="closing-wise"] td:nth-child(3) { width: 50px !important; min-width: 50px !important; max-width: 54px !important; text-align: center !important; }
+              body[data-report-type="closing-wise"] th:nth-child(4), body[data-report-type="closing-wise"] td:nth-child(4) { width: 65px !important; min-width: 65px !important; max-width: 70px !important; text-align: left !important; padding-left: 3px !important; }
+              body[data-report-type="closing-wise"] th:nth-child(5), body[data-report-type="closing-wise"] td:nth-child(5) { width: 55px !important; min-width: 55px !important; max-width: 60px !important; text-align: left !important; padding-left: 3px !important; }
+              body[data-report-type="closing-wise"] th:nth-child(6), body[data-report-type="closing-wise"] td:nth-child(6) { width: auto !important; min-width: 80px !important; text-align: left !important; padding-left: 4px !important; }
+              body[data-report-type="closing-wise"] th:nth-child(7), body[data-report-type="closing-wise"] td:nth-child(7) { width: 36px !important; min-width: 36px !important; max-width: 40px !important; text-align: center !important; }
+              body[data-report-type="closing-wise"] th:nth-child(8), body[data-report-type="closing-wise"] td:nth-child(8) { width: auto !important; min-width: 65px !important; text-align: left !important; }
+              body[data-report-type="closing-wise"] th:nth-child(9), body[data-report-type="closing-wise"] td:nth-child(9) { width: 32px !important; min-width: 32px !important; max-width: 38px !important; text-align: center !important; }
+              body[data-report-type="closing-wise"] .total-row td { border-left: none !important; border-right: none !important; }
+              body[data-report-type="closing-wise"] .total-row td:nth-child(3),
+              body[data-report-type="closing-wise"] .total-row td:nth-child(4),
+              body[data-report-type="closing-wise"] .total-row td:nth-child(5) { border-left: 1px solid #000 !important; }
               
               /* Clean cell styling - Uniform professional black borders */
               td {
