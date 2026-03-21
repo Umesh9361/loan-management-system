@@ -1032,9 +1032,12 @@ export default function AccountLedger() {
     let totalInterest = 0;
     statementData.entries.forEach((entry: any) => {
       const bal = entry.balance || 0;
-      const drLabel = isCashAccount
-        ? (bal >= 0 ? ' (Cr.)' : ' (Dr.)')
-        : (bal >= 0 ? ' (Dr.)' : ' (Cr.)');
+      const drLabel = showInterestCol
+        ? ''
+        : isCashAccount
+          ? (bal >= 0 ? ' (Cr.)' : ' (Dr.)')
+          : (bal >= 0 ? ' (Dr.)' : ' (Cr.)');
+      const balSign = showInterestCol ? (bal >= 0 ? '+' : '-') : (bal < 0 ? '-' : '');
       const balColor = isCashAccount
         ? (bal >= 0 ? 'color:green;' : 'color:red;')
         : isLoanAccount
@@ -1052,14 +1055,17 @@ export default function AccountLedger() {
         <td style="${tdBase}text-align:right;${rowBg}">${entry.debit > 0 ? Math.round(entry.debit).toLocaleString('en-IN') : '-'}</td>
         <td style="${tdBase}text-align:right;${rowBg}">${entry.credit > 0 ? Math.round(entry.credit).toLocaleString('en-IN') : '-'}</td>
         ${showInterestCol ? `<td style="${tdBase}text-align:right;${rowBg}">${interestAmt > 0 ? Math.round(interestAmt).toLocaleString('en-IN') : '-'}</td>` : ''}
-        <td style="${tdBase}text-align:right;font-weight:bold;${rowBg}${balColor}">${bal < 0 ? '-' : ''}${Math.round(Math.abs(bal)).toLocaleString('en-IN')}${drLabel}</td>
+        <td style="${tdBase}text-align:right;font-weight:bold;${rowBg}${balColor}">${balSign}₹${Math.round(Math.abs(bal)).toLocaleString('en-IN')}${drLabel}</td>
       </tr>`;
     });
 
     const finalBal = parseFloat(statementData.finalBalance || 0);
-    const finalDrLabel = isCashAccount
-      ? (finalBal >= 0 ? ' (Cr.)' : ' (Dr.)')
-      : (finalBal >= 0 ? ' (Dr.)' : ' (Cr.)');
+    const finalDrLabel = showInterestCol
+      ? ''
+      : isCashAccount
+        ? (finalBal >= 0 ? ' (Cr.)' : ' (Dr.)')
+        : (finalBal >= 0 ? ' (Dr.)' : ' (Cr.)');
+    const finalBalSign = showInterestCol ? (finalBal >= 0 ? '+' : '-') : (finalBal < 0 ? '-' : '');
     const finalBalColor = isCashAccount
       ? (finalBal >= 0 ? 'color:green;' : 'color:red;')
       : isLoanAccount
@@ -1071,7 +1077,7 @@ export default function AccountLedger() {
       <td style="${tdBase}text-align:right;background:#e0e7ff;font-weight:bold;-webkit-print-color-adjust:exact;print-color-adjust:exact;">${Math.round(parseFloat(statementData.totalDebit || 0)).toLocaleString('en-IN')}</td>
       <td style="${tdBase}text-align:right;background:#e0e7ff;font-weight:bold;-webkit-print-color-adjust:exact;print-color-adjust:exact;">${Math.round(parseFloat(statementData.totalCredit || 0)).toLocaleString('en-IN')}</td>
       ${showInterestCol ? `<td style="${tdBase}text-align:right;background:#e0e7ff;font-weight:bold;-webkit-print-color-adjust:exact;print-color-adjust:exact;">${Math.round(totalInterest).toLocaleString('en-IN')}</td>` : ''}
-      <td style="${tdBase}text-align:right;background:#e0e7ff;font-weight:bold;-webkit-print-color-adjust:exact;print-color-adjust:exact;${finalBalColor}">${finalBal < 0 ? '-' : ''}${Math.round(Math.abs(finalBal)).toLocaleString('en-IN')} ${finalDrLabel.trim()}</td>
+      <td style="${tdBase}text-align:right;background:#e0e7ff;font-weight:bold;-webkit-print-color-adjust:exact;print-color-adjust:exact;${finalBalColor}">${finalBalSign}₹${Math.round(Math.abs(finalBal)).toLocaleString('en-IN')}${finalDrLabel}</td>
     </tr>`;
 
     const printHTML = `<!DOCTYPE html><html><head><meta charset="utf-8"/><title>${headerTitle}</title>
@@ -1098,7 +1104,7 @@ export default function AccountLedger() {
 </div>
 <table>
   ${showInterestCol
-    ? `<colgroup><col style="width:11%;"><col style="width:28%;"><col style="width:14%;"><col style="width:14%;"><col style="width:13%;"><col style="width:20%;"></colgroup>`
+    ? `<colgroup><col style="width:11%;"><col style="width:33%;"><col style="width:13%;"><col style="width:13%;"><col style="width:13%;"><col style="width:17%;"></colgroup>`
     : `<colgroup><col style="width:12%;"><col style="width:34%;"><col style="width:16%;"><col style="width:16%;"><col style="width:22%;"></colgroup>`
   }
   <thead><tr>
@@ -1251,7 +1257,7 @@ export default function AccountLedger() {
         </div>
         <table>
           ${pdfShowInterest
-            ? `<colgroup><col style="width:11%;"><col style="width:28%;"><col style="width:14%;"><col style="width:14%;"><col style="width:13%;"><col style="width:20%;"></colgroup>`
+            ? `<colgroup><col style="width:11%;"><col style="width:33%;"><col style="width:13%;"><col style="width:13%;"><col style="width:13%;"><col style="width:17%;"></colgroup>`
             : `<colgroup><col style="width:12%;"><col style="width:34%;"><col style="width:16%;"><col style="width:16%;"><col style="width:22%;"></colgroup>`
           }
           <thead>
