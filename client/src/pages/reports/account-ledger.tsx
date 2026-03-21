@@ -942,8 +942,8 @@ export default function AccountLedger() {
     entries.unshift({
       date: filters.dateFrom,
       description: 'प्रारंभिक शिल्लक',
-      debit: 0,
-      credit: 0,
+      debit: openingBalance > 0 ? openingBalance : 0,
+      credit: openingBalance < 0 ? Math.abs(openingBalance) : 0,
       balance: openingBalance,
       type: 'opening'
     });
@@ -1037,7 +1037,7 @@ export default function AccountLedger() {
         : isCashAccount
           ? (bal >= 0 ? ' (Cr.)' : ' (Dr.)')
           : (bal >= 0 ? ' (Dr.)' : ' (Cr.)');
-      const balSign = showInterestCol ? (bal >= 0 ? '+' : '-') : (bal < 0 ? '-' : '');
+      const balSign = '';
       const balColor = isCashAccount
         ? (bal >= 0 ? 'color:green;' : 'color:red;')
         : isLoanAccount
@@ -1065,7 +1065,7 @@ export default function AccountLedger() {
       : isCashAccount
         ? (finalBal >= 0 ? ' (Cr.)' : ' (Dr.)')
         : (finalBal >= 0 ? ' (Dr.)' : ' (Cr.)');
-    const finalBalSign = showInterestCol ? (finalBal >= 0 ? '+' : '-') : (finalBal < 0 ? '-' : '');
+    const finalBalSign = '';
     const finalBalColor = isCashAccount
       ? (finalBal >= 0 ? 'color:green;' : 'color:red;')
       : isLoanAccount
