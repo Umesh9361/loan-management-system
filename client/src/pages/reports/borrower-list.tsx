@@ -2127,11 +2127,6 @@ export default function BorrowerListReports() {
                 font-family: 'Noto Sans Devanagari', 'Inter', sans-serif !important;
               }
               
-              /* PRINT-ONLY - Specific font size reduction for closing date column in closing-wise report */
-              .closing-wise-table tbody td:nth-child(3) {
-                font-size: 8.1pt !important; /* 10% smaller: 9pt - 10% = 8.1pt */
-              }
-              
             }
             
             /* Hide company name on screen but show in print */
@@ -2325,6 +2320,7 @@ export default function BorrowerListReports() {
               body[data-report-type="closing-wise"] th:nth-child(7), body[data-report-type="closing-wise"] td:nth-child(7) { width: 42px !important; min-width: 42px !important; max-width: 48px !important; text-align: center !important; }
               body[data-report-type="closing-wise"] th:nth-child(8), body[data-report-type="closing-wise"] td:nth-child(8) { width: auto !important; min-width: 85px !important; text-align: left !important; }
               body[data-report-type="closing-wise"] th:nth-child(9), body[data-report-type="closing-wise"] td:nth-child(9) { width: 36px !important; min-width: 36px !important; max-width: 42px !important; text-align: center !important; }
+              body[data-report-type="closing-wise"] tbody td:nth-child(3) { font-size: 8.1pt !important; }
               
               /* Clean cell styling - Uniform professional black borders */
               td {
