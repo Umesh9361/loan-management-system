@@ -281,6 +281,8 @@ export default function CapitalAccountReport() {
           top: 0 !important;
           width: 100% !important;
           z-index: 9999 !important;
+          padding-left: 25mm !important;
+          box-sizing: border-box !important;
           font-family: 'Noto Sans Devanagari', Arial, sans-serif !important;
         }
         body {
@@ -318,7 +320,10 @@ export default function CapitalAccountReport() {
           print-color-adjust: exact !important;
           color: #111;
           font-weight: 700;
-          font-size: 11px;
+          font-size: 9px;
+          word-wrap: break-word;
+          overflow-wrap: break-word;
+          line-height: 1.3;
         }
         .capital-table td {
           background: white;
@@ -422,7 +427,7 @@ export default function CapitalAccountReport() {
       const renderWidthPx = 794;
       const companyName = (company as any)?.name || 'कंपनी नाव';
       const bdr = '1.5px solid #333';
-      const thStyle = `border:${bdr};padding:7px 6px;text-align:center;font-size:11px;background:#f0f0f0;font-weight:700;color:#111;line-height:1.4;`;
+      const thStyle = `border:${bdr};padding:7px 4px;text-align:center;font-size:9px;background:#f0f0f0;font-weight:700;color:#111;line-height:1.3;word-wrap:break-word;overflow-wrap:break-word;`;
       const tdBase = `border:${bdr};padding:7px 6px;font-size:11px;font-weight:600;line-height:1.4;`;
 
       let rows = '';
@@ -491,7 +496,7 @@ export default function CapitalAccountReport() {
               <th style="${thStyle}">रोकड वहीतील पान क्रमांक</th>
               <th style="${thStyle}">कर्ज वाटपाची एकूण रक्कम</th>
               <th style="${thStyle}">रोकड वहीतील पान क्रमांक</th>
-              <th style="${thStyle}">व्यवसायात गुंतवलेली निव्वळ शिल्लक रक्कम</th>
+              <th style="${thStyle}">व्यवसायात गुंतवलेली<br>निव्वळ शिल्लक रक्कम</th>
             </tr>
           </thead>
           <tbody>${rows}</tbody>
