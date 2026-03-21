@@ -123,6 +123,8 @@ function CashBookReport() {
           top: 0 !important;
           width: 100% !important;
           z-index: 9999 !important;
+          padding-left: 15mm !important;
+          box-sizing: border-box !important;
         }
         body {
           font-family: 'Noto Sans Devanagari', Arial, sans-serif !important;
