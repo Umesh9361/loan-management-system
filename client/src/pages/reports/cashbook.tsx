@@ -105,264 +105,144 @@ function CashBookReport() {
   };
 
   const handlePrint = () => {
-    const printStyles = `
-      @media print {
-        @page {
-          size: A4 portrait;
-          margin: 12mm 5mm 12mm 5mm;
-        }
-        body * {
-          visibility: hidden !important;
-        }
-        .print-content, .print-content * {
-          visibility: visible !important;
-        }
-        .print-content {
-          position: absolute !important;
-          left: 0 !important;
-          top: 0 !important;
-          width: 100% !important;
-          z-index: 9999 !important;
-          padding-left: 20mm !important;
-          padding-right: 5mm !important;
-          box-sizing: border-box !important;
-        }
-        body {
-          font-family: 'Noto Sans Devanagari', Arial, sans-serif !important;
-          font-size: 11px;
-          line-height: 1.3;
-        }
-        .overflow-x-auto {
-          overflow: visible !important;
-          max-height: none !important;
-          height: auto !important;
-        }
-        .cashbook-header {
-          text-align: center;
-          margin-bottom: 12px;
-          font-weight: bold;
-        }
-        .cashbook-header h1 {
-          font-size: 14px !important;
-          margin-bottom: 4px !important;
-        }
-        .cashbook-header p {
-          margin: 0 0 4px 0 !important;
-        }
-        .cashbook-header .print-company-label {
-          display: block !important;
-          font-size: 15px !important;
-          font-weight: 700 !important;
-          margin-bottom: 4px !important;
-        }
-        .cashbook-header .namuna-text {
-          font-size: 11px !important;
-          color: #333 !important;
-        }
-        .cashbook-header .period-text {
-          font-size: 11px !important;
-          color: #333 !important;
-        }
-        .print-company-name {
-          display: none !important;
-        }
-        .screen-title {
-          display: none !important;
-        }
-        .print-title {
-          display: block !important;
-          text-align: center;
-          font-size: 13px !important;
-          line-height: 1.2;
-          margin-bottom: 10px;
-        }
-        /* T-format table print styles */
-        .t-format-table table {
-          width: 100%;
-          border-collapse: collapse;
-          table-layout: fixed;
-          font-size: 11px;
-        }
-        .t-format-table td {
-          border: 1px solid #000;
-          padding: 3px 4px;
-          vertical-align: top;
-          background: white !important;
-          font-size: 10px;
-          line-height: 1.3;
-        }
-        /* Remove data row background colors in print but keep header/highlight rows */
-        .print:hidden { display: none !important; }
-        .print\\:block { display: block !important; }
-        .t-format-table .bg-yellow-50 {
-          background: white !important;
-        }
-        /* Bold styling for balance rows in print */
-        .t-format-table .font-bold {
-          font-weight: bold !important;
-        }
-        /* Make amount figures in balance rows extra bold */
-        .t-format-table .bg-indigo-100 .amount-bold,
-        .t-format-table .bg-indigo-50 .amount-bold {
-          font-weight: 900 !important;
-          font-size: 11px !important;
-        }
-        /* Total row styling */
-        .border-t-2 {
-          border-top: 2px solid #000 !important;
-        }
-        .border-r-2 {
-          border-right: 2px solid #000 !important;
-        }
-        /* Header styling */
-        .professional-t-format .border-b-4 {
-          border-bottom: 2px solid #000 !important;
-        }
-        /* Reduce header text size in print */
-        .t-format-table h3 {
-          font-size: 11px !important;
-          font-weight: bold;
-        }
-        .t-format-table .text-lg {
-          font-size: 11px !important;
-        }
-        .t-format-table .text-sm {
-          font-size: 10px !important;
-        }
-        /* Compact vertical table in print */
-        .professional-vertical-table th,
-        .professional-vertical-table thead th {
-          font-size: 11px !important;
-          padding: 4px 4px !important;
-          font-weight: 700 !important;
-          line-height: 1.3 !important;
-          background: #f0f0f0 !important;
-          -webkit-print-color-adjust: exact !important;
-          print-color-adjust: exact !important;
-        }
-        .professional-vertical-table td,
-        .professional-vertical-table tbody td {
-          font-size: 10px !important;
-          padding: 3px 4px !important;
-          line-height: 1.3 !important;
-        }
-        .professional-vertical-table thead { display: table-header-group; }
-        .professional-vertical-table tr { page-break-inside: avoid !important; break-inside: avoid !important; }
-        /* Compact T-format main header (जमा/नावे) in print — grey background */
-        .professional-t-format .flex > div,
-        .professional-t-format > div > div {
-          padding: 3px 2px !important;
-        }
-        .professional-t-format > .flex.border-b-4 > div {
-          background: #f0f0f0 !important;
-          -webkit-print-color-adjust: exact !important;
-          print-color-adjust: exact !important;
-          border-bottom: 1.5px solid #333 !important;
-        }
-        .professional-t-format h3,
-        .professional-t-format .font-bold {
-          font-size: 11px !important;
-          line-height: 1.3 !important;
-          color: #111 !important;
-        }
-        .professional-t-format h3 span {
-          font-size: 9px !important;
-        }
-        /* Compact T-format sub-headers (दिनांक/तपशील/रक्कम) in print — grey background */
-        .professional-t-format .flex.font-semibold,
-        .professional-t-format .flex.font-semibold > div {
-          font-size: 10px !important;
-          padding: 2px 2px !important;
-          line-height: 1.3 !important;
-        }
-        .professional-t-format > .flex.border-b-2 {
-          background: #f0f0f0 !important;
-          -webkit-print-color-adjust: exact !important;
-          print-color-adjust: exact !important;
-        }
-        /* शिल्लक पुढे / मागील शिल्लक rows — highlight in print */
-        .t-format-table .bg-indigo-50,
-        .t-format-table .bg-indigo-100 {
-          background: #e8eaf6 !important;
-          -webkit-print-color-adjust: exact !important;
-          print-color-adjust: exact !important;
-        }
-        /* एकूण total row — highlight in print */
-        .t-format-table .border-t-2.bg-indigo-50,
-        .professional-t-format .border-t-2.bg-indigo-50 {
-          background: #e0e7ff !important;
-          -webkit-print-color-adjust: exact !important;
-          print-color-adjust: exact !important;
-          font-weight: 700 !important;
-          border-top: 1.5px solid #333 !important;
-        }
-        /* Vertical format — opening balance row highlight */
-        .professional-vertical-table .bg-yellow-50 {
-          background: #fef3c7 !important;
-          -webkit-print-color-adjust: exact !important;
-          print-color-adjust: exact !important;
-        }
-        /* Override all Tailwind responsive paddings/fonts in print */
-        .print-content .py-2,
-        .print-content .py-3,
-        .print-content .py-4 {
-          padding-top: 3px !important;
-          padding-bottom: 3px !important;
-        }
-        .print-content .text-xl,
-        .print-content .text-lg {
-          font-size: 11px !important;
-        }
-        .print-content .text-base {
-          font-size: 10px !important;
-        }
-        .print-content .md\\:py-3,
-        .print-content .md\\:py-4,
-        .print-content .sm\\:py-3,
-        .print-content .sm\\:py-2 {
-          padding-top: 3px !important;
-          padding-bottom: 3px !important;
-        }
-        .print-content .md\\:text-xl,
-        .print-content .md\\:text-base,
-        .print-content .sm\\:text-lg {
-          font-size: 11px !important;
-        }
-        .print-content .md\\:px-4,
-        .print-content .sm\\:px-3 {
-          padding-left: 4px !important;
-          padding-right: 4px !important;
-        }
-        /* Hide summary stats box in print */
-        .print-content .mt-4.bg-indigo-50,
-        .print-content .sm\\:mt-6 {
-          display: none !important;
-        }
-      }
-    `;
-    
-    const styleSheet = document.createElement("style");
-    styleSheet.innerText = printStyles;
-    document.head.appendChild(styleSheet);
-    
-    // Show print content before printing
-    const printContentDiv = document.querySelector('.print-content') as HTMLElement;
-    if (printContentDiv) {
-      printContentDiv.style.display = 'block';
-      printContentDiv.style.visibility = 'visible';
+    if (finalTransactions.length === 0) {
+      alert("प्रथम तारीख निवडा आणि डेटा लोड करा");
+      return;
     }
-    
-    setTimeout(() => {
-      window.print();
+
+    const companyName = (company as any)?.name || 'कंपनी नाव';
+    const bdr = '1.5px solid #333';
+    const thStyle = `border:${bdr};padding:6px 4px;text-align:center;font-size:11px;background:#f0f0f0;font-weight:700;color:#111;line-height:1.3;word-wrap:break-word;overflow-wrap:break-word;-webkit-print-color-adjust:exact;print-color-adjust:exact;`;
+    const tdBase = `border:${bdr};padding:6px 4px;text-align:center;font-size:11px;font-weight:600;`;
+
+    let tableHTML = '';
+    if (printFormat === 'vertical') {
+      const rows = finalTransactions.map((row: any) => {
+        const isOpening = row.isOpeningBalance;
+        const rowClass = isOpening ? ' class="opening-row"' : '';
+        return `<tr${rowClass}>
+          <td style="${tdBase}text-align:center;">${DateUtils.isoToIndianDate(row.date).replace(/20(\d{2})/g, '$1')}</td>
+          <td style="${tdBase}text-align:left;">${row.description}</td>
+          <td style="${tdBase}text-align:right;">${row.credit ? LoanCalculations.formatAmount(row.credit) : '-'}</td>
+          <td style="${tdBase}text-align:right;">${row.debit ? LoanCalculations.formatAmount(row.debit) : '-'}</td>
+          <td style="${tdBase}text-align:right;font-weight:700;">${LoanCalculations.formatAmount(row.balance)}</td>
+        </tr>`;
+      }).join('');
+
+      tableHTML = `
+        <table>
+          <colgroup><col style="width:12%"/><col style="width:40%"/><col style="width:15%"/><col style="width:15%"/><col style="width:18%"/></colgroup>
+          <thead><tr>
+            <th style="${thStyle}">तारीख</th>
+            <th style="${thStyle}">तपशील</th>
+            <th style="${thStyle}">जमा (Cr.)</th>
+            <th style="${thStyle}">नावे (Dr.)</th>
+            <th style="${thStyle}">शिल्लक</th>
+          </tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      `;
+    } else {
+      const hData = getHorizontalData();
+      const maxRows = Math.max(hData.creditRows.length, hData.debitRows.length);
+      let tRows = '';
+
+      for (let i = 0; i < maxRows; i++) {
+        const cr = hData.creditRows[i];
+        const dr = hData.debitRows[i];
+        const isCrBal = cr?.description?.includes('शिल्लक') || cr?.description?.includes('मागील');
+        const isDrBal = dr?.description?.includes('शिल्लक') || dr?.description?.includes('मागील');
+        const isBalRow = isCrBal || isDrBal;
+        const rowClass = isBalRow ? ' class="balance-row"' : '';
+
+        tRows += `<tr${rowClass}>
+          <td style="${tdBase}text-align:center;font-size:10px;">${cr ? DateUtils.isoToIndianDate(cr.date).replace(/20(\d{2})/g, '$1') : ''}</td>
+          <td style="${tdBase}text-align:left;">${cr?.description || ''}</td>
+          <td style="${tdBase}text-align:right;border-right:2px solid #333;">${cr ? LoanCalculations.formatAmount(cr.amount) : ''}</td>
+          <td style="${tdBase}text-align:center;font-size:10px;">${dr ? DateUtils.isoToIndianDate(dr.date).replace(/20(\d{2})/g, '$1') : ''}</td>
+          <td style="${tdBase}text-align:left;">${dr?.description || ''}</td>
+          <td style="${tdBase}text-align:right;">${dr ? LoanCalculations.formatAmount(dr.amount) : ''}</td>
+        </tr>`;
+      }
+
+      tRows += `<tr class="total-row">
+        <td style="${tdBase}"></td>
+        <td style="${tdBase}text-align:center;font-weight:700;">एकूण</td>
+        <td style="${tdBase}text-align:right;font-weight:700;border-right:2px solid #333;">${LoanCalculations.formatAmount(hData.grandTotalCredit)}</td>
+        <td style="${tdBase}"></td>
+        <td style="${tdBase}text-align:center;font-weight:700;">एकूण</td>
+        <td style="${tdBase}text-align:right;font-weight:700;">${LoanCalculations.formatAmount(hData.grandTotalDebit)}</td>
+      </tr>`;
+
+      tableHTML = `
+        <div style="display:flex;width:100%;border:${bdr};border-bottom:none;">
+          <div style="width:50%;text-align:center;padding:5px 2px;font-size:11px;background:#f0f0f0;font-weight:700;border-right:2px solid #333;-webkit-print-color-adjust:exact;print-color-adjust:exact;">जमा (Credit)</div>
+          <div style="width:50%;text-align:center;padding:5px 2px;font-size:11px;background:#f0f0f0;font-weight:700;-webkit-print-color-adjust:exact;print-color-adjust:exact;">नावे (Debit)</div>
+        </div>
+        <table>
+          <colgroup><col style="width:10%"/><col/><col style="width:15%"/><col style="width:10%"/><col/><col style="width:15%"/></colgroup>
+          <thead><tr>
+            <th style="${thStyle}">दिनांक</th>
+            <th style="${thStyle}">तपशील</th>
+            <th style="${thStyle}border-right:2px solid #333;">रक्कम</th>
+            <th style="${thStyle}">दिनांक</th>
+            <th style="${thStyle}">तपशील</th>
+            <th style="${thStyle}">रक्कम</th>
+          </tr></thead>
+          <tbody>${tRows}</tbody>
+        </table>
+      `;
+    }
+
+    const printHTML = `<!DOCTYPE html><html><head><meta charset="utf-8"/><title>रोकड वही</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  @page { size: A4 portrait; margin: 12mm 5mm 12mm 5mm; }
+  body { font-family: 'Noto Sans Devanagari', Arial, sans-serif; margin: 0; padding: 3mm 5mm 3mm 20mm; box-sizing: border-box; font-size: 11px; line-height: 1.4; }
+  .header { text-align: center; margin-bottom: 12px; font-weight: bold; }
+  .header p { margin: 0 0 4px 0; }
+  table { width: 100%; border-collapse: collapse; table-layout: fixed; page-break-inside: auto; }
+  thead { display: table-header-group; }
+  tr { page-break-inside: avoid !important; break-inside: avoid !important; }
+  th, td { border: 1.5px solid #333; padding: 6px 4px; text-align: center; font-size: 11px; font-weight: 600; }
+  th { background: #f0f0f0; color: #111; font-weight: 700; font-size: 11px; word-wrap: break-word; overflow-wrap: break-word; line-height: 1.3; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .opening-row td { background: #fef3c7; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .balance-row td { background: #e8eaf6; font-weight: 700; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .total-row td { background: #e0e7ff; font-weight: 700; border-top: 1.5px solid #333; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .footer { margin-top: 50px; display: flex; justify-content: space-between; font-size: 11px; font-weight: 600; }
+</style></head><body>
+<div class="header">
+  <p style="font-size:15px;font-weight:700;">${companyName}</p>
+  <p style="font-size:14px;font-weight:700;">रोकड वही</p>
+  <p style="font-size:11px;color:#333;">नमुना क्र. ७ (नियम १८ पहा)</p>
+  <p style="font-size:11px;color:#333;">कालावधी: ${DateUtils.isoToIndianDate(dateFilters.dateFrom)} ते ${DateUtils.isoToIndianDate(dateFilters.dateTo)}</p>
+</div>
+${tableHTML}
+<div class="footer">
+  <span>तयार केल्याची तारीख: ${new Date().toLocaleDateString('en-GB')}</span>
+  <span>अधिकृत स्वाक्षरी</span>
+</div>
+</body></html>`;
+
+    const iframe = document.createElement("iframe");
+    iframe.style.position = "fixed";
+    iframe.style.left = "-9999px";
+    iframe.style.top = "-9999px";
+    iframe.style.width = "794px";
+    iframe.style.height = "1123px";
+    document.body.appendChild(iframe);
+    const doc = iframe.contentDocument || iframe.contentWindow?.document;
+    if (!doc) { document.body.removeChild(iframe); return; }
+    doc.open();
+    doc.write(printHTML);
+    doc.close();
+
+    iframe.onload = () => {
       setTimeout(() => {
-        // Clean up - remove injected print styles
-        document.head.removeChild(styleSheet);
-        if (printContentDiv) {
-          printContentDiv.style.display = '';
-          printContentDiv.style.visibility = '';
-        }
-      }, 1000);
-    }, 100);
+        iframe.contentWindow?.print();
+        setTimeout(() => { document.body.removeChild(iframe); }, 2000);
+      }, 500);
+    };
   };
 
   const handleExportExcel = () => {
