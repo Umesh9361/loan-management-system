@@ -1459,7 +1459,7 @@ export default function BorrowerListReports() {
       // Modified headers for closing-wise report with precise PRINT column measurements
       tableHeaders = `
         <tr style="border-bottom: 2px solid #000; height: 35px;">
-          <th style="border-bottom: 1px solid #000; padding: 2px; width: 20px; text-align: center; font-size: 11px; height: 35px; vertical-align: middle; font-weight: bold;">अ.क्र.</th>
+          <th style="border-bottom: 1px solid #000; padding: 2px; width: 24px; text-align: center; font-size: 11px; height: 35px; vertical-align: middle; font-weight: bold;">अ.क्र.</th>
           <th style="border-bottom: 1px solid #000; border-left: 1px solid #000; padding: 2px; width: 50px; text-align: center; font-size: 11px; height: 35px; vertical-align: middle; font-weight: bold;">कर्ज तारीख</th>
           <th style="border-bottom: 1px solid #000; border-left: 1px solid #000; padding: 2px; width: 50px; text-align: center; font-size: 11px; height: 35px; vertical-align: middle; font-weight: bold;">बंद तारीख</th>
           <th style="border-bottom: 1px solid #000; border-left: 1px solid #000; padding: 2px; width: 65px; font-size: 8px; text-align: left; line-height: 1.2; height: 35px; vertical-align: middle; font-weight: bold; white-space: nowrap; padding-left: 5px;">अं.बा.<br/>मूल्य</th>
@@ -1500,7 +1500,7 @@ export default function BorrowerListReports() {
         
         return `
           <tr data-row-index="${index}" data-loan='${JSON.stringify(loan).replace(/'/g, "&apos;")}' style="border-bottom: 1px solid #ccc; height: auto; cursor: pointer; transition: background-color 0.2s;" onmouseover="this.style.backgroundColor='#f3f4f6'" onmouseout="this.style.backgroundColor=''" class="loan-row">
-            <td style="border-bottom: 1px solid #ccc; padding: 3px 2px; text-align: center; width: 20px; font-size: 13px; vertical-align: middle; font-weight: 500;">${index + 1}</td>
+            <td style="border-bottom: 1px solid #ccc; padding: 3px 2px; text-align: center; width: 24px; font-size: 13px; vertical-align: middle; font-weight: 500;">${index + 1}</td>
             <td style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 3px 2px; text-align: center; width: 50px; font-size: 13px; vertical-align: middle; font-weight: 500;">${shortLoanDate}</td>
             <td style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 3px 2px; text-align: center; width: 50px; font-size: 13px; vertical-align: middle; font-weight: 500;">${shortClosureDate}</td>
             <td style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 3px 2px; text-align: left; width: 65px; font-size: 13px; vertical-align: middle; font-weight: 500; padding-left: 5px;" class="loan-amount">
@@ -1613,7 +1613,7 @@ export default function BorrowerListReports() {
     if (activeTab === 'closing-wise') {
       totalsRow = `
         <tr class="total-row" style="border-top: 2px solid #000; background-color: #f9f9f9; font-weight: bold; height: 40px;">
-          <td style="border-top: 2px solid #000; padding: 3px 2px; text-align: center; vertical-align: middle; width: 20px;"></td>
+          <td style="border-top: 2px solid #000; padding: 3px 2px; text-align: center; vertical-align: middle; width: 24px;"></td>
           <td style="border-top: 2px solid #000; padding: 3px 2px; text-align: center; vertical-align: middle; width: 50px;"></td>
           <td style="border-top: 2px solid #000; border-left: 1px solid #000; padding: 3px 2px; font-size: 12px; text-align: center; vertical-align: middle; font-weight: bold; width: 50px;">एकूण:</td>
           <td style="border-top: 2px solid #000; border-left: 1px solid #000; padding: 3px 2px; text-align: left; font-size: 12px; font-weight: bold; vertical-align: middle; width: 65px; padding-left: 5px;">${totalAmount.toLocaleString('en-IN')}</td>
@@ -2310,11 +2310,10 @@ export default function BorrowerListReports() {
                  This is the ONLY place closing-wise print widths are defined.
                  Uses body[data-report-type] for highest specificity.
                  ═══════════════════════════════════════════════════════════════ */
-              body[data-report-type="closing-wise"] th:nth-child(1), body[data-report-type="closing-wise"] td:nth-child(1) { width: 20px !important; min-width: 20px !important; max-width: 24px !important; text-align: center !important; padding: 3px 1px !important; }
+              body[data-report-type="closing-wise"] th:nth-child(1), body[data-report-type="closing-wise"] td:nth-child(1) { width: 24px !important; min-width: 24px !important; max-width: 28px !important; text-align: center !important; padding: 3px 2px !important; }
               body[data-report-type="closing-wise"] th:nth-child(2), body[data-report-type="closing-wise"] td:nth-child(2) { width: 50px !important; min-width: 50px !important; max-width: 54px !important; text-align: center !important; }
               body[data-report-type="closing-wise"] th:nth-child(3), body[data-report-type="closing-wise"] td:nth-child(3) { width: 50px !important; min-width: 50px !important; max-width: 54px !important; text-align: center !important; }
               body[data-report-type="closing-wise"] tbody tr:not(.total-row) td { padding: 3px 2px !important; line-height: 1.3 !important; }
-              body[data-report-type="closing-wise"] th:nth-child(1), body[data-report-type="closing-wise"] td:nth-child(1) { text-align: center !important; }
               body[data-report-type="closing-wise"] th:nth-child(4), body[data-report-type="closing-wise"] td:nth-child(4) { width: 65px !important; min-width: 65px !important; max-width: 70px !important; text-align: left !important; padding-left: 5px !important; }
               body[data-report-type="closing-wise"] th:nth-child(5), body[data-report-type="closing-wise"] td:nth-child(5) { width: 55px !important; min-width: 55px !important; max-width: 60px !important; text-align: left !important; padding-left: 5px !important; }
               body[data-report-type="closing-wise"] th:nth-child(6), body[data-report-type="closing-wise"] td:nth-child(6) { width: 150px !important; min-width: 150px !important; max-width: 160px !important; text-align: left !important; padding-left: 4px !important; }
