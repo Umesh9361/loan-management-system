@@ -1462,8 +1462,8 @@ export default function BorrowerListReports() {
           <th style="border-bottom: 1px solid #000; padding: 2px; width: 20px; text-align: center; font-size: 11px; height: 35px; vertical-align: middle; font-weight: bold;">अ.क्र.</th>
           <th style="border-bottom: 1px solid #000; border-left: 1px solid #000; padding: 2px; width: 50px; text-align: center; font-size: 11px; height: 35px; vertical-align: middle; font-weight: bold;">कर्ज तारीख</th>
           <th style="border-bottom: 1px solid #000; border-left: 1px solid #000; padding: 2px; width: 50px; text-align: center; font-size: 11px; height: 35px; vertical-align: middle; font-weight: bold;">बंद तारीख</th>
-          <th style="border-bottom: 1px solid #000; border-left: 1px solid #000; padding: 2px; width: 65px; font-size: 8px; text-align: left; line-height: 1.2; height: 35px; vertical-align: middle; font-weight: bold; white-space: nowrap; padding-left: 3px;">अं.बा.<br/>मूल्य</th>
-          <th style="border-bottom: 1px solid #000; border-left: 1px solid #000; padding: 2px; width: 55px; text-align: left; font-size: 11px; height: 35px; vertical-align: middle; font-weight: bold; padding-left: 3px;">चार्जेस</th>
+          <th style="border-bottom: 1px solid #000; border-left: 1px solid #000; padding: 2px; width: 65px; font-size: 8px; text-align: left; line-height: 1.2; height: 35px; vertical-align: middle; font-weight: bold; white-space: nowrap; padding-left: 5px;">अं.बा.<br/>मूल्य</th>
+          <th style="border-bottom: 1px solid #000; border-left: 1px solid #000; padding: 2px; width: 55px; text-align: left; font-size: 11px; height: 35px; vertical-align: middle; font-weight: bold; padding-left: 5px;">चार्जेस</th>
           <th style="border-bottom: 1px solid #000; border-left: 1px solid #000; padding: 2px; width: auto; min-width: 80px; font-size: 11px; height: 35px; vertical-align: middle; font-weight: bold; text-align: left; padding-left: 4px;">कर्जदाराचे नाव</th>
           <th class="mobile-hide" style="border-bottom: 1px solid #000; border-left: 1px solid #000; padding: 2px; width: 36px; text-align: center; font-size: 11px; height: 35px; vertical-align: middle; font-weight: bold;">कोड नं</th>
           <th class="mobile-hide" style="border-bottom: 1px solid #000; border-left: 1px solid #000; padding: 2px; width: auto; min-width: 65px; font-size: 11px; height: 35px; vertical-align: middle; font-weight: bold; text-align: left;">वस्तूचा तपशील</th>
@@ -1499,14 +1499,14 @@ export default function BorrowerListReports() {
           : '0';
         
         return `
-          <tr data-row-index="${index}" data-loan='${JSON.stringify(loan).replace(/'/g, "&apos;")}' style="border-bottom: 1px solid #ccc; height: 40px; min-height: 40px; cursor: pointer; transition: background-color 0.2s;" onmouseover="this.style.backgroundColor='#f3f4f6'" onmouseout="this.style.backgroundColor=''" class="loan-row">
+          <tr data-row-index="${index}" data-loan='${JSON.stringify(loan).replace(/'/g, "&apos;")}' style="border-bottom: 1px solid #ccc; height: auto; cursor: pointer; transition: background-color 0.2s;" onmouseover="this.style.backgroundColor='#f3f4f6'" onmouseout="this.style.backgroundColor=''" class="loan-row">
             <td style="border-bottom: 1px solid #ccc; padding: 3px 2px; text-align: center; width: 20px; font-size: 13px; vertical-align: middle; font-weight: 500;">${index + 1}</td>
             <td style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 3px 2px; text-align: center; width: 50px; font-size: 13px; vertical-align: middle; font-weight: 500;">${shortLoanDate}</td>
             <td style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 3px 2px; text-align: center; width: 50px; font-size: 13px; vertical-align: middle; font-weight: 500;">${shortClosureDate}</td>
-            <td style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 3px 2px; text-align: left; width: 65px; font-size: 13px; vertical-align: middle; font-weight: 500; padding-left: 3px;" class="loan-amount">
+            <td style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 3px 2px; text-align: left; width: 65px; font-size: 13px; vertical-align: middle; font-weight: 500; padding-left: 5px;" class="loan-amount">
               ${Math.round(loan.principalAmount).toLocaleString('en-IN')}
             </td>
-            <td style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 3px 2px; text-align: left; width: 55px; font-size: 13px; vertical-align: middle; font-weight: 500; padding-left: 3px;" class="interest-amount">
+            <td style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 3px 2px; text-align: left; width: 55px; font-size: 13px; vertical-align: middle; font-weight: 500; padding-left: 5px;" class="interest-amount">
               ${interestPaid}
             </td>
             <td style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 3px 2px; width: auto; min-width: 80px; font-size: 13px; vertical-align: middle; font-weight: 500; text-align: left; padding-left: 4px;">${getPhotoIndicator(loan.id)}${loan.borrowerName.length > 22 ? loan.borrowerName.substring(0, 22) + '...' : loan.borrowerName}</td>
@@ -1616,8 +1616,8 @@ export default function BorrowerListReports() {
           <td style="border-top: 2px solid #000; padding: 3px 2px; text-align: center; vertical-align: middle; width: 20px;"></td>
           <td style="border-top: 2px solid #000; padding: 3px 2px; text-align: center; vertical-align: middle; width: 50px;"></td>
           <td style="border-top: 2px solid #000; border-left: 1px solid #000; padding: 3px 2px; font-size: 12px; text-align: center; vertical-align: middle; font-weight: bold; width: 50px;">एकूण:</td>
-          <td style="border-top: 2px solid #000; border-left: 1px solid #000; padding: 3px 2px; text-align: left; font-size: 12px; font-weight: bold; vertical-align: middle; width: 65px; padding-left: 3px;">${totalAmount.toLocaleString('en-IN')}</td>
-          <td style="border-top: 2px solid #000; border-left: 1px solid #000; padding: 3px 2px; text-align: left; font-size: 12px; font-weight: bold; vertical-align: middle; width: 55px; padding-left: 3px;">${totalInterest.toLocaleString('en-IN')}</td>
+          <td style="border-top: 2px solid #000; border-left: 1px solid #000; padding: 3px 2px; text-align: left; font-size: 12px; font-weight: bold; vertical-align: middle; width: 65px; padding-left: 5px;">${totalAmount.toLocaleString('en-IN')}</td>
+          <td style="border-top: 2px solid #000; border-left: 1px solid #000; padding: 3px 2px; text-align: left; font-size: 12px; font-weight: bold; vertical-align: middle; width: 55px; padding-left: 5px;">${totalInterest.toLocaleString('en-IN')}</td>
           <td style="border-top: 2px solid #000; padding: 3px 2px; vertical-align: middle; width: auto;"></td>
           <td class="mobile-hide" style="border-top: 2px solid #000; padding: 3px 2px; vertical-align: middle; width: 36px;"></td>
           <td class="mobile-hide" style="border-top: 2px solid #000; padding: 3px 2px; vertical-align: middle; width: auto;"></td>
@@ -2313,8 +2313,10 @@ export default function BorrowerListReports() {
               body[data-report-type="closing-wise"] th:nth-child(1), body[data-report-type="closing-wise"] td:nth-child(1) { width: 20px !important; min-width: 20px !important; max-width: 24px !important; text-align: center !important; padding: 3px 1px !important; }
               body[data-report-type="closing-wise"] th:nth-child(2), body[data-report-type="closing-wise"] td:nth-child(2) { width: 50px !important; min-width: 50px !important; max-width: 54px !important; text-align: center !important; }
               body[data-report-type="closing-wise"] th:nth-child(3), body[data-report-type="closing-wise"] td:nth-child(3) { width: 50px !important; min-width: 50px !important; max-width: 54px !important; text-align: center !important; }
-              body[data-report-type="closing-wise"] th:nth-child(4), body[data-report-type="closing-wise"] td:nth-child(4) { width: 65px !important; min-width: 65px !important; max-width: 70px !important; text-align: left !important; padding-left: 3px !important; }
-              body[data-report-type="closing-wise"] th:nth-child(5), body[data-report-type="closing-wise"] td:nth-child(5) { width: 55px !important; min-width: 55px !important; max-width: 60px !important; text-align: left !important; padding-left: 3px !important; }
+              body[data-report-type="closing-wise"] tbody tr:not(.total-row) td { padding: 3px 2px !important; line-height: 1.3 !important; }
+              body[data-report-type="closing-wise"] th:nth-child(1), body[data-report-type="closing-wise"] td:nth-child(1) { text-align: center !important; }
+              body[data-report-type="closing-wise"] th:nth-child(4), body[data-report-type="closing-wise"] td:nth-child(4) { width: 65px !important; min-width: 65px !important; max-width: 70px !important; text-align: left !important; padding-left: 5px !important; }
+              body[data-report-type="closing-wise"] th:nth-child(5), body[data-report-type="closing-wise"] td:nth-child(5) { width: 55px !important; min-width: 55px !important; max-width: 60px !important; text-align: left !important; padding-left: 5px !important; }
               body[data-report-type="closing-wise"] th:nth-child(6), body[data-report-type="closing-wise"] td:nth-child(6) { width: auto !important; min-width: 80px !important; text-align: left !important; padding-left: 4px !important; }
               body[data-report-type="closing-wise"] th:nth-child(7), body[data-report-type="closing-wise"] td:nth-child(7) { width: 36px !important; min-width: 36px !important; max-width: 40px !important; text-align: center !important; }
               body[data-report-type="closing-wise"] th:nth-child(8), body[data-report-type="closing-wise"] td:nth-child(8) { width: auto !important; min-width: 65px !important; text-align: left !important; }
