@@ -1729,7 +1729,14 @@ export default function BorrowerListReports() {
                 table-layout: fixed !important;
                 width: 100% !important;
                 border: none !important;
-                page-break-inside: avoid;
+                page-break-inside: auto;
+              }
+              thead {
+                display: table-header-group !important;
+              }
+              tr {
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
               }
               
               /* Professional print appearance - remove all table borders */
@@ -2252,6 +2259,11 @@ export default function BorrowerListReports() {
                 outline: none !important;
                 border: none !important;
                 box-shadow: none !important;
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+              }
+              thead {
+                display: table-header-group !important;
               }
               
               /* Professional table styling - NO LEFT/RIGHT BORDERS as requested */
@@ -2567,7 +2579,8 @@ export default function BorrowerListReports() {
               
               /* Remove all row colors and effects for clean look */
               tr { 
-                page-break-inside: avoid; 
+                page-break-inside: avoid !important; 
+                break-inside: avoid !important;
                 page-break-after: auto;
                 background: white !important;
               }
