@@ -1783,13 +1783,13 @@ export default function BorrowerListReports() {
               /* Data rows - 50% more height */
               tbody tr:not(.total-row):not(.summary-row) td { padding: 8px 2px !important; line-height: 1.6 !important; }
               th:nth-child(1), td:nth-child(1) { width: 26px !important; min-width: 26px !important; }    /* अनुक्रमांक */
-              th:nth-child(2), td:nth-child(2) { width: 50px !important; min-width: 50px !important; }    /* तारीख */
-              th:nth-child(3), td:nth-child(3) { width: 60px !important; min-width: 60px !important; }    /* रक्कम */
-              th:nth-child(4), td:nth-child(4) { width: 125px !important; min-width: 125px !important; text-align: left !important; padding-left: 5px !important; }   /* नाव - left with padding */
-              tbody tr:not(.total-row):not(.summary-row) td:nth-child(4) { padding-left: 5px !important; }
-              th:nth-child(5), td:nth-child(5) { width: 50px !important; min-width: 50px !important; max-width: 55px !important; text-align: center !important; padding: 3px 2px !important; }    /* कोड - center, wider */
+              th:nth-child(2), td:nth-child(2) { width: 44px !important; min-width: 44px !important; }    /* तारीख - कमी */
+              th:nth-child(3), td:nth-child(3) { width: 58px !important; min-width: 58px !important; }    /* रक्कम */
+              th:nth-child(4), td:nth-child(4) { width: 88px !important; min-width: 88px !important; text-align: left !important; padding-left: 4px !important; }   /* नाव - 30% कमी */
+              tbody tr:not(.total-row):not(.summary-row) td:nth-child(4) { padding-left: 4px !important; }
+              th:nth-child(5), td:nth-child(5) { width: 48px !important; min-width: 48px !important; max-width: 52px !important; text-align: center !important; padding: 3px 2px !important; }    /* कोड */
               tbody tr:not(.total-row):not(.summary-row) td:nth-child(5) { padding: 8px 2px !important; text-align: center !important; }
-              th:nth-child(6), td:nth-child(6) { width: auto !important; min-width: 130px !important; text-align: left !important; padding-left: 5px !important; }    /* वस्तूचा तपशील */
+              th:nth-child(6), td:nth-child(6) { width: auto !important; min-width: 170px !important; text-align: left !important; padding-left: 5px !important; }    /* वस्तूचा तपशील - वाढवले */
               th:nth-child(7), td:nth-child(7) { width: 42px !important; min-width: 42px !important; }    /* वजन */
               
               /* For closing-wise report with extra columns - portrait fit (9 cols) */
@@ -1805,12 +1805,12 @@ export default function BorrowerListReports() {
               
               /* MATURITY-WISE REPORT PRINT LAYOUT */
               .maturity-wise-table th:nth-child(1), .maturity-wise-table td:nth-child(1) { width: 26px !important; min-width: 26px !important; max-width: 30px !important; }    /* अ.क्र. */
-              .maturity-wise-table th:nth-child(2), .maturity-wise-table td:nth-child(2) { width: 55px !important; }    /* तारीख */
+              .maturity-wise-table th:nth-child(2), .maturity-wise-table td:nth-child(2) { width: 44px !important; }    /* तारीख - कमी */
               .maturity-wise-table th:nth-child(3), .maturity-wise-table td:nth-child(3) { width: 55px !important; min-width: 55px !important; }    /* अंदाजे बाजार मूल्य */
-              .maturity-wise-table th:nth-child(4), .maturity-wise-table td:nth-child(4) { width: 125px !important; min-width: 125px !important; text-align: left !important; padding-left: 5px !important; }   /* नाव */
-              .maturity-wise-table th:nth-child(5), .maturity-wise-table td:nth-child(5) { width: 50px !important; min-width: 50px !important; max-width: 55px !important; text-align: center !important; padding: 3px 2px !important; }      /* कोड नं - center, wider */
+              .maturity-wise-table th:nth-child(4), .maturity-wise-table td:nth-child(4) { width: 88px !important; min-width: 88px !important; text-align: left !important; padding-left: 4px !important; }   /* नाव - 30% कमी */
+              .maturity-wise-table th:nth-child(5), .maturity-wise-table td:nth-child(5) { width: 48px !important; min-width: 48px !important; max-width: 52px !important; text-align: center !important; padding: 3px 2px !important; }      /* कोड नं */
               .maturity-wise-table tbody tr:not(.total-row):not(.summary-row) td:nth-child(5) { padding: 8px 2px !important; text-align: center !important; }
-              .maturity-wise-table th:nth-child(6), .maturity-wise-table td:nth-child(6) { width: auto !important; min-width: 110px !important; }    /* वस्तूचा तपशील */
+              .maturity-wise-table th:nth-child(6), .maturity-wise-table td:nth-child(6) { width: auto !important; min-width: 170px !important; }    /* वस्तूचा तपशील - वाढवले */
               .maturity-wise-table th:nth-child(7), .maturity-wise-table td:nth-child(7) { width: 40px !important; min-width: 40px !important; }    /* वजन */
               .maturity-wise-table th:nth-child(8), .maturity-wise-table td:nth-child(8) { width: 48px !important; min-width: 48px !important; }    /* मुदत */
               
@@ -2358,13 +2358,13 @@ export default function BorrowerListReports() {
                 border-right: none !important;
               }
               
-              /* A4 Print Column Widths — th+td consistent */
+              /* A4 Print Column Widths — th+td consistent (date-wise, name-wise, maturity) */
               th:nth-child(1), td:nth-child(1) { width: 26px !important; min-width: 26px !important; max-width: 30px !important; text-align: center !important; }
-              th:nth-child(2), td:nth-child(2) { width: 50px !important; min-width: 50px !important; max-width: 55px !important; text-align: center !important; }
-              th:nth-child(3), td:nth-child(3) { width: 60px !important; min-width: 60px !important; max-width: 65px !important; text-align: right !important; }
-              th:nth-child(4), td:nth-child(4) { width: auto !important; min-width: 125px !important; text-align: left !important; padding-left: 5px !important; }
-              th:nth-child(5), td:nth-child(5) { width: 50px !important; min-width: 50px !important; max-width: 55px !important; text-align: center !important; }
-              th:nth-child(6), td:nth-child(6) { width: auto !important; min-width: 100px !important; text-align: left !important; padding-left: 5px !important; }
+              th:nth-child(2), td:nth-child(2) { width: 44px !important; min-width: 44px !important; max-width: 48px !important; text-align: center !important; }
+              th:nth-child(3), td:nth-child(3) { width: 58px !important; min-width: 58px !important; max-width: 62px !important; text-align: right !important; }
+              th:nth-child(4), td:nth-child(4) { width: 88px !important; min-width: 88px !important; text-align: left !important; padding-left: 4px !important; }
+              th:nth-child(5), td:nth-child(5) { width: 48px !important; min-width: 48px !important; max-width: 52px !important; text-align: center !important; }
+              th:nth-child(6), td:nth-child(6) { width: auto !important; min-width: 170px !important; text-align: left !important; padding-left: 5px !important; }
               th:nth-child(7), td:nth-child(7) { width: 42px !important; min-width: 42px !important; max-width: 48px !important; text-align: center !important; }
               
               /* CLOSING-WISE reports (9 columns) — consistent widths */
