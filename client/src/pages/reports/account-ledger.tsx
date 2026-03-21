@@ -931,6 +931,7 @@ export default function AccountLedger() {
       const loanClosure = safeClosures.find((c: any) => c.loanId === loan.id);
       if (!loanClosure) return;
       const principalPaid = parseFloat(loanClosure.principalPaid || '0');
+      const interestPaid = parseFloat(loanClosure.interestPaid || '0');
       const closureDate = typeof loanClosure.closureDate === 'string' ? loanClosure.closureDate.split('T')[0] : loanClosure.closureDate;
       if (principalPaid > 0) {
         runningBalance -= principalPaid;
@@ -939,6 +940,7 @@ export default function AccountLedger() {
           description: `कर्ज बंद - ${loan.borrowerName} (खाते क्र. ${loan.accountNumber})`,
           debit: 0,
           credit: principalPaid,
+          interest: interestPaid,
           balance: runningBalance,
           type: 'loan_closure',
           loanId: loan.id,
@@ -1029,8 +1031,10 @@ export default function AccountLedger() {
     const bdr = '1.5px solid #333';
     const thStyle = `border:${bdr};padding:8px 6px;text-align:center;font-size:11px;background:#f0f0f0;font-weight:700;color:#111;line-height:1.4;-webkit-print-color-adjust:exact;print-color-adjust:exact;`;
     const tdBase = `border:${bdr};padding:8px 6px;font-size:11px;font-weight:600;line-height:1.4;`;
+    const showInterestCol = accountType === 'loan';
 
     let rows = '';
+    let totalInterest = 0;
     statementData.entries.forEach((entry: any) => {
       const bal = entry.balance || 0;
       const drLabel = isCashAccount
@@ -1044,12 +1048,15 @@ export default function AccountLedger() {
 
       const dateDisplay = entry.type === 'opening' ? 'प्रारंभिक' : DateUtils.isoToIndianDate(entry.date);
       const rowBg = entry.type === 'opening' ? 'background:#fef3c7;-webkit-print-color-adjust:exact;print-color-adjust:exact;' : '';
+      const interestAmt = entry.interest || 0;
+      totalInterest += interestAmt;
 
       rows += `<tr>
         <td style="${tdBase}text-align:center;${rowBg}">${dateDisplay}</td>
         <td style="${tdBase}text-align:left;${rowBg}">${entry.description || ''}</td>
         <td style="${tdBase}text-align:right;${rowBg}">${entry.debit > 0 ? Math.round(entry.debit).toLocaleString('en-IN') : '-'}</td>
         <td style="${tdBase}text-align:right;${rowBg}">${entry.credit > 0 ? Math.round(entry.credit).toLocaleString('en-IN') : '-'}</td>
+        ${showInterestCol ? `<td style="${tdBase}text-align:right;${rowBg}">${interestAmt > 0 ? Math.round(interestAmt).toLocaleString('en-IN') : '-'}</td>` : ''}
         <td style="${tdBase}text-align:right;font-weight:bold;${rowBg}${balColor}">${bal < 0 ? '-' : ''}${Math.round(Math.abs(bal)).toLocaleString('en-IN')}${drLabel}</td>
       </tr>`;
     });
@@ -1068,6 +1075,7 @@ export default function AccountLedger() {
       <td style="${tdBase}text-align:center;background:#e0e7ff;-webkit-print-color-adjust:exact;print-color-adjust:exact;" colspan="2"><b>एकूण</b></td>
       <td style="${tdBase}text-align:right;background:#e0e7ff;font-weight:bold;-webkit-print-color-adjust:exact;print-color-adjust:exact;">${Math.round(parseFloat(statementData.totalDebit || 0)).toLocaleString('en-IN')}</td>
       <td style="${tdBase}text-align:right;background:#e0e7ff;font-weight:bold;-webkit-print-color-adjust:exact;print-color-adjust:exact;">${Math.round(parseFloat(statementData.totalCredit || 0)).toLocaleString('en-IN')}</td>
+      ${showInterestCol ? `<td style="${tdBase}text-align:right;background:#e0e7ff;font-weight:bold;-webkit-print-color-adjust:exact;print-color-adjust:exact;">${Math.round(totalInterest).toLocaleString('en-IN')}</td>` : ''}
       <td style="${tdBase}text-align:right;background:#e0e7ff;font-weight:bold;-webkit-print-color-adjust:exact;print-color-adjust:exact;${finalBalColor}">${finalBal < 0 ? '-' : ''}${Math.round(Math.abs(finalBal)).toLocaleString('en-IN')} ${finalDrLabel.trim()}</td>
     </tr>`;
 
@@ -1094,12 +1102,16 @@ export default function AccountLedger() {
   ${accountInfoHTML ? `<p style="margin:0 0 3px 0;">${accountInfoHTML}</p>` : ''}
 </div>
 <table>
-  <colgroup><col style="width:12%;"><col style="width:34%;"><col style="width:16%;"><col style="width:16%;"><col style="width:22%;"></colgroup>
+  ${showInterestCol
+    ? `<colgroup><col style="width:11%;"><col style="width:28%;"><col style="width:14%;"><col style="width:14%;"><col style="width:13%;"><col style="width:20%;"></colgroup>`
+    : `<colgroup><col style="width:12%;"><col style="width:34%;"><col style="width:16%;"><col style="width:16%;"><col style="width:22%;"></colgroup>`
+  }
   <thead><tr>
     <th style="${thStyle}">दिनांक</th>
     <th style="${thStyle}">तपशील</th>
     <th style="${thStyle}">नावे (Dr.)</th>
     <th style="${thStyle}">जमा (Cr.)</th>
+    ${showInterestCol ? `<th style="${thStyle}background:#fff3cd;">व्याज</th>` : ''}
     <th style="${thStyle}background:#dbeafe;">शिल्लक</th>
   </tr></thead>
   <tbody>${rows}</tbody>
@@ -1175,8 +1187,10 @@ export default function AccountLedger() {
 
       const thStyle = `border:1.5px solid #333;padding:8px 6px;text-align:center;font-size:11px;background:#f0f0f0;font-weight:700;color:#111;line-height:1.4;-webkit-print-color-adjust:exact;print-color-adjust:exact;`;
       const tdBase = `border:1.5px solid #333;padding:8px 6px;font-size:11px;font-weight:600;line-height:1.4;`;
+      const pdfShowInterest = accountType === 'loan';
 
       let rows = '';
+      let pdfTotalInterest = 0;
       statementData.entries.forEach((entry: any) => {
         const bal = entry.balance || 0;
         const drLabel = isCashAccount
@@ -1189,14 +1203,17 @@ export default function AccountLedger() {
             : (bal >= 0 ? 'color:#1e40af;' : 'color:red;');
 
         const dateDisplay = entry.type === 'opening' ? 'प्रारंभिक' : DateUtils.isoToIndianDate(entry.date);
-        const rowBg = entry.type === 'opening' ? 'background:#fff4e6;' : '';
+        const rowBg = entry.type === 'opening' ? 'background:#fef3c7;' : '';
+        const intAmt = entry.interest || 0;
+        pdfTotalInterest += intAmt;
 
-        rows += `<tr style="${rowBg}">
-          <td style="${tdBase}text-align:center;">${dateDisplay}</td>
-          <td style="${tdBase}text-align:left;">${entry.description || ''}</td>
-          <td style="${tdBase}text-align:right;">${entry.debit > 0 ? Math.round(entry.debit).toLocaleString('en-IN') : '<span style="color:#999;">-</span>'}</td>
-          <td style="${tdBase}text-align:right;">${entry.credit > 0 ? Math.round(entry.credit).toLocaleString('en-IN') : '<span style="color:#999;">-</span>'}</td>
-          <td style="${tdBase}text-align:right;font-weight:bold;font-size:11px;background:#eef2ff;${balColor}">${bal < 0 ? '-' : ''}${Math.round(Math.abs(bal)).toLocaleString('en-IN')}${drLabel}</td>
+        rows += `<tr>
+          <td style="${tdBase}text-align:center;${rowBg}">${dateDisplay}</td>
+          <td style="${tdBase}text-align:left;${rowBg}">${entry.description || ''}</td>
+          <td style="${tdBase}text-align:right;${rowBg}">${entry.debit > 0 ? Math.round(entry.debit).toLocaleString('en-IN') : '-'}</td>
+          <td style="${tdBase}text-align:right;${rowBg}">${entry.credit > 0 ? Math.round(entry.credit).toLocaleString('en-IN') : '-'}</td>
+          ${pdfShowInterest ? `<td style="${tdBase}text-align:right;${rowBg}">${intAmt > 0 ? Math.round(intAmt).toLocaleString('en-IN') : '-'}</td>` : ''}
+          <td style="${tdBase}text-align:right;font-weight:bold;${rowBg}${balColor}">${bal < 0 ? '-' : ''}${Math.round(Math.abs(bal)).toLocaleString('en-IN')}${drLabel}</td>
         </tr>`;
       });
 
@@ -1210,13 +1227,14 @@ export default function AccountLedger() {
           ? 'color:red;'
           : (finalBal >= 0 ? 'color:#1e40af;' : 'color:red;');
 
-      const totTd = `border:none;border-top:1px solid #333;border-bottom:1px solid #333;padding:7px 5px;font-size:10px;font-weight:bold;line-height:1.5;background:#e3f2fd;`;
+      const totTd = `border:1.5px solid #333;padding:8px 6px;font-size:11px;font-weight:bold;line-height:1.4;background:#e0e7ff;-webkit-print-color-adjust:exact;print-color-adjust:exact;`;
 
       rows += `<tr>
         <td style="${totTd}text-align:center;" colspan="2">एकूण</td>
         <td style="${totTd}text-align:right;">${Math.round(parseFloat(statementData.totalDebit || 0)).toLocaleString('en-IN')}</td>
         <td style="${totTd}text-align:right;">${Math.round(parseFloat(statementData.totalCredit || 0)).toLocaleString('en-IN')}</td>
-        <td style="${totTd}text-align:right;font-size:12px;background:#c7d2fe;color:#1e40af;white-space:nowrap;${finalBalColor}"><span style="font-size:12px;">${finalBal < 0 ? '-' : ''}${Math.round(Math.abs(finalBal)).toLocaleString('en-IN')}</span> <span style="font-size:9px;">${finalDrLabel.trim()}</span></td>
+        ${pdfShowInterest ? `<td style="${totTd}text-align:right;">${Math.round(pdfTotalInterest).toLocaleString('en-IN')}</td>` : ''}
+        <td style="${totTd}text-align:right;${finalBalColor}">${finalBal < 0 ? '-' : ''}${Math.round(Math.abs(finalBal)).toLocaleString('en-IN')} ${finalDrLabel.trim()}</td>
       </tr>`;
 
       const fullHTML = `<!DOCTYPE html><html><head><meta charset="utf-8">
@@ -1237,20 +1255,18 @@ export default function AccountLedger() {
           ${accountInfoHTML ? `<p style="margin:0 0 3px 0;">${accountInfoHTML}</p>` : ''}
         </div>
         <table>
-          <colgroup>
-            <col style="width:12%;">
-            <col style="width:34%;">
-            <col style="width:16%;">
-            <col style="width:16%;">
-            <col style="width:22%;">
-          </colgroup>
+          ${pdfShowInterest
+            ? `<colgroup><col style="width:11%;"><col style="width:28%;"><col style="width:14%;"><col style="width:14%;"><col style="width:13%;"><col style="width:20%;"></colgroup>`
+            : `<colgroup><col style="width:12%;"><col style="width:34%;"><col style="width:16%;"><col style="width:16%;"><col style="width:22%;"></colgroup>`
+          }
           <thead>
             <tr>
               <th style="${thStyle}">दिनांक</th>
               <th style="${thStyle}">तपशील</th>
               <th style="${thStyle}">नावे (Dr.)</th>
               <th style="${thStyle}">जमा (Cr.)</th>
-              <th style="${thStyle}background:#dbeafe;font-size:10px;">शिल्लक</th>
+              ${pdfShowInterest ? `<th style="${thStyle}background:#fff3cd;">व्याज</th>` : ''}
+              <th style="${thStyle}background:#dbeafe;">शिल्लक</th>
             </tr>
           </thead>
           <tbody>${rows}</tbody>
@@ -1700,6 +1716,9 @@ export default function AccountLedger() {
                             <TableHead className="border text-center md:py-3">तपशील</TableHead>
                             <TableHead className="border text-center md:py-3">नावे (Dr.)</TableHead>
                             <TableHead className="border text-center md:py-3">जमा (Cr.)</TableHead>
+                            {statementData?.account?.type === 'loan' && (
+                              <TableHead className="border text-center md:py-3 bg-yellow-50">व्याज</TableHead>
+                            )}
                             <TableHead className="border text-center md:py-3">शिल्लक</TableHead>
                           </TableRow>
                         </TableHeader>
@@ -1729,6 +1748,11 @@ export default function AccountLedger() {
                               <TableCell className="border text-right">
                                 {entry.credit > 0 && `₹${Math.round(entry.credit).toLocaleString('en-IN')}`}
                               </TableCell>
+                              {statementData?.account?.type === 'loan' && (
+                                <TableCell className="border text-right bg-yellow-50">
+                                  {entry.interest > 0 && `₹${Math.round(entry.interest).toLocaleString('en-IN')}`}
+                                </TableCell>
+                              )}
                               <TableCell className="border text-right">
                                 {(() => {
                                   const isCashAccount = statementData.account?.type === 'cash';
@@ -1762,6 +1786,11 @@ export default function AccountLedger() {
                             <TableCell className="border text-right">
                               ₹{Math.round(parseFloat(statementData.totalCredit || 0)).toLocaleString('en-IN')}
                             </TableCell>
+                            {statementData?.account?.type === 'loan' && (
+                              <TableCell className="border text-right bg-yellow-50 font-bold">
+                                ₹{Math.round(statementData.entries.reduce((s: number, e: any) => s + (e.interest || 0), 0)).toLocaleString('en-IN')}
+                              </TableCell>
+                            )}
                             <TableCell className="border text-right">
                               {(() => {
                                 const isCashAccount = statementData.account?.type === 'cash';
