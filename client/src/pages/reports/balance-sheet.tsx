@@ -168,7 +168,7 @@ export default function BalanceSheet() {
     const doc = iframe.contentDocument || iframe.contentWindow?.document;
     if (!doc) { document.body.removeChild(iframe); return; }
     doc.open();
-    doc.write(`<!DOCTYPE html><html><head><meta charset="utf-8"/><title>ताळेबंद</title><style>@page{size:A4;margin:15mm;}body{margin:0;padding:0;}</style></head><body>${html}</body></html>`);
+    doc.write(`<!DOCTYPE html><html><head><meta charset="utf-8"/><title>ताळेबंद</title><style>@page{size:A4;margin:8mm 8mm 8mm 25.4mm;}body{margin:0;padding:0;}</style></head><body>${html}</body></html>`);
     doc.close();
     setTimeout(() => {
       try {

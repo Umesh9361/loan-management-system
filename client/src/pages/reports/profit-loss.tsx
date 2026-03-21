@@ -457,6 +457,14 @@ export default function ProfitLoss() {
           </div>
         </main>
       </div>
+      <style>{`
+        @media print {
+          @page {
+            size: A4;
+            margin: 8mm 8mm 8mm 25.4mm;
+          }
+        }
+      `}</style>
     </div>
   );
 }
