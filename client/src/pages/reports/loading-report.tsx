@@ -273,20 +273,22 @@ export default function LoadingReport() {
     const printHTML = `
       <!DOCTYPE html>
       <html><head><title>लोडिंग रिपोर्ट</title>
+      <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;500;600;700&display=swap" rel="stylesheet">
       <style>
-        @page { size: A4 portrait; margin: 8mm; }
-        body { font-family: 'Noto Sans Devanagari', sans-serif; font-size: 10px; margin: 0; padding: 0 0 0 17.4mm; box-sizing: border-box; }
-        h1 { text-align: center; font-size: 16px; margin: 5px 0; }
-        h2 { text-align: center; font-size: 12px; margin: 3px 0; color: #555; }
+        @page { size: A4 landscape; margin: 8mm; }
+        * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+        body { font-family: 'Noto Sans Devanagari', Arial, sans-serif; font-size: 10px; margin: 0; padding: 0; box-sizing: border-box; }
+        h1 { text-align: center; font-size: 15px; font-weight: 700; margin: 5px 0; }
+        h2 { text-align: center; font-size: 11px; font-weight: 600; margin: 3px 0; color: #555; }
         .info { display: flex; justify-content: space-between; margin: 8px 0; font-size: 9px; border-bottom: 1px solid #ccc; padding-bottom: 5px; }
-        .summary { display: flex; gap: 10px; margin: 8px 0; font-size: 9px; }
-        .summary-card { flex: 1; text-align: center; padding: 5px; border: 1px solid #ddd; border-radius: 4px; }
+        .summary { display: flex; gap: 8px; margin: 8px 0; font-size: 9px; }
+        .summary-card { flex: 1; text-align: center; padding: 4px; border: 1px solid #ddd; border-radius: 4px; }
         .summary-card.high { background: #fee; border-color: #f99; }
         .summary-card.medium { background: #fff3e0; border-color: #ffb74d; }
         .summary-card.slight { background: #fff8e1; border-color: #ffd54f; }
-        table { width: 100%; border-collapse: collapse; margin-top: 5px; }
-        th { background: #4338ca; color: white; padding: 4px 3px; font-size: 8px; text-align: center; }
-        td { border: 1px solid #ddd; padding: 3px; font-size: 8px; text-align: center; }
+        table { width: 100%; border-collapse: collapse; margin-top: 5px; table-layout: auto; }
+        th { background: #4338ca; color: white; padding: 5px 4px; font-size: 8.5px; text-align: center; font-weight: 600; white-space: nowrap; }
+        td { border: 1px solid #ddd; padding: 4px 3px; font-size: 8.5px; text-align: center; }
         tr:nth-child(even) { background: #f9f9f9; }
         .cat-high { background: #fee2e2; color: #991b1b; font-weight: bold; }
         .cat-medium { background: #fff7ed; color: #9a3412; }
