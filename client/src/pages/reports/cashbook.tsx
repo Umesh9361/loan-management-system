@@ -237,33 +237,79 @@ function CashBookReport() {
           font-size: 10px !important;
         }
         /* Compact vertical table in print */
-        .professional-vertical-table th {
+        .professional-vertical-table th,
+        .professional-vertical-table thead th {
           font-size: 11px !important;
           padding: 4px 4px !important;
           font-weight: 700 !important;
           line-height: 1.3 !important;
+          background: #f0f0f0 !important;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
         }
-        .professional-vertical-table td {
+        .professional-vertical-table td,
+        .professional-vertical-table tbody td {
           font-size: 10px !important;
           padding: 3px 4px !important;
           line-height: 1.3 !important;
         }
+        .professional-vertical-table thead { display: table-header-group; }
+        .professional-vertical-table tr { page-break-inside: avoid !important; break-inside: avoid !important; }
         /* Compact T-format main header (जमा/नावे) in print */
-        .professional-t-format > .flex > div {
-          padding-top: 3px !important;
-          padding-bottom: 3px !important;
+        .professional-t-format .flex > div,
+        .professional-t-format > div > div {
+          padding: 3px 2px !important;
         }
-        .professional-t-format > .flex > div h3 {
+        .professional-t-format h3,
+        .professional-t-format .font-bold {
           font-size: 11px !important;
+          line-height: 1.3 !important;
         }
-        .professional-t-format > .flex > div h3 span {
+        .professional-t-format h3 span {
           font-size: 9px !important;
         }
         /* Compact T-format sub-headers (दिनांक/तपशील/रक्कम) in print */
-        .professional-t-format .flex.text-center.font-semibold {
+        .professional-t-format .flex.font-semibold,
+        .professional-t-format .flex.font-semibold > div {
           font-size: 10px !important;
-          padding-top: 2px !important;
-          padding-bottom: 2px !important;
+          padding: 2px 2px !important;
+          line-height: 1.3 !important;
+        }
+        /* Override all Tailwind responsive paddings/fonts in print */
+        .print-content .py-2,
+        .print-content .py-3,
+        .print-content .py-4 {
+          padding-top: 3px !important;
+          padding-bottom: 3px !important;
+        }
+        .print-content .text-xl,
+        .print-content .text-lg {
+          font-size: 11px !important;
+        }
+        .print-content .text-base {
+          font-size: 10px !important;
+        }
+        .print-content .md\\:py-3,
+        .print-content .md\\:py-4,
+        .print-content .sm\\:py-3,
+        .print-content .sm\\:py-2 {
+          padding-top: 3px !important;
+          padding-bottom: 3px !important;
+        }
+        .print-content .md\\:text-xl,
+        .print-content .md\\:text-base,
+        .print-content .sm\\:text-lg {
+          font-size: 11px !important;
+        }
+        .print-content .md\\:px-4,
+        .print-content .sm\\:px-3 {
+          padding-left: 4px !important;
+          padding-right: 4px !important;
+        }
+        /* Hide summary stats box in print */
+        .print-content .mt-4.bg-indigo-50,
+        .print-content .sm\\:mt-6 {
+          display: none !important;
         }
       }
     `;
