@@ -128,13 +128,13 @@ export class ReceiptGenerator {
             
             .loan-receipt {
                 width: 100% !important;
-                height: 94mm !important;
-                min-height: 94mm !important;
-                max-height: 94mm !important;
-                flex: 0 0 94mm !important;
-                padding: 3mm !important;
+                height: 98mm !important;
+                min-height: 98mm !important;
+                max-height: 98mm !important;
+                flex: 0 0 98mm !important;
+                padding: 3mm 4mm !important;
                 margin: 0 !important;
-                margin-top: 3mm !important;
+                margin-top: 2mm !important;
                 border: 1px solid #333 !important;
                 box-sizing: border-box !important;
                 overflow: hidden !important;
@@ -166,13 +166,13 @@ export class ReceiptGenerator {
             
             .closure-receipt {
                 width: 100% !important;
-                height: 94mm !important;
-                min-height: 94mm !important;
-                max-height: 94mm !important;
-                flex: 0 0 94mm !important;
-                padding: 3mm !important;
+                height: 98mm !important;
+                min-height: 98mm !important;
+                max-height: 98mm !important;
+                flex: 0 0 98mm !important;
+                padding: 3mm 4mm !important;
                 margin: 0 !important;
-                margin-bottom: 3mm !important;
+                margin-bottom: 2mm !important;
                 border: 1px solid #333 !important;
                 box-sizing: border-box !important;
                 overflow: hidden !important;
@@ -182,13 +182,13 @@ export class ReceiptGenerator {
             
             .form12-receipt {
                 width: 100% !important;
-                height: 94mm !important;
-                min-height: 94mm !important;
-                max-height: 94mm !important;
-                flex: 0 0 94mm !important;
-                padding: 3mm !important;
+                height: 98mm !important;
+                min-height: 98mm !important;
+                max-height: 98mm !important;
+                flex: 0 0 98mm !important;
+                padding: 3mm 4mm !important;
                 margin: 0 !important;
-                margin-bottom: 3mm !important;
+                margin-bottom: 2mm !important;
                 border: 1px solid #333 !important;
                 box-sizing: border-box !important;
                 overflow: hidden !important;
@@ -306,34 +306,34 @@ export class ReceiptGenerator {
         
         .receipt-container.export-mode .loan-receipt {
             flex: 0 0 auto !important;
-            height: 95mm !important;
-            min-height: 95mm !important;
-            max-height: 95mm !important;
+            height: 98mm !important;
+            min-height: 98mm !important;
+            max-height: 98mm !important;
             overflow: visible !important;
-            padding: 3mm !important;
+            padding: 3mm 4mm !important;
             margin-bottom: 0 !important;
-            margin-top: 4mm !important;
+            margin-top: 2mm !important;
         }
         
         .receipt-container.export-mode .closure-receipt {
             flex: 0 0 auto !important;
-            height: 95mm !important;
-            min-height: 95mm !important;
-            max-height: 95mm !important;
+            height: 98mm !important;
+            min-height: 98mm !important;
+            max-height: 98mm !important;
             overflow: visible !important;
-            padding: 3mm !important;
-            margin-bottom: 4mm !important;
+            padding: 3mm 4mm !important;
+            margin-bottom: 2mm !important;
             margin-top: 0 !important;
         }
         
         .receipt-container.export-mode .form12-receipt {
             flex: 0 0 auto !important;
-            height: 95mm !important;
-            min-height: 95mm !important;
-            max-height: 95mm !important;
+            height: 98mm !important;
+            min-height: 98mm !important;
+            max-height: 98mm !important;
             overflow: visible !important;
-            padding: 3mm !important;
-            margin-bottom: 4mm !important;
+            padding: 3mm 4mm !important;
+            margin-bottom: 2mm !important;
             margin-top: 0 !important;
         }
         
@@ -453,26 +453,26 @@ export class ReceiptGenerator {
 
         .receipt-header {
             text-align: center;
-            margin-bottom: 4px; /* Reduced from 8px to 4px */
-            border-bottom: 1px solid #333;
-            padding-bottom: 2px; /* Reduced from 4px to 2px */
+            margin-bottom: 5px;
+            border-bottom: 1.5px solid #333;
+            padding-bottom: 3px;
         }
 
         .form-number {
-            font-size: 12px; /* Reduced from 14px to 12px */
+            font-size: 12px;
             font-weight: bold;
             float: right;
             text-align: center;
             width: 100%;
-            margin-bottom: 4px; /* Significantly reduced from 15px to 4px */
-            padding: 2px 0; /* Reduced from 8px to 2px */
-            line-height: 1.2; /* Reduced from 1.4 to 1.2 */
+            margin-bottom: 4px;
+            padding: 2px 0;
+            line-height: 1.3;
         }
 
         .receipt-title {
             font-size: 14px;
             font-weight: bold;
-            margin: 1px 0; /* Reduced from 4px to 1px */
+            margin: 2px 0;
             text-align: center;
         }
 
@@ -485,10 +485,10 @@ export class ReceiptGenerator {
         .field-row {
             display: flex;
             justify-content: space-between;
-            margin: 4px 0;
+            margin: 5px 0;
             font-size: 11px;
             align-items: baseline;
-            line-height: 1.4;
+            line-height: 1.5;
             padding: 0;
         }
 
@@ -504,10 +504,10 @@ export class ReceiptGenerator {
             flex: 1;
             margin-left: 4px;
             padding: 0px 4px 4px 4px;
-            min-height: 18px;
+            min-height: 20px;
             font-weight: 500;
             font-size: 11px;
-            line-height: 1.4;
+            line-height: 1.5;
         }
         
         /* ✅ BLANK RECEIPT: Remove border for blank fields to avoid double underlines */
@@ -536,7 +536,7 @@ export class ReceiptGenerator {
         .signature-section {
             display: flex;
             justify-content: flex-end;
-            margin-top: 8px;
+            margin-top: 10px;
             margin-bottom: 8px;
             font-size: 11px;
             padding-right: 10px;
@@ -551,7 +551,7 @@ export class ReceiptGenerator {
         .signature-line {
             border-bottom: 1px solid #333;
             margin-bottom: 4px;
-            height: 20px;
+            height: 22px;
             width: 100%;
         }
 
@@ -1049,35 +1049,35 @@ export class ReceiptGenerator {
     min-height: auto !important;
     max-height: none !important;
     overflow: hidden !important;
-    padding: 2mm !important;
+    padding: 2.5mm 3mm !important;
     margin: 1mm 0 !important;
     border: 1px solid #333 !important;
   }
 
   .bulk-cell .cutting-line {
-    height: 4mm !important;
-    min-height: 4mm !important;
-    max-height: 4mm !important;
-    flex: 0 0 4mm !important;
+    height: 3mm !important;
+    min-height: 3mm !important;
+    max-height: 3mm !important;
+    flex: 0 0 3mm !important;
     margin: 0 !important;
   }
 
   .bulk-cell .hamipatra-page { display: none !important; }
 
-  .bulk-cell .field-row { margin: 2px 0 !important; font-size: 10px !important; }
+  .bulk-cell .receipt-header { margin-bottom: 3px !important; padding-bottom: 2px !important; border-bottom-width: 1px !important; }
+  .bulk-cell .form-number { font-size: 10px !important; margin-bottom: 2px !important; padding: 1px 0 !important; line-height: 1.2 !important; }
+  .bulk-cell .receipt-title { font-size: 11px !important; margin: 1px 0 !important; }
+  .bulk-cell .receipt-title.yearly-statement { font-size: 9px !important; margin: 2px 0 !important; }
+  .bulk-cell .field-row { margin: 3px 0 !important; font-size: 10px !important; line-height: 1.3 !important; }
   .bulk-cell .field-label { font-size: 10px !important; }
-  .bulk-cell .field-value { font-size: 10px !important; min-height: 14px !important; padding: 0 3px 2px 3px !important; }
-  .bulk-cell .receipt-header { margin-bottom: 2px !important; padding-bottom: 1px !important; }
-  .bulk-cell .form-number { font-size: 10px !important; margin-bottom: 2px !important; padding: 1px 0 !important; }
-  .bulk-cell .receipt-title { font-size: 12px !important; margin: 0 !important; }
-  .bulk-cell .receipt-title.yearly-statement { font-size: 9px !important; }
-  .bulk-cell .company-info { font-size: 8px !important; padding: 2px !important; margin: 2px 0 !important; }
-  .bulk-cell .calculation-section { margin: 2px 0 !important; padding: 2px !important; }
+  .bulk-cell .field-value { font-size: 10px !important; min-height: 15px !important; padding: 0 3px 2px 3px !important; line-height: 1.3 !important; }
+  .bulk-cell .company-info { font-size: 8px !important; padding: 2px 3px !important; margin: 3px 0 !important; line-height: 1.2 !important; }
+  .bulk-cell .calculation-section { margin: 3px 0 !important; padding: 3px !important; }
   .bulk-cell .calculation-title { font-size: 10px !important; margin-bottom: 2px !important; }
-  .bulk-cell .calc-row { margin: 2px 0 !important; font-size: 10px !important; }
+  .bulk-cell .calc-row { margin: 3px 0 !important; font-size: 10px !important; }
   .bulk-cell .calc-label { font-size: 10px !important; }
-  .bulk-cell .calc-value { font-size: 10px !important; }
-  .bulk-cell .signature-section { margin-top: 4px !important; }
+  .bulk-cell .calc-value { font-size: 10px !important; min-height: 13px !important; }
+  .bulk-cell .signature-section { margin-top: 5px !important; }
 </style>
 </head>
 <body>
