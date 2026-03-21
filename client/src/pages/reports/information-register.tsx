@@ -187,21 +187,111 @@ export default function InformationRegister() {
   };
 
   const handlePrint = () => {
-    if (!displayData || displayData.length === 0) {
+    const data = getPrintData();
+    if (data.length === 0) {
       toast({ title: "डेटा नाही", description: "प्रिंट करण्यासाठी आधी शोधा किंवा रँडम ५ नाव बटण दाबा", variant: "destructive" });
       return;
     }
-    if (hasSelection) {
-      const printContent = selectedPrintRef.current;
-      if (!printContent) return;
-      printContent.style.display = 'block';
+
+    const companyName = company?.name || '';
+    const licenseNo = company?.licenseNumber || '';
+    const bdr = '1px solid #555';
+
+    const tableRows = data.map((entry, idx) => {
+      const rowBg = idx % 2 === 0 ? '' : 'background:#f8fafc;';
+      const statusStyle = entry.isClosed ? 'color:#16a34a;font-weight:700;' : 'color:#9ca3af;';
+      return `<tr style="${rowBg}">
+        <td style="text-align:center;">${entry.srNo}</td>
+        <td style="text-align:left;line-height:1.3;">
+          <strong style="font-weight:700;">${entry.borrowerName}</strong>
+          ${entry.borrowerAddress ? `<div style="font-size:9px;color:#555;margin-top:1px;">${entry.borrowerAddress}</div>` : ''}
+        </td>
+        <td style="text-align:center;white-space:nowrap;">${formatDate(entry.loanDate)}</td>
+        <td style="text-align:right;white-space:nowrap;">${formatAmount(entry.principalAmount)}</td>
+        <td style="text-align:center;white-space:nowrap;">${entry.isClosed ? formatDate(entry.closureDate) : '.......'}</td>
+        <td style="text-align:right;white-space:nowrap;">${entry.isClosed ? formatAmount(entry.principalPaid) : '.......'}</td>
+        <td style="text-align:right;white-space:nowrap;">${entry.isClosed ? formatAmount(entry.interestPaid) : '.......'}</td>
+        <td style="text-align:center;white-space:nowrap;">${getInterestDisplay(entry.interestRate, entry.interestRateType)}</td>
+        <td style="text-align:center;">${getLoanTypeLabel(entry.loanType)}</td>
+        <td style="text-align:center;">${entry.accountNumber}</td>
+        <td style="text-align:center;${statusStyle}">${entry.isClosed ? 'होय' : 'लागू नाही'}</td>
+      </tr>`;
+    }).join('');
+
+    const printHTML = `<!DOCTYPE html><html><head><meta charset="utf-8"/><title>माहिती तक्ता</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  @page { size: A4 landscape; margin: 8mm; }
+  body { font-family: 'Noto Sans Devanagari', Arial, sans-serif; margin: 0; padding: 0; box-sizing: border-box; font-size: 11px; }
+  table { width: 100%; border-collapse: collapse; table-layout: fixed; page-break-inside: auto; }
+  thead { display: table-header-group; }
+  tr { page-break-inside: avoid !important; break-inside: avoid !important; }
+  th, td { border: ${bdr}; padding: 5px 4px; vertical-align: middle; word-wrap: break-word; overflow-wrap: break-word; }
+  th { background: #eef2ff; font-weight: 800; text-align: center; font-size: 10px; line-height: 1.3; color: #312e81; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  td { font-size: 11px; line-height: 1.3; }
+  .col-sr { width: 30px; } .col-name { width: 200px; } .col-date { width: 72px; } .col-amount { width: 80px; }
+  .col-rdate { width: 72px; } .col-rprincipal { width: 80px; } .col-rinterest { width: 70px; }
+  .col-rate { width: 48px; } .col-type { width: 60px; } .col-acc { width: 38px; } .col-status { width: 62px; }
+</style></head><body>
+<div style="text-align:center;margin-bottom:8px;font-weight:bold;">
+  <p style="font-size:15px;font-weight:700;margin:0 0 2px 0;">
+    सावकाराचे नांव :- ${companyName} &nbsp;&nbsp;&nbsp; सावकारी लायसन नंबर :- ${licenseNo}
+  </p>
+  <p style="font-size:11px;color:#333;margin:0 0 2px 0;">कालावधी: ${DateUtils.isoToIndianDate(dateFilters.dateFrom)} ते ${DateUtils.isoToIndianDate(dateFilters.dateTo)}</p>
+  <p style="font-size:12px;font-weight:600;color:#333;margin:4px 0 0 0;">
+    प्रोप्रायटर :- ${proprietorName || '___________________________'}
+  </p>
+</div>
+<table>
+  <thead>
+    <tr>
+      <th rowspan="2" class="col-sr">अ.<br/>नं.</th>
+      <th rowspan="2" class="col-name">कर्जदाराचे पूर्ण नांव व<br/>पत्ता</th>
+      <th rowspan="2" class="col-date">कर्जाची<br/>तारीख</th>
+      <th rowspan="2" class="col-amount">कर्जाची<br/>रक्कम<br/>रुपये</th>
+      <th colspan="3" style="text-align:center;">वसूल रक्कम रुपये</th>
+      <th rowspan="2" class="col-rate">व्याजदर %</th>
+      <th rowspan="2" class="col-type">तारणी की<br/>बिगर<br/>तारणी</th>
+      <th rowspan="2" class="col-acc">खाते<br/>नं.</th>
+      <th rowspan="2" class="col-status">तारण माल<br/>परत केला<br/>आहे का?</th>
+    </tr>
+    <tr>
+      <th class="col-rdate">तारीख</th>
+      <th class="col-rprincipal">मुद्दल</th>
+      <th class="col-rinterest">व्याज</th>
+    </tr>
+  </thead>
+  <tbody>${tableRows}</tbody>
+</table>
+<div style="display:flex;justify-content:space-between;margin-top:30px;padding:0 14px;font-size:12px;font-weight:700;color:#333;">
+  <div>
+    <p>सावकाराचे सहा. निबंधक तथा उपनिबंधक</p>
+    <p>सह. संस्था, ___________________________</p>
+  </div>
+  <div style="text-align:right;margin-right:5%;">
+    <p>सावकाराची सही</p>
+  </div>
+</div>
+</body></html>`;
+
+    const iframe = document.createElement("iframe");
+    iframe.style.position = "fixed";
+    iframe.style.left = "-9999px";
+    iframe.style.top = "-9999px";
+    iframe.style.width = "1123px";
+    iframe.style.height = "794px";
+    document.body.appendChild(iframe);
+    const iDoc = iframe.contentDocument || iframe.contentWindow?.document;
+    if (!iDoc) { document.body.removeChild(iframe); return; }
+    iDoc.open();
+    iDoc.write(printHTML);
+    iDoc.close();
+    iframe.onload = () => {
       setTimeout(() => {
-        window.print();
-        setTimeout(() => { printContent.style.display = 'none'; }, 500);
-      }, 100);
-    } else {
-      window.print();
-    }
+        iframe.contentWindow?.print();
+        setTimeout(() => { document.body.removeChild(iframe); }, 2000);
+      }, 500);
+    };
   };
 
   const handleDownloadPDF = async () => {
