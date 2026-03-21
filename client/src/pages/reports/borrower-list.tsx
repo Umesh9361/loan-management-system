@@ -1371,10 +1371,10 @@ export default function BorrowerListReports() {
     const commonHeaders = `
       <tr style="border-bottom: 2px solid #000; height: 35px;">
         <th style="border-bottom: 1px solid #000; padding: 2px; width: 26px; text-align: center; font-size: 12px; height: 35px; vertical-align: middle; font-weight: bold;">अ.क्र.</th>
-        <th style="border-bottom: 1px solid #000; border-left: 1px solid #000; padding: 2px; width: 26px; text-align: center; font-size: 12px; height: 35px; vertical-align: middle; font-weight: bold;">तारीख</th>
+        <th style="border-bottom: 1px solid #000; border-left: 1px solid #000; padding: 2px; width: 22px; text-align: center; font-size: 12px; height: 35px; vertical-align: middle; font-weight: bold;">तारीख</th>
         <th style="border-bottom: 1px solid #000; border-left: 1px solid #000; padding: 2px; width: 58px; font-size: 8px; text-align: left; line-height: 1.2; height: 35px; vertical-align: middle; font-weight: bold; white-space: nowrap; padding-left: 5px;">अं.बा.<br/>मूल्य</th>
         <th style="border-bottom: 1px solid #000; border-left: 1px solid #000; padding: 2px; width: 195px; font-size: 12px; height: 35px; vertical-align: middle; font-weight: bold;">नाव</th>
-        <th class="mobile-hide" style="border-bottom: 1px solid #000; border-left: 1px solid #000; padding: 2px; width: 48px; text-align: center; font-size: 12px; height: 35px; vertical-align: middle; font-weight: bold;">कोड नं</th>
+        <th class="mobile-hide" style="border-bottom: 1px solid #000; border-left: 1px solid #000; padding: 2px; width: 54px; text-align: center; font-size: 12px; height: 35px; vertical-align: middle; font-weight: bold;">कोड नं</th>
         <th class="mobile-hide" style="border-bottom: 1px solid #000; border-left: 1px solid #000; padding: 2px; width: auto; min-width: 80px; font-size: 12px; height: 35px; vertical-align: middle; font-weight: bold;">वस्तूचा तपशील</th>
         <th class="mobile-hide" style="border-bottom: 1px solid #000; border-left: 1px solid #000; padding: 2px; width: 50px; text-align: center; font-size: 12px; height: 35px; vertical-align: middle; font-weight: bold;">वजन</th>
       </tr>
@@ -1388,7 +1388,7 @@ export default function BorrowerListReports() {
         <th style="border-bottom: 1px solid #000; border-left: 1px solid #000; padding: 8px; width: 48px; text-align: center; font-size: 12px; height: 45px; vertical-align: middle; font-weight: bold;">मुदत</th>
         <th style="border-bottom: 1px solid #000; border-left: 1px solid #000; padding: 8px; width: 55px; font-size: 8px; text-align: center; line-height: 1.2; height: 45px; vertical-align: middle; font-weight: bold; white-space: nowrap;">अं.बा.<br/>मूल्य</th>
         <th style="border-bottom: 1px solid #000; border-left: 1px solid #000; padding: 8px; width: 121px; font-size: 12px; height: 45px; vertical-align: middle; font-weight: bold; text-align: left;">नाव</th>
-        <th class="mobile-hide" style="border-bottom: 1px solid #000; border-left: 1px solid #000; padding: 8px; width: 48px; text-align: left; font-size: 12px; height: 45px; vertical-align: middle; font-weight: bold;">कोड नं</th>
+        <th class="mobile-hide" style="border-bottom: 1px solid #000; border-left: 1px solid #000; padding: 8px; width: 54px; text-align: left; font-size: 12px; height: 45px; vertical-align: middle; font-weight: bold;">कोड नं</th>
         <th class="mobile-hide" style="border-bottom: 1px solid #000; border-left: 1px solid #000; padding: 8px; width: auto; font-size: 12px; height: 45px; vertical-align: middle; font-weight: bold; text-align: left;">वस्तूचा तपशील</th>
         <th class="mobile-hide" style="border-bottom: 1px solid #000; border-left: 1px solid #000; padding: 8px; width: 42px; text-align: center; font-size: 12px; height: 45px; vertical-align: middle; font-weight: bold;">वजन</th>
       </tr>
@@ -1415,10 +1415,10 @@ export default function BorrowerListReports() {
         return `
           <tr data-row-index="${index}" data-loan='${JSON.stringify(loan).replace(/'/g, "&apos;")}' style="${rowStyle} border-bottom: 1px solid #ccc; height: 40px; min-height: 40px; cursor: pointer; transition: background-color 0.2s;" onmouseover="this.style.backgroundColor='#f3f4f6'" onmouseout="this.style.backgroundColor=''" class="loan-row">
             <td style="border-bottom: 1px solid #ccc; padding: 4px; text-align: center; width: 26px; font-size: 14px; vertical-align: middle; font-weight: 500;">${index + 1}</td>
-            <td style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 4px; text-align: center; width: 26px; font-size: 14px; vertical-align: middle; font-weight: 500;">${shortDate}</td>
+            <td style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 4px; text-align: center; width: 22px; font-size: 14px; vertical-align: middle; font-weight: 500;">${shortDate}</td>
             <td style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 4px; text-align: left; width: 58px; font-size: 14px; vertical-align: middle; font-weight: 500; padding-left: 5px;" class="loan-amount">${Math.round(loan.principalAmount).toLocaleString('en-IN')}</td>
             <td style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 4px; width: 195px; font-size: 14px; vertical-align: middle; font-weight: 500;">${getPhotoIndicator(loan.id)}${loan.borrowerName.length > 30 ? loan.borrowerName.substring(0, 30) + '...' : loan.borrowerName}${isClosedLoan && dateWiseStatus === 'all' ? ' (बंद)' : ''}</td>
-            <td class="mobile-hide" style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 4px; text-align: center; width: 48px; font-size: 14px; vertical-align: middle; font-weight: 500;">${(loan.accountNumber || loan.id.slice(0, 5)).toString().substring(0, 7)}</td>
+            <td class="mobile-hide" style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 4px; text-align: center; width: 54px; font-size: 14px; vertical-align: middle; font-weight: 500;">${(loan.accountNumber || loan.id.slice(0, 5)).toString().substring(0, 7)}</td>
             <td class="mobile-hide" style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 4px; width: auto; font-size: 14px; word-wrap: break-word; white-space: normal; vertical-align: middle; line-height: 1.3; overflow-wrap: break-word; font-weight: 500;">${loan.loanType === 'विनातारण' ? getUnsecuredDetails(loan) : (loan.itemDescription || loan.collateralDetails || 'सोन्याचे दागिने, अंगूठी, कंगन, नथ, हार इत्यादी')}</td>
             <td class="mobile-hide" style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 4px; text-align: center; width: 50px; font-size: 14px; vertical-align: middle; font-weight: 500;">${loan.loanType === 'विनातारण' ? '—' : (loan.weight ? parseFloat(loan.weight.toString()).toFixed(2) : '0')}</td>
           </tr>
@@ -1444,10 +1444,10 @@ export default function BorrowerListReports() {
         return `
           <tr data-row-index="${index}" data-loan='${JSON.stringify(loan).replace(/'/g, "&apos;")}' style="${rowStyle} border-bottom: 1px solid #ccc; height: 40px; min-height: 40px; cursor: pointer; transition: background-color 0.2s;" onmouseover="this.style.backgroundColor='#f3f4f6'" onmouseout="this.style.backgroundColor=''" class="loan-row">
             <td style="border-bottom: 1px solid #ccc; padding: 4px; text-align: center; width: 26px; font-size: 14px; vertical-align: middle; font-weight: 500;">${index + 1}</td>
-            <td style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 4px; text-align: center; width: 26px; font-size: 14px; vertical-align: middle; font-weight: 500;">${shortDate}</td>
+            <td style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 4px; text-align: center; width: 22px; font-size: 14px; vertical-align: middle; font-weight: 500;">${shortDate}</td>
             <td style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 4px; text-align: left; width: 58px; font-size: 14px; vertical-align: middle; font-weight: 500; padding-left: 5px;" class="loan-amount">${Math.round(loan.principalAmount).toLocaleString('en-IN')}</td>
             <td style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 4px; width: 195px; font-size: 14px; vertical-align: middle; font-weight: 500;">${getPhotoIndicator(loan.id)}${loan.borrowerName.length > 30 ? loan.borrowerName.substring(0, 30) + '...' : loan.borrowerName}${isClosedLoan && nameWiseStatus === 'all' ? ' (बंद)' : ''}</td>
-            <td class="mobile-hide" style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 4px; text-align: center; width: 48px; font-size: 14px; vertical-align: middle; font-weight: 500;">${(loan.accountNumber || loan.id.slice(0, 5)).toString().substring(0, 7)}</td>
+            <td class="mobile-hide" style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 4px; text-align: center; width: 54px; font-size: 14px; vertical-align: middle; font-weight: 500;">${(loan.accountNumber || loan.id.slice(0, 5)).toString().substring(0, 7)}</td>
             <td class="mobile-hide" style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 4px; width: auto; font-size: 14px; word-wrap: break-word; white-space: normal; vertical-align: middle; line-height: 1.3; overflow-wrap: break-word; font-weight: 500;">${loan.loanType === 'विनातारण' ? getUnsecuredDetails(loan) : (loan.itemDescription || loan.collateralDetails || 'सोन्याचे दागिने, अंगूठी, कंगन, नथ, हार इत्यादी')}</td>
             <td class="mobile-hide" style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 4px; text-align: center; width: 50px; font-size: 14px; vertical-align: middle; font-weight: 500;">${loan.loanType === 'विनातारण' ? '—' : (loan.weight ? parseFloat(loan.weight.toString()).toFixed(2) : '0')}</td>
           </tr>
@@ -1779,11 +1779,11 @@ export default function BorrowerListReports() {
               /* Data rows - 50% more height */
               tbody tr:not(.total-row):not(.summary-row) td { padding: 8px 2px !important; line-height: 1.6 !important; }
               th:nth-child(1), td:nth-child(1) { width: 26px !important; min-width: 26px !important; text-align: center !important; }    /* अनुक्रमांक */
-              th:nth-child(2), td:nth-child(2) { width: 26px !important; min-width: 26px !important; }    /* तारीख - कमी */
+              th:nth-child(2), td:nth-child(2) { width: 22px !important; min-width: 22px !important; }    /* तारीख - कमी */
               th:nth-child(3), td:nth-child(3) { width: 58px !important; min-width: 58px !important; text-align: left !important; padding-left: 5px !important; }    /* रक्कम */
               th:nth-child(4), td:nth-child(4) { width: 195px !important; min-width: 195px !important; text-align: left !important; padding-left: 4px !important; }   /* नाव — 30 अक्षरे */
               tbody tr:not(.total-row):not(.summary-row) td:nth-child(4) { padding-left: 4px !important; }
-              th:nth-child(5), td:nth-child(5) { width: 48px !important; min-width: 48px !important; max-width: 52px !important; text-align: center !important; padding: 3px 2px !important; }    /* कोड */
+              th:nth-child(5), td:nth-child(5) { width: 54px !important; min-width: 54px !important; max-width: 58px !important; text-align: center !important; padding: 3px 2px !important; }    /* कोड */
               tbody tr:not(.total-row):not(.summary-row) td:nth-child(5) { padding: 8px 2px !important; text-align: center !important; }
               th:nth-child(6), td:nth-child(6) { width: auto !important; min-width: 80px !important; text-align: left !important; padding-left: 5px !important; }    /* वस्तूचा तपशील — उरलेली जागा */
               th:nth-child(7), td:nth-child(7) { width: 50px !important; min-width: 50px !important; }    /* वजन */
@@ -1804,7 +1804,7 @@ export default function BorrowerListReports() {
               .maturity-wise-table th:nth-child(2), .maturity-wise-table td:nth-child(2) { width: 40px !important; }    /* तारीख - कमी */
               .maturity-wise-table th:nth-child(3), .maturity-wise-table td:nth-child(3) { width: 55px !important; min-width: 55px !important; }    /* अंदाजे बाजार मूल्य */
               .maturity-wise-table th:nth-child(4), .maturity-wise-table td:nth-child(4) { width: 121px !important; min-width: 121px !important; text-align: left !important; padding-left: 4px !important; }   /* नाव - 20% वाढ */
-              .maturity-wise-table th:nth-child(5), .maturity-wise-table td:nth-child(5) { width: 48px !important; min-width: 48px !important; max-width: 52px !important; text-align: center !important; padding: 3px 2px !important; }      /* कोड नं */
+              .maturity-wise-table th:nth-child(5), .maturity-wise-table td:nth-child(5) { width: 54px !important; min-width: 54px !important; max-width: 58px !important; text-align: center !important; padding: 3px 2px !important; }      /* कोड नं */
               .maturity-wise-table tbody tr:not(.total-row):not(.summary-row) td:nth-child(5) { padding: 8px 2px !important; text-align: center !important; }
               .maturity-wise-table th:nth-child(6), .maturity-wise-table td:nth-child(6) { width: auto !important; min-width: 140px !important; }    /* वस्तूचा तपशील */
               .maturity-wise-table th:nth-child(7), .maturity-wise-table td:nth-child(7) { width: 40px !important; min-width: 40px !important; }    /* वजन */
