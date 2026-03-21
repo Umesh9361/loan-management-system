@@ -108,8 +108,8 @@ function CashBookReport() {
     const printStyles = `
       @media print {
         @page {
-          size: A4;
-          margin: 8mm;
+          size: A4 portrait;
+          margin: 12mm 5mm 12mm 5mm;
         }
         body * {
           visibility: hidden !important;
@@ -123,7 +123,8 @@ function CashBookReport() {
           top: 0 !important;
           width: 100% !important;
           z-index: 9999 !important;
-          padding-left: 25mm !important;
+          padding-left: 20mm !important;
+          padding-right: 5mm !important;
           box-sizing: border-box !important;
         }
         body {
@@ -138,8 +139,29 @@ function CashBookReport() {
         }
         .cashbook-header {
           text-align: center;
-          margin-bottom: 20px;
+          margin-bottom: 12px;
           font-weight: bold;
+        }
+        .cashbook-header h1 {
+          font-size: 14px !important;
+          margin-bottom: 4px !important;
+        }
+        .cashbook-header p {
+          margin: 0 0 4px 0 !important;
+        }
+        .cashbook-header .print-company-label {
+          display: block !important;
+          font-size: 15px !important;
+          font-weight: 700 !important;
+          margin-bottom: 4px !important;
+        }
+        .cashbook-header .namuna-text {
+          font-size: 11px !important;
+          color: #333 !important;
+        }
+        .cashbook-header .period-text {
+          font-size: 11px !important;
+          color: #333 !important;
         }
         .print-company-name {
           display: none !important;
@@ -890,13 +912,13 @@ function CashBookReport() {
                     )}
                   </div>
 
-                  {/* Professional Header - matches capital account style */}
-                  <div className="cashbook-header" style={{ textAlign: 'center', marginBottom: '20px', fontWeight: 'bold' }}>
-                    <h1 style={{ fontSize: '20px', marginBottom: '8px' }}>रोकड वही</h1>
-                    <p style={{ fontSize: '16px', marginBottom: '2px' }}>नमुना क्र. ७</p>
-                    <p style={{ fontSize: '14px', marginBottom: '20px' }}>(नियम १८ पहा)</p>
+                  {/* Professional Header - matches capital account (नमुना क्रमांक 13) style */}
+                  <div className="cashbook-header" style={{ textAlign: 'center', marginBottom: '12px', fontWeight: 'bold' }}>
+                    <p className="print-company-label" style={{ display: 'none' }}>{(company as any)?.name || 'कंपनी नाव'}</p>
+                    <h1 style={{ fontSize: '20px', marginBottom: '4px' }}>रोकड वही</h1>
+                    <p className="namuna-text" style={{ fontSize: '14px', marginBottom: '2px' }}>नमुना क्र. ७ (नियम १८ पहा)</p>
                     {dateFilters.dateFrom && dateFilters.dateTo && (
-                      <p style={{ fontSize: '16px', marginBottom: '20px' }}>
+                      <p className="period-text" style={{ fontSize: '14px', marginBottom: '10px' }}>
                         कालावधी: {DateUtils.isoToIndianDate(dateFilters.dateFrom)} ते {DateUtils.isoToIndianDate(dateFilters.dateTo)}
                       </p>
                     )}
