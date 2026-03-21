@@ -1661,7 +1661,7 @@ ${pagesHTML}
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body { background: white; font-family: 'Noto Sans Devanagari', Arial, sans-serif; }
-  .ledger-page { padding: 15px 20px 15px 15mm; }
+  .ledger-page { padding: 15px 20px 15px 5mm; }
   .page-break-after { page-break-after: always; }
   table { width: 100%; border-collapse: collapse; }
 </style>

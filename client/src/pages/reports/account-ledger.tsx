@@ -53,7 +53,7 @@ export default function AccountLedger() {
           max-width: 100% !important;
           overflow: visible !important;
           page-break-inside: auto;
-          padding-left: 15mm;
+          padding-left: 25mm;
           box-sizing: border-box;
         }
         .print-area table {

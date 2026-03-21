@@ -141,7 +141,7 @@ export default function AccountSummaryReport() {
           top: 0 !important;
           width: 100% !important;
           z-index: 9999 !important;
-          padding-left: 15mm !important;
+          padding-left: 25mm !important;
           box-sizing: border-box !important;
         }
         body {

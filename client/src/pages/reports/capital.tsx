@@ -193,7 +193,7 @@ export default function CapitalReport() {
             left: 0;
             top: 0;
             width: 100%;
-            padding-left: 15mm;
+            padding-left: 25mm;
             box-sizing: border-box;
           }
         }
