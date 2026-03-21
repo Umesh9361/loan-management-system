@@ -47,6 +47,7 @@ export default function InformationRegister() {
     dateFrom: fy.from,
     dateTo: fy.to
   });
+  const [proprietorName, setProprietorName] = useState('');
   const [pdfLoading, setPdfLoading] = useState(false);
   const [randomIndices, setRandomIndices] = useState<number[] | null>(null);
   const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set());
@@ -325,7 +326,7 @@ export default function InformationRegister() {
             सावकाराचे नांव :- ${companyName} &nbsp;&nbsp;&nbsp; सावकारी लायसन नंबर :- ${licenseNo}
           </p>
           <p class="pdf-header-prop">
-            प्रोप्रायटर :- <span class="pdf-prop-line">&nbsp;</span>
+            प्रोप्रायटर :- ${proprietorName || '<span class="pdf-prop-line">&nbsp;</span>'}
           </p>
         </div>
 
@@ -793,7 +794,18 @@ export default function InformationRegister() {
 
               <Card className="mb-4 border border-indigo-100 shadow-sm rounded-xl overflow-hidden">
                 <CardContent className="p-3 sm:p-5 md:p-6">
-                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 sm:gap-4 items-end">
+                  <div className="grid grid-cols-2 sm:grid-cols-6 gap-2 sm:gap-4 items-end">
+                    <div>
+                      <Label htmlFor="proprietor" className="text-xs sm:text-sm font-medium text-gray-700 mb-1 block">प्रोप्रायटर नाव</Label>
+                      <Input
+                        id="proprietor"
+                        type="text"
+                        placeholder="प्रोप्रायटर नाव टाका"
+                        className="h-11 sm:h-10 text-base border-gray-300 focus:border-indigo-400 focus:ring-indigo-400"
+                        value={proprietorName}
+                        onChange={(e) => setProprietorName(e.target.value)}
+                      />
+                    </div>
                     <div>
                       <Label htmlFor="dateFrom" className="text-xs sm:text-sm font-medium text-gray-700 mb-1 block">पासून तारीख</Label>
                       <Input
@@ -883,7 +895,7 @@ export default function InformationRegister() {
                     सावकाराचे नांव :- {company?.name || ''} &nbsp;&nbsp;&nbsp; सावकारी लायसन नंबर :- {company?.licenseNumber || ''}
                   </p>
                   <p className="register-proprietor">
-                    प्रोप्रायटर :- <span className="ir-prop-line">&nbsp;</span>
+                    प्रोप्रायटर :- {proprietorName || <span className="ir-prop-line">&nbsp;</span>}
                   </p>
                 </div>
 
@@ -961,7 +973,7 @@ export default function InformationRegister() {
                     सावकाराचे नांव :- {company?.name || ''} &nbsp;&nbsp;&nbsp; सावकारी लायसन नंबर :- {company?.licenseNumber || ''}
                   </p>
                   <p className="register-proprietor">
-                    प्रोप्रायटर :- <span className="ir-prop-line">&nbsp;</span>
+                    प्रोप्रायटर :- {proprietorName || <span className="ir-prop-line">&nbsp;</span>}
                   </p>
                 </div>
                 <div className="ir-table-scroll">
