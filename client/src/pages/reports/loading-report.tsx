@@ -274,7 +274,7 @@ export default function LoadingReport() {
       <!DOCTYPE html>
       <html><head><title>लोडिंग रिपोर्ट</title>
       <style>
-        @page { size: A4 portrait; margin: 10mm 8mm 8mm 8mm; }
+        @page { size: A4 portrait; margin: 8mm 8mm 8mm 25.4mm; }
         body { font-family: 'Noto Sans Devanagari', sans-serif; font-size: 10px; margin: 0; padding: 0; }
         h1 { text-align: center; font-size: 16px; margin: 5px 0; }
         h2 { text-align: center; font-size: 12px; margin: 3px 0; color: #555; }
@@ -329,7 +329,7 @@ export default function LoadingReport() {
               <td>${item.groupName}</td>
               <td>${item.metalType === 'silver' ? 'चांदी' : 'सोने'}</td>
               <td>${item.weight}g</td>
-              <td style="${(item as any).purityUsed !== 82 ? 'color:#1d4ed8;font-weight:bold' : ''}">${(item as any).purityUsed}%</td>
+              <td style="color:#1d4ed8;font-weight:bold">${(item as any).purityUsed}%</td>
               <td style="color:#c2410c;font-weight:bold">${item.interestRate}%${item.interestRateType === 'yearly' ? ' वा.' : ''}</td>
               <td>${formatCurrency(item.marketValue)}</td>
               <td style="${item.totalWithInterest > item.marketValue ? 'color:#dc2626;font-weight:bold' : 'color:#16a34a;font-weight:bold'}">${formatCurrency(item.totalWithInterest)}</td>
@@ -709,7 +709,7 @@ export default function LoadingReport() {
                                 </div>
                                 <div>
                                   <span className="text-gray-500">शुद्धता</span>
-                                  <div className={cn("font-semibold", (item as any).purityUsed !== 82 ? "text-blue-700" : "text-gray-600")}>{(item as any).purityUsed}%</div>
+                                  <div className="font-semibold text-blue-700">{(item as any).purityUsed}%</div>
                                 </div>
                                 <div>
                                   <span className="text-gray-500">व्याजदर</span>
@@ -814,7 +814,7 @@ export default function LoadingReport() {
                                   <TableCell className="text-center text-xs">{formatDate(item.loanDate)}</TableCell>
                                   <TableCell className="text-center text-xs">{item.groupName}</TableCell>
                                   <TableCell className="text-center text-xs">{item.weight}g</TableCell>
-                                  <TableCell className={cn("text-center text-xs font-semibold", (item as any).purityUsed !== 82 ? "text-blue-700" : "")}>{(item as any).purityUsed}%</TableCell>
+                                  <TableCell className="text-center text-xs font-semibold text-blue-700">{(item as any).purityUsed}%</TableCell>
                                   <TableCell className="text-center text-xs font-semibold text-orange-700">{item.interestRate}%{item.interestRateType === 'yearly' ? ' वा.' : ''}</TableCell>
                                   <TableCell className="text-center text-xs">{formatCurrency(item.marketValue)}</TableCell>
                                   <TableCell className={cn("text-center text-xs font-semibold", item.totalWithInterest > item.marketValue ? "text-red-600" : "text-green-700")}>{formatCurrency(item.totalWithInterest)}</TableCell>

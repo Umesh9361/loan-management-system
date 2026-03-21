@@ -1829,6 +1829,10 @@ export default function OverdueReport() {
       </div>
       <style>{`
         @media print {
+          @page {
+            size: A4;
+            margin: 8mm 8mm 8mm 25.4mm;
+          }
           body { font-family: 'Noto Sans Devanagari', Arial, sans-serif !important; }
         }
       `}</style>

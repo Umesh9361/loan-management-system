@@ -127,7 +127,7 @@ export default function AccountSummaryReport() {
       @media print {
         @page {
           size: A4;
-          margin: 8mm;
+          margin: 8mm 8mm 8mm 25.4mm;
         }
         body * {
           visibility: hidden !important;
@@ -141,6 +141,8 @@ export default function AccountSummaryReport() {
           top: 0 !important;
           width: 100% !important;
           z-index: 9999 !important;
+          padding-left: 15mm !important;
+          box-sizing: border-box !important;
         }
         body {
           font-family: 'Noto Sans Devanagari', Arial, sans-serif !important;
