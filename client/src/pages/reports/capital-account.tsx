@@ -292,11 +292,13 @@ export default function CapitalAccountReport() {
     const printHTML = `<!DOCTYPE html><html><head><meta charset="utf-8"/><title>भांडवल खाते</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
-  @page { size: A4 portrait; margin: 8mm; }
+  @page { size: A4 portrait; margin: 18mm 8mm 10mm 8mm; }
   body { font-family: 'Noto Sans Devanagari', Arial, sans-serif; margin: 0; padding: 10px 10px 10px 17.4mm; box-sizing: border-box; font-size: 11px; line-height: 1.4; }
   .header { text-align: center; margin-bottom: 16px; font-weight: bold; }
   .header p { margin: 0 0 4px 0; }
-  table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+  table { width: 100%; border-collapse: collapse; table-layout: fixed; page-break-inside: auto; }
+  thead { display: table-header-group; }
+  tr { page-break-inside: avoid !important; break-inside: avoid !important; }
   col:nth-child(1) { width: 6%; }
   col:nth-child(2) { width: 12%; }
   col:nth-child(3) { width: 18%; }
