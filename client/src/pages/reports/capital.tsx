@@ -189,12 +189,12 @@ export default function CapitalReport() {
             visibility: visible;
           }
           .print-content {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100%;
-            padding-left: 25mm;
-            box-sizing: border-box;
+            position: absolute !important;
+            left: 0 !important;
+            top: 0 !important;
+            width: 100% !important;
+            padding-left: 25mm !important;
+            box-sizing: border-box !important;
           }
         }
       `}</style>
