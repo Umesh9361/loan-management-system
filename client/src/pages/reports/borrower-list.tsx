@@ -1747,23 +1747,29 @@ export default function BorrowerListReports() {
                 height: auto !important;
               }
               
-              /* Professional print appearance - remove all table borders */
-              table, th, td {
-                border-left: none !important;
-                border-right: none !important;
+              /* Print table borders - thin grey lines */
+              table {
+                border: 0.5px solid #bbb !important;
+              }
+              th, td {
+                border: 0.5px solid #bbb !important;
               }
               
-              /* Keep only horizontal dividers */
+              /* Header row - slightly stronger bottom border */
               th {
-                border-bottom: 2px solid #000 !important;
+                border-bottom: 1px solid #999 !important;
               }
               
-              td {
-                border-bottom: 1px solid #ccc !important;
+              /* Data rows - 30% more height via padding */
+              tbody tr:not(.total-row):not(.summary-row) td {
+                padding-top: 5px !important;
+                padding-bottom: 5px !important;
+                line-height: 1.5 !important;
               }
               
               /* A4 Portrait Print Column Measurements - compressed for portrait fit */
               th, td { font-size: 10px !important; padding: 3px 2px !important; word-wrap: break-word !important; overflow-wrap: break-word !important; }
+              tbody tr:not(.total-row):not(.summary-row) td { padding: 5px 2px !important; }
               th:nth-child(1), td:nth-child(1) { width: 26px !important; min-width: 26px !important; }    /* अनुक्रमांक */
               th:nth-child(2), td:nth-child(2) { width: 50px !important; min-width: 50px !important; }    /* तारीख */
               th:nth-child(3), td:nth-child(3) { width: 60px !important; min-width: 60px !important; }    /* रक्कम */
