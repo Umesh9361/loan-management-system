@@ -1883,23 +1883,7 @@ export default function BorrowerListReports() {
               .maturity-wise-table th:nth-child(7), .maturity-wise-table td:nth-child(7) { width: 60px !important; min-width: 60px !important; max-width: 60px !important; }    /* वजन - 60px for screen */
               .maturity-wise-table th:nth-child(8), .maturity-wise-table td:nth-child(8) { width: 80px !important; min-width: 80px !important; max-width: 80px !important; }    /* मुदत - 80px for screen */
               
-              /* Universal table column width enforcement for ALL report types */
-              .borrower-report-table th:nth-child(1), .borrower-report-table td:nth-child(1) { width: 50px !important; min-width: 50px !important; max-width: 50px !important; }
-              .borrower-report-table th:nth-child(2), .borrower-report-table td:nth-child(2) { width: 70px !important; min-width: 70px !important; max-width: 70px !important; }
-              .borrower-report-table th:nth-child(3), .borrower-report-table td:nth-child(3) { width: 100px !important; min-width: 100px !important; max-width: 100px !important; }
-              .borrower-report-table th:nth-child(4), .borrower-report-table td:nth-child(4) { width: 250px !important; min-width: 250px !important; max-width: 250px !important; }
-              .borrower-report-table th:nth-child(5), .borrower-report-table td:nth-child(5) { width: 80px !important; min-width: 80px !important; max-width: 80px !important; }
-              .borrower-report-table th:nth-child(6), .borrower-report-table td:nth-child(6) { width: auto !important; min-width: 150px !important; }
-              .borrower-report-table th:nth-child(7), .borrower-report-table td:nth-child(7) { width: 80px !important; min-width: 80px !important; max-width: 80px !important; }
-              
-              /* Enhanced specificity for all generic table scenarios */
-              table th:nth-child(1), table td:nth-child(1) { width: 50px !important; min-width: 50px !important; max-width: 50px !important; }
-              table th:nth-child(2), table td:nth-child(2) { width: 70px !important; min-width: 70px !important; max-width: 70px !important; }
-              table th:nth-child(3), table td:nth-child(3) { width: 100px !important; min-width: 100px !important; max-width: 100px !important; }
-              table th:nth-child(4), table td:nth-child(4) { width: 250px !important; min-width: 250px !important; max-width: 250px !important; }
-              table th:nth-child(5), table td:nth-child(5) { width: 80px !important; min-width: 80px !important; max-width: 80px !important; }
-              table th:nth-child(6), table td:nth-child(6) { width: auto !important; min-width: 150px !important; }
-              table th:nth-child(7), table td:nth-child(7) { width: 80px !important; min-width: 80px !important; max-width: 80px !important; }
+              /* Column widths handled by colgroup + body[data-report-type] selectors in 4th print block */
               
               /* CLOSING-WISE SCREEN LAYOUT (9 cols) — single definition */
               .closing-wise-table th:nth-child(1), .closing-wise-table td:nth-child(1) { width: 50px !important; min-width: 50px !important; max-width: 50px !important; text-align: center !important; }
@@ -2824,6 +2808,29 @@ export default function BorrowerListReports() {
           </div>
           
           <table class="borrower-report-table${activeTab === 'closing-wise' ? ' closing-wise-table' : ''}${activeTab === 'maturity-wise' ? ' maturity-wise-table' : ''}" style="table-layout: fixed !important; width: 100% !important; border-collapse: collapse !important;">
+            ${activeTab === 'date-wise' || activeTab === 'name-wise' ? `
+            <colgroup>
+              <col style="width: 26px;" />
+              <col style="width: 50px;" />
+              <col style="width: 65px;" />
+              <col style="width: 173px;" />
+              <col style="width: 54px;" />
+              <col />
+              <col style="width: 50px;" />
+            </colgroup>
+            ` : ''}${activeTab === 'closing-wise' ? `
+            <colgroup>
+              <col style="width: 32px;" />
+              <col style="width: 62px;" />
+              <col style="width: 62px;" />
+              <col style="width: 65px;" />
+              <col style="width: 55px;" />
+              <col style="width: 100px;" />
+              <col style="width: 48px;" />
+              <col />
+              <col style="width: 46px;" />
+            </colgroup>
+            ` : ''}
             <thead>
               ${tableHeaders}
             </thead>
