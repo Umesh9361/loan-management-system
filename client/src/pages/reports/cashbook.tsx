@@ -175,20 +175,22 @@ function CashBookReport() {
       </tr>`;
 
       tableHTML = `
-        <div style="display:flex;width:100%;border:${bdr};border-bottom:none;">
-          <div style="width:50%;text-align:center;padding:5px 2px;font-size:11px;background:#f0f0f0;font-weight:700;border-right:2px solid #333;-webkit-print-color-adjust:exact;print-color-adjust:exact;">जमा (Credit)</div>
-          <div style="width:50%;text-align:center;padding:5px 2px;font-size:11px;background:#f0f0f0;font-weight:700;-webkit-print-color-adjust:exact;print-color-adjust:exact;">नावे (Debit)</div>
-        </div>
         <table>
           <colgroup><col style="width:10%"/><col/><col style="width:15%"/><col style="width:10%"/><col/><col style="width:15%"/></colgroup>
-          <thead><tr>
-            <th style="${thStyle}">दिनांक</th>
-            <th style="${thStyle}">तपशील</th>
-            <th style="${thStyle}border-right:2px solid #333;">रक्कम</th>
-            <th style="${thStyle}">दिनांक</th>
-            <th style="${thStyle}">तपशील</th>
-            <th style="${thStyle}">रक्कम</th>
-          </tr></thead>
+          <thead>
+            <tr>
+              <th colspan="3" style="border:${bdr};padding:8px 4px;text-align:center;font-size:12px;background:#f0f0f0;font-weight:700;color:#111;border-right:2px solid #333;-webkit-print-color-adjust:exact;print-color-adjust:exact;">जमा (Credit)</th>
+              <th colspan="3" style="border:${bdr};padding:8px 4px;text-align:center;font-size:12px;background:#f0f0f0;font-weight:700;color:#111;-webkit-print-color-adjust:exact;print-color-adjust:exact;">नावे (Debit)</th>
+            </tr>
+            <tr>
+              <th style="${thStyle}">दिनांक</th>
+              <th style="${thStyle}">तपशील</th>
+              <th style="${thStyle}border-right:2px solid #333;">रक्कम</th>
+              <th style="${thStyle}">दिनांक</th>
+              <th style="${thStyle}">तपशील</th>
+              <th style="${thStyle}">रक्कम</th>
+            </tr>
+          </thead>
           <tbody>${tRows}</tbody>
         </table>
       `;

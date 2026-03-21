@@ -114,18 +114,20 @@ function buildProfitLossHTML(plData: any, company: any, dateFrom: string, dateTo
         <p style="font-size:11px;color:#333;margin:0 0 2px 0;">कालावधी: ${fd(dateFrom)} ते ${fd(dateTo)}</p>
       </div>
 
-      <div style="display:flex;width:100%;border:${bdr};border-bottom:none;">
-        <div style="width:50%;text-align:center;padding:5px 2px;font-size:11px;background:#f0f0f0;font-weight:700;border-right:2px solid #333;-webkit-print-color-adjust:exact;print-color-adjust:exact;">उत्पन्न (Income)</div>
-        <div style="width:50%;text-align:center;padding:5px 2px;font-size:11px;background:#f0f0f0;font-weight:700;-webkit-print-color-adjust:exact;print-color-adjust:exact;">खर्च (Expenses)</div>
-      </div>
       <table style="width:100%;border-collapse:collapse;table-layout:fixed;font-size:11px;">
         <colgroup><col style="width:35%"/><col style="width:15%"/><col style="width:35%"/><col style="width:15%"/></colgroup>
-        <thead><tr>
-          <th style="${thStyle}">तपशील</th>
-          <th style="${thStyle}text-align:right;border-right:2px solid #333;">रक्कम (₹)</th>
-          <th style="${thStyle}">तपशील</th>
-          <th style="${thStyle}text-align:right;">रक्कम (₹)</th>
-        </tr></thead>
+        <thead>
+          <tr>
+            <th colspan="2" style="border:${bdr};padding:8px 4px;text-align:center;font-size:12px;background:#f0f0f0;font-weight:700;color:#111;border-right:2px solid #333;-webkit-print-color-adjust:exact;print-color-adjust:exact;">उत्पन्न (Income)</th>
+            <th colspan="2" style="border:${bdr};padding:8px 4px;text-align:center;font-size:12px;background:#f0f0f0;font-weight:700;color:#111;-webkit-print-color-adjust:exact;print-color-adjust:exact;">खर्च (Expenses)</th>
+          </tr>
+          <tr>
+            <th style="${thStyle}">तपशील</th>
+            <th style="${thStyle}text-align:right;border-right:2px solid #333;">रक्कम (₹)</th>
+            <th style="${thStyle}">तपशील</th>
+            <th style="${thStyle}text-align:right;">रक्कम (₹)</th>
+          </tr>
+        </thead>
         <tbody>${tRows}</tbody>
       </table>
 
