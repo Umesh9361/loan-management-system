@@ -1623,15 +1623,15 @@ export default function BorrowerListReports() {
     } else if (activeTab === 'maturity-wise') {
       // 🎯 FRESH MATURITY-WISE TOTALS ROW - Professional Design
       totalsRow = `
-        <tr class="maturity-totals-row" style="border-top: 3px solid #1e40af; background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); color: #ffffff; font-weight: bold; height: 50px;">
-          <td class="maturity-total-serial" style="border-top: 2px solid #1e40af; padding: 8px 4px; text-align: center; vertical-align: middle; width: 30px; font-size: 16px; font-weight: bold;"></td>
-          <td class="maturity-total-label" style="border-top: 2px solid #1e40af; border-left: 1px solid #60a5fa; padding: 8px 4px; font-size: 16px; text-align: center; vertical-align: middle; font-weight: bold; width: 60px;">एकूण:</td>
-          <td class="maturity-total-amount" style="border-top: 2px solid #1e40af; border-left: 1px solid #60a5fa; padding: 8px 4px; text-align: right; font-size: 16px; font-weight: bold; vertical-align: middle; width: 70px; color: #fef3c7;">${totalAmount.toLocaleString('en-IN')}</td>
-          <td class="maturity-total-space" style="border-top: 2px solid #1e40af; border-left: 1px solid #60a5fa; padding: 8px 4px; vertical-align: middle; width: 200px;"></td>
-          <td class="maturity-total-code mobile-hide" style="border-top: 2px solid #1e40af; border-left: 1px solid #60a5fa; padding: 8px 4px; vertical-align: middle; width: 50px;"></td>
-          <td class="maturity-total-details mobile-hide" style="border-top: 2px solid #1e40af; border-left: 1px solid #60a5fa; padding: 8px 4px; vertical-align: middle; width: auto;"></td>
-          <td class="maturity-total-weight mobile-hide" style="border-top: 2px solid #1e40af; border-left: 1px solid #60a5fa; padding: 8px 4px; text-align: center; font-size: 16px; font-weight: bold; vertical-align: middle; width: 50px; color: #fef3c7;">${weightDisplay}</td>
-          <td class="maturity-total-maturity mobile-hide" style="border-top: 2px solid #1e40af; border-left: 1px solid #60a5fa; padding: 8px 4px; text-align: center; font-size: 14px; font-weight: 600; vertical-align: middle; width: 60px; color: #fbbf24;">कुल: ${reportData.length}</td>
+        <tr class="total-row" style="border-top: 2px solid #000; border-bottom: 2px solid #000; background-color: #f9f9f9; font-weight: bold; height: 40px;">
+          <td style="border-top: 2px solid #000; border-bottom: 2px solid #000; border-left: none; border-right: none; padding: 4px; text-align: center; vertical-align: middle;"></td>
+          <td style="border-top: 2px solid #000; border-bottom: 2px solid #000; border-left: none; border-right: none; padding: 4px; font-size: 14px; text-align: center; vertical-align: middle; font-weight: bold;">एकूण:</td>
+          <td style="border-top: 2px solid #000; border-bottom: 2px solid #000; border-left: none; border-right: none; padding: 4px; text-align: left; font-size: 14px; font-weight: bold; vertical-align: middle; padding-left: 5px;">${totalAmount.toLocaleString('en-IN')}</td>
+          <td style="border-top: 2px solid #000; border-bottom: 2px solid #000; border-left: none; border-right: none; padding: 4px; vertical-align: middle;"></td>
+          <td class="mobile-hide" style="border-top: 2px solid #000; border-bottom: 2px solid #000; border-left: none; border-right: none; padding: 4px; vertical-align: middle;"></td>
+          <td class="mobile-hide" style="border-top: 2px solid #000; border-bottom: 2px solid #000; border-left: none; border-right: none; padding: 4px; vertical-align: middle;"></td>
+          <td class="mobile-hide" style="border-top: 2px solid #000; border-bottom: 2px solid #000; border-left: none; border-right: none; padding: 4px; text-align: center; font-size: 14px; font-weight: bold; vertical-align: middle;">${weightDisplay}</td>
+          <td class="mobile-hide" style="border-top: 2px solid #000; border-bottom: 2px solid #000; border-left: none; border-right: none; padding: 4px; vertical-align: middle;"></td>
         </tr>
       `;
     } else {
