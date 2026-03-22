@@ -2289,7 +2289,7 @@ export default function BorrowerListReports() {
               body[data-report-type="closing-wise"] tbody tr:not(.total-row) td { padding: 3px 2px !important; line-height: 1.3 !important; }
               body[data-report-type="closing-wise"] th:nth-child(4), body[data-report-type="closing-wise"] td:nth-child(4) { width: 65px !important; min-width: 65px !important; max-width: 70px !important; text-align: right !important; padding-right: 4px !important; }
               body[data-report-type="closing-wise"] th:nth-child(5), body[data-report-type="closing-wise"] td:nth-child(5) { width: 55px !important; min-width: 55px !important; max-width: 60px !important; text-align: right !important; padding-right: 4px !important; }
-              body[data-report-type="closing-wise"] th:nth-child(6), body[data-report-type="closing-wise"] td:nth-child(6) { width: 150px !important; min-width: 150px !important; max-width: 155px !important; text-align: left !important; padding-left: 4px !important; }
+              body[data-report-type="closing-wise"] th:nth-child(6), body[data-report-type="closing-wise"] td:nth-child(6) { width: 170px !important; min-width: 170px !important; max-width: 175px !important; text-align: left !important; padding-left: 4px !important; }
               body[data-report-type="closing-wise"] th:nth-child(7), body[data-report-type="closing-wise"] td:nth-child(7) { width: 48px !important; min-width: 48px !important; max-width: 52px !important; text-align: center !important; }
               body[data-report-type="closing-wise"] th:nth-child(8), body[data-report-type="closing-wise"] td:nth-child(8) { width: auto !important; min-width: 50px !important; text-align: left !important; }
               body[data-report-type="closing-wise"] th:nth-child(9), body[data-report-type="closing-wise"] td:nth-child(9) { width: 56px !important; min-width: 56px !important; max-width: 60px !important; text-align: center !important; }
@@ -2792,7 +2792,7 @@ export default function BorrowerListReports() {
               <col style="width: 62px;" />
               <col style="width: 65px;" />
               <col style="width: 55px;" />
-              <col style="width: 150px;" />
+              <col style="width: 170px;" />
               <col style="width: 48px;" />
               <col />
               <col style="width: 56px;" />
