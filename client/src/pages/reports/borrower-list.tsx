@@ -1567,9 +1567,9 @@ export default function BorrowerListReports() {
             <td class="maturity-cell-amount" style="border-left: 1px solid #e5e7eb; padding: 8px 4px; text-align: right; width: 70px; font-size: 14px; font-weight: 600; color: #059669; vertical-align: middle;">
               ${Math.round(loan.principalAmount).toLocaleString('en-IN')}
             </td>
-            <td class="maturity-cell-name" style="border-left: 1px solid #e5e7eb; padding: 8px 4px; width: 200px; font-size: 14px; font-weight: 500; color: #1f2937; vertical-align: middle; word-wrap: break-word;">${getPhotoIndicator(loan.id)}${loan.borrowerName.length > 28 ? loan.borrowerName.substring(0, 28) + '...' : loan.borrowerName}</td>
+            <td class="maturity-cell-name" style="border-left: 1px solid #e5e7eb; padding: 8px 4px; width: 155px; font-size: 14px; font-weight: 500; color: #1f2937; vertical-align: middle; white-space: normal; word-break: break-word;">${getPhotoIndicator(loan.id)}${loan.borrowerName}</td>
             <td class="maturity-cell-code mobile-hide" style="border-left: 1px solid #e5e7eb; padding: 8px 4px; text-align: center; width: 50px; font-size: 14px; font-weight: 600; color: #000000; vertical-align: middle;">${(loan.accountNumber || loan.id.slice(0, 5)).toString().substring(0, 7)}</td>
-            <td class="maturity-cell-details mobile-hide" style="border-left: 1px solid #e5e7eb; padding: 8px 4px; width: auto; font-size: 13px; font-weight: 400; color: #4b5563; vertical-align: middle; line-height: 1.4; word-wrap: break-word; overflow-wrap: break-word;">${loan.loanType === 'विनातारण' ? getUnsecuredDetails(loan) : (loan.itemDescription || loan.collateralDetails || 'सोन्याचे दागिने, अंगूठी, कंगन, नथ, हार इत्यादी').substring(0, 80)}</td>
+            <td class="maturity-cell-details mobile-hide" style="border-left: 1px solid #e5e7eb; padding: 8px 4px; width: auto; font-size: 13px; font-weight: 400; color: #4b5563; vertical-align: middle; line-height: 1.4; word-wrap: break-word; overflow-wrap: break-word;">${loan.loanType === 'विनातारण' ? getUnsecuredDetails(loan) : ((loan.itemDescription || loan.collateralDetails || 'सोन्याचे दागिने, अंगूठी, कंगन, नथ, हार इत्यादी').replace(/^\d+[\s-]*/, '').trim() || 'सोन्याचे दागिने, अंगूठी, कंगन, नथ, हार इत्यादी')}</td>
             <td class="maturity-cell-weight mobile-hide" style="border-left: 1px solid #e5e7eb; padding: 8px 4px; text-align: center; width: 50px; font-size: 14px; font-weight: 500; color: #6b7280; vertical-align: middle;">${loan.loanType === 'विनातारण' ? '—' : (loan.weight ? parseFloat(loan.weight.toString()).toFixed(2) : '0')}</td>
             <td class="maturity-cell-maturity mobile-hide" style="border-left: 1px solid #e5e7eb; padding: 8px 4px; text-align: center; width: 60px; font-size: 14px; font-weight: 700; color: #dc2626; vertical-align: middle; background-color: #fef2f2;">${shortMaturityDate}</td>
           </tr>
@@ -2264,7 +2264,7 @@ export default function BorrowerListReports() {
                  ★ Uses body[] selector to GUARANTEE these values apply over ALL other rules ★
                  ═══════════════════════════════════════════════════════════════ */
               body[data-report-type="date-wise"] th:nth-child(1), body[data-report-type="date-wise"] td:nth-child(1),
-              body[data-report-type="name-wise"] th:nth-child(1), body[data-report-type="name-wise"] td:nth-child(1) { width: 38px !important; min-width: 38px !important; max-width: 42px !important; text-align: center !important; box-sizing: border-box !important; }
+              body[data-report-type="name-wise"] th:nth-child(1), body[data-report-type="name-wise"] td:nth-child(1) { width: 40px !important; min-width: 40px !important; max-width: 44px !important; text-align: center !important; box-sizing: border-box !important; }
               body[data-report-type="date-wise"] th:nth-child(2), body[data-report-type="date-wise"] td:nth-child(2),
               body[data-report-type="name-wise"] th:nth-child(2), body[data-report-type="name-wise"] td:nth-child(2) { width: 68px !important; min-width: 68px !important; max-width: 72px !important; text-align: center !important; box-sizing: border-box !important; }
               body[data-report-type="date-wise"] th:nth-child(3), body[data-report-type="date-wise"] td:nth-child(3),
@@ -2445,75 +2445,15 @@ export default function BorrowerListReports() {
                 box-sizing: border-box !important;
               }
               
-              /* EXACT DATE-WISE COLUMN WIDTHS for MATURITY-WISE with मुदत at LAST position */
-              body[data-report-type="maturity-wise"] td:nth-child(1) { /* अनुक्रमांक - 45px (increased) */
-                width: 45px !important;
-                min-width: 45px !important;
-                max-width: 45px !important;
-                text-align: center !important;
-              }
-              body[data-report-type="maturity-wise"] td:nth-child(2) { /* तारीख - 75px (increased) */
-                width: 75px !important;
-                min-width: 75px !important;
-                max-width: 75px !important;
-                text-align: center !important;
-              }
-              body[data-report-type="maturity-wise"] td:nth-child(3) { /* अंदाजे बाजार मूल्य - 70px (same as date-wise) */
-                width: 70px !important;
-                min-width: 70px !important;
-                max-width: 70px !important;
-                text-align: right !important;
-                white-space: nowrap !important;
-              }
-              body[data-report-type="maturity-wise"] td:nth-child(4) { /* नाव - 200px (same as date-wise) */
-                width: 200px !important;
-                min-width: 200px !important;
-                max-width: 200px !important;
-                text-align: left !important;
-                white-space: nowrap !important;
-                overflow: hidden !important;
-                text-overflow: ellipsis !important;
-              }
-              body[data-report-type="maturity-wise"] td:nth-child(5) { /* कोड नं - 70px (same as date-wise) */
-                width: 70px !important;
-                min-width: 70px !important;
-                max-width: 70px !important;
-                text-align: left !important;
-              }
-              body[data-report-type="maturity-wise"] td:nth-child(6) { /* वस्तूचा तपशील - auto (same as date-wise) */
-                width: auto !important;
-                min-width: 111px !important;
-                text-align: left !important;
-                white-space: normal !important;
-                word-wrap: break-word !important;
-                overflow-wrap: break-word !important;
-              }
-              body[data-report-type="maturity-wise"] td:nth-child(7) { /* वजन - 70px (same as date-wise) */
-                width: 70px !important;
-                min-width: 70px !important;
-                max-width: 70px !important;
-                text-align: center !important;
-              }
-              body[data-report-type="maturity-wise"] td:nth-child(8) { /* मुदत - 75px (increased) */
-                width: 75px !important;
-                min-width: 75px !important;
-                max-width: 75px !important;
-                text-align: center !important;
-              }
-              body[data-report-type="maturity-wise"] td:nth-child(7) { /* वस्तूचा तपशील - auto */
-                width: auto !important;
-                min-width: 120px !important;
-                text-align: left !important;
-                white-space: normal !important;
-                word-wrap: break-word !important;
-                overflow-wrap: break-word !important;
-              }
-              body[data-report-type="maturity-wise"] td:nth-child(8) { /* वजन - 63px */
-                width: 63px !important;
-                min-width: 63px !important;
-                max-width: 63px !important;
-                text-align: center !important;
-              }
+              /* MATURITY-WISE PRINT — EXACT DATE-WISE WIDTHS + मुदत column (space from वस्तूचा तपशील) */
+              body[data-report-type="maturity-wise"] th:nth-child(1), body[data-report-type="maturity-wise"] td:nth-child(1) { width: 40px !important; min-width: 40px !important; max-width: 44px !important; text-align: center !important; box-sizing: border-box !important; }
+              body[data-report-type="maturity-wise"] th:nth-child(2), body[data-report-type="maturity-wise"] td:nth-child(2) { width: 68px !important; min-width: 68px !important; max-width: 72px !important; text-align: center !important; box-sizing: border-box !important; }
+              body[data-report-type="maturity-wise"] th:nth-child(3), body[data-report-type="maturity-wise"] td:nth-child(3) { width: 78px !important; min-width: 78px !important; max-width: 82px !important; text-align: right !important; padding-right: 5px !important; box-sizing: border-box !important; }
+              body[data-report-type="maturity-wise"] th:nth-child(4), body[data-report-type="maturity-wise"] td:nth-child(4) { width: 155px !important; min-width: 155px !important; text-align: left !important; padding-left: 4px !important; box-sizing: border-box !important; white-space: normal !important; overflow: visible !important; text-overflow: clip !important; word-break: break-word !important; }
+              body[data-report-type="maturity-wise"] th:nth-child(5), body[data-report-type="maturity-wise"] td:nth-child(5) { width: 65px !important; min-width: 65px !important; max-width: 69px !important; text-align: center !important; box-sizing: border-box !important; }
+              body[data-report-type="maturity-wise"] th:nth-child(6), body[data-report-type="maturity-wise"] td:nth-child(6) { width: auto !important; min-width: 50px !important; text-align: left !important; padding-left: 5px !important; box-sizing: border-box !important; white-space: normal !important; word-wrap: break-word !important; overflow-wrap: break-word !important; }
+              body[data-report-type="maturity-wise"] th:nth-child(7), body[data-report-type="maturity-wise"] td:nth-child(7) { width: 56px !important; min-width: 56px !important; max-width: 60px !important; text-align: center !important; box-sizing: border-box !important; }
+              body[data-report-type="maturity-wise"] th:nth-child(8), body[data-report-type="maturity-wise"] td:nth-child(8) { width: 60px !important; min-width: 60px !important; max-width: 64px !important; text-align: center !important; box-sizing: border-box !important; }
               
               /* Hide mobile columns properly */
               .mobile-hide {
@@ -2787,7 +2727,7 @@ export default function BorrowerListReports() {
           <table class="borrower-report-table${activeTab === 'closing-wise' ? ' closing-wise-table' : ''}${activeTab === 'maturity-wise' ? ' maturity-wise-table' : ''}" style="table-layout: fixed !important; width: 100% !important; border-collapse: collapse !important;">
             ${activeTab === 'date-wise' || activeTab === 'name-wise' ? `
             <colgroup>
-              <col style="width: 38px;" />
+              <col style="width: 40px;" />
               <col style="width: 68px;" />
               <col style="width: 78px;" />
               <col style="width: 155px;" />
@@ -2806,6 +2746,17 @@ export default function BorrowerListReports() {
               <col style="width: 52px;" />
               <col />
               <col style="width: 56px;" />
+            </colgroup>
+            ` : ''}${activeTab === 'maturity-wise' ? `
+            <colgroup>
+              <col style="width: 40px;" />
+              <col style="width: 68px;" />
+              <col style="width: 78px;" />
+              <col style="width: 155px;" />
+              <col style="width: 65px;" />
+              <col />
+              <col style="width: 56px;" />
+              <col style="width: 60px;" />
             </colgroup>
             ` : ''}
             <thead>
