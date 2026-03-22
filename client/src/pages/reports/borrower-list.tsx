@@ -1505,7 +1505,7 @@ export default function BorrowerListReports() {
             <td style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 3px 2px; text-align: center; width: 62px; font-size: 13px; vertical-align: middle; font-weight: 500;">${shortClosureDate}</td>
             <td style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 3px 2px; text-align: left; width: 65px; font-size: 13px; vertical-align: middle; font-weight: 500; padding-left: 5px;" class="loan-amount">${Math.round(loan.principalAmount).toLocaleString('en-IN')}</td>
             <td style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 3px 2px; text-align: left; width: 55px; font-size: 13px; vertical-align: middle; font-weight: 500; padding-left: 5px;" class="interest-amount">${interestPaid}</td>
-            <td style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 3px 2px; width: 100px; font-size: 13px; vertical-align: middle; font-weight: 500; text-align: left; padding-left: 4px;">${getPhotoIndicator(loan.id)}${loan.borrowerName.length > 15 ? loan.borrowerName.substring(0, 15) + '...' : loan.borrowerName}</td>
+            <td style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 3px 2px; width: 150px; font-size: 13px; vertical-align: middle; font-weight: 500; text-align: left; padding-left: 4px; white-space: normal; word-break: break-word;">${getPhotoIndicator(loan.id)}${loan.borrowerName}</td>
             <td class="mobile-hide" style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 3px 2px; text-align: center; width: 48px; font-size: 13px; vertical-align: middle; font-weight: 500;">${(loan.accountNumber || loan.id.slice(0, 5)).toString().substring(0, 7)}</td>
             <td class="mobile-hide" style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 3px 2px; width: auto; min-width: 50px; font-size: 13px; word-wrap: break-word; white-space: normal; vertical-align: middle; line-height: 1.3; overflow-wrap: break-word; font-weight: 500; text-align: left;">${loan.loanType === 'विनातारण' ? getUnsecuredDetails(loan) : ((loan.itemDescription || loan.collateralDetails || 'सोन्याचे दागिने, अंगूठी, कंगन, नथ, हार इत्यादी').replace(/^\d+[\s-]*/, '').trim() || 'सोन्याचे दागिने, अंगूठी, कंगन, नथ, हार इत्यादी')}</td>
             <td class="mobile-hide" style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 3px 2px; text-align: center; width: 46px; font-size: 13px; vertical-align: middle; font-weight: 500;">${loan.loanType === 'विनातारण' ? '—' : (loan.weight ? parseFloat(loan.weight.toString()).toFixed(2) : '0')}</td>
@@ -2320,11 +2320,6 @@ export default function BorrowerListReports() {
                 overflow: visible !important;
                 text-overflow: clip !important;
                 word-break: break-word !important;
-              }
-              /* Closing-wise नाव column smaller font to fit more text */
-              body[data-report-type="closing-wise"] td:nth-child(6) {
-                font-size: 8.5px !important;
-                line-height: 1.2 !important;
               }
               
               /* ★ TOTAL ROW OVERRIDE — MUST come AFTER generic td rule to win cascade ★ */
