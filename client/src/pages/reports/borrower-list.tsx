@@ -2321,6 +2321,11 @@ export default function BorrowerListReports() {
                 text-overflow: clip !important;
                 word-break: break-word !important;
               }
+              /* Closing-wise नाव column smaller font to fit more text */
+              body[data-report-type="closing-wise"] td:nth-child(6) {
+                font-size: 8.5px !important;
+                line-height: 1.2 !important;
+              }
               
               /* ★ TOTAL ROW OVERRIDE — MUST come AFTER generic td rule to win cascade ★ */
               tr.total-row > td,
