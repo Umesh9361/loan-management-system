@@ -1798,16 +1798,7 @@ export default function BorrowerListReports() {
                 font-size: 11px !important; font-weight: bold !important;
               }
               
-              /* MATURITY-WISE REPORT PRINT LAYOUT */
-              .maturity-wise-table th:nth-child(1), .maturity-wise-table td:nth-child(1) { width: 26px !important; min-width: 26px !important; max-width: 30px !important; text-align: center !important; }    /* अ.क्र. */
-              .maturity-wise-table th:nth-child(2), .maturity-wise-table td:nth-child(2) { width: 40px !important; }    /* तारीख - कमी */
-              .maturity-wise-table th:nth-child(3), .maturity-wise-table td:nth-child(3) { width: 55px !important; min-width: 55px !important; }    /* अंदाजे बाजार मूल्य */
-              .maturity-wise-table th:nth-child(4), .maturity-wise-table td:nth-child(4) { width: 121px !important; min-width: 121px !important; text-align: left !important; padding-left: 4px !important; }   /* नाव - 20% वाढ */
-              .maturity-wise-table th:nth-child(5), .maturity-wise-table td:nth-child(5) { width: 54px !important; min-width: 54px !important; max-width: 58px !important; text-align: center !important; padding: 3px 2px !important; }      /* कोड नं */
-              .maturity-wise-table tbody tr:not(.total-row):not(.summary-row) td:nth-child(5) { padding: 8px 2px !important; text-align: center !important; }
-              .maturity-wise-table th:nth-child(6), .maturity-wise-table td:nth-child(6) { width: auto !important; min-width: 140px !important; }    /* वस्तूचा तपशील */
-              .maturity-wise-table th:nth-child(7), .maturity-wise-table td:nth-child(7) { width: 40px !important; min-width: 40px !important; }    /* वजन */
-              .maturity-wise-table th:nth-child(8), .maturity-wise-table td:nth-child(8) { width: 48px !important; min-width: 48px !important; }    /* मुदत */
+              /* Maturity-wise column widths controlled by colgroup + body[data-report-type="maturity-wise"] in 4th print block */
               
               /* Portrait print - compact header */
               .header {
