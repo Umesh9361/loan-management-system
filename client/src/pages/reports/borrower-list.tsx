@@ -35,6 +35,7 @@ export default function BorrowerListReports() {
   
   // Date-wise specific
   const [dateWiseStatus, setDateWiseStatus] = useState<'active' | 'all'>('active');
+  const [showInterestRate, setShowInterestRate] = useState(false);
   
   // Closing-wise specific
   const [dateFilter, setDateFilter] = useState<'loan-date' | 'closure-date'>('loan-date');
@@ -1417,7 +1418,7 @@ export default function BorrowerListReports() {
             <td style="border-bottom: 1px solid #ccc; padding: 4px; text-align: center; width: 38px; font-size: 14px; vertical-align: middle; font-weight: 500; box-sizing: border-box;">${index + 1}</td>
             <td style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 4px; text-align: center; width: 68px; font-size: 14px; vertical-align: middle; font-weight: 500; box-sizing: border-box;">${shortDate}</td>
             <td style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 4px; text-align: left; width: 78px; font-size: 14px; vertical-align: middle; font-weight: 500; padding-left: 5px; box-sizing: border-box;" class="loan-amount">${Math.round(loan.principalAmount).toLocaleString('en-IN')}</td>
-            <td style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 4px; width: 155px; font-size: 14px; vertical-align: middle; font-weight: 500; box-sizing: border-box;">${getPhotoIndicator(loan.id)}${loan.borrowerName.length > 26 ? loan.borrowerName.substring(0, 26) + '...' : loan.borrowerName}${isClosedLoan && dateWiseStatus === 'all' ? ' (बंद)' : ''}</td>
+            <td style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 4px; width: 155px; font-size: 14px; vertical-align: middle; font-weight: 500; box-sizing: border-box; position: relative;">${getPhotoIndicator(loan.id)}${loan.borrowerName.length > 26 ? loan.borrowerName.substring(0, 26) + '...' : loan.borrowerName}${isClosedLoan && dateWiseStatus === 'all' ? ' (बंद)' : ''}${showInterestRate && loan.interestRate ? '<span style="position: absolute; right: 1px; top: 50%; transform: translateY(-50%); font-size: 10px; color: #555; font-weight: 400;">' + (loan.interestRateType === 'monthly' ? parseFloat(loan.interestRate.toString()).toFixed(2) : Math.round(parseFloat(loan.interestRate.toString()))) + '</span>' : ''}</td>
             <td class="mobile-hide" style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 4px; text-align: center; width: 65px; font-size: 14px; vertical-align: middle; font-weight: 500; box-sizing: border-box;">${(loan.accountNumber || loan.id.slice(0, 5)).toString().substring(0, 7)}</td>
             <td class="mobile-hide" style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 4px; width: auto; min-width: 60px; font-size: 14px; word-wrap: break-word; white-space: normal; vertical-align: middle; line-height: 1.3; overflow-wrap: break-word; font-weight: 500; box-sizing: border-box;">${loan.loanType === 'विनातारण' ? getUnsecuredDetails(loan) : (loan.itemDescription || loan.collateralDetails || 'सोन्याचे दागिने, अंगूठी, कंगन, नथ, हार इत्यादी')}</td>
             <td class="mobile-hide" style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 4px; text-align: center; width: 56px; font-size: 14px; vertical-align: middle; font-weight: 500; box-sizing: border-box;">${loan.loanType === 'विनातारण' ? '—' : (loan.weight ? parseFloat(loan.weight.toString()).toFixed(2) : '0')}</td>
@@ -1446,7 +1447,7 @@ export default function BorrowerListReports() {
             <td style="border-bottom: 1px solid #ccc; padding: 4px; text-align: center; width: 38px; font-size: 14px; vertical-align: middle; font-weight: 500; box-sizing: border-box;">${index + 1}</td>
             <td style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 4px; text-align: center; width: 68px; font-size: 14px; vertical-align: middle; font-weight: 500; box-sizing: border-box;">${shortDate}</td>
             <td style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 4px; text-align: left; width: 78px; font-size: 14px; vertical-align: middle; font-weight: 500; padding-left: 5px; box-sizing: border-box;" class="loan-amount">${Math.round(loan.principalAmount).toLocaleString('en-IN')}</td>
-            <td style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 4px; width: 155px; font-size: 14px; vertical-align: middle; font-weight: 500; box-sizing: border-box;">${getPhotoIndicator(loan.id)}${loan.borrowerName.length > 26 ? loan.borrowerName.substring(0, 26) + '...' : loan.borrowerName}${isClosedLoan && nameWiseStatus === 'all' ? ' (बंद)' : ''}</td>
+            <td style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 4px; width: 155px; font-size: 14px; vertical-align: middle; font-weight: 500; box-sizing: border-box; position: relative;">${getPhotoIndicator(loan.id)}${loan.borrowerName.length > 26 ? loan.borrowerName.substring(0, 26) + '...' : loan.borrowerName}${isClosedLoan && nameWiseStatus === 'all' ? ' (बंद)' : ''}${showInterestRate && loan.interestRate ? '<span style="position: absolute; right: 1px; top: 50%; transform: translateY(-50%); font-size: 10px; color: #555; font-weight: 400;">' + (loan.interestRateType === 'monthly' ? parseFloat(loan.interestRate.toString()).toFixed(2) : Math.round(parseFloat(loan.interestRate.toString()))) + '</span>' : ''}</td>
             <td class="mobile-hide" style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 4px; text-align: center; width: 65px; font-size: 14px; vertical-align: middle; font-weight: 500; box-sizing: border-box;">${(loan.accountNumber || loan.id.slice(0, 5)).toString().substring(0, 7)}</td>
             <td class="mobile-hide" style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 4px; width: auto; min-width: 60px; font-size: 14px; word-wrap: break-word; white-space: normal; vertical-align: middle; line-height: 1.3; overflow-wrap: break-word; font-weight: 500; box-sizing: border-box;">${loan.loanType === 'विनातारण' ? getUnsecuredDetails(loan) : (loan.itemDescription || loan.collateralDetails || 'सोन्याचे दागिने, अंगूठी, कंगन, नथ, हार इत्यादी')}</td>
             <td class="mobile-hide" style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 4px; text-align: center; width: 56px; font-size: 14px; vertical-align: middle; font-weight: 500; box-sizing: border-box;">${loan.loanType === 'विनातारण' ? '—' : (loan.weight ? parseFloat(loan.weight.toString()).toFixed(2) : '0')}</td>
@@ -3669,6 +3670,10 @@ export default function BorrowerListReports() {
                     </Label>
                   </div>
                 </RadioGroup>
+                <div className="flex items-center space-x-2 mt-2">
+                  <input type="checkbox" id="show-interest-rate" checked={showInterestRate} onChange={(e) => setShowInterestRate(e.target.checked)} className="h-4 w-4 rounded border-gray-300" />
+                  <Label htmlFor="show-interest-rate" className="font-normal text-sm">व्याजदर दाखवा</Label>
+                </div>
               </div>
             )}
             
@@ -3824,6 +3829,10 @@ export default function BorrowerListReports() {
                       </Label>
                     </div>
                   </RadioGroup>
+                  <div className="flex items-center space-x-2 mt-2">
+                    <input type="checkbox" id="show-interest-rate-name" checked={showInterestRate} onChange={(e) => setShowInterestRate(e.target.checked)} className="h-4 w-4 rounded border-gray-300" />
+                    <Label htmlFor="show-interest-rate-name" className="font-normal text-sm">व्याजदर दाखवा</Label>
+                  </div>
                 </div>
                 
                 {/* Date Filter Toggle and Options */}
