@@ -2312,6 +2312,16 @@ export default function BorrowerListReports() {
                 white-space: nowrap !important;
               }
               
+              /* Allow text wrap in नाव column (col 4 date/name-wise, col 6 closing-wise) */
+              body[data-report-type="date-wise"] td:nth-child(4),
+              body[data-report-type="name-wise"] td:nth-child(4),
+              body[data-report-type="closing-wise"] td:nth-child(6) {
+                white-space: normal !important;
+                overflow: visible !important;
+                text-overflow: clip !important;
+                word-break: break-word !important;
+              }
+              
               /* ★ TOTAL ROW OVERRIDE — MUST come AFTER generic td rule to win cascade ★ */
               tr.total-row > td,
               table tbody tr.total-row td {
