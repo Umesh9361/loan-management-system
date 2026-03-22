@@ -1571,7 +1571,7 @@ export default function BorrowerListReports() {
             <td class="maturity-cell-code mobile-hide" style="border-left: 1px solid #e5e7eb; padding: 8px 4px; text-align: center; width: 50px; font-size: 14px; font-weight: 600; color: #000000; vertical-align: middle;">${(loan.accountNumber || loan.id.slice(0, 5)).toString().substring(0, 7)}</td>
             <td class="maturity-cell-details mobile-hide" style="border-left: 1px solid #e5e7eb; padding: 8px 4px; width: auto; font-size: 13px; font-weight: 400; color: #4b5563; vertical-align: middle; line-height: 1.4; word-wrap: break-word; overflow-wrap: break-word;">${loan.loanType === 'विनातारण' ? getUnsecuredDetails(loan) : ((loan.itemDescription || loan.collateralDetails || 'सोन्याचे दागिने, अंगूठी, कंगन, नथ, हार इत्यादी').replace(/^\d+[\s-]*/, '').trim() || 'सोन्याचे दागिने, अंगूठी, कंगन, नथ, हार इत्यादी')}</td>
             <td class="maturity-cell-weight mobile-hide" style="border-left: 1px solid #e5e7eb; padding: 8px 4px; text-align: center; width: 50px; font-size: 14px; font-weight: 500; color: #6b7280; vertical-align: middle;">${loan.loanType === 'विनातारण' ? '—' : (loan.weight ? parseFloat(loan.weight.toString()).toFixed(2) : '0')}</td>
-            <td class="maturity-cell-maturity mobile-hide" style="border-left: 1px solid #e5e7eb; padding: 8px 4px; text-align: center; width: 60px; font-size: 14px; font-weight: 700; color: #dc2626; vertical-align: middle; background-color: #fef2f2;">${shortMaturityDate}</td>
+            <td class="maturity-cell-maturity mobile-hide" style="border-left: 1px solid #e5e7eb; padding: 8px 4px; text-align: center; width: 68px; font-size: 14px; font-weight: 500; color: #dc2626; vertical-align: middle; background-color: #fef2f2;">${shortMaturityDate}</td>
           </tr>
         `;
       }).join('');
@@ -2444,7 +2444,7 @@ export default function BorrowerListReports() {
               body[data-report-type="maturity-wise"] th:nth-child(5), body[data-report-type="maturity-wise"] td:nth-child(5) { width: 65px !important; min-width: 65px !important; max-width: 69px !important; text-align: center !important; box-sizing: border-box !important; }
               body[data-report-type="maturity-wise"] th:nth-child(6), body[data-report-type="maturity-wise"] td:nth-child(6) { width: auto !important; min-width: 50px !important; text-align: left !important; padding-left: 5px !important; box-sizing: border-box !important; white-space: normal !important; word-wrap: break-word !important; overflow-wrap: break-word !important; }
               body[data-report-type="maturity-wise"] th:nth-child(7), body[data-report-type="maturity-wise"] td:nth-child(7) { width: 56px !important; min-width: 56px !important; max-width: 60px !important; text-align: center !important; box-sizing: border-box !important; }
-              body[data-report-type="maturity-wise"] th:nth-child(8), body[data-report-type="maturity-wise"] td:nth-child(8) { width: 60px !important; min-width: 60px !important; max-width: 64px !important; text-align: center !important; box-sizing: border-box !important; }
+              body[data-report-type="maturity-wise"] th:nth-child(8), body[data-report-type="maturity-wise"] td:nth-child(8) { width: 68px !important; min-width: 68px !important; max-width: 72px !important; text-align: center !important; box-sizing: border-box !important; font-weight: 500 !important; }
               
               /* Hide mobile columns properly */
               .mobile-hide {
@@ -2747,7 +2747,7 @@ export default function BorrowerListReports() {
               <col style="width: 65px;" />
               <col />
               <col style="width: 56px;" />
-              <col style="width: 60px;" />
+              <col style="width: 68px;" />
             </colgroup>
             ` : ''}
             <thead>
