@@ -1861,8 +1861,6 @@ ${pagesHTML}
 
     const feeDateFmt = data.feeDate ? formatDateDDMMYYYY(data.feeDate) : `____/____/${fyEndShort}`;
     const jawabDateFmt = data.jawabDate ? formatDateDDMMYYYY(data.jawabDate) : `____/____/${fyEndShort}`;
-    const proprietorName = data.proprietorName || '________________________________________';
-    const proprietorAge = data.proprietorAge || '______';
 
     return `<!DOCTYPE html>
 <html lang="mr">
