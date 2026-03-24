@@ -2094,7 +2094,7 @@ ${pagesHTML}
         उपनिबंधक, सहकारी संस्था
       </div>
     </div>
-    <div class="signature-right" style="text-align:left;">
+    <div class="signature-right" style="text-align:left; margin-top: 30px;">
       <div style="font-weight: 600; margin-bottom: 6px;">सावकाराचे नाव व सही</div>
       <div style="line-height: 1.4;">
         <strong style="font-size:14px;">${companyName}</strong><br>
