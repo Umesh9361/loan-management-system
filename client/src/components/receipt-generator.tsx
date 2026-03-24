@@ -2094,14 +2094,15 @@ ${pagesHTML}
         उपनिबंधक, सहकारी संस्था
       </div>
     </div>
-    <div class="signature-right" style="text-align:right;">
+    <div class="signature-right" style="text-align:left;">
       <div style="line-height: 1.4;">
         <strong style="font-size:14px;">${companyName}</strong><br>
         सा.ला.नं. ${licenseNumber}<br>
         ${companyAddress}
       </div>
       <div style="margin-top: 4px;">दिनांक: ${jawabDateFmt}</div>
-      <div style="margin-top: 8px; font-weight: 600;">सावकाराचे नाव व सही</div>
+      <div style="margin-top: 10px; font-weight: 600;">सावकाराची सही</div>
+      <div style="margin-top: 4px; font-weight: 600;">सावकाराचे नाव व सही</div>
     </div>
   </div>
 </div>
