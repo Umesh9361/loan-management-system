@@ -100,38 +100,39 @@ export default function JawabGeneratorPage() {
     if (!jawabHTML) return;
     setPdfLoading(true);
     try {
-      const iframe = document.createElement('iframe');
-      iframe.style.position = 'fixed';
-      iframe.style.left = '-9999px';
-      iframe.style.top = '0';
-      iframe.style.width = '700px';
-      iframe.style.height = '1200px';
-      document.body.appendChild(iframe);
+      const pdfIframe = document.createElement('iframe');
+      pdfIframe.style.position = 'fixed';
+      pdfIframe.style.left = '0';
+      pdfIframe.style.top = '0';
+      pdfIframe.style.width = '700px';
+      pdfIframe.style.height = '2000px';
+      pdfIframe.style.zIndex = '-1';
+      pdfIframe.style.opacity = '0.01';
+      pdfIframe.style.border = 'none';
+      document.body.appendChild(pdfIframe);
 
-      const iframeDoc = iframe.contentDocument;
-      if (!iframeDoc) { setPdfLoading(false); return; }
+      const iframeDoc = pdfIframe.contentDocument || pdfIframe.contentWindow?.document;
+      if (!iframeDoc) { document.body.removeChild(pdfIframe); setPdfLoading(false); return; }
+
       iframeDoc.open();
       iframeDoc.write(jawabHTML);
       iframeDoc.close();
 
       await new Promise<void>((resolve) => {
-        const checkFonts = () => {
-          if (iframeDoc.fonts) {
-            iframeDoc.fonts.ready.then(() => resolve());
-          } else {
-            resolve();
-          }
-        };
-        iframe.onload = checkFonts;
-        setTimeout(checkFonts, 500);
+        pdfIframe.onload = () => resolve();
+        setTimeout(resolve, 2000);
       });
-      await new Promise(resolve => setTimeout(resolve, 1200));
+
+      if (iframeDoc.fonts) {
+        await iframeDoc.fonts.ready;
+      }
+      await new Promise(resolve => setTimeout(resolve, 1500));
 
       const html2canvas = (await import('html2canvas')).default;
       const jsPDF = (await import('jspdf')).default;
 
       const pageElement = iframeDoc.querySelector('.jawab-page') as HTMLElement;
-      if (!pageElement) { document.body.removeChild(iframe); setPdfLoading(false); return; }
+      if (!pageElement) { document.body.removeChild(pdfIframe); setPdfLoading(false); return; }
 
       const canvas = await html2canvas(pageElement, {
         scale: 2,
@@ -139,6 +140,11 @@ export default function JawabGeneratorPage() {
         logging: false,
         backgroundColor: '#ffffff',
         width: 700,
+        windowWidth: 700,
+        onclone: (clonedDoc: Document) => {
+          const el = clonedDoc.querySelector('.jawab-page') as HTMLElement;
+          if (el) el.style.width = '700px';
+        },
       });
 
       const a4Width = 210;
@@ -176,7 +182,7 @@ export default function JawabGeneratorPage() {
 
       const fyLabel = jawabData?.financialYear || 'jawab';
       pdf.save(`जवाब_${fyLabel}.pdf`);
-      document.body.removeChild(iframe);
+      document.body.removeChild(pdfIframe);
     } catch (err) {
       console.error('PDF generation error:', err);
     }
