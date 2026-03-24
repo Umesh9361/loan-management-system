@@ -1870,7 +1870,7 @@ ${pagesHTML}
 <style>
   @page {
     size: A4 portrait;
-    margin: 10mm 15mm 10mm 25.4mm;
+    margin: 10mm 10mm 10mm 25.4mm;
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
@@ -1980,8 +1980,7 @@ ${pagesHTML}
   .footer-text {
     margin-top: 15px;
     font-size: 10.5px;
-    text-align: right;
-    padding-right: 10px;
+    text-align: left;
     padding-top: 4px;
     color: #444;
   }

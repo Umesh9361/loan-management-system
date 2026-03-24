@@ -135,7 +135,7 @@ export default function JawabGeneratorPage() {
       const a4Height = 297;
       const leftMargin = 25.4;
       const topMargin = 10;
-      const rightMargin = 15;
+      const rightMargin = 10;
       const contentWidth = a4Width - leftMargin - rightMargin;
 
       const imgRatio = canvas.height / canvas.width;
