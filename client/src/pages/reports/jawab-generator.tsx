@@ -134,7 +134,7 @@ export default function JawabGeneratorPage() {
       const a4Width = 210;
       const a4Height = 297;
       const leftMargin = 25.4;
-      const topMargin = 20;
+      const topMargin = 10;
       const rightMargin = 15;
       const contentWidth = a4Width - leftMargin - rightMargin;
 
