@@ -5483,7 +5483,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         totalClosingPrincipal += loan.closingPrincipal;
       }
 
-      const totalCollection = totalYearPrincipalRepayment + totalYearInterestRepayment;
+      const totalCollection = totalYearPrincipalRepayment;
       const totalAmount = totalOpeningPrincipal + totalYearDisbursement;
 
       const fyStart = `${financialYear}-04-01`;

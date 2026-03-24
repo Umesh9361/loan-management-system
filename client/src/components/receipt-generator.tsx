@@ -1837,6 +1837,9 @@ ${pagesHTML}
     const companyName = company.name || '';
     const licenseNumber = company.licenseNumber || '';
     const companyAddress = company.address || '';
+    const proprietorName = data.proprietorName || '';
+    const proprietorAge = data.proprietorAge || '';
+    const proprietorInfo = proprietorName ? ` (प्रोप्रायटर: ${proprietorName}${proprietorAge ? ', वय ' + proprietorAge : ''}${companyAddress ? ', रा. ' + companyAddress : ''})` : '';
 
     const formatAmt = (amount: number) => {
       if (!amount && amount !== 0) return '0';
@@ -2017,7 +2020,7 @@ ${pagesHTML}
   <div class="sub-title">(सावकारी कायदा अधिनियम-2014, कलम 18, 25 व 26)</div>
 
   <div class="header-info">
-    <p>मी, <strong style="font-size:14px;">${companyName}</strong>${companyAddress ? ', ' + companyAddress : ''} सत्य प्रतिज्ञावर जबाब लिहून देतो की, मला सन ${fy} या वर्षाकरिता सावकारी परवाना क्रमांक ${licenseNumber} मिळालेला आहे. सदर परवान्याचे सन ${nextFy} या वर्षाकरिता नूतनीकरण करणेकरिता मी आपले कार्यालयात दिनांक ${jawabDateFmt} रोजी रीतसर अर्ज केलेला आहे. सदर अर्जासोबत दिनांक ${feeDateFmt} रोजी भरणा केलेले नूतनीकरण परवाना फी रुपये 500/- (दंडासह रु. <span class="blank-field">&nbsp;</span>/-) ची पावती जोडलेली आहे. परवाना फी मागणी अर्जावर रु. 10/- चा कोर्ट फी स्टॅम्प लावलेला आहे. अर्जात भरलेली सर्व माहिती बरोबर असून सावकारी व्यवहाराबद्दल मी स्वतः जबाबदार आहे.</p>
+    <p>मी, <strong style="font-size:14px;">${companyName}</strong>${proprietorInfo}${companyAddress ? ', ' + companyAddress : ''} सत्य प्रतिज्ञावर जबाब लिहून देतो की, मला सन ${fy} या वर्षाकरिता सावकारी परवाना क्रमांक ${licenseNumber} मिळालेला आहे. सदर परवान्याचे सन ${nextFy} या वर्षाकरिता नूतनीकरण करणेकरिता मी आपले कार्यालयात दिनांक ${jawabDateFmt} रोजी रीतसर अर्ज केलेला आहे. सदर अर्जासोबत दिनांक ${feeDateFmt} रोजी भरणा केलेले नूतनीकरण परवाना फी रुपये 500/- (दंडासह रु. <span class="blank-field">&nbsp;</span>/-) ची पावती जोडलेली आहे. परवाना फी मागणी अर्जावर रु. 10/- चा कोर्ट फी स्टॅम्प लावलेला आहे. अर्जात भरलेली सर्व माहिती बरोबर असून सावकारी व्यवहाराबद्दल मी स्वतः जबाबदार आहे.</p>
   </div>
 
   <div class="legal-text">
@@ -2088,21 +2091,20 @@ ${pagesHTML}
 
   <div class="signature-section">
     <div class="signature-left">
+      <div style="line-height: 1.5;">
+        सहाय्यक निबंधक तथा<br>
+        उपनिबंधक, सहकारी संस्था
+      </div>
+    </div>
+    <div class="signature-right" style="text-align:right;">
       <div style="line-height: 1.4;">
         <strong style="font-size:14px;">${companyName}</strong><br>
         सा.ला.नं. ${licenseNumber}<br>
         ${companyAddress}
       </div>
-      <div style="margin-top: 6px;">दिनांक: ${jawabDateFmt}</div>
+      <div style="margin-top: 4px;">दिनांक: ${jawabDateFmt}</div>
+      <div style="margin-top: 8px; font-weight: 600;">सावकाराचे नाव व सही</div>
     </div>
-    <div class="signature-right" style="text-align:right;">
-      <div style="font-weight: 600;">सावकाराचे नाव व सही</div>
-    </div>
-  </div>
-
-  <div class="footer-text">
-    सहाय्यक निबंधक तथा<br>
-    उपनिबंधक, सहकारी संस्था
   </div>
 </div>
 </body>
