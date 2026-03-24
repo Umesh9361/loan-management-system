@@ -114,8 +114,18 @@ export default function JawabGeneratorPage() {
       iframeDoc.write(jawabHTML);
       iframeDoc.close();
 
-      await new Promise(resolve => setTimeout(resolve, 800));
-      await document.fonts.ready;
+      await new Promise<void>((resolve) => {
+        const checkFonts = () => {
+          if (iframeDoc.fonts) {
+            iframeDoc.fonts.ready.then(() => resolve());
+          } else {
+            resolve();
+          }
+        };
+        iframe.onload = checkFonts;
+        setTimeout(checkFonts, 500);
+      });
+      await new Promise(resolve => setTimeout(resolve, 1200));
 
       const html2canvas = (await import('html2canvas')).default;
       const jsPDF = (await import('jspdf')).default;
