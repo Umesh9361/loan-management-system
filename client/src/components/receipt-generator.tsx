@@ -1875,9 +1875,9 @@ ${pagesHTML}
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
     font-family: 'Noto Sans Devanagari', Arial, sans-serif;
-    font-size: 13px;
-    line-height: 1.7;
-    color: #000;
+    font-size: 12.5px;
+    line-height: 1.65;
+    color: #1a1a1a;
     background: white;
     -webkit-text-size-adjust: 100%;
   }
@@ -1885,91 +1885,85 @@ ${pagesHTML}
     width: 100%;
     max-width: 700px;
     margin: 0 auto;
-    padding: 15px 10px;
-  }
-  .company-header {
-    text-align: center;
-    font-size: 17px;
-    font-weight: 700;
-    margin-bottom: 2px;
-    letter-spacing: 0.5px;
-  }
-  .company-address {
-    text-align: center;
-    font-size: 11px;
-    font-weight: 400;
-    color: #333;
-    margin-bottom: 6px;
+    padding: 12px 10px;
   }
   .header-title {
     text-align: center;
-    font-size: 18px;
+    font-size: 17px;
     font-weight: 700;
     text-decoration: underline;
-    margin-bottom: 12px;
+    margin-bottom: 6px;
     letter-spacing: 1px;
+    color: #000;
   }
   .sub-title {
     text-align: center;
-    font-size: 11px;
+    font-size: 10.5px;
     font-weight: 500;
-    margin-bottom: 10px;
-    color: #333;
+    margin-bottom: 8px;
+    color: #444;
   }
   .header-info {
     font-size: 12px;
-    margin-bottom: 5px;
-    line-height: 1.8;
+    margin-bottom: 4px;
+    line-height: 1.7;
     text-align: justify;
   }
   .header-info p {
-    margin-bottom: 4px;
+    margin-bottom: 3px;
     text-indent: 25px;
   }
   .blank-field {
     display: inline-block;
-    min-width: 60px;
+    min-width: 55px;
     border-bottom: 1px dotted #000;
   }
   .legal-text {
     font-size: 12px;
-    line-height: 1.8;
+    line-height: 1.7;
     text-align: justify;
-    margin: 12px 0;
+    margin: 6px 0;
   }
   .legal-text p {
-    margin-bottom: 8px;
+    margin-bottom: 5px;
     text-indent: 25px;
   }
   .data-table {
     width: 100%;
     border-collapse: collapse;
-    margin: 14px 0;
+    margin: 10px 0;
     font-size: 12px;
   }
   .data-table th, .data-table td {
-    border: 1.5px solid #000;
-    padding: 6px 10px;
+    border: 1px solid #333;
+    padding: 5px 8px;
     text-align: left;
   }
   .data-table th {
-    background: #f0f0f0;
+    background: linear-gradient(180deg, #e8eaf6 0%, #c5cae9 100%);
     font-weight: 700;
     text-align: center;
-    font-size: 13px;
+    font-size: 12.5px;
+    color: #1a237e;
+    border-bottom: 2px solid #3949ab;
   }
-  .data-table .sr-col { width: 50px; text-align: center; }
+  .data-table .sr-col { width: 45px; text-align: center; }
   .data-table .desc-col { width: auto; }
-  .data-table .amt-col { width: 150px; text-align: right; font-weight: 500; }
-  .data-table tr.total-row td { font-weight: 700; }
+  .data-table .amt-col { width: 140px; text-align: right; font-weight: 600; }
+  .data-table tr.total-row td { font-weight: 700; background: #f5f5f5; }
+  .data-table tr:nth-child(even) td { background: #fafafa; }
+  .data-table tr.total-row td { background: #e8eaf6; }
   .closing-text {
     font-size: 12px;
-    line-height: 1.8;
+    line-height: 1.7;
     text-align: justify;
-    margin: 14px 0;
+    margin: 8px 0;
+  }
+  .closing-text p {
+    text-indent: 25px;
   }
   .signature-section {
-    margin-top: 20px;
+    margin-top: 15px;
     display: flex;
     justify-content: space-between;
     font-size: 12px;
@@ -1977,42 +1971,44 @@ ${pagesHTML}
   }
   .signature-left {
     text-align: left;
-    line-height: 1.6;
+    line-height: 1.5;
   }
   .signature-right {
     text-align: center;
     min-width: 200px;
   }
   .footer-text {
-    margin-top: 20px;
-    font-size: 11px;
+    margin-top: 15px;
+    font-size: 10.5px;
     text-align: right;
-    padding-right: 15px;
-    padding-top: 5px;
-    color: #333;
+    padding-right: 10px;
+    padding-top: 4px;
+    color: #444;
   }
   @media screen and (max-width: 480px) {
     body { font-size: 11px; line-height: 1.5; }
     .jawab-page { padding: 8px 6px; }
-    .company-header { font-size: 14px; }
-    .header-title { font-size: 15px; margin-bottom: 8px; }
-    .sub-title { font-size: 10px; margin-bottom: 6px; }
-    .header-info { font-size: 10px; line-height: 1.6; }
-    .legal-text { font-size: 10px; line-height: 1.6; margin: 8px 0; }
-    .legal-text p { margin-bottom: 5px; text-indent: 15px; }
-    .data-table { font-size: 10px; margin: 8px 0; }
-    .data-table th, .data-table td { padding: 4px 5px; }
-    .data-table th { font-size: 11px; }
+    .header-title { font-size: 15px; margin-bottom: 6px; }
+    .sub-title { font-size: 10px; margin-bottom: 5px; }
+    .header-info { font-size: 10px; line-height: 1.55; }
+    .legal-text { font-size: 10px; line-height: 1.55; margin: 5px 0; }
+    .legal-text p { margin-bottom: 4px; text-indent: 15px; }
+    .data-table { font-size: 10px; margin: 6px 0; }
+    .data-table th, .data-table td { padding: 3px 5px; }
+    .data-table th { font-size: 10.5px; }
     .data-table .sr-col { width: 30px; }
-    .data-table .amt-col { width: 90px; }
-    .closing-text { font-size: 10px; line-height: 1.6; margin: 8px 0; }
-    .signature-section { margin-top: 20px; font-size: 10px; flex-direction: column; gap: 20px; align-items: stretch; }
+    .data-table .amt-col { width: 85px; }
+    .closing-text { font-size: 10px; line-height: 1.55; margin: 6px 0; }
+    .signature-section { margin-top: 12px; font-size: 10px; flex-direction: column; gap: 15px; align-items: stretch; }
     .signature-right { min-width: auto; text-align: right; }
-    .footer-text { margin-top: 15px; font-size: 9px; }
+    .footer-text { margin-top: 10px; font-size: 9px; }
   }
   @media print {
-    body { margin: 0; padding: 0; font-size: 13px; line-height: 1.7; }
+    body { margin: 0; padding: 0; font-size: 12.5px; line-height: 1.65; }
     .jawab-page { max-width: 100%; padding: 0; }
+    .data-table th { background: #e8eaf6 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .data-table tr.total-row td { background: #e8eaf6 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .data-table tr:nth-child(even) td { background: #fafafa !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   }
 </style>
 </head>
@@ -2022,7 +2018,7 @@ ${pagesHTML}
   <div class="sub-title">(सावकारी कायदा अधिनियम-2014, कलम 18, 25 व 26)</div>
 
   <div class="header-info">
-    <p>मी, <strong style="font-size:14px;">${companyName}</strong>${companyAddress ? ', ' + companyAddress : ''} सत्य प्रतिज्ञावर जबाब लिहून देतो की, मला सन ${fy} या वर्षाकरिता सावकारी परवाना क्रमांक ${licenseNumber} मिळालेला आहे. सदर परवान्याचे सन ${nextFy} या वर्षाकरिता नूतनीकरण करणेकरिता मी आपले कार्यालयात दिनांक ${feeDateFmt} रोजी भरणा केलेले नूतनीकरण परवाना फी रुपये 500/- (दंडासह रु. <span class="blank-field">&nbsp;</span>/-) ची पावती जोडलेली आहे. परवाना फी मागणी अर्जावर रु. 10/- चा कोर्ट फी स्टॅम्प लावलेला आहे. अर्जात भरलेली सर्व माहिती बरोबर असून सावकारी व्यवहाराबद्दल मी स्वतः जबाबदार आहे.</p>
+    <p>मी, <strong style="font-size:14px;">${companyName}</strong>${companyAddress ? ', ' + companyAddress : ''} सत्य प्रतिज्ञावर जबाब लिहून देतो की, मला सन ${fy} या वर्षाकरिता सावकारी परवाना क्रमांक ${licenseNumber} मिळालेला आहे. सदर परवान्याचे सन ${nextFy} या वर्षाकरिता नूतनीकरण करणेकरिता मी आपले कार्यालयात दिनांक ${jawabDateFmt} रोजी रीतसर अर्ज केलेला आहे. सदर अर्जासोबत दिनांक ${feeDateFmt} रोजी भरणा केलेले नूतनीकरण परवाना फी रुपये 500/- (दंडासह रु. <span class="blank-field">&nbsp;</span>/-) ची पावती जोडलेली आहे. परवाना फी मागणी अर्जावर रु. 10/- चा कोर्ट फी स्टॅम्प लावलेला आहे. अर्जात भरलेली सर्व माहिती बरोबर असून सावकारी व्यवहाराबद्दल मी स्वतः जबाबदार आहे.</p>
   </div>
 
   <div class="legal-text">
