@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Printer, Loader2, FileText, Calendar } from "lucide-react";
+import { Printer, Loader2, FileText, Calendar, Download } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { Sidebar } from "@/components/ui/sidebar";
 import { MobileNav } from "@/components/ui/mobile-nav";
@@ -94,6 +94,85 @@ export default function JawabGeneratorPage() {
     }
   };
 
+  const [pdfLoading, setPdfLoading] = useState(false);
+
+  const handleDownloadPDF = async () => {
+    if (!jawabHTML) return;
+    setPdfLoading(true);
+    try {
+      const iframe = document.createElement('iframe');
+      iframe.style.position = 'fixed';
+      iframe.style.left = '-9999px';
+      iframe.style.top = '0';
+      iframe.style.width = '700px';
+      iframe.style.height = '1200px';
+      document.body.appendChild(iframe);
+
+      const iframeDoc = iframe.contentDocument;
+      if (!iframeDoc) { setPdfLoading(false); return; }
+      iframeDoc.open();
+      iframeDoc.write(jawabHTML);
+      iframeDoc.close();
+
+      await new Promise(resolve => setTimeout(resolve, 800));
+      await document.fonts.ready;
+
+      const html2canvas = (await import('html2canvas')).default;
+      const jsPDF = (await import('jspdf')).default;
+
+      const pageElement = iframeDoc.querySelector('.jawab-page') as HTMLElement;
+      if (!pageElement) { document.body.removeChild(iframe); setPdfLoading(false); return; }
+
+      const canvas = await html2canvas(pageElement, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff',
+        width: 700,
+      });
+
+      const a4Width = 210;
+      const a4Height = 297;
+      const leftMargin = 25.4;
+      const topMargin = 20;
+      const rightMargin = 15;
+      const contentWidth = a4Width - leftMargin - rightMargin;
+
+      const imgRatio = canvas.height / canvas.width;
+      const contentHeight = contentWidth * imgRatio;
+
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+
+      if (contentHeight <= a4Height - topMargin - 15) {
+        pdf.addImage(canvas.toDataURL('image/png'), 'PNG', leftMargin, topMargin, contentWidth, contentHeight);
+      } else {
+        const pageContentHeight = a4Height - topMargin - 15;
+        const totalPages = Math.ceil(contentHeight / pageContentHeight);
+        for (let i = 0; i < totalPages; i++) {
+          if (i > 0) pdf.addPage();
+          const srcY = (i * pageContentHeight / contentHeight) * canvas.height;
+          const srcH = (pageContentHeight / contentHeight) * canvas.height;
+          const pageCanvas = document.createElement('canvas');
+          pageCanvas.width = canvas.width;
+          pageCanvas.height = Math.min(srcH, canvas.height - srcY);
+          const ctx = pageCanvas.getContext('2d');
+          if (ctx) {
+            ctx.drawImage(canvas, 0, srcY, canvas.width, pageCanvas.height, 0, 0, canvas.width, pageCanvas.height);
+            const actualHeight = (pageCanvas.height / canvas.width) * contentWidth;
+            pdf.addImage(pageCanvas.toDataURL('image/png'), 'PNG', leftMargin, topMargin, contentWidth, actualHeight);
+          }
+        }
+      }
+
+      const fyLabel = jawabData?.financialYear || 'jawab';
+      pdf.save(`जवाब_${fyLabel}.pdf`);
+      document.body.removeChild(iframe);
+    } catch (err) {
+      console.error('PDF generation error:', err);
+    }
+    setPdfLoading(false);
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <MobileNav />
@@ -135,6 +214,15 @@ export default function JawabGeneratorPage() {
                   >
                     <Printer className="h-4 w-4 mr-2" />
                     प्रिंट करा
+                  </Button>
+                  <Button
+                    onClick={handleDownloadPDF}
+                    disabled={isLoading || !jawabData || pdfLoading}
+                    variant="outline"
+                    className="border-indigo-600 text-indigo-600 hover:bg-indigo-50 w-full sm:w-auto h-10"
+                  >
+                    {pdfLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Download className="h-4 w-4 mr-2" />}
+                    PDF डाउनलोड
                   </Button>
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
