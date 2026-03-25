@@ -134,7 +134,7 @@ export default function InterestCalculator() {
 
     // Calculate total days with inclusive counting (both start and end dates included)
     const timeDiff = end.getTime() - start.getTime();
-    const totalDays = Math.ceil(timeDiff / (1000 * 3600 * 24)) + 1;
+    const totalDays = Math.floor(timeDiff / (1000 * 3600 * 24)) + 1;
     
     if (isAdvanced) {
       // Advanced compound interest calculation with calendar accuracy
@@ -241,13 +241,11 @@ export default function InterestCalculator() {
           });
         }
       } else {
-        // 365-day banking standard: Convert months to days for other modes
         let effectiveRate = rate;
         if (rateType === "monthly") {
-          effectiveRate = rate * 12; // Convert monthly to annual
+          effectiveRate = rate * 12;
         }
-        const daysForCalculation = Math.round(calculatedMonths * 30); // Convert months to days  
-        simpleInterest = Math.round((principal * effectiveRate * daysForCalculation) / (100 * 365));
+        simpleInterest = Math.round((principal * effectiveRate * totalDays) / (100 * 365));
       }
       const simpleTotal = principal + simpleInterest;
 
