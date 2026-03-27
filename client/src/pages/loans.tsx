@@ -424,12 +424,20 @@ function Loans() {
       await queryClient.cancelQueries({ queryKey: ["/api/loans"] });
       const previousLoans = queryClient.getQueryData(["/api/loans"]);
       queryClient.setQueryData(["/api/loans"], (old: any) =>
-        Array.isArray(old) ? old.filter((loan: any) => loan.id !== loanId) : old
+        Array.isArray(old) ? old.filter((loan: any) => String(loan.id) !== String(loanId)) : old
       );
       return { previousLoans };
     },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["/api/loans"], refetchType: 'all' });
+    onSuccess: async (_data: any, loanId: string) => {
+      const filterDeleted = (old: any) =>
+        Array.isArray(old) ? old.filter((loan: any) => String(loan.id) !== String(loanId)) : old;
+
+      queryClient.setQueryData(["/api/loans"], filterDeleted);
+
+      await queryClient.refetchQueries({ queryKey: ["/api/loans"], type: 'all' });
+
+      queryClient.setQueryData(["/api/loans"], filterDeleted);
+
       queryClient.invalidateQueries({ queryKey: ["/api/cash-transactions"], refetchType: 'all' });
       queryClient.invalidateQueries({ queryKey: ["/api/loan-closures"], refetchType: 'all' });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"], refetchType: 'all' });
@@ -3470,14 +3478,14 @@ function Loans() {
                       <TableHead className="text-xs font-semibold text-indigo-100 uppercase tracking-wider py-3 px-4 text-right min-w-[120px]">रक्कम (₹)</TableHead>
                       <TableHead className="text-xs font-semibold text-indigo-100 uppercase tracking-wider py-3 px-4">तारीख</TableHead>
                       <TableHead className="text-xs font-semibold text-indigo-100 uppercase tracking-wider py-3 px-4 text-center">स्थिती</TableHead>
-                      <TableHead className="text-xs font-semibold text-indigo-100 uppercase tracking-wider py-3 px-4 text-center">कृती</TableHead>
+                      <TableHead className="text-xs font-semibold text-indigo-100 uppercase tracking-wider py-3 px-4 text-center sticky right-0 z-20 bg-indigo-700" style={{boxShadow: '-4px 0 8px -2px rgba(0,0,0,0.15)'}}>कृती</TableHead>
                     </TableRow>
                   </TableHeader>
                 <TableBody>
                   {Array.isArray(paginatedLoans) && paginatedLoans.length > 0 && paginatedLoans.map((loan: any, index: number) => (
                     <TableRow 
                       key={loan.id} 
-                      className={`
+                      className={`group/row
                         ${loan.status === 'closed' 
                           ? 'bg-red-50/60 hover:bg-red-50 border-l-3 border-l-red-400 text-gray-700' 
                           : index % 2 === 0 ? 'bg-white hover:bg-indigo-50/50 border-l-3 border-l-transparent' : 'bg-indigo-50/30 hover:bg-indigo-50 border-l-3 border-l-transparent'
@@ -3545,7 +3553,16 @@ function Loans() {
                           {loan.status === "active" ? "सक्रिय" : "बंद"}
                         </span>
                       </TableCell>
-                      <TableCell className="py-3 px-4 text-center">
+                      <TableCell 
+                        className={`py-3 px-4 text-center sticky right-0 z-10 transition-colors duration-150 ${
+                          selectedRowIndex === index 
+                            ? 'bg-indigo-50' 
+                            : loan.status === 'closed' 
+                              ? 'bg-[#fef2f2]/60 group-hover/row:bg-red-50' 
+                              : index % 2 === 0 ? 'bg-white group-hover/row:bg-indigo-50/50' : 'bg-[#f0f2fb] group-hover/row:bg-indigo-50'
+                        }`}
+                        style={{boxShadow: '-4px 0 8px -2px rgba(0,0,0,0.1)'}}
+                      >
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button
@@ -3574,7 +3591,7 @@ function Loans() {
                               <span className="sr-only">Actions</span>
                             </Button>
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
+                          <DropdownMenuContent align="end" side="left">
                             {loan.status === 'active' && (
                               <DropdownMenuItem onClick={() => handleEdit(loan)}>
                                 <Edit className="mr-2 h-4 w-4" />
