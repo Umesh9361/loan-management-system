@@ -389,12 +389,15 @@ export class RealTimeSyncEngine {
     }
 
     // Tier 2: account number pattern match (fallback for old entries without loanId)
+    // Safety: only match orphan entries (loanId IS NULL) or entries belonging to THIS loan
+    // This prevents accidentally deleting closure entries of OTHER loans with the same accountNumber
     const pattern = this.buildAccountPattern(accountNumber);
     const allTransactions = await storage.getCashTransactions(tenantId);
     const closureMatches = allTransactions.filter((ct: any) =>
       ct.category === 'loan_repayment' &&
       ct.transactionType === 'cash_in' &&
-      ct.narration && pattern.test(ct.narration)
+      ct.narration && pattern.test(ct.narration) &&
+      (!ct.loanId || ct.loanId === loanId)
     );
 
     for (const entry of closureMatches) {
@@ -416,10 +419,14 @@ export class RealTimeSyncEngine {
 
     if (!newData) return;
 
-    const existing = await this.findClosureTransaction(tenantId, newData.accountNumber, newData.totalAmount, newData.closureDate);
+    const existing = await this.findClosureTransaction(tenantId, newData.accountNumber, newData.totalAmount, newData.closureDate, loanId);
     if (existing) {
       result.operationsPerformed.push('SKIP_EXISTING_CLOSURE');
       return;
+    }
+
+    if (!loanId) {
+      console.warn('⚠️ CLOSURE: loanId missing — closure cash entry created without UUID link');
     }
 
     const groupName = await this.getGroupName(tenantId, newData.groupId);
@@ -466,9 +473,9 @@ export class RealTimeSyncEngine {
         ));
     }
 
-    // Fallback: narration-based for old entries without loanId
+    // Fallback: narration-based for old entries without loanId (orphan-only filter)
     if (closureEntries.length === 0) {
-      closureEntries = await this.findClosureTransactions(tenantId, oldData.accountNumber, oldData.borrowerName);
+      closureEntries = await this.findClosureTransactions(tenantId, oldData.accountNumber, oldData.borrowerName, loanId);
     }
 
     for (const entry of closureEntries) {
@@ -498,26 +505,37 @@ export class RealTimeSyncEngine {
     return new RegExp('खाते क्र\\.[ ]?' + escaped + '([^0-9]|$)');
   }
 
-  private async findClosureTransaction(tenantId: string, accountNumber: string, amount: number, date: string): Promise<any> {
+  private async findClosureTransaction(tenantId: string, accountNumber: string, amount: number, date: string, forLoanId?: string): Promise<any> {
     const transactions = await storage.getCashTransactions(tenantId);
+
+    if (forLoanId) {
+      const byUuid = transactions.find((ct: any) =>
+        ct.category === 'loan_repayment' &&
+        ct.transactionType === 'cash_in' &&
+        ct.loanId === forLoanId &&
+        Math.abs(Number(ct.amount) - Number(amount)) < 0.01
+      );
+      if (byUuid) return byUuid;
+    }
+
     const pattern = this.buildAccountPattern(accountNumber);
     return transactions.find((ct: any) =>
       ct.category === 'loan_repayment' &&
       ct.transactionType === 'cash_in' &&
       ct.narration && pattern.test(ct.narration) &&
-      Math.abs(Number(ct.amount) - Number(amount)) < 0.01
+      Math.abs(Number(ct.amount) - Number(amount)) < 0.01 &&
+      (!ct.loanId || ct.loanId === forLoanId)
     );
   }
 
-  private async findClosureTransactions(tenantId: string, accountNumber: string, _borrowerName: string): Promise<any[]> {
+  private async findClosureTransactions(tenantId: string, accountNumber: string, _borrowerName: string, forLoanId?: string): Promise<any[]> {
     const transactions = await storage.getCashTransactions(tenantId);
     const pattern = this.buildAccountPattern(accountNumber);
-    // Only match by account number pattern — borrowerName fallback removed
-    // because same borrowerName can exist in multiple groups → wrong delete risk
     return transactions.filter((ct: any) =>
       ct.category === 'loan_repayment' &&
       ct.narration &&
-      pattern.test(ct.narration)
+      pattern.test(ct.narration) &&
+      (!ct.loanId || ct.loanId === forLoanId)
     );
   }
 
