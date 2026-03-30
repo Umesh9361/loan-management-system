@@ -495,12 +495,12 @@ export default function AnnualStatementPage() {
           <div className="flex gap-2">
             <button 
               type="button"
-              onClick={downloadReceiptAsImage}
-              className="flex-1 inline-flex items-center justify-center rounded-md text-sm font-medium h-10 px-3 bg-indigo-600 hover:bg-indigo-700 text-white active:bg-indigo-800"
+              onClick={() => window.print()}
+              className="flex-1 inline-flex items-center justify-center rounded-md text-sm font-medium h-10 px-3 bg-green-600 hover:bg-green-700 text-white active:bg-green-800"
               style={{ touchAction: 'manipulation' }}
             >
-              <Download className="mr-2 h-4 w-4" />
-              इमेज
+              <Printer className="mr-2 h-4 w-4" />
+              प्रिंट
             </button>
             <button 
               type="button"

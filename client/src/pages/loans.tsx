@@ -2375,38 +2375,9 @@ function Loans() {
                           </FormLabel>
                           <FormControl>
                             <div>
-                              {/* Desktop: Text input for typing date */}
-                              <Input
-                                className="hidden sm:block text-base"
-                                value={field.value || DateUtils.getCurrentIndianDate()}
-                                placeholder="DD/MM/YYYY"
-                                tabIndex={9}
-                                onChange={(e) => {
-                                  const inputValue = e.target.value;
-                                  field.onChange(inputValue);
-                                  
-                                  // Auto-calculate maturity date only when hasMaturity is false
-                                  const hasMaturity = form.getValues('hasMaturity');
-                                  if (!hasMaturity && inputValue && DateUtils.isValidIndianDate(inputValue)) {
-                                    const months = 12;
-                                    const calculatedMaturity = DateUtils.addMonthsToIndianDate(inputValue, months);
-                                    form.setValue('maturityDate', calculatedMaturity);
-                                  }
-                                }}
-                                onBlur={(e) => {
-                                  const inputValue = e.target.value;
-                                  if (inputValue && !DateUtils.isValidIndianDate(inputValue)) {
-                                    const formatted = DateUtils.autoFormatIndianDate(inputValue);
-                                    if (formatted) {
-                                      field.onChange(formatted);
-                                    }
-                                  }
-                                }}
-                              />
-                              {/* Mobile: Native date picker */}
                               <Input
                                 type="date"
-                                className="block sm:hidden text-base"
+                                className="text-base"
                                 value={field.value ? DateUtils.indianDateToISO(field.value) : DateUtils.indianDateToISO(DateUtils.getCurrentIndianDate())}
                                 tabIndex={9}
                                 onChange={(e) => {
@@ -2415,7 +2386,6 @@ function Loans() {
                                     const indianDate = DateUtils.isoToIndianDate(isoValue);
                                     field.onChange(indianDate);
                                     
-                                    // Auto-calculate maturity date only when hasMaturity is false
                                     const hasMaturity = form.getValues('hasMaturity');
                                     if (!hasMaturity && DateUtils.isValidIndianDate(indianDate)) {
                                       const months = 12;
@@ -2577,30 +2547,9 @@ function Loans() {
                           </FormLabel>
                           <FormControl>
                             <div>
-                              {/* Desktop: Text input for typing date */}
-                              <Input
-                                className="hidden sm:block text-base"
-                                value={field.value || ''}
-                                placeholder="DD/MM/YYYY"
-                                tabIndex={12}
-                                onChange={(e) => {
-                                  const inputValue = e.target.value;
-                                  field.onChange(inputValue);
-                                }}
-                                onBlur={(e) => {
-                                  const inputValue = e.target.value;
-                                  if (inputValue && !DateUtils.isValidIndianDate(inputValue)) {
-                                    const formatted = DateUtils.autoFormatIndianDate(inputValue);
-                                    if (formatted) {
-                                      field.onChange(formatted);
-                                    }
-                                  }
-                                }}
-                              />
-                              {/* Mobile: Native date picker */}
                               <Input
                                 type="date"
-                                className="block sm:hidden text-base"
+                                className="text-base"
                                 value={field.value ? DateUtils.indianDateToISO(field.value) : ''}
                                 tabIndex={12}
                                 onChange={(e) => {
