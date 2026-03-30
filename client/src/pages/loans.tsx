@@ -1414,20 +1414,7 @@ function Loans() {
           }
         }
       }
-      if (termLower.length >= 3 && count < maxVariations) {
-        for (const key of Object.keys(nameTranslationsMap)) {
-          if (count >= maxVariations) break;
-          if (key.includes(termLower) && !key.startsWith(termLower) && key !== termLower) {
-            variations.add(key);
-            count++;
-            for (const t of nameTranslationsMap[key]) {
-              if (count >= maxVariations) break;
-              variations.add(t.toLowerCase());
-              count++;
-            }
-          }
-        }
-      }
+      
     }
     return Array.from(variations);
   }, [nameTranslationsMap, transliterateToDevanagari]);
@@ -1458,7 +1445,7 @@ function Loans() {
             const wordStart = word.substring(0, Math.min(4, word.length));
             if (searchStart === wordStart) {
               varScore = Math.max(varScore, weight * 2);
-            } else if (calculateSimilarity(sv, word) >= 0.7) {
+            } else if (sv.length >= 4 && word.length >= 4 && calculateSimilarity(sv, word) >= 0.85) {
               varScore = Math.max(varScore, weight * 1);
             }
           }
