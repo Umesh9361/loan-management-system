@@ -82,14 +82,7 @@ export default function OverdueReport() {
   const [, setLocation] = useLocation();
   const reportSectionRef = useRef<HTMLDivElement>(null);
   const dataTableRef = useRef<HTMLDivElement>(null);
-  const [sidebarHidden, setSidebarHidden] = useState(true);
-
-  useEffect(() => {
-    setSidebarHidden(true);
-    return () => {
-      setSidebarHidden(false);
-    };
-  }, []);
+  const [sidebarHidden, setSidebarHidden] = useState(false);
 
   useEffect(() => {
     const style = document.createElement('style');
@@ -746,6 +739,7 @@ export default function OverdueReport() {
     }
     generateReport();
     setReportGenerated(true);
+    setSidebarHidden(true);
     setShouldScrollToReport(true);
   };
 
@@ -1140,6 +1134,7 @@ export default function OverdueReport() {
                 futureProjectionPeriod: '3months'
               });
               setReportGenerated(false);
+              setSidebarHidden(false);
               setCustomerSearchTerm("");
               setSelectedCustomerName("");
               setGoldRateManuallyEdited(false);
@@ -1207,7 +1202,7 @@ export default function OverdueReport() {
 
         <div className="flex mb-4 bg-white rounded-lg border border-gray-200 p-1 shadow-sm print:hidden">
           <button 
-            onClick={() => { setActiveTab("group"); setReportGenerated(false); }}
+            onClick={() => { setActiveTab("group"); setReportGenerated(false); setSidebarHidden(false); }}
             className={cn(
               "flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all",
               activeTab === "group" 
@@ -1218,7 +1213,7 @@ export default function OverdueReport() {
             <Users className="h-4 w-4" /> गट प्रमाणे
           </button>
           <button 
-            onClick={() => { setActiveTab("customer"); setReportGenerated(false); }}
+            onClick={() => { setActiveTab("customer"); setReportGenerated(false); setSidebarHidden(false); }}
             className={cn(
               "flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all",
               activeTab === "customer" 
