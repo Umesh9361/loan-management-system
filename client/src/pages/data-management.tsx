@@ -303,6 +303,8 @@ function CashReconciliationTab({ queryClient }: { queryClient: any }) {
 function DataManagementPage() {
   const queryClient = useQueryClient();
   
+  const [backupPortable, setBackupPortable] = useState(false);
+
   const [cleanupOptions, setCleanupOptions] = useState({
     dateFrom: "",
     dateTo: "",
@@ -450,8 +452,8 @@ function DataManagementPage() {
   });
 
   const backupMutation = useMutation({
-    mutationFn: async () => {
-      const response = await apiRequest("/api/data-management/create-backup", "POST");
+    mutationFn: async (options?: { portable?: boolean }) => {
+      const response = await apiRequest("/api/data-management/create-backup", "POST", { portable: options?.portable || false });
       return await response.json();
     },
     onSuccess: (data: any) => {
@@ -463,8 +465,11 @@ function DataManagementPage() {
         const now = new Date();
         const dateStr = `${String(now.getDate()).padStart(2,'0')}-${String(now.getMonth()+1).padStart(2,'0')}-${now.getFullYear()}`;
         const timeStr = `${String(now.getHours()).padStart(2,'0')}-${String(now.getMinutes()).padStart(2,'0')}-${String(now.getSeconds()).padStart(2,'0')}`;
+        const isPortable = data.backupData.portable === true;
+        const prefix = isPortable ? 'portable_backup' : 'backup';
+        const tenantLabel = isPortable ? (data.backupData.originalTenantId || 'universal') : data.backupData.tenantId;
         a.href = url;
-        a.download = `backup_${data.backupData.tenantId}_${dateStr}_${timeStr}.json`;
+        a.download = `${prefix}_${tenantLabel}_${dateStr}_${timeStr}.json`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -588,7 +593,7 @@ function DataManagementPage() {
   };
 
   const handleBackup = () => {
-    backupMutation.mutate();
+    backupMutation.mutate({ portable: backupPortable });
   };
 
   const handleRestore = () => {
@@ -1796,11 +1801,47 @@ function DataManagementPage() {
                       <strong>📸 Photo Files:</strong> Database metadata backup होईल, पण physical photo files अजूनही manual backup आवश्यक आहे
                     </div>
                   </div>
+
+                  <div className="bg-white dark:bg-gray-900 p-3 rounded-xl border-2 border-gray-200 dark:border-gray-700 space-y-2">
+                    <h4 className="font-semibold text-gray-700 dark:text-gray-300 text-sm mb-2">बॅकअप प्रकार निवडा:</h4>
+                    <label 
+                      className={`flex items-start gap-3 p-2.5 rounded-lg border-2 cursor-pointer transition-all ${!backupPortable ? 'border-indigo-400 bg-indigo-50 dark:bg-indigo-900/30' : 'border-gray-200 dark:border-gray-700 hover:border-gray-300'}`}
+                      onClick={() => setBackupPortable(false)}
+                    >
+                      <input 
+                        type="radio" 
+                        name="backupType" 
+                        checked={!backupPortable} 
+                        onChange={() => setBackupPortable(false)}
+                        className="mt-0.5 accent-indigo-600"
+                      />
+                      <div>
+                        <div className="font-semibold text-sm text-gray-800 dark:text-gray-200">📌 या टेनंट साठी बॅकअप</div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400">फक्त याच टेनंट ला रिस्टोर करता येईल (users, permissions सहित)</div>
+                      </div>
+                    </label>
+                    <label 
+                      className={`flex items-start gap-3 p-2.5 rounded-lg border-2 cursor-pointer transition-all ${backupPortable ? 'border-green-400 bg-green-50 dark:bg-green-900/30' : 'border-gray-200 dark:border-gray-700 hover:border-gray-300'}`}
+                      onClick={() => setBackupPortable(true)}
+                    >
+                      <input 
+                        type="radio" 
+                        name="backupType" 
+                        checked={backupPortable} 
+                        onChange={() => setBackupPortable(true)}
+                        className="mt-0.5 accent-green-600"
+                      />
+                      <div>
+                        <div className="font-semibold text-sm text-gray-800 dark:text-gray-200">🌐 सार्वत्रिक बॅकअप</div>
+                        <div className="text-xs text-gray-500 dark:text-gray-400">कोणत्याही टेनंट ला रिस्टोर करता येईल (users exclude होतील)</div>
+                      </div>
+                    </label>
+                  </div>
                   
                   <Button 
                     onClick={handleBackup}
                     disabled={backupMutation.isPending}
-                    className="w-full flex items-center justify-center gap-2 min-h-[44px] text-sm font-semibold rounded-lg shadow-sm bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white"
+                    className={`w-full flex items-center justify-center gap-2 min-h-[44px] text-sm font-semibold rounded-lg shadow-sm text-white ${backupPortable ? 'bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800' : 'bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800'}`}
                     size="lg"
                   >
                     {backupMutation.isPending ? (
@@ -1808,7 +1849,7 @@ function DataManagementPage() {
                     ) : (
                       <Database className="h-4 w-4" />
                     )}
-                    {backupMutation.isPending ? "बॅकअप तयार करत आहे..." : "संपूर्ण बॅकअप तयार करा"}
+                    {backupMutation.isPending ? "बॅकअप तयार करत आहे..." : (backupPortable ? "🌐 सार्वत्रिक बॅकअप तयार करा" : "📌 संपूर्ण बॅकअप तयार करा")}
                   </Button>
 
                   {backupMutation.data && (backupMutation.data as any).success && (
