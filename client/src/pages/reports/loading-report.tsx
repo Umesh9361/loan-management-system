@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -77,6 +77,14 @@ function getCategoryStyle(category: string): { color: string; bgColor: string; b
 export default function LoadingReport() {
   const [, setLocation] = useLocation();
   const reportSectionRef = useRef<HTMLDivElement>(null);
+  const [sidebarHidden, setSidebarHidden] = useState(true);
+
+  useEffect(() => {
+    setSidebarHidden(true);
+    return () => {
+      setSidebarHidden(false);
+    };
+  }, []);
 
   const handleBackNavigation = () => {
     try {
@@ -363,13 +371,15 @@ export default function LoadingReport() {
       </div>
       
       <div className="lg:flex print:block">
-        <aside className="hidden lg:block lg:w-72 lg:fixed lg:inset-y-0 print:hidden">
-          <div className="sidebar-modern h-full">
-            <Sidebar />
-          </div>
-        </aside>
+        {!sidebarHidden && (
+          <aside className="hidden lg:block lg:w-72 lg:fixed lg:inset-y-0 print:hidden">
+            <div className="sidebar-modern h-full">
+              <Sidebar />
+            </div>
+          </aside>
+        )}
 
-        <main className="flex-1 w-full lg:pl-72 pb-16 lg:pb-0 print:pl-0 print:pb-0">
+        <main className={`flex-1 w-full ${sidebarHidden ? '' : 'lg:pl-72'} pb-16 lg:pb-0 print:pl-0 print:pb-0`}>
           <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-purple-50 p-4 print:min-h-0 print:bg-white print:p-0">
             <div className="space-y-3 print:max-w-none print:mx-0 print:space-y-0 px-2 lg:px-4">
 
@@ -777,24 +787,24 @@ export default function LoadingReport() {
                       </div>
 
                       <CardContent className="p-0 overflow-x-auto hidden sm:block">
-                        <Table>
+                        <Table className="min-w-[1100px]">
                           <TableHeader>
                             <TableRow className="bg-indigo-600">
-                              <TableHead className="text-white text-[10px] font-bold text-center w-8">क्र.</TableHead>
-                              <TableHead className="text-white text-[10px] font-bold text-left min-w-[120px]">कर्जदार नाव</TableHead>
-                              <TableHead className="text-white text-[10px] font-bold text-center">खाते</TableHead>
-                              <TableHead className="text-white text-[10px] font-bold text-center">दिनांक</TableHead>
-                              <TableHead className="text-white text-[10px] font-bold text-center">गट</TableHead>
-                              <TableHead className="text-white text-[10px] font-bold text-center">वजन</TableHead>
-                              <TableHead className="text-white text-[10px] font-bold text-center">शुद्धता</TableHead>
-                              <TableHead className="text-white text-[10px] font-bold text-center">व्याजदर</TableHead>
-                              <TableHead className="text-white text-[10px] font-bold text-center">बाजार मूल्य</TableHead>
-                              <TableHead className="text-white text-[10px] font-bold text-center">व्याजासहित</TableHead>
-                              <TableHead className="text-white text-[10px] font-bold text-center">80% मानक</TableHead>
-                              <TableHead className="text-white text-[10px] font-bold text-center">प्रत्यक्ष कर्ज</TableHead>
-                              <TableHead className="text-white text-[10px] font-bold text-center">लोडिंग</TableHead>
-                              <TableHead className="text-white text-[10px] font-bold text-center">LTV%</TableHead>
-                              <TableHead className="text-white text-[10px] font-bold text-center">जोखीम</TableHead>
+                              <TableHead className="text-white text-[10px] font-bold text-center w-7 px-1">क्र.</TableHead>
+                              <TableHead className="text-white text-[10px] font-bold text-left min-w-[150px]">कर्जदार नाव</TableHead>
+                              <TableHead className="text-white text-[10px] font-bold text-center w-12 px-1">खाते</TableHead>
+                              <TableHead className="text-white text-[10px] font-bold text-center w-16 px-1">दिनांक</TableHead>
+                              <TableHead className="text-white text-[10px] font-bold text-center w-14 px-1">गट</TableHead>
+                              <TableHead className="text-white text-[10px] font-bold text-center w-12 px-1">वजन</TableHead>
+                              <TableHead className="text-white text-[10px] font-bold text-center w-11 px-1">शुद्धता</TableHead>
+                              <TableHead className="text-white text-[10px] font-bold text-center w-14 px-1">व्याजदर</TableHead>
+                              <TableHead className="text-white text-[10px] font-bold text-center w-[72px] px-1">बाजार मूल्य</TableHead>
+                              <TableHead className="text-white text-[10px] font-bold text-center w-[72px] px-1">व्याजासहित</TableHead>
+                              <TableHead className="text-white text-[10px] font-bold text-center w-[72px] px-1">80% मानक</TableHead>
+                              <TableHead className="text-white text-[10px] font-bold text-center w-[72px] px-1">प्रत्यक्ष कर्ज</TableHead>
+                              <TableHead className="text-white text-[10px] font-bold text-center w-[68px] px-1">लोडिंग</TableHead>
+                              <TableHead className="text-white text-[10px] font-bold text-center w-11 px-1">LTV%</TableHead>
+                              <TableHead className="text-white text-[10px] font-bold text-center w-16 px-1">जोखीम</TableHead>
                             </TableRow>
                           </TableHeader>
                           <TableBody>
@@ -802,34 +812,34 @@ export default function LoadingReport() {
                               const style = getCategoryStyle(item.category);
                               return (
                                 <TableRow key={item.loanId} className={cn("hover:bg-gray-50", index % 2 === 0 ? "bg-white" : "bg-gray-50/50")}>
-                                  <TableCell className="text-center text-xs font-medium">{index + 1}</TableCell>
-                                  <TableCell className="text-left">
-                                    <div className="text-xs font-semibold text-gray-800">{item.borrowerName}</div>
+                                  <TableCell className="text-center text-xs font-medium px-1">{index + 1}</TableCell>
+                                  <TableCell className="text-left px-2">
+                                    <div className="text-xs font-semibold text-gray-800 whitespace-nowrap">{item.borrowerName}</div>
                                     {item.collateralDetails && (
-                                      <div className="text-[10px] text-gray-400">{item.collateralDetails}</div>
+                                      <div className="text-[10px] text-gray-400 whitespace-nowrap">{item.collateralDetails}</div>
                                     )}
                                     {(item as any).suspiciousInput && (
                                       <div className="text-[10px] text-purple-600 font-semibold">{(item as any).suspiciousInput}</div>
                                     )}
                                   </TableCell>
-                                  <TableCell className="text-center text-xs">{item.accountNumber}</TableCell>
-                                  <TableCell className="text-center text-xs">{formatDate(item.loanDate)}</TableCell>
-                                  <TableCell className="text-center text-xs">{item.groupName}</TableCell>
-                                  <TableCell className="text-center text-xs">{item.weight ? parseFloat(String(item.weight)).toFixed(2) : '0'}g</TableCell>
-                                  <TableCell className="text-center text-xs font-semibold text-blue-700">{(item as any).purityUsed}%</TableCell>
-                                  <TableCell className="text-center text-xs font-semibold text-orange-700">{item.interestRate}%{item.interestRateType === 'yearly' ? ' वा.' : ''}</TableCell>
-                                  <TableCell className="text-center text-xs">{formatCurrency(item.marketValue)}</TableCell>
-                                  <TableCell className={cn("text-center text-xs font-semibold", item.totalWithInterest > item.marketValue ? "text-red-600" : "text-green-700")}>{formatCurrency(item.totalWithInterest)}</TableCell>
-                                  <TableCell className="text-center text-xs">{formatCurrency(item.standard80Loan)}</TableCell>
-                                  <TableCell className="text-center text-xs font-semibold">{formatCurrency(item.principalAmount)}</TableCell>
-                                  <TableCell className="text-center">
+                                  <TableCell className="text-center text-xs px-1">{item.accountNumber}</TableCell>
+                                  <TableCell className="text-center text-xs px-1 whitespace-nowrap">{formatDate(item.loanDate)}</TableCell>
+                                  <TableCell className="text-center text-xs px-1">{item.groupName}</TableCell>
+                                  <TableCell className="text-center text-xs px-1">{item.weight ? parseFloat(String(item.weight)).toFixed(2) : '0'}g</TableCell>
+                                  <TableCell className="text-center text-xs font-semibold text-blue-700 px-1">{(item as any).purityUsed}%</TableCell>
+                                  <TableCell className="text-center text-xs font-semibold text-orange-700 px-1 whitespace-nowrap">{item.interestRate}%{item.interestRateType === 'yearly' ? ' वा.' : ''}</TableCell>
+                                  <TableCell className="text-center text-xs px-1 whitespace-nowrap">{formatCurrency(item.marketValue)}</TableCell>
+                                  <TableCell className={cn("text-center text-xs font-semibold px-1 whitespace-nowrap", item.totalWithInterest > item.marketValue ? "text-red-600" : "text-green-700")}>{formatCurrency(item.totalWithInterest)}</TableCell>
+                                  <TableCell className="text-center text-xs px-1 whitespace-nowrap">{formatCurrency(item.standard80Loan)}</TableCell>
+                                  <TableCell className="text-center text-xs font-semibold px-1 whitespace-nowrap">{formatCurrency(item.principalAmount)}</TableCell>
+                                  <TableCell className="text-center px-1 whitespace-nowrap">
                                     <span className={cn("text-xs font-bold", item.loadingAmount > 0 ? "text-red-600" : "text-gray-500")}>
                                       {item.loadingAmount > 0 ? `+${formatCurrency(item.loadingAmount)}` : formatCurrency(item.loadingAmount)}
                                     </span>
                                   </TableCell>
-                                  <TableCell className="text-center text-xs font-bold">{item.ltvPercent}%</TableCell>
-                                  <TableCell className="text-center">
-                                    <span className={cn("text-[10px] px-2 py-0.5 rounded-full font-semibold", style.bgColor, style.color, "border", style.borderColor)}>
+                                  <TableCell className="text-center text-xs font-bold px-1">{item.ltvPercent}%</TableCell>
+                                  <TableCell className="text-center px-1">
+                                    <span className={cn("text-[10px] px-1.5 py-0.5 rounded-full font-semibold whitespace-nowrap", style.bgColor, style.color, "border", style.borderColor)}>
                                       {item.categoryLabel}
                                     </span>
                                   </TableCell>
