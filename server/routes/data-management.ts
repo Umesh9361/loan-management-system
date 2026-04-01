@@ -303,10 +303,11 @@ router.post("/rearrange-account-numbers", async (req: any, res) => {
 router.post("/create-backup", async (req: any, res) => {
   try {
     const tenantId = req.session.tenantId;
+    const { portable } = req.body || {};
     
-    console.log(`💾 BACKUP: Creating comprehensive backup for tenant ${tenantId}`);
+    console.log(`💾 BACKUP: Creating ${portable ? 'PORTABLE/सार्वत्रिक' : 'standard'} backup for tenant ${tenantId}`);
     
-    const result = await dataManagementService.createComprehensiveBackup(tenantId);
+    const result = await dataManagementService.createComprehensiveBackup(tenantId, { portable: portable === true });
     
     if (result.success) {
       console.log(`✅ BACKUP: Successfully created backup with ID ${result.backupId}`);
