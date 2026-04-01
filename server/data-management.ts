@@ -593,7 +593,9 @@ export class DataManagementService {
       console.log("🧹 STEP 1: Clearing existing data...");
       
       await db.transaction(async (tx) => {
-        // Clear dependent tables first
+        await tx.execute(sql`ALTER TABLE loans DISABLE TRIGGER ALL`);
+        await tx.execute(sql`ALTER TABLE loan_closures DISABLE TRIGGER ALL`);
+
         await tx.delete(journalEntryLines).where(eq(journalEntryLines.tenantId, tenantId));
         await tx.delete(journalEntries).where(eq(journalEntries.tenantId, tenantId));
         await tx.delete(cashTransactions).where(eq(cashTransactions.tenantId, tenantId));
@@ -712,6 +714,9 @@ export class DataManagementService {
           restoredRecords += backupData.data.tenantStorageSettings.length;
           restoreResults.push({ table: 'tenantStorageSettings', records: backupData.data.tenantStorageSettings.length });
         }
+
+        await tx.execute(sql`ALTER TABLE loans ENABLE TRIGGER ALL`);
+        await tx.execute(sql`ALTER TABLE loan_closures ENABLE TRIGGER ALL`);
       });
 
       console.log(`✅ RESTORE COMPLETE: ${restoredRecords} records restored across ${restoreResults.length} tables (transaction committed)`);
