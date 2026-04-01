@@ -115,6 +115,10 @@ export async function initializeDatabase() {
           created_at TIMESTAMP NOT NULL DEFAULT now()
         )`);
         await db.execute(sql`ALTER TABLE user_permissions ADD COLUMN IF NOT EXISTS can_view_loading_report BOOLEAN DEFAULT false`);
+        await db.execute(sql`ALTER TABLE user_permissions ADD COLUMN IF NOT EXISTS can_view_information_register BOOLEAN DEFAULT false`);
+        await db.execute(sql`ALTER TABLE user_permissions ADD COLUMN IF NOT EXISTS can_view_notice_generator BOOLEAN DEFAULT false`);
+        await db.execute(sql`ALTER TABLE user_permissions ADD COLUMN IF NOT EXISTS can_view_balance_sheet BOOLEAN DEFAULT false`);
+        await db.execute(sql`ALTER TABLE user_permissions ADD COLUMN IF NOT EXISTS can_view_profit_loss BOOLEAN DEFAULT false`);
         console.log("✅ Schema migration: data_entry_mode, notification_warnings, loading_report permission verified");
       } catch (migrationError) {
         console.warn("⚠️  Data entry mode migration warning (non-fatal):", migrationError instanceof Error ? migrationError.message : migrationError);
