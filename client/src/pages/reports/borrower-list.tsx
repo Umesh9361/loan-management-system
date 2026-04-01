@@ -1592,7 +1592,9 @@ export default function BorrowerListReports() {
     }, 0);
     const totalWeight = totalGoldWeight + totalSilverWeight;
     const formatWeight = (w: number) => w % 1 === 0 ? w.toString() : w.toFixed(2);
-    const weightDisplay = totalSilverWeight > 0 ? `सोने: ${formatWeight(totalGoldWeight)}g | चांदी: ${formatWeight(totalSilverWeight)}g` : `${formatWeight(totalWeight)}`;
+    const weightDisplay = totalSilverWeight > 0 
+      ? `<div style="line-height: 1.5;">सोने: ${formatWeight(totalGoldWeight)}g</div><div style="line-height: 1.5;">चांदी: ${formatWeight(totalSilverWeight)}g</div>` 
+      : `${formatWeight(totalWeight)}g`;
     
     // Calculate total interest for closing-wise report
     const totalInterest = activeTab === 'closing-wise' ? reportData.reduce((sum, loan) => {
@@ -1618,7 +1620,7 @@ export default function BorrowerListReports() {
           <td style="border-top: 2px solid #000; border-bottom: 2px solid #000; border-left: none; border-right: none; padding: 3px 2px; vertical-align: middle;"></td>
           <td class="mobile-hide" style="border-top: 2px solid #000; border-bottom: 2px solid #000; border-left: none; border-right: none; padding: 3px 2px; vertical-align: middle;"></td>
           <td class="mobile-hide" style="border-top: 2px solid #000; border-bottom: 2px solid #000; border-left: none; border-right: none; padding: 3px 2px; vertical-align: middle;"></td>
-          <td class="mobile-hide" style="border-top: 2px solid #000; border-bottom: 2px solid #000; border-left: none; border-right: none; padding: 3px 2px; text-align: center; font-size: 12px; font-weight: bold; vertical-align: middle;">${weightDisplay}</td>
+          <td class="mobile-hide" style="border-top: 2px solid #000; border-bottom: 2px solid #000; border-left: none; border-right: none; padding: 3px 4px 3px 2px; text-align: left; font-size: 12px; font-weight: bold; vertical-align: middle;">${weightDisplay}</td>
         </tr>
       `;
     } else if (activeTab === 'maturity-wise') {
@@ -1631,7 +1633,7 @@ export default function BorrowerListReports() {
           <td style="border-top: 2px solid #000; border-bottom: 2px solid #000; border-left: none; border-right: none; padding: 4px; vertical-align: middle;"></td>
           <td class="mobile-hide" style="border-top: 2px solid #000; border-bottom: 2px solid #000; border-left: none; border-right: none; padding: 4px; vertical-align: middle;"></td>
           <td class="mobile-hide" style="border-top: 2px solid #000; border-bottom: 2px solid #000; border-left: none; border-right: none; padding: 4px; vertical-align: middle;"></td>
-          <td class="mobile-hide" style="border-top: 2px solid #000; border-bottom: 2px solid #000; border-left: none; border-right: none; padding: 4px; text-align: center; font-size: 14px; font-weight: bold; vertical-align: middle;">${weightDisplay}</td>
+          <td class="mobile-hide" style="border-top: 2px solid #000; border-bottom: 2px solid #000; border-left: none; border-right: none; padding: 4px 4px 4px 2px; text-align: left; font-size: 14px; font-weight: bold; vertical-align: middle;">${weightDisplay}</td>
           <td class="mobile-hide" style="border-top: 2px solid #000; border-bottom: 2px solid #000; border-left: none; border-right: none; padding: 4px; vertical-align: middle;"></td>
         </tr>
       `;
@@ -1645,7 +1647,7 @@ export default function BorrowerListReports() {
           <td style="border-top: 2px solid #000; border-bottom: 2px solid #000; padding: 4px; vertical-align: middle;"></td>
           <td class="mobile-hide" style="border-top: 2px solid #000; border-bottom: 2px solid #000; padding: 4px; vertical-align: middle;"></td>
           <td class="mobile-hide" style="border-top: 2px solid #000; border-bottom: 2px solid #000; padding: 4px; vertical-align: middle;"></td>
-          <td class="mobile-hide" style="border-top: 2px solid #000; border-bottom: 2px solid #000; padding: 4px; text-align: center; font-size: 14px; font-weight: bold; vertical-align: middle;">${weightDisplay}</td>
+          <td class="mobile-hide" style="border-top: 2px solid #000; border-bottom: 2px solid #000; padding: 4px 4px 4px 2px; text-align: left; font-size: 14px; font-weight: bold; vertical-align: middle;">${weightDisplay}</td>
         </tr>
       `;
     }
@@ -1795,7 +1797,7 @@ export default function BorrowerListReports() {
               /* Total row — remove fixed widths and overflow restrictions so amounts/weight never get cut */
               tr.total-row td, table tbody tr.total-row td { 
                 width: auto !important; min-width: 0 !important; max-width: none !important; 
-                white-space: nowrap !important; overflow: visible !important; text-overflow: clip !important;
+                white-space: normal !important; overflow: visible !important; text-overflow: clip !important;
                 font-size: 11px !important; font-weight: bold !important;
               }
               
