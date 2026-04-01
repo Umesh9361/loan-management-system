@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useCallback, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,22 +8,69 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Sidebar } from "@/components/ui/sidebar";
 import { MobileNav } from "@/components/ui/mobile-nav";
-import { Calculator, Calendar, TrendingUp, Info, Home } from "lucide-react";
+import { Calculator, Calendar, TrendingUp, Info, Home, Plus, Trash2, Bluetooth, FileText, Loader2 } from "lucide-react";
 import { Link } from "wouter";
 import { LoanCalculationsAdvanced, CompoundInterestCalculator } from "@/lib/loan-calculations";
 import { DateUtils } from "@/lib/date-utils";
+import html2canvas from "html2canvas";
+import { printReceiptViaBluetooth, isBluetoothSupported } from "@/lib/bluetooth-printer";
+
+interface CalcSummaryEntry {
+  id: number;
+  customerName: string;
+  codeNumber: string;
+  principalAmount: number;
+  interestRate: string;
+  startDate: string;
+  endDate: string;
+  interestAmount: number;
+  totalAmount: number;
+  totalDays: number;
+}
+
+const CALC_SUMMARY_KEY = 'calc_summary_entries';
+
+const toShortDate = (isoDate: string): string => {
+  const d = DateUtils.isoToIndianDate(isoDate);
+  const parts = d.split('/');
+  if (parts.length === 3 && parts[2].length === 4) {
+    return `${parts[0]}/${parts[1]}/${parts[2].slice(2)}`;
+  }
+  return d;
+};
 
 export default function InterestCalculator() {
   const [principalAmount, setPrincipalAmount] = useState("");
   const [interestRate, setInterestRate] = useState("");
   const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
   const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
-  const [isAdvanced, setIsAdvanced] = useState(true); // Default to Advanced (Advance Button व्याज)
-  const [calculationMode, setCalculationMode] = useState("half_month"); // Default to half-month
-  const [compoundFrequency, setCompoundFrequency] = useState("yearly"); // New compound frequency state
-  const [rateType, setRateType] = useState("yearly"); // Monthly or Yearly rate for Simple Interest
+  const [isAdvanced, setIsAdvanced] = useState(true);
+  const [calculationMode, setCalculationMode] = useState("half_month");
+  const [compoundFrequency, setCompoundFrequency] = useState("yearly");
+  const [rateType, setRateType] = useState("yearly");
   const [results, setResults] = useState<any>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
+
+  const [customerName, setCustomerName] = useState("");
+  const [codeNumber, setCodeNumber] = useState("");
+  const [summaryEntries, setSummaryEntries] = useState<CalcSummaryEntry[]>(() => {
+    try {
+      const saved = sessionStorage.getItem(CALC_SUMMARY_KEY);
+      return saved ? JSON.parse(saved) : [];
+    } catch { return []; }
+  });
+  const [summaryCounter, setSummaryCounter] = useState(1);
+  const summaryEntriesRef = useRef<CalcSummaryEntry[]>(summaryEntries);
+  const summaryRef = useRef<HTMLDivElement>(null);
+  const [isBtPrinting, setIsBtPrinting] = useState(false);
+  const btPrintBtnRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    summaryEntriesRef.current = summaryEntries;
+    try {
+      sessionStorage.setItem(CALC_SUMMARY_KEY, JSON.stringify(summaryEntries));
+    } catch {}
+  }, [summaryEntries]);
 
   const calculatePeriod = (start: string, end: string, mode: string) => {
     if (!start || !end) return null;
@@ -284,14 +331,151 @@ export default function InterestCalculator() {
     }, 100);
   };
 
+  const handleAddToSummary = useCallback(() => {
+    if (!results) return;
+    const entry: CalcSummaryEntry = {
+      id: summaryCounter,
+      customerName: customerName.trim(),
+      codeNumber: codeNumber.trim(),
+      principalAmount: results.principal,
+      interestRate: interestRate,
+      startDate: startDate,
+      endDate: endDate,
+      interestAmount: results.interest,
+      totalAmount: results.total,
+      totalDays: results.totalDays,
+    };
+    setSummaryEntries(prev => [...prev, entry]);
+    setSummaryCounter(prev => prev + 1);
+    setResults(null);
+    setPrincipalAmount("");
+    setCodeNumber("");
+    setTimeout(() => {
+      summaryRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 150);
+  }, [results, summaryCounter, customerName, codeNumber, interestRate, startDate, endDate]);
+
+  const handleDeleteEntry = useCallback((entryId: number) => {
+    setSummaryEntries(prev => prev.filter(e => e.id !== entryId));
+  }, []);
+
+  const handleClearAllSummary = useCallback(() => {
+    setSummaryEntries([]);
+    setSummaryCounter(1);
+  }, []);
+
+  const generateThermalReceiptHTML = useCallback((entries: CalcSummaryEntry[]): string => {
+    if (entries.length === 0) return '';
+    const totalPrincipal = entries.reduce((sum, e) => sum + e.principalAmount, 0);
+    const totalInterest = entries.reduce((sum, e) => sum + e.interestAmount, 0);
+    const grandTotal = totalPrincipal + totalInterest;
+    const displayName = entries[entries.length - 1].customerName || 'अंदाज';
+    const todayFormatted = DateUtils.isoToIndianDate(new Date().toISOString().split('T')[0]);
+
+    let rows = '';
+    entries.forEach((entry, i) => {
+      rows += `<tr>
+        <td style="padding:14px 4px 14px 4px;text-align:center;font-size:16px;font-weight:600;">${i + 1}</td>
+        <td style="padding:14px 4px;text-align:center;font-size:22px;font-weight:700;">${entry.codeNumber || '—'}</td>
+        <td style="padding:14px 4px;text-align:right;font-size:20px;font-weight:700;vertical-align:middle;">${toShortDate(entry.startDate)}</td>
+        <td style="padding:14px 4px;text-align:right;font-size:22px;font-weight:700;">${Number(Math.round(entry.principalAmount)).toLocaleString('en-IN')}</td>
+        <td style="padding:14px 4px;text-align:right;font-size:22px;font-weight:700;">${Number(Math.round(entry.interestAmount)).toLocaleString('en-IN')}</td>
+      </tr>`;
+    });
+
+    return `
+      <div style="padding:6px 12px;font-family:'Noto Sans Devanagari',sans-serif;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px;">
+          <div style="font-weight:800;font-size:26px;line-height:1.4;">${displayName}</div>
+          <div style="font-size:22px;font-weight:700;white-space:nowrap;line-height:1.4;">तारीख: ${todayFormatted}</div>
+        </div>
+        <div style="text-align:center;font-weight:800;font-size:24px;margin-bottom:10px;"><span style="border-bottom:2px solid #000;padding-bottom:6px;">Estimate</span></div>
+        <table style="width:100%;border-collapse:collapse;table-layout:fixed;">
+          <colgroup>
+            <col style="width:46px;">
+            <col style="width:90px;">
+            <col style="width:110px;">
+            <col style="width:auto;">
+            <col style="width:110px;">
+          </colgroup>
+          <thead>
+            <tr style="border-bottom:3px double #000;">
+              <th style="padding:10px 4px;font-size:22px;text-align:center;font-weight:700;">अ.नं.</th>
+              <th style="padding:10px 4px;font-size:22px;text-align:center;font-weight:700;">कोड नं</th>
+              <th style="padding:10px 4px;font-size:22px;text-align:right;font-weight:700;">दिनांक</th>
+              <th style="padding:10px 4px;font-size:22px;text-align:right;font-weight:700;">मुद्दल</th>
+              <th style="padding:10px 4px;font-size:22px;text-align:right;font-weight:700;">व्याज</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows}
+            <tr style="border-top:3px double #000;">
+              <td colspan="3" style="padding:12px 4px;text-align:right;font-size:22px;font-weight:700;">एकूण</td>
+              <td style="padding:12px 4px;text-align:right;font-size:22px;font-weight:700;">${Number(Math.round(totalPrincipal)).toLocaleString('en-IN')}</td>
+              <td style="padding:12px 4px;text-align:right;font-size:22px;font-weight:700;">${Number(Math.round(totalInterest)).toLocaleString('en-IN')}</td>
+            </tr>
+            <tr style="border-top:3px double #000;">
+              <td colspan="5" style="padding:16px 4px;text-align:center;font-size:32px;font-weight:900;">Grand Total : ${Number(Math.round(grandTotal)).toLocaleString('en-IN')}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>`;
+  }, []);
+
+  const renderReceiptToCanvas = useCallback(async (thermalHTML: string): Promise<HTMLCanvasElement> => {
+    const thermalWidth = 576;
+    const container = document.createElement('div');
+    container.style.position = 'absolute';
+    container.style.left = '-9999px';
+    container.style.top = '0';
+    container.style.width = `${thermalWidth}px`;
+    container.style.background = '#fff';
+    container.style.padding = '0';
+    container.style.fontFamily = "'Noto Sans Devanagari', 'Mangal', sans-serif";
+    container.style.fontWeight = '700';
+    container.innerHTML = thermalHTML;
+    document.body.appendChild(container);
+    await new Promise(resolve => setTimeout(resolve, 300));
+    const canvas = await html2canvas(container, {
+      width: thermalWidth,
+      scale: 2,
+      backgroundColor: '#ffffff',
+      useCORS: true,
+      logging: false,
+    });
+    document.body.removeChild(container);
+    return canvas;
+  }, []);
+
+  const handleBluetoothPrint = useCallback(async () => {
+    const currentEntries = summaryEntriesRef.current;
+    if (currentEntries.length === 0 || isBtPrinting) return;
+    const thermalHTML = generateThermalReceiptHTML(currentEntries);
+    if (!thermalHTML) return;
+    setIsBtPrinting(true);
+    try {
+      const canvas = await renderReceiptToCanvas(thermalHTML);
+      await printReceiptViaBluetooth(canvas, 576);
+    } catch (error: any) {
+      if (error?.message?.includes('cancelled') || error?.message?.includes('User cancelled')) {
+        return;
+      }
+      console.error("Bluetooth print error:", error);
+    } finally {
+      setIsBtPrinting(false);
+      if (btPrintBtnRef.current) btPrintBtnRef.current.blur();
+      if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
+    }
+  }, [generateThermalReceiptHTML, renderReceiptToCanvas, isBtPrinting]);
+
   const clearAll = () => {
     setPrincipalAmount("");
     setInterestRate("");
     setStartDate(new Date().toISOString().split('T')[0]);
     setEndDate(new Date().toISOString().split('T')[0]);
-    setIsAdvanced(true); // Default to Advanced (Advance Button व्याज)
-    setCalculationMode("half_month"); // Default to half-month
-    setCompoundFrequency("yearly"); // Default to yearly compound
+    setIsAdvanced(true);
+    setCalculationMode("half_month");
+    setCompoundFrequency("yearly");
     setResults(null);
   };
 
@@ -325,6 +509,36 @@ export default function InterestCalculator() {
                 365 दिवसांच्या बँकिंग मानकानुसार साधे व्याज गणना
               </p>
             </div>
+
+            {/* Name & Code for Print */}
+            <Card className="mb-4 card-professional border-amber-200 bg-amber-50/30">
+              <CardContent className="py-3 px-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <Label htmlFor="customerName" className="text-sm font-medium text-amber-800">कर्जदार नाव <span className="text-xs text-gray-500">(प्रिंट साठी)</span></Label>
+                    <Input
+                      id="customerName"
+                      type="text"
+                      value={customerName}
+                      onChange={(e) => setCustomerName(e.target.value)}
+                      placeholder="उदा. राम शिंदे"
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="codeNumber" className="text-sm font-medium text-amber-800">कोड नंबर <span className="text-xs text-gray-500">(कर्ज क्रमांक)</span></Label>
+                    <Input
+                      id="codeNumber"
+                      type="text"
+                      value={codeNumber}
+                      onChange={(e) => setCodeNumber(e.target.value)}
+                      placeholder="उदा. 101"
+                      className="mt-1"
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
 
             {/* Input Form */}
             <Card className="mb-6 card-professional">
@@ -666,11 +880,106 @@ export default function InterestCalculator() {
                       </div>
                     )}
                   </div>
+                  <div className="mt-6 flex justify-center">
+                    <Button
+                      onClick={handleAddToSummary}
+                      className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white px-8 py-3 text-base font-bold shadow-lg"
+                    >
+                      <Plus className="h-5 w-5 mr-2" />
+                      हिशोबात जोडा
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             )}
 
-
+            {/* Summary Section - Closure Form Style */}
+            {summaryEntries.length > 0 && (
+              <Card ref={summaryRef} className="border border-amber-200 shadow-lg bg-white mb-6">
+                <CardHeader className="py-3 px-4 bg-amber-50 border-b">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                    <CardTitle className="text-base font-semibold text-amber-800 flex items-center gap-2">
+                      <FileText className="h-4 w-4" />
+                      एकत्रित हिशोब ({summaryEntries.length})
+                    </CardTitle>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button
+                        ref={btPrintBtnRef}
+                        type="button"
+                        onClick={handleBluetoothPrint}
+                        disabled={isBtPrinting}
+                        className="inline-flex items-center rounded-md px-3 h-9 text-xs border border-indigo-300 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 active:bg-indigo-200 transition-colors outline-none disabled:opacity-50"
+                      >
+                        {isBtPrinting ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Bluetooth className="h-3 w-3 mr-1" />}
+                        ब्लूटूथ प्रिंट
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleClearAllSummary}
+                        className="inline-flex items-center rounded-md px-3 h-9 text-xs border border-red-300 bg-red-50 text-red-700 hover:bg-red-100 active:bg-red-200 transition-colors outline-none"
+                      >
+                        <Trash2 className="h-3 w-3 mr-1" />
+                        सर्व काढा
+                      </button>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="p-0">
+                  {summaryEntries[summaryEntries.length - 1]?.customerName && (
+                    <div className="flex justify-between items-start px-3 pt-2 pb-1">
+                      <div className="font-bold text-sm">{summaryEntries[summaryEntries.length - 1].customerName}</div>
+                      <div className="text-xs text-gray-500 text-right">
+                        तारीख: {DateUtils.isoToIndianDate(new Date().toISOString().split('T')[0])}
+                      </div>
+                    </div>
+                  )}
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b-2 border-amber-200 bg-amber-50/50">
+                          <th className="px-2 py-2 text-center font-bold text-xs">अ.नं.</th>
+                          <th className="px-2 py-2 text-center font-bold text-xs">कोड नं</th>
+                          <th className="px-2 py-2 text-right font-bold text-xs">दिनांक</th>
+                          <th className="px-2 py-2 text-right font-bold text-xs">मुद्दल</th>
+                          <th className="px-2 py-2 text-right font-bold text-xs">व्याज</th>
+                          <th className="px-2 py-2 text-right font-bold text-xs">एकूण</th>
+                          <th className="px-2 py-2 text-center font-bold text-xs w-8"></th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {summaryEntries.map((entry, index) => (
+                          <tr key={entry.id} className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}>
+                            <td className="px-2 py-2 text-center text-xs font-medium">{index + 1}</td>
+                            <td className="px-2 py-2 text-center text-xs font-semibold text-indigo-700">{entry.codeNumber || '—'}</td>
+                            <td className="px-2 py-2 text-right text-xs whitespace-nowrap">{toShortDate(entry.startDate)}</td>
+                            <td className="px-2 py-2 text-right text-xs font-semibold">₹{entry.principalAmount.toLocaleString('en-IN')}</td>
+                            <td className="px-2 py-2 text-right text-xs font-semibold text-orange-700">₹{entry.interestAmount.toLocaleString('en-IN')}</td>
+                            <td className="px-2 py-2 text-right text-xs font-bold text-green-700">₹{entry.totalAmount.toLocaleString('en-IN')}</td>
+                            <td className="px-2 py-2 text-center">
+                              <button onClick={() => handleDeleteEntry(entry.id)} className="text-red-400 hover:text-red-600 p-0.5">
+                                <Trash2 className="h-3 w-3" />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                        <tr className="border-t-2 border-amber-300 bg-amber-50 font-bold">
+                          <td colSpan={3} className="px-2 py-2 text-right text-sm font-bold text-amber-800">एकूण:</td>
+                          <td className="px-2 py-2 text-right text-sm font-bold text-gray-800">₹{summaryEntries.reduce((s, e) => s + e.principalAmount, 0).toLocaleString('en-IN')}</td>
+                          <td className="px-2 py-2 text-right text-sm font-bold text-orange-700">₹{summaryEntries.reduce((s, e) => s + e.interestAmount, 0).toLocaleString('en-IN')}</td>
+                          <td className="px-2 py-2 text-right text-sm font-bold text-green-700">₹{summaryEntries.reduce((s, e) => s + e.totalAmount, 0).toLocaleString('en-IN')}</td>
+                          <td></td>
+                        </tr>
+                        <tr className="border-t-2 border-amber-400 bg-gradient-to-r from-amber-100 to-orange-100">
+                          <td colSpan={7} className="px-2 py-3 text-center text-lg font-black text-amber-900">
+                            Grand Total : ₹{summaryEntries.reduce((s, e) => s + e.totalAmount, 0).toLocaleString('en-IN')}
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
           </div>
         </main>
