@@ -1,11 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Search, Printer, TrendingUp, TrendingDown, DollarSign, Receipt, ArrowUpRight, ArrowDownRight, BarChart3, FileText, ArrowLeft, Home } from "lucide-react";
+import { Search, Printer, TrendingUp, TrendingDown, DollarSign, Receipt, ArrowUpRight, ArrowDownRight, BarChart3, FileText } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { useLocation } from "wouter";
 import { Sidebar } from "@/components/ui/sidebar";
 import { MobileNav } from "@/components/ui/mobile-nav";
 import jsPDF from "jspdf";
@@ -140,29 +139,11 @@ function buildProfitLossHTML(plData: any, company: any, dateFrom: string, dateTo
 }
 
 export default function ProfitLoss() {
-  const [, setLocation] = useLocation();
   const fy = getDefaultFY();
   const [dateFrom, setDateFrom] = useState(fy.dateFrom);
   const [dateTo, setDateTo] = useState(fy.dateTo);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
-  const [sidebarHidden, setSidebarHidden] = useState(true);
 
-  useEffect(() => {
-    setSidebarHidden(true);
-    return () => { setSidebarHidden(false); };
-  }, []);
-
-  const handleBackNavigation = () => {
-    try {
-      if (window.history.length > 1 && document.referrer) {
-        window.history.back();
-      } else {
-        setLocation("/dashboard");
-      }
-    } catch {
-      setLocation("/dashboard");
-    }
-  };
 
   const { data: company } = useQuery<any>({ queryKey: ["/api/company"] });
 
@@ -325,34 +306,15 @@ export default function ProfitLoss() {
       <MobileNav />
 
       <div className="lg:flex">
-        {!sidebarHidden && (
-          <aside className="hidden lg:block lg:w-72 lg:fixed lg:inset-y-0 lg:h-screen print:hidden">
-            <Sidebar />
-          </aside>
-        )}
+        <aside className="hidden lg:block lg:w-72 lg:fixed lg:inset-y-0 lg:h-screen print:hidden">
+          <Sidebar />
+        </aside>
 
-        <main className={`flex-1 w-full ${sidebarHidden ? '' : 'lg:pl-72'} pb-16 lg:pb-0 print:pl-0 print:pb-0`}>
+        <main className="flex-1 w-full lg:pl-72 pb-16 lg:pb-0 print:pl-0 print:pb-0">
           <div className="px-4 sm:px-6 lg:px-8 py-6 max-w-4xl md:max-w-6xl mx-auto w-full print:p-0 print:max-w-none">
-            <div className="print:hidden mb-6 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Button variant="ghost" size="sm" onClick={handleBackNavigation} title="मागे जा">
-                  <ArrowLeft className="h-4 w-4" />
-                </Button>
-                <div>
-                  <h1 className="text-xl sm:text-2xl md:text-3xl font-semibold text-indigo-900 mb-1">नफा-तोटा पत्रक</h1>
-                  <p className="text-sm text-gray-500">Profit & Loss Statement</p>
-                </div>
-              </div>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => setLocation("/dashboard")} 
-                className="hidden lg:flex items-center gap-1.5 text-indigo-600 border-indigo-200 hover:bg-indigo-50 hover:border-indigo-400"
-                title="मुख्य पटल"
-              >
-                <Home className="h-4 w-4" />
-                <span className="text-xs font-medium">मुख्य पटल</span>
-              </Button>
+            <div className="print:hidden mb-6">
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-semibold text-indigo-900 mb-1">नफा-तोटा पत्रक</h1>
+              <p className="text-sm text-gray-500">Profit & Loss Statement</p>
             </div>
 
             <Card className="print:hidden mb-6">
