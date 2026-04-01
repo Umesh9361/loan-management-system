@@ -538,17 +538,52 @@ export class DataManagementService {
   /**
    * Comprehensive data restore system - Updated August 2025
    */
+  private convertDateFields(records: any[], timestampFields: string[], dateFields: string[] = []): any[] {
+    return records.map(record => {
+      const converted = { ...record };
+      for (const field of timestampFields) {
+        if (converted[field] && typeof converted[field] === 'string') {
+          converted[field] = new Date(converted[field]);
+        }
+      }
+      return converted;
+    });
+  }
+
   async restoreFromBackup(tenantId: string, backupData: any): Promise<DataManagementResult> {
     try {
       console.log(`🔄 RESTORE: Starting comprehensive restore for ${tenantId}`);
       
-      // Validate backup data structure
       if (!backupData || !backupData.data || !backupData.version) {
         throw new Error("Invalid backup data format");
       }
 
       if (backupData.tenantId !== tenantId) {
         throw new Error("Backup tenant ID does not match current tenant");
+      }
+
+      const tsFields: Record<string, string[]> = {
+        companies: ['createdAt', 'updatedAt', 'subscriptionStartDate', 'subscriptionEndDate'],
+        groups: ['createdAt', 'updatedAt'],
+        borrowers: ['createdAt', 'updatedAt'],
+        loans: ['createdAt', 'updatedAt'],
+        transactions: ['createdAt'],
+        loanClosures: ['createdAt'],
+        loanPhotos: ['createdAt', 'updatedAt'],
+        parties: ['createdAt', 'updatedAt'],
+        cashTransactions: ['createdAt', 'updatedAt'],
+        journalEntries: ['createdAt', 'updatedAt', 'completedAt'],
+        journalEntryLines: [],
+        users: ['createdAt', 'updatedAt', 'temporaryDisabledUntil', 'lastLoginAt'],
+        userPermissions: ['createdAt', 'updatedAt'],
+        userActivityLogs: ['createdAt'],
+        tenantStorageSettings: ['createdAt', 'updatedAt', 'lastTestedAt'],
+      };
+
+      for (const [table, fields] of Object.entries(tsFields)) {
+        if (backupData.data[table]?.length > 0 && fields.length > 0) {
+          backupData.data[table] = this.convertDateFields(backupData.data[table], fields);
+        }
       }
 
       let restoredRecords = 0;
