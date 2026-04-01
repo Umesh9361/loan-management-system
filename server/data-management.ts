@@ -459,19 +459,20 @@ export class DataManagementService {
   /**
    * Create comprehensive system backup - Updated August 2025
    */
-  async createComprehensiveBackup(tenantId: string): Promise<DataManagementResult> {
+  async createComprehensiveBackup(tenantId: string, options?: { portable?: boolean }): Promise<DataManagementResult> {
     try {
       const timestamp = new Date().toISOString().split('T')[0];
       const fullTimestamp = new Date().toISOString();
+      const isPortable = options?.portable === true;
       
-      // Fetch all tenant data from all tables
-      const backupData = {
+      const backupData: any = {
         timestamp: fullTimestamp,
-        tenantId,
+        tenantId: isPortable ? "PORTABLE" : tenantId,
+        originalTenantId: tenantId,
         version: "2.0",
+        portable: isPortable,
         schema: "comprehensive_backup_aug_2025",
         data: {
-          // Core business tables
           companies: await db.select().from(companies).where(eq(companies.tenantId, tenantId)),
           groups: await db.select().from(groups).where(eq(groups.tenantId, tenantId)),
           borrowers: await db.select().from(borrowers).where(eq(borrowers.tenantId, tenantId)),
@@ -480,18 +481,15 @@ export class DataManagementService {
           loanClosures: await db.select().from(loanClosures).where(eq(loanClosures.tenantId, tenantId)),
           loanPhotos: await db.select().from(loanPhotos).where(eq(loanPhotos.tenantId, tenantId)),
           
-          // Financial system tables
           parties: await db.select().from(parties).where(eq(parties.tenantId, tenantId)),
           cashTransactions: await db.select().from(cashTransactions).where(eq(cashTransactions.tenantId, tenantId)),
           journalEntries: await db.select().from(journalEntries).where(eq(journalEntries.tenantId, tenantId)),
           journalEntryLines: await db.select().from(journalEntryLines).where(eq(journalEntryLines.tenantId, tenantId)),
           
-          // User management tables (except for SUPER_ADMIN tenant to preserve user data)
-          users: tenantId !== 'SUPER_ADMIN' ? await db.select().from(users).where(eq(users.tenantId, tenantId)) : [],
-          userPermissions: tenantId !== 'SUPER_ADMIN' ? await db.select().from(userPermissions).where(eq(userPermissions.tenantId, tenantId)) : [],
-          userActivityLogs: tenantId !== 'SUPER_ADMIN' ? await db.select().from(userActivityLogs).where(eq(userActivityLogs.tenantId, tenantId)) : [],
+          users: (!isPortable && tenantId !== 'SUPER_ADMIN') ? await db.select().from(users).where(eq(users.tenantId, tenantId)) : [],
+          userPermissions: (!isPortable && tenantId !== 'SUPER_ADMIN') ? await db.select().from(userPermissions).where(eq(userPermissions.tenantId, tenantId)) : [],
+          userActivityLogs: (!isPortable && tenantId !== 'SUPER_ADMIN') ? await db.select().from(userActivityLogs).where(eq(userActivityLogs.tenantId, tenantId)) : [],
           
-          // Storage settings
           tenantStorageSettings: await db.select().from(tenantStorageSettings).where(eq(tenantStorageSettings.tenantId, tenantId))
         }
       };
@@ -558,8 +556,107 @@ export class DataManagementService {
         throw new Error("Invalid backup data format");
       }
 
-      if (backupData.tenantId !== tenantId) {
-        throw new Error("Backup tenant ID does not match current tenant");
+      const isPortableBackup = backupData.portable === true || backupData.tenantId === "PORTABLE";
+      
+      if (!isPortableBackup && backupData.tenantId !== tenantId) {
+        throw new Error("Backup tenant ID does not match current tenant. सार्वत्रिक बॅकअप वापरा किंवा योग्य टेनंट मधून रिस्टोर करा.");
+      }
+
+      if (isPortableBackup) {
+        console.log(`🌐 PORTABLE RESTORE: Remapping tenant from ${backupData.originalTenantId || 'unknown'} → ${tenantId}`);
+        
+        const idMap = new Map<string, string>();
+        const genNewId = (oldId: string): string => {
+          if (!oldId) return oldId;
+          if (idMap.has(oldId)) return idMap.get(oldId)!;
+          const newId = crypto.randomUUID();
+          idMap.set(oldId, newId);
+          return newId;
+        };
+        const remapId = (oldId: string | null | undefined): string | null | undefined => {
+          if (!oldId) return oldId;
+          return idMap.get(oldId) || oldId;
+        };
+
+        for (const comp of (backupData.data.companies || [])) {
+          genNewId(comp.id);
+        }
+        for (const g of (backupData.data.groups || [])) {
+          genNewId(g.id);
+        }
+        for (const b of (backupData.data.borrowers || [])) {
+          genNewId(b.id);
+        }
+        for (const p of (backupData.data.parties || [])) {
+          genNewId(p.id);
+        }
+        for (const l of (backupData.data.loans || [])) {
+          genNewId(l.id);
+        }
+        for (const lc of (backupData.data.loanClosures || [])) {
+          genNewId(lc.id);
+        }
+        for (const lp of (backupData.data.loanPhotos || [])) {
+          genNewId(lp.id);
+        }
+        for (const ct of (backupData.data.cashTransactions || [])) {
+          genNewId(ct.id);
+        }
+        for (const t of (backupData.data.transactions || [])) {
+          genNewId(t.id);
+        }
+        for (const je of (backupData.data.journalEntries || [])) {
+          genNewId(je.id);
+        }
+        for (const jl of (backupData.data.journalEntryLines || [])) {
+          genNewId(jl.id);
+        }
+        for (const ts of (backupData.data.tenantStorageSettings || [])) {
+          genNewId(ts.id);
+        }
+
+        backupData.data.companies = (backupData.data.companies || []).map((r: any) => ({
+          ...r, id: remapId(r.id), tenantId
+        }));
+        backupData.data.groups = (backupData.data.groups || []).map((r: any) => ({
+          ...r, id: remapId(r.id), tenantId, companyId: remapId(r.companyId)
+        }));
+        backupData.data.borrowers = (backupData.data.borrowers || []).map((r: any) => ({
+          ...r, id: remapId(r.id), tenantId
+        }));
+        backupData.data.parties = (backupData.data.parties || []).map((r: any) => ({
+          ...r, id: remapId(r.id), tenantId
+        }));
+        backupData.data.loans = (backupData.data.loans || []).map((r: any) => ({
+          ...r, id: remapId(r.id), tenantId, groupId: remapId(r.groupId), borrowerId: remapId(r.borrowerId)
+        }));
+        backupData.data.loanClosures = (backupData.data.loanClosures || []).map((r: any) => ({
+          ...r, id: remapId(r.id), tenantId, loanId: remapId(r.loanId)
+        }));
+        backupData.data.loanPhotos = (backupData.data.loanPhotos || []).map((r: any) => ({
+          ...r, id: remapId(r.id), tenantId, loanId: remapId(r.loanId), uploadedBy: remapId(r.uploadedBy)
+        }));
+        backupData.data.cashTransactions = (backupData.data.cashTransactions || []).map((r: any) => ({
+          ...r, id: remapId(r.id), tenantId, partyId: remapId(r.partyId), loanId: remapId(r.loanId), linkedTransactionId: remapId(r.linkedTransactionId)
+        }));
+        backupData.data.transactions = (backupData.data.transactions || []).map((r: any) => ({
+          ...r, id: remapId(r.id), tenantId, loanId: remapId(r.loanId)
+        }));
+        backupData.data.journalEntries = (backupData.data.journalEntries || []).map((r: any) => ({
+          ...r, id: remapId(r.id), tenantId, cashTransactionId: remapId(r.cashTransactionId)
+        }));
+        backupData.data.journalEntryLines = (backupData.data.journalEntryLines || []).map((r: any) => ({
+          ...r, id: remapId(r.id), tenantId, journalEntryId: remapId(r.journalEntryId)
+        }));
+        backupData.data.tenantStorageSettings = (backupData.data.tenantStorageSettings || []).map((r: any) => ({
+          ...r, id: remapId(r.id), tenantId
+        }));
+
+        backupData.data.users = [];
+        backupData.data.userPermissions = [];
+        backupData.data.userActivityLogs = [];
+
+        console.log(`🔑 PORTABLE RESTORE: ${idMap.size} UUIDs remapped`);
       }
 
       const tsFields: Record<string, string[]> = {
