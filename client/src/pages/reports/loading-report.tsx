@@ -776,94 +776,112 @@ export default function LoadingReport() {
                         </div>
                       </div>
 
-                      <CardContent className="p-0 overflow-x-auto hidden sm:block">
-                        <Table className="min-w-[1100px]">
-                          <TableHeader>
-                            <TableRow className="bg-indigo-600">
-                              <TableHead className="text-white text-[10px] font-bold text-center w-7 px-1">क्र.</TableHead>
-                              <TableHead className="text-white text-[10px] font-bold text-left min-w-[150px]">कर्जदार नाव</TableHead>
-                              <TableHead className="text-white text-[10px] font-bold text-center w-12 px-1">खाते</TableHead>
-                              <TableHead className="text-white text-[10px] font-bold text-center w-16 px-1">दिनांक</TableHead>
-                              <TableHead className="text-white text-[10px] font-bold text-center w-14 px-1">गट</TableHead>
-                              <TableHead className="text-white text-[10px] font-bold text-center w-12 px-1">वजन</TableHead>
-                              <TableHead className="text-white text-[10px] font-bold text-center w-11 px-1">शुद्धता</TableHead>
-                              <TableHead className="text-white text-[10px] font-bold text-center w-14 px-1">व्याजदर</TableHead>
-                              <TableHead className="text-white text-[10px] font-bold text-center w-[72px] px-1">बाजार मूल्य</TableHead>
-                              <TableHead className="text-white text-[10px] font-bold text-center w-[72px] px-1">व्याजासहित</TableHead>
-                              <TableHead className="text-white text-[10px] font-bold text-center w-[72px] px-1">80% मानक</TableHead>
-                              <TableHead className="text-white text-[10px] font-bold text-center w-[72px] px-1">प्रत्यक्ष कर्ज</TableHead>
-                              <TableHead className="text-white text-[10px] font-bold text-center w-[68px] px-1">लोडिंग</TableHead>
-                              <TableHead className="text-white text-[10px] font-bold text-center w-11 px-1">LTV%</TableHead>
-                              <TableHead className="text-white text-[10px] font-bold text-center w-16 px-1">जोखीम</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {items.map((item, index) => {
-                              const style = getCategoryStyle(item.category);
-                              return (
-                                <TableRow key={item.loanId} className={cn("hover:bg-gray-50", index % 2 === 0 ? "bg-white" : "bg-gray-50/50")}>
-                                  <TableCell className="text-center text-xs font-medium px-1">{index + 1}</TableCell>
-                                  <TableCell className="text-left px-2">
-                                    <div className="text-xs font-semibold text-gray-800 whitespace-nowrap">{item.borrowerName}</div>
-                                    {item.collateralDetails && (
-                                      <div className="text-[10px] text-gray-400 whitespace-nowrap">{item.collateralDetails}</div>
-                                    )}
-                                    {(item as any).suspiciousInput && (
-                                      <div className="text-[10px] text-purple-600 font-semibold">{(item as any).suspiciousInput}</div>
-                                    )}
-                                  </TableCell>
-                                  <TableCell className="text-center text-xs px-1">{item.accountNumber}</TableCell>
-                                  <TableCell className="text-center text-xs px-1 whitespace-nowrap">{formatDate(item.loanDate)}</TableCell>
-                                  <TableCell className="text-center text-xs px-1">{item.groupName}</TableCell>
-                                  <TableCell className="text-center text-xs px-1">{item.weight ? parseFloat(String(item.weight)).toFixed(2) : '0'}g</TableCell>
-                                  <TableCell className="text-center text-xs font-semibold text-blue-700 px-1">{(item as any).purityUsed}%</TableCell>
-                                  <TableCell className="text-center text-xs font-semibold text-orange-700 px-1 whitespace-nowrap">{item.interestRate}%{item.interestRateType === 'yearly' ? ' वा.' : ''}</TableCell>
-                                  <TableCell className="text-center text-xs px-1 whitespace-nowrap">{formatCurrency(item.marketValue)}</TableCell>
-                                  <TableCell className={cn("text-center text-xs font-semibold px-1 whitespace-nowrap", item.totalWithInterest > item.marketValue ? "text-red-600" : "text-green-700")}>{formatCurrency(item.totalWithInterest)}</TableCell>
-                                  <TableCell className="text-center text-xs px-1 whitespace-nowrap">{formatCurrency(item.standard80Loan)}</TableCell>
-                                  <TableCell className="text-center text-xs font-semibold px-1 whitespace-nowrap">{formatCurrency(item.principalAmount)}</TableCell>
-                                  <TableCell className="text-center px-1 whitespace-nowrap">
-                                    <span className={cn("text-xs font-bold", item.loadingAmount > 0 ? "text-red-600" : "text-gray-500")}>
-                                      {item.loadingAmount > 0 ? `+${formatCurrency(item.loadingAmount)}` : formatCurrency(item.loadingAmount)}
-                                    </span>
-                                  </TableCell>
-                                  <TableCell className="text-center text-xs font-bold px-1">{item.ltvPercent}%</TableCell>
-                                  <TableCell className="text-center px-1">
-                                    <span className={cn("text-[10px] px-1.5 py-0.5 rounded-full font-semibold whitespace-nowrap", style.bgColor, style.color, "border", style.borderColor)}>
+                      <CardContent className="p-0 hidden sm:block">
+                        <div className="divide-y divide-gray-200">
+                          {items.map((item, index) => {
+                            const style = getCategoryStyle(item.category);
+                            return (
+                              <div key={item.loanId} className={cn("px-4 py-3 hover:bg-indigo-50/50 transition-colors", index % 2 === 0 ? "bg-white" : "bg-gray-50/30")}>
+                                <div className="flex items-start justify-between gap-4 mb-2">
+                                  <div className="flex items-center gap-3 min-w-0 flex-1">
+                                    <span className="text-xs font-bold text-indigo-600 bg-indigo-50 rounded-full w-7 h-7 flex items-center justify-center flex-shrink-0">{index + 1}</span>
+                                    <div className="min-w-0">
+                                      <div className="text-sm font-bold text-gray-800">{item.borrowerName}</div>
+                                      <div className="flex items-center gap-2 text-xs text-gray-500 mt-0.5">
+                                        <span>खाते: {item.accountNumber}</span>
+                                        <span>•</span>
+                                        <span>{formatDate(item.loanDate)}</span>
+                                        <span>•</span>
+                                        <span className="text-indigo-600">{item.groupName}</span>
+                                        {item.collateralDetails && (
+                                          <>
+                                            <span>•</span>
+                                            <span className="text-gray-400">{item.collateralDetails}</span>
+                                          </>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-2 flex-shrink-0">
+                                    <span className="text-sm font-bold text-gray-700">LTV: {item.ltvPercent}%</span>
+                                    <span className={cn("text-xs px-2 py-1 rounded-full font-semibold", style.bgColor, style.color, "border", style.borderColor)}>
                                       {item.categoryLabel}
                                     </span>
-                                  </TableCell>
-                                </TableRow>
-                              );
-                            })}
-                            <TableRow className="bg-indigo-50 font-bold border-t-2 border-indigo-300">
-                              <TableCell colSpan={5} className="text-right text-xs font-bold text-indigo-800">एकूण:</TableCell>
-                              <TableCell className="text-center text-xs font-bold text-indigo-800">—</TableCell>
-                              <TableCell className="text-center text-xs font-bold text-indigo-800">—</TableCell>
-                              <TableCell className="text-center text-xs font-bold text-indigo-800">
-                                {formatCurrency(items.reduce((sum, i) => sum + i.marketValue, 0))}
-                              </TableCell>
-                              <TableCell className="text-center text-xs font-bold text-red-700">
-                                {formatCurrency(items.reduce((sum, i) => sum + i.totalWithInterest, 0))}
-                              </TableCell>
-                              <TableCell className="text-center text-xs font-bold text-indigo-800">
-                                {formatCurrency(items.reduce((sum, i) => sum + i.standard80Loan, 0))}
-                              </TableCell>
-                              <TableCell className="text-center text-xs font-bold text-indigo-800">
-                                {formatCurrency(items.reduce((sum, i) => sum + i.principalAmount, 0))}
-                              </TableCell>
-                              <TableCell className="text-center text-xs font-bold text-red-700">
-                                +{formatCurrency(items.reduce((sum, i) => sum + (i.loadingAmount > 0 ? i.loadingAmount : 0), 0))}
-                              </TableCell>
-                              <TableCell className="text-center text-xs font-bold text-indigo-800">
-                                {summary.avgLTV}%
-                              </TableCell>
-                              <TableCell className="text-center text-[10px] text-indigo-700 font-semibold">
-                                {items.length} कर्ज
-                              </TableCell>
-                            </TableRow>
-                          </TableBody>
-                        </Table>
+                                  </div>
+                                </div>
+
+                                <div className="grid grid-cols-8 gap-3 text-xs">
+                                  <div className="text-center bg-amber-50 rounded px-2 py-1.5">
+                                    <div className="text-gray-500 mb-0.5">वजन</div>
+                                    <div className="font-semibold text-amber-700">{item.weight ? parseFloat(String(item.weight)).toFixed(2) : '0'}g</div>
+                                  </div>
+                                  <div className="text-center bg-blue-50 rounded px-2 py-1.5">
+                                    <div className="text-gray-500 mb-0.5">शुद्धता</div>
+                                    <div className="font-semibold text-blue-700">{(item as any).purityUsed}%</div>
+                                  </div>
+                                  <div className="text-center bg-orange-50 rounded px-2 py-1.5">
+                                    <div className="text-gray-500 mb-0.5">व्याजदर</div>
+                                    <div className="font-semibold text-orange-700">{item.interestRate}%{item.interestRateType === 'yearly' ? ' वा.' : ''}</div>
+                                  </div>
+                                  <div className="text-center bg-green-50 rounded px-2 py-1.5">
+                                    <div className="text-gray-500 mb-0.5">बाजार मूल्य</div>
+                                    <div className="font-semibold text-green-700">{formatCurrency(item.marketValue)}</div>
+                                  </div>
+                                  <div className={cn("text-center rounded px-2 py-1.5", item.totalWithInterest > item.marketValue ? "bg-red-50" : "bg-green-50")}>
+                                    <div className="text-gray-500 mb-0.5">व्याजासहित</div>
+                                    <div className={cn("font-semibold", item.totalWithInterest > item.marketValue ? "text-red-600" : "text-green-700")}>{formatCurrency(item.totalWithInterest)}</div>
+                                  </div>
+                                  <div className="text-center bg-gray-100 rounded px-2 py-1.5">
+                                    <div className="text-gray-500 mb-0.5">80% मानक</div>
+                                    <div className="font-semibold text-gray-700">{formatCurrency(item.standard80Loan)}</div>
+                                  </div>
+                                  <div className="text-center bg-purple-50 rounded px-2 py-1.5">
+                                    <div className="text-gray-500 mb-0.5">प्रत्यक्ष कर्ज</div>
+                                    <div className="font-bold text-purple-700">{formatCurrency(item.principalAmount)}</div>
+                                  </div>
+                                  <div className={cn("text-center rounded px-2 py-1.5", item.loadingAmount > 0 ? "bg-red-50" : "bg-gray-50")}>
+                                    <div className="text-gray-500 mb-0.5">लोडिंग</div>
+                                    <div className={cn("font-bold", item.loadingAmount > 0 ? "text-red-600" : "text-gray-500")}>
+                                      {item.loadingAmount > 0 ? `+${formatCurrency(item.loadingAmount)}` : formatCurrency(item.loadingAmount)}
+                                    </div>
+                                  </div>
+                                </div>
+                                {(item as any).suspiciousInput && (
+                                  <div className="text-xs text-purple-600 font-semibold mt-1">⚠️ {(item as any).suspiciousInput}</div>
+                                )}
+                              </div>
+                            );
+                          })}
+
+                          <div className="bg-indigo-50 px-4 py-3 border-t-2 border-indigo-300">
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-sm font-bold text-indigo-800">एकूण: {items.length} कर्ज</span>
+                              <span className="text-sm font-bold text-indigo-800">सरासरी LTV: {summary.avgLTV}%</span>
+                            </div>
+                            <div className="grid grid-cols-5 gap-3 text-xs">
+                              <div className="text-center bg-white rounded px-2 py-1.5 shadow-sm">
+                                <div className="text-gray-500 mb-0.5">बाजार मूल्य</div>
+                                <div className="font-bold text-green-700">{formatCurrency(items.reduce((sum, i) => sum + i.marketValue, 0))}</div>
+                              </div>
+                              <div className="text-center bg-white rounded px-2 py-1.5 shadow-sm">
+                                <div className="text-gray-500 mb-0.5">व्याजासहित</div>
+                                <div className="font-bold text-red-700">{formatCurrency(items.reduce((sum, i) => sum + i.totalWithInterest, 0))}</div>
+                              </div>
+                              <div className="text-center bg-white rounded px-2 py-1.5 shadow-sm">
+                                <div className="text-gray-500 mb-0.5">80% मानक</div>
+                                <div className="font-bold text-gray-700">{formatCurrency(items.reduce((sum, i) => sum + i.standard80Loan, 0))}</div>
+                              </div>
+                              <div className="text-center bg-white rounded px-2 py-1.5 shadow-sm">
+                                <div className="text-gray-500 mb-0.5">प्रत्यक्ष कर्ज</div>
+                                <div className="font-bold text-purple-700">{formatCurrency(items.reduce((sum, i) => sum + i.principalAmount, 0))}</div>
+                              </div>
+                              <div className="text-center bg-white rounded px-2 py-1.5 shadow-sm">
+                                <div className="text-gray-500 mb-0.5">एकूण लोडिंग</div>
+                                <div className="font-bold text-red-700">+{formatCurrency(items.reduce((sum, i) => sum + (i.loadingAmount > 0 ? i.loadingAmount : 0), 0))}</div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
                       </CardContent>
                     </Card>
                   )}
