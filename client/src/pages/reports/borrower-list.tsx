@@ -1592,9 +1592,7 @@ export default function BorrowerListReports() {
     }, 0);
     const totalWeight = totalGoldWeight + totalSilverWeight;
     const formatWeight = (w: number) => w % 1 === 0 ? w.toString() : w.toFixed(2);
-    const weightDisplay = totalSilverWeight > 0 
-      ? `<div style="line-height: 1.5;">सोने: ${formatWeight(totalGoldWeight)}g</div><div style="line-height: 1.5;">चांदी: ${formatWeight(totalSilverWeight)}g</div>` 
-      : `${formatWeight(totalWeight)}g`;
+    const weightDisplay = totalSilverWeight > 0 ? `सोने: ${formatWeight(totalGoldWeight)}g | चांदी: ${formatWeight(totalSilverWeight)}g` : `${formatWeight(totalWeight)}g`;
     
     // Calculate total interest for closing-wise report
     const totalInterest = activeTab === 'closing-wise' ? reportData.reduce((sum, loan) => {
@@ -1797,7 +1795,7 @@ export default function BorrowerListReports() {
               /* Total row — remove fixed widths and overflow restrictions so amounts/weight never get cut */
               tr.total-row td, table tbody tr.total-row td { 
                 width: auto !important; min-width: 0 !important; max-width: none !important; 
-                white-space: normal !important; overflow: visible !important; text-overflow: clip !important;
+                white-space: nowrap !important; overflow: visible !important; text-overflow: clip !important;
                 font-size: 11px !important; font-weight: bold !important;
               }
               
