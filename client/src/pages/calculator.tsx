@@ -14,6 +14,7 @@ import { LoanCalculationsAdvanced, CompoundInterestCalculator } from "@/lib/loan
 import { DateUtils } from "@/lib/date-utils";
 import html2canvas from "html2canvas";
 import { printReceiptViaBluetooth, isBluetoothSupported } from "@/lib/bluetooth-printer";
+import { useToast } from "@/hooks/use-toast";
 
 interface CalcSummaryEntry {
   id: number;
@@ -40,6 +41,7 @@ const toShortDate = (isoDate: string): string => {
 };
 
 export default function InterestCalculator() {
+  const { toast } = useToast();
   const [principalAmount, setPrincipalAmount] = useState("");
   const [interestRate, setInterestRate] = useState("");
   const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
@@ -51,6 +53,7 @@ export default function InterestCalculator() {
   const [results, setResults] = useState<any>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
 
+  const CALC_COUNTER_KEY = 'calc_summary_counter';
   const [customerName, setCustomerName] = useState("");
   const [codeNumber, setCodeNumber] = useState("");
   const [summaryEntries, setSummaryEntries] = useState<CalcSummaryEntry[]>(() => {
@@ -59,7 +62,12 @@ export default function InterestCalculator() {
       return saved ? JSON.parse(saved) : [];
     } catch { return []; }
   });
-  const [summaryCounter, setSummaryCounter] = useState(1);
+  const [summaryCounter, setSummaryCounter] = useState(() => {
+    try {
+      const saved = sessionStorage.getItem(CALC_COUNTER_KEY);
+      return saved ? Number(saved) : 1;
+    } catch { return 1; }
+  });
   const summaryEntriesRef = useRef<CalcSummaryEntry[]>(summaryEntries);
   const summaryRef = useRef<HTMLDivElement>(null);
   const [isBtPrinting, setIsBtPrinting] = useState(false);
@@ -71,6 +79,12 @@ export default function InterestCalculator() {
       sessionStorage.setItem(CALC_SUMMARY_KEY, JSON.stringify(summaryEntries));
     } catch {}
   }, [summaryEntries]);
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(CALC_COUNTER_KEY, String(summaryCounter));
+    } catch {}
+  }, [summaryCounter]);
 
   const calculatePeriod = (start: string, end: string, mode: string) => {
     if (!start || !end) return null;
@@ -350,10 +364,16 @@ export default function InterestCalculator() {
     setResults(null);
     setPrincipalAmount("");
     setCodeNumber("");
+
+    toast({
+      title: "हिशोबात जोडले",
+      description: `${entry.customerName || 'कर्जदार'} - ₹${entry.principalAmount.toLocaleString('en-IN')}`,
+    });
+
     setTimeout(() => {
       summaryRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 150);
-  }, [results, summaryCounter, customerName, codeNumber, interestRate, startDate, endDate]);
+  }, [results, summaryCounter, customerName, codeNumber, interestRate, startDate, endDate, toast]);
 
   const handleDeleteEntry = useCallback((entryId: number) => {
     setSummaryEntries(prev => prev.filter(e => e.id !== entryId));
@@ -455,18 +475,22 @@ export default function InterestCalculator() {
     setIsBtPrinting(true);
     try {
       const canvas = await renderReceiptToCanvas(thermalHTML);
+      toast({ title: "कनेक्ट करत आहे...", description: "ब्लूटूथ प्रिंटर निवडा" });
       await printReceiptViaBluetooth(canvas, 576);
+      toast({ title: "यशस्वी", description: "प्रिंट पाठवले!" });
     } catch (error: any) {
       if (error?.message?.includes('cancelled') || error?.message?.includes('User cancelled')) {
         return;
       }
-      console.error("Bluetooth print error:", error);
+      const errMsg = error?.message || error?.name || String(error);
+      console.error("Bluetooth print error:", errMsg, error);
+      toast({ title: "ब्लूटूथ प्रिंट अयशस्वी", description: errMsg || "कृपया पुन्हा प्रयत्न करा", variant: "destructive" });
     } finally {
       setIsBtPrinting(false);
       if (btPrintBtnRef.current) btPrintBtnRef.current.blur();
       if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
     }
-  }, [generateThermalReceiptHTML, renderReceiptToCanvas, isBtPrinting]);
+  }, [generateThermalReceiptHTML, renderReceiptToCanvas, isBtPrinting, toast]);
 
   const clearAll = () => {
     setPrincipalAmount("");
