@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { ArrowLeft, Calculator, TrendingDown, AlertTriangle, Printer, Eye, Camera, FileSpreadsheet, Users, User } from "lucide-react";
+import { ArrowLeft, Calculator, TrendingDown, AlertTriangle, Printer, Eye, Camera, FileSpreadsheet, Users, User, Home } from "lucide-react";
 import * as XLSX from 'xlsx';
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
@@ -82,6 +82,14 @@ export default function OverdueReport() {
   const [, setLocation] = useLocation();
   const reportSectionRef = useRef<HTMLDivElement>(null);
   const dataTableRef = useRef<HTMLDivElement>(null);
+  const [sidebarHidden, setSidebarHidden] = useState(true);
+
+  useEffect(() => {
+    setSidebarHidden(true);
+    return () => {
+      setSidebarHidden(false);
+    };
+  }, []);
 
   useEffect(() => {
     const style = document.createElement('style');
@@ -1161,13 +1169,15 @@ export default function OverdueReport() {
       </div>
       
       <div className="lg:flex print:block">
-        <aside className="hidden lg:block lg:w-72 lg:fixed lg:inset-y-0 print:hidden">
-          <div className="sidebar-modern h-full">
-            <Sidebar />
-          </div>
-        </aside>
+        {!sidebarHidden && (
+          <aside className="hidden lg:block lg:w-72 lg:fixed lg:inset-y-0 print:hidden">
+            <div className="sidebar-modern h-full">
+              <Sidebar />
+            </div>
+          </aside>
+        )}
 
-        <main className="flex-1 w-full lg:pl-72 pb-16 lg:pb-0 print:pl-0 print:pb-0">
+        <main className={`flex-1 w-full ${sidebarHidden ? '' : 'lg:pl-72'} pb-16 lg:pb-0 print:pl-0 print:pb-0`}>
           <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-50 p-4 print:min-h-0 print:bg-white print:p-0">
             <div className="space-y-3 print:max-w-none print:mx-0 print:space-y-0 px-2 lg:px-4">
         <div className="flex items-center justify-between bg-white rounded-lg shadow-md p-3 print:hidden">
@@ -1181,9 +1191,17 @@ export default function OverdueReport() {
               </h1>
             </div>
           </div>
-          <div className="flex items-center gap-2 text-red-600">
-            <AlertTriangle className="h-5 w-5" />
-            <span className="font-semibold">Loss Analysis</span>
+          <div className="flex items-center gap-2">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => setLocation("/dashboard")} 
+              className="hidden lg:flex items-center gap-1.5 text-indigo-600 border-indigo-200 hover:bg-indigo-50 hover:border-indigo-400"
+              title="मुख्य पटल"
+            >
+              <Home className="h-4 w-4" />
+              <span className="text-xs font-medium">मुख्य पटल</span>
+            </Button>
           </div>
         </div>
 
@@ -1442,19 +1460,19 @@ export default function OverdueReport() {
                     <table className="w-full border-collapse">
                       <thead>
                         <tr className="bg-gradient-to-r from-red-50 to-orange-50 border-b-2 border-red-200">
-                          <th className="border border-gray-300 px-3 py-3 text-left text-base font-bold text-gray-700">खाते नं.</th>
-                          <th className="border border-gray-300 px-3 py-3 text-left text-base font-bold text-gray-700">नाव</th>
-                          <th className="border border-gray-300 px-3 py-3 text-left text-base font-bold text-gray-700">फोन</th>
-                          <th className="border border-gray-300 px-3 py-3 text-left text-base font-bold text-gray-700">गट</th>
-                          <th className="border border-gray-300 px-3 py-3 text-center text-base font-bold text-gray-700">तारीख</th>
-                          <th className="border border-gray-300 px-3 py-3 text-right text-base font-bold text-gray-700">मुद्दल</th>
-                          <th className="border border-gray-300 px-3 py-3 text-right text-base font-bold text-gray-700">व्याज</th>
-                          <th className="border border-gray-300 px-3 py-3 text-center text-base font-bold text-gray-700">वजन</th>
-                          <th className="border border-gray-300 px-3 py-3 text-center text-base font-bold text-gray-700">शुद्धता</th>
-                          <th className="border border-gray-300 px-3 py-3 text-right text-base font-bold text-gray-700">तारण मूल्य</th>
-                          <th className="border border-gray-300 px-3 py-3 text-right text-base font-bold text-gray-700">एकूण</th>
-                          <th className="border border-gray-300 px-3 py-3 text-right text-base font-bold text-gray-700">नुकसान</th>
-                          <th className="border border-gray-300 px-3 py-3 text-center text-base font-bold text-gray-700">दिवस</th>
+                          <th className="border border-gray-300 px-2 py-2 text-left text-sm font-bold text-gray-700 whitespace-nowrap">खाते नं.</th>
+                          <th className="border border-gray-300 px-2 py-2 text-left text-sm font-bold text-gray-700 whitespace-nowrap">नाव</th>
+                          <th className="border border-gray-300 px-2 py-2 text-left text-sm font-bold text-gray-700 whitespace-nowrap">फोन</th>
+                          <th className="border border-gray-300 px-2 py-2 text-left text-sm font-bold text-gray-700 whitespace-nowrap">गट</th>
+                          <th className="border border-gray-300 px-2 py-2 text-center text-sm font-bold text-gray-700 whitespace-nowrap">तारीख</th>
+                          <th className="border border-gray-300 px-2 py-2 text-right text-sm font-bold text-gray-700 whitespace-nowrap">मुद्दल</th>
+                          <th className="border border-gray-300 px-2 py-2 text-right text-sm font-bold text-gray-700 whitespace-nowrap">व्याज</th>
+                          <th className="border border-gray-300 px-2 py-2 text-center text-sm font-bold text-gray-700 whitespace-nowrap">वजन</th>
+                          <th className="border border-gray-300 px-2 py-2 text-center text-sm font-bold text-gray-700 whitespace-nowrap">शुद्धता</th>
+                          <th className="border border-gray-300 px-2 py-2 text-right text-sm font-bold text-gray-700 whitespace-nowrap">तारण मूल्य</th>
+                          <th className="border border-gray-300 px-2 py-2 text-right text-sm font-bold text-gray-700 whitespace-nowrap">एकूण</th>
+                          <th className="border border-gray-300 px-2 py-2 text-right text-sm font-bold text-gray-700 whitespace-nowrap">नुकसान</th>
+                          <th className="border border-gray-300 px-2 py-2 text-center text-sm font-bold text-gray-700 whitespace-nowrap">दिवस</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -1473,23 +1491,23 @@ export default function OverdueReport() {
                                   : index % 2 === 0 ? 'bg-white border-l-transparent' : 'bg-gray-50 border-l-transparent',
                                 "hover:bg-indigo-50 hover:border-l-indigo-300"
                               )}>
-                              <td className="border border-gray-300 px-3 py-3 text-base font-medium text-gray-700">{item.accountNumber || '—'}</td>
-                              <td className="border border-gray-300 px-3 py-3">
-                                <div className="text-base font-bold text-gray-800">{item.borrowerName}</div>
+                              <td className="border border-gray-300 px-2 py-2 text-sm font-medium text-gray-700 whitespace-nowrap">{item.accountNumber || '—'}</td>
+                              <td className="border border-gray-300 px-2 py-2">
+                                <div className="text-sm font-bold text-gray-800 whitespace-nowrap">{item.borrowerName}</div>
                                 {item.goldItem && (
-                                  <div className="text-xs text-gray-400">{item.goldItem}</div>
+                                  <div className="text-xs text-gray-400 whitespace-nowrap">{item.goldItem}</div>
                                 )}
                               </td>
-                              <td className="border border-gray-300 px-3 py-3 text-base text-indigo-600 font-medium">{item.borrowerPhone}</td>
-                              <td className="border border-gray-300 px-3 py-3 text-base text-gray-600">{item.groupName}</td>
-                              <td className="border border-gray-300 px-3 py-3 text-base text-center text-gray-700">{formatDate(item.loanDate)}</td>
-                              <td className="border border-gray-300 px-3 py-3 text-base text-right font-semibold text-purple-700">{formatCurrency(item.principalAmount)}</td>
-                              <td className="border border-gray-300 px-3 py-3 text-base text-right font-semibold text-orange-700">{formatCurrency(item.interestToDate)}</td>
-                              <td className="border border-gray-300 px-3 py-3 text-base text-center font-semibold text-amber-700">{item.goldWeight || '—'}</td>
-                              <td className="border border-gray-300 px-3 py-3 text-base text-center font-semibold text-blue-700">{`${item.purityUsed}%`}</td>
-                              <td className="border border-gray-300 px-3 py-3 text-base text-right font-semibold text-green-700">{formatCurrency(item.currentGoldValue)}</td>
-                              <td className="border border-gray-300 px-3 py-3 text-base text-right font-bold text-indigo-700">{formatCurrency(item.totalAmount)}</td>
-                              <td className={`border border-gray-300 px-3 py-3 text-base text-right font-bold ${security.bgColor}`}>
+                              <td className="border border-gray-300 px-2 py-2 text-sm text-indigo-600 font-medium whitespace-nowrap">{item.borrowerPhone}</td>
+                              <td className="border border-gray-300 px-2 py-2 text-sm text-gray-600 whitespace-nowrap">{item.groupName}</td>
+                              <td className="border border-gray-300 px-2 py-2 text-sm text-center text-gray-700 whitespace-nowrap">{formatDate(item.loanDate)}</td>
+                              <td className="border border-gray-300 px-2 py-2 text-sm text-right font-semibold text-purple-700 whitespace-nowrap">{formatCurrency(item.principalAmount)}</td>
+                              <td className="border border-gray-300 px-2 py-2 text-sm text-right font-semibold text-orange-700 whitespace-nowrap">{formatCurrency(item.interestToDate)}</td>
+                              <td className="border border-gray-300 px-2 py-2 text-sm text-center font-semibold text-amber-700 whitespace-nowrap">{item.goldWeight || '—'}</td>
+                              <td className="border border-gray-300 px-2 py-2 text-sm text-center font-semibold text-blue-700 whitespace-nowrap">{`${item.purityUsed}%`}</td>
+                              <td className="border border-gray-300 px-2 py-2 text-sm text-right font-semibold text-green-700 whitespace-nowrap">{formatCurrency(item.currentGoldValue)}</td>
+                              <td className="border border-gray-300 px-2 py-2 text-sm text-right font-bold text-indigo-700 whitespace-nowrap">{formatCurrency(item.totalAmount)}</td>
+                              <td className={`border border-gray-300 px-2 py-2 text-sm text-right font-bold ${security.bgColor}`}>
                                 <div className={`${security.color}`}>
                                   {item.lossAmount > 0 ? formatCurrency(item.lossAmount) : ''}
                                 </div>
@@ -1575,16 +1593,16 @@ export default function OverdueReport() {
                     <table className="w-full border-collapse">
                       <thead>
                         <tr className="bg-gradient-to-r from-amber-50 to-orange-50 border-b-2 border-amber-200">
-                          <th className="border border-gray-300 px-3 py-3 text-left text-base font-bold text-gray-700">खाते नं.</th>
-                          <th className="border border-gray-300 px-3 py-3 text-left text-base font-bold text-gray-700">नाव</th>
-                          <th className="border border-gray-300 px-3 py-3 text-left text-base font-bold text-gray-700">फोन</th>
-                          <th className="border border-gray-300 px-3 py-3 text-left text-base font-bold text-gray-700">गट</th>
-                          <th className="border border-gray-300 px-3 py-3 text-center text-base font-bold text-gray-700">तारीख</th>
-                          <th className="border border-gray-300 px-3 py-3 text-right text-base font-bold text-gray-700">मुद्दल</th>
-                          <th className="border border-gray-300 px-3 py-3 text-right text-base font-bold text-gray-700">व्याज</th>
-                          <th className="border border-gray-300 px-3 py-3 text-right text-base font-bold text-gray-700">एकूण थकबाकी</th>
-                          <th className="border border-gray-300 px-3 py-3 text-center text-base font-bold text-gray-700">दिवस</th>
-                          <th className="border border-gray-300 px-3 py-3 text-right text-base font-bold text-gray-700">नुकसान</th>
+                          <th className="border border-gray-300 px-2 py-2 text-left text-sm font-bold text-gray-700 whitespace-nowrap">खाते नं.</th>
+                          <th className="border border-gray-300 px-2 py-2 text-left text-sm font-bold text-gray-700 whitespace-nowrap">नाव</th>
+                          <th className="border border-gray-300 px-2 py-2 text-left text-sm font-bold text-gray-700 whitespace-nowrap">फोन</th>
+                          <th className="border border-gray-300 px-2 py-2 text-left text-sm font-bold text-gray-700 whitespace-nowrap">गट</th>
+                          <th className="border border-gray-300 px-2 py-2 text-center text-sm font-bold text-gray-700 whitespace-nowrap">तारीख</th>
+                          <th className="border border-gray-300 px-2 py-2 text-right text-sm font-bold text-gray-700 whitespace-nowrap">मुद्दल</th>
+                          <th className="border border-gray-300 px-2 py-2 text-right text-sm font-bold text-gray-700 whitespace-nowrap">व्याज</th>
+                          <th className="border border-gray-300 px-2 py-2 text-right text-sm font-bold text-gray-700 whitespace-nowrap">एकूण थकबाकी</th>
+                          <th className="border border-gray-300 px-2 py-2 text-center text-sm font-bold text-gray-700 whitespace-nowrap">दिवस</th>
+                          <th className="border border-gray-300 px-2 py-2 text-right text-sm font-bold text-gray-700 whitespace-nowrap">नुकसान</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -1597,21 +1615,21 @@ export default function OverdueReport() {
                               index % 2 === 0 ? 'bg-white' : 'bg-amber-50/30',
                               "hover:bg-amber-50"
                             )}>
-                            <td className="border border-gray-300 px-3 py-3 text-base font-medium text-gray-700">{item.accountNumber || '—'}</td>
-                            <td className="border border-gray-300 px-3 py-3">
-                              <div className="text-base font-bold text-gray-800">{item.borrowerName}</div>
+                            <td className="border border-gray-300 px-2 py-2 text-sm font-medium text-gray-700 whitespace-nowrap">{item.accountNumber || '—'}</td>
+                            <td className="border border-gray-300 px-2 py-2">
+                              <div className="text-sm font-bold text-gray-800 whitespace-nowrap">{item.borrowerName}</div>
                               {item.goldItem && item.goldItem !== 'विनातारण' && (
-                                <div className="text-xs text-gray-400">{item.goldItem}</div>
+                                <div className="text-xs text-gray-400 whitespace-nowrap">{item.goldItem}</div>
                               )}
                             </td>
-                            <td className="border border-gray-300 px-3 py-3 text-base text-indigo-600 font-medium">{item.borrowerPhone}</td>
-                            <td className="border border-gray-300 px-3 py-3 text-base text-gray-600">{item.groupName}</td>
-                            <td className="border border-gray-300 px-3 py-3 text-base text-center text-gray-700">{formatDate(item.loanDate)}</td>
-                            <td className="border border-gray-300 px-3 py-3 text-base text-right font-semibold text-purple-700">{formatCurrency(item.principalAmount)}</td>
-                            <td className="border border-gray-300 px-3 py-3 text-base text-right font-semibold text-orange-700">{formatCurrency(item.interestToDate)}</td>
-                            <td className="border border-gray-300 px-3 py-3 text-base text-right font-bold text-red-700">{formatCurrency(item.totalAmount)}</td>
-                            <td className="border border-gray-300 px-3 py-3 text-base text-center text-gray-700">{item.daysOverdue}</td>
-                            <td className="border border-gray-300 px-3 py-3 text-base text-right font-bold text-red-700">{formatCurrency(item.lossAmount)}</td>
+                            <td className="border border-gray-300 px-2 py-2 text-sm text-indigo-600 font-medium whitespace-nowrap">{item.borrowerPhone}</td>
+                            <td className="border border-gray-300 px-2 py-2 text-sm text-gray-600 whitespace-nowrap">{item.groupName}</td>
+                            <td className="border border-gray-300 px-2 py-2 text-sm text-center text-gray-700 whitespace-nowrap">{formatDate(item.loanDate)}</td>
+                            <td className="border border-gray-300 px-2 py-2 text-sm text-right font-semibold text-purple-700 whitespace-nowrap">{formatCurrency(item.principalAmount)}</td>
+                            <td className="border border-gray-300 px-2 py-2 text-sm text-right font-semibold text-orange-700 whitespace-nowrap">{formatCurrency(item.interestToDate)}</td>
+                            <td className="border border-gray-300 px-2 py-2 text-sm text-right font-bold text-red-700 whitespace-nowrap">{formatCurrency(item.totalAmount)}</td>
+                            <td className="border border-gray-300 px-2 py-2 text-sm text-center text-gray-700 whitespace-nowrap">{item.daysOverdue}</td>
+                            <td className="border border-gray-300 px-2 py-2 text-sm text-right font-bold text-red-700 whitespace-nowrap">{formatCurrency(item.lossAmount)}</td>
                           </tr>
                         ))}
                         <tr className="bg-amber-50 border-t-2 border-amber-300">
