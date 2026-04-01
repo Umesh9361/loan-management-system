@@ -1,10 +1,10 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, TrendingUp, AlertTriangle, Printer, FileSpreadsheet, Users, User, BarChart3, Loader2, Home } from "lucide-react";
+import { ArrowLeft, TrendingUp, AlertTriangle, Printer, FileSpreadsheet, Users, User, BarChart3, Loader2 } from "lucide-react";
 import * as XLSX from 'xlsx';
 import { useLocation } from "wouter";
 import { cn } from "@/lib/utils";
@@ -77,14 +77,6 @@ function getCategoryStyle(category: string): { color: string; bgColor: string; b
 export default function LoadingReport() {
   const [, setLocation] = useLocation();
   const reportSectionRef = useRef<HTMLDivElement>(null);
-  const [sidebarHidden, setSidebarHidden] = useState(true);
-
-  useEffect(() => {
-    setSidebarHidden(true);
-    return () => {
-      setSidebarHidden(false);
-    };
-  }, []);
 
   const handleBackNavigation = () => {
     try {
@@ -371,21 +363,19 @@ export default function LoadingReport() {
       </div>
       
       <div className="lg:flex print:block">
-        {!sidebarHidden && (
-          <aside className="hidden lg:block lg:w-72 lg:fixed lg:inset-y-0 print:hidden">
-            <div className="sidebar-modern h-full">
-              <Sidebar />
-            </div>
-          </aside>
-        )}
+        <aside className="hidden lg:block lg:w-72 lg:fixed lg:inset-y-0 print:hidden">
+          <div className="sidebar-modern h-full">
+            <Sidebar />
+          </div>
+        </aside>
 
-        <main className={`flex-1 w-full ${sidebarHidden ? '' : 'lg:pl-72'} pb-16 lg:pb-0 print:pl-0 print:pb-0`}>
+        <main className="flex-1 w-full lg:pl-72 pb-16 lg:pb-0 print:pl-0 print:pb-0">
           <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-purple-50 p-4 print:min-h-0 print:bg-white print:p-0">
             <div className="space-y-3 print:max-w-none print:mx-0 print:space-y-0 px-2 lg:px-4">
 
               <div className="flex items-center justify-between bg-white rounded-lg shadow-md p-3 print:hidden">
                 <div className="flex items-center gap-3">
-                  <Button variant="ghost" size="sm" onClick={handleBackNavigation} title="मागे जा">
+                  <Button variant="ghost" size="sm" onClick={handleBackNavigation}>
                     <ArrowLeft className="h-4 w-4" />
                   </Button>
                   <div>
@@ -401,16 +391,7 @@ export default function LoadingReport() {
                       दर: ₹{summary.goldRateUsed?.toLocaleString('en-IN')}/g ({summary.goldRateSource})
                     </span>
                   )}
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={() => setLocation("/dashboard")} 
-                    className="hidden lg:flex items-center gap-1.5 text-indigo-600 border-indigo-200 hover:bg-indigo-50 hover:border-indigo-400"
-                    title="मुख्य पटल"
-                  >
-                    <Home className="h-4 w-4" />
-                    <span className="text-xs font-medium">मुख्य पटल</span>
-                  </Button>
+                  <TrendingUp className="h-5 w-5 text-indigo-600" />
                 </div>
               </div>
 
