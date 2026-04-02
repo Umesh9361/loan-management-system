@@ -15,6 +15,7 @@ import { Sidebar } from "./sidebar";
 import { AuthService } from "@/lib/auth";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { useSafeNavigation } from "@/hooks/use-safe-navigation";
+import { useDedicatedMode } from "@/contexts/dedicated-mode";
 import { NotificationBell } from "@/components/maturity-reminder";
 import { QrScanButton } from "@/components/qr-scanner-modal";
 import { 
@@ -61,6 +62,12 @@ interface MobileNavProps {
 }
 
 export function MobileNav({ hideBottomNav = false }: MobileNavProps = {}) {
+  const { isDedicatedMode } = useDedicatedMode();
+  if (isDedicatedMode) return null;
+  return <MobileNavInner hideBottomNav={hideBottomNav} />;
+}
+
+function MobileNavInner({ hideBottomNav = false }: MobileNavProps = {}) {
   const [location, setLocation] = useLocation();
   const [isOpen, setIsOpen] = useState(false);
   const { safeNavigate } = useSafeNavigation();

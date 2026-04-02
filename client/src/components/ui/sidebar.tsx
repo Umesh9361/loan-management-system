@@ -6,6 +6,7 @@ import { Separator } from "@/components/ui/separator";
 import { useQuery } from "@tanstack/react-query";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { useEffect, useRef } from "react";
+import { useDedicatedMode } from "@/contexts/dedicated-mode";
 import { NotificationBell } from "@/components/maturity-reminder";
 import { 
   Building, 
@@ -232,6 +233,12 @@ interface SidebarProps {
 }
 
 export function Sidebar({ className }: SidebarProps) {
+  const { isDedicatedMode } = useDedicatedMode();
+  if (isDedicatedMode) return null;
+  return <SidebarInner className={className} />;
+}
+
+function SidebarInner({ className }: SidebarProps) {
   const [location] = useLocation();
   const scrollRef = useRef<HTMLDivElement>(null);
   

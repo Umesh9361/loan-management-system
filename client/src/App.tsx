@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useMemo } from "react";
 import { Switch, Route, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider, useQuery } from "@tanstack/react-query";
@@ -9,7 +9,8 @@ import { I18nProvider } from "@/providers/I18nProvider";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { useMidnightLogout } from "@/hooks/use-midnight-logout";
 import { useSafeNavigation } from "@/hooks/use-safe-navigation";
-// Import date locale setup
+import { AuthService } from "@/lib/auth";
+import { DedicatedModeProvider } from "@/contexts/dedicated-mode";
 import "@/lib/date-locale";
 import NotFound from "@/pages/not-found";
 import { NoPermissionPage } from "@/components/ProtectedRoute";
@@ -71,6 +72,109 @@ function RedirectToDashboard() {
   const [, setLocation] = useLocation();
   useEffect(() => { setLocation('/'); }, []);
   return null;
+}
+
+const PERMISSION_ROUTE_MAP: Record<string, { route: string; label: string }> = {
+  canAccessCompanyRegistration: { route: '/company', label: 'कंपनी नोंदणी' },
+  canAccessGroupManagement: { route: '/groups', label: 'ग्रुप व्यवस्थापन' },
+  canAccessLoanRegistration: { route: '/loans', label: 'कर्ज नोंदणी' },
+  canAccessLoanClosure: { route: '/closure', label: 'कर्ज बंद करा' },
+  canAccessCashTransactions: { route: '/cash-transactions', label: 'रोकड व्यवहार' },
+  canAccessPartyManagement: { route: '/party-management', label: 'अकाउंट क्रिएशन' },
+  canAccessMobileCashbook: { route: '/mobile-cashbook', label: 'मोबाईल रोकड वही' },
+  canAccessInterestCalculator: { route: '/calculator', label: 'व्याज कॅल्क्युलेटर' },
+  canViewReceiptGenerator: { route: '/reports/receipt-generator', label: 'पावती जनरेशन' },
+  canViewCashBookReport: { route: '/reports/cashbook', label: 'रोकड वही' },
+  canViewCapitalReport: { route: '/reports/capital-account', label: 'भांडवल खाते' },
+  canViewLedgerReport: { route: '/reports/account-ledger', label: 'खाते वही' },
+  canViewBorrowerListReport: { route: '/reports/borrower-list', label: 'कर्जदार सूची' },
+  canViewOverdueReport: { route: '/reports/overdue', label: 'लॉस रिपोर्ट' },
+  canViewLoadingReport: { route: '/reports/loading-report', label: 'लोडिंग रिपोर्ट' },
+  canViewAccountSummaryReport: { route: '/reports/account-summary', label: 'खाते सारांश' },
+  canViewInformationRegister: { route: '/reports/information-register', label: 'माहिती तक्ता' },
+  canViewNoticeGenerator: { route: '/reports/notice-generator', label: 'नोटीस' },
+  canViewBalanceSheet: { route: '/reports/balance-sheet', label: 'ताळेबंद' },
+  canViewProfitLoss: { route: '/reports/profit-loss', label: 'नफा-तोटा पत्रक' },
+};
+
+function getActivePermissions(perms: any): { route: string; label: string; key: string }[] {
+  const active: { route: string; label: string; key: string }[] = [];
+  for (const [key, info] of Object.entries(PERMISSION_ROUTE_MAP)) {
+    if (perms[key]) {
+      active.push({ ...info, key });
+    }
+  }
+  return active;
+}
+
+function getDedicatedComponent(permKey: string): any {
+  const componentMap: Record<string, any> = {
+    canAccessCompanyRegistration: Company,
+    canAccessGroupManagement: Groups,
+    canAccessLoanRegistration: Loans,
+    canAccessLoanClosure: Closure,
+    canAccessCashTransactions: CashTransactions,
+    canAccessPartyManagement: PartyManagement,
+    canAccessMobileCashbook: MobileCashbook,
+    canAccessInterestCalculator: InterestCalculator,
+    canViewReceiptGenerator: ReceiptGeneratorPage,
+    canViewCashBookReport: CashBook,
+    canViewCapitalReport: CapitalAccount,
+    canViewLedgerReport: AccountLedger,
+    canViewBorrowerListReport: BorrowerListReports,
+    canViewOverdueReport: OverdueReport,
+    canViewLoadingReport: LoadingReport,
+    canViewAccountSummaryReport: AccountSummaryReport,
+    canViewInformationRegister: InformationRegister,
+    canViewNoticeGenerator: NoticeGeneratorPage,
+    canViewBalanceSheet: BalanceSheet,
+    canViewProfitLoss: ProfitLoss,
+  };
+  return componentMap[permKey] || null;
+}
+
+function DedicatedModeRedirect({ targetRoute }: { targetRoute: string }) {
+  const [location, setLocation] = useLocation();
+  useEffect(() => {
+    if (location === '/' || location === '') {
+      setLocation(targetRoute);
+    }
+  }, [location, targetRoute, setLocation]);
+  return null;
+}
+
+function DedicatedModeHeader({ userName, label }: { userName: string; label: string }) {
+  const handleLogout = async () => {
+    try {
+      await AuthService.logout();
+      window.location.href = '/';
+    } catch {
+      window.location.href = '/';
+    }
+  };
+
+  return (
+    <div className="bg-white border-b border-gray-200 shadow-sm print:hidden">
+      <div className="flex items-center justify-between px-4 py-2.5">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
+            <span className="text-white font-bold text-sm">LP</span>
+          </div>
+          <div>
+            <span className="text-sm font-semibold text-indigo-700">{label}</span>
+            <span className="text-xs text-gray-400 ml-2 hidden sm:inline">| {userName}</span>
+          </div>
+        </div>
+        <button
+          onClick={handleLogout}
+          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-md transition-colors"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          बाहेर पडा
+        </button>
+      </div>
+    </div>
+  );
 }
 
 const INACTIVITY_KEY = 'last_active_timestamp';
@@ -255,20 +359,42 @@ function AppContent() {
       );
     }
     const perms = (userPermissions as any) || {};
+    const activePerms = getActivePermissions(perms);
+    const isDedicatedMode = activePerms.length === 1;
+    const dedicatedRoute = isDedicatedMode ? activePerms[0] : null;
+
+    if (isDedicatedMode && dedicatedRoute) {
+      return (
+        <DedicatedModeProvider isDedicatedMode={true}>
+          <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-purple-50">
+            <DedicatedModeHeader 
+              userName={actualUser.username || ''} 
+              label={dedicatedRoute.label} 
+            />
+            <DedicatedModeRedirect targetRoute={dedicatedRoute.route} />
+            <Switch>
+              <Route path={dedicatedRoute.route}>
+                {() => {
+                  const RouteComponent = getDedicatedComponent(dedicatedRoute.key);
+                  return RouteComponent ? <RouteComponent /> : null;
+                }}
+              </Route>
+              <Route>{() => <DedicatedModeRedirect targetRoute={dedicatedRoute.route} />}</Route>
+            </Switch>
+          </div>
+        </DedicatedModeProvider>
+      );
+    }
     
     return (
       <div className="pb-16">
         <Switch>
-          {/* Always available routes */}
           <Route path="/" component={Dashboard} />
-        {/* Profile page removed for normal users - Admin/Super Admin only */}
         
-        {/* Core Features - Permission controlled */}
         {perms.canAccessCompanyRegistration && <Route path="/company" component={Company} />}
         {perms.canAccessGroupManagement && <Route path="/groups" component={Groups} />}
         {perms.canAccessLoanRegistration && <Route path="/loans" component={Loans} />}
         {perms.canAccessLoanClosure && <Route path="/closure" component={Closure} />}
-        {/* Bulk closure feature removed - single closure only */}
         {perms.canAccessCashTransactions && <Route path="/cash-transactions" component={CashTransactions} />}
         {perms.canAccessCashTransactions && <Route path="/cash-dashboard" component={CashDashboard} />}
         {perms.canAccessPartyManagement && <Route path="/party-management" component={PartyManagement} />}
@@ -276,10 +402,6 @@ function AppContent() {
         {perms.canAccessInterestCalculator && <Route path="/calculator" component={InterestCalculator} />}
         {perms.canAccessLoanRegistration && <Route path="/inventory-scan" component={InventoryScan} />}
         
-        {/* Admin Functions - REMOVED: Regular users should never access admin panels */}
-        {/* User Management और Data Management admin-only features हैं */}
-        
-        {/* Reports - Permission controlled */}
         {perms.canViewReceiptGenerator && <Route path="/reports/receipt-generator" component={ReceiptGeneratorPage} />}
         {perms.canViewNoticeGenerator && <Route path="/reports/notice-generator" component={NoticeGeneratorPage} />}
         {perms.canViewReceiptGenerator && <Route path="/reports/jawab-generator" component={JawabGeneratorPage} />}
@@ -299,7 +421,6 @@ function AppContent() {
         {perms.canViewBalanceSheet && <Route path="/reports/balance-sheet" component={BalanceSheet} />}
         {perms.canViewProfitLoss && <Route path="/reports/profit-loss" component={ProfitLoss} />}
         
-        {/* Receipt routes - Only if loan closure permitted */}
           {perms.canAccessLoanClosure && <Route path="/receipt/closure/:loanId" component={ClosureReceiptPage} />}
           {perms.canViewReceiptGenerator && <Route path="/receipt/annual-statement" component={AnnualStatementPage} />}
           <Route path="/qr/:loanId" component={QrScan} />
