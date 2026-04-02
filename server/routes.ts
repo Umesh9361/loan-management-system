@@ -2724,8 +2724,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Loading Report API - Dual-Logic LTV Overloading Analysis
   app.get("/api/loading-report", requireAuth, async (req: any, res: any) => {
     try {
-      const { groupId, customerName, goldRate, silverRate } = req.query;
+      const { groupId, customerName, goldRate, silverRate, page: pageParam, pageSize: pageSizeParam, export: exportAll } = req.query;
       const tenantId = req.session.tenantId!;
+      const page = Math.max(1, parseInt(pageParam as string) || 1);
+      const pageSize = Math.min(200, Math.max(10, parseInt(pageSizeParam as string) || 50));
 
       let silverRatePerGram = 0;
       if (silverRate && parseFloat(silverRate as string) > 0) {
@@ -3007,10 +3009,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const overloadedCount = overloaded.filter(i => i.ltvPercent > standardLTV).length;
       const totalOverloadAmount = overloaded.reduce((sum, i) => sum + (i.loadingAmount > 0 ? i.loadingAmount : 0), 0);
 
-      console.log(`📊 LOADING REPORT: ${overloaded.length} flagged out of ${allItems.length} total | Avg LTV: ${avgLTV}% | Gold: ₹${goldRatePerGram}/g (${goldRateSource}) | Suspect: ${suspectCount}`);
+      const totalFlagged = overloaded.length;
+      const totalPages = Math.ceil(totalFlagged / pageSize);
+      const paginatedItems = exportAll === 'all' ? overloaded : overloaded.slice((page - 1) * pageSize, page * pageSize);
+
+      console.log(`📊 LOADING REPORT: ${totalFlagged} flagged out of ${allItems.length} total | Page ${page}/${totalPages} (${paginatedItems.length} items) | Avg LTV: ${avgLTV}% | Gold: ₹${goldRatePerGram}/g (${goldRateSource}) | Suspect: ${suspectCount}`);
 
       res.json({
-        items: overloaded,
+        items: paginatedItems,
         summary: {
           totalLoans: allItems.length,
           avgLTV,
@@ -3026,6 +3032,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           purityVedan: vedanPurity,
           purityFine: finePurity,
           goldRateSource: goldRateSource || 'N/A',
+          totalFlagged,
+          totalPages,
+          currentPage: page,
+          pageSize,
         },
       });
     } catch (error) {

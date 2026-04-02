@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, TrendingUp, AlertTriangle, Printer, FileSpreadsheet, Users, User, BarChart3, Loader2 } from "lucide-react";
+import { ArrowLeft, TrendingUp, AlertTriangle, Printer, FileSpreadsheet, Users, User, BarChart3, Loader2, Home, ChevronLeft, ChevronRight, Filter } from "lucide-react";
 import * as XLSX from 'xlsx';
 import { useLocation } from "wouter";
 import { cn } from "@/lib/utils";
@@ -53,6 +53,10 @@ interface LoadingSummary {
   totalOverloadAmount: number;
   goldRateUsed: number;
   goldRateSource: string;
+  totalFlagged: number;
+  totalPages: number;
+  currentPage: number;
+  pageSize: number;
 }
 
 interface LoadingReportData {
@@ -100,6 +104,11 @@ export default function LoadingReport() {
   const [goldRateManuallyEdited, setGoldRateManuallyEdited] = useState(false);
   const [silverRateInput, setSilverRateInput] = useState("");
   const [silverRateManuallyEdited, setSilverRateManuallyEdited] = useState(false);
+  const [reportGenerated, setReportGenerated] = useState(false);
+  const [sidebarHidden, setSidebarHidden] = useState(false);
+  const [shouldScrollToReport, setShouldScrollToReport] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const dataTableRef = useRef<HTMLDivElement>(null);
   const customerInputRef = useRef<HTMLInputElement>(null);
   const customerSuggestionsRef = useRef<HTMLDivElement>(null);
 
@@ -174,36 +183,101 @@ export default function LoadingReport() {
     setSelectedSuggestionIndex(-1);
   };
 
-  const queryParams = new URLSearchParams();
-  if (activeTab === "group") {
-    queryParams.append('groupId', groupId);
-  }
-  if (activeTab === "customer" && selectedCustomerName) {
-    queryParams.append('customerName', selectedCustomerName);
-  }
-  if (goldRateInput) {
-    queryParams.append('goldRate', goldRateInput);
-  }
-  if (silverRateInput) {
-    queryParams.append('silverRate', silverRateInput);
-  }
+  const buildQueryParams = (page = 1, exportAll = false) => {
+    const params = new URLSearchParams();
+    if (activeTab === "group") {
+      params.append('groupId', groupId);
+    }
+    if (activeTab === "customer" && selectedCustomerName) {
+      params.append('customerName', selectedCustomerName);
+    }
+    if (goldRateInput) {
+      params.append('goldRate', goldRateInput);
+    }
+    if (silverRateInput) {
+      params.append('silverRate', silverRateInput);
+    }
+    params.append('page', String(page));
+    params.append('pageSize', '50');
+    if (exportAll) {
+      params.append('export', 'all');
+    }
+    return params;
+  };
 
-  const shouldFetch = activeTab === "group" || (activeTab === "customer" && !!selectedCustomerName);
-
-  const { data: reportData, isLoading } = useQuery<LoadingReportData>({
-    queryKey: ['/api/loading-report', activeTab, groupId, selectedCustomerName, goldRateInput, silverRateInput],
+  const { data: reportData, isLoading: isGenerating, refetch: generateReport } = useQuery<LoadingReportData>({
+    queryKey: ['/api/loading-report', activeTab, groupId, selectedCustomerName, goldRateInput, silverRateInput, currentPage],
     queryFn: async () => {
-      const res = await fetch(`/api/loading-report?${queryParams.toString()}`, { credentials: 'include' });
+      const params = buildQueryParams(currentPage);
+      const res = await fetch(`/api/loading-report?${params.toString()}`, { credentials: 'include' });
       if (!res.ok) throw new Error('Failed to fetch loading report');
       return res.json();
     },
-    enabled: shouldFetch,
+    enabled: false,
     staleTime: 60 * 1000,
   });
 
   const items = reportData?.items || [];
   const summary = reportData?.summary;
   const hasSilverLoans = items.some(item => item.metalType === 'silver');
+
+  const fetchAllForExport = async () => {
+    const params = buildQueryParams(1, true);
+    const res = await fetch(`/api/loading-report?${params.toString()}`, { credentials: 'include' });
+    if (!res.ok) throw new Error('Failed to fetch loading report');
+    return res.json() as Promise<LoadingReportData>;
+  };
+
+  const handleGenerateReport = () => {
+    if (!goldRateInput) {
+      alert("कृपया सोन्याचा दर भरा / Please enter gold rate");
+      return;
+    }
+    if (activeTab === "customer" && !selectedCustomerName) {
+      alert("कृपया कर्जदार निवडा / Please select a borrower");
+      return;
+    }
+    setCurrentPage(1);
+    setTimeout(() => {
+      generateReport();
+      setReportGenerated(true);
+      setSidebarHidden(true);
+      setShouldScrollToReport(true);
+    }, 50);
+  };
+
+  const handleResetFilters = () => {
+    setGroupId("all");
+    setCustomerSearchTerm("");
+    setSelectedCustomerName("");
+    setGoldRateManuallyEdited(false);
+    setSilverRateManuallyEdited(false);
+    if (goldRateData?.perGram) setGoldRateInput(String(goldRateData.perGram));
+    if (silverRateData?.perGram) setSilverRateInput(String(silverRateData.perGram));
+    setReportGenerated(false);
+    setSidebarHidden(false);
+    setCurrentPage(1);
+  };
+
+  const handlePageChange = (newPage: number) => {
+    setCurrentPage(newPage);
+    setShouldScrollToReport(true);
+  };
+
+  useEffect(() => {
+    if (reportGenerated && currentPage >= 1) {
+      generateReport();
+    }
+  }, [currentPage]);
+
+  useEffect(() => {
+    if (shouldScrollToReport && reportGenerated && !isGenerating && dataTableRef.current) {
+      setTimeout(() => {
+        dataTableRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        setShouldScrollToReport(false);
+      }, 300);
+    }
+  }, [shouldScrollToReport, reportGenerated, isGenerating, reportData]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -229,10 +303,18 @@ export default function LoadingReport() {
     return date.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: '2-digit' });
   };
 
-  const handleExportExcel = () => {
+  const handleExportExcel = async () => {
     if (items.length === 0) return;
 
-    const excelData = items.map((item, index) => ({
+    let exportItems = items;
+    if (summary && summary.totalFlagged > summary.pageSize) {
+      try {
+        const allData = await fetchAllForExport();
+        exportItems = allData.items;
+      } catch { }
+    }
+
+    const excelData = exportItems.map((item, index) => ({
       'अ.क्र.': index + 1,
       'कर्जदार नाव': item.borrowerName,
       'खाते क्र.': item.accountNumber,
@@ -267,8 +349,16 @@ export default function LoadingReport() {
     XLSX.writeFile(wb, `Loading_Report_${reportDate}.xlsx`);
   };
 
-  const handlePrint = () => {
+  const handlePrint = async () => {
     if (items.length === 0) return;
+
+    let printItems = items;
+    if (summary && summary.totalFlagged > summary.pageSize) {
+      try {
+        const allData = await fetchAllForExport();
+        printItems = allData.items;
+      } catch { }
+    }
 
     const printHTML = `
       <!DOCTYPE html>
@@ -322,7 +412,7 @@ export default function LoadingReport() {
           <th>लोडिंग</th><th>LTV%</th><th>जोखीम</th>
         </tr></thead>
         <tbody>
-          ${items.map((item, i) => `
+          ${printItems.map((item, i) => `
             <tr>
               <td>${i + 1}</td>
               <td style="text-align:left">${item.borrowerName}</td>
@@ -363,21 +453,29 @@ export default function LoadingReport() {
       </div>
       
       <div className="lg:flex print:block">
-        <aside className="hidden lg:block lg:w-72 lg:fixed lg:inset-y-0 print:hidden">
-          <div className="sidebar-modern h-full">
-            <Sidebar />
-          </div>
-        </aside>
+        {!sidebarHidden && (
+          <aside className="hidden lg:block lg:w-72 lg:fixed lg:inset-y-0 print:hidden">
+            <div className="sidebar-modern h-full">
+              <Sidebar />
+            </div>
+          </aside>
+        )}
 
-        <main className="flex-1 w-full lg:pl-72 pb-16 lg:pb-0 print:pl-0 print:pb-0">
+        <main className={cn("flex-1 w-full pb-16 lg:pb-0 print:pl-0 print:pb-0", sidebarHidden ? "" : "lg:pl-72")}>
           <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-purple-50 p-4 print:min-h-0 print:bg-white print:p-0">
             <div className="space-y-3 print:max-w-none print:mx-0 print:space-y-0 px-2 lg:px-4">
 
               <div className="flex items-center justify-between bg-white rounded-lg shadow-md p-3 print:hidden">
                 <div className="flex items-center gap-3">
-                  <Button variant="ghost" size="sm" onClick={handleBackNavigation}>
-                    <ArrowLeft className="h-4 w-4" />
-                  </Button>
+                  {sidebarHidden ? (
+                    <Button variant="ghost" size="sm" onClick={() => setLocation("/dashboard")} title="मुख्यपृष्ठ">
+                      <Home className="h-4 w-4" />
+                    </Button>
+                  ) : (
+                    <Button variant="ghost" size="sm" onClick={handleBackNavigation}>
+                      <ArrowLeft className="h-4 w-4" />
+                    </Button>
+                  )}
                   <div>
                     <h1 className="text-xl sm:text-2xl font-bold text-indigo-700">
                       लोडिंग रिपोर्ट
@@ -386,6 +484,11 @@ export default function LoadingReport() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
+                  {sidebarHidden && reportGenerated && (
+                    <Button variant="outline" size="sm" onClick={() => { setSidebarHidden(false); setReportGenerated(false); }} className="text-indigo-600 border-indigo-300">
+                      <Filter className="h-3.5 w-3.5 mr-1" /> फिल्टर बदला
+                    </Button>
+                  )}
                   {summary && (
                     <span className="text-xs text-gray-500 hidden sm:block">
                       दर: ₹{summary.goldRateUsed?.toLocaleString('en-IN')}/g ({summary.goldRateSource})
@@ -395,9 +498,10 @@ export default function LoadingReport() {
                 </div>
               </div>
 
+              {!reportGenerated && (
               <div className="flex mb-4 bg-white rounded-lg border border-gray-200 p-1 shadow-sm print:hidden">
                 <button 
-                  onClick={() => { setActiveTab("group"); setSelectedCustomerName(""); setCustomerSearchTerm(""); }}
+                  onClick={() => { setActiveTab("group"); setSelectedCustomerName(""); setCustomerSearchTerm(""); setReportGenerated(false); setSidebarHidden(false); }}
                   className={cn(
                     "flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all",
                     activeTab === "group" 
@@ -408,7 +512,7 @@ export default function LoadingReport() {
                   <Users className="h-4 w-4" /> गट प्रमाणे
                 </button>
                 <button 
-                  onClick={() => { setActiveTab("customer"); }}
+                  onClick={() => { setActiveTab("customer"); setReportGenerated(false); setSidebarHidden(false); }}
                   className={cn(
                     "flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all",
                     activeTab === "customer" 
@@ -601,14 +705,38 @@ export default function LoadingReport() {
                 </CardContent>
               </Card>
 
-              {isLoading && (
+              <div className="flex gap-3 print:hidden">
+                <Button 
+                  onClick={handleGenerateReport} 
+                  disabled={isGenerating}
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 text-sm font-semibold shadow-md"
+                >
+                  {isGenerating ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      तयार करीत आहे...
+                    </>
+                  ) : (
+                    <>
+                      <BarChart3 className="h-4 w-4 mr-2" />
+                      अहवाल तयार करा
+                    </>
+                  )}
+                </Button>
+                <Button variant="outline" onClick={handleResetFilters} size="sm" className="text-gray-600 border-gray-300">
+                  साफ करा
+                </Button>
+              </div>
+              )}
+
+              {isGenerating && (
                 <div className="flex items-center justify-center py-12">
                   <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
                   <span className="ml-3 text-indigo-600 font-medium">रिपोर्ट तयार करीत आहे...</span>
                 </div>
               )}
 
-              {!isLoading && summary && (
+              {!isGenerating && reportGenerated && summary && (
                 <div ref={reportSectionRef}>
                   <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2 print:hidden">
                     <Card className="bg-white border-l-4 border-l-indigo-500">
@@ -670,13 +798,20 @@ export default function LoadingReport() {
                   )}
 
                   {items.length > 0 && (
-                    <div className="flex gap-2 print:hidden mt-2">
-                      <Button onClick={handlePrint} variant="outline" size="sm" className="text-indigo-600 border-indigo-300">
-                        <Printer className="h-4 w-4 mr-1" /> प्रिंट
-                      </Button>
-                      <Button onClick={handleExportExcel} variant="outline" size="sm" className="text-green-600 border-green-300">
-                        <FileSpreadsheet className="h-4 w-4 mr-1" /> Excel
-                      </Button>
+                    <div className="flex items-center justify-between print:hidden mt-2">
+                      <div className="flex gap-2">
+                        <Button onClick={handlePrint} variant="outline" size="sm" className="text-indigo-600 border-indigo-300">
+                          <Printer className="h-4 w-4 mr-1" /> प्रिंट
+                        </Button>
+                        <Button onClick={handleExportExcel} variant="outline" size="sm" className="text-green-600 border-green-300">
+                          <FileSpreadsheet className="h-4 w-4 mr-1" /> Excel
+                        </Button>
+                      </div>
+                      {summary.totalPages > 1 && (
+                        <span className="text-xs text-gray-500">
+                          पृष्ठ {summary.currentPage}/{summary.totalPages} — एकूण {summary.totalFlagged} कर्ज
+                        </span>
+                      )}
                     </div>
                   )}
 
@@ -691,9 +826,10 @@ export default function LoadingReport() {
                       </CardContent>
                     </Card>
                   ) : (
-                    <Card className="bg-white shadow-lg mt-2 overflow-hidden">
+                    <Card ref={dataTableRef} className="bg-white shadow-lg mt-2 overflow-hidden">
                       <div className="sm:hidden divide-y divide-gray-100">
                         {items.map((item, index) => {
+                          const serialNo = ((summary?.currentPage || 1) - 1) * (summary?.pageSize || 50) + index;
                           const style = getCategoryStyle(item.category);
                           return (
                             <div key={item.loanId} className={cn("p-3", index % 2 === 0 ? "bg-white" : "bg-gray-50/50")}>
@@ -788,11 +924,12 @@ export default function LoadingReport() {
                         <div className="divide-y divide-gray-200">
                           {items.map((item, index) => {
                             const style = getCategoryStyle(item.category);
+                            const serialNo = ((summary?.currentPage || 1) - 1) * (summary?.pageSize || 50) + index + 1;
                             return (
                               <div key={item.loanId} className={cn("px-4 py-3 hover:bg-indigo-50/50 transition-colors", index % 2 === 0 ? "bg-white" : "bg-gray-50/30")}>
                                 <div className="flex items-start justify-between gap-4 mb-2">
                                   <div className="flex items-center gap-3 min-w-0 flex-1">
-                                    <span className="text-xs font-bold text-indigo-600 bg-indigo-50 rounded-full w-7 h-7 flex items-center justify-center flex-shrink-0">{index + 1}</span>
+                                    <span className="text-xs font-bold text-indigo-600 bg-indigo-50 rounded-full w-7 h-7 flex items-center justify-center flex-shrink-0">{serialNo}</span>
                                     <div className="min-w-0">
                                       <div className="text-sm font-bold text-gray-800">{item.borrowerName}</div>
                                       <div className="flex items-center gap-2 text-xs text-gray-500 mt-0.5">
@@ -893,10 +1030,62 @@ export default function LoadingReport() {
                       </CardContent>
                     </Card>
                   )}
+
+                  {summary && summary.totalPages > 1 && (
+                    <div className="flex items-center justify-center gap-2 mt-4 print:hidden">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={currentPage <= 1}
+                        onClick={() => handlePageChange(currentPage - 1)}
+                        className="text-indigo-600 border-indigo-300"
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </Button>
+                      {Array.from({ length: Math.min(summary.totalPages, 7) }, (_, i) => {
+                        let pageNum: number;
+                        if (summary.totalPages <= 7) {
+                          pageNum = i + 1;
+                        } else if (currentPage <= 4) {
+                          pageNum = i + 1;
+                        } else if (currentPage >= summary.totalPages - 3) {
+                          pageNum = summary.totalPages - 6 + i;
+                        } else {
+                          pageNum = currentPage - 3 + i;
+                        }
+                        return (
+                          <Button
+                            key={pageNum}
+                            variant={currentPage === pageNum ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => handlePageChange(pageNum)}
+                            className={cn(
+                              "min-w-[36px]",
+                              currentPage === pageNum ? "bg-indigo-600 text-white" : "text-indigo-600 border-indigo-300"
+                            )}
+                          >
+                            {pageNum}
+                          </Button>
+                        );
+                      })}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={currentPage >= summary.totalPages}
+                        onClick={() => handlePageChange(currentPage + 1)}
+                        className="text-indigo-600 border-indigo-300"
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                      <span className="text-xs text-gray-500 ml-2">
+                        {summary.totalFlagged} पैकी {((currentPage - 1) * summary.pageSize) + 1}-{Math.min(currentPage * summary.pageSize, summary.totalFlagged)}
+                      </span>
+                    </div>
+                  )}
                 </div>
               )}
 
-              {!isLoading && activeTab === "customer" && !selectedCustomerName && (
+              {!reportGenerated && !isGenerating && activeTab === "customer" && !selectedCustomerName && (
                 <Card className="bg-white">
                   <CardContent className="p-8 text-center">
                     <User className="h-12 w-12 text-indigo-300 mx-auto mb-3" />
