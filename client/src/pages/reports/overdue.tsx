@@ -1457,7 +1457,6 @@ export default function OverdueReport() {
                         <tr className="bg-gradient-to-r from-red-50 to-orange-50 border-b-2 border-red-200">
                           <th className="border border-gray-300 px-2 py-2 text-left text-sm font-bold text-gray-700 whitespace-nowrap">खाते नं.</th>
                           <th className="border border-gray-300 px-2 py-2 text-left text-sm font-bold text-gray-700 whitespace-nowrap">नाव</th>
-                          <th className="border border-gray-300 px-2 py-2 text-left text-sm font-bold text-gray-700 whitespace-nowrap">फोन</th>
                           <th className="border border-gray-300 px-2 py-2 text-left text-sm font-bold text-gray-700 whitespace-nowrap">गट</th>
                           <th className="border border-gray-300 px-2 py-2 text-center text-sm font-bold text-gray-700 whitespace-nowrap">तारीख</th>
                           <th className="border border-gray-300 px-2 py-2 text-right text-sm font-bold text-gray-700 whitespace-nowrap">मुद्दल</th>
@@ -1489,11 +1488,13 @@ export default function OverdueReport() {
                               <td className="border border-gray-300 px-2 py-2 text-sm font-medium text-gray-700 whitespace-nowrap">{item.accountNumber || '—'}</td>
                               <td className="border border-gray-300 px-2 py-2">
                                 <div className="text-sm font-bold text-gray-800 whitespace-nowrap">{item.borrowerName}</div>
+                                {item.borrowerPhone && (
+                                  <div className="text-xs text-indigo-600 whitespace-nowrap">{item.borrowerPhone}</div>
+                                )}
                                 {item.goldItem && (
                                   <div className="text-xs text-gray-400 whitespace-nowrap">{item.goldItem}</div>
                                 )}
                               </td>
-                              <td className="border border-gray-300 px-2 py-2 text-sm text-indigo-600 font-medium whitespace-nowrap">{item.borrowerPhone}</td>
                               <td className="border border-gray-300 px-2 py-2 text-sm text-gray-600 whitespace-nowrap">{item.groupName}</td>
                               <td className="border border-gray-300 px-2 py-2 text-sm text-center text-gray-700 whitespace-nowrap">{formatDate(item.loanDate)}</td>
                               <td className="border border-gray-300 px-2 py-2 text-sm text-right font-semibold text-purple-700 whitespace-nowrap">{formatCurrency(item.principalAmount)}</td>
@@ -1516,7 +1517,7 @@ export default function OverdueReport() {
                         })}
                         {securedLoans.length > 0 && (
                           <tr className="bg-indigo-50 border-t-2 border-indigo-300">
-                            <td colSpan={5} className="border border-gray-300 px-3 py-2 text-sm font-bold text-indigo-800 text-right">तारण कर्ज एकूण ({securedLoans.length})</td>
+                            <td colSpan={4} className="border border-gray-300 px-3 py-2 text-sm font-bold text-indigo-800 text-right">तारण कर्ज एकूण ({securedLoans.length})</td>
                             <td className="border border-gray-300 px-3 py-2 text-sm font-bold text-purple-700 text-right">{formatCurrency(securedLoans.reduce((s, i) => s + i.principalAmount, 0))}</td>
                             <td className="border border-gray-300 px-3 py-2 text-sm font-bold text-orange-700 text-right">{formatCurrency(securedLoans.reduce((s, i) => s + i.interestToDate, 0))}</td>
                             <td colSpan={3} className="border border-gray-300 px-3 py-2"></td>
@@ -1590,7 +1591,6 @@ export default function OverdueReport() {
                         <tr className="bg-gradient-to-r from-amber-50 to-orange-50 border-b-2 border-amber-200">
                           <th className="border border-gray-300 px-2 py-2 text-left text-sm font-bold text-gray-700 whitespace-nowrap">खाते नं.</th>
                           <th className="border border-gray-300 px-2 py-2 text-left text-sm font-bold text-gray-700 whitespace-nowrap">नाव</th>
-                          <th className="border border-gray-300 px-2 py-2 text-left text-sm font-bold text-gray-700 whitespace-nowrap">फोन</th>
                           <th className="border border-gray-300 px-2 py-2 text-left text-sm font-bold text-gray-700 whitespace-nowrap">गट</th>
                           <th className="border border-gray-300 px-2 py-2 text-center text-sm font-bold text-gray-700 whitespace-nowrap">तारीख</th>
                           <th className="border border-gray-300 px-2 py-2 text-right text-sm font-bold text-gray-700 whitespace-nowrap">मुद्दल</th>
@@ -1613,11 +1613,13 @@ export default function OverdueReport() {
                             <td className="border border-gray-300 px-2 py-2 text-sm font-medium text-gray-700 whitespace-nowrap">{item.accountNumber || '—'}</td>
                             <td className="border border-gray-300 px-2 py-2">
                               <div className="text-sm font-bold text-gray-800 whitespace-nowrap">{item.borrowerName}</div>
+                              {item.borrowerPhone && (
+                                <div className="text-xs text-indigo-600 whitespace-nowrap">{item.borrowerPhone}</div>
+                              )}
                               {item.goldItem && item.goldItem !== 'विनातारण' && (
                                 <div className="text-xs text-gray-400 whitespace-nowrap">{item.goldItem}</div>
                               )}
                             </td>
-                            <td className="border border-gray-300 px-2 py-2 text-sm text-indigo-600 font-medium whitespace-nowrap">{item.borrowerPhone}</td>
                             <td className="border border-gray-300 px-2 py-2 text-sm text-gray-600 whitespace-nowrap">{item.groupName}</td>
                             <td className="border border-gray-300 px-2 py-2 text-sm text-center text-gray-700 whitespace-nowrap">{formatDate(item.loanDate)}</td>
                             <td className="border border-gray-300 px-2 py-2 text-sm text-right font-semibold text-purple-700 whitespace-nowrap">{formatCurrency(item.principalAmount)}</td>
@@ -1628,7 +1630,7 @@ export default function OverdueReport() {
                           </tr>
                         ))}
                         <tr className="bg-amber-50 border-t-2 border-amber-300">
-                          <td colSpan={5} className="border border-gray-300 px-3 py-2 text-sm font-bold text-amber-800 text-right">विनातारण एकूण ({unsecuredLoans.length})</td>
+                          <td colSpan={4} className="border border-gray-300 px-3 py-2 text-sm font-bold text-amber-800 text-right">विनातारण एकूण ({unsecuredLoans.length})</td>
                           <td className="border border-gray-300 px-3 py-2 text-sm font-bold text-purple-700 text-right">{formatCurrency(unsecuredLoans.reduce((s, i) => s + i.principalAmount, 0))}</td>
                           <td className="border border-gray-300 px-3 py-2 text-sm font-bold text-orange-700 text-right">{formatCurrency(unsecuredLoans.reduce((s, i) => s + i.interestToDate, 0))}</td>
                           <td className="border border-gray-300 px-3 py-2 text-sm font-bold text-red-700 text-right">{formatCurrency(unsecuredLoans.reduce((s, i) => s + i.totalAmount, 0))}</td>
@@ -1662,17 +1664,16 @@ export default function OverdueReport() {
                 <thead>
                   <tr style={{backgroundColor: '#f5f5f5'}}>
                     <th style={{border: '1px solid black', padding: '5px', fontWeight: 'bold', textAlign: 'left', width: '7%'}}>खाते नं.</th>
-                    <th style={{border: '1px solid black', padding: '5px', fontWeight: 'bold', textAlign: 'left', width: '10%'}}>नाव</th>
-                    <th style={{border: '1px solid black', padding: '5px', fontWeight: 'bold', textAlign: 'left', width: '8%'}}>फोन</th>
+                    <th style={{border: '1px solid black', padding: '5px', fontWeight: 'bold', textAlign: 'left', width: '15%'}}>नाव</th>
                     <th style={{border: '1px solid black', padding: '5px', fontWeight: 'bold', textAlign: 'left', width: '8%'}}>गट</th>
                     <th style={{border: '1px solid black', padding: '5px', fontWeight: 'bold', textAlign: 'center', width: '7%'}}>तारीख</th>
                     <th style={{border: '1px solid black', padding: '5px', fontWeight: 'bold', textAlign: 'right', width: '8%'}}>मुद्दल</th>
                     <th style={{border: '1px solid black', padding: '5px', fontWeight: 'bold', textAlign: 'right', width: '8%'}}>व्याज</th>
-                    <th style={{border: '1px solid black', padding: '5px', fontWeight: 'bold', textAlign: 'center', width: '5%'}}>वजन</th>
-                    <th style={{border: '1px solid black', padding: '5px', fontWeight: 'bold', textAlign: 'center', width: '5%'}}>शुद्धता</th>
-                    <th style={{border: '1px solid black', padding: '5px', fontWeight: 'bold', textAlign: 'right', width: '8%'}}>तारण मूल्य</th>
-                    <th style={{border: '1px solid black', padding: '5px', fontWeight: 'bold', textAlign: 'right', width: '8%'}}>एकूण</th>
-                    <th style={{border: '1px solid black', padding: '5px', fontWeight: 'bold', textAlign: 'right', width: '8%'}}>नुकसान</th>
+                    <th style={{border: '1px solid black', padding: '5px', fontWeight: 'bold', textAlign: 'center', width: '6%'}}>वजन</th>
+                    <th style={{border: '1px solid black', padding: '5px', fontWeight: 'bold', textAlign: 'center', width: '6%'}}>शुद्धता</th>
+                    <th style={{border: '1px solid black', padding: '5px', fontWeight: 'bold', textAlign: 'right', width: '9%'}}>तारण मूल्य</th>
+                    <th style={{border: '1px solid black', padding: '5px', fontWeight: 'bold', textAlign: 'right', width: '9%'}}>एकूण</th>
+                    <th style={{border: '1px solid black', padding: '5px', fontWeight: 'bold', textAlign: 'right', width: '9%'}}>नुकसान</th>
                     <th style={{border: '1px solid black', padding: '5px', fontWeight: 'bold', textAlign: 'center', width: '6%'}}>दिवस</th>
                   </tr>
                 </thead>
@@ -1682,11 +1683,13 @@ export default function OverdueReport() {
                       <td style={{border: '1px solid black', padding: '3px'}}>{item.accountNumber || '—'}</td>
                       <td style={{border: '1px solid black', padding: '3px'}}>
                         <div style={{fontWeight: 'bold'}}>{item.borrowerName}</div>
+                        {item.borrowerPhone && (
+                          <div style={{fontSize: '7pt', color: '#3949ab'}}>{item.borrowerPhone}</div>
+                        )}
                         {item.goldItem && (
                           <div style={{fontSize: '11px', color: '#999'}}>{item.goldItem}</div>
                         )}
                       </td>
-                      <td style={{border: '1px solid black', padding: '3px'}}>{item.borrowerPhone}</td>
                       <td style={{border: '1px solid black', padding: '3px'}}>{item.groupName}</td>
                       <td style={{border: '1px solid black', padding: '3px', textAlign: 'center'}}>{formatDate(item.loanDate)}</td>
                       <td style={{border: '1px solid black', padding: '3px', textAlign: 'right'}}>{formatCurrency(item.principalAmount)}</td>
@@ -1702,7 +1705,7 @@ export default function OverdueReport() {
                     </tr>
                   ))}
                   <tr style={{backgroundColor: '#e8eaf6', borderTop: '2px solid black'}}>
-                    <td colSpan={5} style={{border: '1px solid black', padding: '5px', textAlign: 'right', fontWeight: 'bold', fontSize: '8pt'}}>तारण कर्ज एकूण ({securedLoans.length})</td>
+                    <td colSpan={4} style={{border: '1px solid black', padding: '5px', textAlign: 'right', fontWeight: 'bold', fontSize: '8pt'}}>तारण कर्ज एकूण ({securedLoans.length})</td>
                     <td style={{border: '1px solid black', padding: '5px', textAlign: 'right', fontWeight: 'bold'}}>{formatCurrency(securedLoans.reduce((s, i) => s + i.principalAmount, 0))}</td>
                     <td style={{border: '1px solid black', padding: '5px', textAlign: 'right', fontWeight: 'bold'}}>{formatCurrency(securedLoans.reduce((s, i) => s + i.interestToDate, 0))}</td>
                     <td colSpan={3} style={{border: '1px solid black', padding: '5px'}}></td>
@@ -1730,13 +1733,12 @@ export default function OverdueReport() {
                 <thead>
                   <tr style={{backgroundColor: '#fff8e1'}}>
                     <th style={{border: '1px solid black', padding: '5px', fontWeight: 'bold', textAlign: 'left', width: '10%'}}>खाते नं.</th>
-                    <th style={{border: '1px solid black', padding: '5px', fontWeight: 'bold', textAlign: 'left', width: '15%'}}>नाव</th>
-                    <th style={{border: '1px solid black', padding: '5px', fontWeight: 'bold', textAlign: 'left', width: '12%'}}>फोन</th>
+                    <th style={{border: '1px solid black', padding: '5px', fontWeight: 'bold', textAlign: 'left', width: '22%'}}>नाव</th>
                     <th style={{border: '1px solid black', padding: '5px', fontWeight: 'bold', textAlign: 'left', width: '12%'}}>गट</th>
                     <th style={{border: '1px solid black', padding: '5px', fontWeight: 'bold', textAlign: 'center', width: '10%'}}>तारीख</th>
-                    <th style={{border: '1px solid black', padding: '5px', fontWeight: 'bold', textAlign: 'right', width: '12%'}}>मुद्दल</th>
-                    <th style={{border: '1px solid black', padding: '5px', fontWeight: 'bold', textAlign: 'right', width: '12%'}}>व्याज</th>
-                    <th style={{border: '1px solid black', padding: '5px', fontWeight: 'bold', textAlign: 'right', width: '12%'}}>एकूण थकबाकी</th>
+                    <th style={{border: '1px solid black', padding: '5px', fontWeight: 'bold', textAlign: 'right', width: '14%'}}>मुद्दल</th>
+                    <th style={{border: '1px solid black', padding: '5px', fontWeight: 'bold', textAlign: 'right', width: '14%'}}>व्याज</th>
+                    <th style={{border: '1px solid black', padding: '5px', fontWeight: 'bold', textAlign: 'right', width: '14%'}}>एकूण थकबाकी</th>
                     <th style={{border: '1px solid black', padding: '5px', fontWeight: 'bold', textAlign: 'center', width: '8%'}}>दिवस</th>
                   </tr>
                 </thead>
@@ -1744,8 +1746,12 @@ export default function OverdueReport() {
                   {unsecuredLoans.map((item: OverdueItem) => (
                     <tr key={item.loanId} style={{backgroundColor: 'white'}}>
                       <td style={{border: '1px solid black', padding: '3px'}}>{item.accountNumber || '—'}</td>
-                      <td style={{border: '1px solid black', padding: '3px', fontWeight: 'bold'}}>{item.borrowerName}</td>
-                      <td style={{border: '1px solid black', padding: '3px'}}>{item.borrowerPhone}</td>
+                      <td style={{border: '1px solid black', padding: '3px'}}>
+                        <div style={{fontWeight: 'bold'}}>{item.borrowerName}</div>
+                        {item.borrowerPhone && (
+                          <div style={{fontSize: '7pt', color: '#3949ab'}}>{item.borrowerPhone}</div>
+                        )}
+                      </td>
                       <td style={{border: '1px solid black', padding: '3px'}}>{item.groupName}</td>
                       <td style={{border: '1px solid black', padding: '3px', textAlign: 'center'}}>{formatDate(item.loanDate)}</td>
                       <td style={{border: '1px solid black', padding: '3px', textAlign: 'right'}}>{formatCurrency(item.principalAmount)}</td>
@@ -1755,7 +1761,7 @@ export default function OverdueReport() {
                     </tr>
                   ))}
                   <tr style={{backgroundColor: '#fff3e0', borderTop: '2px solid black'}}>
-                    <td colSpan={5} style={{border: '1px solid black', padding: '5px', textAlign: 'right', fontWeight: 'bold', fontSize: '8pt'}}>विनातारण एकूण ({unsecuredLoans.length})</td>
+                    <td colSpan={4} style={{border: '1px solid black', padding: '5px', textAlign: 'right', fontWeight: 'bold', fontSize: '8pt'}}>विनातारण एकूण ({unsecuredLoans.length})</td>
                     <td style={{border: '1px solid black', padding: '5px', textAlign: 'right', fontWeight: 'bold'}}>{formatCurrency(unsecuredLoans.reduce((s, i) => s + i.principalAmount, 0))}</td>
                     <td style={{border: '1px solid black', padding: '5px', textAlign: 'right', fontWeight: 'bold'}}>{formatCurrency(unsecuredLoans.reduce((s, i) => s + i.interestToDate, 0))}</td>
                     <td style={{border: '1px solid black', padding: '5px', textAlign: 'right', fontWeight: 'bold', color: 'red'}}>{formatCurrency(unsecuredLoans.reduce((s, i) => s + i.totalAmount, 0))}</td>

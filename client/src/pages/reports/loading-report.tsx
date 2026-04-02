@@ -428,168 +428,176 @@ export default function LoadingReport() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="p-4">
-                  {activeTab === "group" ? (
-                    <div className="max-w-xs">
-                      <label className="text-sm font-semibold text-gray-700 block mb-1">गट निवड</label>
-                      <Select value={groupId} onValueChange={setGroupId}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="सर्व गट" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">सर्व गट</SelectItem>
-                          {(groups as any[]).map((group: any) => (
-                            <SelectItem key={group.id} value={group.id}>{group.name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  ) : (
-                    <div className="max-w-xs relative">
-                      <label className="text-sm font-semibold text-gray-700 block mb-1">कर्जदार शोधा</label>
-                      <input
-                        ref={customerInputRef}
-                        type="text"
-                        placeholder="नाव टाईप करा..."
-                        value={customerSearchTerm}
-                        onChange={(e) => {
-                          setCustomerSearchTerm(e.target.value);
-                          if (e.target.value.length >= 2) setShowCustomerSuggestions(true);
-                          else setShowCustomerSuggestions(false);
-                          if (selectedCustomerName && e.target.value !== selectedCustomerName) {
-                            setSelectedCustomerName("");
-                          }
-                        }}
-                        onKeyDown={(e) => {
-                          if (!showCustomerSuggestions || customerAutocompleteSuggestions.length === 0) return;
-                          if (e.key === "ArrowDown") {
-                            e.preventDefault();
-                            setSelectedSuggestionIndex(prev => prev < customerAutocompleteSuggestions.length - 1 ? prev + 1 : 0);
-                          } else if (e.key === "ArrowUp") {
-                            e.preventDefault();
-                            setSelectedSuggestionIndex(prev => prev > 0 ? prev - 1 : customerAutocompleteSuggestions.length - 1);
-                          } else if (e.key === "Enter" && selectedSuggestionIndex >= 0) {
-                            e.preventDefault();
-                            const selected = customerAutocompleteSuggestions[selectedSuggestionIndex];
-                            handleCustomerSelect(selected.borrowerName || selected.name);
-                          } else if (e.key === "Escape") {
-                            setShowCustomerSuggestions(false);
-                          }
-                        }}
-                        onFocus={() => {
-                          if (customerAutocompleteSuggestions.length > 0) setShowCustomerSuggestions(true);
-                        }}
-                        onBlur={() => {
-                          setTimeout(() => setShowCustomerSuggestions(false), 300);
-                        }}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                      />
-                      {showCustomerSuggestions && customerAutocompleteSuggestions.length > 0 && (
-                        <div ref={customerSuggestionsRef} className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-48 overflow-y-auto">
-                          {customerAutocompleteSuggestions.map((borrower: any, index: number) => (
-                            <div
-                              key={index}
-                              onClick={() => handleCustomerSelect(borrower.borrowerName)}
-                              className={cn(
-                                "px-3 py-2 cursor-pointer text-sm hover:bg-indigo-50",
-                                selectedSuggestionIndex === index && "bg-indigo-100"
-                              )}
-                            >
-                              <div className="font-medium">{borrower.borrowerName}</div>
-                              {borrower.borrowerMobile && (
-                                <div className="text-xs text-gray-500">{borrower.borrowerMobile}</div>
-                              )}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-start">
+                    <div>
+                      {activeTab === "group" ? (
+                        <div>
+                          <label className="text-sm font-semibold text-gray-700 block mb-1">गट निवड</label>
+                          <Select value={groupId} onValueChange={setGroupId}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="सर्व गट" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="all">सर्व गट</SelectItem>
+                              {(groups as any[]).map((group: any) => (
+                                <SelectItem key={group.id} value={group.id}>{group.name}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      ) : (
+                        <div className="relative">
+                          <label className="text-sm font-semibold text-gray-700 block mb-1">कर्जदार शोधा</label>
+                          <input
+                            ref={customerInputRef}
+                            type="text"
+                            placeholder="नाव टाईप करा..."
+                            value={customerSearchTerm}
+                            onChange={(e) => {
+                              setCustomerSearchTerm(e.target.value);
+                              if (e.target.value.length >= 2) setShowCustomerSuggestions(true);
+                              else setShowCustomerSuggestions(false);
+                              if (selectedCustomerName && e.target.value !== selectedCustomerName) {
+                                setSelectedCustomerName("");
+                              }
+                            }}
+                            onKeyDown={(e) => {
+                              if (!showCustomerSuggestions || customerAutocompleteSuggestions.length === 0) return;
+                              if (e.key === "ArrowDown") {
+                                e.preventDefault();
+                                setSelectedSuggestionIndex(prev => prev < customerAutocompleteSuggestions.length - 1 ? prev + 1 : 0);
+                              } else if (e.key === "ArrowUp") {
+                                e.preventDefault();
+                                setSelectedSuggestionIndex(prev => prev > 0 ? prev - 1 : customerAutocompleteSuggestions.length - 1);
+                              } else if (e.key === "Enter" && selectedSuggestionIndex >= 0) {
+                                e.preventDefault();
+                                const selected = customerAutocompleteSuggestions[selectedSuggestionIndex];
+                                handleCustomerSelect(selected.borrowerName || selected.name);
+                              } else if (e.key === "Escape") {
+                                setShowCustomerSuggestions(false);
+                              }
+                            }}
+                            onFocus={() => {
+                              if (customerAutocompleteSuggestions.length > 0) setShowCustomerSuggestions(true);
+                            }}
+                            onBlur={() => {
+                              setTimeout(() => setShowCustomerSuggestions(false), 300);
+                            }}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                          />
+                          {showCustomerSuggestions && customerAutocompleteSuggestions.length > 0 && (
+                            <div ref={customerSuggestionsRef} className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-48 overflow-y-auto">
+                              {customerAutocompleteSuggestions.map((borrower: any, index: number) => (
+                                <div
+                                  key={index}
+                                  onClick={() => handleCustomerSelect(borrower.borrowerName)}
+                                  className={cn(
+                                    "px-3 py-2 cursor-pointer text-sm hover:bg-indigo-50",
+                                    selectedSuggestionIndex === index && "bg-indigo-100"
+                                  )}
+                                >
+                                  <div className="font-medium">{borrower.borrowerName}</div>
+                                  {borrower.borrowerMobile && (
+                                    <div className="text-xs text-gray-500">{borrower.borrowerMobile}</div>
+                                  )}
+                                </div>
+                              ))}
                             </div>
-                          ))}
-                        </div>
-                      )}
-                      {selectedCustomerName && (
-                        <div className="mt-1 text-xs text-green-600">
-                          निवडलेले: {selectedCustomerName}
+                          )}
+                          {selectedCustomerName && (
+                            <div className="mt-1 text-xs text-green-600">
+                              निवडलेले: {selectedCustomerName}
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
-                  )}
-                  
-                  <div className="mt-3">
-                    <label className="text-sm font-semibold text-orange-700 block mb-1">💰 सोन्याचा दर (₹/ग्रॅम)</label>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="number"
-                        step="1"
-                        placeholder="उदा: 7500"
-                        value={goldRateInput}
-                        onChange={(e) => {
-                          setGoldRateInput(e.target.value);
-                          setGoldRateManuallyEdited(true);
-                        }}
-                        className="w-40 px-3 py-1.5 text-sm border-2 border-orange-300 rounded-md focus:border-orange-500 focus:outline-none bg-white"
-                      />
-                      <span className="text-xs text-gray-500">प्रति ग्रॅम</span>
-                      {goldRateData?.success && !goldRateManuallyEdited && (
-                        <span className="text-[10px] text-green-600">✅ ₹{goldRateData.perGram?.toLocaleString('en-IN')}/g ({goldRateData.source})</span>
-                      )}
-                      {goldRateManuallyEdited && (
-                        <button
-                          onClick={() => {
-                            setGoldRateManuallyEdited(false);
-                            if (goldRateData?.perGram) setGoldRateInput(String(goldRateData.perGram));
-                          }}
-                          className="text-[10px] text-blue-600 underline"
-                        >
-                          IBJA दर वापरा
-                        </button>
-                      )}
-                    </div>
-                    {goldRateInput && (
-                      <div className="text-[10px] text-gray-400 mt-0.5">
-                        प्रति तोळा: ₹{(parseFloat(goldRateInput) * 10).toLocaleString('en-IN')} | शुद्धता: 82% | पाटली/बांगडी: 90% | वेडण: 95% | चोख: 99.50%
-                      </div>
-                    )}
-                    {goldRateData?.allSources && goldRateData.allSources.length > 1 && (
-                      <div className="text-[10px] text-gray-500 mt-0.5">
-                        📊 {goldRateData.allSources.map((s: any) => `${s.source}: ₹${s.perGram?.toLocaleString('en-IN')}/g`).join(' | ')}
-                      </div>
-                    )}
-                  </div>
 
-                  {hasSilverLoans && (
-                  <div className="mt-3">
-                    <label className="text-sm font-semibold text-gray-600 block mb-1">🪙 चांदीचा दर (₹/ग्रॅम)</label>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="number"
-                        step="0.01"
-                        placeholder="उदा: 95"
-                        value={silverRateInput}
-                        onChange={(e) => {
-                          setSilverRateInput(e.target.value);
-                          setSilverRateManuallyEdited(true);
-                        }}
-                        className="w-40 px-3 py-1.5 text-sm border-2 border-gray-300 rounded-md focus:border-gray-500 focus:outline-none bg-white"
-                      />
-                      <span className="text-xs text-gray-500">प्रति ग्रॅम</span>
-                      {silverRateData?.success && !silverRateManuallyEdited && (
-                        <span className="text-[10px] text-green-600">✅ ₹{silverRateData.perGram}/g ({silverRateData.source})</span>
-                      )}
-                      {silverRateManuallyEdited && (
-                        <button
-                          onClick={() => {
-                            setSilverRateManuallyEdited(false);
-                            if (silverRateData?.perGram) setSilverRateInput(String(silverRateData.perGram));
+                    <div>
+                      <label className="text-sm font-semibold text-orange-700 block mb-1">💰 सोन्याचा दर (₹/ग्रॅम)</label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="number"
+                          step="1"
+                          placeholder="उदा: 7500"
+                          value={goldRateInput}
+                          onChange={(e) => {
+                            setGoldRateInput(e.target.value);
+                            setGoldRateManuallyEdited(true);
                           }}
-                          className="text-[10px] text-blue-600 underline"
-                        >
-                          ऑनलाईन दर वापरा
-                        </button>
+                          className="w-40 px-3 py-1.5 text-sm border-2 border-orange-300 rounded-md focus:border-orange-500 focus:outline-none bg-white"
+                        />
+                        <span className="text-xs text-gray-500">प्रति ग्रॅम</span>
+                      </div>
+                      <div className="mt-0.5">
+                        {goldRateData?.success && !goldRateManuallyEdited && (
+                          <span className="text-[10px] text-green-600">✅ ₹{goldRateData.perGram?.toLocaleString('en-IN')}/g ({goldRateData.source})</span>
+                        )}
+                        {goldRateManuallyEdited && (
+                          <button
+                            onClick={() => {
+                              setGoldRateManuallyEdited(false);
+                              if (goldRateData?.perGram) setGoldRateInput(String(goldRateData.perGram));
+                            }}
+                            className="text-[10px] text-blue-600 underline"
+                          >
+                            IBJA दर वापरा
+                          </button>
+                        )}
+                      </div>
+                      {goldRateInput && (
+                        <div className="text-[10px] text-gray-400 mt-0.5">
+                          प्रति तोळा: ₹{(parseFloat(goldRateInput) * 10).toLocaleString('en-IN')} | शुद्धता: 82% | पाटली/बांगडी: 90% | वेडण: 95% | चोख: 99.50%
+                        </div>
+                      )}
+                      {goldRateData?.allSources && goldRateData.allSources.length > 1 && (
+                        <div className="text-[10px] text-gray-500 mt-0.5">
+                          📊 {goldRateData.allSources.map((s: any) => `${s.source}: ₹${s.perGram?.toLocaleString('en-IN')}/g`).join(' | ')}
+                        </div>
                       )}
                     </div>
-                    {silverRateInput && (
-                      <div className="text-[10px] text-gray-400 mt-0.5">
-                        प्रति किलो: ₹{(parseFloat(silverRateInput) * 1000).toLocaleString('en-IN')} | शुद्धता: 99.9%
+
+                    {hasSilverLoans && (
+                    <div>
+                      <label className="text-sm font-semibold text-gray-600 block mb-1">🪙 चांदीचा दर (₹/ग्रॅम)</label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="number"
+                          step="0.01"
+                          placeholder="उदा: 95"
+                          value={silverRateInput}
+                          onChange={(e) => {
+                            setSilverRateInput(e.target.value);
+                            setSilverRateManuallyEdited(true);
+                          }}
+                          className="w-40 px-3 py-1.5 text-sm border-2 border-gray-300 rounded-md focus:border-gray-500 focus:outline-none bg-white"
+                        />
+                        <span className="text-xs text-gray-500">प्रति ग्रॅम</span>
                       </div>
+                      <div className="mt-0.5">
+                        {silverRateData?.success && !silverRateManuallyEdited && (
+                          <span className="text-[10px] text-green-600">✅ ₹{silverRateData.perGram}/g ({silverRateData.source})</span>
+                        )}
+                        {silverRateManuallyEdited && (
+                          <button
+                            onClick={() => {
+                              setSilverRateManuallyEdited(false);
+                              if (silverRateData?.perGram) setSilverRateInput(String(silverRateData.perGram));
+                            }}
+                            className="text-[10px] text-blue-600 underline"
+                          >
+                            ऑनलाईन दर वापरा
+                          </button>
+                        )}
+                      </div>
+                      {silverRateInput && (
+                        <div className="text-[10px] text-gray-400 mt-0.5">
+                          प्रति किलो: ₹{(parseFloat(silverRateInput) * 1000).toLocaleString('en-IN')} | शुद्धता: 99.9%
+                        </div>
+                      )}
+                    </div>
                     )}
                   </div>
-                  )}
                 </CardContent>
               </Card>
 
