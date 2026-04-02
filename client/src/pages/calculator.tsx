@@ -30,6 +30,13 @@ interface CalcSummaryEntry {
 }
 
 const CALC_SUMMARY_KEY = 'calc_summary_entries';
+const CALC_RATE_TOGGLE_KEY = 'calc_show_rate';
+
+const formatRate = (rate: string | number): string => {
+  const num = Number(rate);
+  if (isNaN(num)) return String(rate);
+  return parseFloat(num.toFixed(4)).toString();
+};
 
 const toShortDate = (isoDate: string): string => {
   const d = DateUtils.isoToIndianDate(isoDate);
@@ -72,6 +79,11 @@ export default function InterestCalculator() {
   const summaryRef = useRef<HTMLDivElement>(null);
   const [isBtPrinting, setIsBtPrinting] = useState(false);
   const btPrintBtnRef = useRef<HTMLButtonElement>(null);
+  const [showRateMonths, setShowRateMonths] = useState(() => {
+    try {
+      return sessionStorage.getItem(CALC_RATE_TOGGLE_KEY) === 'true';
+    } catch { return false; }
+  });
 
   useEffect(() => {
     summaryEntriesRef.current = summaryEntries;
@@ -85,6 +97,12 @@ export default function InterestCalculator() {
       sessionStorage.setItem(CALC_COUNTER_KEY, String(summaryCounter));
     } catch {}
   }, [summaryCounter]);
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(CALC_RATE_TOGGLE_KEY, String(showRateMonths));
+    } catch {}
+  }, [showRateMonths]);
 
   const calculatePeriod = (start: string, end: string, mode: string) => {
     if (!start || !end) return null;
@@ -384,7 +402,7 @@ export default function InterestCalculator() {
     setSummaryCounter(1);
   }, []);
 
-  const generateThermalReceiptHTML = useCallback((entries: CalcSummaryEntry[]): string => {
+  const generateThermalReceiptHTML = useCallback((entries: CalcSummaryEntry[], showInterestRate: boolean = false): string => {
     if (entries.length === 0) return '';
     const totalPrincipal = entries.reduce((sum, e) => sum + e.principalAmount, 0);
     const totalInterest = entries.reduce((sum, e) => sum + e.interestAmount, 0);
@@ -395,9 +413,9 @@ export default function InterestCalculator() {
     let rows = '';
     entries.forEach((entry, i) => {
       rows += `<tr>
-        <td style="padding:14px 4px 14px 4px;text-align:center;font-size:16px;font-weight:600;">${i + 1}</td>
-        <td style="padding:14px 4px;text-align:center;font-size:22px;font-weight:700;">${entry.codeNumber || '—'}</td>
-        <td style="padding:14px 4px;text-align:right;font-size:20px;font-weight:700;vertical-align:middle;">${toShortDate(entry.startDate)}</td>
+        <td style="padding:14px 8px 14px 4px;text-align:center;font-size:16px;font-weight:600;">${i + 1}</td>
+        <td style="padding:14px 8px;text-align:center;font-size:22px;font-weight:700;">${entry.codeNumber || '—'}</td>
+        <td style="padding:14px 4px;text-align:right;font-size:22px;font-weight:700;vertical-align:middle;">${toShortDate(entry.startDate)}${showInterestRate ? `<span style="margin-left:16px;font-size:20px;font-weight:600;">${formatRate(entry.interestRate)}</span>` : ''}</td>
         <td style="padding:14px 4px;text-align:right;font-size:22px;font-weight:700;">${Number(Math.round(entry.principalAmount)).toLocaleString('en-IN')}</td>
         <td style="padding:14px 4px;text-align:right;font-size:22px;font-weight:700;">${Number(Math.round(entry.interestAmount)).toLocaleString('en-IN')}</td>
       </tr>`;
@@ -414,17 +432,17 @@ export default function InterestCalculator() {
           <colgroup>
             <col style="width:46px;">
             <col style="width:90px;">
-            <col style="width:110px;">
+            <col style="width:120px;">
             <col style="width:auto;">
             <col style="width:110px;">
           </colgroup>
           <thead>
             <tr style="border-bottom:3px double #000;">
-              <th style="padding:10px 4px;font-size:22px;text-align:center;font-weight:700;">अ.नं.</th>
-              <th style="padding:10px 4px;font-size:22px;text-align:center;font-weight:700;">कोड नं</th>
-              <th style="padding:10px 4px;font-size:22px;text-align:right;font-weight:700;">दिनांक</th>
-              <th style="padding:10px 4px;font-size:22px;text-align:right;font-weight:700;">मुद्दल</th>
-              <th style="padding:10px 4px;font-size:22px;text-align:right;font-weight:700;">व्याज</th>
+              <th style="padding:10px 8px 10px 4px;font-size:22px;text-align:center;font-weight:700;">अ.नं.</th>
+              <th style="padding:10px 8px;font-size:22px;text-align:center;font-weight:700;">कोड नं</th>
+              <th style="padding:10px 4px;font-size:22px;text-align:right;font-weight:700;vertical-align:middle;">दिनांक</th>
+              <th style="padding:10px 4px;font-size:22px;text-align:right;font-weight:700;">बाजारमूल्य</th>
+              <th style="padding:10px 4px;font-size:22px;text-align:right;font-weight:700;">चार्जेस</th>
             </tr>
           </thead>
           <tbody>
@@ -470,7 +488,7 @@ export default function InterestCalculator() {
   const handleBluetoothPrint = useCallback(async () => {
     const currentEntries = summaryEntriesRef.current;
     if (currentEntries.length === 0 || isBtPrinting) return;
-    const thermalHTML = generateThermalReceiptHTML(currentEntries);
+    const thermalHTML = generateThermalReceiptHTML(currentEntries, showRateMonths);
     if (!thermalHTML) return;
     setIsBtPrinting(true);
     try {
@@ -490,7 +508,7 @@ export default function InterestCalculator() {
       if (btPrintBtnRef.current) btPrintBtnRef.current.blur();
       if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
     }
-  }, [generateThermalReceiptHTML, renderReceiptToCanvas, isBtPrinting, toast]);
+  }, [generateThermalReceiptHTML, renderReceiptToCanvas, isBtPrinting, toast, showRateMonths]);
 
   const clearAll = () => {
     setPrincipalAmount("");
@@ -917,7 +935,7 @@ export default function InterestCalculator() {
               </Card>
             )}
 
-            {/* Summary Section - Closure Form Style */}
+            {/* Summary Section - Exact Closure Form Style */}
             {summaryEntries.length > 0 && (
               <Card ref={summaryRef} className="border border-amber-200 shadow-lg bg-white mb-6">
                 <CardHeader className="py-3 px-4 bg-amber-50 border-b">
@@ -927,6 +945,19 @@ export default function InterestCalculator() {
                       एकत्रित हिशोब ({summaryEntries.length})
                     </CardTitle>
                     <div className="flex flex-wrap items-center gap-2">
+                      <div className="flex items-center gap-1.5 mr-2">
+                        <span className="text-xs text-gray-600">व्याजदर</span>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={showRateMonths}
+                            onChange={(e) => setShowRateMonths(e.target.checked)}
+                            className="sr-only peer"
+                            autoComplete="off"
+                          />
+                          <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-amber-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-600"></div>
+                        </label>
+                      </div>
                       <button
                         ref={btPrintBtnRef}
                         type="button"
@@ -949,54 +980,65 @@ export default function InterestCalculator() {
                   </div>
                 </CardHeader>
                 <CardContent className="p-0">
-                  {summaryEntries[summaryEntries.length - 1]?.customerName && (
+                  {summaryEntries.length > 0 && (
                     <div className="flex justify-between items-start px-3 pt-2 pb-1">
-                      <div className="font-bold text-sm">{summaryEntries[summaryEntries.length - 1].customerName}</div>
+                      <div>
+                        <div className="font-bold text-sm">{summaryEntries[summaryEntries.length - 1].customerName || 'अंदाज'}</div>
+                      </div>
                       <div className="text-xs text-gray-500 text-right">
                         तारीख: {DateUtils.isoToIndianDate(new Date().toISOString().split('T')[0])}
                       </div>
                     </div>
                   )}
+                  <div className="text-center font-bold text-sm py-1 underline">Estimate</div>
                   <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
+                    <table className="w-full text-sm border-collapse">
                       <thead>
-                        <tr className="border-b-2 border-amber-200 bg-amber-50/50">
-                          <th className="px-2 py-2 text-center font-bold text-xs">अ.नं.</th>
-                          <th className="px-2 py-2 text-center font-bold text-xs">कोड नं</th>
-                          <th className="px-2 py-2 text-right font-bold text-xs">दिनांक</th>
-                          <th className="px-2 py-2 text-right font-bold text-xs">मुद्दल</th>
-                          <th className="px-2 py-2 text-right font-bold text-xs">व्याज</th>
-                          <th className="px-2 py-2 text-right font-bold text-xs">एकूण</th>
-                          <th className="px-2 py-2 text-center font-bold text-xs w-8"></th>
+                        <tr className="bg-gray-100 text-xs">
+                          <th className="border border-gray-300 px-1 py-1 text-center w-8">अ.नं.</th>
+                          <th className="border border-gray-300 px-1 py-1 text-center w-16 font-bold">कोड नं</th>
+                          <th className="border border-gray-300 px-1 py-1 text-center w-20">दिनांक</th>
+                          <th className="border border-gray-300 px-2 py-1 text-right" style={{minWidth:'10ch'}}>बाजारमूल्य</th>
+                          <th className="border border-gray-300 px-2 py-1 text-right" style={{minWidth:'10ch'}}>चार्जेस</th>
+                          <th className="border border-gray-300 px-1 py-1 w-8"></th>
                         </tr>
                       </thead>
                       <tbody>
                         {summaryEntries.map((entry, index) => (
-                          <tr key={entry.id} className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}>
-                            <td className="px-2 py-2 text-center text-xs font-medium">{index + 1}</td>
-                            <td className="px-2 py-2 text-center text-xs font-semibold text-indigo-700">{entry.codeNumber || '—'}</td>
-                            <td className="px-2 py-2 text-right text-xs whitespace-nowrap">{toShortDate(entry.startDate)}</td>
-                            <td className="px-2 py-2 text-right text-xs font-semibold">₹{entry.principalAmount.toLocaleString('en-IN')}</td>
-                            <td className="px-2 py-2 text-right text-xs font-semibold text-orange-700">₹{entry.interestAmount.toLocaleString('en-IN')}</td>
-                            <td className="px-2 py-2 text-right text-xs font-bold text-green-700">₹{entry.totalAmount.toLocaleString('en-IN')}</td>
-                            <td className="px-2 py-2 text-center">
-                              <button onClick={() => handleDeleteEntry(entry.id)} className="text-red-400 hover:text-red-600 p-0.5">
-                                <Trash2 className="h-3 w-3" />
+                          <tr key={entry.id} className="hover:bg-gray-50">
+                            <td className="border border-gray-300 px-1 py-1 text-center text-xs">{index + 1}</td>
+                            <td className="border border-gray-300 px-1 py-1 text-center text-xs font-bold">{entry.codeNumber || '—'}</td>
+                            <td className="border border-gray-300 px-1 py-1 text-center text-xs">{toShortDate(entry.startDate)}{showRateMonths ? <span className="ml-4 text-xs font-normal">{formatRate(entry.interestRate)}</span> : ''}</td>
+                            <td className="border border-gray-300 px-2 py-1 text-right text-xs font-bold">{Number(Math.round(entry.principalAmount)).toLocaleString('en-IN')}</td>
+                            <td className="border border-gray-300 px-2 py-1 text-right text-xs font-bold">{Number(Math.round(entry.interestAmount)).toLocaleString('en-IN')}</td>
+                            <td className="border border-gray-300 px-1 py-1 text-center">
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteEntry(entry.id)}
+                                className="text-red-500 hover:text-red-700 p-0.5"
+                                title="काढा"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
                               </button>
                             </td>
                           </tr>
                         ))}
-                        <tr className="border-t-2 border-amber-300 bg-amber-50 font-bold">
-                          <td colSpan={3} className="px-2 py-2 text-right text-sm font-bold text-amber-800">एकूण:</td>
-                          <td className="px-2 py-2 text-right text-sm font-bold text-gray-800">₹{summaryEntries.reduce((s, e) => s + e.principalAmount, 0).toLocaleString('en-IN')}</td>
-                          <td className="px-2 py-2 text-right text-sm font-bold text-orange-700">₹{summaryEntries.reduce((s, e) => s + e.interestAmount, 0).toLocaleString('en-IN')}</td>
-                          <td className="px-2 py-2 text-right text-sm font-bold text-green-700">₹{summaryEntries.reduce((s, e) => s + e.totalAmount, 0).toLocaleString('en-IN')}</td>
-                          <td></td>
-                        </tr>
-                        <tr className="border-t-2 border-amber-400 bg-gradient-to-r from-amber-100 to-orange-100">
-                          <td colSpan={7} className="px-2 py-3 text-center text-lg font-black text-amber-900">
-                            Grand Total : ₹{summaryEntries.reduce((s, e) => s + e.totalAmount, 0).toLocaleString('en-IN')}
+                        <tr className="bg-gray-100 font-bold">
+                          <td colSpan={3} className="border border-gray-300 px-2 py-1.5 text-right text-xs font-bold">एकूण</td>
+                          <td className="border border-gray-300 px-2 py-1.5 text-right text-xs font-bold">
+                            {Number(Math.round(summaryEntries.reduce((sum, e) => sum + e.principalAmount, 0))).toLocaleString('en-IN')}
                           </td>
+                          <td className="border border-gray-300 px-2 py-1.5 text-right text-xs font-bold">
+                            {Number(Math.round(summaryEntries.reduce((sum, e) => sum + e.interestAmount, 0))).toLocaleString('en-IN')}
+                          </td>
+                          <td className="border border-gray-300"></td>
+                        </tr>
+                        <tr className="bg-amber-50 font-bold">
+                          <td colSpan={4} className="border border-gray-300 px-2 py-1.5 text-right text-xs font-bold">Grand Total</td>
+                          <td className="border border-gray-300 px-2 py-1.5 text-right text-sm font-bold text-green-700">
+                            {Number(Math.round(summaryEntries.reduce((sum, e) => sum + e.principalAmount + e.interestAmount, 0))).toLocaleString('en-IN')}
+                          </td>
+                          <td className="border border-gray-300"></td>
                         </tr>
                       </tbody>
                     </table>
