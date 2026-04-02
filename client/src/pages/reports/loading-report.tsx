@@ -498,7 +498,7 @@ export default function LoadingReport() {
                 </div>
               </div>
 
-              {!reportGenerated && (
+              {!reportGenerated && (<>
               <div className="flex mb-4 bg-white rounded-lg border border-gray-200 p-1 shadow-sm print:hidden">
                 <button 
                   onClick={() => { setActiveTab("group"); setSelectedCustomerName(""); setCustomerSearchTerm(""); setReportGenerated(false); setSidebarHidden(false); }}
@@ -727,7 +727,7 @@ export default function LoadingReport() {
                   साफ करा
                 </Button>
               </div>
-              )}
+              </>)}
 
               {isGenerating && (
                 <div className="flex items-center justify-center py-12">
