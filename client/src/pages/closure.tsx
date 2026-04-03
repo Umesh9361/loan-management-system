@@ -124,9 +124,15 @@ export default function Closure() {
   const [summaryReceiptHTML, setSummaryReceiptHTML] = useState<string | null>(null);
   const [printNameMode, setPrintNameMode] = useState<'group' | 'customer'>('group');
   
-  const urlParams = new URLSearchParams(window.location.search);
-  const loanIdFromUrl = urlParams.get('loanId');
-  const isEditMode = urlParams.get('edit') === 'true';
+  const [currentLocation] = useLocation();
+  const loanIdFromUrl = useMemo(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('loanId');
+  }, [currentLocation]);
+  const isEditMode = useMemo(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('edit') === 'true';
+  }, [currentLocation]);
   const hideSearch = !!loanIdFromUrl;
   const [existingClosureData, setExistingClosureData] = useState<any>(null);
 
