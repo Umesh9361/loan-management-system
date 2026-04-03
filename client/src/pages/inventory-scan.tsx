@@ -396,22 +396,27 @@ export default function InventoryScan() {
     }
   }, [toast, stopScanner]);
 
+  const deviceModeRef = useRef(false);
+  useEffect(() => { deviceModeRef.current = deviceMode; }, [deviceMode]);
+
   const handleDeviceScanInput = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       const val = (e.target as HTMLInputElement).value.trim();
       if (!val) return;
       (e.target as HTMLInputElement).value = '';
 
-      if (!deviceMode && deviceCharCountRef.current >= 8) {
-        setDeviceMode(true);
-        stopScanner();
-        setScanStatus("idle");
-      }
-
+      const charCount = deviceCharCountRef.current;
       deviceCharCountRef.current = 0;
       if (deviceKeystrokeTimerRef.current) {
         clearTimeout(deviceKeystrokeTimerRef.current);
         deviceKeystrokeTimerRef.current = null;
+      }
+
+      if (!deviceModeRef.current && charCount >= 8) {
+        setDeviceMode(true);
+        deviceModeRef.current = true;
+        stopScanner();
+        setScanStatus("idle");
       }
 
       onQrDecoded(val);
@@ -419,12 +424,14 @@ export default function InventoryScan() {
       return;
     }
 
-    deviceCharCountRef.current++;
-    if (deviceKeystrokeTimerRef.current) clearTimeout(deviceKeystrokeTimerRef.current);
-    deviceKeystrokeTimerRef.current = window.setTimeout(() => {
-      deviceCharCountRef.current = 0;
-    }, 300);
-  }, [onQrDecoded, deviceMode, stopScanner]);
+    if (e.key.length === 1) {
+      deviceCharCountRef.current++;
+      if (deviceKeystrokeTimerRef.current) clearTimeout(deviceKeystrokeTimerRef.current);
+      deviceKeystrokeTimerRef.current = window.setTimeout(() => {
+        deviceCharCountRef.current = 0;
+      }, 800);
+    }
+  }, [onQrDecoded, stopScanner]);
 
   const handleManualAdd = useCallback(() => {
     const accNo = manualAccountNo.trim();
@@ -1246,13 +1253,13 @@ export default function InventoryScan() {
                       height: 100% !important;
                     }
                   `}</style>
-                  {deviceMode ? (
+                  {deviceMode && (
                     <div className="rounded-lg border-2 border-green-400 bg-green-50 p-6 text-center space-y-3">
                       <div className="text-3xl">📡</div>
                       <div className="text-base font-bold text-green-700">Device Scanner Active</div>
                       <div className="text-xs text-green-600">Camera बंद — बॅटरी बचत | Device ने scan करा</div>
                       <Button
-                        onClick={() => { setDeviceMode(false); startScanning(); }}
+                        onClick={() => { setDeviceMode(false); deviceModeRef.current = false; startScanning(); }}
                         variant="outline"
                         size="sm"
                         className="text-xs border-green-400 text-green-700 hover:bg-green-100"
@@ -1260,12 +1267,11 @@ export default function InventoryScan() {
                         Camera पुन्हा सुरू करा
                       </Button>
                     </div>
-                  ) : (
-                    <div
-                      id={containerId}
-                      style={{ width: '100%', height: '280px', borderRadius: '8px', background: '#111', position: 'relative' }}
-                    />
                   )}
+                  <div
+                    id={containerId}
+                    style={{ width: '100%', height: deviceMode ? '0px' : '280px', borderRadius: '8px', background: '#111', position: 'relative', overflow: 'hidden', transition: 'height 0.3s' }}
+                  />
 
                   <input
                     ref={deviceInputRef}
