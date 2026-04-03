@@ -204,10 +204,13 @@ export default function InventoryScan() {
   const [showManualEntry, setShowManualEntry] = useState(false);
   const [manualAccountNo, setManualAccountNo] = useState("");
   const manualInputRef = useRef<HTMLInputElement>(null);
+  const [deviceMode, setDeviceMode] = useState(false);
 
   const scannerRef = useRef<any>(null);
   const mountedRef = useRef(true);
   const deviceInputRef = useRef<HTMLInputElement>(null);
+  const deviceKeystrokeTimerRef = useRef<number | null>(null);
+  const deviceCharCountRef = useRef(0);
   const containerId = "inventory-scanner-container";
 
   const filteredLoanIdsRef = useRef<Set<string>>(new Set());
@@ -394,13 +397,34 @@ export default function InventoryScan() {
   }, [toast, stopScanner]);
 
   const handleDeviceScanInput = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key !== 'Enter') return;
-    const val = (e.target as HTMLInputElement).value.trim();
-    if (!val) return;
-    (e.target as HTMLInputElement).value = '';
-    onQrDecoded(val);
-    setTimeout(() => deviceInputRef.current?.focus(), 50);
-  }, [onQrDecoded]);
+    if (e.key === 'Enter') {
+      const val = (e.target as HTMLInputElement).value.trim();
+      if (!val) return;
+      (e.target as HTMLInputElement).value = '';
+
+      if (!deviceMode && deviceCharCountRef.current >= 8) {
+        setDeviceMode(true);
+        stopScanner();
+        setScanStatus("idle");
+      }
+
+      deviceCharCountRef.current = 0;
+      if (deviceKeystrokeTimerRef.current) {
+        clearTimeout(deviceKeystrokeTimerRef.current);
+        deviceKeystrokeTimerRef.current = null;
+      }
+
+      onQrDecoded(val);
+      setTimeout(() => deviceInputRef.current?.focus(), 50);
+      return;
+    }
+
+    deviceCharCountRef.current++;
+    if (deviceKeystrokeTimerRef.current) clearTimeout(deviceKeystrokeTimerRef.current);
+    deviceKeystrokeTimerRef.current = window.setTimeout(() => {
+      deviceCharCountRef.current = 0;
+    }, 300);
+  }, [onQrDecoded, deviceMode, stopScanner]);
 
   const handleManualAdd = useCallback(() => {
     const accNo = manualAccountNo.trim();
@@ -1222,10 +1246,26 @@ export default function InventoryScan() {
                       height: 100% !important;
                     }
                   `}</style>
-                  <div
-                    id={containerId}
-                    style={{ width: '100%', height: '280px', borderRadius: '8px', background: '#111', position: 'relative' }}
-                  />
+                  {deviceMode ? (
+                    <div className="rounded-lg border-2 border-green-400 bg-green-50 p-6 text-center space-y-3">
+                      <div className="text-3xl">📡</div>
+                      <div className="text-base font-bold text-green-700">Device Scanner Active</div>
+                      <div className="text-xs text-green-600">Camera बंद — बॅटरी बचत | Device ने scan करा</div>
+                      <Button
+                        onClick={() => { setDeviceMode(false); startScanning(); }}
+                        variant="outline"
+                        size="sm"
+                        className="text-xs border-green-400 text-green-700 hover:bg-green-100"
+                      >
+                        Camera पुन्हा सुरू करा
+                      </Button>
+                    </div>
+                  ) : (
+                    <div
+                      id={containerId}
+                      style={{ width: '100%', height: '280px', borderRadius: '8px', background: '#111', position: 'relative' }}
+                    />
+                  )}
 
                   <input
                     ref={deviceInputRef}
@@ -1237,18 +1277,18 @@ export default function InventoryScan() {
                     aria-label="Scanner device input"
                   />
 
-                  {scanStatus === "loading" && (
+                  {!deviceMode && scanStatus === "loading" && (
                     <div className="text-center text-sm text-gray-500 py-1 flex items-center justify-center gap-2">
                       <span className="inline-block w-3 h-3 border-2 border-gray-400 border-t-indigo-600 rounded-full animate-spin" />
                       Camera सुरू होत आहे...
                     </div>
                   )}
-                  {scanStatus === "active" && (
+                  {!deviceMode && scanStatus === "active" && (
                     <div className="text-center text-sm text-indigo-600 font-medium py-1">
-                      QR code camera समोर धरा | Scanner device पण चालेल
+                      📷 QR code camera समोर धरा | Scanner device पण चालेल
                     </div>
                   )}
-                  {scanStatus === "error" && (
+                  {!deviceMode && scanStatus === "error" && (
                     <div className="space-y-2">
                       <div className="text-center text-sm text-red-600 py-1">{scanError}</div>
                       <Button onClick={startScanning} variant="outline" className="w-full text-indigo-600 border-indigo-300">

@@ -48,6 +48,9 @@ export function QrScannerModal({ open, onOpenChange }: QrScannerModalProps) {
   const scannerRef = useRef<any>(null);
   const mountedRef = useRef(false);
   const deviceInputRef = useRef<HTMLInputElement>(null);
+  const [deviceMode, setDeviceMode] = useState(false);
+  const deviceKeystrokeTimerRef = useRef<number | null>(null);
+  const deviceCharCountRef = useRef(0);
   const containerId = "qr-scanner-container";
 
   const stopScanner = useCallback(() => {
@@ -87,12 +90,32 @@ export function QrScannerModal({ open, onOpenChange }: QrScannerModalProps) {
   }, [onOpenChange, setLocation, stopScanner]);
 
   const handleDeviceScanInput = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key !== 'Enter') return;
-    const val = (e.target as HTMLInputElement).value.trim();
-    if (!val) return;
-    (e.target as HTMLInputElement).value = '';
-    onQrDecoded(val);
-  }, [onQrDecoded]);
+    if (e.key === 'Enter') {
+      const val = (e.target as HTMLInputElement).value.trim();
+      if (!val) return;
+      (e.target as HTMLInputElement).value = '';
+
+      if (!deviceMode && deviceCharCountRef.current >= 8) {
+        setDeviceMode(true);
+        stopScanner();
+      }
+
+      deviceCharCountRef.current = 0;
+      if (deviceKeystrokeTimerRef.current) {
+        clearTimeout(deviceKeystrokeTimerRef.current);
+        deviceKeystrokeTimerRef.current = null;
+      }
+
+      onQrDecoded(val);
+      return;
+    }
+
+    deviceCharCountRef.current++;
+    if (deviceKeystrokeTimerRef.current) clearTimeout(deviceKeystrokeTimerRef.current);
+    deviceKeystrokeTimerRef.current = window.setTimeout(() => {
+      deviceCharCountRef.current = 0;
+    }, 300);
+  }, [onQrDecoded, deviceMode, stopScanner]);
 
   useEffect(() => {
     if (!open) return;
@@ -192,6 +215,8 @@ export function QrScannerModal({ open, onOpenChange }: QrScannerModalProps) {
       stopScanner();
       setStatus("loading");
       setErrorMsg("");
+      setDeviceMode(false);
+      deviceCharCountRef.current = 0;
       return;
     }
 
@@ -235,10 +260,24 @@ export function QrScannerModal({ open, onOpenChange }: QrScannerModalProps) {
               height: 100% !important;
             }
           `}</style>
-          <div
-            id={containerId}
-            style={{ width: '100%', height: '280px', borderRadius: '8px', background: '#111', position: 'relative' }}
-          />
+          {deviceMode ? (
+            <div className="rounded-lg border-2 border-green-400 bg-green-50 p-6 text-center space-y-3">
+              <div className="text-3xl">📡</div>
+              <div className="text-base font-bold text-green-700">Device Scanner Active</div>
+              <div className="text-xs text-green-600">Camera बंद — बॅटरी बचत | Device ने scan करा</div>
+              <button
+                onClick={() => { setDeviceMode(false); handleRetry(); }}
+                className="text-xs border border-green-400 text-green-700 hover:bg-green-100 px-3 py-1 rounded-md"
+              >
+                Camera पुन्हा सुरू करा
+              </button>
+            </div>
+          ) : (
+            <div
+              id={containerId}
+              style={{ width: '100%', height: '280px', borderRadius: '8px', background: '#111', position: 'relative' }}
+            />
+          )}
 
           <input
             ref={deviceInputRef}
@@ -250,13 +289,13 @@ export function QrScannerModal({ open, onOpenChange }: QrScannerModalProps) {
             aria-label="Scanner device input"
           />
 
-          {status === "loading" && (
+          {!deviceMode && status === "loading" && (
             <div className="text-center text-sm text-gray-500 py-1 flex items-center justify-center gap-2">
               <span className="inline-block w-3 h-3 border-2 border-gray-400 border-t-indigo-600 rounded-full animate-spin" />
               Camera सुरू होत आहे...
             </div>
           )}
-          {status === "scanning" && (
+          {!deviceMode && status === "scanning" && (
             <div className="text-center text-sm text-indigo-600 font-medium py-1">
               📷 QR code camera समोर धरा | Scanner device पण चालेल
             </div>
@@ -266,7 +305,7 @@ export function QrScannerModal({ open, onOpenChange }: QrScannerModalProps) {
               ✓ कर्ज सापडले! उघडत आहे...
             </div>
           )}
-          {status === "error" && (
+          {!deviceMode && status === "error" && (
             <div className="space-y-2">
               <div className="text-center text-sm text-red-600 py-1">{errorMsg}</div>
               <button
