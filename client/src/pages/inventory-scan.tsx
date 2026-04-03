@@ -501,7 +501,7 @@ export default function InventoryScan() {
     toast({ title: "मॅन्युअल जोडले", description: `${loan.borrowerName} — खाते ${accNo}` });
   }, [manualAccountNo, filteredLoans, loans, toast, stopScanner]);
 
-  const marathiNumberMap: Record<string, number> = useMemo(() => ({
+  const numberWordMap: Record<string, number> = useMemo(() => ({
     'शून्य': 0, 'एक': 1, 'दोन': 2, 'तीन': 3, 'चार': 4, 'पाच': 5,
     'सहा': 6, 'सात': 7, 'आठ': 8, 'नऊ': 9, 'दहा': 10,
     'अकरा': 11, 'बारा': 12, 'तेरा': 13, 'चौदा': 14, 'पंधरा': 15,
@@ -524,32 +524,77 @@ export default function InventoryScan() {
     'शहाण्णव': 96, 'सत्त्याण्णव': 97, 'अठ्ठ्याण्णव': 98, 'नव्व्याण्णव': 99,
     'शंभर': 100, 'दोनशे': 200, 'तीनशे': 300, 'चारशे': 400, 'पाचशे': 500,
     'सहाशे': 600, 'सातशे': 700, 'आठशे': 800, 'नऊशे': 900, 'हजार': 1000,
+    'zero': 0, 'one': 1, 'two': 2, 'three': 3, 'four': 4, 'five': 5,
+    'six': 6, 'seven': 7, 'eight': 8, 'nine': 9, 'ten': 10,
+    'eleven': 11, 'twelve': 12, 'thirteen': 13, 'fourteen': 14, 'fifteen': 15,
+    'sixteen': 16, 'seventeen': 17, 'eighteen': 18, 'nineteen': 19, 'twenty': 20,
+    'thirty': 30, 'forty': 40, 'fifty': 50, 'sixty': 60, 'seventy': 70,
+    'eighty': 80, 'ninety': 90, 'hundred': 100, 'thousand': 1000,
+    'शून्या': 0, 'ek': 1, 'do': 2, 'teen': 3, 'char': 4, 'paanch': 5,
+    'chhe': 6, 'saat': 7, 'aath': 8, 'nau': 9, 'das': 10,
+    'एक सौ': 100, 'दो सौ': 200, 'तीन सौ': 300, 'चार सौ': 400, 'पांच सौ': 500,
+    'छह सौ': 600, 'सात सौ': 700, 'आठ सौ': 800, 'नौ सौ': 900,
+    'सौ': 100, 'हज़ार': 1000,
+    'बीस': 20, 'तीस_hi': 30, 'चालीस': 40, 'पचास': 50, 'साठ_hi': 60, 'सत्तर_hi': 70, 'अस्सी': 80, 'नब्बे': 90,
   }), []);
 
-  const parseMarathiNumber = useCallback((text: string): string | null => {
-    const trimmed = text.trim();
-    if (/^\d+$/.test(trimmed)) return trimmed;
-    const direct = marathiNumberMap[trimmed];
+  const devanagariToAscii = useCallback((text: string): string => {
+    return text.replace(/[०-९]/g, (ch) => String('०१२३४५६७८९'.indexOf(ch)));
+  }, []);
+
+  const normalizeTranscript = useCallback((text: string): string => {
+    let normalized = devanagariToAscii(text.trim().toLowerCase());
+    normalized = normalized.replace(/[।,\.]+/g, ' ').replace(/\s+/g, ' ').trim();
+    return normalized;
+  }, [devanagariToAscii]);
+
+  const parseSpokenNumber = useCallback((text: string): string | null => {
+    const normalized = normalizeTranscript(text);
+    if (/^\d+$/.test(normalized)) return normalized;
+
+    const direct = numberWordMap[normalized];
     if (direct !== undefined) return String(direct);
-    const parts = trimmed.split(/\s+/);
+
+    const parts = normalized.split(/[\s\-]+/);
+
     if (parts.length === 2) {
-      const a = marathiNumberMap[parts[0]];
-      const b = marathiNumberMap[parts[1]];
+      const a = numberWordMap[parts[0]];
+      const b = numberWordMap[parts[1]];
       if (a !== undefined && b !== undefined) {
         if (a >= 100 && b < 100) return String(a + b);
         if (a === 1000 && b < 1000) return String(a + b);
+        if (a < 10 && b === 100) return String(a * b);
+        if (a < 10 && b === 1000) return String(a * b);
+        if (a >= 20 && a < 100 && b < 10) return String(a + b);
       }
     }
+
     if (parts.length === 3) {
-      const a = marathiNumberMap[parts[0]];
-      const b = marathiNumberMap[parts[1]];
-      const c = marathiNumberMap[parts[2]];
+      const a = numberWordMap[parts[0]];
+      const b = numberWordMap[parts[1]];
+      const c = numberWordMap[parts[2]];
       if (a !== undefined && b !== undefined && c !== undefined) {
         if (a >= 100 && b >= 100) return String(a + b + c);
+        if (a < 10 && b === 100 && c < 100) return String(a * b + c);
+        if (a >= 100 && b < 100 && c < 10) return String(a + b + c);
       }
     }
+
+    if (parts.length === 4) {
+      const a = numberWordMap[parts[0]];
+      const b = numberWordMap[parts[1]];
+      const c = numberWordMap[parts[2]];
+      const d = numberWordMap[parts[3]];
+      if (a !== undefined && b !== undefined && c !== undefined && d !== undefined) {
+        if (a < 10 && b === 100 && c >= 10 && c < 100 && d < 10) return String(a * b + c + d);
+      }
+    }
+
+    const digits = normalized.replace(/\D/g, '');
+    if (digits.length > 0) return digits;
+
     return null;
-  }, [marathiNumberMap]);
+  }, [normalizeTranscript, numberWordMap]);
 
   const handleRapidAdd = useCallback((accNo: string) => {
     const trimmed = accNo.trim();
@@ -615,7 +660,7 @@ export default function InventoryScan() {
       e.preventDefault();
       const val = rapidInput.trim();
       if (val) {
-        const parsed = parseMarathiNumber(val);
+        const parsed = parseSpokenNumber(val);
         if (parsed) {
           handleRapidAdd(parsed);
         } else {
@@ -625,7 +670,7 @@ export default function InventoryScan() {
       }
       setRapidInput("");
     }
-  }, [rapidInput, handleRapidAdd, parseMarathiNumber, toast]);
+  }, [rapidInput, handleRapidAdd, parseSpokenNumber, toast]);
 
   const hasSpeechRecognition = useMemo(() => {
     return typeof window !== 'undefined' && ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window);
@@ -639,6 +684,35 @@ export default function InventoryScan() {
     setIsListening(false);
   }, []);
 
+  const [voiceLang, setVoiceLang] = useState<"mr-IN" | "hi-IN" | "en-IN">("mr-IN");
+
+  const processTranscript = useCallback((transcript: string) => {
+    const normalized = normalizeTranscript(transcript);
+    const fullParsed = parseSpokenNumber(normalized);
+    if (fullParsed) {
+      handleRapidAdd(fullParsed);
+      return;
+    }
+    const segments = normalized.split(/[,।\.\s]+/).filter((w: string) => w.length > 0);
+    let i = 0;
+    while (i < segments.length) {
+      if (i + 1 < segments.length) {
+        const twoWord = segments[i] + ' ' + segments[i + 1];
+        const parsed2 = parseSpokenNumber(twoWord);
+        if (parsed2) {
+          handleRapidAdd(parsed2);
+          i += 2;
+          continue;
+        }
+      }
+      const parsed1 = parseSpokenNumber(segments[i]);
+      if (parsed1) {
+        handleRapidAdd(parsed1);
+      }
+      i++;
+    }
+  }, [normalizeTranscript, parseSpokenNumber, handleRapidAdd]);
+
   const startVoice = useCallback(() => {
     if (!hasSpeechRecognition) return;
     stopVoice();
@@ -647,19 +721,13 @@ export default function InventoryScan() {
     const recognition = new SpeechRecognition();
     recognition.continuous = true;
     recognition.interimResults = false;
-    recognition.lang = 'mr-IN';
+    recognition.lang = voiceLang;
 
     recognition.onresult = (event: any) => {
       for (let i = event.resultIndex; i < event.results.length; i++) {
         if (event.results[i].isFinal) {
           const transcript = event.results[i][0].transcript.trim();
-          const words = transcript.split(/[,\s]+/).filter((w: string) => w.length > 0);
-          for (const word of words) {
-            const parsed = parseMarathiNumber(word);
-            if (parsed) {
-              handleRapidAdd(parsed);
-            }
-          }
+          if (transcript) processTranscript(transcript);
         }
       }
     };
@@ -683,7 +751,7 @@ export default function InventoryScan() {
     } catch {
       toast({ title: "Voice सुरू झाले नाही", variant: "destructive" });
     }
-  }, [hasSpeechRecognition, stopVoice, parseMarathiNumber, handleRapidAdd, toast]);
+  }, [hasSpeechRecognition, stopVoice, voiceLang, processTranscript, toast]);
 
   useEffect(() => {
     if (phase !== 'scanning' || scanMode !== 'manual') {
@@ -1568,7 +1636,7 @@ export default function InventoryScan() {
                   <CardContent className="pt-4 space-y-3">
                     <div className="text-center">
                       <Keyboard className="h-8 w-8 text-indigo-600 mx-auto mb-1" />
-                      <div className="text-sm font-bold text-indigo-800">खाते क्रमांक टाइप करा</div>
+                      <div className="text-sm font-bold text-indigo-800">खाते क्रमांक टाइप करा / बोला</div>
                       <div className="text-xs text-gray-500 mt-0.5">नंबर टाका → Space / Enter दाबा → auto-add</div>
                     </div>
 
@@ -1593,7 +1661,7 @@ export default function InventoryScan() {
                       </div>
                       {hasSpeechRecognition && (
                         <Button
-                          onClick={isListening ? stopVoice : startVoice}
+                          onClick={() => { if (isListening) { stopVoice(); } else { startVoice(); } }}
                           className={`px-4 py-6 ${isListening ? 'bg-red-500 hover:bg-red-600 animate-pulse' : 'bg-indigo-600 hover:bg-indigo-700'} text-white`}
                         >
                           {isListening ? <MicOff className="h-6 w-6" /> : <Mic className="h-6 w-6" />}
@@ -1601,17 +1669,34 @@ export default function InventoryScan() {
                       )}
                     </div>
 
+                    {hasSpeechRecognition && (
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs text-gray-500 font-medium">भाषा:</span>
+                        {([ { code: "mr-IN" as const, label: "मराठी" }, { code: "hi-IN" as const, label: "हिंदी" }, { code: "en-IN" as const, label: "English" } ]).map(lang => (
+                          <button
+                            key={lang.code}
+                            onClick={() => { setVoiceLang(lang.code); if (isListening) { stopVoice(); setTimeout(() => startVoice(), 200); } }}
+                            className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${voiceLang === lang.code ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                          >
+                            {lang.label}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
                     {isListening && (
                       <div className="flex items-center justify-center gap-2 py-2 bg-red-50 border border-red-200 rounded-lg">
                         <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-                        <span className="text-sm font-medium text-red-700">ऐकत आहे... खाते नंबर बोला</span>
+                        <span className="text-sm font-medium text-red-700">
+                          {voiceLang === 'mr-IN' ? 'ऐकत आहे... मराठीत नंबर बोला' : voiceLang === 'hi-IN' ? 'सुन रहा है... हिंदी में नंबर बोलें' : 'Listening... speak numbers in English'}
+                        </span>
                       </div>
                     )}
 
                     <div className="bg-gray-50 border border-gray-200 rounded-lg p-2.5">
                       <div className="text-xs text-gray-500 space-y-1">
                         <div>⌨️ <span className="font-medium">Keyboard:</span> नंबर टाका → Space / Enter</div>
-                        {hasSpeechRecognition && <div>🎤 <span className="font-medium">Voice:</span> 🎤 दाबा → "तीनशे वीस" बोला</div>}
+                        {hasSpeechRecognition && <div>🎤 <span className="font-medium">Voice:</span> 🎤 दाबा → मराठी / हिंदी / English बोला</div>}
                         <div>🔁 <span className="font-medium">सतत:</span> एक मागून एक पटापट टाकत जा</div>
                       </div>
                     </div>
