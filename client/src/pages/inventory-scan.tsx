@@ -199,6 +199,9 @@ export default function InventoryScan() {
   const [autoStopFlash, setAutoStopFlash] = useState(false);
   const [showFound, setShowFound] = useState(false);
   const [resumePrompt, setResumePrompt] = useState<ScanSession | null>(null);
+  const [showManualEntry, setShowManualEntry] = useState(false);
+  const [manualAccountNo, setManualAccountNo] = useState("");
+  const manualInputRef = useRef<HTMLInputElement>(null);
 
   const scannerRef = useRef<any>(null);
   const mountedRef = useRef(true);
@@ -392,6 +395,69 @@ export default function InventoryScan() {
     onQrDecoded(val);
     setTimeout(() => deviceInputRef.current?.focus(), 50);
   }, [onQrDecoded]);
+
+  const handleManualAdd = useCallback(() => {
+    const accNo = manualAccountNo.trim();
+    if (!accNo) return;
+
+    const loan = filteredLoans.find((l: any) => String(l.accountNumber) === accNo);
+    if (!loan) {
+      const allLoan = (loans as any[])?.find((l: any) => String(l.accountNumber) === accNo);
+      if (allLoan) {
+        toast({ title: "फिल्टर बाहेरील वस्तू", description: `${allLoan.borrowerName} (खाते ${allLoan.accountNumber}) — सध्याच्या फिल्टरमध्ये नाही`, variant: "destructive" });
+      } else {
+        toast({ title: "खाते सापडले नाही", description: `खाते क्रमांक ${accNo} सापडले नाही`, variant: "destructive" });
+      }
+      playErrorBeep();
+      return;
+    }
+
+    const loanId = String(loan.id);
+    const currentScanned = scannedIdsRef.current;
+
+    if (currentScanned.has(loanId)) {
+      setDuplicateFlash(true);
+      playErrorBeep();
+      toast({ title: "आधीच scan झाले", description: `खाते ${accNo} आधीच जोडले आहे`, variant: "destructive" });
+      setTimeout(() => setDuplicateFlash(false), 800);
+      setManualAccountNo("");
+      return;
+    }
+
+    const newSet = new Set(currentScanned);
+    newSet.add(loanId);
+    setScannedIds(newSet);
+    setLastScanned(loan);
+    setManualAccountNo("");
+
+    const session: ScanSession = {
+      filterSettings: filterSettingsRef.current,
+      scannedLoanIds: Array.from(newSet),
+      startedAt: new Date().toISOString(),
+      expectedCount: filteredCountRef.current,
+    };
+    saveSession(session);
+
+    let scannedInFilter = 0;
+    const currentFilteredIds = filteredLoanIdsRef.current;
+    newSet.forEach(id => { if (currentFilteredIds.has(id)) scannedInFilter++; });
+    const totalFiltered = filteredCountRef.current;
+
+    if (totalFiltered > 0 && scannedInFilter >= totalFiltered) {
+      playCelebrationSound();
+      setAutoStopFlash(true);
+      setTimeout(() => {
+        setAutoStopFlash(false);
+        stopScanner();
+        setScanStatus("idle");
+        setPhase("report");
+      }, 1800);
+    } else {
+      playBeep();
+    }
+
+    toast({ title: "मॅन्युअल जोडले", description: `${loan.borrowerName} — खाते ${accNo}` });
+  }, [manualAccountNo, filteredLoans, loans, toast, stopScanner]);
 
   useEffect(() => {
     if (phase !== 'scanning') return;
@@ -973,6 +1039,41 @@ export default function InventoryScan() {
                   </div>
                 </div>
               )}
+
+              <div className="space-y-2">
+                {!showManualEntry ? (
+                  <Button
+                    onClick={() => { setShowManualEntry(true); setTimeout(() => manualInputRef.current?.focus(), 100); }}
+                    variant="outline"
+                    className="w-full border-indigo-300 text-indigo-700 py-3"
+                  >
+                    <Search className="h-4 w-4 mr-2" />
+                    QR खराब? — खाते नंबर टाका
+                  </Button>
+                ) : (
+                  <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-3 space-y-2">
+                    <div className="text-xs font-medium text-indigo-700">खाते क्रमांक टाका (QR खराब असल्यास)</div>
+                    <div className="flex gap-2">
+                      <Input
+                        ref={manualInputRef}
+                        type="text"
+                        inputMode="numeric"
+                        placeholder="उदा. 55"
+                        value={manualAccountNo}
+                        onChange={(e) => setManualAccountNo(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleManualAdd(); } }}
+                        className="flex-1 text-center text-lg font-bold border-indigo-300"
+                      />
+                      <Button onClick={handleManualAdd} className="bg-indigo-600 hover:bg-indigo-700 text-white px-4">
+                        जोडा
+                      </Button>
+                      <Button onClick={() => { setShowManualEntry(false); setManualAccountNo(""); }} variant="ghost" size="icon" className="text-gray-500">
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
 
               <Button onClick={handleStopScan} className="w-full bg-red-600 hover:bg-red-700 text-white py-5 font-bold">
                 <StopCircle className="h-5 w-5 mr-2" />
