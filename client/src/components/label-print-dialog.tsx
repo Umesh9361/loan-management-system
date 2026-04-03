@@ -608,7 +608,7 @@ function generateQrLabelHtml(loan: LabelLoan, qrDataUrl: string, settings: Label
   const amtIsLong = show_amt && amtNum.length > 7;
 
   return `
-    <div class="label-container" style="width:${totalW}mm;height:${totalH}mm;box-sizing:border-box;page-break-after:always;overflow:hidden;display:flex;flex-direction:row;align-items:stretch;padding:0.3mm 0.3mm 0.3mm 0.5mm;gap:0;">
+    <div class="label-container" style="width:${totalW}mm;height:${totalH}mm;box-sizing:border-box;page-break-after:always;overflow:hidden;display:flex;flex-direction:row;align-items:stretch;padding:0.3mm 0.3mm 0.8mm 1mm;gap:0;">
       <div style="display:flex;align-items:center;flex-shrink:0;"><img src="${qrDataUrl}" width="${qrPx}" height="${qrPx}" style="width:${qrSizeMm}mm;height:${qrSizeMm}mm;display:block;" /></div>
       <div style="flex:1;min-width:0;display:flex;flex-direction:column;justify-content:space-between;padding-left:0.8mm;padding-right:0.3mm;border-left:0.3mm solid #ccc;margin-left:0.3mm;overflow:hidden;">
         ${amtIsLong ? `
@@ -1467,7 +1467,7 @@ export function LabelPrintDialog({ open, onOpenChange, loans }: LabelPrintDialog
                       const eff_fp_acct = Math.round(fp_acct * row1Scale2);
                       const eff_fp_amt  = Math.round(fp_amt * row1Scale2);
                       return (
-                        <div style={{ width: `${realWPx}px`, height: `${realHPx}px`, transform: `scale(${previewScale})`, transformOrigin: 'top left', display: 'flex', flexDirection: 'row', alignItems: 'stretch', padding: '1px 1px 1px 1.5px', gap: 0, overflow: 'hidden', boxSizing: 'border-box' }}>
+                        <div style={{ width: `${realWPx}px`, height: `${realHPx}px`, transform: `scale(${previewScale})`, transformOrigin: 'top left', display: 'flex', flexDirection: 'row', alignItems: 'stretch', padding: '1px 1px 2.5px 3px', gap: 0, overflow: 'hidden', boxSizing: 'border-box' }}>
                           <div style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
                           {qrPreviewUrls[String(loan.id)] ? (
                             <img src={qrPreviewUrls[String(loan.id)]} style={{ width: `${qrSizePx}px`, height: `${qrSizePx}px`, display: 'block', flexShrink: 0 }} alt="QR" />
