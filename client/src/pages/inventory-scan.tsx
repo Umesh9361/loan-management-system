@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo, Component, type ReactNode, type ErrorInfo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,41 @@ import {
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import { decodeQrData } from "@/lib/qr-utils";
+
+class InventoryErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean; error: string }> {
+  constructor(props: { children: ReactNode }) {
+    super(props);
+    this.state = { hasError: false, error: "" };
+  }
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error: error.message || "Unknown error" };
+  }
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.error("InventoryScan Error:", error, errorInfo);
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50/30 to-slate-50 flex items-center justify-center p-4">
+          <div className="bg-white border border-red-200 rounded-xl shadow-lg p-6 max-w-md w-full text-center space-y-4">
+            <AlertTriangle className="h-12 w-12 text-red-500 mx-auto" />
+            <h2 className="text-lg font-bold text-red-800">वस्तू तपासणी लोड त्रुटी</h2>
+            <p className="text-sm text-gray-600">{this.state.error}</p>
+            <div className="space-y-2">
+              <button onClick={() => { try { localStorage.removeItem("inventory_scan_session"); } catch {} this.setState({ hasError: false, error: "" }); }} className="w-full px-4 py-2 bg-indigo-600 text-white rounded-lg font-medium">
+                पुन्हा प्रयत्न करा
+              </button>
+              <button onClick={() => window.location.reload()} className="w-full px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium">
+                Page Reload करा
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 const CDN_URL = "https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js";
 const STORAGE_KEY = "inventory_scan_session";
@@ -133,8 +168,14 @@ function loadSession(): ScanSession | null {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
-    return JSON.parse(raw);
+    const parsed = JSON.parse(raw);
+    if (!parsed || !parsed.filterSettings || !Array.isArray(parsed.scannedLoanIds)) {
+      localStorage.removeItem(STORAGE_KEY);
+      return null;
+    }
+    return parsed as ScanSession;
   } catch {
+    try { localStorage.removeItem(STORAGE_KEY); } catch {}
     return null;
   }
 }
@@ -145,7 +186,7 @@ function clearSessionStorage() {
   } catch {}
 }
 
-export default function InventoryScan() {
+function InventoryScanInner() {
   const { toast } = useToast();
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -1881,5 +1922,13 @@ export default function InventoryScan() {
         </main>
       </div>
     </div>
+  );
+}
+
+export default function InventoryScan() {
+  return (
+    <InventoryErrorBoundary>
+      <InventoryScanInner />
+    </InventoryErrorBoundary>
   );
 }
