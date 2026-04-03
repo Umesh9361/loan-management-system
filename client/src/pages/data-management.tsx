@@ -635,12 +635,12 @@ function DataManagementPage() {
     doc.setFont('NotoDevanagari');
     doc.setFontSize(14);
     doc.setTextColor(0, 0, 0);
-    doc.text(`खाते क्रमांक पुनर्व्यवस्थापन`, pageWidth / 2, 12, { align: 'center' });
+    doc.text(`खाते क्रमांक पुनर्क्रमांकन`, pageWidth / 2, 12, { align: 'center' });
     doc.setFontSize(11);
     doc.text(groupName, pageWidth / 2, 18, { align: 'center' });
     doc.setFontSize(9);
     doc.setTextColor(80, 80, 80);
-    doc.text(`एकूण कर्ज: ${totalRows}  |  ${dateInfo}  |  पान ${pageNum}/${totalPages}`, pageWidth / 2, 23, { align: 'center' });
+    doc.text(`एकूण कर्जे: ${totalRows}  |  ${dateInfo}  |  पान ${pageNum}/${totalPages}`, pageWidth / 2, 23, { align: 'center' });
     doc.setDrawColor(79, 70, 229);
     doc.setLineWidth(0.5);
     doc.line(sideMargin, 25, pageWidth - sideMargin, 25);
@@ -753,7 +753,7 @@ function DataManagementPage() {
       }
     }
 
-    doc.save(`खाते_रिअरेंज_${groupName}.pdf`);
+    doc.save(`खाते_पुनर्क्रमांकन_${groupName}.pdf`);
     setRearrangePdfDownloaded(true);
   };
 
@@ -853,7 +853,7 @@ function DataManagementPage() {
       doc.text(`पान ${page + 1} / ${totalPages}`, pageWidth / 2, pageHeight - 8, { align: 'center' });
     }
 
-    doc.save(`खाते_रिअरेंज_${groupName}_mobile.pdf`);
+    doc.save(`खाते_पुनर्क्रमांकन_${groupName}_mobile.pdf`);
     setRearrangePdfDownloaded(true);
   };
 
@@ -863,7 +863,7 @@ function DataManagementPage() {
       return;
     }
     const confirmed = window.confirm(
-      "⚠️ PDF डाउनलोड झाली आहे.\n\nआता खाते क्रमांक बदलायचे का?\nहे action undo करता येणार नाही!"
+      "⚠️ PDF डाउनलोड झाले आहे.\n\nआता खाते क्रमांक बदलायचे का?\nहे बदल पूर्ववत करता येणार नाहीत!"
     );
     if (confirmed) {
       rearrangeConfirmMutation.mutate({
@@ -1004,8 +1004,8 @@ function DataManagementPage() {
             </TabsTrigger>
             <TabsTrigger value="rearrange" className="flex-shrink-0 flex items-center gap-1.5 px-3 py-2.5 text-xs sm:text-sm font-semibold rounded-lg whitespace-nowrap data-[state=active]:bg-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all">
               <ArrowUpDown className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              <span className="hidden sm:inline">खाते नंबर रिअरेंज</span>
-              <span className="sm:hidden">रिअरेंज</span>
+              <span className="hidden sm:inline">खाते क्रमांक पुनर्क्रमांकन</span>
+              <span className="sm:hidden">पुनर्क्रमांकन</span>
             </TabsTrigger>
             <TabsTrigger value="cashfix" className="flex-shrink-0 flex items-center gap-1.5 px-3 py-2.5 text-xs sm:text-sm font-semibold rounded-lg whitespace-nowrap data-[state=active]:bg-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-md transition-all">
               <Scale className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
@@ -1592,10 +1592,10 @@ function DataManagementPage() {
                   <div className="p-1.5 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-lg">
                     <ArrowUpDown className="h-4 w-4 text-white" />
                   </div>
-                  🔢 खाते क्रमांक पुनर्व्यवस्थापन
+                  🔢 खाते क्रमांक पुनर्क्रमांकन
                 </CardTitle>
                 <CardDescription>
-                  ग्रुप निवडून कर्ज वितरण तारखेनुसार 1, 2, 3, 4... असे रिअरेंज करा. फक्त manual account number चेंज होईल.
+                  ग्रुप निवडून कर्ज वितरण तारखेनुसार 1, 2, 3, 4... असे पुनर्क्रमांकन करा. फक्त खाते क्रमांक बदलेल.
                 </CardDescription>
               </CardHeader>
               <CardContent className="p-4 sm:p-6 space-y-5">
@@ -1670,7 +1670,7 @@ function DataManagementPage() {
                         />
                       </div>
                     </div>
-                    <p className="text-xs text-gray-500 mt-1">रिकामे ठेवल्यास सर्व कर्ज रिअरेंज होतील</p>
+                    <p className="text-xs text-gray-500 mt-1">रिकामे ठेवल्यास सर्व कर्जांचे पुनर्क्रमांकन होईल</p>
                   </div>
                   <div className="flex items-end">
                     <Button 
@@ -1741,7 +1741,7 @@ function DataManagementPage() {
                             ) : (
                               <CheckCircle className="h-4 w-4" />
                             )}
-                            {rearrangeConfirmMutation.isPending ? "रिअरेंज करत आहे..." : "खाते क्रमांक बदला"}
+                            {rearrangeConfirmMutation.isPending ? "पुनर्क्रमांकन करत आहे..." : "खाते क्रमांक बदला"}
                           </Button>
                         </div>
 

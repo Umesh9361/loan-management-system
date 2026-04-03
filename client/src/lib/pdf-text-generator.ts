@@ -1,13 +1,13 @@
 import jsPDF from 'jspdf';
 import { NOTO_SANS_DEVANAGARI_BASE64 } from './fonts/noto-devanagari-font';
 
-let fontInitialized = false;
+const initializedDocs = new WeakSet<jsPDF>();
 
 export function initDevanagariFont(doc: jsPDF): void {
-  if (!fontInitialized) {
+  if (!initializedDocs.has(doc)) {
     doc.addFileToVFS('NotoSansDevanagari.ttf', NOTO_SANS_DEVANAGARI_BASE64);
     doc.addFont('NotoSansDevanagari.ttf', 'NotoDevanagari', 'normal');
-    fontInitialized = true;
+    initializedDocs.add(doc);
   }
   doc.setFont('NotoDevanagari');
 }
