@@ -13,7 +13,8 @@ import { useToast } from "@/hooks/use-toast";
 import {
   Search, Calendar, ScanLine, CheckSquare, Trash2,
   ChevronDown, ChevronUp, AlertTriangle, CheckCircle, XCircle,
-  PackageSearch, RotateCcw, Printer, StopCircle, Play, X, FilterX, Download
+  PackageSearch, RotateCcw, Printer, StopCircle, Play, X, FilterX, Download,
+  Camera, Keyboard, Mic, MicOff
 } from "lucide-react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
@@ -206,6 +207,12 @@ export default function InventoryScan() {
   const [manualAccountNo, setManualAccountNo] = useState("");
   const manualInputRef = useRef<HTMLInputElement>(null);
   const [deviceMode, setDeviceMode] = useState(false);
+  const [scanMode, setScanMode] = useState<"camera" | "manual">("camera");
+  const [rapidInput, setRapidInput] = useState("");
+  const rapidInputRef = useRef<HTMLInputElement>(null);
+  const [isListening, setIsListening] = useState(false);
+  const recognitionRef = useRef<any>(null);
+  const [rapidAddedFlash, setRapidAddedFlash] = useState<string | null>(null);
 
   const scannerRef = useRef<any>(null);
   const mountedRef = useRef(true);
@@ -494,17 +501,213 @@ export default function InventoryScan() {
     toast({ title: "मॅन्युअल जोडले", description: `${loan.borrowerName} — खाते ${accNo}` });
   }, [manualAccountNo, filteredLoans, loans, toast, stopScanner]);
 
-  useEffect(() => {
-    if (phase !== 'scanning') return;
-    const interval = setInterval(() => {
-      if (deviceInputRef.current && document.activeElement !== deviceInputRef.current) {
-        const tag = document.activeElement?.tagName?.toLowerCase();
-        if (tag !== 'input' && tag !== 'textarea' && tag !== 'select') {
-          deviceInputRef.current.focus();
+  const marathiNumberMap: Record<string, number> = useMemo(() => ({
+    'शून्य': 0, 'एक': 1, 'दोन': 2, 'तीन': 3, 'चार': 4, 'पाच': 5,
+    'सहा': 6, 'सात': 7, 'आठ': 8, 'नऊ': 9, 'दहा': 10,
+    'अकरा': 11, 'बारा': 12, 'तेरा': 13, 'चौदा': 14, 'पंधरा': 15,
+    'सोळा': 16, 'सतरा': 17, 'अठरा': 18, 'एकोणीस': 19, 'वीस': 20,
+    'एकवीस': 21, 'बावीस': 22, 'तेवीस': 23, 'चोवीस': 24, 'पंचवीस': 25,
+    'सव्वीस': 26, 'सत्तावीस': 27, 'अठ्ठावीस': 28, 'एकोणतीस': 29, 'तीस': 30,
+    'एकतीस': 31, 'बत्तीस': 32, 'तेहतीस': 33, 'चौतीस': 34, 'पस्तीस': 35,
+    'छत्तीस': 36, 'सदतीस': 37, 'अडतीस': 38, 'एकोणचाळीस': 39, 'चाळीस': 40,
+    'एक्केचाळीस': 41, 'बेचाळीस': 42, 'त्रेचाळीस': 43, 'चव्वेचाळीस': 44, 'पंचेचाळीस': 45,
+    'सेहेचाळीस': 46, 'सत्तेचाळीस': 47, 'अठ्ठेचाळीस': 48, 'एकोणपन्नास': 49, 'पन्नास': 50,
+    'एक्कावन्न': 51, 'बावन्न': 52, 'त्रेपन्न': 53, 'चोपन्न': 54, 'पंचावन्न': 55,
+    'छप्पन्न': 56, 'सत्तावन्न': 57, 'अठ्ठावन्न': 58, 'एकोणसाठ': 59, 'साठ': 60,
+    'एकसष्ट': 61, 'बासष्ट': 62, 'त्रेसष्ट': 63, 'चौसष्ट': 64, 'पासष्ट': 65,
+    'सहासष्ट': 66, 'सदुसष्ट': 67, 'अडुसष्ट': 68, 'एकोणसत्तर': 69, 'सत्तर': 70,
+    'एक्काहत्तर': 71, 'बाहत्तर': 72, 'त्र्याहत्तर': 73, 'चौऱ्याहत्तर': 74, 'पंच्याहत्तर': 75,
+    'शहात्तर': 76, 'सत्याहत्तर': 77, 'अठ्ठ्याहत्तर': 78, 'एकोणऐंशी': 79, 'ऐंशी': 80,
+    'एक्क्याऐंशी': 81, 'ब्याऐंशी': 82, 'त्र्याऐंशी': 83, 'चौऱ्याऐंशी': 84, 'पंच्याऐंशी': 85,
+    'शहाऐंशी': 86, 'सत्त्याऐंशी': 87, 'अठ्ठ्याऐंशी': 88, 'एकोणनव्वद': 89, 'नव्वद': 90,
+    'एक्क्याण्णव': 91, 'ब्याण्णव': 92, 'त्र्याण्णव': 93, 'चौऱ्याण्णव': 94, 'पंच्याण्णव': 95,
+    'शहाण्णव': 96, 'सत्त्याण्णव': 97, 'अठ्ठ्याण्णव': 98, 'नव्व्याण्णव': 99,
+    'शंभर': 100, 'दोनशे': 200, 'तीनशे': 300, 'चारशे': 400, 'पाचशे': 500,
+    'सहाशे': 600, 'सातशे': 700, 'आठशे': 800, 'नऊशे': 900, 'हजार': 1000,
+  }), []);
+
+  const parseMarathiNumber = useCallback((text: string): string | null => {
+    const trimmed = text.trim();
+    if (/^\d+$/.test(trimmed)) return trimmed;
+    const direct = marathiNumberMap[trimmed];
+    if (direct !== undefined) return String(direct);
+    const parts = trimmed.split(/\s+/);
+    if (parts.length === 2) {
+      const a = marathiNumberMap[parts[0]];
+      const b = marathiNumberMap[parts[1]];
+      if (a !== undefined && b !== undefined) {
+        if (a >= 100 && b < 100) return String(a + b);
+        if (a === 1000 && b < 1000) return String(a + b);
+      }
+    }
+    if (parts.length === 3) {
+      const a = marathiNumberMap[parts[0]];
+      const b = marathiNumberMap[parts[1]];
+      const c = marathiNumberMap[parts[2]];
+      if (a !== undefined && b !== undefined && c !== undefined) {
+        if (a >= 100 && b >= 100) return String(a + b + c);
+      }
+    }
+    return null;
+  }, [marathiNumberMap]);
+
+  const handleRapidAdd = useCallback((accNo: string) => {
+    const trimmed = accNo.trim();
+    if (!trimmed) return;
+
+    const loan = filteredLoans.find((l: any) => String(l.accountNumber) === trimmed);
+    if (!loan) {
+      const allLoan = (loans as any[])?.find((l: any) => String(l.accountNumber) === trimmed);
+      if (allLoan) {
+        toast({ title: "फिल्टर बाहेरील", description: `${allLoan.borrowerName} (खाते ${allLoan.accountNumber}) — फिल्टरमध्ये नाही`, variant: "destructive" });
+      } else {
+        toast({ title: "सापडले नाही", description: `खाते ${trimmed} सापडले नाही`, variant: "destructive" });
+      }
+      playErrorBeep();
+      return;
+    }
+
+    const loanId = String(loan.id);
+    const currentScanned = scannedIdsRef.current;
+
+    if (currentScanned.has(loanId)) {
+      setDuplicateFlash(true);
+      playErrorBeep();
+      setTimeout(() => setDuplicateFlash(false), 800);
+      return;
+    }
+
+    const newSet = new Set(currentScanned);
+    newSet.add(loanId);
+    setScannedIds(newSet);
+    setLastScanned(loan);
+    setRapidAddedFlash(trimmed);
+    setTimeout(() => setRapidAddedFlash(null), 600);
+
+    const session: ScanSession = {
+      filterSettings: filterSettingsRef.current,
+      scannedLoanIds: Array.from(newSet),
+      startedAt: new Date().toISOString(),
+      expectedCount: filteredCountRef.current,
+    };
+    saveSession(session);
+
+    let scannedInFilter = 0;
+    const currentFilteredIds = filteredLoanIdsRef.current;
+    newSet.forEach(id => { if (currentFilteredIds.has(id)) scannedInFilter++; });
+    const totalFiltered = filteredCountRef.current;
+
+    if (totalFiltered > 0 && scannedInFilter >= totalFiltered) {
+      playCelebrationSound();
+      setAutoStopFlash(true);
+      setTimeout(() => {
+        setAutoStopFlash(false);
+        setScanStatus("idle");
+        setPhase("report");
+      }, 1800);
+    } else {
+      playBeep();
+    }
+  }, [filteredLoans, loans, toast]);
+
+  const handleRapidKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === ' ' || e.key === 'Enter') {
+      e.preventDefault();
+      const val = rapidInput.trim();
+      if (val) {
+        const parsed = parseMarathiNumber(val);
+        if (parsed) {
+          handleRapidAdd(parsed);
+        } else {
+          toast({ title: "ओळखता आला नाही", description: `"${val}" हा खाते क्रमांक नाही`, variant: "destructive" });
+          playErrorBeep();
         }
       }
-    }, 1000);
-    return () => clearInterval(interval);
+      setRapidInput("");
+    }
+  }, [rapidInput, handleRapidAdd, parseMarathiNumber, toast]);
+
+  const hasSpeechRecognition = useMemo(() => {
+    return typeof window !== 'undefined' && ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window);
+  }, []);
+
+  const stopVoice = useCallback(() => {
+    if (recognitionRef.current) {
+      try { recognitionRef.current.stop(); } catch {}
+      recognitionRef.current = null;
+    }
+    setIsListening(false);
+  }, []);
+
+  const startVoice = useCallback(() => {
+    if (!hasSpeechRecognition) return;
+    stopVoice();
+
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    const recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = false;
+    recognition.lang = 'mr-IN';
+
+    recognition.onresult = (event: any) => {
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        if (event.results[i].isFinal) {
+          const transcript = event.results[i][0].transcript.trim();
+          const words = transcript.split(/[,\s]+/).filter((w: string) => w.length > 0);
+          for (const word of words) {
+            const parsed = parseMarathiNumber(word);
+            if (parsed) {
+              handleRapidAdd(parsed);
+            }
+          }
+        }
+      }
+    };
+
+    recognition.onerror = (event: any) => {
+      if (event.error !== 'no-speech' && event.error !== 'aborted') {
+        toast({ title: "Voice त्रुटी", description: `${event.error}`, variant: "destructive" });
+      }
+    };
+
+    recognition.onend = () => {
+      if (recognitionRef.current === recognition && mountedRef.current) {
+        try { recognition.start(); } catch { setIsListening(false); }
+      }
+    };
+
+    try {
+      recognition.start();
+      recognitionRef.current = recognition;
+      setIsListening(true);
+    } catch {
+      toast({ title: "Voice सुरू झाले नाही", variant: "destructive" });
+    }
+  }, [hasSpeechRecognition, stopVoice, parseMarathiNumber, handleRapidAdd, toast]);
+
+  useEffect(() => {
+    if (phase !== 'scanning' || scanMode !== 'manual') {
+      stopVoice();
+    }
+  }, [phase, scanMode, stopVoice]);
+
+  useEffect(() => {
+    if (phase !== 'scanning') return;
+    if (scanMode === 'camera') {
+      const interval = setInterval(() => {
+        if (deviceInputRef.current && document.activeElement !== deviceInputRef.current) {
+          const tag = document.activeElement?.tagName?.toLowerCase();
+          if (tag !== 'input' && tag !== 'textarea' && tag !== 'select') {
+            deviceInputRef.current.focus();
+          }
+        }
+      }, 1000);
+      return () => clearInterval(interval);
+    }
+    if (scanMode === 'manual') {
+      setTimeout(() => rapidInputRef.current?.focus(), 200);
+    }
+  }, [phase, scanMode]);
   }, [phase]);
 
   const tryStartCamera = useCallback(async (scanner: any, boxSize: number): Promise<boolean> => {
@@ -580,15 +783,17 @@ export default function InventoryScan() {
 
   const handleStopScan = useCallback(() => {
     stopScanner();
+    stopVoice();
     setScanStatus("idle");
     setPhase("report");
-  }, [stopScanner]);
+  }, [stopScanner, stopVoice]);
 
   const handleBackFromScanning = useCallback(() => {
     stopScanner();
+    stopVoice();
     setScanStatus("idle");
     setPhase("filter");
-  }, [stopScanner]);
+  }, [stopScanner, stopVoice]);
 
   const hasAnyFilter = searchQuery || groupId !== "all" || dateFrom || dateTo || statusFilter !== "active" || accountFrom || accountTo;
 
@@ -607,6 +812,7 @@ export default function InventoryScan() {
 
   const handleClearSession = useCallback(() => {
     stopScanner();
+    stopVoice();
     clearSessionStorage();
     setScannedIds(new Set());
     setLastScanned(null);
@@ -905,8 +1111,9 @@ export default function InventoryScan() {
     return () => {
       mountedRef.current = false;
       stopScanner();
+      stopVoice();
     };
-  }, [stopScanner]);
+  }, [stopScanner, stopVoice]);
 
   const scannedCount = useMemo(() => {
     let count = 0;
@@ -1237,72 +1444,180 @@ export default function InventoryScan() {
 
           {phase === "scanning" && (
             <>
-              <Card className="shadow-sm border border-indigo-300">
-                <CardContent className="pt-4 space-y-3">
-                  <style>{`
-                    #${containerId} video {
-                      width: 100% !important;
-                      height: 100% !important;
-                      object-fit: cover !important;
-                      border-radius: 8px;
-                    }
-                    #${containerId} canvas {
-                      width: 100% !important;
-                      height: 100% !important;
-                    }
-                  `}</style>
-                  {deviceMode && (
-                    <div className="rounded-lg border-2 border-green-400 bg-green-50 p-6 text-center space-y-3">
-                      <div className="text-3xl">📡</div>
-                      <div className="text-base font-bold text-green-700">Device Scanner Active</div>
-                      <div className="text-xs text-green-600">Camera बंद — बॅटरी बचत | Device ने scan करा</div>
+              <div className="flex rounded-lg border border-indigo-300 overflow-hidden">
+                <button
+                  onClick={() => { setScanMode("camera"); if (scanStatus !== "active" && scanStatus !== "loading") startScanning(); }}
+                  className={`flex-1 py-2.5 px-3 flex items-center justify-center gap-1.5 text-sm font-bold transition-colors ${scanMode === "camera" ? "bg-indigo-600 text-white" : "bg-white text-indigo-600 hover:bg-indigo-50"}`}
+                >
+                  <Camera className="h-4 w-4" />
+                  Camera / QR
+                </button>
+                <button
+                  onClick={() => { setScanMode("manual"); stopScanner(); setScanStatus("idle"); setTimeout(() => rapidInputRef.current?.focus(), 200); }}
+                  className={`flex-1 py-2.5 px-3 flex items-center justify-center gap-1.5 text-sm font-bold transition-colors ${scanMode === "manual" ? "bg-indigo-600 text-white" : "bg-white text-indigo-600 hover:bg-indigo-50"}`}
+                >
+                  <Keyboard className="h-4 w-4" />
+                  Manual Input
+                </button>
+              </div>
+
+              {scanMode === "camera" && (
+                <Card className="shadow-sm border border-indigo-300">
+                  <CardContent className="pt-4 space-y-3">
+                    <style>{`
+                      #${containerId} video {
+                        width: 100% !important;
+                        height: 100% !important;
+                        object-fit: cover !important;
+                        border-radius: 8px;
+                      }
+                      #${containerId} canvas {
+                        width: 100% !important;
+                        height: 100% !important;
+                      }
+                    `}</style>
+                    {deviceMode && (
+                      <div className="rounded-lg border-2 border-green-400 bg-green-50 p-6 text-center space-y-3">
+                        <div className="text-3xl">📡</div>
+                        <div className="text-base font-bold text-green-700">Device Scanner Active</div>
+                        <div className="text-xs text-green-600">Camera बंद — बॅटरी बचत | Device ने scan करा</div>
+                        <Button
+                          onClick={() => { setDeviceMode(false); deviceModeRef.current = false; startScanning(); }}
+                          variant="outline"
+                          size="sm"
+                          className="text-xs border-green-400 text-green-700 hover:bg-green-100"
+                        >
+                          Camera पुन्हा सुरू करा
+                        </Button>
+                      </div>
+                    )}
+                    <div
+                      id={containerId}
+                      style={{ width: '100%', height: deviceMode ? '0px' : '280px', borderRadius: '8px', background: '#111', position: 'relative', overflow: 'hidden', transition: 'height 0.3s' }}
+                    />
+
+                    <input
+                      ref={deviceInputRef}
+                      type="text"
+                      onKeyDown={handleDeviceScanInput}
+                      style={{ position: 'absolute', left: '-9999px', width: '1px', height: '1px', opacity: 0 }}
+                      tabIndex={-1}
+                      autoComplete="off"
+                      aria-label="Scanner device input"
+                    />
+
+                    {!deviceMode && scanStatus === "loading" && (
+                      <div className="text-center text-sm text-gray-500 py-1 flex items-center justify-center gap-2">
+                        <span className="inline-block w-3 h-3 border-2 border-gray-400 border-t-indigo-600 rounded-full animate-spin" />
+                        Camera सुरू होत आहे...
+                      </div>
+                    )}
+                    {!deviceMode && scanStatus === "active" && (
+                      <div className="text-center text-sm text-indigo-600 font-medium py-1">
+                        📷 QR code camera समोर धरा | Scanner device पण चालेल
+                      </div>
+                    )}
+                    {!deviceMode && scanStatus === "error" && (
+                      <div className="space-y-2">
+                        <div className="text-center text-sm text-red-600 py-1">{scanError}</div>
+                        <Button onClick={startScanning} variant="outline" className="w-full text-indigo-600 border-indigo-300">
+                          <RotateCcw className="h-4 w-4 mr-1.5" />
+                          पुन्हा प्रयत्न करा
+                        </Button>
+                      </div>
+                    )}
+
+                    {!showManualEntry ? (
                       <Button
-                        onClick={() => { setDeviceMode(false); deviceModeRef.current = false; startScanning(); }}
+                        onClick={() => { setShowManualEntry(true); setTimeout(() => manualInputRef.current?.focus(), 100); }}
                         variant="outline"
-                        size="sm"
-                        className="text-xs border-green-400 text-green-700 hover:bg-green-100"
+                        className="w-full border-indigo-300 text-indigo-700 py-3"
                       >
-                        Camera पुन्हा सुरू करा
+                        <Search className="h-4 w-4 mr-2" />
+                        QR खराब? — खाते नंबर टाका
                       </Button>
-                    </div>
-                  )}
-                  <div
-                    id={containerId}
-                    style={{ width: '100%', height: deviceMode ? '0px' : '280px', borderRadius: '8px', background: '#111', position: 'relative', overflow: 'hidden', transition: 'height 0.3s' }}
-                  />
+                    ) : (
+                      <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-3 space-y-2">
+                        <div className="text-xs font-medium text-indigo-700">खाते क्रमांक टाका (QR खराब असल्यास)</div>
+                        <div className="flex gap-2">
+                          <Input
+                            ref={manualInputRef}
+                            type="text"
+                            inputMode="numeric"
+                            placeholder="उदा. 55"
+                            value={manualAccountNo}
+                            onChange={(e) => setManualAccountNo(e.target.value)}
+                            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleManualAdd(); } }}
+                            className="flex-1 text-center text-lg font-bold border-indigo-300"
+                          />
+                          <Button onClick={handleManualAdd} className="bg-indigo-600 hover:bg-indigo-700 text-white px-4">
+                            जोडा
+                          </Button>
+                          <Button onClick={() => { setShowManualEntry(false); setManualAccountNo(""); }} variant="ghost" size="icon" className="text-gray-500">
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
 
-                  <input
-                    ref={deviceInputRef}
-                    type="text"
-                    onKeyDown={handleDeviceScanInput}
-                    style={{ position: 'absolute', left: '-9999px', width: '1px', height: '1px', opacity: 0 }}
-                    tabIndex={-1}
-                    autoComplete="off"
-                    aria-label="Scanner device input"
-                  />
+              {scanMode === "manual" && (
+                <Card className="shadow-sm border border-indigo-300">
+                  <CardContent className="pt-4 space-y-3">
+                    <div className="text-center">
+                      <Keyboard className="h-8 w-8 text-indigo-600 mx-auto mb-1" />
+                      <div className="text-sm font-bold text-indigo-800">खाते क्रमांक टाइप करा</div>
+                      <div className="text-xs text-gray-500 mt-0.5">नंबर टाका → Space / Enter दाबा → auto-add</div>
+                    </div>
 
-                  {!deviceMode && scanStatus === "loading" && (
-                    <div className="text-center text-sm text-gray-500 py-1 flex items-center justify-center gap-2">
-                      <span className="inline-block w-3 h-3 border-2 border-gray-400 border-t-indigo-600 rounded-full animate-spin" />
-                      Camera सुरू होत आहे...
+                    <div className="flex gap-2">
+                      <div className="relative flex-1">
+                        <Input
+                          ref={rapidInputRef}
+                          type="text"
+                          inputMode="numeric"
+                          placeholder="उदा. 320"
+                          value={rapidInput}
+                          onChange={(e) => setRapidInput(e.target.value)}
+                          onKeyDown={handleRapidKeyDown}
+                          className={`text-center text-2xl font-black py-6 border-2 transition-colors ${rapidAddedFlash ? 'border-green-400 bg-green-50' : 'border-indigo-300'}`}
+                          autoFocus
+                        />
+                        {rapidAddedFlash && (
+                          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                            <span className="text-green-600 text-sm font-bold animate-pulse">✓ {rapidAddedFlash} जोडले</span>
+                          </div>
+                        )}
+                      </div>
+                      {hasSpeechRecognition && (
+                        <Button
+                          onClick={isListening ? stopVoice : startVoice}
+                          className={`px-4 py-6 ${isListening ? 'bg-red-500 hover:bg-red-600 animate-pulse' : 'bg-indigo-600 hover:bg-indigo-700'} text-white`}
+                        >
+                          {isListening ? <MicOff className="h-6 w-6" /> : <Mic className="h-6 w-6" />}
+                        </Button>
+                      )}
                     </div>
-                  )}
-                  {!deviceMode && scanStatus === "active" && (
-                    <div className="text-center text-sm text-indigo-600 font-medium py-1">
-                      📷 QR code camera समोर धरा | Scanner device पण चालेल
+
+                    {isListening && (
+                      <div className="flex items-center justify-center gap-2 py-2 bg-red-50 border border-red-200 rounded-lg">
+                        <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+                        <span className="text-sm font-medium text-red-700">ऐकत आहे... खाते नंबर बोला</span>
+                      </div>
+                    )}
+
+                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-2.5">
+                      <div className="text-xs text-gray-500 space-y-1">
+                        <div>⌨️ <span className="font-medium">Keyboard:</span> नंबर टाका → Space / Enter</div>
+                        {hasSpeechRecognition && <div>🎤 <span className="font-medium">Voice:</span> 🎤 दाबा → "तीनशे वीस" बोला</div>}
+                        <div>🔁 <span className="font-medium">सतत:</span> एक मागून एक पटापट टाकत जा</div>
+                      </div>
                     </div>
-                  )}
-                  {!deviceMode && scanStatus === "error" && (
-                    <div className="space-y-2">
-                      <div className="text-center text-sm text-red-600 py-1">{scanError}</div>
-                      <Button onClick={startScanning} variant="outline" className="w-full text-indigo-600 border-indigo-300">
-                        <RotateCcw className="h-4 w-4 mr-1.5" />
-                        पुन्हा प्रयत्न करा
-                      </Button>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              )}
 
               {autoStopFlash ? (
                 <div className="rounded-xl p-6 text-center bg-green-100 border-2 border-green-400 animate-pulse">
@@ -1344,41 +1659,6 @@ export default function InventoryScan() {
                   </div>
                 </div>
               )}
-
-              <div className="space-y-2">
-                {!showManualEntry ? (
-                  <Button
-                    onClick={() => { setShowManualEntry(true); setTimeout(() => manualInputRef.current?.focus(), 100); }}
-                    variant="outline"
-                    className="w-full border-indigo-300 text-indigo-700 py-3"
-                  >
-                    <Search className="h-4 w-4 mr-2" />
-                    QR खराब? — खाते नंबर टाका
-                  </Button>
-                ) : (
-                  <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-3 space-y-2">
-                    <div className="text-xs font-medium text-indigo-700">खाते क्रमांक टाका (QR खराब असल्यास)</div>
-                    <div className="flex gap-2">
-                      <Input
-                        ref={manualInputRef}
-                        type="text"
-                        inputMode="numeric"
-                        placeholder="उदा. 55"
-                        value={manualAccountNo}
-                        onChange={(e) => setManualAccountNo(e.target.value)}
-                        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleManualAdd(); } }}
-                        className="flex-1 text-center text-lg font-bold border-indigo-300"
-                      />
-                      <Button onClick={handleManualAdd} className="bg-indigo-600 hover:bg-indigo-700 text-white px-4">
-                        जोडा
-                      </Button>
-                      <Button onClick={() => { setShowManualEntry(false); setManualAccountNo(""); }} variant="ghost" size="icon" className="text-gray-500">
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </div>
 
               <Button onClick={handleStopScan} className="w-full bg-red-600 hover:bg-red-700 text-white py-5 font-bold">
                 <StopCircle className="h-5 w-5 mr-2" />
