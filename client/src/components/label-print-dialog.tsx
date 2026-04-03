@@ -608,9 +608,9 @@ function generateQrLabelHtml(loan: LabelLoan, qrDataUrl: string, settings: Label
   const amtIsLong = show_amt && amtNum.length > 7;
 
   return `
-    <div class="label-container" style="width:${totalW}mm;height:${totalH}mm;box-sizing:border-box;page-break-after:always;overflow:hidden;display:flex;flex-direction:row;align-items:center;padding:0.4mm 0.3mm 0.4mm 0.5mm;gap:0;">
-      <img src="${qrDataUrl}" width="${qrPx}" height="${qrPx}" style="width:${qrSizeMm}mm;height:${qrSizeMm}mm;display:block;flex-shrink:0;" />
-      <div style="flex:1;min-width:0;height:${qrSizeMm}mm;display:flex;flex-direction:column;justify-content:space-between;padding-left:0.8mm;padding-right:0.3mm;border-left:0.3mm solid #ccc;margin-left:0.3mm;overflow:hidden;">
+    <div class="label-container" style="width:${totalW}mm;height:${totalH}mm;box-sizing:border-box;page-break-after:always;overflow:hidden;display:flex;flex-direction:row;align-items:stretch;padding:0.3mm 0.3mm 0.3mm 0.5mm;gap:0;">
+      <div style="display:flex;align-items:center;flex-shrink:0;"><img src="${qrDataUrl}" width="${qrPx}" height="${qrPx}" style="width:${qrSizeMm}mm;height:${qrSizeMm}mm;display:block;" /></div>
+      <div style="flex:1;min-width:0;display:flex;flex-direction:column;justify-content:space-between;padding-left:0.8mm;padding-right:0.3mm;border-left:0.3mm solid #ccc;margin-left:0.3mm;overflow:hidden;">
         ${amtIsLong ? `
           <div style="display:flex;flex-direction:column;overflow:hidden;">
             ${show_acct ? `<div style="font-family:${numFont};font-size:${f_acct}pt;font-weight:${b_acct};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3;text-align:left;${acctOvalStyle}">${loan.accountNumber}</div>` : ''}
@@ -1467,13 +1467,15 @@ export function LabelPrintDialog({ open, onOpenChange, loans }: LabelPrintDialog
                       const eff_fp_acct = Math.round(fp_acct * row1Scale2);
                       const eff_fp_amt  = Math.round(fp_amt * row1Scale2);
                       return (
-                        <div style={{ width: `${realWPx}px`, height: `${realHPx}px`, transform: `scale(${previewScale})`, transformOrigin: 'top left', display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '1px 1px 1px 1.5px', gap: 0, overflow: 'hidden', boxSizing: 'border-box' }}>
+                        <div style={{ width: `${realWPx}px`, height: `${realHPx}px`, transform: `scale(${previewScale})`, transformOrigin: 'top left', display: 'flex', flexDirection: 'row', alignItems: 'stretch', padding: '1px 1px 1px 1.5px', gap: 0, overflow: 'hidden', boxSizing: 'border-box' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
                           {qrPreviewUrls[String(loan.id)] ? (
                             <img src={qrPreviewUrls[String(loan.id)]} style={{ width: `${qrSizePx}px`, height: `${qrSizePx}px`, display: 'block', flexShrink: 0 }} alt="QR" />
                           ) : (
                             <div style={{ width: `${qrSizePx}px`, height: `${qrSizePx}px`, background: '#f3f4f6', borderRadius: '2px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: `${fp_int}px`, color: '#9ca3af', flexShrink: 0 }}>QR…</div>
                           )}
-                          <div style={{ flex: 1, minWidth: 0, height: `${qrSizePx}px`, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', paddingLeft: '2px', paddingRight: '1px', borderLeft: '0.8px solid #ccc', marginLeft: '1px', overflow: 'hidden' }}>
+                          </div>
+                          <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', paddingLeft: '2px', paddingRight: '1px', borderLeft: '0.8px solid #ccc', marginLeft: '1px', overflow: 'hidden' }}>
                             {showRow1v && (
                               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', overflow: 'hidden' }}>
                                 {sv_acct && <span style={{ fontFamily: numF2, fontSize: `${eff_fp_acct}px`, fontWeight: bw_acct, whiteSpace: 'nowrap', lineHeight: 1.3, flexShrink: 1, overflow: 'hidden', textOverflow: 'ellipsis', ...(acctOval2 ? { border: '0.8px solid #333', borderRadius: '50px', padding: '1px 3px', letterSpacing: '0.3px', display: 'inline-block', boxSizing: 'border-box' as const } : {}) }}>{loan.accountNumber}</span>}
