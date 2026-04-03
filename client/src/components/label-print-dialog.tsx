@@ -1405,7 +1405,8 @@ export function LabelPrintDialog({ open, onOpenChange, loans }: LabelPrintDialog
 
                       // QR Center preview
                       if (previewQrCenter) {
-                        const nominalMarginPx = (realWPx - qrSizePx) / 2;
+                        const qrCenterSizePx = +(shorterPx * 0.85).toFixed(1);
+                        const nominalMarginPx = (realWPx - qrCenterSizePx) / 2;
                         const acctText = loan.accountNumber || '';
                         const charWidthPx = fp_acct * 0.212 * 3.78;
                         const ovalExtraPx = acctOval2 ? 7.56 : 0;
@@ -1413,9 +1414,9 @@ export function LabelPrintDialog({ open, onOpenChange, loans }: LabelPrintDialog
                           ? acctText.length * charWidthPx + ovalExtraPx + 5.67
                           : 0;
                         const effectiveLeftPx = Math.max(nominalMarginPx, estimatedTextWidthPx);
-                        const maxLeftPx = realWPx - qrSizePx;
+                        const maxLeftPx = realWPx - qrCenterSizePx;
                         const finalLeftPx = Math.min(effectiveLeftPx, maxLeftPx);
-                        const rightPx = Math.max(0, realWPx - finalLeftPx - qrSizePx);
+                        const rightPx = Math.max(0, realWPx - finalLeftPx - qrCenterSizePx);
                         const acctStyle: React.CSSProperties = acctOval2
                           ? { border: '0.8px solid #333', borderRadius: '50px', padding: '1px 3px', letterSpacing: '0.3px', display: 'inline-block', boxSizing: 'border-box' }
                           : {};
@@ -1425,8 +1426,8 @@ export function LabelPrintDialog({ open, onOpenChange, loans }: LabelPrintDialog
                               {sv_acct && <span style={{ fontFamily: numF2, fontSize: `${fp_acct}px`, fontWeight: bw_acct, textAlign: 'center', wordBreak: 'break-all', lineHeight: 1.2, ...acctStyle }}>{loan.accountNumber}</span>}
                             </div>
                             {qrPreviewUrls[String(loan.id)]
-                              ? <img src={qrPreviewUrls[String(loan.id)]} style={{ width: `${qrSizePx}px`, height: `${qrSizePx}px`, display: 'block', flexShrink: 0 }} alt="QR" />
-                              : <div style={{ width: `${qrSizePx}px`, height: `${qrSizePx}px`, background: '#f3f4f6', borderRadius: '2px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '7px', color: '#9ca3af', flexShrink: 0 }}>QR</div>
+                              ? <img src={qrPreviewUrls[String(loan.id)]} style={{ width: `${qrCenterSizePx}px`, height: `${qrCenterSizePx}px`, display: 'block', flexShrink: 0 }} alt="QR" />
+                              : <div style={{ width: `${qrCenterSizePx}px`, height: `${qrCenterSizePx}px`, background: '#f3f4f6', borderRadius: '2px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '7px', color: '#9ca3af', flexShrink: 0 }}>QR</div>
                             }
                             <div style={{ width: `${rightPx}px`, height: `${realHPx}px`, flexShrink: 0 }} />
                           </div>
