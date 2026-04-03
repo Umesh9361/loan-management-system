@@ -551,7 +551,7 @@ function generateQrLabelHtml(loan: LabelLoan, qrDataUrl: string, settings: Label
   const totalH = stickerSize.height;
   const shorterSide = Math.min(totalW, totalH);
 
-  const qrSizeMm = +(shorterSide * 0.85).toFixed(1);
+  const qrSizeMm = +(shorterSide * 0.68).toFixed(1);
   const qrPx = Math.round(qrSizeMm * 3.78);
 
   // Read font sizes, bold, oval, enabled from settings.fields — same as regular label
@@ -608,17 +608,17 @@ function generateQrLabelHtml(loan: LabelLoan, qrDataUrl: string, settings: Label
   const amtIsLong = show_amt && amtNum.length > 7;
 
   return `
-    <div class="label-container" style="width:${totalW}mm;height:${totalH}mm;box-sizing:border-box;page-break-after:always;overflow:hidden;display:flex;flex-direction:row;align-items:center;padding:1mm;gap:0;">
+    <div class="label-container" style="width:${totalW}mm;height:${totalH}mm;box-sizing:border-box;page-break-after:always;overflow:hidden;display:flex;flex-direction:row;align-items:center;padding:0.4mm 0.3mm 0.4mm 0.5mm;gap:0;">
       <img src="${qrDataUrl}" width="${qrPx}" height="${qrPx}" style="width:${qrSizeMm}mm;height:${qrSizeMm}mm;display:block;flex-shrink:0;" />
-      <div style="flex:1;min-width:0;height:${qrSizeMm}mm;display:flex;flex-direction:column;justify-content:space-between;padding-left:1.5mm;padding-right:1.5mm;border-left:0.3mm solid #ccc;margin-left:0.8mm;overflow:hidden;">
+      <div style="flex:1;min-width:0;height:${qrSizeMm}mm;display:flex;flex-direction:column;justify-content:space-between;padding-left:0.8mm;padding-right:0.3mm;border-left:0.3mm solid #ccc;margin-left:0.3mm;overflow:hidden;">
         ${amtIsLong ? `
           <div style="display:flex;flex-direction:column;overflow:hidden;">
             ${show_acct ? `<div style="font-family:${numFont};font-size:${f_acct}pt;font-weight:${b_acct};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3;text-align:left;${acctOvalStyle}">${loan.accountNumber}</div>` : ''}
             ${show_amt  ? `<div style="font-family:${numFont};font-size:${f_amt}pt;font-weight:${b_amt};white-space:nowrap;line-height:1.3;text-align:right;width:100%;">${amtNum}</div>` : ''}
           </div>
         ` : showRow1 ? `<div style="display:flex;justify-content:space-between;align-items:center;overflow:hidden;">
-          ${show_acct ? `<span style="font-family:${numFont};font-size:${f_acct}pt;font-weight:${b_acct};white-space:nowrap;line-height:1.3;flex-shrink:1;overflow:hidden;text-overflow:ellipsis;${acctOvalStyle}">${loan.accountNumber}</span>` : ''}
-          ${show_amt  ? `<span style="font-family:${numFont};font-size:${f_amt}pt;font-weight:${b_amt};white-space:nowrap;flex-shrink:0;margin-left:1.5mm;">${amtNum}</span>` : ''}
+          ${show_acct ? `<span style="font-family:${numFont};font-size:${f_acct}pt;font-weight:${b_acct};white-space:nowrap;line-height:1.3;flex-shrink:0;${acctOvalStyle}">${loan.accountNumber}</span>` : ''}
+          ${show_amt  ? `<span style="font-family:${numFont};font-size:${f_amt}pt;font-weight:${b_amt};white-space:nowrap;flex-shrink:0;margin-left:0.8mm;">${amtNum}</span>` : ''}
         </div>` : ''}
         ${show_date ? `<div style="font-family:${numFont};font-size:${f_date}pt;font-weight:${b_date};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3;letter-spacing:0.3pt;">${dateStr}</div>` : ''}
         ${show_grp  ? `<div style="font-family:${devaFont};font-size:${f_grp}pt;font-weight:${b_grp};word-break:break-word;overflow-wrap:anywhere;line-height:1.3;overflow:hidden;">${groupLine}</div>` : ''}
@@ -1391,7 +1391,7 @@ export function LabelPrintDialog({ open, onOpenChange, loans }: LabelPrintDialog
                       if (!previewQrMode) return null;
 
                       const shorterPx = Math.min(realWPx, realHPx);
-                      const qrSizePx = +(shorterPx * 0.85).toFixed(1);
+                      const qrSizePx = +(shorterPx * 0.68).toFixed(1);
                       const pt2px = (pt: number) => Math.round(pt * 1.333);
                       const gf2  = (id: string, fb: number)  => settings.fields.find(f => f.id === id)?.fontSize ?? fb;
                       const gb2  = (id: string, fb: boolean) => (settings.fields.find(f => f.id === id)?.bold ?? fb) ? 800 : 600;
@@ -1459,7 +1459,7 @@ export function LabelPrintDialog({ open, onOpenChange, loans }: LabelPrintDialog
                       const wtStr2  = (sv_wt && loan.weight) ? `${parseFloat(String(loan.weight)).toFixed(2)}g` : '';
                       const hasExtra2 = !!(intStr2 || wtStr2);
                       const showRow1v = sv_acct || sv_amt;
-                      const panelWpx = realWPx - qrSizePx - Math.round(5 * 3.78);
+                      const panelWpx = realWPx - qrSizePx - Math.round(3 * 3.78);
                       const row1Chars2 = (sv_acct ? (loan.accountNumber || '').length : 0) + (sv_amt ? amtNum2.length + 1 : 0);
                       const maxRow1Fpx = Math.max(sv_acct ? fp_acct : 0, sv_amt ? fp_amt : 0);
                       const charsPx = maxRow1Fpx > 0 ? panelWpx / (maxRow1Fpx * 0.55) : 999;
@@ -1467,13 +1467,13 @@ export function LabelPrintDialog({ open, onOpenChange, loans }: LabelPrintDialog
                       const eff_fp_acct = Math.round(fp_acct * row1Scale2);
                       const eff_fp_amt  = Math.round(fp_amt * row1Scale2);
                       return (
-                        <div style={{ width: `${realWPx}px`, height: `${realHPx}px`, transform: `scale(${previewScale})`, transformOrigin: 'top left', display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '2.5px', gap: 0, overflow: 'hidden', boxSizing: 'border-box' }}>
+                        <div style={{ width: `${realWPx}px`, height: `${realHPx}px`, transform: `scale(${previewScale})`, transformOrigin: 'top left', display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '1px 1px 1px 1.5px', gap: 0, overflow: 'hidden', boxSizing: 'border-box' }}>
                           {qrPreviewUrls[String(loan.id)] ? (
                             <img src={qrPreviewUrls[String(loan.id)]} style={{ width: `${qrSizePx}px`, height: `${qrSizePx}px`, display: 'block', flexShrink: 0 }} alt="QR" />
                           ) : (
                             <div style={{ width: `${qrSizePx}px`, height: `${qrSizePx}px`, background: '#f3f4f6', borderRadius: '2px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: `${fp_int}px`, color: '#9ca3af', flexShrink: 0 }}>QR…</div>
                           )}
-                          <div style={{ flex: 1, minWidth: 0, height: `${qrSizePx}px`, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', paddingLeft: '3px', paddingRight: '3px', borderLeft: '0.8px solid #ccc', marginLeft: '2px', overflow: 'hidden' }}>
+                          <div style={{ flex: 1, minWidth: 0, height: `${qrSizePx}px`, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', paddingLeft: '2px', paddingRight: '1px', borderLeft: '0.8px solid #ccc', marginLeft: '1px', overflow: 'hidden' }}>
                             {showRow1v && (
                               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', overflow: 'hidden' }}>
                                 {sv_acct && <span style={{ fontFamily: numF2, fontSize: `${eff_fp_acct}px`, fontWeight: bw_acct, whiteSpace: 'nowrap', lineHeight: 1.3, flexShrink: 1, overflow: 'hidden', textOverflow: 'ellipsis', ...(acctOval2 ? { border: '0.8px solid #333', borderRadius: '50px', padding: '1px 3px', letterSpacing: '0.3px', display: 'inline-block', boxSizing: 'border-box' as const } : {}) }}>{loan.accountNumber}</span>}
