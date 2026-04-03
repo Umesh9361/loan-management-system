@@ -202,6 +202,7 @@ export default function InventoryScan() {
 
   const scannerRef = useRef<any>(null);
   const mountedRef = useRef(true);
+  const deviceInputRef = useRef<HTMLInputElement>(null);
   const containerId = "inventory-scanner-container";
 
   const filteredLoanIdsRef = useRef<Set<string>>(new Set());
@@ -382,6 +383,28 @@ export default function InventoryScan() {
       playErrorBeep();
     }
   }, [toast, stopScanner]);
+
+  const handleDeviceScanInput = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key !== 'Enter') return;
+    const val = (e.target as HTMLInputElement).value.trim();
+    if (!val) return;
+    (e.target as HTMLInputElement).value = '';
+    onQrDecoded(val);
+    setTimeout(() => deviceInputRef.current?.focus(), 50);
+  }, [onQrDecoded]);
+
+  useEffect(() => {
+    if (phase !== 'scanning') return;
+    const interval = setInterval(() => {
+      if (deviceInputRef.current && document.activeElement !== deviceInputRef.current) {
+        const tag = document.activeElement?.tagName?.toLowerCase();
+        if (tag !== 'input' && tag !== 'textarea' && tag !== 'select') {
+          deviceInputRef.current.focus();
+        }
+      }
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [phase]);
 
   const tryStartCamera = useCallback(async (scanner: any, boxSize: number): Promise<boolean> => {
     const scanConfig = { fps: 10, qrbox: { width: boxSize, height: boxSize } };
@@ -877,6 +900,16 @@ export default function InventoryScan() {
                     style={{ width: '100%', height: '280px', borderRadius: '8px', background: '#111', position: 'relative' }}
                   />
 
+                  <input
+                    ref={deviceInputRef}
+                    type="text"
+                    onKeyDown={handleDeviceScanInput}
+                    style={{ position: 'absolute', left: '-9999px', width: '1px', height: '1px', opacity: 0 }}
+                    tabIndex={-1}
+                    autoComplete="off"
+                    aria-label="Scanner device input"
+                  />
+
                   {scanStatus === "loading" && (
                     <div className="text-center text-sm text-gray-500 py-1 flex items-center justify-center gap-2">
                       <span className="inline-block w-3 h-3 border-2 border-gray-400 border-t-indigo-600 rounded-full animate-spin" />
@@ -885,7 +918,7 @@ export default function InventoryScan() {
                   )}
                   {scanStatus === "active" && (
                     <div className="text-center text-sm text-indigo-600 font-medium py-1">
-                      QR code camera समोर धरा
+                      QR code camera समोर धरा | Scanner device पण चालेल
                     </div>
                   )}
                   {scanStatus === "error" && (
