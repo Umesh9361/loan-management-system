@@ -13,8 +13,10 @@ import { useToast } from "@/hooks/use-toast";
 import {
   Search, Calendar, ScanLine, CheckSquare, Trash2,
   ChevronDown, ChevronUp, AlertTriangle, CheckCircle, XCircle,
-  PackageSearch, RotateCcw, Printer, StopCircle, Play, X, FilterX
+  PackageSearch, RotateCcw, Printer, StopCircle, Play, X, FilterX, Download
 } from "lucide-react";
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
 
 const CDN_URL = "https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js";
 const STORAGE_KEY = "inventory_scan_session";
@@ -220,6 +222,10 @@ export default function InventoryScan() {
 
   const { data: groups = [] } = useQuery<any[]>({
     queryKey: ["/api/groups"],
+  });
+
+  const { data: company } = useQuery({
+    queryKey: ["/api/company"],
   });
 
   useEffect(() => {
@@ -606,9 +612,264 @@ export default function InventoryScan() {
     toast({ title: "Session पुन्हा सुरू", description: `${session.scannedLoanIds.length}/${session.expectedCount} आधीच scan झाले` });
   }, [toast]);
 
+  const buildReportHTML = useCallback((forPdf: boolean = false) => {
+    const companyName = (company as any)?.name || 'कंपनी नाव';
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('en-GB');
+    const timeStr = now.toLocaleTimeString('mr-IN', { hour: '2-digit', minute: '2-digit' });
+    const fontFamily = "'Noto Sans Devanagari', Arial, sans-serif";
+    const renderWidth = forPdf ? 794 : 'auto';
+    const paddingStyle = forPdf ? 'padding: 18px 14px 18px 14px;' : 'padding: 12mm 5mm 12mm 5mm;';
+
+    const selectedGroup = Array.isArray(groups) ? groups.find((g: any) => String(g.id) === groupId) : null;
+    const groupLabel = selectedGroup?.name || 'सर्व गट';
+
+    let filterInfo = `गट: ${groupLabel}`;
+    if (accountFrom || accountTo) filterInfo += ` | खाते: ${accountFrom || '—'} ते ${accountTo || '—'}`;
+    if (statusFilter !== 'all') filterInfo += ` | स्थिती: ${statusFilter === 'active' ? 'चालू' : 'बंद'}`;
+
+    const bdr = '1.5px solid #333';
+    const thStyle = `border:${bdr};padding:7px 5px;text-align:center;font-size:11px;background:#4F46E5;color:#fff;font-weight:700;line-height:1.3;`;
+    const tdBase = `border:${bdr};padding:6px 5px;font-size:11px;font-weight:500;line-height:1.3;`;
+
+    const missingRows = missingLoans.map((loan: any, idx: number) => {
+      const gName = Array.isArray(groups) ? groups.find((g: any) => String(g.id) === String(loan.groupId))?.name || '' : '';
+      const loanDate = loan.loanDate ? new Date(loan.loanDate).toLocaleDateString('en-GB') : '-';
+      return `<tr${idx % 2 === 1 ? ' style="background:#FEF2F2;"' : ''}>
+        <td style="${tdBase}text-align:center;">${idx + 1}</td>
+        <td style="${tdBase}text-align:center;font-weight:700;">${loan.accountNumber}</td>
+        <td style="${tdBase}">${loan.borrowerName}</td>
+        <td style="${tdBase}text-align:right;">₹${Number(loan.principalAmount || 0).toLocaleString('en-IN')}</td>
+        <td style="${tdBase}text-align:center;">${loanDate}</td>
+        <td style="${tdBase}">${gName}</td>
+        <td style="${tdBase}font-size:10px;">${loan.collateralDetails || '-'}</td>
+      </tr>`;
+    }).join('');
+
+    const foundRows = foundLoans.map((loan: any, idx: number) => {
+      const gName = Array.isArray(groups) ? groups.find((g: any) => String(g.id) === String(loan.groupId))?.name || '' : '';
+      return `<tr${idx % 2 === 1 ? ' style="background:#F0FDF4;"' : ''}>
+        <td style="${tdBase}text-align:center;">${idx + 1}</td>
+        <td style="${tdBase}text-align:center;">${loan.accountNumber}</td>
+        <td style="${tdBase}">${loan.borrowerName}</td>
+        <td style="${tdBase}text-align:right;">₹${Number(loan.principalAmount || 0).toLocaleString('en-IN')}</td>
+        <td style="${tdBase}">${gName}</td>
+      </tr>`;
+    }).join('');
+
+    const totalAmount = filteredLoans.reduce((s: number, l: any) => s + Number(l.principalAmount || 0), 0);
+    const missingAmount = missingLoans.reduce((s: number, l: any) => s + Number(l.principalAmount || 0), 0);
+    const foundAmount = foundLoans.reduce((s: number, l: any) => s + Number(l.principalAmount || 0), 0);
+
+    return `<!DOCTYPE html><html><head><meta charset="utf-8">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+      @page { size: A4 portrait; margin: 12mm 8mm 12mm 8mm; }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      body { font-family: ${fontFamily}; background: white; width: ${typeof renderWidth === 'number' ? renderWidth + 'px' : renderWidth}; ${paddingStyle} font-size: 11px; line-height: 1.4; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      table { width: 100%; border-collapse: collapse; table-layout: fixed; page-break-inside: auto; }
+      thead { display: table-header-group; }
+      tr { page-break-inside: avoid !important; break-inside: avoid !important; }
+    </style></head><body>
+    <div style="text-align:center;margin-bottom:14px;">
+      <p style="font-size:16px;font-weight:700;margin-bottom:3px;">${companyName}</p>
+      <p style="font-size:14px;font-weight:700;color:#4F46E5;margin-bottom:3px;">वस्तू तपासणी अहवाल</p>
+      <p style="font-size:11px;color:#555;margin-bottom:2px;">${filterInfo}</p>
+      <p style="font-size:10px;color:#777;">दिनांक: ${dateStr} | वेळ: ${timeStr}</p>
+    </div>
+    <div style="height:2px;background:#4F46E5;margin:0 0 12px 0;"></div>
+
+    <div style="display:flex;gap:0;margin-bottom:14px;border:${bdr};border-radius:0;">
+      <div style="flex:1;text-align:center;padding:8px 4px;border-right:${bdr};">
+        <div style="font-size:20px;font-weight:700;color:#4F46E5;">${filteredLoans.length}</div>
+        <div style="font-size:10px;color:#555;">एकूण वस्तू</div>
+        <div style="font-size:9px;color:#777;">₹${totalAmount.toLocaleString('en-IN')}</div>
+      </div>
+      <div style="flex:1;text-align:center;padding:8px 4px;border-right:${bdr};background:#F0FDF4;">
+        <div style="font-size:20px;font-weight:700;color:#16A34A;">${scannedCount}</div>
+        <div style="font-size:10px;color:#16A34A;">सापडल्या</div>
+        <div style="font-size:9px;color:#555;">₹${foundAmount.toLocaleString('en-IN')}</div>
+      </div>
+      <div style="flex:1;text-align:center;padding:8px 4px;${missingLoans.length > 0 ? 'background:#FEF2F2;' : 'background:#F0FDF4;'}">
+        <div style="font-size:20px;font-weight:700;color:${missingLoans.length > 0 ? '#DC2626' : '#16A34A'};">${missingLoans.length}</div>
+        <div style="font-size:10px;color:${missingLoans.length > 0 ? '#DC2626' : '#16A34A'};">${missingLoans.length > 0 ? 'गहाळ' : 'गहाळ नाही'}</div>
+        ${missingLoans.length > 0 ? `<div style="font-size:9px;color:#DC2626;">₹${missingAmount.toLocaleString('en-IN')}</div>` : ''}
+      </div>
+    </div>
+
+    ${missingLoans.length > 0 ? `
+    <p style="font-size:13px;font-weight:700;color:#DC2626;margin-bottom:6px;">⚠ गहाळ वस्तू (${missingLoans.length})</p>
+    <table style="margin-bottom:16px;">
+      <colgroup>
+        <col style="width:6%;"><col style="width:10%;"><col style="width:22%;"><col style="width:14%;">
+        <col style="width:11%;"><col style="width:15%;"><col style="width:22%;">
+      </colgroup>
+      <thead><tr>
+        <th style="${thStyle}background:#DC2626;">अ.क्र.</th>
+        <th style="${thStyle}background:#DC2626;">खाते क्र.</th>
+        <th style="${thStyle}background:#DC2626;">कर्जदार नाव</th>
+        <th style="${thStyle}background:#DC2626;">रक्कम</th>
+        <th style="${thStyle}background:#DC2626;">तारीख</th>
+        <th style="${thStyle}background:#DC2626;">गट</th>
+        <th style="${thStyle}background:#DC2626;">वस्तू तपशील</th>
+      </tr></thead>
+      <tbody>${missingRows}</tbody>
+      <tfoot><tr>
+        <td colspan="3" style="${tdBase}text-align:right;font-weight:700;background:#FEE2E2;">एकूण गहाळ रक्कम:</td>
+        <td style="${tdBase}text-align:right;font-weight:700;background:#FEE2E2;">₹${missingAmount.toLocaleString('en-IN')}</td>
+        <td colspan="3" style="${tdBase}background:#FEE2E2;"></td>
+      </tr></tfoot>
+    </table>
+    ` : `
+    <div style="text-align:center;padding:20px 0;margin-bottom:16px;">
+      <p style="font-size:16px;color:#16A34A;font-weight:700;">✓ सर्व वस्तू सापडल्या!</p>
+    </div>
+    `}
+
+    ${foundLoans.length > 0 ? `
+    <p style="font-size:13px;font-weight:700;color:#16A34A;margin-bottom:6px;">✓ सापडलेल्या वस्तू (${foundLoans.length})</p>
+    <table>
+      <colgroup>
+        <col style="width:7%;"><col style="width:12%;"><col style="width:35%;"><col style="width:20%;"><col style="width:26%;">
+      </colgroup>
+      <thead><tr>
+        <th style="${thStyle}">अ.क्र.</th>
+        <th style="${thStyle}">खाते क्र.</th>
+        <th style="${thStyle}">कर्जदार नाव</th>
+        <th style="${thStyle}">रक्कम</th>
+        <th style="${thStyle}">गट</th>
+      </tr></thead>
+      <tbody>${foundRows}</tbody>
+      <tfoot><tr>
+        <td colspan="3" style="${tdBase}text-align:right;font-weight:700;background:#e0e7ff;">एकूण सापडलेली रक्कम:</td>
+        <td style="${tdBase}text-align:right;font-weight:700;background:#e0e7ff;">₹${foundAmount.toLocaleString('en-IN')}</td>
+        <td style="${tdBase}background:#e0e7ff;"></td>
+      </tr></tfoot>
+    </table>
+    ` : ''}
+
+    <div style="margin-top:40px;display:flex;justify-content:space-between;font-size:11px;font-weight:600;padding:0 10px;">
+      <span>दिनांक: ${dateStr}</span>
+      <span>सावकाराची सही</span>
+    </div>
+    </body></html>`;
+  }, [company, groups, groupId, accountFrom, accountTo, statusFilter, filteredLoans, missingLoans, foundLoans, scannedCount]);
+
   const handlePrint = useCallback(() => {
-    window.print();
-  }, []);
+    const printHTML = buildReportHTML(false);
+    const iframe = document.createElement("iframe");
+    iframe.style.position = "fixed";
+    iframe.style.left = "-9999px";
+    iframe.style.top = "-9999px";
+    iframe.style.width = "794px";
+    iframe.style.height = "1123px";
+    document.body.appendChild(iframe);
+    const doc = iframe.contentDocument || iframe.contentWindow?.document;
+    if (!doc) { document.body.removeChild(iframe); return; }
+    doc.open();
+    doc.write(printHTML);
+    doc.close();
+    setTimeout(() => {
+      try {
+        iframe.contentWindow?.focus();
+        iframe.contentWindow?.print();
+      } catch {
+        window.print();
+      }
+      setTimeout(() => { document.body.removeChild(iframe); }, 2000);
+    }, 500);
+  }, [buildReportHTML]);
+
+  const handlePdfDownload = useCallback(async () => {
+    try {
+      const renderWidthPx = 794;
+      const fullHTML = buildReportHTML(true);
+
+      const iframe = document.createElement('iframe');
+      iframe.style.position = 'fixed';
+      iframe.style.left = '-9999px';
+      iframe.style.top = '0';
+      iframe.style.width = renderWidthPx + 'px';
+      iframe.style.height = '2000px';
+      iframe.style.border = 'none';
+      iframe.style.overflow = 'visible';
+      iframe.style.zIndex = '-9999';
+      iframe.style.pointerEvents = 'none';
+      iframe.style.opacity = '0';
+      document.body.appendChild(iframe);
+
+      const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+      if (!iframeDoc) {
+        document.body.removeChild(iframe);
+        toast({ title: "PDF त्रुटी", description: "PDF तयार करता आली नाही", variant: "destructive" });
+        return;
+      }
+
+      iframeDoc.open();
+      iframeDoc.write(fullHTML);
+      iframeDoc.close();
+
+      await new Promise(resolve => setTimeout(resolve, 300));
+      if (iframeDoc.fonts && iframeDoc.fonts.ready) {
+        await iframeDoc.fonts.ready;
+      }
+      await new Promise(resolve => setTimeout(resolve, 200));
+
+      const targetEl = iframeDoc.body;
+      const canvas = await html2canvas(targetEl, {
+        scale: 3,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff',
+        width: renderWidthPx,
+        windowWidth: renderWidthPx,
+      });
+
+      document.body.removeChild(iframe);
+
+      const a4Width = 210;
+      const a4Height = 297;
+      const margin = 5;
+      const contentWidth = a4Width - (margin * 2);
+      const contentHeight = a4Height - (margin * 2);
+
+      const imgWidth = canvas.width;
+      const imgHeight = canvas.height;
+      const ratio = contentWidth / imgWidth;
+      const scaledHeight = imgHeight * ratio;
+
+      const pageContentHeight = contentHeight;
+      const totalPages = Math.ceil(scaledHeight / pageContentHeight);
+
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+
+      for (let page = 0; page < totalPages; page++) {
+        if (page > 0) pdf.addPage();
+        const sourceY = (page * pageContentHeight) / ratio;
+        const sourceHeight = Math.min(pageContentHeight / ratio, imgHeight - sourceY);
+        const pageCanvas = document.createElement('canvas');
+        pageCanvas.width = imgWidth;
+        pageCanvas.height = sourceHeight;
+        const ctx = pageCanvas.getContext('2d');
+        if (ctx) {
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
+          ctx.drawImage(canvas, 0, sourceY, imgWidth, sourceHeight, 0, 0, imgWidth, sourceHeight);
+        }
+        const pageImgData = pageCanvas.toDataURL('image/jpeg', 0.95);
+        const drawHeight = sourceHeight * ratio;
+        pdf.addImage(pageImgData, 'JPEG', margin, margin, contentWidth, drawHeight);
+      }
+
+      const dateStr = new Date().toLocaleDateString('en-GB').replace(/\//g, '-');
+      pdf.save(`वस्तू_तपासणी_अहवाल_${dateStr}.pdf`);
+
+      toast({ title: "PDF डाउनलोड झाली", description: `${filteredLoans.length} वस्तूंचा अहवाल PDF तयार झाली` });
+    } catch (error) {
+      console.error('PDF generation error:', error);
+      toast({ title: "PDF त्रुटी", description: "PDF तयार करताना समस्या आली", variant: "destructive" });
+    }
+  }, [buildReportHTML, filteredLoans.length, toast]);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -1179,6 +1440,16 @@ export default function InventoryScan() {
                 </CardContent>
               </Card>
 
+              <div className="grid grid-cols-2 gap-3 no-print">
+                <Button onClick={handlePrint} variant="outline" className="border-indigo-300 text-indigo-700 py-5">
+                  <Printer className="h-4 w-4 mr-1.5" />
+                  प्रिंट
+                </Button>
+                <Button onClick={handlePdfDownload} className="bg-indigo-600 hover:bg-indigo-700 text-white py-5">
+                  <Download className="h-4 w-4 mr-1.5" />
+                  PDF डाउनलोड
+                </Button>
+              </div>
               <div className="flex gap-3 no-print">
                 <Button onClick={() => setPhase("filter")} variant="outline" className="flex-1 border-indigo-300 text-indigo-700">
                   <RotateCcw className="h-4 w-4 mr-1.5" />
@@ -1187,9 +1458,6 @@ export default function InventoryScan() {
                 <Button onClick={startScanning} className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white">
                   <ScanLine className="h-4 w-4 mr-1.5" />
                   पुन्हा Scan
-                </Button>
-                <Button onClick={handlePrint} variant="outline" className="border-gray-300">
-                  <Printer className="h-4 w-4" />
                 </Button>
               </div>
 
