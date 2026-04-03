@@ -6551,8 +6551,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!url) return res.status(400).json({ error: 'url required' });
       const dataUrl = await QRCode.toDataURL(String(url), {
         width: Math.min(512, Math.max(64, parseInt(String(size)) || 256)),
-        margin: 1,
-        errorCorrectionLevel: 'M',
+        margin: 2,
+        errorCorrectionLevel: 'H',
       });
       res.json({ dataUrl });
     } catch (e) {

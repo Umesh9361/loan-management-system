@@ -1070,7 +1070,7 @@ export function LabelPrintDialog({ open, onOpenChange, loans }: LabelPrintDialog
     if (effectiveQrMode) {
       const labelsHtml = (await Promise.all(loansToprint.map(async loan => {
         const qrUrl = `${window.location.origin}/qr/${loan.id}`;
-        const qrFetch = await fetch(`/api/qr-generate?url=${encodeURIComponent(qrUrl)}&size=256`);
+        const qrFetch = await fetch(`/api/qr-generate?url=${encodeURIComponent(qrUrl)}&size=512`);
         const qrFetchJson = await qrFetch.json();
         const qrDataUrl = qrFetchJson.dataUrl;
         return isQrCenter
