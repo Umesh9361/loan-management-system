@@ -613,7 +613,7 @@ function generateQrLabelHtml(loan: LabelLoan, qrDataUrl: string, settings: Label
       <div style="flex:1;min-width:0;display:flex;flex-direction:column;justify-content:space-between;padding-left:0.8mm;padding-right:0.3mm;border-left:0.3mm solid #ccc;margin-left:0.3mm;overflow:hidden;">
         ${amtIsLong ? `
           <div style="display:flex;flex-direction:column;overflow:hidden;">
-            ${show_acct ? `<div style="font-family:${numFont};font-size:${f_acct}pt;font-weight:${b_acct};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3;text-align:left;${acctOvalStyle}">${loan.accountNumber}</div>` : ''}
+            ${show_acct ? `<div style="line-height:1.3;text-align:left;"><span style="font-family:${numFont};font-size:${f_acct}pt;font-weight:${b_acct};white-space:nowrap;line-height:1.3;display:inline-block;${acctOvalStyle}">${loan.accountNumber}</span></div>` : ''}
             ${show_amt  ? `<div style="font-family:${numFont};font-size:${f_amt}pt;font-weight:${b_amt};white-space:nowrap;line-height:1.3;text-align:right;width:100%;">${amtNum}</div>` : ''}
           </div>
         ` : showRow1 ? `<div style="display:flex;justify-content:space-between;align-items:center;overflow:hidden;">
