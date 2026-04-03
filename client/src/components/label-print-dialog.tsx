@@ -7,6 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { Printer, Settings, ChevronDown, ChevronUp, Minus, Plus, Eye, ArrowUp, ArrowDown, Bold, Type, Trash2, PlusCircle, RotateCcw, Ruler, Loader2 } from "lucide-react";
 import { LoanCalculations } from "@/lib/calculations";
 import { DateUtils } from "@/lib/date-utils";
+import { encodeQrData } from "@/lib/qr-utils";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 
@@ -912,8 +913,8 @@ export function LabelPrintDialog({ open, onOpenChange, loans }: LabelPrintDialog
       const urls: Record<string, string> = {};
       for (const loan of loans.slice(0, 4)) {
         if (cancelled) return;
-        const qrUrl = `${window.location.origin}/qr/${loan.id}`;
-        const qrRes = await fetch(`/api/qr-generate?url=${encodeURIComponent(qrUrl)}&size=128`);
+        const qrData = encodeQrData(String(loan.id));
+        const qrRes = await fetch(`/api/qr-generate?url=${encodeURIComponent(qrData)}&size=128`);
         const qrJson = await qrRes.json();
         urls[String(loan.id)] = qrJson.dataUrl;
       }
@@ -1069,8 +1070,8 @@ export function LabelPrintDialog({ open, onOpenChange, loans }: LabelPrintDialog
     const isQrCenter = settings.printMode === 'qrCenter';
     if (effectiveQrMode) {
       const labelsHtml = (await Promise.all(loansToprint.map(async loan => {
-        const qrUrl = `${window.location.origin}/qr/${loan.id}`;
-        const qrFetch = await fetch(`/api/qr-generate?url=${encodeURIComponent(qrUrl)}&size=512`);
+        const qrData = encodeQrData(String(loan.id));
+        const qrFetch = await fetch(`/api/qr-generate?url=${encodeURIComponent(qrData)}&size=512`);
         const qrFetchJson = await qrFetch.json();
         const qrDataUrl = qrFetchJson.dataUrl;
         return isQrCenter

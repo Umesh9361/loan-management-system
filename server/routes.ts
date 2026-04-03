@@ -6547,9 +6547,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/qr-generate', requireAuth, async (req: any, res) => {
     try {
-      const { url, size = '256' } = req.query;
-      if (!url) return res.status(400).json({ error: 'url required' });
-      const dataUrl = await QRCode.toDataURL(String(url), {
+      const { url, data, size = '256' } = req.query;
+      const qrContent = url || data;
+      if (!qrContent) return res.status(400).json({ error: 'url or data required' });
+      const dataUrl = await QRCode.toDataURL(String(qrContent), {
         width: Math.min(512, Math.max(64, parseInt(String(size)) || 256)),
         margin: 2,
         errorCorrectionLevel: 'H',

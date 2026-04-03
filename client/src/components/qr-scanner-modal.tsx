@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { useLocation } from "wouter";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { QrCode } from "lucide-react";
+import { decodeQrData } from "@/lib/qr-utils";
 
 interface QrScannerModalProps {
   open: boolean;
@@ -69,22 +70,16 @@ export function QrScannerModal({ open, onOpenChange }: QrScannerModalProps) {
 
   const onQrDecoded = useCallback((decodedText: string) => {
     if (!mountedRef.current) return;
-    try {
-      const url = new URL(decodedText);
-      const match = url.pathname.match(/^\/qr\/([a-zA-Z0-9\-]+)$/);
-      if (match) {
-        setStatus("found");
-        stopScanner();
-        setTimeout(() => {
-          onOpenChange(false);
-          setLocation(`/closure?loanId=${match[1]}`);
-        }, 600);
-      } else {
-        setErrorMsg("हे आपल्या app चे QR नाही");
-        setStatus("error");
-      }
-    } catch {
-      setErrorMsg("QR code ओळखता आला नाही");
+    const loanId = decodeQrData(decodedText);
+    if (loanId) {
+      setStatus("found");
+      stopScanner();
+      setTimeout(() => {
+        onOpenChange(false);
+        setLocation(`/closure?loanId=${loanId}`);
+      }, 600);
+    } else {
+      setErrorMsg("हे आपल्या app चे QR नाही");
       setStatus("error");
     }
   }, [onOpenChange, setLocation, stopScanner]);

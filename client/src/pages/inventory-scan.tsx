@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
+import { decodeQrData } from "@/lib/qr-utils";
 
 const CDN_URL = "https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js";
 const STORAGE_KEY = "inventory_scan_session";
@@ -326,15 +327,12 @@ export default function InventoryScan() {
   const onQrDecoded = useCallback((decodedText: string) => {
     if (!mountedRef.current) return;
     try {
-      const url = new URL(decodedText);
-      const match = url.pathname.match(/^\/qr\/([a-zA-Z0-9\-]+)$/);
-      if (!match) {
+      const loanId = decodeQrData(decodedText);
+      if (!loanId) {
         toast({ title: "अज्ञात QR", description: "हे आपल्या app चे QR नाही", variant: "destructive" });
         playErrorBeep();
         return;
       }
-
-      const loanId = match[1];
       const currentScanned = scannedIdsRef.current;
       const currentFilteredIds = filteredLoanIdsRef.current;
       const currentLoanMap = loanMapByIdRef.current;
