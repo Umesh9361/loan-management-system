@@ -47,6 +47,7 @@ export function QrScannerModal({ open, onOpenChange }: QrScannerModalProps) {
   const [errorMsg, setErrorMsg] = useState("");
   const scannerRef = useRef<any>(null);
   const mountedRef = useRef(false);
+  const deviceInputRef = useRef<HTMLInputElement>(null);
   const containerId = "qr-scanner-container";
 
   const stopScanner = useCallback(() => {
@@ -84,6 +85,27 @@ export function QrScannerModal({ open, onOpenChange }: QrScannerModalProps) {
       setStatus("error");
     }
   }, [onOpenChange, setLocation, stopScanner]);
+
+  const handleDeviceScanInput = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key !== 'Enter') return;
+    const val = (e.target as HTMLInputElement).value.trim();
+    if (!val) return;
+    (e.target as HTMLInputElement).value = '';
+    onQrDecoded(val);
+  }, [onQrDecoded]);
+
+  useEffect(() => {
+    if (!open) return;
+    const interval = setInterval(() => {
+      if (deviceInputRef.current && document.activeElement !== deviceInputRef.current) {
+        const tag = document.activeElement?.tagName?.toLowerCase();
+        if (tag !== 'input' && tag !== 'textarea' && tag !== 'select') {
+          deviceInputRef.current.focus();
+        }
+      }
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [open]);
 
   const tryStartCamera = useCallback(async (scanner: any, boxSize: number): Promise<boolean> => {
     // aspectRatio काढला — Android Chrome वर black screen चे कारण
@@ -218,6 +240,16 @@ export function QrScannerModal({ open, onOpenChange }: QrScannerModalProps) {
             style={{ width: '100%', height: '280px', borderRadius: '8px', background: '#111', position: 'relative' }}
           />
 
+          <input
+            ref={deviceInputRef}
+            type="text"
+            onKeyDown={handleDeviceScanInput}
+            style={{ position: 'absolute', left: '-9999px', width: '1px', height: '1px', opacity: 0 }}
+            tabIndex={-1}
+            autoComplete="off"
+            aria-label="Scanner device input"
+          />
+
           {status === "loading" && (
             <div className="text-center text-sm text-gray-500 py-1 flex items-center justify-center gap-2">
               <span className="inline-block w-3 h-3 border-2 border-gray-400 border-t-indigo-600 rounded-full animate-spin" />
@@ -226,7 +258,7 @@ export function QrScannerModal({ open, onOpenChange }: QrScannerModalProps) {
           )}
           {status === "scanning" && (
             <div className="text-center text-sm text-indigo-600 font-medium py-1">
-              📷 लेबल वरील QR code camera समोर धरा
+              📷 QR code camera समोर धरा | Scanner device पण चालेल
             </div>
           )}
           {status === "found" && (
