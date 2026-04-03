@@ -776,7 +776,6 @@ export default function InventoryScan() {
       setTimeout(() => rapidInputRef.current?.focus(), 200);
     }
   }, [phase, scanMode]);
-  }, [phase]);
 
   const tryStartCamera = useCallback(async (scanner: any, boxSize: number): Promise<boolean> => {
     const scanConfig = { fps: 10, qrbox: { width: boxSize, height: boxSize } };
