@@ -801,6 +801,12 @@ function InventoryScanInner() {
     toast({ title: "Session पुन्हा सुरू", description: `${session.scannedLoanIds.length}/${session.expectedCount} आधीच scan झाले` });
   }, [toast]);
 
+  const scannedCount = useMemo(() => {
+    let count = 0;
+    scannedIds.forEach(id => { if (filteredLoanIds.has(id)) count++; });
+    return count;
+  }, [scannedIds, filteredLoanIds]);
+
   const buildReportHTML = useCallback((forPdf: boolean = false) => {
     const companyName = (company as any)?.name || 'कंपनी नाव';
     const now = new Date();
@@ -1068,12 +1074,6 @@ function InventoryScanInner() {
       stopVoice();
     };
   }, [stopScanner, stopVoice]);
-
-  const scannedCount = useMemo(() => {
-    let count = 0;
-    scannedIds.forEach(id => { if (filteredLoanIds.has(id)) count++; });
-    return count;
-  }, [scannedIds, filteredLoanIds]);
 
   if (resumePrompt) {
     return (
