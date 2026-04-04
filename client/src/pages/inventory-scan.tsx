@@ -337,6 +337,19 @@ function InventoryScanInner() {
         }
       } catch {}
     }
+    try {
+      const container = document.getElementById(containerId);
+      if (container) {
+        const videos = container.querySelectorAll('video');
+        videos.forEach(v => {
+          const stream = v.srcObject as MediaStream | null;
+          if (stream) {
+            stream.getTracks().forEach(track => track.stop());
+            v.srcObject = null;
+          }
+        });
+      }
+    } catch {}
   }, []);
 
   const onQrDecoded = useCallback((decodedText: string) => {
