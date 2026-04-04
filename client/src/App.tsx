@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useMemo } from "react";
+import { useEffect, useCallback, useMemo, lazy, Suspense } from "react";
 import { Switch, Route, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider, useQuery } from "@tanstack/react-query";
@@ -60,7 +60,14 @@ import ActivityLogPage from "@/pages/activity-log";
 import UserManagement from "@/pages/user-management";
 import PartyManagement from "@/pages/party-management";
 import QrScan from "@/pages/qr-scan";
-import InventoryScan from "@/pages/inventory-scan";
+const LazyInventoryScan = lazy(() => import("@/pages/inventory-scan"));
+function InventoryScan() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin h-8 w-8 border-4 border-indigo-600 border-t-transparent rounded-full" /></div>}>
+      <LazyInventoryScan />
+    </Suspense>
+  );
+}
 
 function normalizeRole(role: string | undefined): string {
   if (!role) return '';
