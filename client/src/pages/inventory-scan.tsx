@@ -1415,7 +1415,7 @@ function InventoryScanInner() {
                 </button>
               </div>
 
-              {scanMode === "camera" && (
+              <div style={{ display: scanMode === "camera" ? "block" : "none" }}>
                 <Card className="shadow-sm border border-indigo-300">
                   <CardContent className="pt-4 space-y-3">
                     <style>{`
@@ -1515,7 +1515,7 @@ function InventoryScanInner() {
                     )}
                   </CardContent>
                 </Card>
-              )}
+              </div>
 
               {scanMode === "manual" && (
                 <Card className="shadow-sm border border-indigo-300">
