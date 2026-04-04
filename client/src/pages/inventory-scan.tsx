@@ -58,6 +58,119 @@ class InventoryErrorBoundary extends Component<{ children: ReactNode }, { hasErr
 const CDN_URL = "https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js";
 const STORAGE_KEY = "inventory_scan_session";
 
+const NUMBER_WORD_MAP: Record<string, number> = {
+  'शून्य': 0, 'एक': 1, 'दोन': 2, 'तीन': 3, 'चार': 4, 'पाच': 5,
+  'सहा': 6, 'सात': 7, 'आठ': 8, 'नऊ': 9, 'दहा': 10,
+  'अकरा': 11, 'बारा': 12, 'तेरा': 13, 'चौदा': 14, 'पंधरा': 15,
+  'सोळा': 16, 'सतरा': 17, 'अठरा': 18, 'एकोणीस': 19, 'वीस': 20,
+  'एकवीस': 21, 'बावीस': 22, 'तेवीस': 23, 'चोवीस': 24, 'पंचवीस': 25,
+  'सव्वीस': 26, 'सत्तावीस': 27, 'अठ्ठावीस': 28, 'एकोणतीस': 29, 'तीस': 30,
+  'एकतीस': 31, 'बत्तीस': 32, 'तेहतीस': 33, 'चौतीस': 34, 'पस्तीस': 35,
+  'छत्तीस': 36, 'सदतीस': 37, 'अडतीस': 38, 'एकोणचाळीस': 39, 'चाळीस': 40,
+  'एक्केचाळीस': 41, 'बेचाळीस': 42, 'त्रेचाळीस': 43, 'चव्वेचाळीस': 44, 'पंचेचाळीस': 45,
+  'सेहेचाळीस': 46, 'सत्तेचाळीस': 47, 'अठ्ठेचाळीस': 48, 'एकोणपन्नास': 49, 'पन्नास': 50,
+  'एक्कावन्न': 51, 'बावन्न': 52, 'त्रेपन्न': 53, 'चोपन्न': 54, 'पंचावन्न': 55,
+  'छप्पन्न': 56, 'सत्तावन्न': 57, 'अठ्ठावन्न': 58, 'एकोणसाठ': 59, 'साठ': 60,
+  'एकसष्ट': 61, 'बासष्ट': 62, 'त्रेसष्ट': 63, 'चौसष्ट': 64, 'पासष्ट': 65,
+  'सहासष्ट': 66, 'सदुसष्ट': 67, 'अडुसष्ट': 68, 'एकोणसत्तर': 69, 'सत्तर': 70,
+  'एक्काहत्तर': 71, 'बाहत्तर': 72, 'त्र्याहत्तर': 73, 'चौऱ्याहत्तर': 74, 'पंच्याहत्तर': 75,
+  'शहात्तर': 76, 'सत्याहत्तर': 77, 'अठ्ठ्याहत्तर': 78, 'एकोणऐंशी': 79, 'ऐंशी': 80,
+  'एक्क्याऐंशी': 81, 'ब्याऐंशी': 82, 'त्र्याऐंशी': 83, 'चौऱ्याऐंशी': 84, 'पंच्याऐंशी': 85,
+  'शहाऐंशी': 86, 'सत्त्याऐंशी': 87, 'अठ्ठ्याऐंशी': 88, 'एकोणनव्वद': 89, 'नव्वद': 90,
+  'एक्क्याण्णव': 91, 'ब्याण्णव': 92, 'त्र्याण्णव': 93, 'चौऱ्याण्णव': 94, 'पंच्याण्णव': 95,
+  'शहाण्णव': 96, 'सत्त्याण्णव': 97, 'अठ्ठ्याण्णव': 98, 'नव्व्याण्णव': 99,
+  'शंभर': 100, 'दोनशे': 200, 'तीनशे': 300, 'चारशे': 400, 'पाचशे': 500,
+  'सहाशे': 600, 'सातशे': 700, 'आठशे': 800, 'नऊशे': 900, 'हजार': 1000,
+  'zero': 0, 'one': 1, 'two': 2, 'three': 3, 'four': 4, 'five': 5,
+  'six': 6, 'seven': 7, 'eight': 8, 'nine': 9, 'ten': 10,
+  'eleven': 11, 'twelve': 12, 'thirteen': 13, 'fourteen': 14, 'fifteen': 15,
+  'sixteen': 16, 'seventeen': 17, 'eighteen': 18, 'nineteen': 19, 'twenty': 20,
+  'thirty': 30, 'forty': 40, 'fifty': 50, 'sixty': 60, 'seventy': 70,
+  'eighty': 80, 'ninety': 90, 'hundred': 100, 'thousand': 1000,
+  'शून्या': 0, 'ek': 1, 'do': 2, 'teen': 3, 'char': 4, 'paanch': 5,
+  'chhe': 6, 'saat': 7, 'aath': 8, 'nau': 9, 'das': 10,
+  'एक सौ': 100, 'दो सौ': 200, 'तीन सौ': 300, 'चार सौ': 400, 'पांच सौ': 500,
+  'छह सौ': 600, 'सात सौ': 700, 'आठ सौ': 800, 'नौ सौ': 900,
+  'सौ': 100, 'हज़ार': 1000,
+  'बीस': 20, 'चालीस': 40, 'पचास': 50, 'अस्सी': 80, 'नब्बे': 90,
+};
+
+function devanagariToAscii(text: string): string {
+  return text.replace(/[०-९]/g, (ch) => String('०१२३४५६७८९'.indexOf(ch)));
+}
+
+function normalizeTranscript(text: string): string {
+  let normalized = devanagariToAscii(text.trim().toLowerCase());
+  normalized = normalized.replace(/[।,\.]+/g, ' ').replace(/\s+/g, ' ').trim();
+  return normalized;
+}
+
+function parseSpokenNumber(text: string): string | null {
+  const normalized = normalizeTranscript(text);
+  if (/^\d+$/.test(normalized)) return normalized;
+
+  const direct = NUMBER_WORD_MAP[normalized];
+  if (direct !== undefined) return String(direct);
+
+  const parts = normalized.split(/[\s\-]+/);
+
+  if (parts.length === 2) {
+    const a = NUMBER_WORD_MAP[parts[0]];
+    const b = NUMBER_WORD_MAP[parts[1]];
+    if (a !== undefined && b !== undefined) {
+      if (a >= 100 && b < 100) return String(a + b);
+      if (a === 1000 && b < 1000) return String(a + b);
+      if (a < 10 && b === 100) return String(a * b);
+      if (a < 10 && b === 1000) return String(a * b);
+      if (a >= 20 && a < 100 && b < 10) return String(a + b);
+    }
+  }
+
+  if (parts.length === 3) {
+    const a = NUMBER_WORD_MAP[parts[0]];
+    const b = NUMBER_WORD_MAP[parts[1]];
+    const c = NUMBER_WORD_MAP[parts[2]];
+    if (a !== undefined && b !== undefined && c !== undefined) {
+      if (a >= 100 && b >= 100) return String(a + b + c);
+      if (a < 10 && b === 100 && c < 100) return String(a * b + c);
+      if (a >= 100 && b < 100 && c < 10) return String(a + b + c);
+    }
+  }
+
+  if (parts.length === 4) {
+    const a = NUMBER_WORD_MAP[parts[0]];
+    const b = NUMBER_WORD_MAP[parts[1]];
+    const c = NUMBER_WORD_MAP[parts[2]];
+    const d = NUMBER_WORD_MAP[parts[3]];
+    if (a !== undefined && b !== undefined && c !== undefined && d !== undefined) {
+      if (a < 10 && b === 100 && c >= 10 && c < 100 && d < 10) return String(a * b + c + d);
+    }
+  }
+
+  const digits = normalized.replace(/\D/g, '');
+  if (digits.length > 0) return digits;
+
+  return null;
+}
+
+function processTranscriptSegments(transcript: string, addFn: (accNo: string) => void): void {
+  const normalized = normalizeTranscript(transcript);
+  const fullParsed = parseSpokenNumber(normalized);
+  if (fullParsed) { addFn(fullParsed); return; }
+  const segments = normalized.split(/[,।\.\s]+/).filter((w: string) => w.length > 0);
+  let i = 0;
+  while (i < segments.length) {
+    if (i + 1 < segments.length) {
+      const twoWord = segments[i] + ' ' + segments[i + 1];
+      const parsed2 = parseSpokenNumber(twoWord);
+      if (parsed2) { addFn(parsed2); i += 2; continue; }
+    }
+    const parsed1 = parseSpokenNumber(segments[i]);
+    if (parsed1) { addFn(parsed1); }
+    i++;
+  }
+}
+
 const CAMERA_CONFIGS: Array<{ facingMode?: string }> = [
   { facingMode: "environment" },
   { facingMode: "user" },
@@ -542,101 +655,6 @@ function InventoryScanInner() {
     toast({ title: "मॅन्युअल जोडले", description: `${loan.borrowerName} — खाते ${accNo}` });
   }, [manualAccountNo, filteredLoans, loans, toast, stopScanner]);
 
-  const numberWordMap: Record<string, number> = useMemo(() => ({
-    'शून्य': 0, 'एक': 1, 'दोन': 2, 'तीन': 3, 'चार': 4, 'पाच': 5,
-    'सहा': 6, 'सात': 7, 'आठ': 8, 'नऊ': 9, 'दहा': 10,
-    'अकरा': 11, 'बारा': 12, 'तेरा': 13, 'चौदा': 14, 'पंधरा': 15,
-    'सोळा': 16, 'सतरा': 17, 'अठरा': 18, 'एकोणीस': 19, 'वीस': 20,
-    'एकवीस': 21, 'बावीस': 22, 'तेवीस': 23, 'चोवीस': 24, 'पंचवीस': 25,
-    'सव्वीस': 26, 'सत्तावीस': 27, 'अठ्ठावीस': 28, 'एकोणतीस': 29, 'तीस': 30,
-    'एकतीस': 31, 'बत्तीस': 32, 'तेहतीस': 33, 'चौतीस': 34, 'पस्तीस': 35,
-    'छत्तीस': 36, 'सदतीस': 37, 'अडतीस': 38, 'एकोणचाळीस': 39, 'चाळीस': 40,
-    'एक्केचाळीस': 41, 'बेचाळीस': 42, 'त्रेचाळीस': 43, 'चव्वेचाळीस': 44, 'पंचेचाळीस': 45,
-    'सेहेचाळीस': 46, 'सत्तेचाळीस': 47, 'अठ्ठेचाळीस': 48, 'एकोणपन्नास': 49, 'पन्नास': 50,
-    'एक्कावन्न': 51, 'बावन्न': 52, 'त्रेपन्न': 53, 'चोपन्न': 54, 'पंचावन्न': 55,
-    'छप्पन्न': 56, 'सत्तावन्न': 57, 'अठ्ठावन्न': 58, 'एकोणसाठ': 59, 'साठ': 60,
-    'एकसष्ट': 61, 'बासष्ट': 62, 'त्रेसष्ट': 63, 'चौसष्ट': 64, 'पासष्ट': 65,
-    'सहासष्ट': 66, 'सदुसष्ट': 67, 'अडुसष्ट': 68, 'एकोणसत्तर': 69, 'सत्तर': 70,
-    'एक्काहत्तर': 71, 'बाहत्तर': 72, 'त्र्याहत्तर': 73, 'चौऱ्याहत्तर': 74, 'पंच्याहत्तर': 75,
-    'शहात्तर': 76, 'सत्याहत्तर': 77, 'अठ्ठ्याहत्तर': 78, 'एकोणऐंशी': 79, 'ऐंशी': 80,
-    'एक्क्याऐंशी': 81, 'ब्याऐंशी': 82, 'त्र्याऐंशी': 83, 'चौऱ्याऐंशी': 84, 'पंच्याऐंशी': 85,
-    'शहाऐंशी': 86, 'सत्त्याऐंशी': 87, 'अठ्ठ्याऐंशी': 88, 'एकोणनव्वद': 89, 'नव्वद': 90,
-    'एक्क्याण्णव': 91, 'ब्याण्णव': 92, 'त्र्याण्णव': 93, 'चौऱ्याण्णव': 94, 'पंच्याण्णव': 95,
-    'शहाण्णव': 96, 'सत्त्याण्णव': 97, 'अठ्ठ्याण्णव': 98, 'नव्व्याण्णव': 99,
-    'शंभर': 100, 'दोनशे': 200, 'तीनशे': 300, 'चारशे': 400, 'पाचशे': 500,
-    'सहाशे': 600, 'सातशे': 700, 'आठशे': 800, 'नऊशे': 900, 'हजार': 1000,
-    'zero': 0, 'one': 1, 'two': 2, 'three': 3, 'four': 4, 'five': 5,
-    'six': 6, 'seven': 7, 'eight': 8, 'nine': 9, 'ten': 10,
-    'eleven': 11, 'twelve': 12, 'thirteen': 13, 'fourteen': 14, 'fifteen': 15,
-    'sixteen': 16, 'seventeen': 17, 'eighteen': 18, 'nineteen': 19, 'twenty': 20,
-    'thirty': 30, 'forty': 40, 'fifty': 50, 'sixty': 60, 'seventy': 70,
-    'eighty': 80, 'ninety': 90, 'hundred': 100, 'thousand': 1000,
-    'शून्या': 0, 'ek': 1, 'do': 2, 'teen': 3, 'char': 4, 'paanch': 5,
-    'chhe': 6, 'saat': 7, 'aath': 8, 'nau': 9, 'das': 10,
-    'एक सौ': 100, 'दो सौ': 200, 'तीन सौ': 300, 'चार सौ': 400, 'पांच सौ': 500,
-    'छह सौ': 600, 'सात सौ': 700, 'आठ सौ': 800, 'नौ सौ': 900,
-    'सौ': 100, 'हज़ार': 1000,
-    'बीस': 20, 'तीस_hi': 30, 'चालीस': 40, 'पचास': 50, 'साठ_hi': 60, 'सत्तर_hi': 70, 'अस्सी': 80, 'नब्बे': 90,
-  }), []);
-
-  const devanagariToAscii = useCallback((text: string): string => {
-    return text.replace(/[०-९]/g, (ch) => String('०१२३४५६७८९'.indexOf(ch)));
-  }, []);
-
-  const normalizeTranscript = useCallback((text: string): string => {
-    let normalized = devanagariToAscii(text.trim().toLowerCase());
-    normalized = normalized.replace(/[।,\.]+/g, ' ').replace(/\s+/g, ' ').trim();
-    return normalized;
-  }, [devanagariToAscii]);
-
-  const parseSpokenNumber = useCallback((text: string): string | null => {
-    const normalized = normalizeTranscript(text);
-    if (/^\d+$/.test(normalized)) return normalized;
-
-    const direct = numberWordMap[normalized];
-    if (direct !== undefined) return String(direct);
-
-    const parts = normalized.split(/[\s\-]+/);
-
-    if (parts.length === 2) {
-      const a = numberWordMap[parts[0]];
-      const b = numberWordMap[parts[1]];
-      if (a !== undefined && b !== undefined) {
-        if (a >= 100 && b < 100) return String(a + b);
-        if (a === 1000 && b < 1000) return String(a + b);
-        if (a < 10 && b === 100) return String(a * b);
-        if (a < 10 && b === 1000) return String(a * b);
-        if (a >= 20 && a < 100 && b < 10) return String(a + b);
-      }
-    }
-
-    if (parts.length === 3) {
-      const a = numberWordMap[parts[0]];
-      const b = numberWordMap[parts[1]];
-      const c = numberWordMap[parts[2]];
-      if (a !== undefined && b !== undefined && c !== undefined) {
-        if (a >= 100 && b >= 100) return String(a + b + c);
-        if (a < 10 && b === 100 && c < 100) return String(a * b + c);
-        if (a >= 100 && b < 100 && c < 10) return String(a + b + c);
-      }
-    }
-
-    if (parts.length === 4) {
-      const a = numberWordMap[parts[0]];
-      const b = numberWordMap[parts[1]];
-      const c = numberWordMap[parts[2]];
-      const d = numberWordMap[parts[3]];
-      if (a !== undefined && b !== undefined && c !== undefined && d !== undefined) {
-        if (a < 10 && b === 100 && c >= 10 && c < 100 && d < 10) return String(a * b + c + d);
-      }
-    }
-
-    const digits = normalized.replace(/\D/g, '');
-    if (digits.length > 0) return digits;
-
-    return null;
-  }, [normalizeTranscript, numberWordMap]);
-
   const handleRapidAdd = useCallback((accNo: string) => {
     const trimmed = accNo.trim();
     if (!trimmed) return;
@@ -711,11 +729,9 @@ function InventoryScanInner() {
       }
       setRapidInput("");
     }
-  }, [rapidInput, handleRapidAdd, parseSpokenNumber, toast]);
+  }, [rapidInput, handleRapidAdd, toast]);
 
-  const hasSpeechRecognition = useMemo(() => {
-    return typeof window !== 'undefined' && ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window);
-  }, []);
+  const hasSpeechRecognition = typeof window !== 'undefined' && ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window);
 
   const stopVoice = useCallback(() => {
     if (recognitionRef.current) {
@@ -727,32 +743,8 @@ function InventoryScanInner() {
 
   const [voiceLang, setVoiceLang] = useState<"mr-IN" | "hi-IN" | "en-IN">("mr-IN");
 
-  const processTranscript = useCallback((transcript: string) => {
-    const normalized = normalizeTranscript(transcript);
-    const fullParsed = parseSpokenNumber(normalized);
-    if (fullParsed) {
-      handleRapidAdd(fullParsed);
-      return;
-    }
-    const segments = normalized.split(/[,।\.\s]+/).filter((w: string) => w.length > 0);
-    let i = 0;
-    while (i < segments.length) {
-      if (i + 1 < segments.length) {
-        const twoWord = segments[i] + ' ' + segments[i + 1];
-        const parsed2 = parseSpokenNumber(twoWord);
-        if (parsed2) {
-          handleRapidAdd(parsed2);
-          i += 2;
-          continue;
-        }
-      }
-      const parsed1 = parseSpokenNumber(segments[i]);
-      if (parsed1) {
-        handleRapidAdd(parsed1);
-      }
-      i++;
-    }
-  }, [normalizeTranscript, parseSpokenNumber, handleRapidAdd]);
+  const handleRapidAddRef = useRef(handleRapidAdd);
+  useEffect(() => { handleRapidAddRef.current = handleRapidAdd; }, [handleRapidAdd]);
 
   const startVoice = useCallback(() => {
     if (!hasSpeechRecognition) return;
@@ -768,7 +760,7 @@ function InventoryScanInner() {
       for (let i = event.resultIndex; i < event.results.length; i++) {
         if (event.results[i].isFinal) {
           const transcript = event.results[i][0].transcript.trim();
-          if (transcript) processTranscript(transcript);
+          if (transcript) processTranscriptSegments(transcript, (acc) => handleRapidAddRef.current(acc));
         }
       }
     };
@@ -792,7 +784,7 @@ function InventoryScanInner() {
     } catch {
       toast({ title: "Voice सुरू झाले नाही", variant: "destructive" });
     }
-  }, [hasSpeechRecognition, stopVoice, voiceLang, processTranscript, toast]);
+  }, [hasSpeechRecognition, stopVoice, voiceLang, toast]);
 
   useEffect(() => {
     if (phase !== 'scanning' || scanMode !== 'manual') {
@@ -939,7 +931,7 @@ function InventoryScanInner() {
     setShowBorrowerSuggestions(false);
     setSelectedSuggestionIndex(-1);
     toast({ title: "साफ केले", description: "Scan session clear झाले — नव्याने सुरू करा" });
-  }, [stopScanner, toast]);
+  }, [stopScanner, stopVoice, toast]);
 
   const handleResume = useCallback((session: ScanSession) => {
     setSearchQuery(session.filterSettings.searchQuery);
