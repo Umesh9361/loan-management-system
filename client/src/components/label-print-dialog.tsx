@@ -547,9 +547,13 @@ function generatePrintPage(labelsHtml: string, settings: LabelSettings): string 
 }
 
 function generateQrLabelHtml(loan: LabelLoan, qrDataUrl: string, settings: LabelSettings): string {
-  const { stickerSize, fontFamily } = settings;
+  const { stickerSize, fontFamily, margins } = settings;
   const totalW = stickerSize.width;
   const totalH = stickerSize.height;
+  const mTop = Math.min(margins.top, totalH / 2);
+  const mBottom = Math.min(margins.bottom, totalH / 2);
+  const mLeft = Math.min(margins.left, totalW / 2);
+  const mRight = Math.min(margins.right, totalW / 2);
   const shorterSide = Math.min(totalW, totalH);
 
   const qrSizeMm = +(shorterSide * 0.68).toFixed(1);
@@ -609,7 +613,7 @@ function generateQrLabelHtml(loan: LabelLoan, qrDataUrl: string, settings: Label
   const amtIsLong = show_amt && amtNum.length > 7;
 
   return `
-    <div class="label-container" style="width:${totalW}mm;height:${totalH}mm;box-sizing:border-box;page-break-after:always;overflow:hidden;display:flex;flex-direction:row;align-items:stretch;padding:0.3mm 0.3mm 0.8mm 1mm;gap:0;">
+    <div class="label-container" style="width:${totalW}mm;height:${totalH}mm;box-sizing:border-box;page-break-after:always;overflow:hidden;display:flex;flex-direction:row;align-items:stretch;padding:${mTop}mm ${mRight}mm ${mBottom}mm ${mLeft}mm;gap:0;">
       <div style="display:flex;align-items:center;flex-shrink:0;"><img src="${qrDataUrl}" width="${qrPx}" height="${qrPx}" style="width:${qrSizeMm}mm;height:${qrSizeMm}mm;display:block;" /></div>
       <div style="flex:1;min-width:0;display:flex;flex-direction:column;justify-content:space-between;padding-left:0.8mm;padding-right:0.3mm;border-left:0.3mm solid #ccc;margin-left:0.3mm;overflow:hidden;">
         ${amtIsLong ? `
@@ -630,9 +634,13 @@ function generateQrLabelHtml(loan: LabelLoan, qrDataUrl: string, settings: Label
 }
 
 function generateQrCenterLabelHtml(loan: LabelLoan, qrDataUrl: string, settings: LabelSettings): string {
-  const { stickerSize } = settings;
+  const { stickerSize, margins } = settings;
   const totalW = stickerSize.width;
   const totalH = stickerSize.height;
+  const mTop = Math.min(margins.top, totalH / 2);
+  const mBottom = Math.min(margins.bottom, totalH / 2);
+  const mLeft = Math.min(margins.left, totalW / 2);
+  const mRight = Math.min(margins.right, totalW / 2);
   const qrSizeMm = +(Math.min(totalW, totalH) * 0.85).toFixed(1);
 
   const acctField = settings.fields.find(f => f.id === 'accountNumber');
@@ -659,8 +667,8 @@ function generateQrCenterLabelHtml(loan: LabelLoan, qrDataUrl: string, settings:
   const rightMm = +(Math.max(0, totalW - finalLeftMm - +qrSizeMm)).toFixed(2);
 
   return `
-    <div class="label-container" style="width:${totalW}mm;height:${totalH}mm;box-sizing:border-box;page-break-after:always;overflow:hidden;display:flex;flex-direction:row;align-items:center;">
-      <div style="width:${finalLeftMm}mm;height:${totalH}mm;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:0.5mm;overflow:hidden;">
+    <div class="label-container" style="width:${totalW}mm;height:${totalH}mm;box-sizing:border-box;page-break-after:always;overflow:hidden;display:flex;flex-direction:row;align-items:center;padding:${mTop}mm ${mRight}mm ${mBottom}mm ${mLeft}mm;">
+      <div style="width:${finalLeftMm}mm;height:100%;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:0.5mm;overflow:hidden;">
         ${show_acct ? `<div style="font-family:${numFont};font-size:${f_acct}pt;font-weight:${b_acct};text-align:center;word-break:break-all;line-height:1.2;${acctOvalStyle}">${loan.accountNumber}</div>` : ''}
       </div>
       <img src="${qrDataUrl}" width="${Math.round(+qrSizeMm * 3.78)}" height="${Math.round(+qrSizeMm * 3.78)}" style="width:${qrSizeMm}mm;height:${qrSizeMm}mm;display:block;flex-shrink:0;" />
