@@ -773,11 +773,14 @@ export function generatePacketLabelHtml(
 
   lines.push(`<div style="font-family:${numFont};font-size:${dateFontPt}pt;font-weight:600;text-align:center;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:0.4pt;">${dateRange}</div>`);
 
-  if (pf.showWeight) {
-    lines.push(`<div style="font-family:${numFont};font-size:${weightFontPt}pt;font-weight:600;text-align:center;line-height:1.25;white-space:nowrap;"><span style="font-family:${devaFont};font-size:${Math.max(weightFontPt - 2, 6)}pt;color:#666;">वजन </span>${totalWeight.toFixed(2)}g</div>`);
-  }
-  if (pf.showCount) {
-    lines.push(`<div style="font-family:${devaFont};font-size:${countFontPt}pt;font-weight:600;text-align:center;line-height:1.25;white-space:nowrap;"><span style="font-size:${Math.max(countFontPt - 2, 6)}pt;color:#666;">एकूण </span>${totalCount} <span style="font-size:${Math.max(countFontPt - 2, 6)}pt;color:#666;">खाती</span></div>`);
+  if (pf.showWeight || pf.showCount) {
+    const weightHtml = pf.showWeight ? `<span style="font-family:${numFont};font-size:${weightFontPt}pt;font-weight:600;white-space:nowrap;"><span style="font-family:${devaFont};font-size:${Math.max(weightFontPt - 2, 6)}pt;color:#666;">वजन </span>${totalWeight.toFixed(2)}g</span>` : '';
+    const countHtml = pf.showCount ? `<span style="font-family:${devaFont};font-size:${countFontPt}pt;font-weight:600;white-space:nowrap;"><span style="font-size:${Math.max(countFontPt - 2, 6)}pt;color:#666;">एकूण </span>${totalCount} <span style="font-size:${Math.max(countFontPt - 2, 6)}pt;color:#666;">खाती</span></span>` : '';
+    if (pf.showWeight && pf.showCount) {
+      lines.push(`<div style="display:flex;justify-content:space-between;align-items:center;width:100%;line-height:1.25;">${weightHtml}${countHtml}</div>`);
+    } else {
+      lines.push(`<div style="text-align:center;line-height:1.25;">${weightHtml}${countHtml}</div>`);
+    }
   }
   if (totalPackets && totalPackets > 1 && packetIndex !== undefined) {
     lines.push(`<div style="font-family:${devaFont};font-size:${Math.max(countFontPt - 2, 7)}pt;font-weight:700;text-align:center;line-height:1.2;color:#555;">पॅकेट ${toDevanagariDigits(packetIndex + 1)}/${toDevanagariDigits(totalPackets)}</div>`);
