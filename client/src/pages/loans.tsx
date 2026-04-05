@@ -27,14 +27,13 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { LoanCalculations } from "@/lib/calculations";
 import { DateUtils } from "@/lib/date-utils";
-import { Plus, Edit, Trash2, CreditCard, Search, Calendar, Filter, X, FileText, MoreVertical, Lock, Home, RotateCcw, ChevronDown, ChevronRight, Check, Camera, AlertTriangle, Printer, CheckSquare, Square, Package } from "lucide-react";
+import { Plus, Edit, Trash2, CreditCard, Search, Calendar, Filter, X, FileText, MoreVertical, Lock, Home, RotateCcw, ChevronDown, ChevronRight, Check, Camera, AlertTriangle, Printer, CheckSquare, Square } from "lucide-react";
 import { PhotoUpload } from "@/components/ui/photo-upload";
 import { PhotoViewer } from "@/components/ui/photo-viewer";
 import { Link, useLocation } from "wouter";
 import { ReceiptGenerator } from "@/components/receipt-generator";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { LabelPrintDialog } from "@/components/label-print-dialog";
-import { PacketLabelDialog } from "@/components/packet-label-dialog";
 
 
 const loanSchema = z.object({
@@ -137,7 +136,6 @@ function Loans() {
   const [selectedLoanIds, setSelectedLoanIds] = useState<Set<string | number>>(new Set());
   const [labelPrintDialogOpen, setLabelPrintDialogOpen] = useState(false);
   const [labelPrintLoans, setLabelPrintLoans] = useState<any[]>([]);
-  const [packetLabelDialogOpen, setPacketLabelDialogOpen] = useState(false);
 
   // Loan details modal state
   const [selectedLoanDetails, setSelectedLoanDetails] = useState<any>(null);
@@ -3223,13 +3221,6 @@ function Loans() {
               <X className="mr-2 h-4 w-4" />
               साफ करा
             </Button>
-            <Button
-              onClick={() => setPacketLabelDialogOpen(true)}
-              className="bg-amber-600 hover:bg-amber-700 text-white shadow-sm"
-            >
-              <Package className="mr-1.5 h-4 w-4" />
-              पॅकेट लेबल
-            </Button>
           </div>
         </CardContent>
       </Card>
@@ -4283,10 +4274,6 @@ function Loans() {
         loans={labelPrintLoans}
       />
 
-      <PacketLabelDialog
-        open={packetLabelDialogOpen}
-        onOpenChange={setPacketLabelDialogOpen}
-      />
     </div>
   );
 }

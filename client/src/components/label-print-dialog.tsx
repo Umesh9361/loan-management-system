@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { Printer, Settings, ChevronDown, ChevronUp, Minus, Plus, Eye, ArrowUp, ArrowDown, Bold, Type, Trash2, PlusCircle, RotateCcw, Ruler, Loader2 } from "lucide-react";
+import { Printer, Settings, ChevronDown, ChevronUp, Minus, Plus, Eye, ArrowUp, ArrowDown, Bold, Type, Trash2, PlusCircle, RotateCcw, Ruler, Loader2, Calendar, Package, Hash, Scale, AlertCircle, CheckCircle2 } from "lucide-react";
 import { LoanCalculations } from "@/lib/calculations";
 import { DateUtils } from "@/lib/date-utils";
 import { encodeQrData } from "@/lib/qr-utils";
@@ -1005,6 +1005,31 @@ export function LabelPrintDialog({ open, onOpenChange, loans }: LabelPrintDialog
   const [qrPreviewUrls, setQrPreviewUrls] = useState<Record<string, string>>({});
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const [packetDateFrom, setPacketDateFrom] = useState("");
+  const [packetDateTo, setPacketDateTo] = useState("");
+  const packetFetchEnabled = open && settings.printMode === 'packet' && packetDateFrom.length > 0 && packetDateTo.length > 0;
+  const { data: packetFetchedLoans, isLoading: packetLoansLoading, error: packetLoansError } = useQuery<LabelLoan[]>({
+    queryKey: ['/api/loans/by-date-range', packetDateFrom, packetDateTo],
+    queryFn: async () => {
+      const res = await fetch(`/api/loans/by-date-range?from=${packetDateFrom}&to=${packetDateTo}`, { credentials: 'include' });
+      if (!res.ok) throw new Error('Failed to fetch');
+      return res.json();
+    },
+    enabled: packetFetchEnabled,
+  });
+  const packetLoans = packetFetchedLoans || [];
+  const packetSummary = useMemo(() => {
+    if (packetLoans.length === 0) return null;
+    const sorted = [...packetLoans].sort((a, b) => (parseInt(String(a.accountNumber)) || 0) - (parseInt(String(b.accountNumber)) || 0));
+    const minAcct = sorted[0]?.accountNumber || '';
+    const maxAcct = sorted[sorted.length - 1]?.accountNumber || '';
+    const totalWeight = sorted.reduce((sum, l) => sum + (parseFloat(String(l.weight || '0')) || 0), 0);
+    return { count: sorted.length, minAcct, maxAcct, acctRange: minAcct === maxAcct ? minAcct : `${minAcct} — ${maxAcct}`, totalWeight: totalWeight.toFixed(2) };
+  }, [packetLoans]);
+  const isPacketMode = settings.printMode === 'packet';
+  const effectiveLoans = isPacketMode ? packetLoans : loans;
+  const fmtDateDisplay = (isoDate: string) => { if (!isoDate) return ''; try { const [y, m, d] = isoDate.split('-'); return `${d}/${m}/${y}`; } catch { return isoDate; } };
+
   const { data: dbSettings, isLoading: isLoadingSettings, isFetched } = useQuery({
     queryKey: ['/api/label-settings'],
     enabled: open,
@@ -1039,8 +1064,12 @@ export function LabelPrintDialog({ open, onOpenChange, loans }: LabelPrintDialog
                     showCount: typeof parsed.packetFields.showCount === 'boolean' ? parsed.packetFields.showCount : true,
                     showWeight: typeof parsed.packetFields.showWeight === 'boolean' ? parsed.packetFields.showWeight : true,
                     showAmount: typeof parsed.packetFields.showAmount === 'boolean' ? parsed.packetFields.showAmount : true,
+                    acctFontSize: typeof parsed.packetFields.acctFontSize === 'number' ? parsed.packetFields.acctFontSize : 18,
+                    dateFontSize: typeof parsed.packetFields.dateFontSize === 'number' ? parsed.packetFields.dateFontSize : 13,
+                    countFontSize: typeof parsed.packetFields.countFontSize === 'number' ? parsed.packetFields.countFontSize : 10,
+                    weightFontSize: typeof parsed.packetFields.weightFontSize === 'number' ? parsed.packetFields.weightFontSize : 10,
                   }
-                : { showCount: true, showWeight: true, showAmount: true },
+                : { showCount: true, showWeight: true, showAmount: true, acctFontSize: 18, dateFontSize: 13, countFontSize: 10, weightFontSize: 10 },
               perPacket: typeof parsed.perPacket === 'number' && parsed.perPacket >= 0 ? parsed.perPacket : 0,
             });
           }
@@ -1306,12 +1335,14 @@ export function LabelPrintDialog({ open, onOpenChange, loans }: LabelPrintDialog
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="w-[95vw] max-w-xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-lg font-bold text-indigo-800 flex items-center gap-2">
-            <Printer className="h-5 w-5" />
-            लेबल प्रिंट ({loans.length} लेबल{loans.length > 1 ? "s" : ""})
+          <DialogTitle className={`text-lg font-bold flex items-center gap-2 ${isPacketMode ? 'text-amber-800' : 'text-indigo-800'}`}>
+            {isPacketMode ? <Package className="h-5 w-5" /> : <Printer className="h-5 w-5" />}
+            {isPacketMode ? 'पॅकेट लेबल प्रिंट' : `लेबल प्रिंट (${loans.length} लेबल${loans.length > 1 ? "s" : ""})`}
           </DialogTitle>
           <DialogDescription>
-            {settings.stickerSize.width} x {settings.stickerSize.height} mm स्टिकर लेबल
+            {isPacketMode
+              ? 'तारीख श्रेणी निवडा — त्या कालावधीतील सर्व खात्यांचे summary स्टिकर'
+              : `${settings.stickerSize.width} x ${settings.stickerSize.height} mm स्टिकर लेबल`}
           </DialogDescription>
         </DialogHeader>
 
@@ -1367,63 +1398,90 @@ export function LabelPrintDialog({ open, onOpenChange, loans }: LabelPrintDialog
                 {!saveMutation.isPending && dbLoaded && <span className="text-[9px] text-green-500 ml-auto flex-shrink-0">✓ सेव्ह</span>}
               </div>
               {settings.printMode === 'packet' && (
-                <div className="px-3 py-2 bg-amber-50 border-b border-amber-200">
-                  <div className="text-[11px] font-semibold text-amber-800 mb-1.5">पॅकेट लेबल सेटिंग्ज:</div>
-                  <div className="space-y-1.5">
-                    <div className="flex items-center gap-3 flex-wrap">
-                      <label className="flex items-center gap-1.5 cursor-pointer">
-                        <Switch
-                          checked={settings.packetFields?.showCount ?? true}
-                          onCheckedChange={(v) => updateSettings(prev => ({
-                            ...prev,
-                            packetFields: { ...prev.packetFields || { showCount: true, showWeight: true, showAmount: true }, showCount: v }
-                          }))}
-                          className="h-4 w-7"
-                        />
-                        <span className="text-[10px] text-gray-700">एकूण खाती</span>
-                      </label>
-                      <label className="flex items-center gap-1.5 cursor-pointer">
-                        <Switch
-                          checked={settings.packetFields?.showWeight ?? true}
-                          onCheckedChange={(v) => updateSettings(prev => ({
-                            ...prev,
-                            packetFields: { ...prev.packetFields || { showCount: true, showWeight: true, showAmount: true }, showWeight: v }
-                          }))}
-                          className="h-4 w-7"
-                        />
-                        <span className="text-[10px] text-gray-700">एकूण वजन</span>
-                      </label>
-                      <label className="flex items-center gap-1.5 cursor-pointer">
-                        <Switch
-                          checked={settings.packetFields?.showAmount ?? true}
-                          onCheckedChange={(v) => updateSettings(prev => ({
-                            ...prev,
-                            packetFields: { ...prev.packetFields || { showCount: true, showWeight: true, showAmount: true }, showAmount: v }
-                          }))}
-                          className="h-4 w-7"
-                        />
-                        <span className="text-[10px] text-gray-700">एकूण रक्कम</span>
-                      </label>
+                <div className="px-3 py-2 bg-amber-50 border-b border-amber-200 space-y-2">
+                  <div className="text-[11px] font-semibold text-amber-800 mb-1">पॅकेट लेबल — तारीख श्रेणी निवडा:</div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <Label className="text-[10px] font-medium text-amber-700 flex items-center gap-1 mb-0.5">
+                        <Calendar className="h-3 w-3" /> तारखेपासून
+                      </Label>
+                      <Input type="date" value={packetDateFrom} onChange={(e) => setPacketDateFrom(e.target.value)} className="h-8 text-xs border-amber-300 focus:border-amber-500 focus:ring-amber-500" />
                     </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-[10px] text-gray-600 whitespace-nowrap">प्रति पॅकेट:</span>
-                      <Input
-                        type="number"
-                        value={settings.perPacket || ''}
-                        placeholder="सर्व"
-                        onChange={(e) => {
-                          const val = parseInt(e.target.value) || 0;
-                          updateSettings(prev => ({ ...prev, perPacket: Math.max(0, val) }));
-                        }}
-                        className="h-6 w-16 text-[10px] px-1.5"
-                        min={0}
-                      />
-                      <span className="text-[9px] text-gray-400">
-                        {settings.perPacket && settings.perPacket > 0
-                          ? `${Math.ceil(loans.length / settings.perPacket)} पॅकेट`
-                          : 'एकच पॅकेट'}
-                      </span>
+                    <div>
+                      <Label className="text-[10px] font-medium text-amber-700 flex items-center gap-1 mb-0.5">
+                        <Calendar className="h-3 w-3" /> तारखेपर्यंत
+                      </Label>
+                      <Input type="date" value={packetDateTo} onChange={(e) => setPacketDateTo(e.target.value)} className="h-8 text-xs border-amber-300 focus:border-amber-500 focus:ring-amber-500" />
                     </div>
+                  </div>
+                  {packetDateFrom && packetDateTo && (
+                    <div>
+                      {packetLoansLoading && (
+                        <div className="flex items-center gap-2 text-amber-600 text-xs"><Loader2 className="h-3.5 w-3.5 animate-spin" /> शोधत आहे...</div>
+                      )}
+                      {!packetLoansLoading && packetLoansError && (
+                        <div className="flex items-center gap-2 text-red-600 text-xs"><AlertCircle className="h-3.5 w-3.5" /> कर्जे शोधताना त्रुटी आली</div>
+                      )}
+                      {!packetLoansLoading && !packetLoansError && packetLoans.length === 0 && (
+                        <div className="flex items-center gap-2 text-gray-500 text-xs"><AlertCircle className="h-3.5 w-3.5" /> या तारीख श्रेणीत कोणतेही सक्रिय खाते सापडले नाही</div>
+                      )}
+                      {!packetLoansLoading && packetSummary && (
+                        <div className="bg-green-50 border border-green-200 rounded p-2 space-y-0.5">
+                          <div className="flex items-center gap-2 text-green-700 text-xs font-semibold">
+                            <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
+                            {packetSummary.count} खाती सापडली
+                            <span className="text-green-600 font-bold ml-1">({packetSummary.acctRange})</span>
+                          </div>
+                          <div className="flex items-center gap-3 text-[10px] text-green-600 pl-5">
+                            <span className="flex items-center gap-1"><Calendar className="h-2.5 w-2.5" /> {fmtDateDisplay(packetDateFrom)} — {fmtDateDisplay(packetDateTo)}</span>
+                            <span className="flex items-center gap-1"><Scale className="h-2.5 w-2.5" /> {packetSummary.totalWeight}g</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  {packetSummary && (
+                    <div className="space-y-1.5">
+                      <div className="text-[10px] font-semibold text-amber-700">लेबल फील्ड्स:</div>
+                      {([
+                        { key: 'acct' as const, label: 'खाते क्रमांक', icon: <Hash className="h-2.5 w-2.5" />, fontKey: 'acctFontSize' as const, alwaysOn: true },
+                        { key: 'date' as const, label: 'तारीख श्रेणी', icon: <Calendar className="h-2.5 w-2.5" />, fontKey: 'dateFontSize' as const, alwaysOn: true },
+                        { key: 'count' as const, label: 'वस्तू संख्या', icon: <Hash className="h-2.5 w-2.5" />, fontKey: 'countFontSize' as const, toggleKey: 'showCount' as const, alwaysOn: false },
+                        { key: 'weight' as const, label: 'एकूण वजन', icon: <Scale className="h-2.5 w-2.5" />, fontKey: 'weightFontSize' as const, toggleKey: 'showWeight' as const, alwaysOn: false },
+                      ] as const).map(field => {
+                        const pf = settings.packetFields || { showCount: true, showWeight: true, showAmount: false, acctFontSize: 18, dateFontSize: 13, countFontSize: 10, weightFontSize: 10 };
+                        const isOn = field.alwaysOn || (field.toggleKey ? (pf as any)[field.toggleKey] ?? true : true);
+                        const fontSize = (pf as any)[field.fontKey] ?? (field.key === 'acct' ? 18 : field.key === 'date' ? 13 : 10);
+                        return (
+                          <div key={field.key} className={`flex items-center gap-1.5 py-0.5 px-1 rounded transition-colors ${isOn ? 'bg-white' : 'bg-amber-100/50 opacity-60'}`}>
+                            {!field.alwaysOn && field.toggleKey && (
+                              <Switch checked={isOn} onCheckedChange={(v) => updateSettings(prev => ({ ...prev, packetFields: { ...prev.packetFields || { showCount: true, showWeight: true, showAmount: false, acctFontSize: 18, dateFontSize: 13, countFontSize: 10, weightFontSize: 10 }, [field.toggleKey!]: v } }))} className="scale-[0.65] flex-shrink-0" />
+                            )}
+                            {field.alwaysOn && <span className="w-[22px] flex-shrink-0 text-center text-green-600 text-[10px] font-bold">✓</span>}
+                            <span className="text-amber-700 flex-shrink-0">{field.icon}</span>
+                            <span className="text-[10px] font-medium text-amber-800 flex-1 min-w-0 truncate">{field.label}</span>
+                            <div className="flex items-center gap-0.5 bg-amber-100 rounded px-0.5 py-0.5 flex-shrink-0">
+                              <button onClick={() => updateSettings(prev => ({ ...prev, packetFields: { ...prev.packetFields || { showCount: true, showWeight: true, showAmount: false, acctFontSize: 18, dateFontSize: 13, countFontSize: 10, weightFontSize: 10 }, [field.fontKey]: Math.max(6, fontSize - 0.5) } }))} className="p-0.5 rounded hover:bg-amber-200 active:bg-amber-300">
+                                <Minus className="h-2.5 w-2.5 text-amber-700" />
+                              </button>
+                              <span className="text-[9px] font-mono w-6 text-center text-amber-800 font-semibold">{fontSize}</span>
+                              <button onClick={() => updateSettings(prev => ({ ...prev, packetFields: { ...prev.packetFields || { showCount: true, showWeight: true, showAmount: false, acctFontSize: 18, dateFontSize: 13, countFontSize: 10, weightFontSize: 10 }, [field.fontKey]: Math.min(30, fontSize + 0.5) } }))} className="p-0.5 rounded hover:bg-amber-200 active:bg-amber-300">
+                                <Plus className="h-2.5 w-2.5 text-amber-700" />
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] text-gray-600 whitespace-nowrap">प्रति पॅकेट:</span>
+                    <Input type="number" value={settings.perPacket || ''} placeholder="सर्व" onChange={(e) => { const val = parseInt(e.target.value) || 0; updateSettings(prev => ({ ...prev, perPacket: Math.max(0, val) })); }} className="h-6 w-16 text-[10px] px-1.5" min={0} />
+                    <span className="text-[9px] text-gray-400">
+                      {settings.perPacket && settings.perPacket > 0 && packetLoans.length > 0
+                        ? `${Math.ceil(packetLoans.length / settings.perPacket)} पॅकेट`
+                        : 'एकच पॅकेट'}
+                    </span>
                   </div>
                 </div>
               )}
@@ -1639,10 +1697,11 @@ export function LabelPrintDialog({ open, onOpenChange, loans }: LabelPrintDialog
               <Eye className="h-3 w-3" />
               पूर्वावलोकन ({settings.stickerSize.width}×{settings.stickerSize.height}mm)
             </div>
-            {settings.printMode === 'packet' ? (
+            {isPacketMode ? (
+              packetLoans.length > 0 ? (
               <div className="flex flex-wrap gap-3 justify-center">
                 {(() => {
-                  const sorted = [...loans].sort((a, b) => {
+                  const sorted = [...packetLoans].sort((a, b) => {
                     const na = parseInt(String(a.accountNumber)) || 0;
                     const nb = parseInt(String(b.accountNumber)) || 0;
                     return na - nb;
@@ -1687,8 +1746,8 @@ export function LabelPrintDialog({ open, onOpenChange, loans }: LabelPrintDialog
                   });
                 })()}
                 {(() => {
-                  const perPacket = settings.perPacket && settings.perPacket > 0 ? settings.perPacket : loans.length;
-                  const totalChunks = Math.ceil(loans.length / perPacket);
+                  const perPacket = settings.perPacket && settings.perPacket > 0 ? settings.perPacket : packetLoans.length;
+                  const totalChunks = Math.ceil(packetLoans.length / perPacket);
                   return totalChunks > 4 ? (
                     <div className="flex items-center justify-center text-xs text-gray-400 font-medium">
                       +{totalChunks - 4} आणखी...
@@ -1696,6 +1755,11 @@ export function LabelPrintDialog({ open, onOpenChange, loans }: LabelPrintDialog
                   ) : null;
                 })()}
               </div>
+              ) : (
+                <div className="flex items-center justify-center py-4 text-xs text-gray-400">
+                  {packetDateFrom && packetDateTo ? (packetLoansLoading ? 'लोड होत आहे...' : 'तारीख श्रेणीतील खाती दिसतील') : 'वर तारीख श्रेणी निवडा'}
+                </div>
+              )
             ) : (
             <div className="flex flex-wrap gap-3 justify-center">
               {loans.slice(0, 4).map((loan, idx) => {
@@ -1854,23 +1918,38 @@ export function LabelPrintDialog({ open, onOpenChange, loans }: LabelPrintDialog
           </div>
 
           <div className="flex gap-3 pt-1">
-            <Button
-              onClick={() => openPrintWindow(loans)}
-              disabled={loans.length === 0}
-              className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-medium"
-            >
-              <Printer className="mr-2 h-4 w-4" />
-              प्रिंट करा ({loans.length})
-            </Button>
-            {loans.length > 1 && (
+            {isPacketMode ? (
               <Button
-                onClick={() => { if (loans.length > 0) openPrintWindow([loans[0]]); }}
-                variant="outline"
-                className="border-indigo-300 text-indigo-600 hover:bg-indigo-50"
+                onClick={() => openPrintWindow(packetLoans)}
+                disabled={packetLoans.length === 0 || packetLoansLoading}
+                className="flex-1 bg-amber-600 hover:bg-amber-700 text-white font-medium"
               >
-                <Eye className="mr-2 h-4 w-4" />
-                टेस्ट (1)
+                {packetLoansLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Package className="mr-2 h-4 w-4" />}
+                {packetLoans.length > 0
+                  ? `पॅकेट प्रिंट (${packetSummary?.acctRange || packetLoans.length})`
+                  : 'तारीख श्रेणी निवडा'}
               </Button>
+            ) : (
+              <>
+                <Button
+                  onClick={() => openPrintWindow(loans)}
+                  disabled={loans.length === 0}
+                  className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-medium"
+                >
+                  <Printer className="mr-2 h-4 w-4" />
+                  प्रिंट करा ({loans.length})
+                </Button>
+                {loans.length > 1 && (
+                  <Button
+                    onClick={() => { if (loans.length > 0) openPrintWindow([loans[0]]); }}
+                    variant="outline"
+                    className="border-indigo-300 text-indigo-600 hover:bg-indigo-50"
+                  >
+                    <Eye className="mr-2 h-4 w-4" />
+                    टेस्ट (1)
+                  </Button>
+                )}
+              </>
             )}
           </div>
         </div>
