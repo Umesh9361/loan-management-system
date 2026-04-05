@@ -70,6 +70,10 @@ export interface LabelSettings {
     showCount: boolean;
     showWeight: boolean;
     showAmount: boolean;
+    acctFontSize?: number;
+    dateFontSize?: number;
+    countFontSize?: number;
+    weightFontSize?: number;
   };
   perPacket?: number;
 }
@@ -759,34 +763,32 @@ export function generatePacketLabelHtml(
   const numFont = `'Arial','Helvetica',sans-serif`;
 
   const lines: string[] = [];
-  let lineCount = 2;
-  if (pf.showCount) lineCount++;
-  if (pf.showWeight) lineCount++;
-  if (pf.showAmount) lineCount++;
-  if (totalPackets && totalPackets > 1) lineCount++;
 
-  const maxFontPt = Math.min(contentHeight * 2.83 / (lineCount * 1.6), contentWidth * 2.83 / 12);
-  const acctFontPt = Math.min(maxFontPt * 1.1, 14);
-  const dateFontPt = Math.min(maxFontPt * 0.85, 10);
-  const extraFontPt = Math.min(maxFontPt * 0.75, 9);
-  const pktFontPt = Math.min(maxFontPt * 0.65, 8);
+  const acctFontPt = pf.acctFontSize ?? 18;
+  const dateFontPt = pf.dateFontSize ?? 13;
+  const countFontPt = pf.countFontSize ?? 10;
+  const weightFontPt = pf.weightFontSize ?? 10;
 
-  lines.push(`<div style="font-family:${numFont};font-size:${acctFontPt}pt;font-weight:800;text-align:center;line-height:1.5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><span style="border:0.6pt solid #333;border-radius:50px;padding:1pt 5pt;letter-spacing:0.3pt;display:inline-block;box-sizing:border-box;">${acctRange}</span></div>`);
+  lines.push(`<div style="font-family:${numFont};font-size:${acctFontPt}pt;font-weight:800;text-align:center;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><span style="border:0.8pt solid #333;border-radius:50px;padding:1.5pt 6pt;letter-spacing:0.5pt;display:inline-block;box-sizing:border-box;">${acctRange}</span></div>`);
 
-  lines.push(`<div style="font-family:${numFont};font-size:${dateFontPt}pt;font-weight:600;text-align:center;line-height:1.5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:0.3pt;">${dateRange}</div>`);
+  lines.push(`<div style="font-family:${numFont};font-size:${dateFontPt}pt;font-weight:600;text-align:center;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:0.4pt;">${dateRange}</div>`);
 
+  const extraParts: string[] = [];
   if (pf.showCount) {
-    lines.push(`<div style="font-family:${devaFont};font-size:${extraFontPt}pt;font-weight:600;text-align:center;line-height:1.5;white-space:nowrap;">एकूण: ${totalCount} खाती</div>`);
+    extraParts.push(`<span style="font-family:${devaFont};font-size:${countFontPt}pt;font-weight:600;white-space:nowrap;"><span style="font-size:${Math.max(countFontPt - 2, 6)}pt;color:#666;">एकूण </span>${totalCount}</span>`);
   }
   if (pf.showWeight) {
-    lines.push(`<div style="font-family:${devaFont};font-size:${extraFontPt}pt;font-weight:600;text-align:center;line-height:1.5;white-space:nowrap;">एकूण वजन: ${totalWeight.toFixed(2)}g</div>`);
+    extraParts.push(`<span style="font-family:${numFont};font-size:${weightFontPt}pt;font-weight:600;white-space:nowrap;"><span style="font-family:${devaFont};font-size:${Math.max(weightFontPt - 2, 6)}pt;color:#666;">वजन </span>${totalWeight.toFixed(2)}g</span>`);
   }
   if (pf.showAmount) {
     const fmtAmt = totalAmount.toLocaleString('en-IN');
-    lines.push(`<div style="font-family:${devaFont};font-size:${extraFontPt}pt;font-weight:600;text-align:center;line-height:1.5;white-space:nowrap;">एकूण रक्कम: ₹${fmtAmt}</div>`);
+    extraParts.push(`<span style="font-family:${numFont};font-size:${countFontPt}pt;font-weight:600;white-space:nowrap;">₹${fmtAmt}</span>`);
+  }
+  if (extraParts.length > 0) {
+    lines.push(`<div style="text-align:center;line-height:1.3;display:flex;justify-content:center;gap:2mm;flex-wrap:wrap;">${extraParts.join('')}</div>`);
   }
   if (totalPackets && totalPackets > 1 && packetIndex !== undefined) {
-    lines.push(`<div style="font-family:${devaFont};font-size:${pktFontPt}pt;font-weight:700;text-align:center;line-height:1.5;color:#555;">पॅकेट ${toDevanagariDigits(packetIndex + 1)}/${toDevanagariDigits(totalPackets)}</div>`);
+    lines.push(`<div style="font-family:${devaFont};font-size:${Math.max(countFontPt - 2, 7)}pt;font-weight:700;text-align:center;line-height:1.2;color:#555;">पॅकेट ${toDevanagariDigits(packetIndex + 1)}/${toDevanagariDigits(totalPackets)}</div>`);
   }
 
   return `
@@ -804,9 +806,8 @@ export function generatePacketLabelHtml(
         height: ${contentHeight}mm;
         display: flex;
         flex-direction: column;
-        justify-content: center;
+        justify-content: space-evenly;
         align-items: center;
-        gap: 0.2mm;
         overflow: hidden;
       ">
         ${lines.join('\n')}

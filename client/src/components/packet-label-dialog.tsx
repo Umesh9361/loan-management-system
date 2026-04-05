@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { Package, Printer, Calendar, Loader2, Settings, ChevronDown, ChevronUp, AlertCircle, CheckCircle2, Scale, Hash } from "lucide-react";
+import { Package, Printer, Calendar, Loader2, Settings, ChevronDown, ChevronUp, AlertCircle, CheckCircle2, Scale, Hash, Minus, Plus } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import {
@@ -26,7 +26,7 @@ export function PacketLabelDialog({ open, onOpenChange }: PacketLabelDialogProps
   const [settings, setSettings] = useState<LabelSettings>({
     ...DEFAULT_SETTINGS,
     printMode: 'packet',
-    packetFields: { showCount: true, showWeight: true, showAmount: false },
+    packetFields: { showCount: true, showWeight: true, showAmount: false, acctFontSize: 18, dateFontSize: 13, countFontSize: 10, weightFontSize: 10 },
   });
   const [dbLoaded, setDbLoaded] = useState(false);
 
@@ -60,8 +60,12 @@ export function PacketLabelDialog({ open, onOpenChange }: PacketLabelDialogProps
                   showCount: typeof parsed.packetFields.showCount === 'boolean' ? parsed.packetFields.showCount : true,
                   showWeight: typeof parsed.packetFields.showWeight === 'boolean' ? parsed.packetFields.showWeight : true,
                   showAmount: typeof parsed.packetFields.showAmount === 'boolean' ? parsed.packetFields.showAmount : false,
+                  acctFontSize: typeof parsed.packetFields.acctFontSize === 'number' ? parsed.packetFields.acctFontSize : 18,
+                  dateFontSize: typeof parsed.packetFields.dateFontSize === 'number' ? parsed.packetFields.dateFontSize : 13,
+                  countFontSize: typeof parsed.packetFields.countFontSize === 'number' ? parsed.packetFields.countFontSize : 10,
+                  weightFontSize: typeof parsed.packetFields.weightFontSize === 'number' ? parsed.packetFields.weightFontSize : 10,
                 }
-              : { showCount: true, showWeight: true, showAmount: false },
+              : { showCount: true, showWeight: true, showAmount: false, acctFontSize: 18, dateFontSize: 13, countFontSize: 10, weightFontSize: 10 },
           }));
           setDbLoaded(true);
         }
@@ -236,37 +240,64 @@ export function PacketLabelDialog({ open, onOpenChange }: PacketLabelDialogProps
 
           {summary && (
             <>
-              <div className="flex items-center gap-4 px-1">
-                <label className="flex items-center gap-2 text-sm cursor-pointer">
-                  <Switch
-                    checked={settings.packetFields?.showCount ?? true}
-                    onCheckedChange={(v) => updateSettings(prev => ({
-                      ...prev,
-                      packetFields: { ...prev.packetFields || { showCount: true, showWeight: true, showAmount: false }, showCount: v }
-                    }))}
-                    className="scale-90"
-                  />
-                  <Hash className="h-3.5 w-3.5 text-amber-600" />
-                  <span className="text-amber-800 font-medium">वस्तू संख्या</span>
-                </label>
-                <label className="flex items-center gap-2 text-sm cursor-pointer">
-                  <Switch
-                    checked={settings.packetFields?.showWeight ?? true}
-                    onCheckedChange={(v) => updateSettings(prev => ({
-                      ...prev,
-                      packetFields: { ...prev.packetFields || { showCount: true, showWeight: true, showAmount: false }, showWeight: v }
-                    }))}
-                    className="scale-90"
-                  />
-                  <Scale className="h-3.5 w-3.5 text-amber-600" />
-                  <span className="text-amber-800 font-medium">एकूण वजन</span>
-                </label>
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-2.5 space-y-2">
+                <div className="text-[11px] font-semibold text-amber-700 mb-1">लेबल फील्ड्स:</div>
+
+                {([
+                  { key: 'acct' as const, label: 'खाते क्रमांक', icon: <Hash className="h-3 w-3" />, fontKey: 'acctFontSize' as const, alwaysOn: true },
+                  { key: 'date' as const, label: 'तारीख श्रेणी', icon: <Calendar className="h-3 w-3" />, fontKey: 'dateFontSize' as const, alwaysOn: true },
+                  { key: 'count' as const, label: 'वस्तू संख्या', icon: <Hash className="h-3 w-3" />, fontKey: 'countFontSize' as const, toggleKey: 'showCount' as const, alwaysOn: false },
+                  { key: 'weight' as const, label: 'एकूण वजन', icon: <Scale className="h-3 w-3" />, fontKey: 'weightFontSize' as const, toggleKey: 'showWeight' as const, alwaysOn: false },
+                ] as const).map(field => {
+                  const pf = settings.packetFields || { showCount: true, showWeight: true, showAmount: false, acctFontSize: 18, dateFontSize: 13, countFontSize: 10, weightFontSize: 10 };
+                  const isOn = field.alwaysOn || (field.toggleKey ? (pf as any)[field.toggleKey] ?? true : true);
+                  const fontSize = (pf as any)[field.fontKey] ?? (field.key === 'acct' ? 18 : field.key === 'date' ? 13 : 10);
+
+                  return (
+                    <div key={field.key} className={`flex items-center gap-2 py-1 px-1 rounded transition-colors ${isOn ? 'bg-white' : 'bg-amber-100/50 opacity-60'}`}>
+                      {!field.alwaysOn && field.toggleKey && (
+                        <Switch
+                          checked={isOn}
+                          onCheckedChange={(v) => updateSettings(prev => ({
+                            ...prev,
+                            packetFields: { ...prev.packetFields || { showCount: true, showWeight: true, showAmount: false, acctFontSize: 18, dateFontSize: 13, countFontSize: 10, weightFontSize: 10 }, [field.toggleKey!]: v }
+                          }))}
+                          className="scale-75 flex-shrink-0"
+                        />
+                      )}
+                      {field.alwaysOn && <span className="w-[28px] flex-shrink-0 text-center text-green-600 text-xs font-bold">✓</span>}
+                      <span className="text-amber-700 flex-shrink-0">{field.icon}</span>
+                      <span className="text-xs font-medium text-amber-800 flex-1 min-w-0 truncate">{field.label}</span>
+                      <div className="flex items-center gap-0.5 bg-amber-100 rounded px-1 py-0.5 flex-shrink-0">
+                        <button
+                          onClick={() => updateSettings(prev => ({
+                            ...prev,
+                            packetFields: { ...prev.packetFields || { showCount: true, showWeight: true, showAmount: false, acctFontSize: 18, dateFontSize: 13, countFontSize: 10, weightFontSize: 10 }, [field.fontKey]: Math.max(6, fontSize - 0.5) }
+                          }))}
+                          className="p-0.5 rounded hover:bg-amber-200 active:bg-amber-300"
+                        >
+                          <Minus className="h-2.5 w-2.5 text-amber-700" />
+                        </button>
+                        <span className="text-[10px] font-mono w-7 text-center text-amber-800 font-semibold">{fontSize}</span>
+                        <button
+                          onClick={() => updateSettings(prev => ({
+                            ...prev,
+                            packetFields: { ...prev.packetFields || { showCount: true, showWeight: true, showAmount: false, acctFontSize: 18, dateFontSize: 13, countFontSize: 10, weightFontSize: 10 }, [field.fontKey]: Math.min(30, fontSize + 0.5) }
+                          }))}
+                          className="p-0.5 rounded hover:bg-amber-200 active:bg-amber-300"
+                        >
+                          <Plus className="h-2.5 w-2.5 text-amber-700" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
 
               <div className="flex justify-center">
                 <div
                   className="border-2 border-dashed border-amber-300 rounded-lg bg-white p-2 flex items-center justify-center"
-                  style={{ minWidth: '180px', minHeight: '80px' }}
+                  style={{ minWidth: '200px', minHeight: '90px' }}
                 >
                   {previewHtml && (
                     <div
