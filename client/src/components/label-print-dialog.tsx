@@ -74,6 +74,11 @@ export interface LabelSettings {
     dateFontSize?: number;
     countFontSize?: number;
     weightFontSize?: number;
+    acctBold?: boolean;
+    dateBold?: boolean;
+    countBold?: boolean;
+    weightBold?: boolean;
+    acctOval?: boolean;
   };
   perPacket?: number;
 }
@@ -129,7 +134,7 @@ export const DEFAULT_SETTINGS: LabelSettings = {
   fontFamily: 'Noto Sans Devanagari',
   qrMode: false,
   printMode: 'normal',
-  packetFields: { showCount: true, showWeight: true, showAmount: true },
+  packetFields: { showCount: true, showWeight: true, showAmount: true, acctBold: true, dateBold: true, countBold: true, weightBold: true, acctOval: true },
   perPacket: 0,
 };
 
@@ -768,14 +773,22 @@ export function generatePacketLabelHtml(
   const dateFontPt = pf.dateFontSize ?? 13;
   const countFontPt = pf.countFontSize ?? 10;
   const weightFontPt = pf.weightFontSize ?? 10;
+  const acctBold = pf.acctBold !== false;
+  const dateBold = pf.dateBold !== false;
+  const countBold = pf.countBold !== false;
+  const weightBold = pf.weightBold !== false;
+  const acctOval = pf.acctOval !== false;
 
-  lines.push(`<div style="font-family:${numFont};font-size:${acctFontPt}pt;font-weight:800;text-align:center;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><span style="border:0.8pt solid #333;border-radius:50px;padding:1.5pt 6pt;letter-spacing:0.5pt;display:inline-block;box-sizing:border-box;">${acctRange}</span></div>`);
+  const acctContent = acctOval
+    ? `<span style="border:0.8pt solid #333;border-radius:50px;padding:1.5pt 6pt;letter-spacing:0.5pt;display:inline-block;box-sizing:border-box;">${acctRange}</span>`
+    : `<span style="letter-spacing:0.5pt;">${acctRange}</span>`;
+  lines.push(`<div style="font-family:${numFont};font-size:${acctFontPt}pt;font-weight:${acctBold ? 800 : 400};text-align:center;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${acctContent}</div>`);
 
-  lines.push(`<div style="font-family:${numFont};font-size:${dateFontPt}pt;font-weight:600;text-align:center;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:0.4pt;">${dateRange}</div>`);
+  lines.push(`<div style="font-family:${numFont};font-size:${dateFontPt}pt;font-weight:${dateBold ? 600 : 400};text-align:center;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:0.4pt;">${dateRange}</div>`);
 
   if (pf.showWeight || pf.showCount) {
-    const weightHtml = pf.showWeight ? `<span style="font-family:${numFont};font-size:${weightFontPt}pt;font-weight:600;white-space:nowrap;"><span style="font-family:${devaFont};font-size:${Math.max(weightFontPt - 2, 6)}pt;color:#666;">वजन </span>${totalWeight.toFixed(2)}g</span>` : '';
-    const countHtml = pf.showCount ? `<span style="font-family:${devaFont};font-size:${countFontPt}pt;font-weight:600;white-space:nowrap;"><span style="font-size:${Math.max(countFontPt - 2, 6)}pt;color:#666;">एकूण </span>${totalCount} <span style="font-size:${Math.max(countFontPt - 2, 6)}pt;color:#666;">खाती</span></span>` : '';
+    const weightHtml = pf.showWeight ? `<span style="font-family:${numFont};font-size:${weightFontPt}pt;font-weight:${weightBold ? 600 : 400};white-space:nowrap;"><span style="font-family:${devaFont};font-size:${Math.max(weightFontPt - 2, 6)}pt;color:#666;">वजन </span>${totalWeight.toFixed(2)}g</span>` : '';
+    const countHtml = pf.showCount ? `<span style="font-family:${devaFont};font-size:${countFontPt}pt;font-weight:${countBold ? 600 : 400};white-space:nowrap;"><span style="font-size:${Math.max(countFontPt - 2, 6)}pt;color:#666;">एकूण </span>${totalCount} <span style="font-size:${Math.max(countFontPt - 2, 6)}pt;color:#666;">खाती</span></span>` : '';
     if (pf.showWeight && pf.showCount) {
       lines.push(`<div style="display:flex;justify-content:space-between;align-items:center;width:100%;line-height:1.25;">${weightHtml}${countHtml}</div>`);
     } else {
@@ -1168,22 +1181,60 @@ export function LabelPrintDialog({ open, onOpenChange, loans }: LabelPrintDialog
     }));
   }, [updateSettings]);
 
+  const scaleSettingsForSize = useCallback((prev: LabelSettings, newW: number, newH: number): Partial<LabelSettings> => {
+    const oldW = prev.stickerSize.width;
+    const oldH = prev.stickerSize.height;
+    const scaleW = newW / oldW;
+    const scaleH = newH / oldH;
+    const scale = Math.sqrt(scaleW * scaleH);
+    const clampFont = (v: number) => +Math.max(4, Math.min(30, v * scale)).toFixed(1);
+    const clampMargin = (v: number) => +Math.max(0.5, Math.min(15, v * scale)).toFixed(1);
+
+    const scaledFields = prev.fields.map(f => ({ ...f, fontSize: clampFont(f.fontSize) }));
+    const scaledMargins = {
+      top: clampMargin(prev.margins.top),
+      bottom: clampMargin(prev.margins.bottom),
+      left: clampMargin(prev.margins.left),
+      right: clampMargin(prev.margins.right),
+    };
+    const pf = prev.packetFields || DEFAULT_SETTINGS.packetFields!;
+    const scaledPacket = {
+      ...pf,
+      acctFontSize: clampFont(pf.acctFontSize ?? 18),
+      dateFontSize: clampFont(pf.dateFontSize ?? 13),
+      countFontSize: clampFont(pf.countFontSize ?? 10),
+      weightFontSize: clampFont(pf.weightFontSize ?? 10),
+    };
+
+    return { fields: scaledFields, margins: scaledMargins, packetFields: scaledPacket };
+  }, []);
+
   const updateStickerSize = useCallback((preset: typeof STICKER_PRESETS[0]) => {
-    updateSettings(prev => ({
-      ...prev,
-      stickerSize: { width: preset.width, height: preset.height, preset: preset.label }
-    }));
-  }, [updateSettings]);
+    updateSettings(prev => {
+      const scaled = scaleSettingsForSize(prev, preset.width, preset.height);
+      return {
+        ...prev,
+        ...scaled,
+        stickerSize: { width: preset.width, height: preset.height, preset: preset.label }
+      };
+    });
+  }, [updateSettings, scaleSettingsForSize]);
 
   const updateCustomSize = useCallback((dim: 'width' | 'height', value: string) => {
     const num = parseFloat(value);
     if (!isNaN(num) && num > 0 && num <= 200) {
-      updateSettings(prev => ({
-        ...prev,
-        stickerSize: { ...prev.stickerSize, [dim]: num, preset: 'custom' }
-      }));
+      updateSettings(prev => {
+        const newW = dim === 'width' ? num : prev.stickerSize.width;
+        const newH = dim === 'height' ? num : prev.stickerSize.height;
+        const scaled = scaleSettingsForSize(prev, newW, newH);
+        return {
+          ...prev,
+          ...scaled,
+          stickerSize: { ...prev.stickerSize, [dim]: num, preset: 'custom' }
+        };
+      });
     }
-  }, [updateSettings]);
+  }, [updateSettings, scaleSettingsForSize]);
 
   const toggleField = useCallback((fieldId: string) => {
     updateSettings(prev => ({
@@ -1442,31 +1493,50 @@ export function LabelPrintDialog({ open, onOpenChange, loans }: LabelPrintDialog
                     <div className="space-y-1.5">
                       <div className="text-[10px] font-semibold text-amber-700">लेबल फील्ड्स:</div>
                       {([
-                        { key: 'acct' as const, label: 'खाते क्रमांक', icon: <Hash className="h-2.5 w-2.5" />, fontKey: 'acctFontSize' as const, alwaysOn: true },
-                        { key: 'date' as const, label: 'तारीख श्रेणी', icon: <Calendar className="h-2.5 w-2.5" />, fontKey: 'dateFontSize' as const, alwaysOn: true },
-                        { key: 'weight' as const, label: 'एकूण वजन', icon: <Scale className="h-2.5 w-2.5" />, fontKey: 'weightFontSize' as const, toggleKey: 'showWeight' as const, alwaysOn: false },
-                        { key: 'count' as const, label: 'एकूण खाती', icon: <Hash className="h-2.5 w-2.5" />, fontKey: 'countFontSize' as const, toggleKey: 'showCount' as const, alwaysOn: false },
-                      ] as const).map(field => {
-                        const pf = settings.packetFields || { showCount: true, showWeight: true, showAmount: false, acctFontSize: 18, dateFontSize: 13, countFontSize: 10, weightFontSize: 10 };
+                        { key: 'acct' as const, label: 'खाते क्रमांक', icon: <Hash className="h-2.5 w-2.5" />, fontKey: 'acctFontSize' as const, boldKey: 'acctBold' as const, ovalKey: 'acctOval' as const, alwaysOn: true },
+                        { key: 'date' as const, label: 'तारीख श्रेणी', icon: <Calendar className="h-2.5 w-2.5" />, fontKey: 'dateFontSize' as const, boldKey: 'dateBold' as const, alwaysOn: true },
+                        { key: 'weight' as const, label: 'एकूण वजन', icon: <Scale className="h-2.5 w-2.5" />, fontKey: 'weightFontSize' as const, boldKey: 'weightBold' as const, toggleKey: 'showWeight' as const, alwaysOn: false },
+                        { key: 'count' as const, label: 'एकूण खाती', icon: <Hash className="h-2.5 w-2.5" />, fontKey: 'countFontSize' as const, boldKey: 'countBold' as const, toggleKey: 'showCount' as const, alwaysOn: false },
+                      ] as { key: string; label: string; icon: any; fontKey: string; boldKey: string; ovalKey?: string; toggleKey?: string; alwaysOn: boolean }[]).map(field => {
+                        const pf = settings.packetFields || { showCount: true, showWeight: true, showAmount: false, acctFontSize: 18, dateFontSize: 13, countFontSize: 10, weightFontSize: 10, acctBold: true, dateBold: true, countBold: true, weightBold: true, acctOval: true };
                         const isOn = field.alwaysOn || (field.toggleKey ? (pf as any)[field.toggleKey] ?? true : true);
                         const fontSize = (pf as any)[field.fontKey] ?? (field.key === 'acct' ? 18 : field.key === 'date' ? 13 : 10);
+                        const isBold = (pf as any)[field.boldKey] !== false;
+                        const hasOval = field.ovalKey ? (pf as any)[field.ovalKey] !== false : false;
                         return (
-                          <div key={field.key} className={`flex items-center gap-1.5 py-0.5 px-1 rounded transition-colors ${isOn ? 'bg-white' : 'bg-amber-100/50 opacity-60'}`}>
+                          <div key={field.key} className={`flex items-center gap-1 py-0.5 px-1 rounded transition-colors ${isOn ? 'bg-white' : 'bg-amber-100/50 opacity-60'}`}>
                             {!field.alwaysOn && field.toggleKey && (
-                              <Switch checked={isOn} onCheckedChange={(v) => updateSettings(prev => ({ ...prev, packetFields: { ...prev.packetFields || { showCount: true, showWeight: true, showAmount: false, acctFontSize: 18, dateFontSize: 13, countFontSize: 10, weightFontSize: 10 }, [field.toggleKey!]: v } }))} className="scale-[0.65] flex-shrink-0" />
+                              <Switch checked={isOn} onCheckedChange={(v) => updateSettings(prev => ({ ...prev, packetFields: { ...prev.packetFields || { showCount: true, showWeight: true, showAmount: false, acctFontSize: 18, dateFontSize: 13, countFontSize: 10, weightFontSize: 10, acctBold: true, dateBold: true, countBold: true, weightBold: true, acctOval: true }, [field.toggleKey!]: v } }))} className="scale-[0.65] flex-shrink-0" />
                             )}
                             {field.alwaysOn && <span className="w-[22px] flex-shrink-0 text-center text-green-600 text-[10px] font-bold">✓</span>}
                             <span className="text-amber-700 flex-shrink-0">{field.icon}</span>
                             <span className="text-[10px] font-medium text-amber-800 flex-1 min-w-0 truncate">{field.label}</span>
                             <div className="flex items-center gap-0.5 bg-amber-100 rounded px-0.5 py-0.5 flex-shrink-0">
-                              <button onClick={() => updateSettings(prev => ({ ...prev, packetFields: { ...prev.packetFields || { showCount: true, showWeight: true, showAmount: false, acctFontSize: 18, dateFontSize: 13, countFontSize: 10, weightFontSize: 10 }, [field.fontKey]: Math.max(6, fontSize - 0.5) } }))} className="p-0.5 rounded hover:bg-amber-200 active:bg-amber-300">
+                              <button onClick={() => updateSettings(prev => ({ ...prev, packetFields: { ...prev.packetFields || { showCount: true, showWeight: true, showAmount: false, acctFontSize: 18, dateFontSize: 13, countFontSize: 10, weightFontSize: 10, acctBold: true, dateBold: true, countBold: true, weightBold: true, acctOval: true }, [field.fontKey]: Math.max(6, fontSize - 0.5) } }))} className="p-0.5 rounded hover:bg-amber-200 active:bg-amber-300">
                                 <Minus className="h-2.5 w-2.5 text-amber-700" />
                               </button>
                               <span className="text-[9px] font-mono w-6 text-center text-amber-800 font-semibold">{fontSize}</span>
-                              <button onClick={() => updateSettings(prev => ({ ...prev, packetFields: { ...prev.packetFields || { showCount: true, showWeight: true, showAmount: false, acctFontSize: 18, dateFontSize: 13, countFontSize: 10, weightFontSize: 10 }, [field.fontKey]: Math.min(30, fontSize + 0.5) } }))} className="p-0.5 rounded hover:bg-amber-200 active:bg-amber-300">
+                              <button onClick={() => updateSettings(prev => ({ ...prev, packetFields: { ...prev.packetFields || { showCount: true, showWeight: true, showAmount: false, acctFontSize: 18, dateFontSize: 13, countFontSize: 10, weightFontSize: 10, acctBold: true, dateBold: true, countBold: true, weightBold: true, acctOval: true }, [field.fontKey]: Math.min(30, fontSize + 0.5) } }))} className="p-0.5 rounded hover:bg-amber-200 active:bg-amber-300">
                                 <Plus className="h-2.5 w-2.5 text-amber-700" />
                               </button>
                             </div>
+                            <button
+                              onClick={() => updateSettings(prev => ({ ...prev, packetFields: { ...prev.packetFields || { showCount: true, showWeight: true, showAmount: false, acctFontSize: 18, dateFontSize: 13, countFontSize: 10, weightFontSize: 10, acctBold: true, dateBold: true, countBold: true, weightBold: true, acctOval: true }, [field.boldKey]: !isBold } }))}
+                              className={`p-0.5 rounded transition-colors flex-shrink-0 ${isBold ? 'bg-indigo-100 text-indigo-700' : 'hover:bg-amber-200 text-amber-400'}`}
+                              title="बोल्ड"
+                            >
+                              <Bold className="h-3 w-3" />
+                            </button>
+                            {field.ovalKey && (
+                              <button
+                                onClick={() => updateSettings(prev => ({ ...prev, packetFields: { ...prev.packetFields || { showCount: true, showWeight: true, showAmount: false, acctFontSize: 18, dateFontSize: 13, countFontSize: 10, weightFontSize: 10, acctBold: true, dateBold: true, countBold: true, weightBold: true, acctOval: true }, [field.ovalKey!]: !hasOval } }))}
+                                className={`p-0.5 rounded text-[9px] font-bold transition-colors flex-shrink-0 ${hasOval ? 'bg-indigo-100 text-indigo-700 ring-1 ring-indigo-300' : 'hover:bg-amber-200 text-amber-400 border border-amber-300'}`}
+                                title="ओव्हल बॉर्डर"
+                                style={{ borderRadius: '50px', minWidth: '18px', lineHeight: 1, fontSize: '9px' }}
+                              >
+                                O
+                              </button>
+                            )}
                           </div>
                         );
                       })}
