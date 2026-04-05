@@ -773,19 +773,11 @@ export function generatePacketLabelHtml(
 
   lines.push(`<div style="font-family:${numFont};font-size:${dateFontPt}pt;font-weight:600;text-align:center;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:0.4pt;">${dateRange}</div>`);
 
-  const extraParts: string[] = [];
-  if (pf.showCount) {
-    extraParts.push(`<span style="font-family:${devaFont};font-size:${countFontPt}pt;font-weight:600;white-space:nowrap;"><span style="font-size:${Math.max(countFontPt - 2, 6)}pt;color:#666;">एकूण </span>${totalCount}</span>`);
-  }
   if (pf.showWeight) {
-    extraParts.push(`<span style="font-family:${numFont};font-size:${weightFontPt}pt;font-weight:600;white-space:nowrap;"><span style="font-family:${devaFont};font-size:${Math.max(weightFontPt - 2, 6)}pt;color:#666;">वजन </span>${totalWeight.toFixed(2)}g</span>`);
+    lines.push(`<div style="font-family:${numFont};font-size:${weightFontPt}pt;font-weight:600;text-align:center;line-height:1.25;white-space:nowrap;"><span style="font-family:${devaFont};font-size:${Math.max(weightFontPt - 2, 6)}pt;color:#666;">वजन </span>${totalWeight.toFixed(2)}g</div>`);
   }
-  if (pf.showAmount) {
-    const fmtAmt = totalAmount.toLocaleString('en-IN');
-    extraParts.push(`<span style="font-family:${numFont};font-size:${countFontPt}pt;font-weight:600;white-space:nowrap;">₹${fmtAmt}</span>`);
-  }
-  if (extraParts.length > 0) {
-    lines.push(`<div style="text-align:center;line-height:1.3;display:flex;justify-content:center;gap:2mm;flex-wrap:wrap;">${extraParts.join('')}</div>`);
+  if (pf.showCount) {
+    lines.push(`<div style="font-family:${devaFont};font-size:${countFontPt}pt;font-weight:600;text-align:center;line-height:1.25;white-space:nowrap;"><span style="font-size:${Math.max(countFontPt - 2, 6)}pt;color:#666;">एकूण </span>${totalCount} <span style="font-size:${Math.max(countFontPt - 2, 6)}pt;color:#666;">खाती</span></div>`);
   }
   if (totalPackets && totalPackets > 1 && packetIndex !== undefined) {
     lines.push(`<div style="font-family:${devaFont};font-size:${Math.max(countFontPt - 2, 7)}pt;font-weight:700;text-align:center;line-height:1.2;color:#555;">पॅकेट ${toDevanagariDigits(packetIndex + 1)}/${toDevanagariDigits(totalPackets)}</div>`);
@@ -1382,7 +1374,10 @@ export function LabelPrintDialog({ open, onOpenChange, loans }: LabelPrintDialog
                     const active = (settings.printMode || 'normal') === opt.mode;
                     return (
                       <button key={opt.mode}
-                        onClick={() => updateSettings(prev => ({ ...prev, printMode: opt.mode, qrMode: opt.mode === 'qrSide' || opt.mode === 'qrCenter' }))}
+                        onClick={() => {
+                          if (opt.mode === 'packet' && settingsTab === 'fields') setSettingsTab('size');
+                          updateSettings(prev => ({ ...prev, printMode: opt.mode, qrMode: opt.mode === 'qrSide' || opt.mode === 'qrCenter' }));
+                        }}
                         style={{
                           padding: '3px 9px', borderRadius: '5px', fontSize: '10px', fontWeight: 600,
                           background: active ? '#4f46e5' : '#f3f4f6',
@@ -1446,8 +1441,8 @@ export function LabelPrintDialog({ open, onOpenChange, loans }: LabelPrintDialog
                       {([
                         { key: 'acct' as const, label: 'खाते क्रमांक', icon: <Hash className="h-2.5 w-2.5" />, fontKey: 'acctFontSize' as const, alwaysOn: true },
                         { key: 'date' as const, label: 'तारीख श्रेणी', icon: <Calendar className="h-2.5 w-2.5" />, fontKey: 'dateFontSize' as const, alwaysOn: true },
-                        { key: 'count' as const, label: 'वस्तू संख्या', icon: <Hash className="h-2.5 w-2.5" />, fontKey: 'countFontSize' as const, toggleKey: 'showCount' as const, alwaysOn: false },
                         { key: 'weight' as const, label: 'एकूण वजन', icon: <Scale className="h-2.5 w-2.5" />, fontKey: 'weightFontSize' as const, toggleKey: 'showWeight' as const, alwaysOn: false },
+                        { key: 'count' as const, label: 'एकूण खाती', icon: <Hash className="h-2.5 w-2.5" />, fontKey: 'countFontSize' as const, toggleKey: 'showCount' as const, alwaysOn: false },
                       ] as const).map(field => {
                         const pf = settings.packetFields || { showCount: true, showWeight: true, showAmount: false, acctFontSize: 18, dateFontSize: 13, countFontSize: 10, weightFontSize: 10 };
                         const isOn = field.alwaysOn || (field.toggleKey ? (pf as any)[field.toggleKey] ?? true : true);
@@ -1485,11 +1480,11 @@ export function LabelPrintDialog({ open, onOpenChange, loans }: LabelPrintDialog
                   </div>
                 </div>
               )}
-              {/* Row 2: Tabs + Font inline */}
+              {/* Row 2: Tabs (hide फील्ड्स in packet mode) */}
               <div className="flex items-stretch border-b border-gray-200">
                 {([
                   { key: 'size'    as const, label: 'साइज' },
-                  { key: 'fields' as const, label: 'फील्ड्स' },
+                  ...(!isPacketMode ? [{ key: 'fields' as const, label: 'फील्ड्स' }] : []),
                   { key: 'margins' as const, label: 'मार्जिन' },
                 ]).map(tab => (
                   <button
@@ -1502,17 +1497,6 @@ export function LabelPrintDialog({ open, onOpenChange, loans }: LabelPrintDialog
                     }`}
                   >{tab.label}</button>
                 ))}
-                <select
-                  value={settings.fontFamily || 'Noto Sans Devanagari'}
-                  onChange={(e) => updateSettings(prev => ({ ...prev, fontFamily: e.target.value }))}
-                  className="text-[10px] border-l border-gray-200 bg-white px-1 focus:outline-none text-gray-600 cursor-pointer"
-                  style={{ minWidth: '82px', maxWidth: '100px' }}
-                  title="फॉन्ट बदला"
-                >
-                  {FONT_OPTIONS.map(opt => (
-                    <option key={opt.value} value={opt.value}>{opt.label.split(' ')[0]}</option>
-                  ))}
-                </select>
               </div>
 
               <div className="p-3">
@@ -1568,7 +1552,7 @@ export function LabelPrintDialog({ open, onOpenChange, loans }: LabelPrintDialog
                   </div>
                 )}
 
-                {settingsTab === 'fields' && (
+                {settingsTab === 'fields' && !isPacketMode && (
                   <div className="space-y-2">
                     <div className="text-xs font-medium text-gray-700 mb-1">
                       फील्ड्स (दाखवा/लपवा, क्रम बदला, फॉन्ट):
