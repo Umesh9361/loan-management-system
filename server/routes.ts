@@ -927,6 +927,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/loans/by-date-range", requireAuth, async (req, res) => {
+    try {
+      const { from, to } = req.query;
+      if (!from || !to) {
+        return res.status(400).json({ message: "from आणि to तारीख आवश्यक आहे" });
+      }
+      const fromDate = new Date(from as string);
+      const toDate = new Date(to as string);
+      if (isNaN(fromDate.getTime()) || isNaN(toDate.getTime())) {
+        return res.status(400).json({ message: "अवैध तारीख format" });
+      }
+      const allLoans = await storage.getLoans(req.session.tenantId!, { status: 'active' });
+      const filtered = allLoans.filter((loan: any) => {
+        if (!loan.loanDate) return false;
+        const ld = new Date(String(loan.loanDate).split('T')[0]);
+        return ld >= fromDate && ld <= toDate;
+      }).sort((a: any, b: any) => {
+        const na = parseInt(String(a.accountNumber)) || 0;
+        const nb = parseInt(String(b.accountNumber)) || 0;
+        return na - nb;
+      }).map((loan: any) => ({
+        id: loan.id,
+        accountNumber: loan.accountNumber,
+        borrowerName: loan.borrowerName || loan.borrower?.name || '',
+        groupName: loan.group?.name || '',
+        weight: loan.weight,
+        loanDate: loan.loanDate,
+        principalAmount: loan.principalAmount,
+        interestRate: loan.interestRate,
+      }));
+      res.json(filtered);
+    } catch (error) {
+      console.error("Date range loans fetch error:", error);
+      res.status(500).json({ message: "कर्जे शोधताना त्रुटी" });
+    }
+  });
+
   app.get("/api/name-translations", requireAuth, (req, res) => {
     try {
       res.set({ 'Cache-Control': 'public, max-age=86400' });

@@ -11,7 +11,7 @@ import { encodeQrData } from "@/lib/qr-utils";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 
-interface LabelLoan {
+export interface LabelLoan {
   id: number | string;
   accountNumber: string;
   principalAmount: string | number;
@@ -58,17 +58,23 @@ interface StickerSize {
   preset: string;
 }
 
-interface LabelSettings {
+export interface LabelSettings {
   stickerSize: StickerSize;
   margins: MarginSettings;
   fields: LabelField[];
   horizontalOffset: number;
   fontFamily?: string;
   qrMode?: boolean;
-  printMode?: 'normal' | 'qrSide' | 'qrCenter';
+  printMode?: 'normal' | 'qrSide' | 'qrCenter' | 'packet';
+  packetFields?: {
+    showCount: boolean;
+    showWeight: boolean;
+    showAmount: boolean;
+  };
+  perPacket?: number;
 }
 
-const FONT_OPTIONS = [
+export const FONT_OPTIONS = [
   { label: 'Noto Sans (Default)', value: 'Noto Sans Devanagari', url: 'Noto+Sans+Devanagari:wght@400;700;800', preview: 'अ आ क' },
   { label: 'Baloo 2 (आकर्षक ⭐)', value: 'Baloo 2', url: 'Baloo+2:wght@400;600;800', preview: 'अ आ क' },
   { label: 'Laila (Elegant)', value: 'Laila', url: 'Laila:wght@400;600;700', preview: 'अ आ क' },
@@ -81,7 +87,7 @@ interface LabelPrintDialogProps {
   loans: LabelLoan[];
 }
 
-const STICKER_PRESETS: { label: string; width: number; height: number }[] = [
+export const STICKER_PRESETS: { label: string; width: number; height: number }[] = [
   { label: "50 x 25 mm", width: 50, height: 25 },
   { label: "50 x 30 mm", width: 50, height: 30 },
   { label: "38 x 25 mm", width: 38, height: 25 },
@@ -111,7 +117,7 @@ const DEFAULT_FIELDS: LabelField[] = [
   { id: 'date', label: 'तारीख', enabled: true, fontSize: 10, bold: true, type: 'pair', pairedWith: 'weight' },
 ];
 
-const DEFAULT_SETTINGS: LabelSettings = {
+export const DEFAULT_SETTINGS: LabelSettings = {
   stickerSize: { width: 50, height: 25, preset: "50 x 25 mm" },
   margins: { top: 1.5, bottom: 1, left: 2, right: 2 },
   fields: DEFAULT_FIELDS,
@@ -119,6 +125,8 @@ const DEFAULT_SETTINGS: LabelSettings = {
   fontFamily: 'Noto Sans Devanagari',
   qrMode: false,
   printMode: 'normal',
+  packetFields: { showCount: true, showWeight: true, showAmount: true },
+  perPacket: 0,
 };
 
 const STORAGE_KEY = "label_print_settings_v2";
@@ -187,9 +195,17 @@ function loadSettings(): LabelSettings {
           horizontalOffset: typeof parsed.horizontalOffset === 'number' ? Math.max(-10, Math.min(10, parsed.horizontalOffset)) : 0,
           fontFamily: typeof parsed.fontFamily === 'string' && FONT_OPTIONS.some(f => f.value === parsed.fontFamily) ? parsed.fontFamily : 'Noto Sans Devanagari',
           qrMode: false,
-          printMode: (['normal','qrSide','qrCenter'] as const).includes(parsed.printMode)
+          printMode: (['normal','qrSide','qrCenter','packet'] as const).includes(parsed.printMode)
             ? parsed.printMode
             : (parsed.qrMode ? 'qrSide' : 'normal'),
+          packetFields: parsed.packetFields && typeof parsed.packetFields === 'object'
+            ? {
+                showCount: typeof parsed.packetFields.showCount === 'boolean' ? parsed.packetFields.showCount : true,
+                showWeight: typeof parsed.packetFields.showWeight === 'boolean' ? parsed.packetFields.showWeight : true,
+                showAmount: typeof parsed.packetFields.showAmount === 'boolean' ? parsed.packetFields.showAmount : true,
+              }
+            : { showCount: true, showWeight: true, showAmount: true },
+          perPacket: typeof parsed.perPacket === 'number' && parsed.perPacket >= 0 ? parsed.perPacket : 0,
         };
       }
     }
@@ -693,6 +709,177 @@ function generateQrPrintPage(labelsHtml: string, settings: LabelSettings): strin
     <body>${labelsHtml}<script>window.onload=function(){setTimeout(function(){window.print();},900);};</script></body></html>`;
 }
 
+export function toDevanagariDigits(n: number): string {
+  const digits = ['०', '१', '२', '३', '४', '५', '६', '७', '८', '९'];
+  return String(n).replace(/[0-9]/g, d => digits[parseInt(d)]);
+}
+
+export function generatePacketLabelHtml(
+  loansSlice: LabelLoan[],
+  settings: LabelSettings,
+  packetIndex?: number,
+  totalPackets?: number
+): string {
+  const { stickerSize, margins, fontFamily } = settings;
+  const pf = settings.packetFields || { showCount: true, showWeight: true, showAmount: true };
+
+  const contentWidth = Math.max(5, stickerSize.width - margins.left - margins.right);
+  const contentHeight = Math.max(5, stickerSize.height - margins.top - margins.bottom);
+  const safeMarginTop = Math.min(margins.top, stickerSize.height / 2);
+  const safeMarginBottom = Math.min(margins.bottom, stickerSize.height / 2);
+  const safeMarginLeft = Math.min(margins.left, stickerSize.width / 2);
+  const safeMarginRight = Math.min(margins.right, stickerSize.width / 2);
+
+  const sorted = [...loansSlice].sort((a, b) => {
+    const na = parseInt(String(a.accountNumber)) || 0;
+    const nb = parseInt(String(b.accountNumber)) || 0;
+    return na - nb;
+  });
+
+  const minAcct = sorted[0]?.accountNumber || '';
+  const maxAcct = sorted[sorted.length - 1]?.accountNumber || '';
+  const acctRange = minAcct === maxAcct ? minAcct : `${minAcct} — ${maxAcct}`;
+
+  const dates = sorted
+    .map(l => l.loanDate)
+    .filter(Boolean)
+    .map(d => { try { return new Date(d.split('T')[0]); } catch { return null; } })
+    .filter(Boolean) as Date[];
+  dates.sort((a, b) => a.getTime() - b.getTime());
+  const fmtDate = (d: Date) => `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getFullYear()).slice(-2)}`;
+  const minDate = dates.length > 0 ? fmtDate(dates[0]) : '';
+  const maxDate = dates.length > 0 ? fmtDate(dates[dates.length - 1]) : '';
+  const dateRange = minDate === maxDate ? minDate : `${minDate} — ${maxDate}`;
+
+  const totalCount = sorted.length;
+  const totalWeight = sorted.reduce((sum, l) => sum + (parseFloat(String(l.weight || '0')) || 0), 0);
+  const totalAmount = sorted.reduce((sum, l) => sum + (Number(l.principalAmount) || 0), 0);
+
+  const devaFont = `'${fontFamily || 'Noto Sans Devanagari'}','Mangal','Arial Unicode MS',sans-serif`;
+  const numFont = `'Arial','Helvetica',sans-serif`;
+
+  const lines: string[] = [];
+  let lineCount = 2;
+  if (pf.showCount) lineCount++;
+  if (pf.showWeight) lineCount++;
+  if (pf.showAmount) lineCount++;
+  if (totalPackets && totalPackets > 1) lineCount++;
+
+  const maxFontPt = Math.min(contentHeight * 2.83 / (lineCount * 1.6), contentWidth * 2.83 / 12);
+  const acctFontPt = Math.min(maxFontPt * 1.1, 14);
+  const dateFontPt = Math.min(maxFontPt * 0.85, 10);
+  const extraFontPt = Math.min(maxFontPt * 0.75, 9);
+  const pktFontPt = Math.min(maxFontPt * 0.65, 8);
+
+  lines.push(`<div style="font-family:${numFont};font-size:${acctFontPt}pt;font-weight:800;text-align:center;line-height:1.5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><span style="border:0.6pt solid #333;border-radius:50px;padding:1pt 5pt;letter-spacing:0.3pt;display:inline-block;box-sizing:border-box;">${acctRange}</span></div>`);
+
+  lines.push(`<div style="font-family:${numFont};font-size:${dateFontPt}pt;font-weight:600;text-align:center;line-height:1.5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:0.3pt;">${dateRange}</div>`);
+
+  if (pf.showCount) {
+    lines.push(`<div style="font-family:${devaFont};font-size:${extraFontPt}pt;font-weight:600;text-align:center;line-height:1.5;white-space:nowrap;">एकूण: ${totalCount} खाती</div>`);
+  }
+  if (pf.showWeight) {
+    lines.push(`<div style="font-family:${devaFont};font-size:${extraFontPt}pt;font-weight:600;text-align:center;line-height:1.5;white-space:nowrap;">एकूण वजन: ${totalWeight.toFixed(2)}g</div>`);
+  }
+  if (pf.showAmount) {
+    const fmtAmt = totalAmount.toLocaleString('en-IN');
+    lines.push(`<div style="font-family:${devaFont};font-size:${extraFontPt}pt;font-weight:600;text-align:center;line-height:1.5;white-space:nowrap;">एकूण रक्कम: ₹${fmtAmt}</div>`);
+  }
+  if (totalPackets && totalPackets > 1 && packetIndex !== undefined) {
+    lines.push(`<div style="font-family:${devaFont};font-size:${pktFontPt}pt;font-weight:700;text-align:center;line-height:1.5;color:#555;">पॅकेट ${toDevanagariDigits(packetIndex + 1)}/${toDevanagariDigits(totalPackets)}</div>`);
+  }
+
+  return `
+    <div class="label-container" style="
+      width: ${stickerSize.width}mm;
+      height: ${stickerSize.height}mm;
+      padding: ${safeMarginTop}mm ${safeMarginRight}mm ${safeMarginBottom}mm ${safeMarginLeft}mm;
+      box-sizing: border-box;
+      page-break-after: always;
+      overflow: hidden;
+      position: relative;
+    ">
+      <div style="
+        width: ${contentWidth}mm;
+        height: ${contentHeight}mm;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        gap: 0.2mm;
+        overflow: hidden;
+      ">
+        ${lines.join('\n')}
+      </div>
+    </div>
+  `;
+}
+
+export function generatePacketPrintPage(loans: LabelLoan[], settings: LabelSettings): string {
+  const { stickerSize, horizontalOffset } = settings;
+  const offsetMm = horizontalOffset || 0;
+  const transformStyle = offsetMm !== 0 ? `transform: translateX(${offsetMm}mm);` : '';
+  const selectedFont = settings.fontFamily || 'Noto Sans Devanagari';
+  const fontOption = FONT_OPTIONS.find(f => f.value === selectedFont) || FONT_OPTIONS[0];
+
+  const sorted = [...loans].sort((a, b) => {
+    const na = parseInt(String(a.accountNumber)) || 0;
+    const nb = parseInt(String(b.accountNumber)) || 0;
+    return na - nb;
+  });
+
+  const perPacket = settings.perPacket && settings.perPacket > 0 ? settings.perPacket : sorted.length;
+  const chunks: LabelLoan[][] = [];
+  for (let i = 0; i < sorted.length; i += perPacket) {
+    chunks.push(sorted.slice(i, i + perPacket));
+  }
+
+  const labelsHtml = chunks.map((chunk, idx) =>
+    generatePacketLabelHtml(chunk, settings, idx, chunks.length)
+  ).join('');
+
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <title>पॅकेट लेबल प्रिंट</title>
+      <link rel="preconnect" href="https://fonts.googleapis.com">
+      <link href="https://fonts.googleapis.com/css2?family=${fontOption.url}&display=swap" rel="stylesheet">
+      <style>
+        @page {
+          size: ${stickerSize.width}mm ${stickerSize.height}mm;
+          margin: 0;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+          font-family: '${selectedFont}', 'Mangal', 'Arial Unicode MS', sans-serif;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+        .label-container {
+          overflow: hidden;
+          ${transformStyle}
+        }
+        .label-container:last-child { page-break-after: avoid; }
+        @media print {
+          .label-container { page-break-after: always; }
+          .label-container:last-child { page-break-after: avoid; }
+        }
+      </style>
+    </head>
+    <body>
+      ${labelsHtml}
+      <script>
+        window.onload = function() {
+          setTimeout(function() { window.print(); }, 500);
+        };
+      </script>
+    </body>
+    </html>
+  `;
+}
+
 interface FieldItemProps {
   field: LabelField;
   idx: number;
@@ -843,9 +1030,17 @@ export function LabelPrintDialog({ open, onOpenChange, loans }: LabelPrintDialog
               horizontalOffset: typeof parsed.horizontalOffset === 'number' ? parsed.horizontalOffset : 0,
               fontFamily: typeof parsed.fontFamily === 'string' ? parsed.fontFamily : undefined,
               qrMode: typeof parsed.qrMode === 'boolean' ? parsed.qrMode : false,
-              printMode: (['normal','qrSide','qrCenter'] as const).includes(parsed.printMode)
+              printMode: (['normal','qrSide','qrCenter','packet'] as const).includes(parsed.printMode)
                 ? parsed.printMode
                 : (parsed.qrMode ? 'qrSide' : 'normal'),
+              packetFields: parsed.packetFields && typeof parsed.packetFields === 'object'
+                ? {
+                    showCount: typeof parsed.packetFields.showCount === 'boolean' ? parsed.packetFields.showCount : true,
+                    showWeight: typeof parsed.packetFields.showWeight === 'boolean' ? parsed.packetFields.showWeight : true,
+                    showAmount: typeof parsed.packetFields.showAmount === 'boolean' ? parsed.packetFields.showAmount : true,
+                  }
+                : { showCount: true, showWeight: true, showAmount: true },
+              perPacket: typeof parsed.perPacket === 'number' && parsed.perPacket >= 0 ? parsed.perPacket : 0,
             });
           }
         }
@@ -914,7 +1109,7 @@ export function LabelPrintDialog({ open, onOpenChange, loans }: LabelPrintDialog
   }, [settings.fontFamily]);
 
   useEffect(() => {
-    const isQrAny = settings.printMode === 'qrSide' || settings.printMode === 'qrCenter' || !!settings.qrMode;
+    const isQrAny = (settings.printMode === 'qrSide' || settings.printMode === 'qrCenter' || !!settings.qrMode) && settings.printMode !== 'packet';
     if (!isQrAny || !open) { setQrPreviewUrls({}); return; }
     let cancelled = false;
     (async () => {
@@ -1074,6 +1269,11 @@ export function LabelPrintDialog({ open, onOpenChange, loans }: LabelPrintDialog
       alert("पॉप-अप ब्लॉक झाले. कृपया ब्राउझर सेटिंग्ज मध्ये पॉप-अप अनुमती द्या.");
       return;
     }
+    if (settings.printMode === 'packet') {
+      printWindow.document.write(generatePacketPrintPage(loansToprint, settings));
+      printWindow.document.close();
+      return;
+    }
     const effectiveQrMode = settings.printMode === 'qrSide' || settings.printMode === 'qrCenter' || !!settings.qrMode;
     const isQrCenter = settings.printMode === 'qrCenter';
     if (effectiveQrMode) {
@@ -1145,11 +1345,12 @@ export function LabelPrintDialog({ open, onOpenChange, loans }: LabelPrintDialog
                     { mode: 'normal'    as const, label: 'Regular' },
                     { mode: 'qrSide'   as const, label: 'QR साइड' },
                     { mode: 'qrCenter' as const, label: 'QR Center' },
+                    { mode: 'packet'   as const, label: 'पॅकेट' },
                   ]).map(opt => {
                     const active = (settings.printMode || 'normal') === opt.mode;
                     return (
                       <button key={opt.mode}
-                        onClick={() => updateSettings(prev => ({ ...prev, printMode: opt.mode, qrMode: opt.mode !== 'normal' }))}
+                        onClick={() => updateSettings(prev => ({ ...prev, printMode: opt.mode, qrMode: opt.mode === 'qrSide' || opt.mode === 'qrCenter' }))}
                         style={{
                           padding: '3px 9px', borderRadius: '5px', fontSize: '10px', fontWeight: 600,
                           background: active ? '#4f46e5' : '#f3f4f6',
@@ -1164,6 +1365,67 @@ export function LabelPrintDialog({ open, onOpenChange, loans }: LabelPrintDialog
                 {saveMutation.isPending && <Loader2 className="h-3 w-3 animate-spin text-indigo-400 ml-auto flex-shrink-0" />}
                 {!saveMutation.isPending && dbLoaded && <span className="text-[9px] text-green-500 ml-auto flex-shrink-0">✓ सेव्ह</span>}
               </div>
+              {settings.printMode === 'packet' && (
+                <div className="px-3 py-2 bg-amber-50 border-b border-amber-200">
+                  <div className="text-[11px] font-semibold text-amber-800 mb-1.5">पॅकेट लेबल सेटिंग्ज:</div>
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <label className="flex items-center gap-1.5 cursor-pointer">
+                        <Switch
+                          checked={settings.packetFields?.showCount ?? true}
+                          onCheckedChange={(v) => updateSettings(prev => ({
+                            ...prev,
+                            packetFields: { ...prev.packetFields || { showCount: true, showWeight: true, showAmount: true }, showCount: v }
+                          }))}
+                          className="h-4 w-7"
+                        />
+                        <span className="text-[10px] text-gray-700">एकूण खाती</span>
+                      </label>
+                      <label className="flex items-center gap-1.5 cursor-pointer">
+                        <Switch
+                          checked={settings.packetFields?.showWeight ?? true}
+                          onCheckedChange={(v) => updateSettings(prev => ({
+                            ...prev,
+                            packetFields: { ...prev.packetFields || { showCount: true, showWeight: true, showAmount: true }, showWeight: v }
+                          }))}
+                          className="h-4 w-7"
+                        />
+                        <span className="text-[10px] text-gray-700">एकूण वजन</span>
+                      </label>
+                      <label className="flex items-center gap-1.5 cursor-pointer">
+                        <Switch
+                          checked={settings.packetFields?.showAmount ?? true}
+                          onCheckedChange={(v) => updateSettings(prev => ({
+                            ...prev,
+                            packetFields: { ...prev.packetFields || { showCount: true, showWeight: true, showAmount: true }, showAmount: v }
+                          }))}
+                          className="h-4 w-7"
+                        />
+                        <span className="text-[10px] text-gray-700">एकूण रक्कम</span>
+                      </label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] text-gray-600 whitespace-nowrap">प्रति पॅकेट:</span>
+                      <Input
+                        type="number"
+                        value={settings.perPacket || ''}
+                        placeholder="सर्व"
+                        onChange={(e) => {
+                          const val = parseInt(e.target.value) || 0;
+                          updateSettings(prev => ({ ...prev, perPacket: Math.max(0, val) }));
+                        }}
+                        className="h-6 w-16 text-[10px] px-1.5"
+                        min={0}
+                      />
+                      <span className="text-[9px] text-gray-400">
+                        {settings.perPacket && settings.perPacket > 0
+                          ? `${Math.ceil(loans.length / settings.perPacket)} पॅकेट`
+                          : 'एकच पॅकेट'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
               {/* Row 2: Tabs + Font inline */}
               <div className="flex items-stretch border-b border-gray-200">
                 {([
@@ -1376,6 +1638,64 @@ export function LabelPrintDialog({ open, onOpenChange, loans }: LabelPrintDialog
               <Eye className="h-3 w-3" />
               पूर्वावलोकन ({settings.stickerSize.width}×{settings.stickerSize.height}mm)
             </div>
+            {settings.printMode === 'packet' ? (
+              <div className="flex flex-wrap gap-3 justify-center">
+                {(() => {
+                  const sorted = [...loans].sort((a, b) => {
+                    const na = parseInt(String(a.accountNumber)) || 0;
+                    const nb = parseInt(String(b.accountNumber)) || 0;
+                    return na - nb;
+                  });
+                  const perPacket = settings.perPacket && settings.perPacket > 0 ? settings.perPacket : sorted.length;
+                  const chunks: LabelLoan[][] = [];
+                  for (let i = 0; i < sorted.length; i += perPacket) {
+                    chunks.push(sorted.slice(i, i + perPacket));
+                  }
+                  const previewChunks = chunks.slice(0, 4);
+                  return previewChunks.map((chunk, idx) => {
+                    const realWPx = settings.stickerSize.width * 3.78;
+                    const realHPx = settings.stickerSize.height * 3.78;
+                    const previewW = realWPx * previewScale;
+                    const previewH = realHPx * previewScale;
+                    const html = generatePacketLabelHtml(chunk, settings, idx, chunks.length)
+                      .replace(/class="label-container"/, '')
+                      .replace(/page-break-after:\s*always;/, '');
+                    return (
+                      <div
+                        key={idx}
+                        className="border border-dashed border-amber-400 bg-white rounded shadow-sm"
+                        style={{
+                          width: `${previewW}px`,
+                          height: `${previewH}px`,
+                          overflow: 'hidden',
+                          position: 'relative',
+                        }}
+                      >
+                        <div
+                          style={{
+                            width: `${realWPx}px`,
+                            height: `${realHPx}px`,
+                            transform: `scale(${previewScale})`,
+                            transformOrigin: 'top left',
+                            fontFamily: `'${settings.fontFamily || 'Noto Sans Devanagari'}', 'Mangal', 'Arial Unicode MS', sans-serif`,
+                          }}
+                          dangerouslySetInnerHTML={{ __html: html }}
+                        />
+                      </div>
+                    );
+                  });
+                })()}
+                {(() => {
+                  const perPacket = settings.perPacket && settings.perPacket > 0 ? settings.perPacket : loans.length;
+                  const totalChunks = Math.ceil(loans.length / perPacket);
+                  return totalChunks > 4 ? (
+                    <div className="flex items-center justify-center text-xs text-gray-400 font-medium">
+                      +{totalChunks - 4} आणखी...
+                    </div>
+                  ) : null;
+                })()}
+              </div>
+            ) : (
             <div className="flex flex-wrap gap-3 justify-center">
               {loans.slice(0, 4).map((loan, idx) => {
                 const realWPx = settings.stickerSize.width * 3.78;
@@ -1395,7 +1715,7 @@ export function LabelPrintDialog({ open, onOpenChange, loans }: LabelPrintDialog
                     }}
                   >
                     {(() => {
-                      const previewQrMode = settings.printMode === 'qrSide' || settings.printMode === 'qrCenter' || !!settings.qrMode;
+                      const previewQrMode = (settings.printMode === 'qrSide' || settings.printMode === 'qrCenter' || !!settings.qrMode) && settings.printMode !== 'packet';
                       const previewQrCenter = settings.printMode === 'qrCenter';
                       if (!previewQrMode) return null;
 
@@ -1529,6 +1849,7 @@ export function LabelPrintDialog({ open, onOpenChange, loans }: LabelPrintDialog
                 </div>
               )}
             </div>
+            )}
           </div>
 
           <div className="flex gap-3 pt-1">
