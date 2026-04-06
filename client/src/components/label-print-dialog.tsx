@@ -1013,16 +1013,39 @@ export function LabelPrintDialog({ open, onOpenChange, loans }: LabelPrintDialog
   const [qrPreviewUrls, setQrPreviewUrls] = useState<Record<string, string>>({});
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const todayISO = useMemo(() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }, []);
   const [packetDateFrom, setPacketDateFrom] = useState("");
   const [packetDateTo, setPacketDateTo] = useState("");
   const [packetGroupId, setPacketGroupId] = useState("all");
+  const [packetFetchCounter, setPacketFetchCounter] = useState(0);
+
+  useEffect(() => {
+    if (open && settings.printMode === 'packet' && !packetDateFrom && !packetDateTo) {
+      setPacketDateFrom(todayISO);
+      setPacketDateTo(todayISO);
+    }
+  }, [open, settings.printMode, todayISO]);
+
+  const handlePacketDateFrom = useCallback((val: string) => {
+    setPacketDateFrom(val);
+    setPacketFetchCounter(c => c + 1);
+  }, []);
+  const handlePacketDateTo = useCallback((val: string) => {
+    setPacketDateTo(val);
+    setPacketFetchCounter(c => c + 1);
+  }, []);
+  const handlePacketGroupChange = useCallback((val: string) => {
+    setPacketGroupId(val);
+    setPacketFetchCounter(c => c + 1);
+  }, []);
+
   const packetFetchEnabled = open && settings.printMode === 'packet' && packetDateFrom.length > 0 && packetDateTo.length > 0;
   const { data: packetGroups } = useQuery<{ id: number; name: string }[]>({
     queryKey: ['/api/groups'],
     enabled: open && settings.printMode === 'packet',
   });
   const { data: packetFetchedLoans, isLoading: packetLoansLoading, error: packetLoansError } = useQuery<LabelLoan[]>({
-    queryKey: ['/api/loans/by-date-range', packetDateFrom, packetDateTo, packetGroupId],
+    queryKey: ['packet-loans-fetch', { from: packetDateFrom, to: packetDateTo, group: packetGroupId, v: packetFetchCounter }],
     queryFn: async () => {
       const groupParam = packetGroupId !== 'all' ? `&groupId=${packetGroupId}` : '';
       const res = await fetch(`/api/loans/by-date-range?from=${packetDateFrom}&to=${packetDateTo}${groupParam}&_t=${Date.now()}`, { credentials: 'include', cache: 'no-store' });
@@ -1032,6 +1055,7 @@ export function LabelPrintDialog({ open, onOpenChange, loans }: LabelPrintDialog
     enabled: packetFetchEnabled,
     staleTime: 0,
     gcTime: 0,
+    placeholderData: undefined,
   });
   const packetLoans = packetFetchedLoans || [];
   const packetSummary = useMemo(() => {
@@ -1460,7 +1484,7 @@ export function LabelPrintDialog({ open, onOpenChange, loans }: LabelPrintDialog
                     <div className="text-[11px] font-semibold text-amber-800">पॅकेट लेबल — तारीख व ग्रुप निवडा:</div>
                     {(packetDateFrom || packetDateTo || packetGroupId !== 'all') && (
                       <button
-                        onClick={() => { setPacketDateFrom(''); setPacketDateTo(''); setPacketGroupId('all'); }}
+                        onClick={() => { setPacketDateFrom(''); setPacketDateTo(''); setPacketGroupId('all'); setPacketFetchCounter(c => c + 1); }}
                         className="text-[9px] text-red-500 hover:text-red-700 hover:bg-red-50 px-1.5 py-0.5 rounded transition-colors flex items-center gap-0.5"
                         title="सर्व क्लिअर करा"
                       >
@@ -1472,7 +1496,7 @@ export function LabelPrintDialog({ open, onOpenChange, loans }: LabelPrintDialog
                     <Label className="text-[10px] font-medium text-amber-700 flex items-center gap-1 mb-0.5">ग्रुप निवडा</Label>
                     <select
                       value={packetGroupId}
-                      onChange={(e) => setPacketGroupId(e.target.value)}
+                      onChange={(e) => handlePacketGroupChange(e.target.value)}
                       className="w-full h-8 text-xs border border-amber-300 rounded-md px-2 bg-white focus:border-amber-500 focus:ring-1 focus:ring-amber-500 focus:outline-none"
                     >
                       <option value="all">सर्व ग्रुप</option>
@@ -1486,13 +1510,13 @@ export function LabelPrintDialog({ open, onOpenChange, loans }: LabelPrintDialog
                       <Label className="text-[10px] font-medium text-amber-700 flex items-center gap-1 mb-0.5">
                         <Calendar className="h-3 w-3" /> तारखेपासून
                       </Label>
-                      <Input type="date" value={packetDateFrom} onChange={(e) => setPacketDateFrom(e.target.value)} className="h-8 text-xs border-amber-300 focus:border-amber-500 focus:ring-amber-500" />
+                      <Input type="date" value={packetDateFrom} onChange={(e) => handlePacketDateFrom(e.target.value)} className="h-8 text-xs border-amber-300 focus:border-amber-500 focus:ring-amber-500" />
                     </div>
                     <div>
                       <Label className="text-[10px] font-medium text-amber-700 flex items-center gap-1 mb-0.5">
                         <Calendar className="h-3 w-3" /> तारखेपर्यंत
                       </Label>
-                      <Input type="date" value={packetDateTo} onChange={(e) => setPacketDateTo(e.target.value)} className="h-8 text-xs border-amber-300 focus:border-amber-500 focus:ring-amber-500" />
+                      <Input type="date" value={packetDateTo} onChange={(e) => handlePacketDateTo(e.target.value)} className="h-8 text-xs border-amber-300 focus:border-amber-500 focus:ring-amber-500" />
                     </div>
                   </div>
                   {packetDateFrom && packetDateTo && (
