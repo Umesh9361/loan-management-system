@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { Printer, Settings, ChevronDown, ChevronUp, Minus, Plus, Eye, ArrowUp, ArrowDown, Bold, Type, Trash2, PlusCircle, RotateCcw, Ruler, Loader2, Calendar, Package, Hash, Scale, AlertCircle, CheckCircle2, X } from "lucide-react";
+import { Printer, Settings, ChevronDown, ChevronUp, Minus, Plus, Eye, ArrowUp, ArrowDown, Bold, Type, Trash2, PlusCircle, RotateCcw, Ruler, Loader2, Calendar, Package, Hash, Scale, AlertCircle, CheckCircle2, X, Search, Filter } from "lucide-react";
 import { LoanCalculations } from "@/lib/calculations";
 import { DateUtils } from "@/lib/date-utils";
 import { encodeQrData } from "@/lib/qr-utils";
@@ -1018,6 +1018,8 @@ export function LabelPrintDialog({ open, onOpenChange, loans }: LabelPrintDialog
   const [packetFetchCounter, setPacketFetchCounter] = useState(0);
   const [packetAcctFrom, setPacketAcctFrom] = useState("");
   const [packetAcctTo, setPacketAcctTo] = useState("");
+  const [appliedAcctFrom, setAppliedAcctFrom] = useState("");
+  const [appliedAcctTo, setAppliedAcctTo] = useState("");
 
   useEffect(() => {
     if (open) {
@@ -1026,9 +1028,23 @@ export function LabelPrintDialog({ open, onOpenChange, loans }: LabelPrintDialog
       setPacketGroupId('all');
       setPacketAcctFrom('');
       setPacketAcctTo('');
+      setAppliedAcctFrom('');
+      setAppliedAcctTo('');
       setPacketFetchCounter(c => c + 1);
     }
   }, [open, todayISO]);
+
+  const applyAcctFilter = useCallback(() => {
+    setAppliedAcctFrom(packetAcctFrom);
+    setAppliedAcctTo(packetAcctTo);
+  }, [packetAcctFrom, packetAcctTo]);
+
+  const clearAcctFilter = useCallback(() => {
+    setPacketAcctFrom('');
+    setPacketAcctTo('');
+    setAppliedAcctFrom('');
+    setAppliedAcctTo('');
+  }, []);
 
   const handlePacketDateFrom = useCallback((val: string) => {
     setPacketDateFrom(val);
@@ -1064,8 +1080,8 @@ export function LabelPrintDialog({ open, onOpenChange, loans }: LabelPrintDialog
   const packetAllLoans = packetFetchedLoans || [];
   const packetLoans = useMemo(() => {
     if (packetAllLoans.length === 0) return [];
-    const acctFromNum = packetAcctFrom ? parseInt(packetAcctFrom) : null;
-    const acctToNum = packetAcctTo ? parseInt(packetAcctTo) : null;
+    const acctFromNum = appliedAcctFrom ? parseInt(appliedAcctFrom) : null;
+    const acctToNum = appliedAcctTo ? parseInt(appliedAcctTo) : null;
     if (acctFromNum === null && acctToNum === null) return packetAllLoans;
     return packetAllLoans.filter(loan => {
       const acctNum = parseInt(String(loan.accountNumber)) || 0;
@@ -1073,7 +1089,7 @@ export function LabelPrintDialog({ open, onOpenChange, loans }: LabelPrintDialog
       if (acctToNum !== null && acctNum > acctToNum) return false;
       return true;
     });
-  }, [packetAllLoans, packetAcctFrom, packetAcctTo]);
+  }, [packetAllLoans, appliedAcctFrom, appliedAcctTo]);
   const packetSummary = useMemo(() => {
     if (packetLoans.length === 0) return null;
     const sorted = [...packetLoans].sort((a, b) => (parseInt(String(a.accountNumber)) || 0) - (parseInt(String(b.accountNumber)) || 0));
@@ -1498,7 +1514,7 @@ export function LabelPrintDialog({ open, onOpenChange, loans }: LabelPrintDialog
                     <div className="text-[11px] font-semibold text-amber-800">पॅकेट लेबल — तारीख व ग्रुप निवडा:</div>
                     {(packetDateFrom || packetDateTo || packetGroupId !== 'all') && (
                       <button
-                        onClick={() => { setPacketDateFrom(''); setPacketDateTo(''); setPacketGroupId('all'); setPacketAcctFrom(''); setPacketAcctTo(''); setPacketFetchCounter(c => c + 1); }}
+                        onClick={() => { setPacketDateFrom(''); setPacketDateTo(''); setPacketGroupId('all'); setPacketAcctFrom(''); setPacketAcctTo(''); setAppliedAcctFrom(''); setAppliedAcctTo(''); setPacketFetchCounter(c => c + 1); }}
                         className="text-[9px] text-red-500 hover:text-red-700 hover:bg-red-50 px-1.5 py-0.5 rounded transition-colors flex items-center gap-0.5"
                         title="सर्व क्लिअर करा"
                       >
@@ -1534,19 +1550,36 @@ export function LabelPrintDialog({ open, onOpenChange, loans }: LabelPrintDialog
                     </div>
                   </div>
                   {packetAllLoans.length > 0 && (
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <Label className="text-[10px] font-medium text-amber-700 flex items-center gap-1 mb-0.5">
-                          <Hash className="h-3 w-3" /> खाते क्र. पासून <span className="text-[8px] text-amber-500 font-normal">(ऐच्छिक)</span>
-                        </Label>
-                        <Input type="number" placeholder="उदा. 320" value={packetAcctFrom} onChange={(e) => setPacketAcctFrom(e.target.value)} className="h-8 text-xs border-amber-300 focus:border-amber-500 focus:ring-amber-500" min="1" />
+                    <div className="space-y-1.5">
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <Label className="text-[10px] font-medium text-amber-700 flex items-center gap-1 mb-0.5">
+                            <Hash className="h-3 w-3" /> खाते क्र. पासून <span className="text-[8px] text-amber-500 font-normal">(ऐच्छिक)</span>
+                          </Label>
+                          <Input type="number" placeholder="उदा. 320" value={packetAcctFrom} onChange={(e) => setPacketAcctFrom(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') applyAcctFilter(); }} className="h-8 text-xs border-amber-300 focus:border-amber-500 focus:ring-amber-500" min="1" />
+                        </div>
+                        <div>
+                          <Label className="text-[10px] font-medium text-amber-700 flex items-center gap-1 mb-0.5">
+                            <Hash className="h-3 w-3" /> खाते क्र. पर्यंत <span className="text-[8px] text-amber-500 font-normal">(ऐच्छिक)</span>
+                          </Label>
+                          <Input type="number" placeholder="उदा. 350" value={packetAcctTo} onChange={(e) => setPacketAcctTo(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') applyAcctFilter(); }} className="h-8 text-xs border-amber-300 focus:border-amber-500 focus:ring-amber-500" min="1" />
+                        </div>
                       </div>
-                      <div>
-                        <Label className="text-[10px] font-medium text-amber-700 flex items-center gap-1 mb-0.5">
-                          <Hash className="h-3 w-3" /> खाते क्र. पर्यंत <span className="text-[8px] text-amber-500 font-normal">(ऐच्छिक)</span>
-                        </Label>
-                        <Input type="number" placeholder="उदा. 350" value={packetAcctTo} onChange={(e) => setPacketAcctTo(e.target.value)} className="h-8 text-xs border-amber-300 focus:border-amber-500 focus:ring-amber-500" min="1" />
+                      <div className="flex items-center gap-2">
+                        <button onClick={applyAcctFilter} className="flex-1 h-7 text-[10px] font-semibold bg-amber-600 hover:bg-amber-700 text-white rounded-md transition-colors flex items-center justify-center gap-1" disabled={!packetAcctFrom && !packetAcctTo}>
+                          <Search className="h-3 w-3" /> खाते फिल्टर लावा
+                        </button>
+                        {(appliedAcctFrom || appliedAcctTo) && (
+                          <button onClick={clearAcctFilter} className="h-7 px-2 text-[10px] text-red-600 hover:text-red-800 hover:bg-red-50 border border-red-200 rounded-md transition-colors flex items-center gap-0.5">
+                            <X className="h-2.5 w-2.5" /> काढा
+                          </button>
+                        )}
                       </div>
+                      {(appliedAcctFrom || appliedAcctTo) && (
+                        <div className="text-[9px] text-amber-600 bg-amber-50 border border-amber-200 rounded px-2 py-1 flex items-center gap-1">
+                          <Filter className="h-2.5 w-2.5" /> खाते फिल्टर: {appliedAcctFrom || '...'} — {appliedAcctTo || '...'}
+                        </div>
+                      )}
                     </div>
                   )}
                   {packetDateFrom && packetDateTo && (
