@@ -2295,34 +2295,34 @@ export default function Closure() {
                           <button
                             type="button"
                             onClick={handleGenerateSummaryReceipt}
-                            className="inline-flex items-center rounded-md px-2 h-8 text-[11px] border border-indigo-300 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 active:bg-indigo-200 transition-colors outline-none"
+                            className="inline-flex items-center rounded-md px-3 h-9 text-xs border border-indigo-300 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 active:bg-indigo-200 transition-colors outline-none"
                           >
-                            <Printer className="h-3 w-3 mr-1" />
+                            <Printer className="h-3.5 w-3.5 mr-1" />
                             पावती
                           </button>
                           <button
                             ref={btPrintBtnRef}
                             type="button"
                             onClick={handleBluetoothPrint}
-                            className="inline-flex items-center rounded-md px-2 h-8 text-[11px] border border-indigo-300 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 active:bg-indigo-200 transition-colors outline-none"
+                            className="inline-flex items-center rounded-md px-3 h-9 text-xs border border-indigo-300 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 active:bg-indigo-200 transition-colors outline-none"
                           >
-                            <Bluetooth className="h-3 w-3 mr-1" />
-                            BT
+                            <Bluetooth className="h-3.5 w-3.5 mr-1" />
+                            ब्लूटूथ
                           </button>
                           <button
                             type="button"
                             onClick={() => setShowPrintSettings(v => !v)}
-                            className={`inline-flex items-center rounded-md px-2 h-8 text-[11px] border transition-colors outline-none ${showPrintSettings ? 'border-amber-500 bg-amber-100 text-amber-800' : 'border-gray-300 bg-gray-50 text-gray-700 hover:bg-gray-100'}`}
+                            className={`inline-flex items-center rounded-md px-2.5 h-9 text-xs border transition-colors outline-none ${showPrintSettings ? 'border-amber-500 bg-amber-100 text-amber-800' : 'border-gray-300 bg-gray-50 text-gray-700 hover:bg-gray-100'}`}
                             title="प्रिंट सेटिंग्स"
                           >
-                            <Settings className="h-3 w-3" />
+                            <Settings className="h-3.5 w-3.5" />
                           </button>
                           <button
                             type="button"
                             onClick={handleClearAllSummary}
-                            className="inline-flex items-center rounded-md px-2 h-8 text-[11px] border border-red-300 bg-red-50 text-red-700 hover:bg-red-100 active:bg-red-200 transition-colors outline-none"
+                            className="inline-flex items-center rounded-md px-3 h-9 text-xs border border-red-300 bg-red-50 text-red-700 hover:bg-red-100 active:bg-red-200 transition-colors outline-none"
                           >
-                            <Trash2 className="h-3 w-3 mr-0.5" />
+                            <Trash2 className="h-3.5 w-3.5 mr-1" />
                             काढा
                           </button>
                         </div>
