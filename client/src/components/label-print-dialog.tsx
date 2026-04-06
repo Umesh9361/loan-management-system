@@ -204,9 +204,7 @@ function loadSettings(): LabelSettings {
           horizontalOffset: typeof parsed.horizontalOffset === 'number' ? Math.max(-10, Math.min(10, parsed.horizontalOffset)) : 0,
           fontFamily: typeof parsed.fontFamily === 'string' && FONT_OPTIONS.some(f => f.value === parsed.fontFamily) ? parsed.fontFamily : 'Noto Sans Devanagari',
           qrMode: false,
-          printMode: (['normal','qrSide','qrCenter','packet'] as const).includes(parsed.printMode)
-            ? parsed.printMode
-            : (parsed.qrMode ? 'qrSide' : 'normal'),
+          printMode: 'normal' as const,
           packetFields: parsed.packetFields && typeof parsed.packetFields === 'object'
             ? {
                 showCount: typeof parsed.packetFields.showCount === 'boolean' ? parsed.packetFields.showCount : true,
@@ -1098,9 +1096,7 @@ export function LabelPrintDialog({ open, onOpenChange, loans }: LabelPrintDialog
               horizontalOffset: typeof parsed.horizontalOffset === 'number' ? parsed.horizontalOffset : 0,
               fontFamily: typeof parsed.fontFamily === 'string' ? parsed.fontFamily : undefined,
               qrMode: typeof parsed.qrMode === 'boolean' ? parsed.qrMode : false,
-              printMode: (['normal','qrSide','qrCenter','packet'] as const).includes(parsed.printMode)
-                ? parsed.printMode
-                : (parsed.qrMode ? 'qrSide' : 'normal'),
+              printMode: 'normal' as const,
               packetFields: parsed.packetFields && typeof parsed.packetFields === 'object'
                 ? {
                     showCount: typeof parsed.packetFields.showCount === 'boolean' ? parsed.packetFields.showCount : true,
