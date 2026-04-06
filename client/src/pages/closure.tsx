@@ -83,8 +83,16 @@ interface ReceiptPrintSettings {
     name: ReceiptFieldSetting;
     date: ReceiptFieldSetting;
     title: ReceiptFieldSetting;
-    tableHeader: ReceiptFieldSetting;
-    tableData: ReceiptFieldSetting;
+    colSerial: ReceiptFieldSetting;
+    colAccount: ReceiptFieldSetting;
+    colDate: ReceiptFieldSetting;
+    colPrincipal: ReceiptFieldSetting;
+    colCharges: ReceiptFieldSetting;
+    hdrSerial: ReceiptFieldSetting;
+    hdrAccount: ReceiptFieldSetting;
+    hdrDate: ReceiptFieldSetting;
+    hdrPrincipal: ReceiptFieldSetting;
+    hdrCharges: ReceiptFieldSetting;
     total: ReceiptFieldSetting;
     grandTotal: ReceiptFieldSetting;
   };
@@ -104,8 +112,16 @@ const DEFAULT_RECEIPT_SETTINGS: ReceiptPrintSettings = {
     name: { fontSize: 26, bold: true },
     date: { fontSize: 22, bold: true },
     title: { fontSize: 24, bold: true },
-    tableHeader: { fontSize: 22, bold: true },
-    tableData: { fontSize: 22, bold: true },
+    colSerial: { fontSize: 16, bold: true },
+    colAccount: { fontSize: 22, bold: true },
+    colDate: { fontSize: 22, bold: true },
+    colPrincipal: { fontSize: 22, bold: true },
+    colCharges: { fontSize: 22, bold: true },
+    hdrSerial: { fontSize: 22, bold: true },
+    hdrAccount: { fontSize: 22, bold: true },
+    hdrDate: { fontSize: 22, bold: true },
+    hdrPrincipal: { fontSize: 22, bold: true },
+    hdrCharges: { fontSize: 22, bold: true },
     total: { fontSize: 22, bold: true },
     grandTotal: { fontSize: 32, bold: true },
   },
@@ -1156,19 +1172,14 @@ export default function Closure() {
     const closureDateFormatted = DateUtils.isoToIndianDate(lastEntry.closureDate);
     const displayName = nameMode === 'group' ? (lastEntry.groupName || lastEntry.borrowerName) : lastEntry.borrowerName;
     const displayAddress = nameMode === 'group' ? '' : (lastEntry.borrowerAddress || '');
-    const dfs = bt.tableData.fontSize;
-    const dfw = bt.tableData.bold ? 700 : 400;
-    const hfs = bt.tableHeader.fontSize;
-    const hfw = bt.tableHeader.bold ? 700 : 400;
-
     let rows = '';
     entries.forEach((entry, i) => {
       rows += `<tr>
-        <td style="padding:14px 8px 14px 4px;text-align:center;font-size:${Math.round(dfs * 0.73)}px;font-weight:600;">${i + 1}</td>
-        <td style="padding:14px 8px;text-align:center;font-size:${dfs}px;font-weight:${dfw};">${entry.accountNumber}</td>
-        <td style="padding:14px 4px;text-align:right;font-size:${dfs}px;font-weight:${dfw};vertical-align:middle;">${toShortDate(entry.loanDate)}${showInterestRate ? `<span style="margin-left:16px;font-size:${Math.round(dfs * 0.9)}px;font-weight:600;">${formatRate(entry.interestRate)}</span>` : ''}</td>
-        <td style="padding:14px 4px;text-align:right;font-size:${dfs}px;font-weight:${dfw};">${Number(Math.round(entry.principalAmount)).toLocaleString('en-IN')}</td>
-        <td style="padding:14px 4px;text-align:right;font-size:${dfs}px;font-weight:${dfw};">${Number(Math.round(entry.chargesAmount)).toLocaleString('en-IN')}</td>
+        <td style="padding:14px 8px 14px 4px;text-align:center;font-size:${bt.colSerial.fontSize}px;font-weight:${bt.colSerial.bold ? 700 : 400};">${i + 1}</td>
+        <td style="padding:14px 8px;text-align:center;font-size:${bt.colAccount.fontSize}px;font-weight:${bt.colAccount.bold ? 700 : 400};">${entry.accountNumber}</td>
+        <td style="padding:14px 4px;text-align:right;font-size:${bt.colDate.fontSize}px;font-weight:${bt.colDate.bold ? 700 : 400};vertical-align:middle;">${toShortDate(entry.loanDate)}${showInterestRate ? `<span style="margin-left:16px;font-size:${Math.round(bt.colDate.fontSize * 0.9)}px;font-weight:600;">${formatRate(entry.interestRate)}</span>` : ''}</td>
+        <td style="padding:14px 4px;text-align:right;font-size:${bt.colPrincipal.fontSize}px;font-weight:${bt.colPrincipal.bold ? 700 : 400};">${Number(Math.round(entry.principalAmount)).toLocaleString('en-IN')}</td>
+        <td style="padding:14px 4px;text-align:right;font-size:${bt.colCharges.fontSize}px;font-weight:${bt.colCharges.bold ? 700 : 400};">${Number(Math.round(entry.chargesAmount)).toLocaleString('en-IN')}</td>
       </tr>`;
     });
 
@@ -1190,11 +1201,11 @@ export default function Closure() {
           </colgroup>
           <thead>
             <tr style="border-bottom:3px double #000;">
-              <th style="padding:10px 8px 10px 4px;font-size:${hfs}px;text-align:center;font-weight:${hfw};">अ.नं.</th>
-              <th style="padding:10px 8px;font-size:${hfs}px;text-align:center;font-weight:${hfw};">कोड नं</th>
-              <th style="padding:10px 4px;font-size:${hfs}px;text-align:right;font-weight:${hfw};vertical-align:middle;">दिनांक</th>
-              <th style="padding:10px 4px;font-size:${hfs}px;text-align:right;font-weight:${hfw};">बाजारमूल्य</th>
-              <th style="padding:10px 4px;font-size:${hfs}px;text-align:right;font-weight:${hfw};">चार्जेस</th>
+              <th style="padding:10px 8px 10px 4px;font-size:${bt.hdrSerial.fontSize}px;text-align:center;font-weight:${bt.hdrSerial.bold ? 700 : 400};">अ.नं.</th>
+              <th style="padding:10px 8px;font-size:${bt.hdrAccount.fontSize}px;text-align:center;font-weight:${bt.hdrAccount.bold ? 700 : 400};">कोड नं</th>
+              <th style="padding:10px 4px;font-size:${bt.hdrDate.fontSize}px;text-align:right;font-weight:${bt.hdrDate.bold ? 700 : 400};vertical-align:middle;">दिनांक</th>
+              <th style="padding:10px 4px;font-size:${bt.hdrPrincipal.fontSize}px;text-align:right;font-weight:${bt.hdrPrincipal.bold ? 700 : 400};">बाजारमूल्य</th>
+              <th style="padding:10px 4px;font-size:${bt.hdrCharges.fontSize}px;text-align:right;font-weight:${bt.hdrCharges.bold ? 700 : 400};">चार्जेस</th>
             </tr>
           </thead>
           <tbody>
@@ -2326,10 +2337,29 @@ export default function Closure() {
                               <RotateCcw className="h-2.5 w-2.5" /> डिफॉल्ट
                             </button>
                           </div>
-                          {(['standard', 'thermal'] as const).map(mode => {
-                            const modeLabel = mode === 'standard' ? 'पावती प्रिंट' : 'ब्लूटूथ प्रिंट';
-                            const modeIcon = mode === 'standard' ? <Printer className="h-3 w-3" /> : <Bluetooth className="h-3 w-3" />;
-                            const fields: { key: keyof ReceiptPrintSettings['standard']; label: string }[] = [
+                          {(() => {
+                            const renderRow = (mode: 'standard' | 'thermal', key: string, label: string, setting: ReceiptFieldSetting) => (
+                              <div key={key} className="flex items-center gap-1.5 py-0.5 px-1 bg-white rounded">
+                                <span className="text-[10px] font-medium text-amber-800 flex-1 min-w-0 truncate">{label}</span>
+                                <div className="flex items-center gap-0.5 bg-amber-100 rounded px-0.5 py-0.5 flex-shrink-0">
+                                  <button onClick={() => updateReceiptSettings(prev => ({ ...prev, [mode]: { ...prev[mode], [key]: { ...prev[mode][key as keyof typeof prev[typeof mode]], fontSize: Math.max(6, setting.fontSize - 1) } } }))} className="p-0.5 rounded hover:bg-amber-200 active:bg-amber-300">
+                                    <Minus className="h-2.5 w-2.5 text-amber-700" />
+                                  </button>
+                                  <span className="text-[9px] font-mono w-6 text-center text-amber-800 font-semibold">{setting.fontSize}</span>
+                                  <button onClick={() => updateReceiptSettings(prev => ({ ...prev, [mode]: { ...prev[mode], [key]: { ...prev[mode][key as keyof typeof prev[typeof mode]], fontSize: Math.min(50, setting.fontSize + 1) } } }))} className="p-0.5 rounded hover:bg-amber-200 active:bg-amber-300">
+                                    <Plus className="h-2.5 w-2.5 text-amber-700" />
+                                  </button>
+                                </div>
+                                <button
+                                  onClick={() => updateReceiptSettings(prev => ({ ...prev, [mode]: { ...prev[mode], [key]: { ...prev[mode][key as keyof typeof prev[typeof mode]], bold: !setting.bold } } }))}
+                                  className={`p-0.5 rounded transition-colors flex-shrink-0 ${setting.bold ? 'bg-indigo-100 text-indigo-700' : 'hover:bg-amber-200 text-amber-400'}`}
+                                  title="बोल्ड"
+                                >
+                                  <Bold className="h-3 w-3" />
+                                </button>
+                              </div>
+                            );
+                            const stdFields: { key: keyof ReceiptPrintSettings['standard']; label: string }[] = [
                               { key: 'name', label: 'नाव' },
                               { key: 'date', label: 'तारीख' },
                               { key: 'title', label: 'शीर्षक (Estimate)' },
@@ -2338,38 +2368,40 @@ export default function Closure() {
                               { key: 'total', label: 'एकूण' },
                               { key: 'grandTotal', label: 'Grand Total' },
                             ];
+                            const btFields: { key: keyof ReceiptPrintSettings['thermal']; label: string; group?: string }[] = [
+                              { key: 'name', label: 'नाव' },
+                              { key: 'date', label: 'तारीख' },
+                              { key: 'title', label: 'शीर्षक (Estimate)' },
+                              { key: 'hdrSerial', label: '🔤 अ.नं. (हेडर)', group: 'हेडर' },
+                              { key: 'hdrAccount', label: '🔤 कोड नं (हेडर)', group: 'हेडर' },
+                              { key: 'hdrDate', label: '🔤 दिनांक (हेडर)', group: 'हेडर' },
+                              { key: 'hdrPrincipal', label: '🔤 बाजारमूल्य (हेडर)', group: 'हेडर' },
+                              { key: 'hdrCharges', label: '🔤 चार्जेस (हेडर)', group: 'हेडर' },
+                              { key: 'colSerial', label: '📊 अ.नं. (डेटा)', group: 'डेटा' },
+                              { key: 'colAccount', label: '📊 कोड नं (डेटा)', group: 'डेटा' },
+                              { key: 'colDate', label: '📊 दिनांक (डेटा)', group: 'डेटा' },
+                              { key: 'colPrincipal', label: '📊 बाजारमूल्य (डेटा)', group: 'डेटा' },
+                              { key: 'colCharges', label: '📊 चार्जेस (डेटा)', group: 'डेटा' },
+                              { key: 'total', label: 'एकूण' },
+                              { key: 'grandTotal', label: 'Grand Total' },
+                            ];
                             return (
-                              <div key={mode} className="space-y-1">
-                                <div className="text-[10px] font-semibold text-amber-700 flex items-center gap-1 border-b border-amber-200 pb-0.5">
-                                  {modeIcon} {modeLabel}
+                              <>
+                                <div className="space-y-1">
+                                  <div className="text-[10px] font-semibold text-amber-700 flex items-center gap-1 border-b border-amber-200 pb-0.5">
+                                    <Printer className="h-3 w-3" /> पावती प्रिंट
+                                  </div>
+                                  {stdFields.map(f => renderRow('standard', f.key, f.label, receiptSettings.standard[f.key]))}
                                 </div>
-                                {fields.map(f => {
-                                  const setting = receiptSettings[mode][f.key];
-                                  return (
-                                    <div key={f.key} className="flex items-center gap-1.5 py-0.5 px-1 bg-white rounded">
-                                      <span className="text-[10px] font-medium text-amber-800 flex-1 min-w-0 truncate">{f.label}</span>
-                                      <div className="flex items-center gap-0.5 bg-amber-100 rounded px-0.5 py-0.5 flex-shrink-0">
-                                        <button onClick={() => updateReceiptSettings(prev => ({ ...prev, [mode]: { ...prev[mode], [f.key]: { ...prev[mode][f.key], fontSize: Math.max(6, setting.fontSize - 1) } } }))} className="p-0.5 rounded hover:bg-amber-200 active:bg-amber-300">
-                                          <Minus className="h-2.5 w-2.5 text-amber-700" />
-                                        </button>
-                                        <span className="text-[9px] font-mono w-6 text-center text-amber-800 font-semibold">{setting.fontSize}</span>
-                                        <button onClick={() => updateReceiptSettings(prev => ({ ...prev, [mode]: { ...prev[mode], [f.key]: { ...prev[mode][f.key], fontSize: Math.min(50, setting.fontSize + 1) } } }))} className="p-0.5 rounded hover:bg-amber-200 active:bg-amber-300">
-                                          <Plus className="h-2.5 w-2.5 text-amber-700" />
-                                        </button>
-                                      </div>
-                                      <button
-                                        onClick={() => updateReceiptSettings(prev => ({ ...prev, [mode]: { ...prev[mode], [f.key]: { ...prev[mode][f.key], bold: !setting.bold } } }))}
-                                        className={`p-0.5 rounded transition-colors flex-shrink-0 ${setting.bold ? 'bg-indigo-100 text-indigo-700' : 'hover:bg-amber-200 text-amber-400'}`}
-                                        title="बोल्ड"
-                                      >
-                                        <Bold className="h-3 w-3" />
-                                      </button>
-                                    </div>
-                                  );
-                                })}
-                              </div>
+                                <div className="space-y-1">
+                                  <div className="text-[10px] font-semibold text-amber-700 flex items-center gap-1 border-b border-amber-200 pb-0.5">
+                                    <Bluetooth className="h-3 w-3" /> ब्लूटूथ प्रिंट
+                                  </div>
+                                  {btFields.map(f => renderRow('thermal', f.key, f.label, receiptSettings.thermal[f.key]))}
+                                </div>
+                              </>
                             );
-                          })}
+                          })()}
                         </div>
                       )}
                     </CardHeader>
