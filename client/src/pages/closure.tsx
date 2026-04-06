@@ -2399,57 +2399,6 @@ export default function Closure() {
                                   </div>
                                   {btFields.map(f => renderRow('thermal', f.key, f.label, receiptSettings.thermal[f.key]))}
                                 </div>
-                                {(() => {
-                                  const bt = receiptSettings.thermal;
-                                  const sampleName = summaryEntries.length > 0 ? (summaryEntries[summaryEntries.length-1].groupName || summaryEntries[summaryEntries.length-1].borrowerName) : 'रामचंद्र शिंदे';
-                                  const sampleDate = summaryEntries.length > 0 ? DateUtils.isoToIndianDate(summaryEntries[summaryEntries.length-1].closureDate) : '06/04/2026';
-                                  const sampleAcct = summaryEntries.length > 0 ? summaryEntries[0].accountNumber : '1001';
-                                  const sampleLoanDate = summaryEntries.length > 0 ? toShortDate(summaryEntries[0].loanDate) : '15/03/26';
-                                  const samplePrincipal = summaryEntries.length > 0 ? Number(Math.round(summaryEntries[0].principalAmount)).toLocaleString('en-IN') : '50,000';
-                                  const sampleCharges = summaryEntries.length > 0 ? Number(Math.round(summaryEntries[0].chargesAmount)).toLocaleString('en-IN') : '2,500';
-                                  return (
-                                    <div className="space-y-2 mt-1">
-                                      <div className="text-[10px] font-semibold text-green-700 flex items-center gap-1 border-b border-green-200 pb-0.5">
-                                        <Eye className="h-3 w-3" /> BT प्रिव्ह्यू (Live)
-                                      </div>
-                                      <div className="bg-white border border-green-200 rounded-md p-2 overflow-x-auto" style={{fontFamily:"'Noto Sans Devanagari',sans-serif"}}>
-                                        <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:2}}>
-                                          <div style={{fontWeight:bt.name.bold?800:400,fontSize:bt.name.fontSize*0.55}}>{sampleName}</div>
-                                          <div style={{fontSize:bt.date.fontSize*0.55,fontWeight:bt.date.bold?700:400,whiteSpace:'nowrap'}}>तारीख: {sampleDate}</div>
-                                        </div>
-                                        <div style={{textAlign:'center',fontWeight:bt.title.bold?800:400,fontSize:bt.title.fontSize*0.55,marginBottom:4}}><span style={{borderBottom:'1.5px solid #000',paddingBottom:2}}>Estimate</span></div>
-                                        <table style={{width:'100%',borderCollapse:'collapse',tableLayout:'fixed'}}>
-                                          <thead>
-                                            <tr style={{borderBottom:'2px double #000'}}>
-                                              <th style={{fontSize:bt.hdrSerial.fontSize*0.55,fontWeight:bt.hdrSerial.bold?700:400,textAlign:'center',padding:'2px 1px'}}>अ.नं.</th>
-                                              <th style={{fontSize:bt.hdrAccount.fontSize*0.55,fontWeight:bt.hdrAccount.bold?700:400,textAlign:'center',padding:'2px 1px'}}>कोड नं</th>
-                                              <th style={{fontSize:bt.hdrDate.fontSize*0.55,fontWeight:bt.hdrDate.bold?700:400,textAlign:'right',padding:'2px 1px'}}>दिनांक</th>
-                                              <th style={{fontSize:bt.hdrPrincipal.fontSize*0.55,fontWeight:bt.hdrPrincipal.bold?700:400,textAlign:'right',padding:'2px 1px'}}>बाजारमूल्य</th>
-                                              <th style={{fontSize:bt.hdrCharges.fontSize*0.55,fontWeight:bt.hdrCharges.bold?700:400,textAlign:'right',padding:'2px 1px'}}>चार्जेस</th>
-                                            </tr>
-                                          </thead>
-                                          <tbody>
-                                            <tr>
-                                              <td style={{fontSize:bt.colSerial.fontSize*0.55,fontWeight:bt.colSerial.bold?700:400,textAlign:'center',padding:'2px 1px'}}>1</td>
-                                              <td style={{fontSize:bt.colAccount.fontSize*0.55,fontWeight:bt.colAccount.bold?700:400,textAlign:'center',padding:'2px 1px'}}>{sampleAcct}</td>
-                                              <td style={{fontSize:bt.colDate.fontSize*0.55,fontWeight:bt.colDate.bold?700:400,textAlign:'right',padding:'2px 1px'}}>{sampleLoanDate}</td>
-                                              <td style={{fontSize:bt.colPrincipal.fontSize*0.55,fontWeight:bt.colPrincipal.bold?700:400,textAlign:'right',padding:'2px 1px'}}>{samplePrincipal}</td>
-                                              <td style={{fontSize:bt.colCharges.fontSize*0.55,fontWeight:bt.colCharges.bold?700:400,textAlign:'right',padding:'2px 1px'}}>{sampleCharges}</td>
-                                            </tr>
-                                            <tr style={{borderTop:'2px double #000'}}>
-                                              <td colSpan={3} style={{fontSize:bt.total.fontSize*0.55,fontWeight:bt.total.bold?700:400,textAlign:'right',padding:'2px 1px'}}>एकूण</td>
-                                              <td style={{fontSize:bt.total.fontSize*0.55,fontWeight:bt.total.bold?700:400,textAlign:'right',padding:'2px 1px'}}>{samplePrincipal}</td>
-                                              <td style={{fontSize:bt.total.fontSize*0.55,fontWeight:bt.total.bold?700:400,textAlign:'right',padding:'2px 1px'}}>{sampleCharges}</td>
-                                            </tr>
-                                            <tr style={{borderTop:'2px double #000'}}>
-                                              <td colSpan={5} style={{fontSize:bt.grandTotal.fontSize*0.55,fontWeight:bt.grandTotal.bold?900:400,textAlign:'center',padding:'3px 1px'}}>Grand Total : {summaryEntries.length > 0 ? Number(Math.round(summaryEntries.reduce((s,e)=>s+e.principalAmount+e.chargesAmount,0))).toLocaleString('en-IN') : '52,500'}</td>
-                                            </tr>
-                                          </tbody>
-                                        </table>
-                                      </div>
-                                    </div>
-                                  );
-                                })()}
                               </>
                             );
                           })()}
@@ -2457,44 +2406,48 @@ export default function Closure() {
                       )}
                     </CardHeader>
                     <CardContent className="p-0">
+                      {(() => {
+                        const bt = receiptSettings.thermal;
+                        const sc = 0.5;
+                        return (<>
                       {summaryEntries.length > 0 && (
                         <div className="flex justify-between items-start px-3 pt-2 pb-1">
                           <div>
-                            <div className="font-bold text-sm">{summaryEntries[summaryEntries.length - 1].borrowerName}</div>
+                            <div style={{fontSize:bt.name.fontSize*sc,fontWeight:bt.name.bold?700:400}}>{summaryEntries[summaryEntries.length - 1].borrowerName}</div>
                             {summaryEntries[summaryEntries.length - 1].borrowerAddress && (
                               <div className="text-xs text-gray-500">{summaryEntries[summaryEntries.length - 1].borrowerAddress}</div>
                             )}
                           </div>
-                          <div className="text-xs text-gray-500 text-right">
+                          <div style={{fontSize:bt.date.fontSize*sc,fontWeight:bt.date.bold?700:400}} className="text-gray-500 text-right">
                             तारीख: {DateUtils.isoToIndianDate(summaryEntries[summaryEntries.length - 1].closureDate)}
                           </div>
                         </div>
                       )}
-                      <div className="text-center font-bold text-sm py-1 underline">Estimate</div>
+                      <div className="text-center py-1 underline" style={{fontSize:bt.title.fontSize*sc,fontWeight:bt.title.bold?700:400}}>Estimate</div>
                       <div className="overflow-x-auto">
-                        <table className="w-full text-sm border-collapse">
+                        <table className="w-full border-collapse" style={{fontSize:12}}>
                           <thead>
-                            <tr className="bg-gray-100 text-xs">
-                              <th className="border border-gray-300 px-1 py-1 text-center w-8">अ.नं.</th>
-                              {showDetails && <th className="border border-gray-300 px-2 py-1 text-left">तपशील</th>}
-                              <th className="border border-gray-300 px-1 py-1 text-center w-16 font-bold">कोड नं</th>
-                              <th className="border border-gray-300 px-1 py-1 text-center w-20">दिनांक</th>
-                              {showDetails && <th className="border border-gray-300 px-1 py-1 text-center w-10"></th>}
-                              <th className="border border-gray-300 px-2 py-1 text-right" style={{minWidth:'10ch'}}>बाजारमूल्य</th>
-                              <th className="border border-gray-300 px-2 py-1 text-right" style={{minWidth:'10ch'}}>चार्जेस</th>
+                            <tr className="bg-gray-100">
+                              <th className="border border-gray-300 px-1 py-1 text-center w-8" style={{fontSize:bt.hdrSerial.fontSize*sc,fontWeight:bt.hdrSerial.bold?700:400}}>अ.नं.</th>
+                              {showDetails && <th className="border border-gray-300 px-2 py-1 text-left text-xs">तपशील</th>}
+                              <th className="border border-gray-300 px-1 py-1 text-center w-16" style={{fontSize:bt.hdrAccount.fontSize*sc,fontWeight:bt.hdrAccount.bold?700:400}}>कोड नं</th>
+                              <th className="border border-gray-300 px-1 py-1 text-center w-20" style={{fontSize:bt.hdrDate.fontSize*sc,fontWeight:bt.hdrDate.bold?700:400}}>दिनांक</th>
+                              {showDetails && <th className="border border-gray-300 px-1 py-1 text-center w-10 text-xs"></th>}
+                              <th className="border border-gray-300 px-2 py-1 text-right" style={{minWidth:'10ch',fontSize:bt.hdrPrincipal.fontSize*sc,fontWeight:bt.hdrPrincipal.bold?700:400}}>बाजारमूल्य</th>
+                              <th className="border border-gray-300 px-2 py-1 text-right" style={{minWidth:'10ch',fontSize:bt.hdrCharges.fontSize*sc,fontWeight:bt.hdrCharges.bold?700:400}}>चार्जेस</th>
                               <th className="border border-gray-300 px-1 py-1 w-8"></th>
                             </tr>
                           </thead>
                           <tbody>
                             {summaryEntries.map((entry, index) => (
                               <tr key={entry.id} className="hover:bg-gray-50">
-                                <td className="border border-gray-300 px-1 py-1 text-center text-xs">{index + 1}</td>
+                                <td className="border border-gray-300 px-1 py-1 text-center" style={{fontSize:bt.colSerial.fontSize*sc,fontWeight:bt.colSerial.bold?700:400}}>{index + 1}</td>
                                 {showDetails && <td className="border border-gray-300 px-2 py-1 text-xs"><div className="max-w-[120px] truncate" title={entry.collateralDetails || '-'}>{entry.collateralDetails || '-'}</div></td>}
-                                <td className="border border-gray-300 px-1 py-1 text-center text-xs font-bold">{entry.accountNumber}</td>
-                                <td className="border border-gray-300 px-1 py-1 text-center text-xs">{toShortDate(entry.loanDate)}{showRateMonths ? <span className="ml-4 text-xs font-normal">{formatRate(entry.interestRate)}</span> : ''}</td>
+                                <td className="border border-gray-300 px-1 py-1 text-center" style={{fontSize:bt.colAccount.fontSize*sc,fontWeight:bt.colAccount.bold?700:400}}>{entry.accountNumber}</td>
+                                <td className="border border-gray-300 px-1 py-1 text-center" style={{fontSize:bt.colDate.fontSize*sc,fontWeight:bt.colDate.bold?700:400}}>{toShortDate(entry.loanDate)}{showRateMonths ? <span className="ml-4 font-normal" style={{fontSize:bt.colDate.fontSize*sc*0.9}}>{formatRate(entry.interestRate)}</span> : ''}</td>
                                 {showDetails && <td className="border border-gray-300 px-1 py-1 text-center text-xs">{entry.months}</td>}
-                                <td className="border border-gray-300 px-2 py-1 text-right text-xs font-bold">{Number(Math.round(entry.principalAmount)).toLocaleString('en-IN')}</td>
-                                <td className="border border-gray-300 px-2 py-1 text-right text-xs font-bold">{Number(Math.round(entry.chargesAmount)).toLocaleString('en-IN')}</td>
+                                <td className="border border-gray-300 px-2 py-1 text-right" style={{fontSize:bt.colPrincipal.fontSize*sc,fontWeight:bt.colPrincipal.bold?700:400}}>{Number(Math.round(entry.principalAmount)).toLocaleString('en-IN')}</td>
+                                <td className="border border-gray-300 px-2 py-1 text-right" style={{fontSize:bt.colCharges.fontSize*sc,fontWeight:bt.colCharges.bold?700:400}}>{Number(Math.round(entry.chargesAmount)).toLocaleString('en-IN')}</td>
                                 <td className="border border-gray-300 px-1 py-1 text-center">
                                   <button
                                     type="button"
@@ -2507,19 +2460,19 @@ export default function Closure() {
                                 </td>
                               </tr>
                             ))}
-                            <tr className="bg-gray-100 font-bold">
-                              <td colSpan={1 + (showDetails ? 2 : 0) + 2} className="border border-gray-300 px-2 py-1.5 text-right text-xs font-bold">एकूण</td>
-                              <td className="border border-gray-300 px-2 py-1.5 text-right text-xs font-bold">
+                            <tr className="bg-gray-100">
+                              <td colSpan={1 + (showDetails ? 2 : 0) + 2} className="border border-gray-300 px-2 py-1.5 text-right" style={{fontSize:bt.total.fontSize*sc,fontWeight:bt.total.bold?700:400}}>एकूण</td>
+                              <td className="border border-gray-300 px-2 py-1.5 text-right" style={{fontSize:bt.total.fontSize*sc,fontWeight:bt.total.bold?700:400}}>
                                 {Number(Math.round(summaryEntries.reduce((sum, e) => sum + e.principalAmount, 0))).toLocaleString('en-IN')}
                               </td>
-                              <td className="border border-gray-300 px-2 py-1.5 text-right text-xs font-bold">
+                              <td className="border border-gray-300 px-2 py-1.5 text-right" style={{fontSize:bt.total.fontSize*sc,fontWeight:bt.total.bold?700:400}}>
                                 {Number(Math.round(summaryEntries.reduce((sum, e) => sum + e.chargesAmount, 0))).toLocaleString('en-IN')}
                               </td>
                               <td className="border border-gray-300"></td>
                             </tr>
-                            <tr className="bg-amber-50 font-bold">
-                              <td colSpan={1 + (showDetails ? 2 : 0) + 2 + 1} className="border border-gray-300 px-2 py-1.5 text-right text-xs font-bold">Grand Total</td>
-                              <td className="border border-gray-300 px-2 py-1.5 text-right text-sm font-bold text-green-700">
+                            <tr className="bg-amber-50">
+                              <td colSpan={1 + (showDetails ? 2 : 0) + 2 + 1} className="border border-gray-300 px-2 py-1.5 text-right" style={{fontSize:bt.grandTotal.fontSize*sc*0.7,fontWeight:bt.grandTotal.bold?700:400}}>Grand Total</td>
+                              <td className="border border-gray-300 px-2 py-1.5 text-right text-green-700" style={{fontSize:bt.grandTotal.fontSize*sc,fontWeight:bt.grandTotal.bold?900:400}}>
                                 {Number(Math.round(summaryEntries.reduce((sum, e) => sum + e.principalAmount + e.chargesAmount, 0))).toLocaleString('en-IN')}
                               </td>
                               <td className="border border-gray-300"></td>
@@ -2527,6 +2480,8 @@ export default function Closure() {
                           </tbody>
                         </table>
                       </div>
+                        </>);
+                      })()}
                     </CardContent>
                   </Card>
                 ) : (
