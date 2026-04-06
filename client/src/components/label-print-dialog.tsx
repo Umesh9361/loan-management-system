@@ -1016,12 +1016,16 @@ export function LabelPrintDialog({ open, onOpenChange, loans }: LabelPrintDialog
   const [packetDateTo, setPacketDateTo] = useState("");
   const [packetGroupId, setPacketGroupId] = useState("all");
   const [packetFetchCounter, setPacketFetchCounter] = useState(0);
+  const [packetAcctFrom, setPacketAcctFrom] = useState("");
+  const [packetAcctTo, setPacketAcctTo] = useState("");
 
   useEffect(() => {
     if (open) {
       setPacketDateFrom(todayISO);
       setPacketDateTo(todayISO);
       setPacketGroupId('all');
+      setPacketAcctFrom('');
+      setPacketAcctTo('');
       setPacketFetchCounter(c => c + 1);
     }
   }, [open, todayISO]);
@@ -1057,7 +1061,19 @@ export function LabelPrintDialog({ open, onOpenChange, loans }: LabelPrintDialog
     gcTime: 0,
     placeholderData: undefined,
   });
-  const packetLoans = packetFetchedLoans || [];
+  const packetAllLoans = packetFetchedLoans || [];
+  const packetLoans = useMemo(() => {
+    if (packetAllLoans.length === 0) return [];
+    const acctFromNum = packetAcctFrom ? parseInt(packetAcctFrom) : null;
+    const acctToNum = packetAcctTo ? parseInt(packetAcctTo) : null;
+    if (acctFromNum === null && acctToNum === null) return packetAllLoans;
+    return packetAllLoans.filter(loan => {
+      const acctNum = parseInt(String(loan.accountNumber)) || 0;
+      if (acctFromNum !== null && acctNum < acctFromNum) return false;
+      if (acctToNum !== null && acctNum > acctToNum) return false;
+      return true;
+    });
+  }, [packetAllLoans, packetAcctFrom, packetAcctTo]);
   const packetSummary = useMemo(() => {
     if (packetLoans.length === 0) return null;
     const sorted = [...packetLoans].sort((a, b) => (parseInt(String(a.accountNumber)) || 0) - (parseInt(String(b.accountNumber)) || 0));
@@ -1482,7 +1498,7 @@ export function LabelPrintDialog({ open, onOpenChange, loans }: LabelPrintDialog
                     <div className="text-[11px] font-semibold text-amber-800">पॅकेट लेबल — तारीख व ग्रुप निवडा:</div>
                     {(packetDateFrom || packetDateTo || packetGroupId !== 'all') && (
                       <button
-                        onClick={() => { setPacketDateFrom(''); setPacketDateTo(''); setPacketGroupId('all'); setPacketFetchCounter(c => c + 1); }}
+                        onClick={() => { setPacketDateFrom(''); setPacketDateTo(''); setPacketGroupId('all'); setPacketAcctFrom(''); setPacketAcctTo(''); setPacketFetchCounter(c => c + 1); }}
                         className="text-[9px] text-red-500 hover:text-red-700 hover:bg-red-50 px-1.5 py-0.5 rounded transition-colors flex items-center gap-0.5"
                         title="सर्व क्लिअर करा"
                       >
@@ -1517,6 +1533,22 @@ export function LabelPrintDialog({ open, onOpenChange, loans }: LabelPrintDialog
                       <Input type="date" value={packetDateTo} onChange={(e) => handlePacketDateTo(e.target.value)} className="h-8 text-xs border-amber-300 focus:border-amber-500 focus:ring-amber-500" />
                     </div>
                   </div>
+                  {packetAllLoans.length > 0 && (
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <Label className="text-[10px] font-medium text-amber-700 flex items-center gap-1 mb-0.5">
+                          <Hash className="h-3 w-3" /> खाते क्र. पासून <span className="text-[8px] text-amber-500 font-normal">(ऐच्छिक)</span>
+                        </Label>
+                        <Input type="number" placeholder="उदा. 320" value={packetAcctFrom} onChange={(e) => setPacketAcctFrom(e.target.value)} className="h-8 text-xs border-amber-300 focus:border-amber-500 focus:ring-amber-500" min="1" />
+                      </div>
+                      <div>
+                        <Label className="text-[10px] font-medium text-amber-700 flex items-center gap-1 mb-0.5">
+                          <Hash className="h-3 w-3" /> खाते क्र. पर्यंत <span className="text-[8px] text-amber-500 font-normal">(ऐच्छिक)</span>
+                        </Label>
+                        <Input type="number" placeholder="उदा. 350" value={packetAcctTo} onChange={(e) => setPacketAcctTo(e.target.value)} className="h-8 text-xs border-amber-300 focus:border-amber-500 focus:ring-amber-500" min="1" />
+                      </div>
+                    </div>
+                  )}
                   {packetDateFrom && packetDateTo && (
                     <div>
                       {packetLoansLoading && (
@@ -1526,7 +1558,7 @@ export function LabelPrintDialog({ open, onOpenChange, loans }: LabelPrintDialog
                         <div className="flex items-center gap-2 text-red-600 text-xs"><AlertCircle className="h-3.5 w-3.5" /> कर्जे शोधताना त्रुटी आली</div>
                       )}
                       {!packetLoansLoading && !packetLoansError && packetLoans.length === 0 && (
-                        <div className="flex items-center gap-2 text-gray-500 text-xs"><AlertCircle className="h-3.5 w-3.5" /> या तारीख श्रेणीत कोणतेही सक्रिय खाते सापडले नाही</div>
+                        <div className="flex items-center gap-2 text-gray-500 text-xs"><AlertCircle className="h-3.5 w-3.5" /> {packetAllLoans.length > 0 && (packetAcctFrom || packetAcctTo) ? 'या खाते क्रमांक श्रेणीत कोणतेही खाते सापडले नाही' : 'या तारीख श्रेणीत कोणतेही सक्रिय खाते सापडले नाही'}</div>
                       )}
                       {!packetLoansLoading && packetSummary && (
                         <div className="bg-green-50 border border-green-200 rounded p-2 space-y-0.5">
