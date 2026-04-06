@@ -24,7 +24,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { LoanCalculationsAdvanced } from "@/lib/loan-calculations";
 import { LoanCalculations } from "@/lib/calculations";
 import { DateUtils } from "@/lib/date-utils";
-import { Calculator, FileText, AlertTriangle, CheckCircle, Download, Search, X, Clock, Edit, Calendar, Lightbulb, Sparkles, TrendingUp, Info, Check, AlertCircle, Home, Trash2, Printer, Bluetooth, Loader2 } from "lucide-react";
+import { Calculator, FileText, AlertTriangle, CheckCircle, Download, Search, X, Clock, Edit, Calendar, Lightbulb, Sparkles, TrendingUp, Info, Check, AlertCircle, Home, Trash2, Printer, Bluetooth, Loader2, Settings, Minus, Plus, Bold, RotateCcw, ChevronDown, ChevronUp } from "lucide-react";
 import html2canvas from "html2canvas";
 import { printReceiptViaBluetooth, isBluetoothSupported } from "@/lib/bluetooth-printer";
 import jsPDF from "jspdf";
@@ -62,6 +62,69 @@ interface SummaryEntry {
   principalAmount: number;
   chargesAmount: number;
   closureDate: string;
+}
+
+interface ReceiptFieldSetting {
+  fontSize: number;
+  bold: boolean;
+}
+
+interface ReceiptPrintSettings {
+  standard: {
+    name: ReceiptFieldSetting;
+    date: ReceiptFieldSetting;
+    title: ReceiptFieldSetting;
+    tableHeader: ReceiptFieldSetting;
+    tableData: ReceiptFieldSetting;
+    total: ReceiptFieldSetting;
+    grandTotal: ReceiptFieldSetting;
+  };
+  thermal: {
+    name: ReceiptFieldSetting;
+    date: ReceiptFieldSetting;
+    title: ReceiptFieldSetting;
+    tableHeader: ReceiptFieldSetting;
+    tableData: ReceiptFieldSetting;
+    total: ReceiptFieldSetting;
+    grandTotal: ReceiptFieldSetting;
+  };
+}
+
+const DEFAULT_RECEIPT_SETTINGS: ReceiptPrintSettings = {
+  standard: {
+    name: { fontSize: 13, bold: true },
+    date: { fontSize: 12, bold: true },
+    title: { fontSize: 13, bold: true },
+    tableHeader: { fontSize: 12, bold: true },
+    tableData: { fontSize: 12, bold: true },
+    total: { fontSize: 12, bold: true },
+    grandTotal: { fontSize: 13, bold: true },
+  },
+  thermal: {
+    name: { fontSize: 26, bold: true },
+    date: { fontSize: 22, bold: true },
+    title: { fontSize: 24, bold: true },
+    tableHeader: { fontSize: 22, bold: true },
+    tableData: { fontSize: 22, bold: true },
+    total: { fontSize: 22, bold: true },
+    grandTotal: { fontSize: 32, bold: true },
+  },
+};
+
+const RECEIPT_SETTINGS_KEY = 'lms_receipt_print_settings';
+
+function loadReceiptSettings(): ReceiptPrintSettings {
+  try {
+    const saved = localStorage.getItem(RECEIPT_SETTINGS_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      return {
+        standard: { ...DEFAULT_RECEIPT_SETTINGS.standard, ...parsed.standard },
+        thermal: { ...DEFAULT_RECEIPT_SETTINGS.thermal, ...parsed.thermal },
+      };
+    }
+  } catch {}
+  return { ...DEFAULT_RECEIPT_SETTINGS };
 }
 
 const formatRate = (rate: string | number): string => {
@@ -121,6 +184,21 @@ export default function Closure() {
   const [showSummaryReceipt, setShowSummaryReceipt] = useState(false);
   const [showPhotos, setShowPhotos] = useState(false);
   const [isBtPrinting, setIsBtPrinting] = useState(false);
+  const [receiptSettings, setReceiptSettings] = useState<ReceiptPrintSettings>(loadReceiptSettings);
+  const [showPrintSettings, setShowPrintSettings] = useState(false);
+
+  const updateReceiptSettings = useCallback((updater: (prev: ReceiptPrintSettings) => ReceiptPrintSettings) => {
+    setReceiptSettings(prev => {
+      const next = updater(prev);
+      try { localStorage.setItem(RECEIPT_SETTINGS_KEY, JSON.stringify(next)); } catch {}
+      return next;
+    });
+  }, []);
+
+  const resetReceiptSettings = useCallback(() => {
+    setReceiptSettings({ ...DEFAULT_RECEIPT_SETTINGS, standard: { ...DEFAULT_RECEIPT_SETTINGS.standard }, thermal: { ...DEFAULT_RECEIPT_SETTINGS.thermal } });
+    try { localStorage.removeItem(RECEIPT_SETTINGS_KEY); } catch {}
+  }, []);
   const [summaryReceiptHTML, setSummaryReceiptHTML] = useState<string | null>(null);
   const [printNameMode, setPrintNameMode] = useState<'group' | 'customer'>('group');
   
@@ -710,8 +788,9 @@ export default function Closure() {
 
   const generateMultiLoanReceiptHTML = useCallback((entries: SummaryEntry[], showInterestRate: boolean, showDetailsCols: boolean = true, nameMode: 'group' | 'customer' = 'group'): string => {
     if (entries.length === 0) return '';
-    const fontSize = '12px';
-    const headFontSize = '12px';
+    const rs = receiptSettings.standard;
+    const fontSize = `${rs.tableData.fontSize}px`;
+    const headFontSize = `${rs.tableHeader.fontSize}px`;
     const totalPrincipal = entries.reduce((sum, e) => sum + e.principalAmount, 0);
     const totalCharges = entries.reduce((sum, e) => sum + e.chargesAmount, 0);
     const grandTotal = totalPrincipal + totalCharges;
@@ -729,16 +808,17 @@ export default function Closure() {
     const makeHeader = (pageNum: number) => `
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px;line-height:1.8;">
         <div>
-          <div style="font-weight:700;font-size:13px;line-height:1.8;">${displayName}</div>
+          <div style="font-weight:${rs.name.bold ? 700 : 400};font-size:${rs.name.fontSize}px;line-height:1.8;">${displayName}</div>
           ${displayAddress ? `<div style="font-size:${fontSize};color:#333;line-height:1.8;">${displayAddress}</div>` : ''}
         </div>
         <div style="text-align:right;">
-          <div style="font-size:12px;font-weight:700;line-height:1.8;">तारीख: ${closureDateFormatted}</div>
+          <div style="font-size:${rs.date.fontSize}px;font-weight:${rs.date.bold ? 700 : 400};line-height:1.8;">तारीख: ${closureDateFormatted}</div>
           ${totalPages > 1 ? `<div style="font-size:${fontSize};color:#666;">पान ${pageNum}/${totalPages}</div>` : ''}
         </div>
       </div>
-      <div style="text-align:center;font-weight:700;font-size:13px;margin-bottom:12px;text-decoration:underline;text-underline-offset:6px;line-height:1.8;">Estimate</div>`;
+      <div style="text-align:center;font-weight:${rs.title.bold ? 700 : 400};font-size:${rs.title.fontSize}px;margin-bottom:12px;text-decoration:underline;text-underline-offset:6px;line-height:1.8;">Estimate</div>`;
 
+    const hfw = rs.tableHeader.bold ? 700 : 400;
     const makeTableHead = () => `
       <colgroup>
         <col style="width:36px;">
@@ -751,24 +831,25 @@ export default function Closure() {
       </colgroup>
       <thead>
       <tr>
-        <th style="border:none;border-bottom:0.5px solid #000;padding:5px 4px 5px 2px;font-size:${headFontSize};text-align:center;vertical-align:middle;font-weight:700;line-height:1.8;">अ.नं.</th>
-        ${showDetailsCols ? `<th style="border:none;border-bottom:0.5px solid #000;padding:5px 4px 5px 6px;font-size:${headFontSize};text-align:left;vertical-align:middle;font-weight:700;line-height:1.8;">तपशील</th>` : ''}
-        <th style="border:none;border-bottom:0.5px solid #000;padding:5px 3px;font-size:${headFontSize};text-align:center;vertical-align:middle;font-weight:700;line-height:1.8;">कोड नं</th>
-        <th style="border:none;border-bottom:0.5px solid #000;padding:5px 3px;font-size:${headFontSize};text-align:center;vertical-align:middle;font-weight:700;line-height:1.8;">दिनांक</th>
-        ${showDetailsCols ? `<th style="border:none;border-bottom:0.5px solid #000;padding:5px 2px;font-size:${headFontSize};text-align:center;vertical-align:middle;font-weight:700;line-height:1.8;"></th>` : ''}
-        <th style="border:none;border-bottom:0.5px solid #000;padding:5px 4px;font-size:${headFontSize};text-align:right;vertical-align:middle;font-weight:700;line-height:1.8;">बाजारमूल्य</th>
-        <th style="border:none;border-bottom:0.5px solid #000;padding:5px 4px;font-size:${headFontSize};text-align:right;vertical-align:middle;font-weight:700;line-height:1.8;">चार्जेस</th>
+        <th style="border:none;border-bottom:0.5px solid #000;padding:5px 4px 5px 2px;font-size:${headFontSize};text-align:center;vertical-align:middle;font-weight:${hfw};line-height:1.8;">अ.नं.</th>
+        ${showDetailsCols ? `<th style="border:none;border-bottom:0.5px solid #000;padding:5px 4px 5px 6px;font-size:${headFontSize};text-align:left;vertical-align:middle;font-weight:${hfw};line-height:1.8;">तपशील</th>` : ''}
+        <th style="border:none;border-bottom:0.5px solid #000;padding:5px 3px;font-size:${headFontSize};text-align:center;vertical-align:middle;font-weight:${hfw};line-height:1.8;">कोड नं</th>
+        <th style="border:none;border-bottom:0.5px solid #000;padding:5px 3px;font-size:${headFontSize};text-align:center;vertical-align:middle;font-weight:${hfw};line-height:1.8;">दिनांक</th>
+        ${showDetailsCols ? `<th style="border:none;border-bottom:0.5px solid #000;padding:5px 2px;font-size:${headFontSize};text-align:center;vertical-align:middle;font-weight:${hfw};line-height:1.8;"></th>` : ''}
+        <th style="border:none;border-bottom:0.5px solid #000;padding:5px 4px;font-size:${headFontSize};text-align:right;vertical-align:middle;font-weight:${hfw};line-height:1.8;">बाजारमूल्य</th>
+        <th style="border:none;border-bottom:0.5px solid #000;padding:5px 4px;font-size:${headFontSize};text-align:right;vertical-align:middle;font-weight:${hfw};line-height:1.8;">चार्जेस</th>
       </tr>
     </thead>`;
 
+    const dfw = rs.tableData.bold ? 700 : 400;
     const makeRow = (entry: SummaryEntry, index: number) => `<tr>
-      <td style="border:none;padding:10px 4px 10px 2px;text-align:center;font-size:${fontSize};vertical-align:middle;line-height:1.8;">${index + 1}</td>
-      ${showDetailsCols ? `<td style="border:none;padding:10px 4px 10px 6px;font-size:${fontSize};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:middle;line-height:1.8;">${entry.collateralDetails || '-'}</td>` : ''}
-      <td style="border:none;padding:10px 3px;text-align:center;font-size:${fontSize};font-weight:700;vertical-align:middle;line-height:1.8;">${entry.accountNumber}</td>
-      <td style="border:none;padding:10px 3px;text-align:center;font-size:${fontSize};vertical-align:middle;line-height:1.8;white-space:nowrap;">${toShortDate(entry.loanDate)}${showInterestRate ? `<span style="margin-left:4px;font-size:10px;font-weight:600;">${formatRate(entry.interestRate)}</span>` : ''}</td>
-      ${showDetailsCols ? `<td style="border:none;padding:10px 2px;text-align:center;font-size:${fontSize};vertical-align:middle;line-height:1.8;">${entry.months}</td>` : ''}
-      <td style="border:none;padding:10px 4px;text-align:right;font-size:${fontSize};font-weight:700;vertical-align:middle;line-height:1.8;">${Number(Math.round(entry.principalAmount)).toLocaleString('en-IN')}</td>
-      <td style="border:none;padding:10px 4px;text-align:right;font-size:${fontSize};font-weight:700;vertical-align:middle;line-height:1.8;">${Number(Math.round(entry.chargesAmount)).toLocaleString('en-IN')}</td>
+      <td style="border:none;padding:10px 4px 10px 2px;text-align:center;font-size:${fontSize};font-weight:${dfw};vertical-align:middle;line-height:1.8;">${index + 1}</td>
+      ${showDetailsCols ? `<td style="border:none;padding:10px 4px 10px 6px;font-size:${fontSize};font-weight:${dfw};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:middle;line-height:1.8;">${entry.collateralDetails || '-'}</td>` : ''}
+      <td style="border:none;padding:10px 3px;text-align:center;font-size:${fontSize};font-weight:${dfw};vertical-align:middle;line-height:1.8;">${entry.accountNumber}</td>
+      <td style="border:none;padding:10px 3px;text-align:center;font-size:${fontSize};font-weight:${dfw};vertical-align:middle;line-height:1.8;white-space:nowrap;">${toShortDate(entry.loanDate)}${showInterestRate ? `<span style="margin-left:4px;font-size:10px;font-weight:600;">${formatRate(entry.interestRate)}</span>` : ''}</td>
+      ${showDetailsCols ? `<td style="border:none;padding:10px 2px;text-align:center;font-size:${fontSize};font-weight:${dfw};vertical-align:middle;line-height:1.8;">${entry.months}</td>` : ''}
+      <td style="border:none;padding:10px 4px;text-align:right;font-size:${fontSize};font-weight:${dfw};vertical-align:middle;line-height:1.8;">${Number(Math.round(entry.principalAmount)).toLocaleString('en-IN')}</td>
+      <td style="border:none;padding:10px 4px;text-align:right;font-size:${fontSize};font-weight:${dfw};vertical-align:middle;line-height:1.8;">${Number(Math.round(entry.chargesAmount)).toLocaleString('en-IN')}</td>
     </tr>`;
 
     let pagesHTML = '';
@@ -781,15 +862,17 @@ export default function Closure() {
         rows += makeRow(entry, p * ROWS_PER_PAGE + i);
       });
 
+      const tfw = rs.total.bold ? 700 : 400;
+      const gfw = rs.grandTotal.bold ? 800 : 400;
       const totalsHTML = isLastPage ? `
         <tr>
-          <td colspan="${totalColSpan}" style="border-top:2px double #000;border-left:none;border-right:none;border-bottom:none;padding:8px 4px;text-align:right;font-size:${fontSize};font-weight:700;vertical-align:middle;line-height:1.8;">एकूण</td>
-          <td style="border-top:2px double #000;border-left:none;border-right:none;border-bottom:none;padding:8px 4px;text-align:right;font-size:${fontSize};font-weight:700;vertical-align:middle;line-height:1.8;">${Number(Math.round(totalPrincipal)).toLocaleString('en-IN')}</td>
-          <td style="border-top:2px double #000;border-left:none;border-right:none;border-bottom:none;padding:8px 4px;text-align:right;font-size:${fontSize};font-weight:700;vertical-align:middle;line-height:1.8;">${Number(Math.round(totalCharges)).toLocaleString('en-IN')}</td>
+          <td colspan="${totalColSpan}" style="border-top:2px double #000;border-left:none;border-right:none;border-bottom:none;padding:8px 4px;text-align:right;font-size:${rs.total.fontSize}px;font-weight:${tfw};vertical-align:middle;line-height:1.8;">एकूण</td>
+          <td style="border-top:2px double #000;border-left:none;border-right:none;border-bottom:none;padding:8px 4px;text-align:right;font-size:${rs.total.fontSize}px;font-weight:${tfw};vertical-align:middle;line-height:1.8;">${Number(Math.round(totalPrincipal)).toLocaleString('en-IN')}</td>
+          <td style="border-top:2px double #000;border-left:none;border-right:none;border-bottom:none;padding:8px 4px;text-align:right;font-size:${rs.total.fontSize}px;font-weight:${tfw};vertical-align:middle;line-height:1.8;">${Number(Math.round(totalCharges)).toLocaleString('en-IN')}</td>
         </tr>
         <tr>
-          <td colspan="${grandTotalColSpan}" style="border-top:2px double #000;border-bottom:2px double #000;border-left:none;border-right:none;padding:10px 4px;text-align:right;font-size:13px;font-weight:800;vertical-align:middle;line-height:1.8;">Grand Total</td>
-          <td style="border-top:2px double #000;border-bottom:2px double #000;border-left:none;border-right:none;padding:10px 4px;text-align:right;font-size:13px;font-weight:800;vertical-align:middle;line-height:1.8;">${Number(Math.round(grandTotal)).toLocaleString('en-IN')}</td>
+          <td colspan="${grandTotalColSpan}" style="border-top:2px double #000;border-bottom:2px double #000;border-left:none;border-right:none;padding:10px 4px;text-align:right;font-size:${rs.grandTotal.fontSize}px;font-weight:${gfw};vertical-align:middle;line-height:1.8;">Grand Total</td>
+          <td style="border-top:2px double #000;border-bottom:2px double #000;border-left:none;border-right:none;padding:10px 4px;text-align:right;font-size:${rs.grandTotal.fontSize}px;font-weight:${gfw};vertical-align:middle;line-height:1.8;">${Number(Math.round(grandTotal)).toLocaleString('en-IN')}</td>
         </tr>` : '';
 
       const continuedNote = !isLastPage ? `<div style="text-align:right;font-size:${fontSize};color:#888;margin-top:1px;">पुढे चालू...</div>` : '';
@@ -823,7 +906,7 @@ export default function Closure() {
     </style></head><body>
     ${pagesHTML}
     </body></html>`;
-  }, []);
+  }, [receiptSettings.standard]);
 
   const handleAddToSummary = useCallback(() => {
     if (!selectedLoan || !calculationResult) return;
@@ -1065,6 +1148,7 @@ export default function Closure() {
 
   const generateThermalReceiptHTML = useCallback((entries: SummaryEntry[], nameMode: 'group' | 'customer' = 'group', showInterestRate: boolean = false): string => {
     if (entries.length === 0) return '';
+    const bt = receiptSettings.thermal;
     const totalPrincipal = entries.reduce((sum, e) => sum + e.principalAmount, 0);
     const totalCharges = entries.reduce((sum, e) => sum + e.chargesAmount, 0);
     const grandTotal = totalPrincipal + totalCharges;
@@ -1072,26 +1156,30 @@ export default function Closure() {
     const closureDateFormatted = DateUtils.isoToIndianDate(lastEntry.closureDate);
     const displayName = nameMode === 'group' ? (lastEntry.groupName || lastEntry.borrowerName) : lastEntry.borrowerName;
     const displayAddress = nameMode === 'group' ? '' : (lastEntry.borrowerAddress || '');
+    const dfs = bt.tableData.fontSize;
+    const dfw = bt.tableData.bold ? 700 : 400;
+    const hfs = bt.tableHeader.fontSize;
+    const hfw = bt.tableHeader.bold ? 700 : 400;
 
     let rows = '';
     entries.forEach((entry, i) => {
       rows += `<tr>
-        <td style="padding:14px 8px 14px 4px;text-align:center;font-size:16px;font-weight:600;">${i + 1}</td>
-        <td style="padding:14px 8px;text-align:center;font-size:22px;font-weight:700;">${entry.accountNumber}</td>
-        <td style="padding:14px 4px;text-align:right;font-size:22px;font-weight:700;vertical-align:middle;">${toShortDate(entry.loanDate)}${showInterestRate ? `<span style="margin-left:16px;font-size:20px;font-weight:600;">${formatRate(entry.interestRate)}</span>` : ''}</td>
-        <td style="padding:14px 4px;text-align:right;font-size:22px;font-weight:700;">${Number(Math.round(entry.principalAmount)).toLocaleString('en-IN')}</td>
-        <td style="padding:14px 4px;text-align:right;font-size:22px;font-weight:700;">${Number(Math.round(entry.chargesAmount)).toLocaleString('en-IN')}</td>
+        <td style="padding:14px 8px 14px 4px;text-align:center;font-size:${Math.round(dfs * 0.73)}px;font-weight:600;">${i + 1}</td>
+        <td style="padding:14px 8px;text-align:center;font-size:${dfs}px;font-weight:${dfw};">${entry.accountNumber}</td>
+        <td style="padding:14px 4px;text-align:right;font-size:${dfs}px;font-weight:${dfw};vertical-align:middle;">${toShortDate(entry.loanDate)}${showInterestRate ? `<span style="margin-left:16px;font-size:${Math.round(dfs * 0.9)}px;font-weight:600;">${formatRate(entry.interestRate)}</span>` : ''}</td>
+        <td style="padding:14px 4px;text-align:right;font-size:${dfs}px;font-weight:${dfw};">${Number(Math.round(entry.principalAmount)).toLocaleString('en-IN')}</td>
+        <td style="padding:14px 4px;text-align:right;font-size:${dfs}px;font-weight:${dfw};">${Number(Math.round(entry.chargesAmount)).toLocaleString('en-IN')}</td>
       </tr>`;
     });
 
     return `
       <div style="padding:6px 12px;font-family:'Noto Sans Devanagari',sans-serif;">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px;">
-          <div style="font-weight:800;font-size:26px;line-height:1.4;">${displayName}</div>
-          <div style="font-size:22px;font-weight:700;white-space:nowrap;line-height:1.4;">तारीख: ${closureDateFormatted}</div>
+          <div style="font-weight:${bt.name.bold ? 800 : 400};font-size:${bt.name.fontSize}px;line-height:1.4;">${displayName}</div>
+          <div style="font-size:${bt.date.fontSize}px;font-weight:${bt.date.bold ? 700 : 400};white-space:nowrap;line-height:1.4;">तारीख: ${closureDateFormatted}</div>
         </div>
-        ${displayAddress ? `<div style="font-size:18px;color:#333;margin-bottom:4px;">${displayAddress}</div>` : ''}
-        <div style="text-align:center;font-weight:800;font-size:24px;margin-bottom:10px;"><span style="border-bottom:2px solid #000;padding-bottom:6px;">Estimate</span></div>
+        ${displayAddress ? `<div style="font-size:${Math.round(bt.name.fontSize * 0.7)}px;color:#333;margin-bottom:4px;">${displayAddress}</div>` : ''}
+        <div style="text-align:center;font-weight:${bt.title.bold ? 800 : 400};font-size:${bt.title.fontSize}px;margin-bottom:10px;"><span style="border-bottom:2px solid #000;padding-bottom:6px;">Estimate</span></div>
         <table style="width:100%;border-collapse:collapse;table-layout:fixed;">
           <colgroup>
             <col style="width:46px;">
@@ -1102,27 +1190,27 @@ export default function Closure() {
           </colgroup>
           <thead>
             <tr style="border-bottom:3px double #000;">
-              <th style="padding:10px 8px 10px 4px;font-size:22px;text-align:center;font-weight:700;">अ.नं.</th>
-              <th style="padding:10px 8px;font-size:22px;text-align:center;font-weight:700;">कोड नं</th>
-              <th style="padding:10px 4px;font-size:22px;text-align:right;font-weight:700;vertical-align:middle;">दिनांक</th>
-              <th style="padding:10px 4px;font-size:22px;text-align:right;font-weight:700;">बाजारमूल्य</th>
-              <th style="padding:10px 4px;font-size:22px;text-align:right;font-weight:700;">चार्जेस</th>
+              <th style="padding:10px 8px 10px 4px;font-size:${hfs}px;text-align:center;font-weight:${hfw};">अ.नं.</th>
+              <th style="padding:10px 8px;font-size:${hfs}px;text-align:center;font-weight:${hfw};">कोड नं</th>
+              <th style="padding:10px 4px;font-size:${hfs}px;text-align:right;font-weight:${hfw};vertical-align:middle;">दिनांक</th>
+              <th style="padding:10px 4px;font-size:${hfs}px;text-align:right;font-weight:${hfw};">बाजारमूल्य</th>
+              <th style="padding:10px 4px;font-size:${hfs}px;text-align:right;font-weight:${hfw};">चार्जेस</th>
             </tr>
           </thead>
           <tbody>
             ${rows}
             <tr style="border-top:3px double #000;">
-              <td colspan="3" style="padding:12px 4px;text-align:right;font-size:22px;font-weight:700;">एकूण</td>
-              <td style="padding:12px 4px;text-align:right;font-size:22px;font-weight:700;">${Number(Math.round(totalPrincipal)).toLocaleString('en-IN')}</td>
-              <td style="padding:12px 4px;text-align:right;font-size:22px;font-weight:700;">${Number(Math.round(totalCharges)).toLocaleString('en-IN')}</td>
+              <td colspan="3" style="padding:12px 4px;text-align:right;font-size:${bt.total.fontSize}px;font-weight:${bt.total.bold ? 700 : 400};">एकूण</td>
+              <td style="padding:12px 4px;text-align:right;font-size:${bt.total.fontSize}px;font-weight:${bt.total.bold ? 700 : 400};">${Number(Math.round(totalPrincipal)).toLocaleString('en-IN')}</td>
+              <td style="padding:12px 4px;text-align:right;font-size:${bt.total.fontSize}px;font-weight:${bt.total.bold ? 700 : 400};">${Number(Math.round(totalCharges)).toLocaleString('en-IN')}</td>
             </tr>
             <tr style="border-top:3px double #000;">
-              <td colspan="5" style="padding:16px 4px;text-align:center;font-size:32px;font-weight:900;">Grand Total : ${Number(Math.round(grandTotal)).toLocaleString('en-IN')}</td>
+              <td colspan="5" style="padding:16px 4px;text-align:center;font-size:${bt.grandTotal.fontSize}px;font-weight:${bt.grandTotal.bold ? 900 : 400};">Grand Total : ${Number(Math.round(grandTotal)).toLocaleString('en-IN')}</td>
             </tr>
           </tbody>
         </table>
       </div>`;
-  }, []);
+  }, [receiptSettings.thermal]);
 
   const renderReceiptToCanvas = useCallback(async (thermalHTML: string): Promise<HTMLCanvasElement> => {
     const thermalWidth = 576;
@@ -2212,6 +2300,14 @@ export default function Closure() {
                           </button>
                           <button
                             type="button"
+                            onClick={() => setShowPrintSettings(v => !v)}
+                            className={`inline-flex items-center rounded-md px-2.5 h-9 text-xs border transition-colors outline-none ${showPrintSettings ? 'border-amber-500 bg-amber-100 text-amber-800' : 'border-gray-300 bg-gray-50 text-gray-700 hover:bg-gray-100'}`}
+                            title="प्रिंट सेटिंग्स"
+                          >
+                            <Settings className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            type="button"
                             onClick={handleClearAllSummary}
                             className="inline-flex items-center rounded-md px-3 h-9 text-xs border border-red-300 bg-red-50 text-red-700 hover:bg-red-100 active:bg-red-200 transition-colors outline-none"
                           >
@@ -2220,6 +2316,62 @@ export default function Closure() {
                           </button>
                         </div>
                       </div>
+                      {showPrintSettings && (
+                        <div className="mt-2 p-3 bg-amber-50 border border-amber-200 rounded-lg space-y-3">
+                          <div className="flex items-center justify-between">
+                            <div className="text-xs font-semibold text-amber-800 flex items-center gap-1.5">
+                              <Settings className="h-3.5 w-3.5" /> प्रिंट सेटिंग्स
+                            </div>
+                            <button onClick={resetReceiptSettings} className="text-[10px] text-red-600 hover:text-red-800 hover:bg-red-50 border border-red-200 rounded-md px-2 py-0.5 transition-colors flex items-center gap-1">
+                              <RotateCcw className="h-2.5 w-2.5" /> डिफॉल्ट
+                            </button>
+                          </div>
+                          {(['standard', 'thermal'] as const).map(mode => {
+                            const modeLabel = mode === 'standard' ? 'पावती प्रिंट' : 'ब्लूटूथ प्रिंट';
+                            const modeIcon = mode === 'standard' ? <Printer className="h-3 w-3" /> : <Bluetooth className="h-3 w-3" />;
+                            const fields: { key: keyof ReceiptPrintSettings['standard']; label: string }[] = [
+                              { key: 'name', label: 'नाव' },
+                              { key: 'date', label: 'तारीख' },
+                              { key: 'title', label: 'शीर्षक (Estimate)' },
+                              { key: 'tableHeader', label: 'टेबल हेडर' },
+                              { key: 'tableData', label: 'टेबल डेटा' },
+                              { key: 'total', label: 'एकूण' },
+                              { key: 'grandTotal', label: 'Grand Total' },
+                            ];
+                            return (
+                              <div key={mode} className="space-y-1">
+                                <div className="text-[10px] font-semibold text-amber-700 flex items-center gap-1 border-b border-amber-200 pb-0.5">
+                                  {modeIcon} {modeLabel}
+                                </div>
+                                {fields.map(f => {
+                                  const setting = receiptSettings[mode][f.key];
+                                  return (
+                                    <div key={f.key} className="flex items-center gap-1.5 py-0.5 px-1 bg-white rounded">
+                                      <span className="text-[10px] font-medium text-amber-800 flex-1 min-w-0 truncate">{f.label}</span>
+                                      <div className="flex items-center gap-0.5 bg-amber-100 rounded px-0.5 py-0.5 flex-shrink-0">
+                                        <button onClick={() => updateReceiptSettings(prev => ({ ...prev, [mode]: { ...prev[mode], [f.key]: { ...prev[mode][f.key], fontSize: Math.max(6, setting.fontSize - 1) } } }))} className="p-0.5 rounded hover:bg-amber-200 active:bg-amber-300">
+                                          <Minus className="h-2.5 w-2.5 text-amber-700" />
+                                        </button>
+                                        <span className="text-[9px] font-mono w-6 text-center text-amber-800 font-semibold">{setting.fontSize}</span>
+                                        <button onClick={() => updateReceiptSettings(prev => ({ ...prev, [mode]: { ...prev[mode], [f.key]: { ...prev[mode][f.key], fontSize: Math.min(50, setting.fontSize + 1) } } }))} className="p-0.5 rounded hover:bg-amber-200 active:bg-amber-300">
+                                          <Plus className="h-2.5 w-2.5 text-amber-700" />
+                                        </button>
+                                      </div>
+                                      <button
+                                        onClick={() => updateReceiptSettings(prev => ({ ...prev, [mode]: { ...prev[mode], [f.key]: { ...prev[mode][f.key], bold: !setting.bold } } }))}
+                                        className={`p-0.5 rounded transition-colors flex-shrink-0 ${setting.bold ? 'bg-indigo-100 text-indigo-700' : 'hover:bg-amber-200 text-amber-400'}`}
+                                        title="बोल्ड"
+                                      >
+                                        <Bold className="h-3 w-3" />
+                                      </button>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
                     </CardHeader>
                     <CardContent className="p-0">
                       {summaryEntries.length > 0 && (
