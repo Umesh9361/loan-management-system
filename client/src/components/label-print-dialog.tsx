@@ -1020,11 +1020,13 @@ export function LabelPrintDialog({ open, onOpenChange, loans }: LabelPrintDialog
   const [packetFetchCounter, setPacketFetchCounter] = useState(0);
 
   useEffect(() => {
-    if (open && settings.printMode === 'packet' && !packetDateFrom && !packetDateTo) {
+    if (open) {
       setPacketDateFrom(todayISO);
       setPacketDateTo(todayISO);
+      setPacketGroupId('all');
+      setPacketFetchCounter(c => c + 1);
     }
-  }, [open, settings.printMode, todayISO]);
+  }, [open, todayISO]);
 
   const handlePacketDateFrom = useCallback((val: string) => {
     setPacketDateFrom(val);
