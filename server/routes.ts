@@ -929,7 +929,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/loans/by-date-range", requireAuth, async (req, res) => {
     try {
-      const { from, to } = req.query;
+      const { from, to, groupId } = req.query;
       if (!from || !to) {
         return res.status(400).json({ message: "from आणि to तारीख आवश्यक आहे" });
       }
@@ -942,7 +942,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const filtered = allLoans.filter((loan: any) => {
         if (!loan.loanDate) return false;
         const ld = new Date(String(loan.loanDate).split('T')[0]);
-        return ld >= fromDate && ld <= toDate;
+        if (ld < fromDate || ld > toDate) return false;
+        if (groupId && String(groupId) !== 'all') {
+          const loanGroupId = String(loan.groupId || loan.group?.id || '');
+          if (loanGroupId !== String(groupId)) return false;
+        }
+        return true;
       }).sort((a: any, b: any) => {
         const na = parseInt(String(a.accountNumber)) || 0;
         const nb = parseInt(String(b.accountNumber)) || 0;

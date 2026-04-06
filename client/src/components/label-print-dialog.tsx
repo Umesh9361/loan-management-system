@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { Printer, Settings, ChevronDown, ChevronUp, Minus, Plus, Eye, ArrowUp, ArrowDown, Bold, Type, Trash2, PlusCircle, RotateCcw, Ruler, Loader2, Calendar, Package, Hash, Scale, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Printer, Settings, ChevronDown, ChevronUp, Minus, Plus, Eye, ArrowUp, ArrowDown, Bold, Type, Trash2, PlusCircle, RotateCcw, Ruler, Loader2, Calendar, Package, Hash, Scale, AlertCircle, CheckCircle2, X } from "lucide-react";
 import { LoanCalculations } from "@/lib/calculations";
 import { DateUtils } from "@/lib/date-utils";
 import { encodeQrData } from "@/lib/qr-utils";
@@ -1015,11 +1015,17 @@ export function LabelPrintDialog({ open, onOpenChange, loans }: LabelPrintDialog
 
   const [packetDateFrom, setPacketDateFrom] = useState("");
   const [packetDateTo, setPacketDateTo] = useState("");
+  const [packetGroupId, setPacketGroupId] = useState("all");
   const packetFetchEnabled = open && settings.printMode === 'packet' && packetDateFrom.length > 0 && packetDateTo.length > 0;
+  const { data: packetGroups } = useQuery<{ id: number; name: string }[]>({
+    queryKey: ['/api/groups'],
+    enabled: open && settings.printMode === 'packet',
+  });
   const { data: packetFetchedLoans, isLoading: packetLoansLoading, error: packetLoansError } = useQuery<LabelLoan[]>({
-    queryKey: ['/api/loans/by-date-range', packetDateFrom, packetDateTo],
+    queryKey: ['/api/loans/by-date-range', packetDateFrom, packetDateTo, packetGroupId],
     queryFn: async () => {
-      const res = await fetch(`/api/loans/by-date-range?from=${packetDateFrom}&to=${packetDateTo}&_t=${Date.now()}`, { credentials: 'include', cache: 'no-store' });
+      const groupParam = packetGroupId !== 'all' ? `&groupId=${packetGroupId}` : '';
+      const res = await fetch(`/api/loans/by-date-range?from=${packetDateFrom}&to=${packetDateTo}${groupParam}&_t=${Date.now()}`, { credentials: 'include', cache: 'no-store' });
       if (!res.ok) throw new Error('Failed to fetch');
       return res.json();
     },
@@ -1450,7 +1456,31 @@ export function LabelPrintDialog({ open, onOpenChange, loans }: LabelPrintDialog
               </div>
               {settings.printMode === 'packet' && (
                 <div className="px-3 py-2 bg-amber-50 border-b border-amber-200 space-y-2">
-                  <div className="text-[11px] font-semibold text-amber-800 mb-1">पॅकेट लेबल — तारीख श्रेणी निवडा:</div>
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="text-[11px] font-semibold text-amber-800">पॅकेट लेबल — तारीख व ग्रुप निवडा:</div>
+                    {(packetDateFrom || packetDateTo || packetGroupId !== 'all') && (
+                      <button
+                        onClick={() => { setPacketDateFrom(''); setPacketDateTo(''); setPacketGroupId('all'); }}
+                        className="text-[9px] text-red-500 hover:text-red-700 hover:bg-red-50 px-1.5 py-0.5 rounded transition-colors flex items-center gap-0.5"
+                        title="सर्व क्लिअर करा"
+                      >
+                        <X className="h-2.5 w-2.5" /> क्लिअर
+                      </button>
+                    )}
+                  </div>
+                  <div>
+                    <Label className="text-[10px] font-medium text-amber-700 flex items-center gap-1 mb-0.5">ग्रुप निवडा</Label>
+                    <select
+                      value={packetGroupId}
+                      onChange={(e) => setPacketGroupId(e.target.value)}
+                      className="w-full h-8 text-xs border border-amber-300 rounded-md px-2 bg-white focus:border-amber-500 focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                    >
+                      <option value="all">सर्व ग्रुप</option>
+                      {(packetGroups || []).map((g: any) => (
+                        <option key={g.id} value={String(g.id)}>{g.name}</option>
+                      ))}
+                    </select>
+                  </div>
                   <div className="grid grid-cols-2 gap-2">
                     <div>
                       <Label className="text-[10px] font-medium text-amber-700 flex items-center gap-1 mb-0.5">
