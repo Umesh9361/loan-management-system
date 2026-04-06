@@ -24,7 +24,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { LoanCalculationsAdvanced } from "@/lib/loan-calculations";
 import { LoanCalculations } from "@/lib/calculations";
 import { DateUtils } from "@/lib/date-utils";
-import { Calculator, FileText, AlertTriangle, CheckCircle, Download, Search, X, Clock, Edit, Calendar, Lightbulb, Sparkles, TrendingUp, Info, Check, AlertCircle, Home, Trash2, Printer, Bluetooth, Loader2, Settings, Minus, Plus, Bold, RotateCcw, ChevronDown, ChevronUp } from "lucide-react";
+import { Calculator, FileText, AlertTriangle, CheckCircle, Download, Search, X, Clock, Edit, Calendar, Lightbulb, Sparkles, TrendingUp, Info, Check, AlertCircle, Home, Trash2, Printer, Bluetooth, Loader2, Settings, Minus, Plus, Bold, RotateCcw, ChevronDown, ChevronUp, Eye } from "lucide-react";
 import html2canvas from "html2canvas";
 import { printReceiptViaBluetooth, isBluetoothSupported } from "@/lib/bluetooth-printer";
 import jsPDF from "jspdf";
@@ -2399,6 +2399,57 @@ export default function Closure() {
                                   </div>
                                   {btFields.map(f => renderRow('thermal', f.key, f.label, receiptSettings.thermal[f.key]))}
                                 </div>
+                                {(() => {
+                                  const bt = receiptSettings.thermal;
+                                  const sampleName = summaryEntries.length > 0 ? (summaryEntries[summaryEntries.length-1].groupName || summaryEntries[summaryEntries.length-1].borrowerName) : 'रामचंद्र शिंदे';
+                                  const sampleDate = summaryEntries.length > 0 ? DateUtils.isoToIndianDate(summaryEntries[summaryEntries.length-1].closureDate) : '06/04/2026';
+                                  const sampleAcct = summaryEntries.length > 0 ? summaryEntries[0].accountNumber : '1001';
+                                  const sampleLoanDate = summaryEntries.length > 0 ? toShortDate(summaryEntries[0].loanDate) : '15/03/26';
+                                  const samplePrincipal = summaryEntries.length > 0 ? Number(Math.round(summaryEntries[0].principalAmount)).toLocaleString('en-IN') : '50,000';
+                                  const sampleCharges = summaryEntries.length > 0 ? Number(Math.round(summaryEntries[0].chargesAmount)).toLocaleString('en-IN') : '2,500';
+                                  return (
+                                    <div className="space-y-2 mt-1">
+                                      <div className="text-[10px] font-semibold text-green-700 flex items-center gap-1 border-b border-green-200 pb-0.5">
+                                        <Eye className="h-3 w-3" /> BT प्रिव्ह्यू (Live)
+                                      </div>
+                                      <div className="bg-white border border-green-200 rounded-md p-2 overflow-x-auto" style={{fontFamily:"'Noto Sans Devanagari',sans-serif"}}>
+                                        <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:2}}>
+                                          <div style={{fontWeight:bt.name.bold?800:400,fontSize:bt.name.fontSize*0.55}}>{sampleName}</div>
+                                          <div style={{fontSize:bt.date.fontSize*0.55,fontWeight:bt.date.bold?700:400,whiteSpace:'nowrap'}}>तारीख: {sampleDate}</div>
+                                        </div>
+                                        <div style={{textAlign:'center',fontWeight:bt.title.bold?800:400,fontSize:bt.title.fontSize*0.55,marginBottom:4}}><span style={{borderBottom:'1.5px solid #000',paddingBottom:2}}>Estimate</span></div>
+                                        <table style={{width:'100%',borderCollapse:'collapse',tableLayout:'fixed'}}>
+                                          <thead>
+                                            <tr style={{borderBottom:'2px double #000'}}>
+                                              <th style={{fontSize:bt.hdrSerial.fontSize*0.55,fontWeight:bt.hdrSerial.bold?700:400,textAlign:'center',padding:'2px 1px'}}>अ.नं.</th>
+                                              <th style={{fontSize:bt.hdrAccount.fontSize*0.55,fontWeight:bt.hdrAccount.bold?700:400,textAlign:'center',padding:'2px 1px'}}>कोड नं</th>
+                                              <th style={{fontSize:bt.hdrDate.fontSize*0.55,fontWeight:bt.hdrDate.bold?700:400,textAlign:'right',padding:'2px 1px'}}>दिनांक</th>
+                                              <th style={{fontSize:bt.hdrPrincipal.fontSize*0.55,fontWeight:bt.hdrPrincipal.bold?700:400,textAlign:'right',padding:'2px 1px'}}>बाजारमूल्य</th>
+                                              <th style={{fontSize:bt.hdrCharges.fontSize*0.55,fontWeight:bt.hdrCharges.bold?700:400,textAlign:'right',padding:'2px 1px'}}>चार्जेस</th>
+                                            </tr>
+                                          </thead>
+                                          <tbody>
+                                            <tr>
+                                              <td style={{fontSize:bt.colSerial.fontSize*0.55,fontWeight:bt.colSerial.bold?700:400,textAlign:'center',padding:'2px 1px'}}>1</td>
+                                              <td style={{fontSize:bt.colAccount.fontSize*0.55,fontWeight:bt.colAccount.bold?700:400,textAlign:'center',padding:'2px 1px'}}>{sampleAcct}</td>
+                                              <td style={{fontSize:bt.colDate.fontSize*0.55,fontWeight:bt.colDate.bold?700:400,textAlign:'right',padding:'2px 1px'}}>{sampleLoanDate}</td>
+                                              <td style={{fontSize:bt.colPrincipal.fontSize*0.55,fontWeight:bt.colPrincipal.bold?700:400,textAlign:'right',padding:'2px 1px'}}>{samplePrincipal}</td>
+                                              <td style={{fontSize:bt.colCharges.fontSize*0.55,fontWeight:bt.colCharges.bold?700:400,textAlign:'right',padding:'2px 1px'}}>{sampleCharges}</td>
+                                            </tr>
+                                            <tr style={{borderTop:'2px double #000'}}>
+                                              <td colSpan={3} style={{fontSize:bt.total.fontSize*0.55,fontWeight:bt.total.bold?700:400,textAlign:'right',padding:'2px 1px'}}>एकूण</td>
+                                              <td style={{fontSize:bt.total.fontSize*0.55,fontWeight:bt.total.bold?700:400,textAlign:'right',padding:'2px 1px'}}>{samplePrincipal}</td>
+                                              <td style={{fontSize:bt.total.fontSize*0.55,fontWeight:bt.total.bold?700:400,textAlign:'right',padding:'2px 1px'}}>{sampleCharges}</td>
+                                            </tr>
+                                            <tr style={{borderTop:'2px double #000'}}>
+                                              <td colSpan={5} style={{fontSize:bt.grandTotal.fontSize*0.55,fontWeight:bt.grandTotal.bold?900:400,textAlign:'center',padding:'3px 1px'}}>Grand Total : {summaryEntries.length > 0 ? Number(Math.round(summaryEntries.reduce((s,e)=>s+e.principalAmount+e.chargesAmount,0))).toLocaleString('en-IN') : '52,500'}</td>
+                                            </tr>
+                                          </tbody>
+                                        </table>
+                                      </div>
+                                    </div>
+                                  );
+                                })()}
                               </>
                             );
                           })()}
