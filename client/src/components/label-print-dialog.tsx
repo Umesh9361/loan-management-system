@@ -1019,11 +1019,13 @@ export function LabelPrintDialog({ open, onOpenChange, loans }: LabelPrintDialog
   const { data: packetFetchedLoans, isLoading: packetLoansLoading, error: packetLoansError } = useQuery<LabelLoan[]>({
     queryKey: ['/api/loans/by-date-range', packetDateFrom, packetDateTo],
     queryFn: async () => {
-      const res = await fetch(`/api/loans/by-date-range?from=${packetDateFrom}&to=${packetDateTo}`, { credentials: 'include' });
+      const res = await fetch(`/api/loans/by-date-range?from=${packetDateFrom}&to=${packetDateTo}&_t=${Date.now()}`, { credentials: 'include', cache: 'no-store' });
       if (!res.ok) throw new Error('Failed to fetch');
       return res.json();
     },
     enabled: packetFetchEnabled,
+    staleTime: 0,
+    gcTime: 0,
   });
   const packetLoans = packetFetchedLoans || [];
   const packetSummary = useMemo(() => {
