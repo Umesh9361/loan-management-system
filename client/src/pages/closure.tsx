@@ -86,6 +86,9 @@ interface ReceiptPrintSettings {
     colSerial: ReceiptFieldSetting;
     colAccount: ReceiptFieldSetting;
     colDate: ReceiptFieldSetting;
+    colRate: ReceiptFieldSetting;
+    colDetails: ReceiptFieldSetting;
+    colMonths: ReceiptFieldSetting;
     colPrincipal: ReceiptFieldSetting;
     colCharges: ReceiptFieldSetting;
     hdrSerial: ReceiptFieldSetting;
@@ -115,6 +118,9 @@ const DEFAULT_RECEIPT_SETTINGS: ReceiptPrintSettings = {
     colSerial: { fontSize: 16, bold: true },
     colAccount: { fontSize: 22, bold: true },
     colDate: { fontSize: 22, bold: true },
+    colRate: { fontSize: 20, bold: true },
+    colDetails: { fontSize: 18, bold: false },
+    colMonths: { fontSize: 18, bold: false },
     colPrincipal: { fontSize: 22, bold: true },
     colCharges: { fontSize: 22, bold: true },
     hdrSerial: { fontSize: 22, bold: true },
@@ -1177,7 +1183,7 @@ export default function Closure() {
       rows += `<tr>
         <td style="padding:14px 8px 14px 4px;text-align:center;font-size:${bt.colSerial.fontSize}px;font-weight:${bt.colSerial.bold ? 700 : 400};">${i + 1}</td>
         <td style="padding:14px 8px;text-align:center;font-size:${bt.colAccount.fontSize}px;font-weight:${bt.colAccount.bold ? 700 : 400};">${entry.accountNumber}</td>
-        <td style="padding:14px 4px;text-align:right;font-size:${bt.colDate.fontSize}px;font-weight:${bt.colDate.bold ? 700 : 400};vertical-align:middle;">${toShortDate(entry.loanDate)}${showInterestRate ? `<span style="margin-left:16px;font-size:${Math.round(bt.colDate.fontSize * 0.9)}px;font-weight:600;">${formatRate(entry.interestRate)}</span>` : ''}</td>
+        <td style="padding:14px 4px;text-align:right;font-size:${bt.colDate.fontSize}px;font-weight:${bt.colDate.bold ? 700 : 400};vertical-align:middle;">${toShortDate(entry.loanDate)}${showInterestRate ? `<span style="margin-left:16px;font-size:${bt.colRate.fontSize}px;font-weight:${bt.colRate.bold ? 700 : 400};">${formatRate(entry.interestRate)}</span>` : ''}</td>
         <td style="padding:14px 4px;text-align:right;font-size:${bt.colPrincipal.fontSize}px;font-weight:${bt.colPrincipal.bold ? 700 : 400};">${Number(Math.round(entry.principalAmount)).toLocaleString('en-IN')}</td>
         <td style="padding:14px 4px;text-align:right;font-size:${bt.colCharges.fontSize}px;font-weight:${bt.colCharges.bold ? 700 : 400};">${Number(Math.round(entry.chargesAmount)).toLocaleString('en-IN')}</td>
       </tr>`;
@@ -2380,6 +2386,9 @@ export default function Closure() {
                               { key: 'colSerial', label: '📊 अ.नं. (डेटा)', group: 'डेटा' },
                               { key: 'colAccount', label: '📊 कोड नं (डेटा)', group: 'डेटा' },
                               { key: 'colDate', label: '📊 दिनांक (डेटा)', group: 'डेटा' },
+                              { key: 'colRate', label: '📊 व्याजदर (डेटा)', group: 'डेटा' },
+                              { key: 'colDetails', label: '📊 तपशील (डेटा)', group: 'डेटा' },
+                              { key: 'colMonths', label: '📊 महिने (डेटा)', group: 'डेटा' },
                               { key: 'colPrincipal', label: '📊 बाजारमूल्य (डेटा)', group: 'डेटा' },
                               { key: 'colCharges', label: '📊 चार्जेस (डेटा)', group: 'डेटा' },
                               { key: 'total', label: 'एकूण' },
@@ -2442,10 +2451,10 @@ export default function Closure() {
                             {summaryEntries.map((entry, index) => (
                               <tr key={entry.id} className="hover:bg-gray-50">
                                 <td className="border border-gray-300 px-1 py-1 text-center" style={{fontSize:bt.colSerial.fontSize*sc,fontWeight:bt.colSerial.bold?700:400}}>{index + 1}</td>
-                                {showDetails && <td className="border border-gray-300 px-2 py-1 text-xs"><div className="max-w-[120px] truncate" title={entry.collateralDetails || '-'}>{entry.collateralDetails || '-'}</div></td>}
+                                {showDetails && <td className="border border-gray-300 px-2 py-1" style={{fontSize:bt.colDetails.fontSize*sc,fontWeight:bt.colDetails.bold?700:400}}><div className="max-w-[120px] truncate" title={entry.collateralDetails || '-'}>{entry.collateralDetails || '-'}</div></td>}
                                 <td className="border border-gray-300 px-1 py-1 text-center" style={{fontSize:bt.colAccount.fontSize*sc,fontWeight:bt.colAccount.bold?700:400}}>{entry.accountNumber}</td>
-                                <td className="border border-gray-300 px-1 py-1 text-center" style={{fontSize:bt.colDate.fontSize*sc,fontWeight:bt.colDate.bold?700:400}}>{toShortDate(entry.loanDate)}{showRateMonths ? <span className="ml-4 font-normal" style={{fontSize:bt.colDate.fontSize*sc*0.9}}>{formatRate(entry.interestRate)}</span> : ''}</td>
-                                {showDetails && <td className="border border-gray-300 px-1 py-1 text-center text-xs">{entry.months}</td>}
+                                <td className="border border-gray-300 px-1 py-1 text-center" style={{fontSize:bt.colDate.fontSize*sc,fontWeight:bt.colDate.bold?700:400}}>{toShortDate(entry.loanDate)}{showRateMonths ? <span className="ml-4" style={{fontSize:bt.colRate.fontSize*sc,fontWeight:bt.colRate.bold?700:400}}>{formatRate(entry.interestRate)}</span> : ''}</td>
+                                {showDetails && <td className="border border-gray-300 px-1 py-1 text-center" style={{fontSize:bt.colMonths.fontSize*sc,fontWeight:bt.colMonths.bold?700:400}}>{entry.months}</td>}
                                 <td className="border border-gray-300 px-2 py-1 text-right" style={{fontSize:bt.colPrincipal.fontSize*sc,fontWeight:bt.colPrincipal.bold?700:400}}>{Number(Math.round(entry.principalAmount)).toLocaleString('en-IN')}</td>
                                 <td className="border border-gray-300 px-2 py-1 text-right" style={{fontSize:bt.colCharges.fontSize*sc,fontWeight:bt.colCharges.bold?700:400}}>{Number(Math.round(entry.chargesAmount)).toLocaleString('en-IN')}</td>
                                 <td className="border border-gray-300 px-1 py-1 text-center">
