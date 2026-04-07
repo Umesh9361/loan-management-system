@@ -6587,6 +6587,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  const estimateCodes = new Map<string, { loanIds: string[]; tenantId: string; createdAt: number }>();
+
+  setInterval(() => {
+    const cutoff = Date.now() - 8 * 24 * 60 * 60 * 1000;
+    for (const [code, entry] of estimateCodes) {
+      if (entry.createdAt < cutoff) estimateCodes.delete(code);
+    }
+  }, 60 * 60 * 1000);
+
+  function generateUniqueCode(): string {
+    for (let i = 0; i < 100; i++) {
+      const code = String(1000 + Math.floor(Math.random() * 9000));
+      if (!estimateCodes.has(code)) return code;
+    }
+    return String(1000 + Math.floor(Math.random() * 9000));
+  }
+
+  app.post('/api/estimate-code', requireAuth, async (req: any, res) => {
+    try {
+      const { loanIds } = req.body;
+      if (!loanIds || !Array.isArray(loanIds) || loanIds.length === 0) {
+        return res.status(400).json({ error: 'loanIds required' });
+      }
+      const tenantId = req.session?.tenantId || '';
+      const code = generateUniqueCode();
+      estimateCodes.set(code, { loanIds, tenantId, createdAt: Date.now() });
+      res.json({ code });
+    } catch (e) {
+      res.status(500).json({ error: 'Code generation failed' });
+    }
+  });
+
+  app.get('/api/estimate-code/:code', requireAuth, async (req: any, res) => {
+    try {
+      const { code } = req.params;
+      const entry = estimateCodes.get(code);
+      if (!entry) {
+        return res.status(404).json({ error: 'कोड सापडला नाही किंवा expired' });
+      }
+      const tenantId = req.session?.tenantId || '';
+      if (entry.tenantId !== tenantId) {
+        return res.status(404).json({ error: 'कोड सापडला नाही' });
+      }
+      const cutoff = Date.now() - 8 * 24 * 60 * 60 * 1000;
+      if (entry.createdAt < cutoff) {
+        estimateCodes.delete(code);
+        return res.status(404).json({ error: 'कोड expired — 8 दिवस संपले' });
+      }
+      res.json({ loanIds: entry.loanIds });
+    } catch (e) {
+      res.status(500).json({ error: 'Lookup failed' });
+    }
+  });
+
   app.get('/api/qr-generate', requireAuth, async (req: any, res) => {
     try {
       const { url, data, size = '256' } = req.query;

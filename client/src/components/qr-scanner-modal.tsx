@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useLocation } from "wouter";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { QrCode } from "lucide-react";
+import { QrCode, Keyboard, Loader2 } from "lucide-react";
 import { decodeQrLoanIds } from "@/lib/qr-utils";
+import { useToast } from "@/hooks/use-toast";
 
 interface QrScannerModalProps {
   open: boolean;
@@ -44,6 +45,7 @@ function loadHtml5QrcodeCdn(): Promise<void> {
 
 export function QrScannerModal({ open, onOpenChange }: QrScannerModalProps) {
   const [, setLocation] = useLocation();
+  const { toast } = useToast();
   const [status, setStatus] = useState<"loading" | "scanning" | "found" | "error">("loading");
   const [errorMsg, setErrorMsg] = useState("");
   const scannerRef = useRef<any>(null);
@@ -53,6 +55,10 @@ export function QrScannerModal({ open, onOpenChange }: QrScannerModalProps) {
   const deviceKeystrokeTimerRef = useRef<number | null>(null);
   const deviceCharCountRef = useRef(0);
   const containerId = "qr-scanner-container";
+  const [showCodeEntry, setShowCodeEntry] = useState(false);
+  const [manualCode, setManualCode] = useState("");
+  const [codeLooking, setCodeLooking] = useState(false);
+  const codeInputRef = useRef<HTMLInputElement>(null);
 
   const stopScanner = useCallback(() => {
     if (scannerRef.current) {
@@ -223,6 +229,9 @@ export function QrScannerModal({ open, onOpenChange }: QrScannerModalProps) {
       setDeviceMode(false);
       deviceModeRef.current = false;
       deviceCharCountRef.current = 0;
+      setShowCodeEntry(false);
+      setManualCode("");
+      setCodeLooking(false);
       return;
     }
 
@@ -242,6 +251,37 @@ export function QrScannerModal({ open, onOpenChange }: QrScannerModalProps) {
     if (containerEl) containerEl.innerHTML = "";
     initScanner();
   }, [stopScanner, initScanner]);
+
+  const handleCodeLookup = useCallback(async () => {
+    const code = manualCode.trim();
+    if (!code || code.length !== 4 || !/^\d{4}$/.test(code)) {
+      toast({ title: "4 अंकी कोड टाका", description: "Receipt वरील 4 अंकी कोड टाका", variant: "destructive" });
+      return;
+    }
+    setCodeLooking(true);
+    try {
+      const res = await fetch(`/api/estimate-code/${code}`);
+      const data = await res.json();
+      if (!res.ok || !data.loanIds) {
+        toast({ title: "कोड सापडला नाही", description: data.error || "चुकीचा कोड किंवा expired", variant: "destructive" });
+        return;
+      }
+      setStatus("found");
+      stopScanner();
+      setTimeout(() => {
+        onOpenChange(false);
+        if (data.loanIds.length === 1) {
+          setLocation(`/closure?loanId=${data.loanIds[0]}`);
+        } else {
+          setLocation(`/closure?loanIds=${data.loanIds.join(',')}`);
+        }
+      }, 600);
+    } catch {
+      toast({ title: "त्रुटी", description: "Server शी संपर्क होत नाही", variant: "destructive" });
+    } finally {
+      setCodeLooking(false);
+    }
+  }, [manualCode, toast, stopScanner, onOpenChange, setLocation]);
 
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) stopScanner(); onOpenChange(v); }}>
@@ -320,6 +360,48 @@ export function QrScannerModal({ open, onOpenChange }: QrScannerModalProps) {
                 पुन्हा प्रयत्न करा
               </button>
             </div>
+          )}
+
+          {status !== "found" && (
+            !showCodeEntry ? (
+              <button
+                onClick={() => { setShowCodeEntry(true); setTimeout(() => codeInputRef.current?.focus(), 100); }}
+                className="w-full py-2 text-sm text-indigo-600 border border-indigo-300 rounded-md hover:bg-indigo-50 font-medium flex items-center justify-center gap-2"
+              >
+                <Keyboard className="h-4 w-4" />
+                QR नाही चालला? — कोड टाका
+              </button>
+            ) : (
+              <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-3 space-y-2">
+                <div className="text-xs font-medium text-indigo-700">Receipt वरील 4 अंकी कोड टाका</div>
+                <div className="flex gap-2">
+                  <input
+                    ref={codeInputRef}
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={4}
+                    placeholder="उदा. 7829"
+                    value={manualCode}
+                    onChange={(e) => setManualCode(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleCodeLookup(); } }}
+                    className="flex-1 text-center text-xl font-bold tracking-[6px] border border-indigo-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                  <button
+                    onClick={handleCodeLookup}
+                    disabled={codeLooking || manualCode.length !== 4}
+                    className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white px-4 py-2 rounded-md text-sm font-medium flex items-center gap-1"
+                  >
+                    {codeLooking ? <Loader2 className="h-4 w-4 animate-spin" /> : "शोधा"}
+                  </button>
+                  <button
+                    onClick={() => { setShowCodeEntry(false); setManualCode(""); }}
+                    className="text-gray-400 hover:text-gray-600 px-1"
+                  >
+                    ✕
+                  </button>
+                </div>
+              </div>
+            )
           )}
         </div>
       </DialogContent>
