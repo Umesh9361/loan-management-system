@@ -24,7 +24,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { LoanCalculationsAdvanced } from "@/lib/loan-calculations";
 import { LoanCalculations } from "@/lib/calculations";
 import { DateUtils } from "@/lib/date-utils";
-import { Calculator, FileText, AlertTriangle, CheckCircle, Download, Search, X, Clock, Edit, Calendar, Lightbulb, Sparkles, TrendingUp, Info, Check, AlertCircle, Home, Trash2, Printer, Bluetooth, Loader2, Settings, Minus, Plus, Bold, RotateCcw, ChevronDown, ChevronUp, Eye } from "lucide-react";
+import { Calculator, FileText, AlertTriangle, CheckCircle, Download, Search, X, Clock, Edit, Calendar, Lightbulb, Sparkles, TrendingUp, Info, Check, AlertCircle, Home, Trash2, Printer, Bluetooth, Loader2, Settings, Minus, Plus, Bold, RotateCcw, ChevronDown, ChevronUp, Eye, QrCode } from "lucide-react";
 import html2canvas from "html2canvas";
 import { printReceiptViaBluetooth, isBluetoothSupported } from "@/lib/bluetooth-printer";
 import { encodeMultiQrData } from "@/lib/qr-utils";
@@ -2584,6 +2584,15 @@ export default function Closure() {
                           </tbody>
                         </table>
                       </div>
+                      {receiptSettings.thermal.showQrCode && summaryEntries.length > 0 && (
+                        <div className="flex flex-col items-center py-3 border-t border-dashed border-gray-300 mt-2">
+                          <div className="bg-gray-100 rounded-lg p-3 flex flex-col items-center gap-1">
+                            <QrCode className="h-10 w-10 text-indigo-600" />
+                            <span className="text-[10px] text-gray-500">QR Scan → Direct Close</span>
+                            <span className="text-[10px] text-gray-400">+ 4 अंकी कोड (प्रिंट वेळी generate)</span>
+                          </div>
+                        </div>
+                      )}
                         </>);
                       })()}
                     </CardContent>
