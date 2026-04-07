@@ -1637,9 +1637,16 @@ function InventoryScanInner() {
               {lastScanned && (
                 <div className="bg-green-50 border border-green-200 rounded-lg p-3 flex items-center gap-3">
                   <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0" />
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1">
                     <div className="text-sm font-bold text-green-800 truncate">{lastScanned.borrowerName}</div>
                     <div className="text-xs text-green-600">खाते {lastScanned.accountNumber} • ₹{Number(lastScanned.principalAmount || 0).toLocaleString('en-IN')}</div>
+                    {(lastScanned.collateralDetails || lastScanned.weight) && (
+                      <div className="text-xs text-green-700 mt-0.5 truncate">
+                        {lastScanned.collateralDetails && <span>{lastScanned.collateralDetails}</span>}
+                        {lastScanned.collateralDetails && lastScanned.weight && parseFloat(lastScanned.weight) > 0 && <span> • </span>}
+                        {lastScanned.weight && parseFloat(lastScanned.weight) > 0 && <span>वजन: {lastScanned.weight} ग्रॅम</span>}
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -1706,8 +1713,12 @@ function InventoryScanInner() {
                                 </div>
                                 <XCircle className="h-4 w-4 text-red-400 flex-shrink-0 mt-0.5" />
                               </div>
-                              {loan.collateralDetails && (
-                                <div className="text-xs text-red-600 mt-1 truncate">{loan.collateralDetails}</div>
+                              {(loan.collateralDetails || (loan.weight && parseFloat(loan.weight) > 0)) && (
+                                <div className="text-xs text-red-600 mt-1 truncate">
+                                  {loan.collateralDetails && <span>{loan.collateralDetails}</span>}
+                                  {loan.collateralDetails && loan.weight && parseFloat(loan.weight) > 0 && <span> • </span>}
+                                  {loan.weight && parseFloat(loan.weight) > 0 && <span>वजन: {loan.weight} ग्रॅम</span>}
+                                </div>
                               )}
                             </div>
                           );
@@ -1736,9 +1747,18 @@ function InventoryScanInner() {
                       {showFound && (
                         <div className="space-y-1.5 mt-2 max-h-[30vh] overflow-y-auto">
                           {foundLoans.map((loan: any) => (
-                            <div key={loan.id} className="bg-green-50 border border-green-100 rounded p-2 flex items-center gap-2">
-                              <CheckSquare className="h-3.5 w-3.5 text-green-500 flex-shrink-0" />
-                              <span className="text-xs text-green-800 truncate">{loan.accountNumber} — {loan.borrowerName}</span>
+                            <div key={loan.id} className="bg-green-50 border border-green-100 rounded p-2">
+                              <div className="flex items-center gap-2">
+                                <CheckSquare className="h-3.5 w-3.5 text-green-500 flex-shrink-0" />
+                                <span className="text-xs text-green-800 truncate">{loan.accountNumber} — {loan.borrowerName} • ₹{Number(loan.principalAmount || 0).toLocaleString('en-IN')}</span>
+                              </div>
+                              {(loan.collateralDetails || (loan.weight && parseFloat(loan.weight) > 0)) && (
+                                <div className="text-[10px] text-green-600 mt-0.5 ml-5.5 truncate" style={{marginLeft: 22}}>
+                                  {loan.collateralDetails && <span>{loan.collateralDetails}</span>}
+                                  {loan.collateralDetails && loan.weight && parseFloat(loan.weight) > 0 && <span> • </span>}
+                                  {loan.weight && parseFloat(loan.weight) > 0 && <span>वजन: {loan.weight} ग्रॅम</span>}
+                                </div>
+                              )}
                             </div>
                           ))}
                         </div>
