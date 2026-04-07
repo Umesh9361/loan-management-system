@@ -27,6 +27,7 @@ import { DateUtils } from "@/lib/date-utils";
 import { Calculator, FileText, AlertTriangle, CheckCircle, Download, Search, X, Clock, Edit, Calendar, Lightbulb, Sparkles, TrendingUp, Info, Check, AlertCircle, Home, Trash2, Printer, Bluetooth, Loader2, Settings, Minus, Plus, Bold, RotateCcw, ChevronDown, ChevronUp, Eye } from "lucide-react";
 import html2canvas from "html2canvas";
 import { printReceiptViaBluetooth, isBluetoothSupported } from "@/lib/bluetooth-printer";
+import { encodeMultiQrData } from "@/lib/qr-utils";
 import jsPDF from "jspdf";
 import { PhotoViewer } from "@/components/ui/photo-viewer";
 import { Link } from "wouter";
@@ -50,7 +51,7 @@ type ClosureFormData = z.infer<typeof closureSchema>;
 
 interface SummaryEntry {
   id: number;
-  loanId: number;
+  loanId: string;
   borrowerName: string;
   borrowerAddress: string;
   groupName: string;
@@ -98,6 +99,7 @@ interface ReceiptPrintSettings {
     hdrCharges: ReceiptFieldSetting;
     total: ReceiptFieldSetting;
     grandTotal: ReceiptFieldSetting;
+    showQrCode?: boolean;
   };
 }
 
@@ -228,6 +230,12 @@ export default function Closure() {
   const loanIdFromUrl = useMemo(() => {
     const params = new URLSearchParams(window.location.search);
     return params.get('loanId');
+  }, [currentLocation]);
+  const loanIdsFromUrl = useMemo(() => {
+    const params = new URLSearchParams(window.location.search);
+    const ids = params.get('loanIds');
+    if (!ids) return null;
+    return ids.split(',').map(s => s.trim()).filter(Boolean);
   }, [currentLocation]);
   const isEditMode = useMemo(() => {
     const params = new URLSearchParams(window.location.search);
@@ -439,6 +447,58 @@ export default function Closure() {
       }
     }
   }, [loanIdFromUrl, activeLoans, form, isEditMode]);
+
+  const multiLoadedRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!loanIdsFromUrl || !activeLoans) return;
+    const urlKey = loanIdsFromUrl.join(',');
+    if (multiLoadedRef.current === urlKey) return;
+    multiLoadedRef.current = urlKey;
+    const today = new Date().toISOString().split('T')[0];
+    const matchedLoans = loanIdsFromUrl
+      .map(id => activeLoans.find((l: any) => String(l.id) === id))
+      .filter(Boolean) as any[];
+    if (matchedLoans.length === 0) {
+      toast({ title: "कर्ज सापडले नाही", description: "QR मधील खाती active नाहीत", variant: "destructive" });
+      return;
+    }
+
+    setSummaryEntries(prev => {
+      const existingIds = new Set(prev.map(e => e.loanId));
+      let counter = prev.length > 0 ? Math.max(...prev.map(e => e.id)) + 1 : 1;
+      const fresh: SummaryEntry[] = matchedLoans
+        .filter((loan: any) => !existingIds.has(loan.id))
+        .map((loan: any) => ({
+          id: counter++,
+          loanId: loan.id,
+          borrowerName: loan.borrowerName || '',
+          borrowerAddress: loan.borrowerAddress || loan.address || '',
+          groupName: loan.groupName || '',
+          collateralDetails: loan.collateralDetails || '',
+          accountNumber: loan.accountNumber || '',
+          loanDate: loan.loanDate || '',
+          months: '',
+          interestRate: String(loan.interestRate || ''),
+          principalAmount: Number(loan.principalAmount) || 0,
+          chargesAmount: 0,
+          closureDate: today,
+        }));
+      if (fresh.length === 0) return prev;
+      const merged = [...prev, ...fresh];
+      merged.sort((a, b) => {
+        const dateA = a.loanDate ? new Date(a.loanDate).getTime() : 0;
+        const dateB = b.loanDate ? new Date(b.loanDate).getTime() : 0;
+        return dateA - dateB;
+      });
+      return merged;
+    });
+    setSummaryCounter(prev => prev + matchedLoans.length);
+    setActiveTab("summary");
+    toast({
+      title: `${matchedLoans.length} कर्ज लोड झाले`,
+      description: "एकत्रित हिशोबात जोडले — नको ते काढा, हवे ते ठेवा",
+    });
+  }, [loanIdsFromUrl, activeLoans, toast]);
 
   const calculateInterest = useCallback(() => {
     if (!selectedLoan) return;
@@ -1168,7 +1228,7 @@ export default function Closure() {
     }
   }, [summaryReceiptHTML, toast, createOffscreenReceiptContainer]);
 
-  const generateThermalReceiptHTML = useCallback((entries: SummaryEntry[], nameMode: 'group' | 'customer' = 'group', showInterestRate: boolean = false): string => {
+  const generateThermalReceiptHTML = useCallback((entries: SummaryEntry[], nameMode: 'group' | 'customer' = 'group', showInterestRate: boolean = false, qrDataUrl?: string): string => {
     if (entries.length === 0) return '';
     const bt = receiptSettings.thermal;
     const totalPrincipal = entries.reduce((sum, e) => sum + e.principalAmount, 0);
@@ -1226,6 +1286,7 @@ export default function Closure() {
             </tr>
           </tbody>
         </table>
+        ${qrDataUrl ? `<div style="text-align:center;margin-top:16px;padding-bottom:8px;"><img src="${qrDataUrl}" style="width:160px;height:160px;margin:0 auto;" /><div style="font-size:14px;color:#666;margin-top:4px;">QR Scan → Direct Close</div></div>` : ''}
       </div>`;
   }, [receiptSettings.thermal]);
 
@@ -1262,11 +1323,19 @@ export default function Closure() {
   const handleBluetoothPrint = useCallback(async () => {
     const currentEntries = summaryEntriesRef.current;
     if (currentEntries.length === 0 || isBtPrinting) return;
-    const thermalHTML = generateThermalReceiptHTML(currentEntries, printNameMode, showRateMonths);
-    if (!thermalHTML) return;
 
     setIsBtPrinting(true);
     try {
+      let qrDataUrl: string | undefined;
+      if (receiptSettings.thermal.showQrCode) {
+        const loanIds = currentEntries.map(e => e.loanId);
+        const qrData = encodeMultiQrData(loanIds);
+        const qrRes = await fetch(`/api/qr-generate?url=${encodeURIComponent(qrData)}&size=512`);
+        const qrJson = await qrRes.json();
+        qrDataUrl = qrJson.dataUrl;
+      }
+      const thermalHTML = generateThermalReceiptHTML(currentEntries, printNameMode, showRateMonths, qrDataUrl);
+      if (!thermalHTML) { setIsBtPrinting(false); return; }
       const canvas = await renderReceiptToCanvas(thermalHTML);
       toast({ title: "कनेक्ट करत आहे...", description: "ब्लूटूथ प्रिंटर निवडा" });
       await printReceiptViaBluetooth(canvas, 576);
@@ -1287,7 +1356,7 @@ export default function Closure() {
         document.activeElement.blur();
       }
     }
-  }, [generateThermalReceiptHTML, toast, renderReceiptToCanvas, isBtPrinting, printNameMode, showRateMonths]);
+  }, [generateThermalReceiptHTML, toast, renderReceiptToCanvas, isBtPrinting, printNameMode, showRateMonths, receiptSettings.thermal.showQrCode]);
 
   const recalculateWithOriginalDate = useCallback((data: ClosureFormData) => {
     if (!selectedLoan) return null;
@@ -2405,6 +2474,22 @@ export default function Closure() {
                                 <div className="space-y-1">
                                   <div className="text-[10px] font-semibold text-amber-700 flex items-center gap-1 border-b border-amber-200 pb-0.5">
                                     <Bluetooth className="h-3 w-3" /> ब्लूटूथ प्रिंट
+                                  </div>
+                                  <div className="flex items-center justify-between py-1 px-1 bg-indigo-50/60 rounded">
+                                    <span className="text-[10px] font-medium text-indigo-700">QR कोड दाखवा</span>
+                                    <label className="relative inline-flex items-center cursor-pointer">
+                                      <input
+                                        type="checkbox"
+                                        checked={!!receiptSettings.thermal.showQrCode}
+                                        onChange={(e) => updateReceiptSettings(prev => ({
+                                          ...prev,
+                                          thermal: { ...prev.thermal, showQrCode: e.target.checked }
+                                        }))}
+                                        className="sr-only peer"
+                                        autoComplete="off"
+                                      />
+                                      <div className="w-8 h-4 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[1px] after:left-[1px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3.5 after:w-3.5 after:transition-all peer-checked:bg-indigo-600"></div>
+                                    </label>
                                   </div>
                                   {btFields.map(f => renderRow('thermal', f.key, f.label, receiptSettings.thermal[f.key]))}
                                 </div>

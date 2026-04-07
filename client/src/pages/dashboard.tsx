@@ -41,6 +41,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Link } from "wouter";
 import { AuthService } from "@/lib/auth";
 import { Badge } from "@/components/ui/badge";
+import { QrScanButton } from "@/components/qr-scanner-modal";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell, Area, AreaChart, ReferenceLine } from 'recharts';
 
 
@@ -256,12 +257,15 @@ export default function Dashboard() {
                       Cashbook
                     </Button>
                   </Link>
-                  <Link href="/closure">
-                    <Button variant="outline" className="w-full border-gray-200 text-gray-700 hover:bg-teal-50 hover:border-teal-200 hover:text-teal-700 text-sm h-9">
-                      <Lock className="h-4 w-4 mr-2" />
-                      कर्ज बंद
-                    </Button>
-                  </Link>
+                  <div className="flex gap-2">
+                    <Link href="/closure" className="flex-1">
+                      <Button variant="outline" className="w-full border-gray-200 text-gray-700 hover:bg-teal-50 hover:border-teal-200 hover:text-teal-700 text-sm h-9">
+                        <Lock className="h-4 w-4 mr-2" />
+                        कर्ज बंद
+                      </Button>
+                    </Link>
+                    <QrScanButton className="hidden md:flex items-center justify-center h-9 w-9 rounded-md border border-indigo-200 bg-white text-indigo-600 hover:bg-indigo-50 hover:border-indigo-300 transition-colors shadow-sm" />
+                  </div>
                   {isAdmin && (
                     <div className="flex items-center justify-between pt-3 border-t border-gray-100 md:hidden">
                       <div className="flex items-center gap-2">
