@@ -208,6 +208,8 @@ export default function Closure() {
   const [showSummaryReceipt, setShowSummaryReceipt] = useState(false);
   const [showPhotos, setShowPhotos] = useState(false);
   const [isBtPrinting, setIsBtPrinting] = useState(false);
+  const [isBulkClosing, setIsBulkClosing] = useState(false);
+  const [bulkCloseProgress, setBulkCloseProgress] = useState({ current: 0, total: 0, failed: 0 });
   const [receiptSettings, setReceiptSettings] = useState<ReceiptPrintSettings>(loadReceiptSettings);
   const [showPrintSettings, setShowPrintSettings] = useState(false);
 
@@ -468,21 +470,45 @@ export default function Closure() {
       let counter = prev.length > 0 ? Math.max(...prev.map(e => e.id)) + 1 : 1;
       const fresh: SummaryEntry[] = matchedLoans
         .filter((loan: any) => !existingIds.has(loan.id))
-        .map((loan: any) => ({
-          id: counter++,
-          loanId: loan.id,
-          borrowerName: loan.borrowerName || '',
-          borrowerAddress: loan.borrowerAddress || loan.address || '',
-          groupName: loan.groupName || '',
-          collateralDetails: loan.collateralDetails || '',
-          accountNumber: loan.accountNumber || '',
-          loanDate: loan.loanDate || '',
-          months: '',
-          interestRate: String(loan.interestRate || ''),
-          principalAmount: Number(loan.principalAmount) || 0,
-          chargesAmount: 0,
-          closureDate: today,
-        }));
+        .map((loan: any) => {
+          const principal = Number(loan.principalAmount) || 0;
+          let rate = Number(loan.interestRate) || 0;
+          if (loan.interestRateType === 'monthly') {
+            rate = rate * 12;
+          }
+          const loanDate = loan.loanDate || today;
+          const diffMs = new Date(today).getTime() - new Date(loanDate).getTime();
+          const days = Math.max(0, Math.ceil(diffMs / (1000 * 3600 * 24)));
+          const interest = LoanCalculations.calculateSimpleInterest(principal, rate, days);
+          const timePeriod = LoanCalculationsAdvanced.calculateTimePeriod(new Date(loanDate), new Date(today));
+          let monthsDisplay = '';
+          if (days > 0) {
+            if (timePeriod.years > 0 || timePeriod.months > 0) {
+              const parts = [];
+              if (timePeriod.years > 0) parts.push(`${timePeriod.years}वर्ष`);
+              if (timePeriod.months > 0) parts.push(`${timePeriod.months}महिने`);
+              if (timePeriod.days > 0) parts.push(`${timePeriod.days}दिवस`);
+              monthsDisplay = parts.join(' ');
+            } else {
+              monthsDisplay = `${days} दिवस`;
+            }
+          }
+          return {
+            id: counter++,
+            loanId: loan.id,
+            borrowerName: loan.borrowerName || '',
+            borrowerAddress: loan.borrowerAddress || loan.address || '',
+            groupName: loan.groupName || '',
+            collateralDetails: loan.collateralDetails || '',
+            accountNumber: loan.accountNumber || '',
+            loanDate: loanDate,
+            months: monthsDisplay,
+            interestRate: String(loan.interestRate || ''),
+            principalAmount: principal,
+            chargesAmount: interest,
+            closureDate: today,
+          };
+        });
       if (fresh.length === 0) return prev;
       const merged = [...prev, ...fresh];
       merged.sort((a, b) => {
@@ -1072,6 +1098,87 @@ export default function Closure() {
     setSummaryEntries([]);
     setSummaryCounter(1);
   }, []);
+
+  const handleBulkClose = useCallback(async () => {
+    const entries = summaryEntriesRef.current;
+    if (entries.length === 0) return;
+    
+    const confirmed = window.confirm(
+      `${entries.length} कर्ज एकदम बंद करायचे आहेत?\n\n` +
+      entries.map((e, i) => `${i+1}. खाते ${e.accountNumber} — ₹${e.principalAmount.toLocaleString('en-IN')} + ₹${e.chargesAmount.toLocaleString('en-IN')}`).join('\n') +
+      `\n\nGrand Total: ₹${entries.reduce((s, e) => s + e.principalAmount + e.chargesAmount, 0).toLocaleString('en-IN')}`
+    );
+    if (!confirmed) return;
+
+    setIsBulkClosing(true);
+    setBulkCloseProgress({ current: 0, total: entries.length, failed: 0 });
+    let failCount = 0;
+    const closedIds: number[] = [];
+
+    for (let i = 0; i < entries.length; i++) {
+      const entry = entries[i];
+      setBulkCloseProgress(p => ({ ...p, current: i + 1 }));
+      try {
+        await apiRequest(`/api/loans/cleanup-manual-entries`, "POST", {
+          amount: entry.principalAmount + entry.chargesAmount,
+          accountNumber: entry.accountNumber,
+        });
+      } catch {}
+      try {
+        const closureData = {
+          loanId: entry.loanId,
+          closureDate: entry.closureDate,
+          principalPaid: entry.principalAmount,
+          interestPaid: entry.chargesAmount,
+          totalAmount: entry.principalAmount + entry.chargesAmount,
+          calculatedInterest: entry.chargesAmount,
+          actualPaidAmount: entry.principalAmount + entry.chargesAmount,
+          balanceRefund: 0,
+          interestType: 'simple',
+          advancedCalculationMode: 'half_month',
+          durationInMonths: 0,
+          returnOfArticles: '',
+          isClosed: true,
+          advancedOverride: false,
+          interestVariance: 0,
+          varianceReason: 'गणना प्रमाणे',
+          dateWarningConfirmed: true,
+        };
+        const res = await apiRequest(`/api/loans/${entry.loanId}/close`, "POST", closureData);
+        const result = await res.json();
+        if (result?.dateWarning) {
+          await apiRequest(`/api/loans/${entry.loanId}/close`, "POST", { ...closureData, dateWarningConfirmed: true });
+        }
+        closedIds.push(entry.id);
+      } catch {
+        failCount++;
+      }
+    }
+
+    queryClient.invalidateQueries({ queryKey: ["/api/loans"] });
+    queryClient.invalidateQueries({ queryKey: ["/api/cash-transactions"] });
+    queryClient.invalidateQueries({ queryKey: ["/api/cash-balance"] });
+    queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
+    queryClient.invalidateQueries({ queryKey: ["/api/borrowers"] });
+    queryClient.invalidateQueries({ queryKey: ["/api/loan-closures"] });
+
+    setSummaryEntries(prev => prev.filter(e => !closedIds.includes(e.id)));
+
+    setIsBulkClosing(false);
+    if (failCount === 0) {
+      toast({ title: "यशस्वी", description: `${entries.length} कर्ज बंद केले — रोकड वही अपडेट` });
+      if (closedIds.length === entries.length) {
+        setSummaryEntries([]);
+        setSummaryCounter(1);
+      }
+    } else {
+      toast({
+        title: `${entries.length - failCount} / ${entries.length} बंद`,
+        description: `${failCount} कर्ज बंद करताना त्रुटी — पुन्हा प्रयत्न करा`,
+        variant: "destructive",
+      });
+    }
+  }, [toast]);
 
   const handleGenerateSummaryReceipt = useCallback(() => {
     const currentEntries = summaryEntriesRef.current;
@@ -2401,6 +2508,24 @@ export default function Closure() {
                             title="प्रिंट सेटिंग्स"
                           >
                             <Settings className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleBulkClose}
+                            disabled={isBulkClosing || summaryEntries.some(e => e.chargesAmount === 0 && e.principalAmount === 0)}
+                            className="inline-flex items-center rounded-md px-3 h-9 text-xs border border-green-500 bg-green-50 text-green-700 hover:bg-green-100 active:bg-green-200 disabled:opacity-50 transition-colors outline-none"
+                          >
+                            {isBulkClosing ? (
+                              <>
+                                <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
+                                {bulkCloseProgress.current}/{bulkCloseProgress.total}
+                              </>
+                            ) : (
+                              <>
+                                <CheckCircle className="h-3.5 w-3.5 mr-1" />
+                                सर्व बंद करा
+                              </>
+                            )}
                           </button>
                           <button
                             type="button"
