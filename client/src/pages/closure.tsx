@@ -2465,7 +2465,7 @@ export default function Closure() {
                           <FileText className="h-4 w-4" />
                           एकत्रित हिशोब ({summaryEntries.length})
                         </CardTitle>
-                        <div className="flex flex-wrap items-center gap-1.5">
+                        <div className="hidden sm:flex flex-wrap items-center gap-1.5">
                           <div className="flex items-center gap-1.5">
                             <span className="text-xs text-gray-600">तपशील/महिने</span>
                             <label className="relative inline-flex items-center cursor-pointer">
@@ -2545,6 +2545,95 @@ export default function Closure() {
                             <Trash2 className="h-3.5 w-3.5 mr-1" />
                             काढा
                           </button>
+                        </div>
+                        <div className="flex sm:hidden flex-col gap-2.5">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-xs text-gray-600">तपशील</span>
+                                <label className="relative inline-flex items-center cursor-pointer">
+                                  <input
+                                    type="checkbox"
+                                    checked={showDetails}
+                                    onChange={(e) => summaryColumnsToggle.mutate({ enabled: e.target.checked, field: 'showSummaryDetails' })}
+                                    className="sr-only peer"
+                                    disabled={summaryColumnsToggle.isPending || !company}
+                                    autoComplete="off"
+                                  />
+                                  <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-amber-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-600"></div>
+                                </label>
+                              </div>
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-xs text-gray-600">व्याजदर</span>
+                                <label className="relative inline-flex items-center cursor-pointer">
+                                  <input
+                                    type="checkbox"
+                                    checked={showRateMonths}
+                                    onChange={(e) => summaryColumnsToggle.mutate({ enabled: e.target.checked })}
+                                    className="sr-only peer"
+                                    disabled={summaryColumnsToggle.isPending || !company}
+                                    autoComplete="off"
+                                  />
+                                  <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-amber-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-600"></div>
+                                </label>
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setShowPrintSettings(v => !v)}
+                              className={`inline-flex items-center rounded-lg px-3 h-10 text-xs border transition-colors outline-none ${showPrintSettings ? 'border-amber-500 bg-amber-100 text-amber-800' : 'border-gray-300 bg-gray-50 text-gray-700 hover:bg-gray-100'}`}
+                              title="प्रिंट सेटिंग्स"
+                            >
+                              <Settings className="h-4 w-4" />
+                            </button>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2">
+                            <button
+                              ref={btPrintBtnRef}
+                              type="button"
+                              onClick={handleBluetoothPrint}
+                              className="inline-flex items-center justify-center rounded-lg h-11 text-sm font-medium bg-indigo-600 text-white hover:bg-indigo-700 active:bg-indigo-800 transition-colors outline-none shadow-sm"
+                            >
+                              <Bluetooth className="h-4 w-4 mr-1.5" />
+                              ब्लूटूथ प्रिंट
+                            </button>
+                            <button
+                              type="button"
+                              onClick={handleGenerateSummaryReceipt}
+                              className="inline-flex items-center justify-center rounded-lg h-11 text-sm font-medium border border-indigo-300 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 active:bg-indigo-200 transition-colors outline-none"
+                            >
+                              <Printer className="h-4 w-4 mr-1.5" />
+                              पावती प्रिंट
+                            </button>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2">
+                            <button
+                              type="button"
+                              onClick={handleBulkClose}
+                              disabled={isBulkClosing || summaryEntries.some(e => e.chargesAmount === 0 && e.principalAmount === 0)}
+                              className="inline-flex items-center justify-center rounded-lg h-10 text-xs font-medium border border-green-500 bg-green-50 text-green-700 hover:bg-green-100 active:bg-green-200 disabled:opacity-50 transition-colors outline-none"
+                            >
+                              {isBulkClosing ? (
+                                <>
+                                  <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                                  {bulkCloseProgress.current}/{bulkCloseProgress.total}
+                                </>
+                              ) : (
+                                <>
+                                  <CheckCircle className="h-4 w-4 mr-1.5" />
+                                  सर्व बंद करा
+                                </>
+                              )}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={handleClearAllSummary}
+                              className="inline-flex items-center justify-center rounded-lg h-10 text-xs font-medium border border-red-300 bg-red-50 text-red-700 hover:bg-red-100 active:bg-red-200 transition-colors outline-none"
+                            >
+                              <Trash2 className="h-4 w-4 mr-1.5" />
+                              काढा
+                            </button>
+                          </div>
                         </div>
                       </div>
                       {showPrintSettings && (
