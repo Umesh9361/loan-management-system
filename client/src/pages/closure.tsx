@@ -1456,7 +1456,7 @@ export default function Closure() {
           const codeJson = await codeRes.json();
           if (codeJson.code) estimateCode = codeJson.code;
         } catch {}
-        const qrHTML = `<div style="padding:6px 12px;font-family:'Noto Sans Devanagari',sans-serif;text-align:center;padding-top:16px;padding-bottom:8px;"><img src="${qrDataUrl}" style="width:160px;height:160px;margin:0 auto;" /><div style="font-size:14px;color:#666;margin-top:4px;">QR Scan → Direct Close</div>${estimateCode ? `<div style="margin-top:10px;font-size:22px;font-weight:900;letter-spacing:6px;color:#000;">कोड: ${estimateCode}</div><div style="font-size:12px;color:#888;margin-top:2px;">QR नाही चालला? — हा कोड टाका</div>` : ''}</div>`;
+        const qrHTML = `<div style="padding:6px 12px;font-family:'Noto Sans Devanagari',sans-serif;text-align:center;padding-top:16px;padding-bottom:8px;"><img src="${qrDataUrl}" style="width:160px;height:160px;margin:0 auto;" />${estimateCode ? `<div style="margin-top:2px;font-size:22px;font-weight:900;letter-spacing:6px;color:#000;">${estimateCode}</div>` : ''}</div>`;
         qrCanvas = await renderReceiptToCanvas(qrHTML);
       }
 
