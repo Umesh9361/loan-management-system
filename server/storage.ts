@@ -171,6 +171,7 @@ export interface IStorage {
   getEstimateCodeByCode(code: string, tenantId: string): Promise<EstimateCode | undefined>;
   findEstimateCodeByLoanIds(loanIds: string[], tenantId: string): Promise<EstimateCode | undefined>;
   isEstimateCodeUnique(code: string, tenantId: string): Promise<boolean>;
+  deleteEstimateCodesContainingLoan(loanId: string, tenantId: string): Promise<number>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -4183,6 +4184,38 @@ export class DatabaseStorage implements IStorage {
     const [result] = await db.select().from(estimateCodes)
       .where(and(eq(estimateCodes.code, code), eq(estimateCodes.tenantId, tenantId)));
     return !result;
+  }
+
+  async deleteEstimateCodesContainingLoan(loanId: string, tenantId: string): Promise<number> {
+    const allCodes = await db.select().from(estimateCodes)
+      .where(eq(estimateCodes.tenantId, tenantId));
+    let deleted = 0;
+    for (const row of allCodes) {
+      const ids = row.loanIds as string[];
+      if (ids.includes(loanId)) {
+        const remainingIds = ids.filter(id => id !== loanId);
+        if (remainingIds.length === 0) {
+          await db.delete(estimateCodes).where(eq(estimateCodes.id, row.id));
+          deleted++;
+        } else {
+          const allClosed = await this.checkAllLoansClosed(remainingIds, tenantId);
+          if (allClosed) {
+            await db.delete(estimateCodes).where(eq(estimateCodes.id, row.id));
+            deleted++;
+          }
+        }
+      }
+    }
+    return deleted;
+  }
+
+  private async checkAllLoansClosed(loanIds: string[], tenantId: string): Promise<boolean> {
+    for (const loanId of loanIds) {
+      const [loan] = await db.select().from(loans)
+        .where(and(eq(loans.id, loanId), eq(loans.tenantId, tenantId)));
+      if (loan && loan.status !== 'closed') return false;
+    }
+    return true;
   }
 }
 

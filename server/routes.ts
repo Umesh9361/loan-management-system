@@ -2143,6 +2143,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // This was the source creating duplicate entries - now eliminated
       // "प्रिव्हेन्शन पेक्षा रूट कॉलच काढा" - Direct DB insertion removed as requested
       
+      try {
+        const recycled = await storage.deleteEstimateCodesContainingLoan(id, req.session.tenantId!);
+        if (recycled > 0) console.log(`♻️ ESTIMATE CODE RECYCLED: ${recycled} code(s) freed for loan ${loanDetails?.accountNumber}`);
+      } catch (e) {}
+
       console.log(`✅ LOAN CLOSURE COMPLETED: Account ${loanDetails?.accountNumber} - Amount ₹${closureData.totalAmount}`);
       console.log(`🎯 SINGLE SOURCE: Cash transaction handled by storage.ts only`);
 
