@@ -26,7 +26,7 @@ import { LoanCalculations } from "@/lib/calculations";
 import { DateUtils } from "@/lib/date-utils";
 import { Calculator, FileText, AlertTriangle, CheckCircle, Download, Search, X, Clock, Edit, Calendar, Lightbulb, Sparkles, TrendingUp, Info, Check, AlertCircle, Home, Trash2, Printer, Bluetooth, Loader2, Settings, Minus, Plus, Bold, RotateCcw, ChevronDown, ChevronUp, Eye } from "lucide-react";
 import html2canvas from "html2canvas";
-import { printReceiptViaBluetooth, isBluetoothSupported } from "@/lib/bluetooth-printer";
+import { printReceiptViaBluetooth, printReceiptWithQR, isBluetoothSupported } from "@/lib/bluetooth-printer";
 import { encodeMultiQrData } from "@/lib/qr-utils";
 import jsPDF from "jspdf";
 import { PhotoViewer } from "@/components/ui/photo-viewer";
@@ -1335,7 +1335,7 @@ export default function Closure() {
     }
   }, [summaryReceiptHTML, toast, createOffscreenReceiptContainer]);
 
-  const generateThermalReceiptHTML = useCallback((entries: SummaryEntry[], nameMode: 'group' | 'customer' = 'group', showInterestRate: boolean = false, qrDataUrl?: string, estimateCode?: string): string => {
+  const generateThermalReceiptHTML = useCallback((entries: SummaryEntry[], nameMode: 'group' | 'customer' = 'group', showInterestRate: boolean = false): string => {
     if (entries.length === 0) return '';
     const bt = receiptSettings.thermal;
     const totalPrincipal = entries.reduce((sum, e) => sum + e.principalAmount, 0);
@@ -1393,7 +1393,6 @@ export default function Closure() {
             </tr>
           </tbody>
         </table>
-        ${qrDataUrl ? `<div style="text-align:center;margin-top:16px;padding-bottom:8px;"><img src="${qrDataUrl}" style="width:${entries.length > 1 ? 280 : 160}px;height:${entries.length > 1 ? 280 : 160}px;margin:0 auto;" /><div style="font-size:14px;color:#666;margin-top:4px;">QR Scan → Direct Close</div>${estimateCode ? `<div style="margin-top:10px;font-size:22px;font-weight:900;letter-spacing:6px;color:#000;">कोड: ${estimateCode}</div><div style="font-size:12px;color:#888;margin-top:2px;">QR नाही चालला? — हा कोड टाका</div>` : ''}</div>` : ''}
       </div>`;
   }, [receiptSettings.thermal]);
 
@@ -1433,15 +1432,18 @@ export default function Closure() {
 
     setIsBtPrinting(true);
     try {
-      let qrDataUrl: string | undefined;
-      let estimateCode: string | undefined;
+      const thermalHTML = generateThermalReceiptHTML(currentEntries, printNameMode, showRateMonths);
+      if (!thermalHTML) { setIsBtPrinting(false); return; }
+      const textCanvas = await renderReceiptToCanvas(thermalHTML);
+
+      let qrCanvas: HTMLCanvasElement | null = null;
       if (receiptSettings.thermal.showQrCode) {
         const loanIds = currentEntries.map(e => e.loanId);
         const qrData = encodeMultiQrData(loanIds);
-        const qrSize = loanIds.length > 1 ? 768 : 512;
-        const qrRes = await fetch(`/api/qr-generate?url=${encodeURIComponent(qrData)}&size=${qrSize}`);
+        const qrRes = await fetch(`/api/qr-generate?url=${encodeURIComponent(qrData)}&size=512`);
         const qrJson = await qrRes.json();
-        qrDataUrl = qrJson.dataUrl;
+        const qrDataUrl = qrJson.dataUrl;
+        let estimateCode = '';
         try {
           const codeRes = await fetch('/api/estimate-code', {
             method: 'POST',
@@ -1451,12 +1453,16 @@ export default function Closure() {
           const codeJson = await codeRes.json();
           if (codeJson.code) estimateCode = codeJson.code;
         } catch {}
+        const qrHTML = `<div style="padding:6px 12px;font-family:'Noto Sans Devanagari',sans-serif;text-align:center;padding-top:16px;padding-bottom:8px;"><img src="${qrDataUrl}" style="width:160px;height:160px;margin:0 auto;" /><div style="font-size:14px;color:#666;margin-top:4px;">QR Scan → Direct Close</div>${estimateCode ? `<div style="margin-top:10px;font-size:22px;font-weight:900;letter-spacing:6px;color:#000;">कोड: ${estimateCode}</div><div style="font-size:12px;color:#888;margin-top:2px;">QR नाही चालला? — हा कोड टाका</div>` : ''}</div>`;
+        qrCanvas = await renderReceiptToCanvas(qrHTML);
       }
-      const thermalHTML = generateThermalReceiptHTML(currentEntries, printNameMode, showRateMonths, qrDataUrl, estimateCode);
-      if (!thermalHTML) { setIsBtPrinting(false); return; }
-      const canvas = await renderReceiptToCanvas(thermalHTML);
+
       toast({ title: "कनेक्ट करत आहे...", description: "ब्लूटूथ प्रिंटर निवडा" });
-      await printReceiptViaBluetooth(canvas, 576);
+      if (qrCanvas) {
+        await printReceiptWithQR(textCanvas, qrCanvas, 576);
+      } else {
+        await printReceiptViaBluetooth(textCanvas, 576);
+      }
       toast({ title: "यशस्वी", description: "प्रिंट पाठवले!" });
     } catch (error: any) {
       if (error?.message?.includes('cancelled') || error?.message?.includes('User cancelled')) {

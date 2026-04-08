@@ -75,10 +75,14 @@ async function connectToPrinter(): Promise<{ characteristic: any }> {
   return { characteristic: writeChar };
 }
 
-async function sendData(characteristic: any, data: Uint8Array): Promise<void> {
+async function sendData(characteristic: any, data: Uint8Array, mode: 'tight' | 'loose' = 'tight'): Promise<void> {
   const useNoResponse = characteristic.properties.writeWithoutResponse;
-  const CHUNK_SIZE = useNoResponse ? 512 : 256;
-  const DELAY = useNoResponse ? 3 : 8;
+  const CHUNK_SIZE = mode === 'loose'
+    ? (useNoResponse ? 1024 : 512)
+    : (useNoResponse ? 512 : 256);
+  const DELAY = mode === 'loose'
+    ? (useNoResponse ? 1 : 2)
+    : (useNoResponse ? 3 : 8);
   for (let i = 0; i < data.length; i += CHUNK_SIZE) {
     const chunk = data.slice(i, i + CHUNK_SIZE);
     if (useNoResponse) {
@@ -133,11 +137,8 @@ function concatUint8Arrays(arrays: Uint8Array[]): Uint8Array {
   return result;
 }
 
-export async function printReceiptViaBluetooth(canvas: HTMLCanvasElement, printerWidth: number = 384): Promise<void> {
-  const connection = await connectToPrinter();
-
+function buildBitmapCommand(canvas: HTMLCanvasElement, printerWidth: number): Uint8Array {
   const bitmap = imageToMonochromeBitmap(canvas, printerWidth);
-
   const widthBytes = Math.ceil(bitmap.width / 8);
   const header = new Uint8Array([
     0x1D, 0x76, 0x30, 0x00,
@@ -146,17 +147,47 @@ export async function printReceiptViaBluetooth(canvas: HTMLCanvasElement, printe
     bitmap.height & 0xFF,
     (bitmap.height >> 8) & 0xFF,
   ]);
+  return concatUint8Arrays([header, bitmap.data]);
+}
+
+export async function printReceiptViaBluetooth(canvas: HTMLCanvasElement, printerWidth: number = 384): Promise<void> {
+  const connection = await connectToPrinter();
+
+  const bitmapCmd = buildBitmapCommand(canvas, printerWidth);
 
   const fullCommand = concatUint8Arrays([
     ESC_INIT,
     ESC_ALIGN_CENTER,
-    header,
-    bitmap.data,
+    bitmapCmd,
     FEED_LINES,
     ESC_ALIGN_LEFT,
   ]);
 
-  await sendData(connection.characteristic, fullCommand);
+  await sendData(connection.characteristic, fullCommand, 'tight');
+}
+
+export async function printReceiptWithQR(
+  textCanvas: HTMLCanvasElement,
+  qrCanvas: HTMLCanvasElement,
+  printerWidth: number = 384
+): Promise<void> {
+  const connection = await connectToPrinter();
+
+  const textBitmapCmd = buildBitmapCommand(textCanvas, printerWidth);
+  const textCommand = concatUint8Arrays([
+    ESC_INIT,
+    ESC_ALIGN_CENTER,
+    textBitmapCmd,
+  ]);
+  await sendData(connection.characteristic, textCommand, 'tight');
+
+  const qrBitmapCmd = buildBitmapCommand(qrCanvas, printerWidth);
+  const qrCommand = concatUint8Arrays([
+    qrBitmapCmd,
+    FEED_LINES,
+    ESC_ALIGN_LEFT,
+  ]);
+  await sendData(connection.characteristic, qrCommand, 'loose');
 }
 
 export function isBluetoothSupported(): boolean {
