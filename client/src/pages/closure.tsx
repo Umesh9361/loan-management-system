@@ -1456,8 +1456,44 @@ export default function Closure() {
           const codeJson = await codeRes.json();
           if (codeJson.code) estimateCode = codeJson.code;
         } catch {}
-        const qrHTML = `<div style="padding:6px 12px;font-family:'Noto Sans Devanagari',sans-serif;text-align:center;padding-top:16px;padding-bottom:8px;"><img src="${qrDataUrl}" style="width:160px;height:160px;margin:0 auto;" />${estimateCode ? `<div style="margin-top:2px;font-size:22px;font-weight:900;letter-spacing:6px;color:#000;">${estimateCode}</div>` : ''}</div>`;
-        qrCanvas = await renderReceiptToCanvas(qrHTML);
+        const qrImg = new Image();
+        qrImg.src = qrDataUrl;
+        await new Promise<void>((resolve, reject) => {
+          qrImg.onload = () => resolve();
+          qrImg.onerror = () => reject(new Error('QR image load failed'));
+        });
+        const printWidth = 576;
+        const qrSize = 320;
+        const codeHeight = estimateCode ? 48 : 0;
+        const topPad = 24;
+        const gap = 4;
+        const bottomPad = 16;
+        const totalHeight = topPad + qrSize + gap + codeHeight + bottomPad;
+        const directCanvas = document.createElement('canvas');
+        directCanvas.width = printWidth;
+        directCanvas.height = totalHeight;
+        const dCtx = directCanvas.getContext('2d')!;
+        dCtx.fillStyle = '#ffffff';
+        dCtx.fillRect(0, 0, printWidth, totalHeight);
+        const qrX = Math.round((printWidth - qrSize) / 2);
+        dCtx.imageSmoothingEnabled = false;
+        dCtx.drawImage(qrImg, qrX, topPad, qrSize, qrSize);
+        if (estimateCode) {
+          dCtx.fillStyle = '#000000';
+          dCtx.font = '900 44px Arial, sans-serif';
+          dCtx.textBaseline = 'top';
+          const charSpacing = 16;
+          const chars = estimateCode.split('');
+          const charWidths = chars.map(c => dCtx.measureText(c).width);
+          const totalW = charWidths.reduce((s, w) => s + w, 0) + charSpacing * (chars.length - 1);
+          let cx = (printWidth - totalW) / 2;
+          const cy = topPad + qrSize + gap;
+          for (let i = 0; i < chars.length; i++) {
+            dCtx.fillText(chars[i], cx, cy);
+            cx += charWidths[i] + charSpacing;
+          }
+        }
+        qrCanvas = directCanvas;
       }
 
       if (qrCanvas) {
