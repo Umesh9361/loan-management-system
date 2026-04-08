@@ -26,7 +26,7 @@ import { LoanCalculations } from "@/lib/calculations";
 import { DateUtils } from "@/lib/date-utils";
 import { Calculator, FileText, AlertTriangle, CheckCircle, Download, Search, X, Clock, Edit, Calendar, Lightbulb, Sparkles, TrendingUp, Info, Check, AlertCircle, Home, Trash2, Printer, Bluetooth, Loader2, Settings, Minus, Plus, Bold, RotateCcw, ChevronDown, ChevronUp, Eye } from "lucide-react";
 import html2canvas from "html2canvas";
-import { printReceiptViaBluetooth, printReceiptWithQR, isBluetoothSupported } from "@/lib/bluetooth-printer";
+import { printReceiptViaBluetooth, connectBluetoothPrinter, sendPrintData, isBluetoothSupported } from "@/lib/bluetooth-printer";
 import { encodeMultiQrData } from "@/lib/qr-utils";
 import jsPDF from "jspdf";
 import { PhotoViewer } from "@/components/ui/photo-viewer";
@@ -1432,6 +1432,9 @@ export default function Closure() {
 
     setIsBtPrinting(true);
     try {
+      toast({ title: "कनेक्ट करत आहे...", description: "ब्लूटूथ प्रिंटर निवडा" });
+      const connection = await connectBluetoothPrinter();
+
       const thermalHTML = generateThermalReceiptHTML(currentEntries, printNameMode, showRateMonths);
       if (!thermalHTML) { setIsBtPrinting(false); return; }
       const textCanvas = await renderReceiptToCanvas(thermalHTML);
@@ -1457,11 +1460,11 @@ export default function Closure() {
         qrCanvas = await renderReceiptToCanvas(qrHTML);
       }
 
-      toast({ title: "कनेक्ट करत आहे...", description: "ब्लूटूथ प्रिंटर निवडा" });
       if (qrCanvas) {
-        await printReceiptWithQR(textCanvas, qrCanvas, 576);
+        await sendPrintData(connection.characteristic, textCanvas, 576, 'tight', true, false);
+        await sendPrintData(connection.characteristic, qrCanvas, 576, 'loose', false, true);
       } else {
-        await printReceiptViaBluetooth(textCanvas, 576);
+        await sendPrintData(connection.characteristic, textCanvas, 576, 'tight', true, true);
       }
       toast({ title: "यशस्वी", description: "प्रिंट पाठवले!" });
     } catch (error: any) {

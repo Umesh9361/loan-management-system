@@ -7,7 +7,7 @@ function isWebBluetoothSupported(): boolean {
   return !!(navigator as any).bluetooth;
 }
 
-async function connectToPrinter(): Promise<{ characteristic: any }> {
+export async function connectBluetoothPrinter(): Promise<{ characteristic: any }> {
   if (!isWebBluetoothSupported()) {
     throw new Error('Web Bluetooth API उपलब्ध नाही. Chrome/Edge ब्राउझर वापरा.');
   }
@@ -150,44 +150,22 @@ function buildBitmapCommand(canvas: HTMLCanvasElement, printerWidth: number): Ui
   return concatUint8Arrays([header, bitmap.data]);
 }
 
-export async function printReceiptViaBluetooth(canvas: HTMLCanvasElement, printerWidth: number = 384): Promise<void> {
-  const connection = await connectToPrinter();
-
+export async function sendPrintData(characteristic: any, canvas: HTMLCanvasElement, printerWidth: number = 384, mode: 'tight' | 'loose' = 'tight', isFirst: boolean = true, isLast: boolean = true): Promise<void> {
   const bitmapCmd = buildBitmapCommand(canvas, printerWidth);
-
-  const fullCommand = concatUint8Arrays([
-    ESC_INIT,
-    ESC_ALIGN_CENTER,
-    bitmapCmd,
-    FEED_LINES,
-    ESC_ALIGN_LEFT,
-  ]);
-
-  await sendData(connection.characteristic, fullCommand, 'tight');
+  const parts: Uint8Array[] = [];
+  if (isFirst) {
+    parts.push(ESC_INIT, ESC_ALIGN_CENTER);
+  }
+  parts.push(bitmapCmd);
+  if (isLast) {
+    parts.push(FEED_LINES, ESC_ALIGN_LEFT);
+  }
+  await sendData(characteristic, concatUint8Arrays(parts), mode);
 }
 
-export async function printReceiptWithQR(
-  textCanvas: HTMLCanvasElement,
-  qrCanvas: HTMLCanvasElement,
-  printerWidth: number = 384
-): Promise<void> {
-  const connection = await connectToPrinter();
-
-  const textBitmapCmd = buildBitmapCommand(textCanvas, printerWidth);
-  const textCommand = concatUint8Arrays([
-    ESC_INIT,
-    ESC_ALIGN_CENTER,
-    textBitmapCmd,
-  ]);
-  await sendData(connection.characteristic, textCommand, 'tight');
-
-  const qrBitmapCmd = buildBitmapCommand(qrCanvas, printerWidth);
-  const qrCommand = concatUint8Arrays([
-    qrBitmapCmd,
-    FEED_LINES,
-    ESC_ALIGN_LEFT,
-  ]);
-  await sendData(connection.characteristic, qrCommand, 'loose');
+export async function printReceiptViaBluetooth(canvas: HTMLCanvasElement, printerWidth: number = 384): Promise<void> {
+  const connection = await connectBluetoothPrinter();
+  await sendPrintData(connection.characteristic, canvas, printerWidth, 'tight', true, true);
 }
 
 export function isBluetoothSupported(): boolean {
