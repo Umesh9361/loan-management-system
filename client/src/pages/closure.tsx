@@ -1393,7 +1393,7 @@ export default function Closure() {
             </tr>
           </tbody>
         </table>
-        ${qrDataUrl ? `<div style="text-align:center;margin-top:16px;padding-bottom:8px;"><img src="${qrDataUrl}" style="width:160px;height:160px;margin:0 auto;" /><div style="font-size:14px;color:#666;margin-top:4px;">QR Scan → Direct Close</div>${estimateCode ? `<div style="margin-top:10px;font-size:22px;font-weight:900;letter-spacing:6px;color:#000;">कोड: ${estimateCode}</div><div style="font-size:12px;color:#888;margin-top:2px;">QR नाही चालला? — हा कोड टाका</div>` : ''}</div>` : ''}
+        ${qrDataUrl ? `<div style="text-align:center;margin-top:16px;padding-bottom:8px;"><img src="${qrDataUrl}" style="width:${entries.length > 1 ? 280 : 160}px;height:${entries.length > 1 ? 280 : 160}px;margin:0 auto;" /><div style="font-size:14px;color:#666;margin-top:4px;">QR Scan → Direct Close</div>${estimateCode ? `<div style="margin-top:10px;font-size:22px;font-weight:900;letter-spacing:6px;color:#000;">कोड: ${estimateCode}</div><div style="font-size:12px;color:#888;margin-top:2px;">QR नाही चालला? — हा कोड टाका</div>` : ''}</div>` : ''}
       </div>`;
   }, [receiptSettings.thermal]);
 
@@ -1438,7 +1438,8 @@ export default function Closure() {
       if (receiptSettings.thermal.showQrCode) {
         const loanIds = currentEntries.map(e => e.loanId);
         const qrData = encodeMultiQrData(loanIds);
-        const qrRes = await fetch(`/api/qr-generate?url=${encodeURIComponent(qrData)}&size=512`);
+        const qrSize = loanIds.length > 1 ? 768 : 512;
+        const qrRes = await fetch(`/api/qr-generate?url=${encodeURIComponent(qrData)}&size=${qrSize}`);
         const qrJson = await qrRes.json();
         qrDataUrl = qrJson.dataUrl;
         try {
