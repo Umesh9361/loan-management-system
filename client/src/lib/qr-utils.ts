@@ -1,4 +1,5 @@
 const QR_PREFIX = "LMS:";
+const CODE_PREFIX = "LMS:CODE:";
 
 export function encodeQrData(loanId: string): string {
   const reversed = loanId.split('').reverse().join('');
@@ -11,7 +12,27 @@ export function encodeMultiQrData(loanIds: string[]): string {
   return QR_PREFIX + btoa(reversed);
 }
 
+export function encodeCodeQr(code: string): string {
+  return CODE_PREFIX + code;
+}
+
+export function isCodeQr(scannedText: string): boolean {
+  return scannedText.startsWith(CODE_PREFIX);
+}
+
+export function extractCode(scannedText: string): string | null {
+  if (scannedText.startsWith(CODE_PREFIX)) {
+    const code = scannedText.slice(CODE_PREFIX.length).trim();
+    return code.length > 0 ? code : null;
+  }
+  return null;
+}
+
 export function decodeQrData(scannedText: string): string | null {
+  if (scannedText.startsWith(CODE_PREFIX)) {
+    return null;
+  }
+
   if (scannedText.startsWith(QR_PREFIX)) {
     try {
       const encoded = scannedText.slice(QR_PREFIX.length);

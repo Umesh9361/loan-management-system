@@ -6587,21 +6587,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  const estimateCodes = new Map<string, { loanIds: string[]; tenantId: string; createdAt: number }>();
-
-  setInterval(() => {
-    const cutoff = Date.now() - 8 * 24 * 60 * 60 * 1000;
-    for (const [code, entry] of estimateCodes) {
-      if (entry.createdAt < cutoff) estimateCodes.delete(code);
+  async function generateUniqueCode(tenantId: string): Promise<string> {
+    for (let i = 0; i < 200; i++) {
+      const code = String(100000 + Math.floor(Math.random() * 900000));
+      const isUnique = await storage.isEstimateCodeUnique(code, tenantId);
+      if (isUnique) return code;
     }
-  }, 60 * 60 * 1000);
-
-  function generateUniqueCode(): string {
-    for (let i = 0; i < 100; i++) {
-      const code = String(1000 + Math.floor(Math.random() * 9000));
-      if (!estimateCodes.has(code)) return code;
-    }
-    return String(1000 + Math.floor(Math.random() * 9000));
+    return String(100000 + Math.floor(Math.random() * 900000));
   }
 
   app.post('/api/estimate-code', requireAuth, async (req: any, res) => {
@@ -6611,8 +6603,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'loanIds required' });
       }
       const tenantId = req.session?.tenantId || '';
-      const code = generateUniqueCode();
-      estimateCodes.set(code, { loanIds, tenantId, createdAt: Date.now() });
+      const existing = await storage.findEstimateCodeByLoanIds(loanIds, tenantId);
+      if (existing) {
+        return res.json({ code: existing.code });
+      }
+      const code = await generateUniqueCode(tenantId);
+      await storage.createEstimateCode(code, loanIds, tenantId);
       res.json({ code });
     } catch (e) {
       res.status(500).json({ error: 'Code generation failed' });
@@ -6622,20 +6618,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/estimate-code/:code', requireAuth, async (req: any, res) => {
     try {
       const { code } = req.params;
-      const entry = estimateCodes.get(code);
-      if (!entry) {
-        return res.status(404).json({ error: 'कोड सापडला नाही किंवा expired' });
-      }
       const tenantId = req.session?.tenantId || '';
-      if (entry.tenantId !== tenantId) {
+      const entry = await storage.getEstimateCodeByCode(code, tenantId);
+      if (!entry) {
         return res.status(404).json({ error: 'कोड सापडला नाही' });
       }
-      const cutoff = Date.now() - 8 * 24 * 60 * 60 * 1000;
-      if (entry.createdAt < cutoff) {
-        estimateCodes.delete(code);
-        return res.status(404).json({ error: 'कोड expired — 8 दिवस संपले' });
-      }
-      res.json({ loanIds: entry.loanIds });
+      res.json({ loanIds: entry.loanIds as string[] });
     } catch (e) {
       res.status(500).json({ error: 'Lookup failed' });
     }

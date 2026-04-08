@@ -27,7 +27,7 @@ import { DateUtils } from "@/lib/date-utils";
 import { Calculator, FileText, AlertTriangle, CheckCircle, Download, Search, X, Clock, Edit, Calendar, Lightbulb, Sparkles, TrendingUp, Info, Check, AlertCircle, Home, Trash2, Printer, Bluetooth, Loader2, Settings, Minus, Plus, Bold, RotateCcw, ChevronDown, ChevronUp, Eye } from "lucide-react";
 import html2canvas from "html2canvas";
 import { printReceiptViaBluetooth, connectBluetoothPrinter, sendPrintData, isBluetoothSupported } from "@/lib/bluetooth-printer";
-import { encodeMultiQrData } from "@/lib/qr-utils";
+import { encodeCodeQr } from "@/lib/qr-utils";
 import jsPDF from "jspdf";
 import { PhotoViewer } from "@/components/ui/photo-viewer";
 import { Link } from "wouter";
@@ -1442,10 +1442,6 @@ export default function Closure() {
       let qrCanvas: HTMLCanvasElement | null = null;
       if (receiptSettings.thermal.showQrCode) {
         const loanIds = currentEntries.map(e => e.loanId);
-        const qrData = encodeMultiQrData(loanIds);
-        const qrRes = await fetch(`/api/qr-generate?url=${encodeURIComponent(qrData)}&size=512`);
-        const qrJson = await qrRes.json();
-        const qrDataUrl = qrJson.dataUrl;
         let estimateCode = '';
         try {
           const codeRes = await fetch('/api/estimate-code', {
@@ -1456,6 +1452,11 @@ export default function Closure() {
           const codeJson = await codeRes.json();
           if (codeJson.code) estimateCode = codeJson.code;
         } catch {}
+        const qrContent = estimateCode ? encodeCodeQr(estimateCode) : '';
+        if (!qrContent) throw new Error('Code generation failed');
+        const qrRes = await fetch(`/api/qr-generate?url=${encodeURIComponent(qrContent)}&size=512`);
+        const qrJson = await qrRes.json();
+        const qrDataUrl = qrJson.dataUrl;
         const qrImg = new Image();
         qrImg.src = qrDataUrl;
         await new Promise<void>((resolve, reject) => {

@@ -15,7 +15,8 @@ import {
   type JournalEntryLine, type InsertJournalEntryLine,
   type UserPermissions, type InsertUserPermissions,
   type UserActivityLog, type InsertUserActivityLog,
-  type LoanPhoto, type InsertLoanPhoto
+  type LoanPhoto, type InsertLoanPhoto,
+  estimateCodes, type EstimateCode
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, or, desc, asc, gte, lte, sum, count, sql, like, not, inArray } from "drizzle-orm";
@@ -164,6 +165,12 @@ export interface IStorage {
   getPendingPasswordResetRequests(): Promise<any[]>;
   getPasswordResetRequestById(requestId: string): Promise<any>;
   completePasswordResetRequest(requestId: string, completedBy: string): Promise<void>;
+
+  // Estimate code operations
+  createEstimateCode(code: string, loanIds: string[], tenantId: string): Promise<EstimateCode>;
+  getEstimateCodeByCode(code: string, tenantId: string): Promise<EstimateCode | undefined>;
+  findEstimateCodeByLoanIds(loanIds: string[], tenantId: string): Promise<EstimateCode | undefined>;
+  isEstimateCodeUnique(code: string, tenantId: string): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -4141,6 +4148,41 @@ export class DatabaseStorage implements IStorage {
         completedAt: new Date() 
       })
       .where(eq(passwordResetRequests.id, requestId));
+  }
+
+  async createEstimateCode(code: string, loanIds: string[], tenantId: string): Promise<EstimateCode> {
+    const [result] = await db.insert(estimateCodes).values({
+      code,
+      loanIds: loanIds,
+      tenantId,
+    }).returning();
+    return result;
+  }
+
+  async getEstimateCodeByCode(code: string, tenantId: string): Promise<EstimateCode | undefined> {
+    const [result] = await db.select().from(estimateCodes)
+      .where(and(eq(estimateCodes.code, code), eq(estimateCodes.tenantId, tenantId)));
+    return result || undefined;
+  }
+
+  async findEstimateCodeByLoanIds(loanIds: string[], tenantId: string): Promise<EstimateCode | undefined> {
+    const sorted = [...loanIds].sort();
+    const results = await db.select().from(estimateCodes)
+      .where(eq(estimateCodes.tenantId, tenantId))
+      .orderBy(desc(estimateCodes.createdAt));
+    for (const row of results) {
+      const rowIds = [...(row.loanIds as string[])].sort();
+      if (rowIds.length === sorted.length && rowIds.every((id, i) => id === sorted[i])) {
+        return row;
+      }
+    }
+    return undefined;
+  }
+
+  async isEstimateCodeUnique(code: string, tenantId: string): Promise<boolean> {
+    const [result] = await db.select().from(estimateCodes)
+      .where(and(eq(estimateCodes.code, code), eq(estimateCodes.tenantId, tenantId)));
+    return !result;
   }
 }
 

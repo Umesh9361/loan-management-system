@@ -660,6 +660,22 @@ export type LoanPhoto = typeof loanPhotos.$inferSelect & {
 };
 export type InsertLoanPhoto = z.infer<typeof insertLoanPhotoSchema>;
 
+// Estimate codes table for QR-based loan closure (lifetime, DB-backed)
+export const estimateCodes = pgTable("estimate_codes", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  code: varchar("code", { length: 10 }).notNull(),
+  loanIds: json("loan_ids").notNull(),
+  tenantId: varchar("tenant_id", { length: 20 }).notNull(),
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+});
+
+export const insertEstimateCodeSchema = createInsertSchema(estimateCodes).omit({
+  id: true,
+  createdAt: true,
+});
+export type EstimateCode = typeof estimateCodes.$inferSelect;
+export type InsertEstimateCode = z.infer<typeof insertEstimateCodeSchema>;
+
 // Storage settings schemas and types
 export const insertSystemSettingSchema = createInsertSchema(systemSettings).omit({
   id: true,
