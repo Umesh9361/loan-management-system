@@ -2589,6 +2589,7 @@ export class DatabaseStorage implements IStorage {
   async deleteAllTenantData(tenantId: string): Promise<void> {
     await db.transaction(async (tx) => {
       // Delete in correct order to maintain referential integrity
+      await tx.delete(estimateCodes).where(eq(estimateCodes.tenantId, tenantId));
       await tx.delete(cashTransactions).where(eq(cashTransactions.tenantId, tenantId));
       await tx.delete(loanClosures).where(eq(loanClosures.tenantId, tenantId));
       await tx.delete(transactions).where(eq(transactions.tenantId, tenantId));
@@ -3791,6 +3792,12 @@ export class DatabaseStorage implements IStorage {
       // Start transaction for complete deletion
       return await db.transaction(async (tx) => {
         try {
+          // 0. Delete estimate codes (no dependencies)
+          const estimateCodesResult = await tx
+            .delete(estimateCodes)
+            .where(eq(estimateCodes.tenantId, tenantId));
+          deletedRecords.estimateCodes = estimateCodesResult.rowCount || 0;
+
           // 1. Delete all loan closures first (has foreign key dependencies)
           const loanClosuresResult = await tx
             .delete(loanClosures)

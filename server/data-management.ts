@@ -3,7 +3,7 @@ import { createHash } from "crypto";
 import { 
   loans, loanClosures, cashTransactions, parties, borrowers, groups, transactions,
   companies, users, userPermissions, userActivityLogs, journalEntries, journalEntryLines,
-  loanPhotos, tenantStorageSettings, type Loan, type LoanClosure, type CashTransaction 
+  loanPhotos, tenantStorageSettings, estimateCodes, type Loan, type LoanClosure, type CashTransaction 
 } from "@shared/schema";
 import { eq, and, sql, desc, asc, ne, or, inArray } from "drizzle-orm";
 import { storage } from "./storage";
@@ -490,7 +490,8 @@ export class DataManagementService {
           userPermissions: (!isPortable && tenantId !== 'SUPER_ADMIN') ? await db.select().from(userPermissions).where(eq(userPermissions.tenantId, tenantId)) : [],
           userActivityLogs: (!isPortable && tenantId !== 'SUPER_ADMIN') ? await db.select().from(userActivityLogs).where(eq(userActivityLogs.tenantId, tenantId)) : [],
           
-          tenantStorageSettings: await db.select().from(tenantStorageSettings).where(eq(tenantStorageSettings.tenantId, tenantId))
+          tenantStorageSettings: await db.select().from(tenantStorageSettings).where(eq(tenantStorageSettings.tenantId, tenantId)),
+          estimateCodes: await db.select().from(estimateCodes).where(eq(estimateCodes.tenantId, tenantId))
         }
       };
 
@@ -614,6 +615,9 @@ export class DataManagementService {
         for (const ts of (backupData.data.tenantStorageSettings || [])) {
           genNewId(ts.id);
         }
+        for (const ec of (backupData.data.estimateCodes || [])) {
+          genNewId(ec.id);
+        }
 
         backupData.data.companies = (backupData.data.companies || []).map((r: any) => ({
           ...r, id: remapId(r.id), tenantId
@@ -651,6 +655,9 @@ export class DataManagementService {
         backupData.data.tenantStorageSettings = (backupData.data.tenantStorageSettings || []).map((r: any) => ({
           ...r, id: remapId(r.id), tenantId
         }));
+        backupData.data.estimateCodes = (backupData.data.estimateCodes || []).map((r: any) => ({
+          ...r, id: remapId(r.id), tenantId, loanIds: (r.loanIds || []).map((lid: string) => remapId(lid) || lid)
+        }));
 
         backupData.data.users = [];
         backupData.data.userPermissions = [];
@@ -675,6 +682,7 @@ export class DataManagementService {
         userPermissions: ['createdAt', 'updatedAt'],
         userActivityLogs: ['createdAt'],
         tenantStorageSettings: ['createdAt', 'updatedAt', 'lastTestedAt'],
+        estimateCodes: ['createdAt'],
       };
 
       for (const [table, fields] of Object.entries(tsFields)) {
@@ -705,6 +713,7 @@ export class DataManagementService {
         await tx.delete(groups).where(eq(groups.tenantId, tenantId));
         await tx.delete(companies).where(eq(companies.tenantId, tenantId));
         await tx.delete(tenantStorageSettings).where(eq(tenantStorageSettings.tenantId, tenantId));
+        await tx.delete(estimateCodes).where(eq(estimateCodes.tenantId, tenantId));
         
         // Clear user data only for non-SUPER_ADMIN tenants
         if (tenantId !== 'SUPER_ADMIN') {
@@ -810,6 +819,12 @@ export class DataManagementService {
           await tx.insert(tenantStorageSettings).values(backupData.data.tenantStorageSettings);
           restoredRecords += backupData.data.tenantStorageSettings.length;
           restoreResults.push({ table: 'tenantStorageSettings', records: backupData.data.tenantStorageSettings.length });
+        }
+
+        if (backupData.data.estimateCodes?.length > 0) {
+          await tx.insert(estimateCodes).values(backupData.data.estimateCodes);
+          restoredRecords += backupData.data.estimateCodes.length;
+          restoreResults.push({ table: 'estimateCodes', records: backupData.data.estimateCodes.length });
         }
 
         await tx.execute(sql`ALTER TABLE loans ENABLE TRIGGER ALL`);
@@ -1613,13 +1628,15 @@ export class DataManagementService {
         const deletedGroups = await tx.delete(groups).where(eq(groups.tenantId, tenantId));
         const deletedCompanies = await tx.delete(companies).where(eq(companies.tenantId, tenantId));
         const deletedStorageSettings = await tx.delete(tenantStorageSettings).where(eq(tenantStorageSettings.tenantId, tenantId));
+        const deletedEstimateCodes = await tx.delete(estimateCodes).where(eq(estimateCodes.tenantId, tenantId));
 
         totalAffected = (deletedJournalLines.rowCount || 0) + (deletedJournalEntries.rowCount || 0) +
                        (deletedClosures.rowCount || 0) + (deletedTransactions.rowCount || 0) + 
                        (deletedCashTransactions.rowCount || 0) + (deletedPhotos.rowCount || 0) + 
                        (deletedLoans.rowCount || 0) + (deletedParties.rowCount || 0) + 
                        (deletedBorrowers.rowCount || 0) + (deletedGroups.rowCount || 0) +
-                       (deletedCompanies.rowCount || 0) + (deletedStorageSettings.rowCount || 0);
+                       (deletedCompanies.rowCount || 0) + (deletedStorageSettings.rowCount || 0) +
+                       (deletedEstimateCodes.rowCount || 0);
       });
 
       console.log(`✅ RESTORE: Successfully cleaned ${totalAffected} records`);

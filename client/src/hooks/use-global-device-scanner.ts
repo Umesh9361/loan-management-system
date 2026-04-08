@@ -1,6 +1,6 @@
 import { useEffect, useRef, useCallback } from "react";
 import { useLocation } from "wouter";
-import { decodeQrLoanIds } from "@/lib/qr-utils";
+import { decodeQrLoanIds, isCodeQr, extractCode } from "@/lib/qr-utils";
 
 export function useGlobalDeviceScanner(enabled: boolean) {
   const [, setLocation] = useLocation();
@@ -8,9 +8,26 @@ export function useGlobalDeviceScanner(enabled: boolean) {
   const timerRef = useRef<number | null>(null);
   const lastKeyTimeRef = useRef(0);
 
-  const processBuffer = useCallback((buffer: string) => {
+  const processBuffer = useCallback(async (buffer: string) => {
     const trimmed = buffer.trim();
     if (!trimmed || trimmed.length < 8) return;
+
+    if (isCodeQr(trimmed)) {
+      const code = extractCode(trimmed);
+      if (!code) return;
+      try {
+        const res = await fetch(`/api/estimate-code/${code}`);
+        const data = await res.json();
+        if (res.ok && data.loanIds) {
+          if (data.loanIds.length === 1) {
+            setLocation(`/closure?loanId=${data.loanIds[0]}`);
+          } else {
+            setLocation(`/closure?loanIds=${data.loanIds.join(',')}`);
+          }
+        }
+      } catch {}
+      return;
+    }
 
     const loanIds = decodeQrLoanIds(trimmed);
     if (loanIds && loanIds.length > 0) {
