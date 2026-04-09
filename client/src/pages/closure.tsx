@@ -593,32 +593,20 @@ export default function Closure() {
                 rate = rate / 12;
               }
             }
-            const bulkTimePeriod = LoanCalculationsAdvanced.calculateTimePeriod(new Date(loanDate), new Date(today));
-            const bulkTotalMonths = bulkTimePeriod.calendarYears * 12 + bulkTimePeriod.calendarMonths;
-            const isFirstMonthIncomplete = bulkTotalMonths === 0 && bulkTimePeriod.calendarDays > 0;
-
             if (entryCalcIT === 'simple') {
+              const timePeriod = LoanCalculationsAdvanced.calculateTimePeriod(new Date(loanDate), new Date(today));
               const yearlyRate = entryCustomRate !== null ? entryCustomRate * 12 : (loan.interestRateType === 'monthly' ? (Number(loan.interestRate) || 0) * 12 : (Number(loan.interestRate) || 0));
-              if (isFirstMonthIncomplete) {
-                interest = LoanCalculations.calculateSimpleInterest(principal, yearlyRate, 30);
-              } else {
-                interest = LoanCalculations.calculateSimpleInterest(principal, yearlyRate, bulkTimePeriod.totalDays);
-              }
+              interest = LoanCalculations.calculateSimpleInterest(principal, yearlyRate, timePeriod.totalDays);
             } else {
-              if (isFirstMonthIncomplete) {
-                const monthlyInterest = Math.round((principal * rate) / 100);
-                interest = monthlyInterest;
-              } else {
-                const advResult = LoanCalculationsAdvanced.calculateAdvancedCompoundInterest(
-                  principal,
-                  rate,
-                  new Date(loanDate),
-                  new Date(today),
-                  entryCalcCF as any,
-                  entryCalcMode as any
-                );
-                interest = advResult.interestAmount;
-              }
+              const advResult = LoanCalculationsAdvanced.calculateAdvancedCompoundInterest(
+                principal,
+                rate,
+                new Date(loanDate),
+                new Date(today),
+                entryCalcCF as any,
+                entryCalcMode as any
+              );
+              interest = advResult.interestAmount;
             }
           }
           const timePeriod = LoanCalculationsAdvanced.calculateTimePeriod(new Date(loanDate), new Date(today));
