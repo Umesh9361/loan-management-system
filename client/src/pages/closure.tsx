@@ -504,14 +504,21 @@ export default function Closure() {
         .map((loan: any) => {
           const principal = Number(loan.principalAmount) || 0;
           let rate = Number(loan.interestRate) || 0;
-          if (loan.interestRateType === 'monthly') {
-            rate = rate * 12;
+          if (loan.interestRateType !== 'monthly') {
+            rate = rate / 12;
           }
           const loanDate = loan.loanDate || today;
-          const diffMs = new Date(today).getTime() - new Date(loanDate).getTime();
-          const days = Math.max(0, Math.ceil(diffMs / (1000 * 3600 * 24)));
-          const interest = LoanCalculations.calculateSimpleInterest(principal, rate, days);
+          const advResult = LoanCalculationsAdvanced.calculateAdvancedCompoundInterest(
+            principal,
+            rate,
+            new Date(loanDate),
+            new Date(today),
+            "yearly",
+            "half_month"
+          );
+          const interest = advResult.interestAmount;
           const timePeriod = LoanCalculationsAdvanced.calculateTimePeriod(new Date(loanDate), new Date(today));
+          const days = timePeriod.totalDays;
           let monthsDisplay = '';
           if (days > 0) {
             if (timePeriod.years > 0 || timePeriod.months > 0) {
