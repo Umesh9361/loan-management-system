@@ -4187,7 +4187,9 @@ export class DatabaseStorage implements IStorage {
           if (rowSettings &&
               rowSettings.interestType === calcSettings.interestType &&
               rowSettings.compoundingFrequency === calcSettings.compoundingFrequency &&
-              rowSettings.advancedCalculationMode === calcSettings.advancedCalculationMode) {
+              rowSettings.advancedCalculationMode === calcSettings.advancedCalculationMode &&
+              (rowSettings.useCustomRate || false) === (calcSettings.useCustomRate || false) &&
+              (rowSettings.customInterestRate || '') === (calcSettings.customInterestRate || '')) {
             return row;
           }
         } else {

@@ -30,6 +30,7 @@ export function useGlobalDeviceScanner(enabled: boolean) {
             if (cs.interestType) url += `&cIT=${cs.interestType}`;
             if (cs.compoundingFrequency) url += `&cCF=${cs.compoundingFrequency}`;
             if (cs.advancedCalculationMode) url += `&cACM=${cs.advancedCalculationMode}`;
+            if (cs.useCustomRate && cs.customInterestRate) url += `&cCR=${cs.customInterestRate}`;
           }
           setLocation(url);
         }

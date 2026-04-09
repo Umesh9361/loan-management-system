@@ -248,12 +248,18 @@ export default function Closure() {
     const cIT = params.get('cIT');
     const cCF = params.get('cCF');
     const cACM = params.get('cACM');
-    if (!cIT && !cCF && !cACM) return null;
-    return {
+    const cCR = params.get('cCR');
+    if (!cIT && !cCF && !cACM && !cCR) return null;
+    const result: any = {
       interestType: cIT || 'advanced_compound',
       compoundingFrequency: cCF || 'yearly',
       advancedCalculationMode: cACM || 'half_month',
     };
+    if (cCR) {
+      result.useCustomRate = true;
+      result.customInterestRate = cCR;
+    }
+    return result;
   }, [currentLocation]);
   const hideSearch = !!loanIdFromUrl;
   const [existingClosureData, setExistingClosureData] = useState<any>(null);
@@ -447,8 +453,8 @@ export default function Closure() {
         finalInterestAmount: "",
         returnOfArticles: "",
         isClosed: true,
-        useCustomRate: false,
-        customInterestRate: "",
+        useCustomRate: cs?.useCustomRate || false,
+        customInterestRate: cs?.customInterestRate || "",
       });
     }
     prevLoanIdRef.current = currentSingle;
@@ -469,6 +475,10 @@ export default function Closure() {
           form.setValue("interestType", calcSettingsFromUrl.interestType as any);
           form.setValue("compoundingFrequency", calcSettingsFromUrl.compoundingFrequency as any);
           form.setValue("advancedCalculationMode", calcSettingsFromUrl.advancedCalculationMode as any);
+          if (calcSettingsFromUrl.useCustomRate && calcSettingsFromUrl.customInterestRate) {
+            form.setValue("useCustomRate", true);
+            form.setValue("customInterestRate", calcSettingsFromUrl.customInterestRate);
+          }
         }
 
         if (isEditMode) {
@@ -519,11 +529,16 @@ export default function Closure() {
     const qrInterestType = cs?.interestType || 'advanced_compound';
     const qrCompFreq = (cs?.compoundingFrequency || 'yearly') as any;
     const qrCalcMode = (cs?.advancedCalculationMode || 'half_month') as any;
+    const qrCustomRate = cs?.useCustomRate && cs?.customInterestRate ? parseFloat(cs.customInterestRate) : null;
 
     if (cs) {
       form.setValue("interestType", qrInterestType as any);
       form.setValue("compoundingFrequency", qrCompFreq);
       form.setValue("advancedCalculationMode", qrCalcMode);
+      if (cs.useCustomRate && cs.customInterestRate) {
+        form.setValue("useCustomRate", true);
+        form.setValue("customInterestRate", cs.customInterestRate);
+      }
     }
 
     setSummaryEntries(prev => {
@@ -533,15 +548,20 @@ export default function Closure() {
         .filter((loan: any) => !existingIds.has(loan.id))
         .map((loan: any) => {
           const principal = Number(loan.principalAmount) || 0;
-          let rate = Number(loan.interestRate) || 0;
-          if (loan.interestRateType !== 'monthly') {
-            rate = rate / 12;
+          let rate: number;
+          if (qrCustomRate !== null) {
+            rate = qrCustomRate;
+          } else {
+            rate = Number(loan.interestRate) || 0;
+            if (loan.interestRateType !== 'monthly') {
+              rate = rate / 12;
+            }
           }
           const loanDate = loan.loanDate || today;
           let interest = 0;
           if (qrInterestType === 'simple') {
             const timePeriod = LoanCalculationsAdvanced.calculateTimePeriod(new Date(loanDate), new Date(today));
-            const yearlyRate = loan.interestRateType === 'monthly' ? (Number(loan.interestRate) || 0) * 12 : (Number(loan.interestRate) || 0);
+            const yearlyRate = qrCustomRate !== null ? qrCustomRate * 12 : (loan.interestRateType === 'monthly' ? (Number(loan.interestRate) || 0) * 12 : (Number(loan.interestRate) || 0));
             interest = LoanCalculations.calculateSimpleInterest(principal, yearlyRate, timePeriod.totalDays);
           } else {
             const advResult = LoanCalculationsAdvanced.calculateAdvancedCompoundInterest(
@@ -1518,11 +1538,15 @@ export default function Closure() {
       if (receiptSettings.thermal.showQrCode) {
         const loanIds = currentEntries.map(e => e.loanId);
         const formValues = form.getValues();
-        const calcSettings = {
+        const calcSettings: any = {
           interestType: formValues.interestType,
           compoundingFrequency: formValues.compoundingFrequency,
           advancedCalculationMode: formValues.advancedCalculationMode,
         };
+        if (formValues.useCustomRate && formValues.customInterestRate) {
+          calcSettings.useCustomRate = true;
+          calcSettings.customInterestRate = formValues.customInterestRate;
+        }
         let estimateCode = '';
         const codeRes = await fetch('/api/estimate-code', {
           method: 'POST',
