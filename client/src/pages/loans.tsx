@@ -3251,37 +3251,39 @@ function Loans() {
             <div className="relative">
               {/* Multi-select Action Bar */}
               {selectedLoanIds.size > 0 && (
-                <div className="mb-3 p-3 bg-indigo-50 border border-indigo-200 rounded-lg flex items-center justify-between flex-wrap gap-2">
-                  <div className="flex items-center gap-2">
-                    <CheckSquare className="h-4 w-4 text-indigo-600" />
-                    <span className="text-sm font-medium text-indigo-700">
-                      {selectedLoanIds.size} / {sortedLoans.length} निवडले
-                    </span>
-                    {selectedLoanIds.size < sortedLoans.length && (
+                <div className="mb-3 p-3 bg-indigo-50 border border-indigo-200 rounded-lg space-y-2">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <div className="flex items-center gap-2">
+                      <CheckSquare className="h-4 w-4 text-indigo-600" />
+                      <span className="text-sm font-medium text-indigo-700">
+                        {selectedLoanIds.size} / {sortedLoans.length} निवडले
+                      </span>
+                      {selectedLoanIds.size < sortedLoans.length && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="text-xs text-indigo-600 border-indigo-300 h-7"
+                          onClick={() => {
+                            const allIds = sortedLoans.map((l: any) => l.id);
+                            setSelectedLoanIds(new Set(allIds));
+                          }}
+                        >
+                          <CheckSquare className="h-3 w-3 mr-1" />
+                          सर्व {sortedLoans.length} निवडा
+                        </Button>
+                      )}
                       <Button
                         size="sm"
-                        variant="outline"
-                        className="text-xs text-indigo-600 border-indigo-300 h-7"
-                        onClick={() => {
-                          const allIds = sortedLoans.map((l: any) => l.id);
-                          setSelectedLoanIds(new Set(allIds));
-                        }}
+                        variant="ghost"
+                        className="text-xs text-gray-500 h-7"
+                        onClick={() => setSelectedLoanIds(new Set())}
                       >
-                        <CheckSquare className="h-3 w-3 mr-1" />
-                        सर्व {sortedLoans.length} निवडा
+                        <X className="h-3 w-3 mr-1" />
+                        रद्द करा
                       </Button>
-                    )}
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="text-xs text-gray-500 h-7"
-                      onClick={() => setSelectedLoanIds(new Set())}
-                    >
-                      <X className="h-3 w-3 mr-1" />
-                      रद्द करा
-                    </Button>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <Button
                       size="sm"
                       className="bg-amber-600 hover:bg-amber-700 text-white h-8"
