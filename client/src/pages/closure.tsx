@@ -63,6 +63,11 @@ interface SummaryEntry {
   principalAmount: number;
   chargesAmount: number;
   closureDate: string;
+  calcInterestType?: string;
+  calcCompoundingFrequency?: string;
+  calcAdvancedCalculationMode?: string;
+  calcUseCustomRate?: boolean;
+  calcCustomInterestRate?: string;
 }
 
 interface ReceiptFieldSetting {
@@ -562,22 +567,35 @@ export default function Closure() {
           const savedEntry = savedEntries?.find((se: any) => se.loanId === loan.id);
           let interest: number;
           let entryRate = savedEntry?.interestRate || String(loan.interestRate || '');
+          let entryCalcIT = qrInterestType;
+          let entryCalcCF = qrCompFreq;
+          let entryCalcMode = qrCalcMode;
+          let entryCustomRate = qrCustomRate;
 
-          if (savedEntry && savedEntry.chargesAmount !== undefined) {
+          const isSameDay = savedEntry?.closureDate && savedEntry.closureDate === today;
+
+          if (savedEntry && savedEntry.chargesAmount !== undefined && isSameDay) {
             interest = savedEntry.chargesAmount;
           } else {
+            if (savedEntry?.calcInterestType) entryCalcIT = savedEntry.calcInterestType;
+            if (savedEntry?.calcCompoundingFrequency) entryCalcCF = savedEntry.calcCompoundingFrequency;
+            if (savedEntry?.calcAdvancedCalculationMode) entryCalcMode = savedEntry.calcAdvancedCalculationMode;
+            if (savedEntry?.calcUseCustomRate && savedEntry?.calcCustomInterestRate) {
+              entryCustomRate = parseFloat(savedEntry.calcCustomInterestRate);
+            }
+
             let rate: number;
-            if (qrCustomRate !== null) {
-              rate = qrCustomRate;
+            if (entryCustomRate !== null) {
+              rate = entryCustomRate;
             } else {
               rate = Number(loan.interestRate) || 0;
               if (loan.interestRateType !== 'monthly') {
                 rate = rate / 12;
               }
             }
-            if (qrInterestType === 'simple') {
+            if (entryCalcIT === 'simple') {
               const timePeriod = LoanCalculationsAdvanced.calculateTimePeriod(new Date(loanDate), new Date(today));
-              const yearlyRate = qrCustomRate !== null ? qrCustomRate * 12 : (loan.interestRateType === 'monthly' ? (Number(loan.interestRate) || 0) * 12 : (Number(loan.interestRate) || 0));
+              const yearlyRate = entryCustomRate !== null ? entryCustomRate * 12 : (loan.interestRateType === 'monthly' ? (Number(loan.interestRate) || 0) * 12 : (Number(loan.interestRate) || 0));
               interest = LoanCalculations.calculateSimpleInterest(principal, yearlyRate, timePeriod.totalDays);
             } else {
               const advResult = LoanCalculationsAdvanced.calculateAdvancedCompoundInterest(
@@ -585,8 +603,8 @@ export default function Closure() {
                 rate,
                 new Date(loanDate),
                 new Date(today),
-                qrCompFreq,
-                qrCalcMode
+                entryCalcCF as any,
+                entryCalcMode as any
               );
               interest = advResult.interestAmount;
             }
@@ -619,6 +637,11 @@ export default function Closure() {
             principalAmount: principal,
             chargesAmount: interest,
             closureDate: today,
+            calcInterestType: savedEntry?.calcInterestType || qrInterestType,
+            calcCompoundingFrequency: savedEntry?.calcCompoundingFrequency || qrCompFreq,
+            calcAdvancedCalculationMode: savedEntry?.calcAdvancedCalculationMode || qrCalcMode,
+            calcUseCustomRate: savedEntry?.calcUseCustomRate || (qrCustomRate !== null),
+            calcCustomInterestRate: savedEntry?.calcCustomInterestRate || (qrCustomRate !== null ? String(qrCustomRate) : ''),
           };
         });
       if (fresh.length === 0) return prev;
@@ -1172,6 +1195,11 @@ export default function Closure() {
       principalAmount: Number(selectedLoan.principalAmount) || 0,
       chargesAmount: Math.round(finalCharges),
       closureDate: form.getValues("closureDate"),
+      calcInterestType: form.getValues("interestType"),
+      calcCompoundingFrequency: form.getValues("compoundingFrequency"),
+      calcAdvancedCalculationMode: form.getValues("advancedCalculationMode"),
+      calcUseCustomRate: form.getValues("useCustomRate") || false,
+      calcCustomInterestRate: form.getValues("customInterestRate") || '',
     };
 
     setSummaryEntries(prev => {
@@ -1563,6 +1591,12 @@ export default function Closure() {
             loanId: e.loanId,
             chargesAmount: e.chargesAmount,
             interestRate: e.interestRate,
+            closureDate: e.closureDate,
+            calcInterestType: e.calcInterestType,
+            calcCompoundingFrequency: e.calcCompoundingFrequency,
+            calcAdvancedCalculationMode: e.calcAdvancedCalculationMode,
+            calcUseCustomRate: e.calcUseCustomRate,
+            calcCustomInterestRate: e.calcCustomInterestRate,
           })),
         };
         if (formValues.useCustomRate && formValues.customInterestRate) {
