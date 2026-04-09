@@ -91,7 +91,9 @@ export class LoanCalculationsAdvanced {
       const monthlyInterestRate = Math.round((currentPrincipal * monthlyRate) / 100);
       let daysInterest = 0;
       
-      if (calculationMode === "half_month") {
+      if (totalMonths === 0) {
+        daysInterest = monthlyInterestRate;
+      } else if (calculationMode === "half_month") {
         if (calDays >= 1 && calDays <= 15) {
           daysInterest = monthlyInterestRate * 0.5;
         } else if (calDays >= 16) {
