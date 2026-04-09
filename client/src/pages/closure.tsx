@@ -217,6 +217,8 @@ export default function Closure() {
   const [bulkCloseProgress, setBulkCloseProgress] = useState({ current: 0, total: 0, failed: 0 });
   const [receiptSettings, setReceiptSettings] = useState<ReceiptPrintSettings>(loadReceiptSettings);
   const [showPrintSettings, setShowPrintSettings] = useState(false);
+  const [bulkSelectMode, setBulkSelectMode] = useState(false);
+  const [selectedLoanIds, setSelectedLoanIds] = useState<Set<string>>(new Set());
 
   const updateReceiptSettings = useCallback((updater: (prev: ReceiptPrintSettings) => ReceiptPrintSettings) => {
     setReceiptSettings(prev => {
@@ -786,6 +788,124 @@ export default function Closure() {
       });
     }
   }, [selectedLoan, form, editableLoanDate]);
+
+  const calculateInterestForLoan = useCallback((loan: any): { interestAmount: number; durationMonths: string } => {
+    try {
+      const formValues = form.getValues();
+      const closureDate = new Date(formValues.closureDate);
+      const { interestType, useCustomRate, customInterestRate: customRate, compoundingFrequency, advancedCalculationMode } = formValues;
+      let effectiveRate = useCustomRate && customRate ? Number(customRate) : Number(loan.interestRate);
+      if (interestType !== "simple" && loan.interestRateType === "yearly") {
+        effectiveRate = effectiveRate / 12;
+      }
+      const loanStartDate = loan.loanDate;
+      if (interestType === "simple") {
+        let simpleInterestRate = effectiveRate;
+        if (loan.interestRateType === "monthly") simpleInterestRate = effectiveRate * 12;
+        const timePeriod = LoanCalculationsAdvanced.calculateTimePeriod(new Date(loanStartDate), closureDate);
+        const interestAmount = LoanCalculations.calculateSimpleInterest(Number(loan.principalAmount), simpleInterestRate, timePeriod.totalDays);
+        return { interestAmount, durationMonths: `${timePeriod.totalDays} दिवस` };
+      } else {
+        const advancedResult = LoanCalculationsAdvanced.calculateAdvancedCompoundInterest(
+          Number(loan.principalAmount), effectiveRate, new Date(loanStartDate), closureDate, compoundingFrequency, advancedCalculationMode
+        );
+        const calcModeMap: Record<string, string> = { 'month': 'month', 'half_month': 'half-month', 'week': 'week', 'day': 'daily' };
+        const closureCalc = LoanCalculationsAdvanced.calculateInterestForClosure(
+          Number(loan.principalAmount), effectiveRate, new Date(loanStartDate), closureDate, 'simple', (calcModeMap[advancedCalculationMode] || 'half-month') as any
+        );
+        return { interestAmount: advancedResult.interestAmount, durationMonths: formatRate(closureCalc.durationInMonths ?? 0) };
+      }
+    } catch {
+      return { interestAmount: 0, durationMonths: '—' };
+    }
+  }, [form]);
+
+  const watchInterestType = form.watch("interestType");
+  const watchCompoundingFreq = form.watch("compoundingFrequency");
+  const watchCalcMode = form.watch("advancedCalculationMode");
+  const watchClosureDate = form.watch("closureDate");
+  const watchUseCustomRate = form.watch("useCustomRate");
+  const watchCustomRate = form.watch("customInterestRate");
+
+  const bulkLoanInterests = useMemo(() => {
+    if (!bulkSelectMode || filteredLoans.length === 0) return new Map<string, { interestAmount: number; durationMonths: string }>();
+    const map = new Map<string, { interestAmount: number; durationMonths: string }>();
+    for (const loan of filteredLoans) {
+      map.set(loan.id, calculateInterestForLoan(loan));
+    }
+    return map;
+  }, [bulkSelectMode, filteredLoans, calculateInterestForLoan, watchInterestType, watchCompoundingFreq, watchCalcMode, watchClosureDate, watchUseCustomRate, watchCustomRate]);
+
+  const handleToggleLoanSelect = useCallback((loanId: string) => {
+    setSelectedLoanIds(prev => {
+      const next = new Set(prev);
+      if (next.has(loanId)) next.delete(loanId);
+      else next.add(loanId);
+      return next;
+    });
+  }, []);
+
+  const handleSelectAllLoans = useCallback(() => {
+    const currentEntries = summaryEntriesRef.current;
+    const existingIds = new Set(currentEntries.map(e => e.loanId));
+    const available = filteredLoans.filter((l: any) => !existingIds.has(l.id));
+    if (selectedLoanIds.size === available.length && available.length > 0) {
+      setSelectedLoanIds(new Set());
+    } else {
+      setSelectedLoanIds(new Set(available.map((l: any) => l.id)));
+    }
+  }, [filteredLoans, selectedLoanIds]);
+
+  const handleBulkAddToSummary = useCallback(() => {
+    if (selectedLoanIds.size === 0) return;
+    const currentEntries = summaryEntriesRef.current;
+    const existingIds = new Set(currentEntries.map(e => e.loanId));
+    const loansToAdd = filteredLoans.filter((l: any) => selectedLoanIds.has(l.id) && !existingIds.has(l.id));
+    if (loansToAdd.length === 0) {
+      toast({ title: "सूचना", description: "निवडलेली सर्व कर्ज आधीच हिशोबात आहेत", variant: "destructive" });
+      return;
+    }
+    let counter = summaryCounter;
+    const newEntries: SummaryEntry[] = loansToAdd.map((loan: any) => {
+      const calc = bulkLoanInterests.get(loan.id) || { interestAmount: 0, durationMonths: '—' };
+      const effectiveRate = form.getValues("useCustomRate") && form.getValues("customInterestRate")
+        ? form.getValues("customInterestRate")! : String(loan.interestRate);
+      const entry: SummaryEntry = {
+        id: counter++,
+        loanId: loan.id,
+        borrowerName: loan.borrowerName || '',
+        borrowerAddress: loan.borrowerAddress || loan.address || '',
+        groupName: getGroupName(loan.groupId) || '',
+        collateralDetails: loan.collateralDetails || [loan.specialConditions, loan.documentDetails, loan.otherInfo].filter((v: string) => v && v !== '—' && v.trim() !== '').join(' | ') || '',
+        accountNumber: loan.accountNumber || '',
+        loanDate: loan.loanDate || '',
+        months: calc.durationMonths,
+        interestRate: effectiveRate,
+        principalAmount: Number(loan.principalAmount) || 0,
+        chargesAmount: Math.round(calc.interestAmount),
+        closureDate: form.getValues("closureDate"),
+        calcInterestType: form.getValues("interestType"),
+        calcCompoundingFrequency: form.getValues("compoundingFrequency"),
+        calcAdvancedCalculationMode: form.getValues("advancedCalculationMode"),
+        calcUseCustomRate: form.getValues("useCustomRate") || false,
+        calcCustomInterestRate: form.getValues("customInterestRate") || '',
+      };
+      return entry;
+    });
+    setSummaryEntries(prev => {
+      const merged = [...prev, ...newEntries];
+      merged.sort((a, b) => {
+        const dateA = a.loanDate ? new Date(a.loanDate).getTime() : 0;
+        const dateB = b.loanDate ? new Date(b.loanDate).getTime() : 0;
+        return dateA - dateB;
+      });
+      return merged;
+    });
+    setSummaryCounter(counter);
+    setSelectedLoanIds(new Set());
+    setActiveTab("summary");
+    toast({ title: `${newEntries.length} कर्ज जोडले`, description: "एकत्रित हिशोबात जोडले — Summary tab बघा" });
+  }, [selectedLoanIds, filteredLoans, summaryCounter, bulkLoanInterests, form, toast]);
 
   // QR scan नंतर auto-calculate + auto-scroll to result
   useEffect(() => {
@@ -2018,7 +2138,19 @@ export default function Closure() {
                           </div>
                           
                           <div>
-                            <Label className="text-sm font-medium">सर्च: खाते क्रमांक → रक्कम → नाव</Label>
+                            <div className="flex items-center justify-between mb-1">
+                              <Label className="text-sm font-medium">सर्च: खाते क्रमांक → रक्कम → नाव</Label>
+                              {filteredLoans.length >= 2 && showLoanList && (
+                                <button
+                                  type="button"
+                                  onClick={() => { setBulkSelectMode(v => !v); setSelectedLoanIds(new Set()); }}
+                                  className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-md border transition-colors ${bulkSelectMode ? 'bg-indigo-100 border-indigo-400 text-indigo-700' : 'bg-gray-50 border-gray-300 text-gray-600 hover:bg-gray-100'}`}
+                                >
+                                  <CheckCircle className="h-3 w-3" />
+                                  एकत्रित निवड
+                                </button>
+                              )}
+                            </div>
                             <div className="relative">
                               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                               <Input
@@ -2029,6 +2161,7 @@ export default function Closure() {
                                   const converted = e.target.value.replace(/[०-९]/g, (d: string) => String('०१२३४५६७८९'.indexOf(d)));
                                   setSearchQuery(converted);
                                   setShowLoanList(converted.trim().length > 0);
+                                  setSelectedLoanIds(new Set());
                                 }}
                                 onFocus={() => {
                                   if (searchQuery.trim()) {
@@ -2048,6 +2181,8 @@ export default function Closure() {
                                     setSearchQuery("");
                                     setShowLoanList(false);
                                     setSelectedLoan(null);
+                                    setBulkSelectMode(false);
+                                    setSelectedLoanIds(new Set());
                                     form.setValue("loanId", "");
                                   }}
                                 >
@@ -2060,39 +2195,99 @@ export default function Closure() {
 
                         {/* Loan Selection List */}
                         {showLoanList && filteredLoans.length > 0 && (
-                          <Card className="border border-gray-300 max-h-60 overflow-y-auto">
-                            <CardContent className="p-0">
-                              {filteredLoans.map((loan: any) => (
-                                <div
-                                  key={loan.id}
-                                  className="p-3 border-b last:border-b-0 hover:bg-gray-50 cursor-pointer transition-colors"
-                                  onClick={() => handleLoanSelect(loan)}
-                                >
-                                  <div className="flex justify-between items-start">
-                                    <div className="flex-1">
-                                      <div className="font-medium text-indigo-800">{loan.borrowerName}</div>
-                                      <div className="text-sm text-gray-600">
-                                        खाते क्रमांक: {loan.accountNumber} | ग्रुप: {getGroupName(loan.groupId)}
-                                      </div>
-                                      <div className="text-sm text-green-600">
-                                        मुद्दल: ₹{Math.round(loan.principalAmount).toLocaleString('en-IN')} | दर: {formatRate(loan.interestRate)}% {loan.interestRateType === 'monthly' ? 'मासिक' : 'वार्षिक'}
-                                      </div>
-                                      {(loan.collateralDetails || loan.otherInfo || loan.specialConditions || loan.documentDetails) && (
-                                        <div className="text-sm text-purple-600">
-                                          {loan.collateralDetails ? (
-                                            <>वस्तू: {loan.collateralDetails} {loan.weight && `| वजन: ${parseFloat(String(loan.weight)).toFixed(2)}`}</>
-                                          ) : (
-                                            <>माहिती: {[loan.specialConditions, loan.documentDetails, loan.otherInfo].filter((v: string) => v && v !== '—' && v.trim() !== '').join(' | ') || '—'}</>
-                                          )}
-                                        </div>
-                                      )}
-                                    </div>
-                                    <Badge variant="outline" className="text-xs">
-                                      {DateUtils.formatDate(loan.loanDate)}
-                                    </Badge>
+                          <Card className="border border-gray-300 max-h-72 overflow-y-auto">
+                            {bulkSelectMode && (
+                              <div className="sticky top-0 z-10 bg-indigo-50 border-b border-indigo-200 px-3 py-2">
+                                <div className="flex items-center justify-between gap-2 flex-wrap">
+                                  <div className="flex items-center gap-3 text-xs">
+                                    <span className="font-medium text-indigo-800">{filteredLoans.length} कर्ज</span>
+                                    {selectedLoanIds.size > 0 && (() => {
+                                      let selPrincipal = 0, selInterest = 0;
+                                      filteredLoans.forEach((l: any) => {
+                                        if (selectedLoanIds.has(l.id)) {
+                                          selPrincipal += Number(l.principalAmount) || 0;
+                                          const calc = bulkLoanInterests.get(l.id);
+                                          selInterest += calc ? Math.round(calc.interestAmount) : 0;
+                                        }
+                                      });
+                                      return (
+                                        <span className="text-indigo-600">
+                                          निवड: {selectedLoanIds.size} | मुद्दल ₹{Math.round(selPrincipal).toLocaleString('en-IN')} + व्याज ₹{Math.round(selInterest).toLocaleString('en-IN')} = <strong className="text-indigo-800">₹{Math.round(selPrincipal + selInterest).toLocaleString('en-IN')}</strong>
+                                        </span>
+                                      );
+                                    })()}
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <button type="button" onClick={handleSelectAllLoans}
+                                      className="text-xs px-2 py-1 rounded border border-indigo-300 bg-white text-indigo-700 hover:bg-indigo-100 transition-colors">
+                                      {selectedLoanIds.size === filteredLoans.filter((l: any) => !summaryEntriesRef.current.some(e => e.loanId === l.id)).length && selectedLoanIds.size > 0 ? 'निवड काढा' : 'सर्व निवडा'}
+                                    </button>
+                                    <button type="button" onClick={handleBulkAddToSummary} disabled={selectedLoanIds.size === 0}
+                                      className="text-xs px-2.5 py-1 rounded border border-green-500 bg-green-50 text-green-700 hover:bg-green-100 disabled:opacity-40 transition-colors font-medium">
+                                      हिशोबात जोडा ({selectedLoanIds.size})
+                                    </button>
                                   </div>
                                 </div>
-                              ))}
+                              </div>
+                            )}
+                            <CardContent className="p-0">
+                              {filteredLoans.map((loan: any) => {
+                                const isInSummary = summaryEntriesRef.current.some(e => e.loanId === loan.id);
+                                const loanCalc = bulkSelectMode ? bulkLoanInterests.get(loan.id) : null;
+                                return (
+                                <div
+                                  key={loan.id}
+                                  className={`p-3 border-b last:border-b-0 transition-colors ${isInSummary ? 'bg-gray-100 opacity-60' : 'hover:bg-gray-50 cursor-pointer'} ${bulkSelectMode && selectedLoanIds.has(loan.id) ? 'bg-indigo-50' : ''}`}
+                                  onClick={() => {
+                                    if (isInSummary) return;
+                                    if (bulkSelectMode) { handleToggleLoanSelect(loan.id); }
+                                    else { handleLoanSelect(loan); }
+                                  }}
+                                >
+                                  <div className="flex items-start gap-2">
+                                    {bulkSelectMode && (
+                                      <div className="pt-1 flex-shrink-0">
+                                        <input type="checkbox" checked={selectedLoanIds.has(loan.id)} disabled={isInSummary} readOnly
+                                          className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer" />
+                                      </div>
+                                    )}
+                                    <div className="flex-1 min-w-0">
+                                      <div className="flex justify-between items-start">
+                                        <div className="flex-1">
+                                          <div className="font-medium text-indigo-800">{loan.borrowerName} {isInSummary && <span className="text-xs text-gray-500 ml-1">(जोडलेले)</span>}</div>
+                                          <div className="text-sm text-gray-600">
+                                            खाते क्रमांक: {loan.accountNumber} | ग्रुप: {getGroupName(loan.groupId)}
+                                          </div>
+                                          <div className="text-sm text-green-600">
+                                            मुद्दल: ₹{Math.round(loan.principalAmount).toLocaleString('en-IN')} | दर: {formatRate(loan.interestRate)}% {loan.interestRateType === 'monthly' ? 'मासिक' : 'वार्षिक'}
+                                          </div>
+                                          {(loan.collateralDetails || loan.otherInfo || loan.specialConditions || loan.documentDetails) && (
+                                            <div className="text-sm text-purple-600">
+                                              {loan.collateralDetails ? (
+                                                <>वस्तू: {loan.collateralDetails} {loan.weight && `| वजन: ${parseFloat(String(loan.weight)).toFixed(2)}`}</>
+                                              ) : (
+                                                <>माहिती: {[loan.specialConditions, loan.documentDetails, loan.otherInfo].filter((v: string) => v && v !== '—' && v.trim() !== '').join(' | ') || '—'}</>
+                                              )}
+                                            </div>
+                                          )}
+                                        </div>
+                                        <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                                          <Badge variant="outline" className="text-xs">
+                                            {DateUtils.formatDate(loan.loanDate)}
+                                          </Badge>
+                                          {bulkSelectMode && loanCalc && (
+                                            <div className="text-right">
+                                              <div className="text-xs text-amber-700">व्याज: ₹{Math.round(loanCalc.interestAmount).toLocaleString('en-IN')}</div>
+                                              <div className="text-xs font-semibold text-green-700">एकूण: ₹{Math.round(Number(loan.principalAmount) + loanCalc.interestAmount).toLocaleString('en-IN')}</div>
+                                            </div>
+                                          )}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                                );
+                              })}
                             </CardContent>
                           </Card>
                         )}
