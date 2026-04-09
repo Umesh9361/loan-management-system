@@ -541,6 +541,15 @@ export default function Closure() {
       }
     }
 
+    let savedEntries: any[] | null = null;
+    try {
+      const raw = sessionStorage.getItem('qr_calc_entries');
+      if (raw) {
+        savedEntries = JSON.parse(raw);
+        sessionStorage.removeItem('qr_calc_entries');
+      }
+    } catch {}
+
     setSummaryEntries(prev => {
       const existingIds = new Set(prev.map(e => e.loanId));
       let counter = prev.length > 0 ? Math.max(...prev.map(e => e.id)) + 1 : 1;
@@ -548,31 +557,39 @@ export default function Closure() {
         .filter((loan: any) => !existingIds.has(loan.id))
         .map((loan: any) => {
           const principal = Number(loan.principalAmount) || 0;
-          let rate: number;
-          if (qrCustomRate !== null) {
-            rate = qrCustomRate;
-          } else {
-            rate = Number(loan.interestRate) || 0;
-            if (loan.interestRateType !== 'monthly') {
-              rate = rate / 12;
-            }
-          }
           const loanDate = loan.loanDate || today;
-          let interest = 0;
-          if (qrInterestType === 'simple') {
-            const timePeriod = LoanCalculationsAdvanced.calculateTimePeriod(new Date(loanDate), new Date(today));
-            const yearlyRate = qrCustomRate !== null ? qrCustomRate * 12 : (loan.interestRateType === 'monthly' ? (Number(loan.interestRate) || 0) * 12 : (Number(loan.interestRate) || 0));
-            interest = LoanCalculations.calculateSimpleInterest(principal, yearlyRate, timePeriod.totalDays);
+
+          const savedEntry = savedEntries?.find((se: any) => se.loanId === loan.id);
+          let interest: number;
+          let entryRate = savedEntry?.interestRate || String(loan.interestRate || '');
+
+          if (savedEntry && savedEntry.chargesAmount !== undefined) {
+            interest = savedEntry.chargesAmount;
           } else {
-            const advResult = LoanCalculationsAdvanced.calculateAdvancedCompoundInterest(
-              principal,
-              rate,
-              new Date(loanDate),
-              new Date(today),
-              qrCompFreq,
-              qrCalcMode
-            );
-            interest = advResult.interestAmount;
+            let rate: number;
+            if (qrCustomRate !== null) {
+              rate = qrCustomRate;
+            } else {
+              rate = Number(loan.interestRate) || 0;
+              if (loan.interestRateType !== 'monthly') {
+                rate = rate / 12;
+              }
+            }
+            if (qrInterestType === 'simple') {
+              const timePeriod = LoanCalculationsAdvanced.calculateTimePeriod(new Date(loanDate), new Date(today));
+              const yearlyRate = qrCustomRate !== null ? qrCustomRate * 12 : (loan.interestRateType === 'monthly' ? (Number(loan.interestRate) || 0) * 12 : (Number(loan.interestRate) || 0));
+              interest = LoanCalculations.calculateSimpleInterest(principal, yearlyRate, timePeriod.totalDays);
+            } else {
+              const advResult = LoanCalculationsAdvanced.calculateAdvancedCompoundInterest(
+                principal,
+                rate,
+                new Date(loanDate),
+                new Date(today),
+                qrCompFreq,
+                qrCalcMode
+              );
+              interest = advResult.interestAmount;
+            }
           }
           const timePeriod = LoanCalculationsAdvanced.calculateTimePeriod(new Date(loanDate), new Date(today));
           const days = timePeriod.totalDays;
@@ -598,7 +615,7 @@ export default function Closure() {
             accountNumber: loan.accountNumber || '',
             loanDate: loanDate,
             months: monthsDisplay,
-            interestRate: String(loan.interestRate || ''),
+            interestRate: entryRate,
             principalAmount: principal,
             chargesAmount: interest,
             closureDate: today,
@@ -1542,6 +1559,11 @@ export default function Closure() {
           interestType: formValues.interestType,
           compoundingFrequency: formValues.compoundingFrequency,
           advancedCalculationMode: formValues.advancedCalculationMode,
+          entries: currentEntries.map(e => ({
+            loanId: e.loanId,
+            chargesAmount: e.chargesAmount,
+            interestRate: e.interestRate,
+          })),
         };
         if (formValues.useCustomRate && formValues.customInterestRate) {
           calcSettings.useCustomRate = true;
