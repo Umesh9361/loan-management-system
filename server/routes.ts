@@ -6615,8 +6615,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const code = await generateUniqueCode(tenantId);
       await storage.createEstimateCode(code, loanIds, tenantId);
       res.json({ code });
-    } catch (e) {
-      res.status(500).json({ error: 'Code generation failed' });
+    } catch (e: any) {
+      console.error('❌ ESTIMATE CODE ERROR:', e?.message || e);
+      res.status(500).json({ error: 'Code generation failed: ' + (e?.message || 'Unknown error') });
     }
   });
 

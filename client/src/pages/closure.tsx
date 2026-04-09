@@ -1443,17 +1443,19 @@ export default function Closure() {
       if (receiptSettings.thermal.showQrCode) {
         const loanIds = currentEntries.map(e => e.loanId);
         let estimateCode = '';
-        try {
-          const codeRes = await fetch('/api/estimate-code', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ loanIds }),
-          });
-          const codeJson = await codeRes.json();
-          if (codeJson.code) estimateCode = codeJson.code;
-        } catch {}
-        const qrContent = estimateCode ? encodeCodeQr(estimateCode) : '';
-        if (!qrContent) throw new Error('Code generation failed');
+        const codeRes = await fetch('/api/estimate-code', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ loanIds }),
+        });
+        if (!codeRes.ok) {
+          const errData = await codeRes.json().catch(() => ({}));
+          throw new Error(errData.error || 'Code generation failed');
+        }
+        const codeJson = await codeRes.json();
+        if (codeJson.code) estimateCode = codeJson.code;
+        if (!estimateCode) throw new Error('Server returned empty code');
+        const qrContent = encodeCodeQr(estimateCode);
         const qrRes = await fetch(`/api/qr-generate?url=${encodeURIComponent(qrContent)}&size=512`);
         const qrJson = await qrRes.json();
         const qrDataUrl = qrJson.dataUrl;
