@@ -75,21 +75,20 @@ export async function connectBluetoothPrinter(): Promise<{ characteristic: any }
   return { characteristic: writeChar };
 }
 
+async function writeChunk(characteristic: any, chunk: Uint8Array): Promise<void> {
+  if (characteristic.properties.write) {
+    await characteristic.writeValue(chunk);
+  } else {
+    await characteristic.writeValueWithoutResponse(chunk);
+  }
+}
+
 async function sendData(characteristic: any, data: Uint8Array, mode: 'tight' | 'loose' = 'tight'): Promise<void> {
-  const useNoResponse = characteristic.properties.writeWithoutResponse;
-  const CHUNK_SIZE = mode === 'loose'
-    ? (useNoResponse ? 512 : 256)
-    : (useNoResponse ? 512 : 256);
-  const DELAY = mode === 'loose'
-    ? (useNoResponse ? 2 : 4)
-    : (useNoResponse ? 3 : 8);
-  for (let i = 0; i < data.length; i += CHUNK_SIZE) {
-    const chunk = data.slice(i, i + CHUNK_SIZE);
-    if (useNoResponse) {
-      await characteristic.writeValueWithoutResponse(chunk);
-    } else {
-      await characteristic.writeValue(chunk);
-    }
+  const CHUNK = 200;
+  const DELAY = mode === 'loose' ? 5 : 8;
+  for (let i = 0; i < data.length; i += CHUNK) {
+    const chunk = data.slice(i, i + CHUNK);
+    await writeChunk(characteristic, chunk);
     await new Promise(r => setTimeout(r, DELAY));
   }
 }
