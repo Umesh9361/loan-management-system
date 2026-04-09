@@ -109,6 +109,9 @@ export function QrScannerModal({ open, onOpenChange }: QrScannerModalProps) {
             if (cs.compoundingFrequency) url += `&cCF=${cs.compoundingFrequency}`;
             if (cs.advancedCalculationMode) url += `&cACM=${cs.advancedCalculationMode}`;
             if (cs.useCustomRate && cs.customInterestRate) url += `&cCR=${cs.customInterestRate}`;
+            if (cs.entries) {
+              try { sessionStorage.setItem('qr_calc_entries', JSON.stringify(cs.entries)); } catch {}
+            }
           }
           setLocation(url);
         }, 600);
@@ -325,6 +328,9 @@ export function QrScannerModal({ open, onOpenChange }: QrScannerModalProps) {
           if (cs.compoundingFrequency) url += `&cCF=${cs.compoundingFrequency}`;
           if (cs.advancedCalculationMode) url += `&cACM=${cs.advancedCalculationMode}`;
           if (cs.useCustomRate && cs.customInterestRate) url += `&cCR=${cs.customInterestRate}`;
+          if (cs.entries) {
+            try { sessionStorage.setItem('qr_calc_entries', JSON.stringify(cs.entries)); } catch {}
+          }
         }
         setLocation(url);
       }, 600);
