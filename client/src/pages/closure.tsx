@@ -1466,11 +1466,11 @@ export default function Closure() {
           qrImg.onerror = () => reject(new Error('QR image load failed'));
         });
         const printWidth = 576;
-        const qrSize = 320;
-        const codeHeight = estimateCode ? 48 : 0;
-        const topPad = 24;
+        const qrSize = 180;
+        const codeHeight = estimateCode ? 32 : 0;
+        const topPad = 12;
         const gap = 4;
-        const bottomPad = 16;
+        const bottomPad = 8;
         const totalHeight = topPad + qrSize + gap + codeHeight + bottomPad;
         const directCanvas = document.createElement('canvas');
         directCanvas.width = printWidth;
@@ -1483,9 +1483,9 @@ export default function Closure() {
         dCtx.drawImage(qrImg, qrX, topPad, qrSize, qrSize);
         if (estimateCode) {
           dCtx.fillStyle = '#000000';
-          dCtx.font = '900 44px Arial, sans-serif';
+          dCtx.font = '900 28px Arial, sans-serif';
           dCtx.textBaseline = 'top';
-          const charSpacing = 16;
+          const charSpacing = 10;
           const chars = estimateCode.split('');
           const charWidths = chars.map(c => dCtx.measureText(c).width);
           const totalW = charWidths.reduce((s, w) => s + w, 0) + charSpacing * (chars.length - 1);
