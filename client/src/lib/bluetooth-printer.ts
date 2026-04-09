@@ -78,10 +78,10 @@ export async function connectBluetoothPrinter(): Promise<{ characteristic: any }
 async function sendData(characteristic: any, data: Uint8Array, mode: 'tight' | 'loose' = 'tight'): Promise<void> {
   const useNoResponse = characteristic.properties.writeWithoutResponse;
   const CHUNK_SIZE = mode === 'loose'
-    ? (useNoResponse ? 1024 : 512)
+    ? (useNoResponse ? 512 : 256)
     : (useNoResponse ? 512 : 256);
   const DELAY = mode === 'loose'
-    ? (useNoResponse ? 1 : 2)
+    ? (useNoResponse ? 2 : 4)
     : (useNoResponse ? 3 : 8);
   for (let i = 0; i < data.length; i += CHUNK_SIZE) {
     const chunk = data.slice(i, i + CHUNK_SIZE);
