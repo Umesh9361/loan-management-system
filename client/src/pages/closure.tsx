@@ -410,6 +410,38 @@ export default function Closure() {
     setDateWarningDialog({ open: false, title: '', message: '', severity: '', closureData: null });
   };
 
+  const multiLoadedRef = useRef<string | null>(null);
+  const prevLoanIdRef = useRef<string | null>(null);
+  const prevLoanIdsRef = useRef<string | null>(null);
+  useEffect(() => {
+    const currentSingle = loanIdFromUrl || null;
+    const currentMulti = loanIdsFromUrl ? loanIdsFromUrl.join(',') : null;
+    const prevSingle = prevLoanIdRef.current;
+    const prevMulti = prevLoanIdsRef.current;
+    if ((prevSingle !== null || prevMulti !== null) && (currentSingle !== prevSingle || currentMulti !== prevMulti)) {
+      setSelectedLoan(null);
+      setCalculationResult(null);
+      setExistingClosureData(null);
+      setSearchQuery("");
+      setEditableLoanDate("");
+      multiLoadedRef.current = null;
+      form.reset({
+        loanId: "",
+        closureDate: new Date().toISOString().split('T')[0],
+        interestType: "advanced_compound",
+        compoundingFrequency: "yearly",
+        advancedCalculationMode: "half_month",
+        finalInterestAmount: "",
+        returnOfArticles: "",
+        isClosed: true,
+        useCustomRate: false,
+        customInterestRate: "",
+      });
+    }
+    prevLoanIdRef.current = currentSingle;
+    prevLoanIdsRef.current = currentMulti;
+  }, [loanIdFromUrl, loanIdsFromUrl, form]);
+
   useEffect(() => {
     if (loanIdFromUrl && activeLoans) {
       const loan = activeLoans.find((l: any) => l.id === loanIdFromUrl);
@@ -450,7 +482,6 @@ export default function Closure() {
     }
   }, [loanIdFromUrl, activeLoans, form, isEditMode]);
 
-  const multiLoadedRef = useRef<string | null>(null);
   useEffect(() => {
     if (!loanIdsFromUrl || !activeLoans) return;
     const urlKey = loanIdsFromUrl.join(',');
