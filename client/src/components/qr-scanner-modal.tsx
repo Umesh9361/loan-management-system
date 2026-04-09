@@ -97,11 +97,19 @@ export function QrScannerModal({ open, onOpenChange }: QrScannerModalProps) {
         stopScanner();
         setTimeout(() => {
           onOpenChange(false);
+          let url: string;
           if (data.loanIds.length === 1) {
-            setLocation(`/closure?loanId=${data.loanIds[0]}`);
+            url = `/closure?loanId=${data.loanIds[0]}`;
           } else {
-            setLocation(`/closure?loanIds=${data.loanIds.join(',')}`);
+            url = `/closure?loanIds=${data.loanIds.join(',')}`;
           }
+          if (data.calcSettings) {
+            const cs = data.calcSettings;
+            if (cs.interestType) url += `&cIT=${cs.interestType}`;
+            if (cs.compoundingFrequency) url += `&cCF=${cs.compoundingFrequency}`;
+            if (cs.advancedCalculationMode) url += `&cACM=${cs.advancedCalculationMode}`;
+          }
+          setLocation(url);
         }, 600);
       } catch {
         setErrorMsg("Server शी संपर्क होत नाही");
@@ -304,11 +312,19 @@ export function QrScannerModal({ open, onOpenChange }: QrScannerModalProps) {
       stopScanner();
       setTimeout(() => {
         onOpenChange(false);
+        let url: string;
         if (data.loanIds.length === 1) {
-          setLocation(`/closure?loanId=${data.loanIds[0]}`);
+          url = `/closure?loanId=${data.loanIds[0]}`;
         } else {
-          setLocation(`/closure?loanIds=${data.loanIds.join(',')}`);
+          url = `/closure?loanIds=${data.loanIds.join(',')}`;
         }
+        if (data.calcSettings) {
+          const cs = data.calcSettings;
+          if (cs.interestType) url += `&cIT=${cs.interestType}`;
+          if (cs.compoundingFrequency) url += `&cCF=${cs.compoundingFrequency}`;
+          if (cs.advancedCalculationMode) url += `&cACM=${cs.advancedCalculationMode}`;
+        }
+        setLocation(url);
       }, 600);
     } catch {
       toast({ title: "त्रुटी", description: "Server शी संपर्क होत नाही", variant: "destructive" });

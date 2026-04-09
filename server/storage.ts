@@ -167,9 +167,9 @@ export interface IStorage {
   completePasswordResetRequest(requestId: string, completedBy: string): Promise<void>;
 
   // Estimate code operations
-  createEstimateCode(code: string, loanIds: string[], tenantId: string): Promise<EstimateCode>;
+  createEstimateCode(code: string, loanIds: string[], tenantId: string, calcSettings?: any): Promise<EstimateCode>;
   getEstimateCodeByCode(code: string, tenantId: string): Promise<EstimateCode | undefined>;
-  findEstimateCodeByLoanIds(loanIds: string[], tenantId: string): Promise<EstimateCode | undefined>;
+  findEstimateCodeByLoanIds(loanIds: string[], tenantId: string, calcSettings?: any): Promise<EstimateCode | undefined>;
   isEstimateCodeUnique(code: string, tenantId: string): Promise<boolean>;
   deleteEstimateCodesContainingLoan(loanId: string, tenantId: string): Promise<number>;
 }
@@ -4158,11 +4158,12 @@ export class DatabaseStorage implements IStorage {
       .where(eq(passwordResetRequests.id, requestId));
   }
 
-  async createEstimateCode(code: string, loanIds: string[], tenantId: string): Promise<EstimateCode> {
+  async createEstimateCode(code: string, loanIds: string[], tenantId: string, calcSettings?: any): Promise<EstimateCode> {
     const [result] = await db.insert(estimateCodes).values({
       code,
       loanIds: loanIds,
       tenantId,
+      calcSettings: calcSettings || null,
     }).returning();
     return result;
   }
@@ -4173,7 +4174,7 @@ export class DatabaseStorage implements IStorage {
     return result || undefined;
   }
 
-  async findEstimateCodeByLoanIds(loanIds: string[], tenantId: string): Promise<EstimateCode | undefined> {
+  async findEstimateCodeByLoanIds(loanIds: string[], tenantId: string, calcSettings?: any): Promise<EstimateCode | undefined> {
     const sorted = [...loanIds].sort();
     const results = await db.select().from(estimateCodes)
       .where(eq(estimateCodes.tenantId, tenantId))
@@ -4181,7 +4182,17 @@ export class DatabaseStorage implements IStorage {
     for (const row of results) {
       const rowIds = [...(row.loanIds as string[])].sort();
       if (rowIds.length === sorted.length && rowIds.every((id, i) => id === sorted[i])) {
-        return row;
+        if (calcSettings) {
+          const rowSettings = row.calcSettings as any;
+          if (rowSettings &&
+              rowSettings.interestType === calcSettings.interestType &&
+              rowSettings.compoundingFrequency === calcSettings.compoundingFrequency &&
+              rowSettings.advancedCalculationMode === calcSettings.advancedCalculationMode) {
+            return row;
+          }
+        } else {
+          return row;
+        }
       }
     }
     return undefined;

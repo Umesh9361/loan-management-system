@@ -243,6 +243,18 @@ export default function Closure() {
     const params = new URLSearchParams(window.location.search);
     return params.get('edit') === 'true';
   }, [currentLocation]);
+  const calcSettingsFromUrl = useMemo(() => {
+    const params = new URLSearchParams(window.location.search);
+    const cIT = params.get('cIT');
+    const cCF = params.get('cCF');
+    const cACM = params.get('cACM');
+    if (!cIT && !cCF && !cACM) return null;
+    return {
+      interestType: cIT || 'advanced_compound',
+      compoundingFrequency: cCF || 'yearly',
+      advancedCalculationMode: cACM || 'half_month',
+    };
+  }, [currentLocation]);
   const hideSearch = !!loanIdFromUrl;
   const [existingClosureData, setExistingClosureData] = useState<any>(null);
 
@@ -425,12 +437,13 @@ export default function Closure() {
       setSearchQuery("");
       setEditableLoanDate("");
       multiLoadedRef.current = null;
+      const cs = calcSettingsFromUrl;
       form.reset({
         loanId: "",
         closureDate: new Date().toISOString().split('T')[0],
-        interestType: "advanced_compound",
-        compoundingFrequency: "yearly",
-        advancedCalculationMode: "half_month",
+        interestType: (cs?.interestType as any) || "advanced_compound",
+        compoundingFrequency: (cs?.compoundingFrequency as any) || "yearly",
+        advancedCalculationMode: (cs?.advancedCalculationMode as any) || "half_month",
         finalInterestAmount: "",
         returnOfArticles: "",
         isClosed: true,
@@ -440,7 +453,7 @@ export default function Closure() {
     }
     prevLoanIdRef.current = currentSingle;
     prevLoanIdsRef.current = currentMulti;
-  }, [loanIdFromUrl, loanIdsFromUrl, form]);
+  }, [loanIdFromUrl, loanIdsFromUrl, form, calcSettingsFromUrl]);
 
   useEffect(() => {
     if (loanIdFromUrl && activeLoans) {
@@ -451,6 +464,12 @@ export default function Closure() {
         setSearchQuery(`${loan.borrowerName} - ${loan.accountNumber}`);
         setEditableLoanDate(loan.loanDate || "");
         autoCalculateRef.current = true;
+
+        if (calcSettingsFromUrl && !isEditMode) {
+          form.setValue("interestType", calcSettingsFromUrl.interestType as any);
+          form.setValue("compoundingFrequency", calcSettingsFromUrl.compoundingFrequency as any);
+          form.setValue("advancedCalculationMode", calcSettingsFromUrl.advancedCalculationMode as any);
+        }
 
         if (isEditMode) {
           fetch(`/api/loan-closures?loanId=${loan.id}`, { credentials: 'include' })
@@ -496,6 +515,17 @@ export default function Closure() {
       return;
     }
 
+    const cs = calcSettingsFromUrl;
+    const qrInterestType = cs?.interestType || 'advanced_compound';
+    const qrCompFreq = (cs?.compoundingFrequency || 'yearly') as any;
+    const qrCalcMode = (cs?.advancedCalculationMode || 'half_month') as any;
+
+    if (cs) {
+      form.setValue("interestType", qrInterestType as any);
+      form.setValue("compoundingFrequency", qrCompFreq);
+      form.setValue("advancedCalculationMode", qrCalcMode);
+    }
+
     setSummaryEntries(prev => {
       const existingIds = new Set(prev.map(e => e.loanId));
       let counter = prev.length > 0 ? Math.max(...prev.map(e => e.id)) + 1 : 1;
@@ -508,15 +538,22 @@ export default function Closure() {
             rate = rate / 12;
           }
           const loanDate = loan.loanDate || today;
-          const advResult = LoanCalculationsAdvanced.calculateAdvancedCompoundInterest(
-            principal,
-            rate,
-            new Date(loanDate),
-            new Date(today),
-            "yearly",
-            "half_month"
-          );
-          const interest = advResult.interestAmount;
+          let interest = 0;
+          if (qrInterestType === 'simple') {
+            const timePeriod = LoanCalculationsAdvanced.calculateTimePeriod(new Date(loanDate), new Date(today));
+            const yearlyRate = loan.interestRateType === 'monthly' ? (Number(loan.interestRate) || 0) * 12 : (Number(loan.interestRate) || 0);
+            interest = LoanCalculations.calculateSimpleInterest(principal, yearlyRate, timePeriod.totalDays);
+          } else {
+            const advResult = LoanCalculationsAdvanced.calculateAdvancedCompoundInterest(
+              principal,
+              rate,
+              new Date(loanDate),
+              new Date(today),
+              qrCompFreq,
+              qrCalcMode
+            );
+            interest = advResult.interestAmount;
+          }
           const timePeriod = LoanCalculationsAdvanced.calculateTimePeriod(new Date(loanDate), new Date(today));
           const days = timePeriod.totalDays;
           let monthsDisplay = '';
@@ -562,7 +599,7 @@ export default function Closure() {
       title: `${matchedLoans.length} कर्ज लोड झाले`,
       description: "एकत्रित हिशोबात जोडले — नको ते काढा, हवे ते ठेवा",
     });
-  }, [loanIdsFromUrl, activeLoans, toast]);
+  }, [loanIdsFromUrl, activeLoans, toast, calcSettingsFromUrl, form]);
 
   const calculateInterest = useCallback(() => {
     if (!selectedLoan) return;
@@ -1480,11 +1517,17 @@ export default function Closure() {
       let qrCanvas: HTMLCanvasElement | null = null;
       if (receiptSettings.thermal.showQrCode) {
         const loanIds = currentEntries.map(e => e.loanId);
+        const formValues = form.getValues();
+        const calcSettings = {
+          interestType: formValues.interestType,
+          compoundingFrequency: formValues.compoundingFrequency,
+          advancedCalculationMode: formValues.advancedCalculationMode,
+        };
         let estimateCode = '';
         const codeRes = await fetch('/api/estimate-code', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ loanIds }),
+          body: JSON.stringify({ loanIds, calcSettings }),
         });
         if (!codeRes.ok) {
           const errData = await codeRes.json().catch(() => ({}));

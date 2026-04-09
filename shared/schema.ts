@@ -666,6 +666,7 @@ export const estimateCodes = pgTable("estimate_codes", {
   code: varchar("code", { length: 10 }).notNull(),
   loanIds: json("loan_ids").notNull(),
   tenantId: varchar("tenant_id", { length: 20 }).notNull(),
+  calcSettings: json("calc_settings"),
   createdAt: timestamp("created_at").notNull().default(sql`now()`),
 });
 

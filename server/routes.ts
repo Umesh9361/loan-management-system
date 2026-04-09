@@ -6606,6 +6606,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (estimateTableVerified) return;
     try {
       await db.execute(sql`SELECT 1 FROM estimate_codes LIMIT 0`);
+      try {
+        await db.execute(sql`ALTER TABLE estimate_codes ADD COLUMN IF NOT EXISTS calc_settings JSON`);
+      } catch {}
       estimateTableVerified = true;
     } catch {
       try {
@@ -6616,6 +6619,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         code VARCHAR(10) NOT NULL,
         loan_ids JSON NOT NULL,
         tenant_id VARCHAR(20) NOT NULL,
+        calc_settings JSON,
         created_at TIMESTAMP NOT NULL DEFAULT now()
       )`);
       estimateTableVerified = true;
@@ -6625,17 +6629,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/estimate-code', requireAuth, async (req: any, res) => {
     try {
       await ensureEstimateCodesTable();
-      const { loanIds } = req.body;
+      const { loanIds, calcSettings } = req.body;
       if (!loanIds || !Array.isArray(loanIds) || loanIds.length === 0) {
         return res.status(400).json({ error: 'loanIds required' });
       }
       const tenantId = req.session?.tenantId || '';
-      const existing = await storage.findEstimateCodeByLoanIds(loanIds, tenantId);
+      const existing = await storage.findEstimateCodeByLoanIds(loanIds, tenantId, calcSettings || undefined);
       if (existing) {
         return res.json({ code: existing.code });
       }
       const code = await generateUniqueCode(tenantId);
-      await storage.createEstimateCode(code, loanIds, tenantId);
+      await storage.createEstimateCode(code, loanIds, tenantId, calcSettings || undefined);
       res.json({ code });
     } catch (e: any) {
       console.error('❌ ESTIMATE CODE ERROR:', e?.message || e);
@@ -6651,7 +6655,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!entry) {
         return res.status(404).json({ error: 'कोड सापडला नाही' });
       }
-      res.json({ loanIds: entry.loanIds as string[] });
+      res.json({ loanIds: entry.loanIds as string[], calcSettings: entry.calcSettings || null });
     } catch (e) {
       res.status(500).json({ error: 'Lookup failed' });
     }
