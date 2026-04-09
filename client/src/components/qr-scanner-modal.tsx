@@ -297,7 +297,7 @@ export function QrScannerModal({ open, onOpenChange }: QrScannerModalProps) {
       const res = await fetch(`/api/estimate-code/${code}`);
       const data = await res.json();
       if (!res.ok || !data.loanIds) {
-        toast({ title: "कोड सापडला नाही", description: data.error || "चुकीचा कोड किंवा expired", variant: "destructive" });
+        toast({ title: "कोड सापडला नाही", description: data.error || "चुकीचा कोड", variant: "destructive" });
         return;
       }
       setStatus("found");
@@ -422,7 +422,7 @@ export function QrScannerModal({ open, onOpenChange }: QrScannerModalProps) {
                   />
                   <button
                     onClick={handleCodeLookup}
-                    disabled={codeLooking || manualCode.length !== 4}
+                    disabled={codeLooking || manualCode.length < 4 || manualCode.length > 6}
                     className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white px-4 py-2 rounded-md text-sm font-medium flex items-center gap-1"
                   >
                     {codeLooking ? <Loader2 className="h-4 w-4 animate-spin" /> : "शोधा"}
