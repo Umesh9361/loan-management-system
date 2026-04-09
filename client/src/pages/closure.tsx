@@ -820,93 +820,6 @@ export default function Closure() {
     }
   }, [form]);
 
-  const watchInterestType = form.watch("interestType");
-  const watchCompoundingFreq = form.watch("compoundingFrequency");
-  const watchCalcMode = form.watch("advancedCalculationMode");
-  const watchClosureDate = form.watch("closureDate");
-  const watchUseCustomRate = form.watch("useCustomRate");
-  const watchCustomRate = form.watch("customInterestRate");
-
-  const bulkLoanInterests = useMemo(() => {
-    if (!bulkSelectMode || filteredLoans.length === 0) return new Map<string, { interestAmount: number; durationMonths: string }>();
-    const map = new Map<string, { interestAmount: number; durationMonths: string }>();
-    for (const loan of filteredLoans) {
-      map.set(loan.id, calculateInterestForLoan(loan));
-    }
-    return map;
-  }, [bulkSelectMode, filteredLoans, calculateInterestForLoan, watchInterestType, watchCompoundingFreq, watchCalcMode, watchClosureDate, watchUseCustomRate, watchCustomRate]);
-
-  const handleToggleLoanSelect = useCallback((loanId: string) => {
-    setSelectedLoanIds(prev => {
-      const next = new Set(prev);
-      if (next.has(loanId)) next.delete(loanId);
-      else next.add(loanId);
-      return next;
-    });
-  }, []);
-
-  const handleSelectAllLoans = useCallback(() => {
-    const currentEntries = summaryEntriesRef.current;
-    const existingIds = new Set(currentEntries.map(e => e.loanId));
-    const available = filteredLoans.filter((l: any) => !existingIds.has(l.id));
-    if (selectedLoanIds.size === available.length && available.length > 0) {
-      setSelectedLoanIds(new Set());
-    } else {
-      setSelectedLoanIds(new Set(available.map((l: any) => l.id)));
-    }
-  }, [filteredLoans, selectedLoanIds]);
-
-  const handleBulkAddToSummary = useCallback(() => {
-    if (selectedLoanIds.size === 0) return;
-    const currentEntries = summaryEntriesRef.current;
-    const existingIds = new Set(currentEntries.map(e => e.loanId));
-    const loansToAdd = filteredLoans.filter((l: any) => selectedLoanIds.has(l.id) && !existingIds.has(l.id));
-    if (loansToAdd.length === 0) {
-      toast({ title: "सूचना", description: "निवडलेली सर्व कर्ज आधीच हिशोबात आहेत", variant: "destructive" });
-      return;
-    }
-    let counter = summaryCounter;
-    const newEntries: SummaryEntry[] = loansToAdd.map((loan: any) => {
-      const calc = bulkLoanInterests.get(loan.id) || { interestAmount: 0, durationMonths: '—' };
-      const effectiveRate = form.getValues("useCustomRate") && form.getValues("customInterestRate")
-        ? form.getValues("customInterestRate")! : String(loan.interestRate);
-      const entry: SummaryEntry = {
-        id: counter++,
-        loanId: loan.id,
-        borrowerName: loan.borrowerName || '',
-        borrowerAddress: loan.borrowerAddress || loan.address || '',
-        groupName: getGroupName(loan.groupId) || '',
-        collateralDetails: loan.collateralDetails || [loan.specialConditions, loan.documentDetails, loan.otherInfo].filter((v: string) => v && v !== '—' && v.trim() !== '').join(' | ') || '',
-        accountNumber: loan.accountNumber || '',
-        loanDate: loan.loanDate || '',
-        months: calc.durationMonths,
-        interestRate: effectiveRate,
-        principalAmount: Number(loan.principalAmount) || 0,
-        chargesAmount: Math.round(calc.interestAmount),
-        closureDate: form.getValues("closureDate"),
-        calcInterestType: form.getValues("interestType"),
-        calcCompoundingFrequency: form.getValues("compoundingFrequency"),
-        calcAdvancedCalculationMode: form.getValues("advancedCalculationMode"),
-        calcUseCustomRate: form.getValues("useCustomRate") || false,
-        calcCustomInterestRate: form.getValues("customInterestRate") || '',
-      };
-      return entry;
-    });
-    setSummaryEntries(prev => {
-      const merged = [...prev, ...newEntries];
-      merged.sort((a, b) => {
-        const dateA = a.loanDate ? new Date(a.loanDate).getTime() : 0;
-        const dateB = b.loanDate ? new Date(b.loanDate).getTime() : 0;
-        return dateA - dateB;
-      });
-      return merged;
-    });
-    setSummaryCounter(counter);
-    setSelectedLoanIds(new Set());
-    setActiveTab("summary");
-    toast({ title: `${newEntries.length} कर्ज जोडले`, description: "एकत्रित हिशोबात जोडले — Summary tab बघा" });
-  }, [selectedLoanIds, filteredLoans, summaryCounter, bulkLoanInterests, form, toast]);
-
   // QR scan नंतर auto-calculate + auto-scroll to result
   useEffect(() => {
     if (selectedLoan && autoCalculateRef.current) {
@@ -1127,6 +1040,93 @@ export default function Closure() {
 
     return scoredLoans;
   }, [activeLoans, searchQuery, selectedSearchGroup, groups]);
+
+  const watchInterestType = form.watch("interestType");
+  const watchCompoundingFreq = form.watch("compoundingFrequency");
+  const watchCalcMode = form.watch("advancedCalculationMode");
+  const watchClosureDate = form.watch("closureDate");
+  const watchUseCustomRate = form.watch("useCustomRate");
+  const watchCustomRate = form.watch("customInterestRate");
+
+  const bulkLoanInterests = useMemo(() => {
+    if (!bulkSelectMode || filteredLoans.length === 0) return new Map<string, { interestAmount: number; durationMonths: string }>();
+    const map = new Map<string, { interestAmount: number; durationMonths: string }>();
+    for (const loan of filteredLoans) {
+      map.set(loan.id, calculateInterestForLoan(loan));
+    }
+    return map;
+  }, [bulkSelectMode, filteredLoans, calculateInterestForLoan, watchInterestType, watchCompoundingFreq, watchCalcMode, watchClosureDate, watchUseCustomRate, watchCustomRate]);
+
+  const handleToggleLoanSelect = useCallback((loanId: string) => {
+    setSelectedLoanIds(prev => {
+      const next = new Set(prev);
+      if (next.has(loanId)) next.delete(loanId);
+      else next.add(loanId);
+      return next;
+    });
+  }, []);
+
+  const handleSelectAllLoans = useCallback(() => {
+    const currentEntries = summaryEntriesRef.current;
+    const existingIds = new Set(currentEntries.map(e => e.loanId));
+    const available = filteredLoans.filter((l: any) => !existingIds.has(l.id));
+    if (selectedLoanIds.size === available.length && available.length > 0) {
+      setSelectedLoanIds(new Set());
+    } else {
+      setSelectedLoanIds(new Set(available.map((l: any) => l.id)));
+    }
+  }, [filteredLoans, selectedLoanIds]);
+
+  const handleBulkAddToSummary = useCallback(() => {
+    if (selectedLoanIds.size === 0) return;
+    const currentEntries = summaryEntriesRef.current;
+    const existingIds = new Set(currentEntries.map(e => e.loanId));
+    const loansToAdd = filteredLoans.filter((l: any) => selectedLoanIds.has(l.id) && !existingIds.has(l.id));
+    if (loansToAdd.length === 0) {
+      toast({ title: "सूचना", description: "निवडलेली सर्व कर्ज आधीच हिशोबात आहेत", variant: "destructive" });
+      return;
+    }
+    let counter = summaryCounter;
+    const newEntries: SummaryEntry[] = loansToAdd.map((loan: any) => {
+      const calc = bulkLoanInterests.get(loan.id) || { interestAmount: 0, durationMonths: '—' };
+      const effectiveRate = form.getValues("useCustomRate") && form.getValues("customInterestRate")
+        ? form.getValues("customInterestRate")! : String(loan.interestRate);
+      const entry: SummaryEntry = {
+        id: counter++,
+        loanId: loan.id,
+        borrowerName: loan.borrowerName || '',
+        borrowerAddress: loan.borrowerAddress || loan.address || '',
+        groupName: getGroupName(loan.groupId) || '',
+        collateralDetails: loan.collateralDetails || [loan.specialConditions, loan.documentDetails, loan.otherInfo].filter((v: string) => v && v !== '—' && v.trim() !== '').join(' | ') || '',
+        accountNumber: loan.accountNumber || '',
+        loanDate: loan.loanDate || '',
+        months: calc.durationMonths,
+        interestRate: effectiveRate,
+        principalAmount: Number(loan.principalAmount) || 0,
+        chargesAmount: Math.round(calc.interestAmount),
+        closureDate: form.getValues("closureDate"),
+        calcInterestType: form.getValues("interestType"),
+        calcCompoundingFrequency: form.getValues("compoundingFrequency"),
+        calcAdvancedCalculationMode: form.getValues("advancedCalculationMode"),
+        calcUseCustomRate: form.getValues("useCustomRate") || false,
+        calcCustomInterestRate: form.getValues("customInterestRate") || '',
+      };
+      return entry;
+    });
+    setSummaryEntries(prev => {
+      const merged = [...prev, ...newEntries];
+      merged.sort((a, b) => {
+        const dateA = a.loanDate ? new Date(a.loanDate).getTime() : 0;
+        const dateB = b.loanDate ? new Date(b.loanDate).getTime() : 0;
+        return dateA - dateB;
+      });
+      return merged;
+    });
+    setSummaryCounter(counter);
+    setSelectedLoanIds(new Set());
+    setActiveTab("summary");
+    toast({ title: `${newEntries.length} कर्ज जोडले`, description: "एकत्रित हिशोबात जोडले — Summary tab बघा" });
+  }, [selectedLoanIds, filteredLoans, summaryCounter, bulkLoanInterests, form, toast]);
 
   const handleLoanSelect = (loan: any) => {
     setSelectedLoan(loan);
