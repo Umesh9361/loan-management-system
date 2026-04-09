@@ -564,7 +564,7 @@ export default function Closure() {
           const principal = Number(loan.principalAmount) || 0;
           const loanDate = loan.loanDate || today;
 
-          const savedEntry = savedEntries?.find((se: any) => se.loanId === loan.id);
+          const savedEntry = savedEntries?.find((se: any) => String(se.loanId) === String(loan.id));
           let interest: number;
           let entryRate = savedEntry?.interestRate || String(loan.interestRate || '');
           let entryCalcIT = qrInterestType;
