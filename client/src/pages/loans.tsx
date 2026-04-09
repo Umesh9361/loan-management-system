@@ -27,7 +27,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { LoanCalculations } from "@/lib/calculations";
 import { DateUtils } from "@/lib/date-utils";
-import { Plus, Edit, Trash2, CreditCard, Search, Calendar, Filter, X, FileText, MoreVertical, Lock, Home, RotateCcw, ChevronDown, ChevronRight, Check, Camera, AlertTriangle, Printer, CheckSquare, Square } from "lucide-react";
+import { Plus, Edit, Trash2, CreditCard, Search, Calendar, Filter, X, FileText, MoreVertical, Lock, Home, RotateCcw, ChevronDown, ChevronRight, Check, Camera, AlertTriangle, Printer, CheckSquare, Square, Calculator } from "lucide-react";
 import { PhotoUpload } from "@/components/ui/photo-upload";
 import { PhotoViewer } from "@/components/ui/photo-viewer";
 import { Link, useLocation } from "wouter";
@@ -3281,23 +3281,42 @@ function Loans() {
                       रद्द करा
                     </Button>
                   </div>
-                  <Button
-                    size="sm"
-                    className="bg-indigo-600 hover:bg-indigo-700 text-white h-8"
-                    onClick={() => {
-                      const selected = Array.isArray(sortedLoans) ? sortedLoans.filter((l: any) => selectedLoanIds.has(l.id)).map((l: any) => ({
-                        ...l,
-                        groupName: l.groupName || l.group?.name || "",
-                      })) : [];
-                      if (selected.length > 0) {
-                        setLabelPrintLoans(selected);
-                        setLabelPrintDialogOpen(true);
-                      }
-                    }}
-                  >
-                    <Printer className="h-3.5 w-3.5 mr-1.5" />
-                    लेबल प्रिंट ({selectedLoanIds.size})
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      className="bg-amber-600 hover:bg-amber-700 text-white h-8"
+                      onClick={() => {
+                        const activeIds = Array.isArray(sortedLoans)
+                          ? sortedLoans.filter((l: any) => selectedLoanIds.has(l.id) && l.status !== 'closed').map((l: any) => l.id)
+                          : [];
+                        if (activeIds.length === 0) {
+                          toast({ title: "सूचना", description: "फक्त सक्रिय कर्ज निवडा — बंद कर्जांचा Estimate होत नाही", variant: "destructive" });
+                          return;
+                        }
+                        setLocation(`/closure?loanIds=${activeIds.join(',')}`);
+                      }}
+                    >
+                      <Calculator className="h-3.5 w-3.5 mr-1.5" />
+                      Estimate हिशोब ({selectedLoanIds.size})
+                    </Button>
+                    <Button
+                      size="sm"
+                      className="bg-indigo-600 hover:bg-indigo-700 text-white h-8"
+                      onClick={() => {
+                        const selected = Array.isArray(sortedLoans) ? sortedLoans.filter((l: any) => selectedLoanIds.has(l.id)).map((l: any) => ({
+                          ...l,
+                          groupName: l.groupName || l.group?.name || "",
+                        })) : [];
+                        if (selected.length > 0) {
+                          setLabelPrintLoans(selected);
+                          setLabelPrintDialogOpen(true);
+                        }
+                      }}
+                    >
+                      <Printer className="h-3.5 w-3.5 mr-1.5" />
+                      लेबल प्रिंट ({selectedLoanIds.size})
+                    </Button>
+                  </div>
                 </div>
               )}
 
