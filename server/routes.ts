@@ -6601,8 +6601,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     return String(100000 + Math.floor(Math.random() * 900000));
   }
 
+  let estimateTableVerified = false;
+  async function ensureEstimateCodesTable() {
+    if (estimateTableVerified) return;
+    try {
+      await db.execute(sql`CREATE TABLE IF NOT EXISTS estimate_codes (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        code VARCHAR(10) NOT NULL,
+        loan_ids JSON NOT NULL,
+        tenant_id VARCHAR(20) NOT NULL,
+        created_at TIMESTAMP NOT NULL DEFAULT now()
+      )`);
+      estimateTableVerified = true;
+    } catch (e: any) {
+      console.error('⚠️ estimate_codes table check failed:', e?.message);
+    }
+  }
+
   app.post('/api/estimate-code', requireAuth, async (req: any, res) => {
     try {
+      await ensureEstimateCodesTable();
       const { loanIds } = req.body;
       if (!loanIds || !Array.isArray(loanIds) || loanIds.length === 0) {
         return res.status(400).json({ error: 'loanIds required' });
