@@ -6605,6 +6605,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   async function ensureEstimateCodesTable() {
     if (estimateTableVerified) return;
     try {
+      await db.execute(sql`SELECT 1 FROM estimate_codes LIMIT 0`);
+      estimateTableVerified = true;
+    } catch {
+      try {
+        await db.execute(sql`CREATE EXTENSION IF NOT EXISTS "pgcrypto"`);
+      } catch {}
       await db.execute(sql`CREATE TABLE IF NOT EXISTS estimate_codes (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         code VARCHAR(10) NOT NULL,
@@ -6613,8 +6619,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         created_at TIMESTAMP NOT NULL DEFAULT now()
       )`);
       estimateTableVerified = true;
-    } catch (e: any) {
-      console.error('⚠️ estimate_codes table check failed:', e?.message);
     }
   }
 
