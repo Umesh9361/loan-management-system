@@ -51,6 +51,14 @@ export async function initializeDatabase() {
         console.warn("⚠️  Label settings migration warning (non-fatal):", migrationError instanceof Error ? migrationError.message : migrationError);
       }
 
+      // 6a3. AUTO-MIGRATION: Interest settings column
+      try {
+        await db.execute(sql`ALTER TABLE companies ADD COLUMN IF NOT EXISTS interest_settings TEXT`);
+        console.log("✅ Schema migration: interest_settings column verified");
+      } catch (migrationError) {
+        console.warn("⚠️  Interest settings migration warning (non-fatal):", migrationError instanceof Error ? migrationError.message : migrationError);
+      }
+
       // 6b. AUTO-MIGRATION: Subscription management columns
       try {
         await db.execute(sql`ALTER TABLE companies ADD COLUMN IF NOT EXISTS subscription_type VARCHAR(20) NOT NULL DEFAULT 'lifetime'`);
