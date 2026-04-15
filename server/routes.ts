@@ -774,6 +774,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/company/interest-settings", requireAuth, async (req: any, res) => {
+    try {
+      const tenantId = req.session.tenantId!;
+      const company = await storage.getCompany(tenantId);
+      if (!company) {
+        return res.status(404).json({ message: "कंपनी सापडली नाही" });
+      }
+      let settings = { interestType: "advanced_compound", compoundingFrequency: "yearly", advancedCalculationMode: "half_month" };
+      if (company.interestSettings) {
+        try {
+          settings = { ...settings, ...JSON.parse(company.interestSettings) };
+        } catch {}
+      }
+      return res.json(settings);
+    } catch (error) {
+      console.error("Get interest settings error:", error);
+      res.status(500).json({ message: "सेटिंग्स मिळवताना त्रुटी झाली" });
+    }
+  });
+
+  app.put("/api/company/interest-settings", requireAuth, async (req: any, res) => {
+    try {
+      if (req.session.role !== 'admin' && req.session.role !== 'super_admin') {
+        return res.status(403).json({ message: "फक्त अ‍ॅडमिन हे बदलू शकतो" });
+      }
+      const { interestType, compoundingFrequency, advancedCalculationMode } = req.body;
+      const validTypes = ['simple', 'advanced_compound'];
+      const validFreqs = ['yearly', 'half_yearly', 'quarterly', 'monthly'];
+      const validModes = ['month', 'half_month', 'week', 'day'];
+      if (!validTypes.includes(interestType)) {
+        return res.status(400).json({ message: "Invalid interest type" });
+      }
+      if (interestType === 'advanced_compound') {
+        if (!validFreqs.includes(compoundingFrequency)) {
+          return res.status(400).json({ message: "Invalid compounding frequency" });
+        }
+        if (!validModes.includes(advancedCalculationMode)) {
+          return res.status(400).json({ message: "Invalid calculation mode" });
+        }
+      }
+      const settingsJson = JSON.stringify({ interestType, compoundingFrequency, advancedCalculationMode });
+      const tenantId = req.session.tenantId!;
+      const company = await storage.updateCompany(tenantId, { interestSettings: settingsJson } as any);
+      if (!company) {
+        return res.status(404).json({ message: "कंपनी सापडली नाही" });
+      }
+      invalidateCache('company', tenantId);
+      return res.json({ interestType, compoundingFrequency, advancedCalculationMode });
+    } catch (error) {
+      console.error("Update interest settings error:", error);
+      res.status(500).json({ message: "सेटिंग बदलताना त्रुटी झाली" });
+    }
+  });
+
   // Notification Warnings - Bell notification system
   app.get("/api/notification-warnings", requireAuth, async (req: any, res) => {
     try {

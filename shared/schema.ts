@@ -124,6 +124,7 @@ export const companies = pgTable("companies", {
   ltvWarningEnabled: boolean("ltv_warning_enabled").notNull().default(true),
   interestRateWarningEnabled: boolean("interest_rate_warning_enabled").notNull().default(true),
   labelSettings: text("label_settings"),
+  interestSettings: text("interest_settings"),
   createdAt: timestamp("created_at").notNull().default(sql`now()`),
   updatedAt: timestamp("updated_at").notNull().default(sql`now()`),
 });

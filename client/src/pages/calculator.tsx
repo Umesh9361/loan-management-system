@@ -57,6 +57,22 @@ export default function InterestCalculator() {
   const [calculationMode, setCalculationMode] = useState("half_month");
   const [compoundFrequency, setCompoundFrequency] = useState("yearly");
   const [rateType, setRateType] = useState("yearly");
+  const tenantSettingsLoadedRef = useRef(false);
+
+  useEffect(() => {
+    if (tenantSettingsLoadedRef.current) return;
+    fetch("/api/company/interest-settings", { credentials: "include" })
+      .then(res => res.ok ? res.json() : null)
+      .then(settings => {
+        if (settings && !tenantSettingsLoadedRef.current) {
+          tenantSettingsLoadedRef.current = true;
+          setIsAdvanced(settings.interestType === 'advanced_compound');
+          setCalculationMode(settings.advancedCalculationMode || 'half_month');
+          setCompoundFrequency(settings.compoundingFrequency || 'yearly');
+        }
+      })
+      .catch(() => {});
+  }, []);
   const [results, setResults] = useState<any>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
 

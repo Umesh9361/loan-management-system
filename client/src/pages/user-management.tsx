@@ -229,6 +229,108 @@ function LtvWarningToggle() {
   );
 }
 
+function InterestCalculationSettings() {
+  const { toast } = useToast();
+  const qc = useQueryClient();
+  const { data: settings, isLoading } = useQuery<{ interestType: string; compoundingFrequency: string; advancedCalculationMode: string }>({
+    queryKey: ["/api/company/interest-settings"],
+  });
+
+  const saveSettings = async (newSettings: { interestType: string; compoundingFrequency: string; advancedCalculationMode: string }) => {
+    try {
+      await apiRequest("/api/company/interest-settings", "PUT", newSettings);
+      qc.invalidateQueries({ queryKey: ["/api/company/interest-settings"] });
+      toast({ title: "व्याज गणना सेटिंग्स जतन झाल्या", description: "नवीन डिफॉल्ट सेटिंग्स लागू झाल्या" });
+    } catch (error) {
+      toast({ title: "त्रुटी", description: "सेटिंग बदलता आली नाही", variant: "destructive" });
+    }
+  };
+
+  if (isLoading || !settings) return null;
+
+  const isAdvanced = settings.interestType === 'advanced_compound';
+
+  return (
+    <div className="space-y-3">
+      <div className="p-4 rounded-lg border border-indigo-200 bg-indigo-50/50">
+        <h3 className="font-medium text-sm mb-3">📐 व्याज गणना डिफॉल्ट सेटिंग्स</h3>
+        <p className="text-xs text-muted-foreground mb-4">
+          क्लोजर फॉर्म आणि कॅल्क्युलेटर मध्ये डिफॉल्ट कोणती पद्धत वापरायची ते सेट करा.
+          <br />
+          <span className="text-indigo-600 font-medium">QR स्कॅन मधील सेटिंग्स नेहमी या डिफॉल्ट पेक्षा प्राधान्य घेतील.</span>
+        </p>
+
+        <div className="space-y-3">
+          <div>
+            <label className="text-xs font-medium text-gray-600 mb-1 block">व्याज प्रकार</label>
+            <Select
+              value={settings.interestType}
+              onValueChange={(val) => {
+                const newSettings = { ...settings, interestType: val };
+                if (val === 'simple') {
+                  newSettings.compoundingFrequency = 'yearly';
+                  newSettings.advancedCalculationMode = 'half_month';
+                }
+                saveSettings(newSettings);
+              }}
+            >
+              <SelectTrigger className="h-9 text-sm bg-white">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="simple">साधे व्याज (Simple)</SelectItem>
+                <SelectItem value="advanced_compound">प्रगत चक्रवाढ व्याज (Advanced Compound)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {isAdvanced && (
+            <>
+              <div>
+                <label className="text-xs font-medium text-gray-600 mb-1 block">चक्रवाढ कालावधी</label>
+                <Select
+                  value={settings.compoundingFrequency}
+                  onValueChange={(val) => saveSettings({ ...settings, compoundingFrequency: val })}
+                >
+                  <SelectTrigger className="h-9 text-sm bg-white">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="yearly">वार्षिक (Yearly)</SelectItem>
+                    <SelectItem value="half_yearly">सहामाही (Half Yearly)</SelectItem>
+                    <SelectItem value="quarterly">तिमाही (Quarterly)</SelectItem>
+                    <SelectItem value="monthly">मासिक (Monthly)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-gray-600 mb-1 block">गणना पद्धत</label>
+                <Select
+                  value={settings.advancedCalculationMode}
+                  onValueChange={(val) => saveSettings({ ...settings, advancedCalculationMode: val })}
+                >
+                  <SelectTrigger className="h-9 text-sm bg-white">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="month">फुल महिना (Full Month)</SelectItem>
+                    <SelectItem value="half_month">अर्धा महिना (Half Month)</SelectItem>
+                    <SelectItem value="week">आठवडा (Week)</SelectItem>
+                    <SelectItem value="day">दैनिक (Daily)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+      <div className="text-xs px-3 py-2 rounded bg-indigo-100 text-indigo-700">
+        सध्याचे डिफॉल्ट: {isAdvanced ? `प्रगत चक्रवाढ — ${settings.compoundingFrequency === 'yearly' ? 'वार्षिक' : settings.compoundingFrequency === 'half_yearly' ? 'सहामाही' : settings.compoundingFrequency === 'quarterly' ? 'तिमाही' : 'मासिक'} — ${settings.advancedCalculationMode === 'month' ? 'फुल महिना' : settings.advancedCalculationMode === 'half_month' ? 'अर्धा महिना' : settings.advancedCalculationMode === 'week' ? 'आठवडा' : 'दैनिक'}` : 'साधे व्याज (Simple Interest)'}
+      </div>
+    </div>
+  );
+}
+
 function AccountNumberSetting() {
   const { toast } = useToast();
   const qc = useQueryClient();
@@ -1115,6 +1217,9 @@ export default function UserManagement() {
           </div>
           <div className="mt-4">
             <AccountNumberSetting />
+          </div>
+          <div className="mt-4">
+            <InterestCalculationSettings />
           </div>
         </CardContent>
       </Card>

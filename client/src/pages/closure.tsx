@@ -301,6 +301,13 @@ export default function Closure() {
   const { data: company } = useQuery({
     queryKey: ["/api/company"],
   });
+  const { data: tenantInterestSettings } = useQuery<{ interestType: string; compoundingFrequency: string; advancedCalculationMode: string }>({
+    queryKey: ["/api/company/interest-settings"],
+  });
+  const tenantSettingsRef = useRef<{ interestType: string; compoundingFrequency: string; advancedCalculationMode: string } | null>(null);
+  if (tenantInterestSettings) {
+    tenantSettingsRef.current = tenantInterestSettings;
+  }
   const showRateMonths = (company as any)?.showSummaryRateMonths === true;
   const showDetails = (company as any)?.showSummaryDetails === true;
 
@@ -344,6 +351,14 @@ export default function Closure() {
       customInterestRate: "",
     },
   });
+
+  useEffect(() => {
+    if (tenantInterestSettings && !calcSettingsFromUrl && !loanIdFromUrl && !loanIdsFromUrl) {
+      form.setValue("interestType", tenantInterestSettings.interestType as any);
+      form.setValue("compoundingFrequency", tenantInterestSettings.compoundingFrequency as any);
+      form.setValue("advancedCalculationMode", tenantInterestSettings.advancedCalculationMode as any);
+    }
+  }, [tenantInterestSettings]);
 
   // 🚫 MANUAL ENTRY CLEANUP MUTATION - Prevent duplicates at form level
   const cleanupMutation = useMutation({
@@ -456,9 +471,9 @@ export default function Closure() {
       form.reset({
         loanId: "",
         closureDate: new Date().toISOString().split('T')[0],
-        interestType: (cs?.interestType as any) || "advanced_compound",
-        compoundingFrequency: (cs?.compoundingFrequency as any) || "yearly",
-        advancedCalculationMode: (cs?.advancedCalculationMode as any) || "half_month",
+        interestType: (cs?.interestType as any) || tenantSettingsRef.current?.interestType || "advanced_compound",
+        compoundingFrequency: (cs?.compoundingFrequency as any) || tenantSettingsRef.current?.compoundingFrequency || "yearly",
+        advancedCalculationMode: (cs?.advancedCalculationMode as any) || tenantSettingsRef.current?.advancedCalculationMode || "half_month",
         finalInterestAmount: "",
         returnOfArticles: "",
         isClosed: true,
@@ -535,9 +550,9 @@ export default function Closure() {
     }
 
     const cs = calcSettingsFromUrl;
-    const qrInterestType = cs?.interestType || 'advanced_compound';
-    const qrCompFreq = (cs?.compoundingFrequency || 'yearly') as any;
-    const qrCalcMode = (cs?.advancedCalculationMode || 'half_month') as any;
+    const qrInterestType = cs?.interestType || tenantSettingsRef.current?.interestType || 'advanced_compound';
+    const qrCompFreq = (cs?.compoundingFrequency || tenantSettingsRef.current?.compoundingFrequency || 'yearly') as any;
+    const qrCalcMode = (cs?.advancedCalculationMode || tenantSettingsRef.current?.advancedCalculationMode || 'half_month') as any;
     const qrCustomRate = cs?.useCustomRate && cs?.customInterestRate ? parseFloat(cs.customInterestRate) : null;
 
     if (cs) {
