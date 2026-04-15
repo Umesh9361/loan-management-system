@@ -898,13 +898,41 @@ export default function InterestCalculator() {
                             </div>
                           </div>
                         </div>
-                        {results.breakdown && results.breakdown.detailedBreakdown && (
-                          <div className="mt-2 text-xs bg-yellow-50 p-3 rounded border-l-4 border-yellow-400">
-                            <div className="font-semibold text-gray-800 mb-1">गणना माहिती:</div>
-                            <div>कंपाऊंडिंग पिरियड्स: {results.breakdown.compoundingPeriods || 0}</div>
-                            <div>एकूण महिने: {results.breakdown.totalMonthsProcessed || 0}</div>
-                          </div>
-                        )}
+                        {results.breakdown && results.breakdown.detailedBreakdown && (() => {
+                          const bd = results.breakdown;
+                          const calM = (results.years || 0) * 12 + (results.months || 0);
+                          const calD = results.days || 0;
+                          const calParts: string[] = [];
+                          if (calM > 0) calParts.push(`${calM} महिने`);
+                          if (calD > 0) calParts.push(`${calD} दिवस`);
+                          const calStr = calParts.join(' ') || '0';
+
+                          let effM = bd.totalMonthsProcessed || 0;
+                          const dEntry = bd.detailedBreakdown.find((d: any) => d.type === 'days');
+                          if (dEntry) {
+                            const cm = calculationMode;
+                            if (cm === 'half_month') effM += 0.5;
+                            else if (cm === 'week') {
+                              if (dEntry.days >= 16) effM += 0.75;
+                              else if (dEntry.days >= 9) effM += 0.5;
+                              else effM += 0.25;
+                            }
+                          }
+                          let effStr = '';
+                          if (calculationMode === 'day') {
+                            effStr = `${effM} महिने ${calD} दिवस`;
+                          } else {
+                            effStr = effM % 1 === 0 ? `${effM}` : effM.toFixed(2).replace(/0$/, '');
+                          }
+
+                          return (
+                            <div className="mt-2 text-xs bg-yellow-50 p-3 rounded border-l-4 border-yellow-400">
+                              <div className="font-semibold text-gray-800 mb-1">गणना माहिती:</div>
+                              <div>कालावधी: <b>{calStr}</b>{effStr !== calStr ? <span className="text-gray-500"> ({effStr})</span> : null}</div>
+                              <div>कंपाऊंडिंग पिरियड्स: {bd.compoundingPeriods || 0}</div>
+                            </div>
+                          );
+                        })()}
                       </div>
                     ) : (
                       <div className="bg-gradient-to-r from-indigo-100 to-indigo-100 p-4 rounded-lg border-2 border-indigo-300">
