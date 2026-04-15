@@ -1782,21 +1782,30 @@ export default function Closure() {
       const totalCharges = Math.round(advResult.interestAmount || 0);
       const grandTotal = principal + totalCharges;
 
-      let totalDisplayMonths = br.totalMonthsProcessed || 0;
+      const timePeriod = LoanCalculationsAdvanced.calculateTimePeriod(startDate, endDate);
+      const calMonths = timePeriod.calendarYears * 12 + timePeriod.calendarMonths;
+      const calDays = timePeriod.calendarDays;
+      const calParts: string[] = [];
+      if (calMonths > 0) calParts.push(`${calMonths} महिने`);
+      if (calDays > 0) calParts.push(`${calDays} दिवस`);
+      const calPeriodStr = calParts.join(' ');
+
+      let effectiveMonths = br.totalMonthsProcessed || 0;
       const daysEntry = details.find((d: any) => d.type === 'days');
       if (daysEntry) {
-        if (calcMode === 'half_month') totalDisplayMonths += 0.5;
+        if (calcMode === 'half_month') effectiveMonths += 0.5;
         else if (calcMode === 'week') {
-          if (daysEntry.days >= 16) totalDisplayMonths += 0.75;
-          else if (daysEntry.days >= 9) totalDisplayMonths += 0.5;
-          else totalDisplayMonths += 0.25;
-        } else if (calcMode === 'day') {
-          totalDisplayMonths += parseFloat((daysEntry.days / 30).toFixed(2));
+          if (daysEntry.days >= 16) effectiveMonths += 0.75;
+          else if (daysEntry.days >= 9) effectiveMonths += 0.5;
+          else effectiveMonths += 0.25;
         }
       }
-      const monthsStr = totalDisplayMonths % 1 === 0 ? String(totalDisplayMonths) : totalDisplayMonths.toFixed(1);
-      const modeLabels: Record<string, string> = { month: 'फुल महिना', half_month: 'अर्धा महिना', week: 'आठवडा', day: 'दैनिक' };
-      const modeLabel = modeLabels[calcMode] || '';
+      let effectiveStr = '';
+      if (calcMode === 'day') {
+        effectiveStr = `${effectiveMonths} महिने ${calDays} दिवस`;
+      } else {
+        effectiveStr = effectiveMonths % 1 === 0 ? `${effectiveMonths}` : effectiveMonths.toFixed(2).replace(/0$/, '');
+      }
 
       const breakdownHTML = `
         <div style="padding:6px 10px;font-family:'Noto Sans Devanagari',Arial,sans-serif;">
@@ -1805,7 +1814,7 @@ export default function Closure() {
             <div style="display:flex;justify-content:space-between;"><b>${entry.borrowerName}</b><span>${closureDateStr}</span></div>
             <div style="display:flex;justify-content:space-between;"><span>कोड: <b>${entry.accountNumber}</b></span><span>दि: <b>${loanDateStr}</b></span></div>
             <div style="display:flex;justify-content:space-between;"><span>बाजारमूल्य: <b>₹${principal.toLocaleString('en-IN')}</b></span><span>दर: <b>${rateStr}%</b></span></div>
-            <div style="text-align:center;font-size:18px;margin-top:2px;"><b>${monthsStr} महिने</b>${modeLabel ? ` <span style="font-size:16px;color:#555;">(${modeLabel})</span>` : ''}</div>
+            <div style="text-align:center;font-size:18px;margin-top:2px;"><b>${calPeriodStr}</b>${effectiveStr !== calPeriodStr ? ` <span style="font-size:16px;color:#555;">(${effectiveStr})</span>` : ''}</div>
           </div>
           <table style="width:100%;border-collapse:collapse;margin-top:4px;">
             <thead>
