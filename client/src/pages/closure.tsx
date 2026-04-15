@@ -301,10 +301,10 @@ export default function Closure() {
   const { data: company } = useQuery({
     queryKey: ["/api/company"],
   });
-  const { data: tenantInterestSettings } = useQuery<{ interestType: string; compoundingFrequency: string; advancedCalculationMode: string }>({
+  const { data: tenantInterestSettings } = useQuery<{ interestType: string; compoundingFrequency: string; advancedCalculationMode: string; firstMonthFull: boolean }>({
     queryKey: ["/api/company/interest-settings"],
   });
-  const tenantSettingsRef = useRef<{ interestType: string; compoundingFrequency: string; advancedCalculationMode: string } | null>(null);
+  const tenantSettingsRef = useRef<{ interestType: string; compoundingFrequency: string; advancedCalculationMode: string; firstMonthFull: boolean } | null>(null);
   if (tenantInterestSettings) {
     tenantSettingsRef.current = tenantInterestSettings;
   }
@@ -623,7 +623,8 @@ export default function Closure() {
                 new Date(loanDate),
                 new Date(today),
                 entryCalcCF as any,
-                entryCalcMode as any
+                entryCalcMode as any,
+                tenantSettingsRef.current?.firstMonthFull !== false
               );
               interest = advResult.interestAmount;
             }
@@ -758,7 +759,8 @@ export default function Closure() {
           new Date(loanStartDate),
           closureDate,
           formValues.compoundingFrequency,
-          formValues.advancedCalculationMode
+          formValues.advancedCalculationMode,
+          tenantSettingsRef.current?.firstMonthFull !== false
         );
         
         const timePeriod = LoanCalculationsAdvanced.calculateTimePeriod(
@@ -1725,7 +1727,7 @@ export default function Closure() {
       const startDate = new Date(entry.loanDate);
       const endDate = new Date(entry.closureDate);
 
-      const advResult = LoanCalculationsAdvanced.calculateAdvancedCompoundInterest(principal, rate, startDate, endDate, compFreq, calcMode);
+      const advResult = LoanCalculationsAdvanced.calculateAdvancedCompoundInterest(principal, rate, startDate, endDate, compFreq, calcMode, tenantSettingsRef.current?.firstMonthFull !== false);
       const br = advResult.breakdown;
       if (!br || !br.detailedBreakdown || br.detailedBreakdown.length === 0) {
         toast({ title: "ब्रेकडाउन उपलब्ध नाही", variant: "destructive" });
@@ -1952,7 +1954,8 @@ export default function Closure() {
           new Date(originalLoanDate),
           closureDate,
           compoundingFrequency,
-          advancedCalculationMode
+          advancedCalculationMode,
+          tenantSettingsRef.current?.firstMonthFull !== false
         );
         
         const timePeriod = LoanCalculationsAdvanced.calculateTimePeriod(

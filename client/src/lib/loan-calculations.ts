@@ -33,7 +33,8 @@ export class LoanCalculationsAdvanced {
     startDate: Date,
     endDate: Date,
     compoundingFrequency: "yearly" | "half_yearly" | "quarterly" | "monthly" = "yearly",
-    calculationMode: "month" | "half_month" | "week" | "day" = "half_month"
+    calculationMode: "month" | "half_month" | "week" | "day" = "half_month",
+    firstMonthFull: boolean = true
   ) {
     const timePeriod = this.calculateTimePeriod(startDate, endDate);
     let totalInterest = 0;
@@ -54,9 +55,24 @@ export class LoanCalculationsAdvanced {
     let effectiveMonths = calYears * 12 + calMonths;
 
     if (effectiveDays > 0) {
-      if (effectiveMonths === 0) {
+      if (effectiveMonths === 0 && firstMonthFull) {
         effectiveMonths += 1;
         effectiveDays = 0;
+      } else if (effectiveMonths === 0 && !firstMonthFull) {
+        if (calculationMode === "month") {
+          effectiveMonths += 1;
+          effectiveDays = 0;
+        } else if (calculationMode === "half_month") {
+          if (effectiveDays >= 16) {
+            effectiveMonths += 1;
+            effectiveDays = 0;
+          }
+        } else if (calculationMode === "week") {
+          if (effectiveDays >= 23) {
+            effectiveMonths += 1;
+            effectiveDays = 0;
+          }
+        }
       } else if (calculationMode === "month") {
         effectiveMonths += 1;
         effectiveDays = 0;

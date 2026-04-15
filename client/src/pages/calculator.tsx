@@ -57,6 +57,7 @@ export default function InterestCalculator() {
   const [calculationMode, setCalculationMode] = useState("half_month");
   const [compoundFrequency, setCompoundFrequency] = useState("yearly");
   const [rateType, setRateType] = useState("yearly");
+  const [firstMonthFull, setFirstMonthFull] = useState(true);
   const tenantSettingsLoadedRef = useRef(false);
 
   useEffect(() => {
@@ -69,6 +70,7 @@ export default function InterestCalculator() {
           setIsAdvanced(settings.interestType === 'advanced_compound');
           setCalculationMode(settings.advancedCalculationMode || 'half_month');
           setCompoundFrequency(settings.compoundingFrequency || 'yearly');
+          setFirstMonthFull(settings.firstMonthFull !== false);
         }
       })
       .catch(() => {});
@@ -239,7 +241,8 @@ export default function InterestCalculator() {
         start,
         end,
         compoundFrequency as any,
-        calculationMode as any
+        calculationMode as any,
+        firstMonthFull
       );
 
       const timePeriod = LoanCalculationsAdvanced.calculateTimePeriod(start, end);

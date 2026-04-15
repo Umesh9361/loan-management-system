@@ -781,7 +781,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!company) {
         return res.status(404).json({ message: "कंपनी सापडली नाही" });
       }
-      let settings = { interestType: "advanced_compound", compoundingFrequency: "yearly", advancedCalculationMode: "half_month" };
+      let settings: any = { interestType: "advanced_compound", compoundingFrequency: "yearly", advancedCalculationMode: "half_month", firstMonthFull: true };
       if (company.interestSettings) {
         try {
           settings = { ...settings, ...JSON.parse(company.interestSettings) };
@@ -799,7 +799,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (req.session.role !== 'admin' && req.session.role !== 'super_admin') {
         return res.status(403).json({ message: "फक्त अ‍ॅडमिन हे बदलू शकतो" });
       }
-      const { interestType, compoundingFrequency, advancedCalculationMode } = req.body;
+      const { interestType, compoundingFrequency, advancedCalculationMode, firstMonthFull } = req.body;
       const validTypes = ['simple', 'advanced_compound'];
       const validFreqs = ['yearly', 'half_yearly', 'quarterly', 'monthly'];
       const validModes = ['month', 'half_month', 'week', 'day'];
@@ -814,14 +814,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(400).json({ message: "Invalid calculation mode" });
         }
       }
-      const settingsJson = JSON.stringify({ interestType, compoundingFrequency, advancedCalculationMode });
+      const fmf = typeof firstMonthFull === 'boolean' ? firstMonthFull : true;
+      const settingsJson = JSON.stringify({ interestType, compoundingFrequency, advancedCalculationMode, firstMonthFull: fmf });
       const tenantId = req.session.tenantId!;
       const company = await storage.updateCompany(tenantId, { interestSettings: settingsJson } as any);
       if (!company) {
         return res.status(404).json({ message: "कंपनी सापडली नाही" });
       }
       invalidateCache('company', tenantId);
-      return res.json({ interestType, compoundingFrequency, advancedCalculationMode });
+      return res.json({ interestType, compoundingFrequency, advancedCalculationMode, firstMonthFull: fmf });
     } catch (error) {
       console.error("Update interest settings error:", error);
       res.status(500).json({ message: "सेटिंग बदलताना त्रुटी झाली" });

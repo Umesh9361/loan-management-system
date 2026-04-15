@@ -232,11 +232,11 @@ function LtvWarningToggle() {
 function InterestCalculationSettings() {
   const { toast } = useToast();
   const qc = useQueryClient();
-  const { data: settings, isLoading } = useQuery<{ interestType: string; compoundingFrequency: string; advancedCalculationMode: string }>({
+  const { data: settings, isLoading } = useQuery<{ interestType: string; compoundingFrequency: string; advancedCalculationMode: string; firstMonthFull: boolean }>({
     queryKey: ["/api/company/interest-settings"],
   });
 
-  const saveSettings = async (newSettings: { interestType: string; compoundingFrequency: string; advancedCalculationMode: string }) => {
+  const saveSettings = async (newSettings: { interestType: string; compoundingFrequency: string; advancedCalculationMode: string; firstMonthFull: boolean }) => {
     try {
       await apiRequest("/api/company/interest-settings", "PUT", newSettings);
       qc.invalidateQueries({ queryKey: ["/api/company/interest-settings"] });
@@ -320,12 +320,25 @@ function InterestCalculationSettings() {
                   </SelectContent>
                 </Select>
               </div>
+              <div className="flex items-center justify-between p-3 rounded-lg border border-gray-200 bg-white">
+                <div className="flex-1 pr-3">
+                  <h4 className="text-xs font-medium text-gray-700">पहिल्या महिन्यासाठी पूर्ण कन्सिडर करावा</h4>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">
+                    चालू — एक दिवस जरी झाला तरी पहिला महिना पूर्ण गणला जाईल.
+                    बंद — पहिला महिना गणना पद्धती प्रमाणे गणला जाईल.
+                  </p>
+                </div>
+                <Switch
+                  checked={settings.firstMonthFull !== false}
+                  onCheckedChange={(checked: boolean) => saveSettings({ ...settings, firstMonthFull: checked })}
+                />
+              </div>
             </>
           )}
         </div>
       </div>
       <div className="text-xs px-3 py-2 rounded bg-indigo-100 text-indigo-700">
-        सध्याचे डिफॉल्ट: {isAdvanced ? `प्रगत चक्रवाढ — ${settings.compoundingFrequency === 'yearly' ? 'वार्षिक' : settings.compoundingFrequency === 'half_yearly' ? 'सहामाही' : settings.compoundingFrequency === 'quarterly' ? 'तिमाही' : 'मासिक'} — ${settings.advancedCalculationMode === 'month' ? 'फुल महिना' : settings.advancedCalculationMode === 'half_month' ? 'अर्धा महिना' : settings.advancedCalculationMode === 'week' ? 'आठवडा' : 'दैनिक'}` : 'साधे व्याज (Simple Interest)'}
+        सध्याचे डिफॉल्ट: {isAdvanced ? `प्रगत चक्रवाढ — ${settings.compoundingFrequency === 'yearly' ? 'वार्षिक' : settings.compoundingFrequency === 'half_yearly' ? 'सहामाही' : settings.compoundingFrequency === 'quarterly' ? 'तिमाही' : 'मासिक'} — ${settings.advancedCalculationMode === 'month' ? 'फुल महिना' : settings.advancedCalculationMode === 'half_month' ? 'अर्धा महिना' : settings.advancedCalculationMode === 'week' ? 'आठवडा' : 'दैनिक'} — पहिला महिना: ${settings.firstMonthFull !== false ? 'पूर्ण' : 'गणना पद्धती प्रमाणे'}` : 'साधे व्याज (Simple Interest)'}
       </div>
     </div>
   );
