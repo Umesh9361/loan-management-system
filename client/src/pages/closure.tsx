@@ -232,7 +232,10 @@ export default function Closure() {
     try { localStorage.removeItem(RECEIPT_SETTINGS_KEY); } catch {}
   }, []);
   const [summaryReceiptHTML, setSummaryReceiptHTML] = useState<string | null>(null);
-  const [printNameMode, setPrintNameMode] = useState<'group' | 'customer'>('group');
+  const [printNameMode, setPrintNameMode] = useState<'group' | 'customer'>(() => {
+    try { const v = localStorage.getItem('closure_printNameMode'); if (v === 'customer') return 'customer'; } catch {}
+    return 'group';
+  });
   
   const [currentLocation] = useLocation();
   const loanIdFromUrl = useMemo(() => {
@@ -2392,14 +2395,14 @@ export default function Closure() {
                       <div className="flex rounded-lg border overflow-hidden">
                         <button
                           type="button"
-                          onClick={() => setPrintNameMode('group')}
+                          onClick={() => { setPrintNameMode('group'); try { localStorage.setItem('closure_printNameMode', 'group'); } catch {} }}
                           className={`px-3 py-1.5 text-sm font-medium transition-colors ${printNameMode === 'group' ? 'bg-indigo-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'}`}
                         >
                           ग्रुप
                         </button>
                         <button
                           type="button"
-                          onClick={() => setPrintNameMode('customer')}
+                          onClick={() => { setPrintNameMode('customer'); try { localStorage.setItem('closure_printNameMode', 'customer'); } catch {} }}
                           className={`px-3 py-1.5 text-sm font-medium transition-colors border-l ${printNameMode === 'customer' ? 'bg-indigo-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'}`}
                         >
                           कस्टमर
