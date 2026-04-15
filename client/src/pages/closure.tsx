@@ -213,6 +213,7 @@ export default function Closure() {
   const [showSummaryReceipt, setShowSummaryReceipt] = useState(false);
   const [showPhotos, setShowPhotos] = useState(false);
   const [isBtPrinting, setIsBtPrinting] = useState(false);
+  const [isBtBreakdownPrinting, setIsBtBreakdownPrinting] = useState(false);
   const [isBulkClosing, setIsBulkClosing] = useState(false);
   const [bulkCloseProgress, setBulkCloseProgress] = useState({ current: 0, total: 0, failed: 0 });
   const [receiptSettings, setReceiptSettings] = useState<ReceiptPrintSettings>(loadReceiptSettings);
@@ -1685,6 +1686,154 @@ export default function Closure() {
     }
   }, [generateThermalReceiptHTML, toast, renderReceiptToCanvas, isBtPrinting, printNameMode, showRateMonths, receiptSettings.thermal.showQrCode]);
 
+  const handleBreakdownPrint = useCallback(async () => {
+    if (isBtBreakdownPrinting) return;
+    if (summaryEntries.length !== 1) return;
+    const entry = summaryEntries[0];
+    if (!entry.calcInterestType || entry.calcInterestType === 'simple') {
+      toast({ title: "ब्रेकडाउन उपलब्ध नाही", description: "कंपाउंड गणना असलेले कर्ज हवे", variant: "destructive" });
+      return;
+    }
+
+    setIsBtBreakdownPrinting(true);
+    try {
+      const principal = entry.principalAmount;
+      let rate = Number(entry.interestRate) || 0;
+      if (entry.calcUseCustomRate && entry.calcCustomInterestRate) {
+        rate = parseFloat(entry.calcCustomInterestRate);
+      }
+      const compFreq = (entry.calcCompoundingFrequency || 'yearly') as any;
+      const calcMode = (entry.calcAdvancedCalculationMode || 'half_month') as any;
+      const startDate = new Date(entry.loanDate);
+      const endDate = new Date(entry.closureDate);
+
+      const advResult = LoanCalculationsAdvanced.calculateAdvancedCompoundInterest(principal, rate, startDate, endDate, compFreq, calcMode);
+      const br = advResult.breakdown;
+      if (!br || !br.detailedBreakdown || br.detailedBreakdown.length === 0) {
+        toast({ title: "ब्रेकडाउन उपलब्ध नाही", variant: "destructive" });
+        setIsBtBreakdownPrinting(false);
+        return;
+      }
+
+      toast({ title: "कनेक्ट करत आहे...", description: "ब्लूटूथ प्रिंटर निवडा" });
+      const connection = await connectBluetoothPrinter();
+
+      const rateStr = formatRate(rate);
+      const loanDateStr = toShortDate(entry.loanDate);
+      const closureDateStr = toShortDate(entry.closureDate);
+      const compPeriodMonths = compFreq === 'yearly' ? 12 : compFreq === 'half_yearly' ? 6 : compFreq === 'quarterly' ? 3 : 1;
+
+      const fmtShortDate = (d: Date): string => {
+        const dd = String(d.getDate()).padStart(2, '0');
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const yy = String(d.getFullYear()).slice(2);
+        return `${dd}/${mm}/${yy}`;
+      };
+
+      let breakdownRows = '';
+      let periodStartDate = new Date(startDate);
+      const details: any[] = br.detailedBreakdown;
+      const fs = '17px';
+      const fsBold = '18px';
+
+      details.forEach((item: any) => {
+        if (item.period !== undefined && item.periodInterest !== undefined) {
+          const pEnd = new Date(periodStartDate);
+          pEnd.setMonth(pEnd.getMonth() + compPeriodMonths);
+          pEnd.setDate(pEnd.getDate() - 1);
+          const dateRange = `${fmtShortDate(periodStartDate)}-${fmtShortDate(pEnd)}`;
+          breakdownRows += `
+            <tr style="border-bottom:1px solid #ddd;">
+              <td style="padding:6px 2px;font-size:${fs};text-align:center;">${item.period}</td>
+              <td style="padding:6px 2px;font-size:${fs};white-space:nowrap;">${dateRange}</td>
+              <td style="padding:6px 2px;font-size:${fs};text-align:right;">${Math.round(item.principal).toLocaleString('en-IN')}</td>
+              <td style="padding:6px 2px;font-size:${fsBold};text-align:right;font-weight:700;">${Math.round(item.periodInterest).toLocaleString('en-IN')}</td>
+            </tr>`;
+          periodStartDate = new Date(pEnd);
+          periodStartDate.setDate(periodStartDate.getDate() + 1);
+        }
+        if (item.type === 'remaining_months') {
+          const pEnd = new Date(periodStartDate);
+          pEnd.setMonth(pEnd.getMonth() + item.months);
+          pEnd.setDate(pEnd.getDate() - 1);
+          const dateRange = `${fmtShortDate(periodStartDate)}-${fmtShortDate(pEnd)}`;
+          breakdownRows += `
+            <tr style="border-bottom:1px solid #ddd;">
+              <td style="padding:6px 2px;font-size:${fs};text-align:center;">+</td>
+              <td style="padding:6px 2px;font-size:${fs};white-space:nowrap;">${dateRange}</td>
+              <td style="padding:6px 2px;font-size:${fs};text-align:right;">${Math.round(item.principal).toLocaleString('en-IN')}</td>
+              <td style="padding:6px 2px;font-size:${fsBold};text-align:right;font-weight:700;">${Math.round(item.interest).toLocaleString('en-IN')}</td>
+            </tr>`;
+          periodStartDate = new Date(pEnd);
+          periodStartDate.setDate(periodStartDate.getDate() + 1);
+        }
+        if (item.type === 'days') {
+          const dateRange = `${fmtShortDate(periodStartDate)}-${fmtShortDate(endDate)}`;
+          breakdownRows += `
+            <tr style="border-bottom:1px solid #ddd;">
+              <td style="padding:6px 2px;font-size:${fs};text-align:center;">+</td>
+              <td style="padding:6px 2px;font-size:${fs};white-space:nowrap;">${dateRange}<br><span style="font-size:14px;color:#666;">${item.days}दि</span></td>
+              <td style="padding:6px 2px;font-size:${fs};text-align:right;">${Math.round(item.principal).toLocaleString('en-IN')}</td>
+              <td style="padding:6px 2px;font-size:${fsBold};text-align:right;font-weight:700;">${item.interest.toLocaleString('en-IN')}</td>
+            </tr>`;
+        }
+      });
+
+      const totalCharges = Math.round(advResult.interestAmount || 0);
+      const grandTotal = principal + totalCharges;
+
+      const breakdownHTML = `
+        <div style="padding:6px 10px;font-family:'Noto Sans Devanagari',Arial,sans-serif;">
+          <div style="text-align:center;font-weight:800;font-size:26px;margin-bottom:4px;border-bottom:3px double #000;padding-bottom:6px;">Estimate</div>
+          <div style="margin:6px 0;font-size:19px;line-height:1.5;">
+            <div style="display:flex;justify-content:space-between;"><b>${entry.borrowerName}</b><span>${closureDateStr}</span></div>
+            <div style="display:flex;justify-content:space-between;"><span>कोड: <b>${entry.accountNumber}</b></span><span>दि: <b>${loanDateStr}</b></span></div>
+            <div style="display:flex;justify-content:space-between;"><span>बाजारमूल्य: <b>₹${principal.toLocaleString('en-IN')}</b></span><span>दर: <b>${rateStr}%</b></span></div>
+          </div>
+          <table style="width:100%;border-collapse:collapse;margin-top:4px;">
+            <thead>
+              <tr style="border-bottom:2px solid #000;border-top:2px solid #000;">
+                <th style="padding:6px 2px;font-size:16px;text-align:center;width:28px;">नं</th>
+                <th style="padding:6px 2px;font-size:16px;text-align:left;">कालावधी</th>
+                <th style="padding:6px 2px;font-size:16px;text-align:right;">बा.मू.</th>
+                <th style="padding:6px 2px;font-size:16px;text-align:right;">चार्जेस</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${breakdownRows}
+            </tbody>
+            <tfoot>
+              <tr style="border-top:2px solid #000;">
+                <td colspan="3" style="padding:8px 2px;font-size:20px;font-weight:700;text-align:right;">एकूण चार्जेस:</td>
+                <td style="padding:8px 2px;font-size:20px;font-weight:700;text-align:right;">₹${totalCharges.toLocaleString('en-IN')}</td>
+              </tr>
+              <tr>
+                <td colspan="3" style="padding:4px 2px;font-size:20px;font-weight:700;text-align:right;">बाजारमूल्य:</td>
+                <td style="padding:4px 2px;font-size:20px;font-weight:700;text-align:right;">₹${principal.toLocaleString('en-IN')}</td>
+              </tr>
+              <tr style="border-top:3px double #000;">
+                <td colspan="3" style="padding:10px 2px;font-size:26px;font-weight:900;text-align:right;">एकूण:</td>
+                <td style="padding:10px 2px;font-size:26px;font-weight:900;text-align:right;">₹${grandTotal.toLocaleString('en-IN')}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>`;
+
+      const textCanvas = await renderReceiptToCanvas(breakdownHTML);
+      await sendPrintData(connection.characteristic, textCanvas, 576, 'tight', true, true);
+      toast({ title: "यशस्वी", description: "ब्रेकडाउन प्रिंट पाठवले!" });
+    } catch (error: any) {
+      if (error?.message?.includes('cancelled') || error?.message?.includes('User cancelled')) {
+        return;
+      }
+      const errMsg = error?.message || error?.name || String(error);
+      console.error("Breakdown print error:", errMsg, error);
+      toast({ title: "ब्रेकडाउन प्रिंट अयशस्वी", description: errMsg || "कृपया पुन्हा प्रयत्न करा", variant: "destructive" });
+    } finally {
+      setIsBtBreakdownPrinting(false);
+    }
+  }, [summaryEntries, isBtBreakdownPrinting, toast, renderReceiptToCanvas]);
+
   const recalculateWithOriginalDate = useCallback((data: ClosureFormData) => {
     if (!selectedLoan) return null;
     
@@ -3008,6 +3157,19 @@ export default function Closure() {
                           </tbody>
                         </table>
                       </div>
+                      {summaryEntries.length === 1 && summaryEntries[0].calcInterestType && summaryEntries[0].calcInterestType !== 'simple' && isBluetoothSupported() && (
+                        <div className="flex justify-center py-3 border-t border-amber-200">
+                          <button
+                            type="button"
+                            onClick={handleBreakdownPrint}
+                            disabled={isBtBreakdownPrinting}
+                            className="inline-flex items-center rounded-lg px-4 py-2 text-sm font-medium border-2 border-amber-400 bg-gradient-to-r from-amber-50 to-orange-50 text-amber-800 hover:from-amber-100 hover:to-orange-100 active:from-amber-200 active:to-orange-200 disabled:opacity-50 transition-all outline-none shadow-sm"
+                          >
+                            <Bluetooth className="h-4 w-4 mr-2" />
+                            {isBtBreakdownPrinting ? 'प्रिंट होत आहे...' : 'ब्रेकडाउन प्रिंट'}
+                          </button>
+                        </div>
+                      )}
                         </>);
                       })()}
                     </CardContent>

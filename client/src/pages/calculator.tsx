@@ -226,11 +226,10 @@ export default function InterestCalculator() {
         calculationMode as any
       );
 
-      // Get accurate time period with calendar awareness
       const timePeriod = LoanCalculationsAdvanced.calculateTimePeriod(start, end);
-      const years = timePeriod.years;
-      const months = timePeriod.months;
-      const days = timePeriod.days;
+      const years = timePeriod.calendarYears;
+      const months = timePeriod.calendarMonths;
+      const days = timePeriod.calendarDays;
 
       setResults({
         totalDays,
