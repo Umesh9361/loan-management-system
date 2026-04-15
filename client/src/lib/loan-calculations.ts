@@ -29,7 +29,7 @@ export class LoanCalculationsAdvanced {
   // Advanced compound interest calculation with flexible compounding frequency
   static calculateAdvancedCompoundInterest(
     principal: number,
-    monthlyRate: number, // Interest rate per month (e.g., 1 for 1%)
+    monthlyRate: number,
     startDate: Date,
     endDate: Date,
     compoundingFrequency: "yearly" | "half_yearly" | "quarterly" | "monthly" = "yearly",
@@ -39,26 +39,46 @@ export class LoanCalculationsAdvanced {
     let totalInterest = 0;
     let currentPrincipal = principal;
     let detailedBreakdown = [];
-    
-    // Calculate compound interest based on selected frequency
-    let compoundingPeriodMonths = 12; // Default yearly
+
+    let compoundingPeriodMonths = 12;
     switch (compoundingFrequency) {
       case "yearly": compoundingPeriodMonths = 12; break;
       case "half_yearly": compoundingPeriodMonths = 6; break;
       case "quarterly": compoundingPeriodMonths = 3; break;
       case "monthly": compoundingPeriodMonths = 1; break;
     }
-    
+
     const calYears = timePeriod.calendarYears;
     const calMonths = timePeriod.calendarMonths;
-    const calDays = timePeriod.calendarDays;
-    const totalMonths = calYears * 12 + calMonths;
-    const fullCompoundingPeriods = Math.floor(totalMonths / compoundingPeriodMonths);
-    
+    let effectiveDays = timePeriod.calendarDays;
+    let effectiveMonths = calYears * 12 + calMonths;
+
+    if (effectiveDays > 0) {
+      if (effectiveMonths === 0) {
+        effectiveMonths += 1;
+        effectiveDays = 0;
+      } else if (calculationMode === "month") {
+        effectiveMonths += 1;
+        effectiveDays = 0;
+      } else if (calculationMode === "half_month") {
+        if (effectiveDays >= 16) {
+          effectiveMonths += 1;
+          effectiveDays = 0;
+        }
+      } else if (calculationMode === "week") {
+        if (effectiveDays >= 23) {
+          effectiveMonths += 1;
+          effectiveDays = 0;
+        }
+      }
+    }
+
+    const fullCompoundingPeriods = Math.floor(effectiveMonths / compoundingPeriodMonths);
+
     for (let period = 0; period < fullCompoundingPeriods; period++) {
-      const monthlyInterestForPeriod = Math.round((currentPrincipal * monthlyRate) / 100);
+      const monthlyInterestForPeriod = (currentPrincipal * monthlyRate) / 100;
       const periodInterest = monthlyInterestForPeriod * compoundingPeriodMonths;
-      
+
       detailedBreakdown.push({
         period: period + 1,
         compoundingType: compoundingFrequency,
@@ -67,17 +87,17 @@ export class LoanCalculationsAdvanced {
         periodInterest: periodInterest,
         periodMonths: compoundingPeriodMonths
       });
-      
+
       totalInterest += periodInterest;
       currentPrincipal = Number(currentPrincipal) + Number(periodInterest);
     }
-    
-    const remainingMonths = totalMonths - (fullCompoundingPeriods * compoundingPeriodMonths);
+
+    const remainingMonths = effectiveMonths - (fullCompoundingPeriods * compoundingPeriodMonths);
     if (remainingMonths > 0) {
-      const monthlyInterestRate = Math.round((currentPrincipal * monthlyRate) / 100);
+      const monthlyInterestRate = (currentPrincipal * monthlyRate) / 100;
       const monthsInterest = monthlyInterestRate * remainingMonths;
       totalInterest += monthsInterest;
-      
+
       detailedBreakdown.push({
         type: 'remaining_months',
         months: remainingMonths,
@@ -86,69 +106,57 @@ export class LoanCalculationsAdvanced {
         interest: monthsInterest
       });
     }
-    
-    if (calDays > 0) {
-      const monthlyInterestRate = Math.round((currentPrincipal * monthlyRate) / 100);
+
+    if (effectiveDays > 0) {
+      const monthlyInterestRate = (currentPrincipal * monthlyRate) / 100;
       let daysInterest = 0;
-      
-      if (totalMonths === 0) {
-        daysInterest = monthlyInterestRate;
-      } else if (calculationMode === "half_month") {
-        if (calDays >= 1 && calDays <= 15) {
+
+      if (calculationMode === "half_month") {
+        if (effectiveDays >= 1 && effectiveDays <= 15) {
           daysInterest = monthlyInterestRate * 0.5;
-        } else if (calDays >= 16) {
-          daysInterest = monthlyInterestRate;
-        }
-      } else if (calculationMode === "month") {
-        if (calDays > 0) {
-          daysInterest = monthlyInterestRate;
         }
       } else if (calculationMode === "week") {
-        if (calDays >= 1 && calDays <= 8) {
+        if (effectiveDays >= 1 && effectiveDays <= 8) {
           daysInterest = monthlyInterestRate * 0.25;
-        } else if (calDays >= 9 && calDays <= 15) {
+        } else if (effectiveDays >= 9 && effectiveDays <= 15) {
           daysInterest = monthlyInterestRate * 0.5;
-        } else if (calDays >= 16 && calDays <= 22) {
+        } else if (effectiveDays >= 16 && effectiveDays <= 22) {
           daysInterest = monthlyInterestRate * 0.75;
-        } else if (calDays >= 23) {
-          daysInterest = monthlyInterestRate;
         }
-      } else {
-        const monthlyInterest = (currentPrincipal * monthlyRate) / 100;
-        const perDayInterest = monthlyInterest / 30;
-        daysInterest = perDayInterest * calDays;
+      } else if (calculationMode === "day") {
+        const perDayInterest = monthlyInterestRate / 30;
+        daysInterest = perDayInterest * effectiveDays;
       }
-      
-      daysInterest = Math.round(daysInterest);
+
       totalInterest += daysInterest;
-      
+
       detailedBreakdown.push({
         type: 'days',
-        days: calDays,
+        days: effectiveDays,
         principal: currentPrincipal,
         dailyRate: monthlyInterestRate / 30,
-        interest: daysInterest,
+        interest: Math.round(daysInterest),
         calculationMode: calculationMode
       });
     }
-    
+
     totalInterest = Math.round(totalInterest);
-    
+
     return {
       interestAmount: totalInterest,
       totalPayable: principal + totalInterest,
-      durationInMonths: totalMonths,
+      durationInMonths: effectiveMonths,
       durationInDays: timePeriod.totalDays,
       breakdown: {
         principalAmount: principal,
         interestRate: monthlyRate,
         calculationType: 'advanced_compound' as const,
         calculationMode: calculationMode as any,
-        periodUsed: `${calYears} वर्ष, ${calMonths} महिने, ${calDays} दिवस`,
+        periodUsed: `${calYears} वर्ष, ${calMonths} महिने, ${timePeriod.calendarDays} दिवस`,
         detailedBreakdown: detailedBreakdown,
         compoundingFrequency: compoundingFrequency,
         compoundingPeriods: fullCompoundingPeriods,
-        totalMonthsProcessed: totalMonths
+        totalMonthsProcessed: effectiveMonths
       }
     };
   }
@@ -267,53 +275,53 @@ export class LoanCalculationsAdvanced {
     let calculatedMonths = 0;
     let interestAmount = 0;
     
-    // Calculate months based on calculation mode using calendar-based breakdown
+    const calFullMonths = timePeriod.calendarYears * 12 + timePeriod.calendarMonths;
+    const calDaysRemaining = timePeriod.calendarDays;
+
     switch (calculationMode) {
       case 'month':
-        // पूर्ण महिना: 1 दिवस झाला तरी पूर्ण महिन्याची व्याज
-        const fullMonthsOnly = timePeriod.years * 12 + timePeriod.months;
-        
-        if (timePeriod.days > 0) {
-          calculatedMonths = fullMonthsOnly + 1;
+        if (calDaysRemaining > 0) {
+          calculatedMonths = calFullMonths + 1;
         } else {
-          calculatedMonths = fullMonthsOnly;
+          calculatedMonths = calFullMonths;
         }
         break;
-        
+
       case 'half-month':
-        const fullMonthsHalf = timePeriod.years * 12 + timePeriod.months;
-        if (timePeriod.days >= 1 && timePeriod.days <= 15) {
-          calculatedMonths = fullMonthsHalf + 0.5;
-        } else if (timePeriod.days >= 16) {
-          calculatedMonths = fullMonthsHalf + 1;
+        if (calFullMonths === 0 && calDaysRemaining > 0) {
+          calculatedMonths = 1;
+        } else if (calDaysRemaining >= 1 && calDaysRemaining <= 15) {
+          calculatedMonths = calFullMonths + 0.5;
+        } else if (calDaysRemaining >= 16) {
+          calculatedMonths = calFullMonths + 1;
         } else {
-          calculatedMonths = fullMonthsHalf;
+          calculatedMonths = calFullMonths;
         }
         break;
-        
+
       case 'week':
-        const fullMonthsWeek = timePeriod.years * 12 + timePeriod.months;
-        let weekMonths = 0;
-        
-        if (timePeriod.days >= 1 && timePeriod.days <= 8) {
-          weekMonths = 0.25;
-        } else if (timePeriod.days >= 9 && timePeriod.days <= 15) {
-          weekMonths = 0.5;
-        } else if (timePeriod.days >= 16 && timePeriod.days <= 22) {
-          weekMonths = 0.75;
-        } else if (timePeriod.days >= 23) {
-          weekMonths = 1;
+        if (calFullMonths === 0 && calDaysRemaining > 0) {
+          calculatedMonths = 1;
+        } else {
+          let weekMonths = 0;
+          if (calDaysRemaining >= 1 && calDaysRemaining <= 8) {
+            weekMonths = 0.25;
+          } else if (calDaysRemaining >= 9 && calDaysRemaining <= 15) {
+            weekMonths = 0.5;
+          } else if (calDaysRemaining >= 16 && calDaysRemaining <= 22) {
+            weekMonths = 0.75;
+          } else if (calDaysRemaining >= 23) {
+            weekMonths = 1;
+          }
+          calculatedMonths = calFullMonths + weekMonths;
         }
-        
-        calculatedMonths = fullMonthsWeek + weekMonths;
         break;
-        
+
       case 'day':
       case 'daily':
-        // Daily calculation using EXACT Interest Calculator formula: banking standard
         calculatedMonths = (timePeriod.totalDays * 12) / 365;
         break;
-        
+
       default:
         calculatedMonths = Math.floor(timePeriod.totalDays / 30);
         break;
