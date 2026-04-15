@@ -1782,6 +1782,22 @@ export default function Closure() {
       const totalCharges = Math.round(advResult.interestAmount || 0);
       const grandTotal = principal + totalCharges;
 
+      let totalDisplayMonths = br.totalMonthsProcessed || 0;
+      const daysEntry = details.find((d: any) => d.type === 'days');
+      if (daysEntry) {
+        if (calcMode === 'half_month') totalDisplayMonths += 0.5;
+        else if (calcMode === 'week') {
+          if (daysEntry.days >= 16) totalDisplayMonths += 0.75;
+          else if (daysEntry.days >= 9) totalDisplayMonths += 0.5;
+          else totalDisplayMonths += 0.25;
+        } else if (calcMode === 'day') {
+          totalDisplayMonths += parseFloat((daysEntry.days / 30).toFixed(2));
+        }
+      }
+      const monthsStr = totalDisplayMonths % 1 === 0 ? String(totalDisplayMonths) : totalDisplayMonths.toFixed(1);
+      const modeLabels: Record<string, string> = { month: 'फुल महिना', half_month: 'अर्धा महिना', week: 'आठवडा', day: 'दैनिक' };
+      const modeLabel = modeLabels[calcMode] || '';
+
       const breakdownHTML = `
         <div style="padding:6px 10px;font-family:'Noto Sans Devanagari',Arial,sans-serif;">
           <div style="text-align:center;font-weight:800;font-size:26px;margin-bottom:4px;border-bottom:3px double #000;padding-bottom:6px;">Estimate</div>
@@ -1789,6 +1805,7 @@ export default function Closure() {
             <div style="display:flex;justify-content:space-between;"><b>${entry.borrowerName}</b><span>${closureDateStr}</span></div>
             <div style="display:flex;justify-content:space-between;"><span>कोड: <b>${entry.accountNumber}</b></span><span>दि: <b>${loanDateStr}</b></span></div>
             <div style="display:flex;justify-content:space-between;"><span>बाजारमूल्य: <b>₹${principal.toLocaleString('en-IN')}</b></span><span>दर: <b>${rateStr}%</b></span></div>
+            <div style="text-align:center;font-size:18px;margin-top:2px;"><b>${monthsStr} महिने</b>${modeLabel ? ` <span style="font-size:16px;color:#555;">(${modeLabel})</span>` : ''}</div>
           </div>
           <table style="width:100%;border-collapse:collapse;margin-top:4px;">
             <thead>
