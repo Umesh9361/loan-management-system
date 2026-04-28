@@ -1,4 +1,59 @@
 // Comprehensive loan calculations for closure module
+
+// Canonical calculation mode names — single source of truth for mode vocabulary
+export type CanonicalCalcMode = "month" | "half_month" | "week" | "day";
+
+/**
+ * Normalize any incoming calculation-mode string to the canonical underscore form.
+ *
+ * Accepts hyphen forms ("half-month"), legacy/historical values
+ * ("full_month", "fractional", "daily"), empty/undefined/null, and any
+ * letter case. Only the explicit canonical "month" string maps to month
+ * mode — every other legacy or unknown value, including the historical
+ * `loan_closures.calculation_mode` DB default of "full_month" and the
+ * legacy "fractional", falls back to "half_month".
+ *
+ * Why "full_month" is treated as a legacy alias of "half_month", not as
+ * "month": the value originated as a Drizzle column default and was
+ * present on rows that, prior to this fix, silently fell through every
+ * mode branch in `calculateAdvancedCompoundInterest` and ended up
+ * computing the same numbers as half-month. Mapping it to "month" now
+ * would change the ₹ figure on every reopened legacy closure (e.g. the
+ * user's 26/03→28/04 case would jump from ₹900 to ₹1200), which is
+ * exactly the silent regression we are trying to prevent. "half_month"
+ * is also the safest default for the Indian gold-loan business.
+ *
+ * Unrecognised values also resolve to "half_month" and emit a dev-only
+ * console warning so future drift surfaces immediately.
+ */
+export function normalizeCalcMode(input: unknown): CanonicalCalcMode {
+  if (input === null || input === undefined) return "half_month";
+  const s = String(input).toLowerCase().trim().replace(/-/g, "_");
+  switch (s) {
+    case "month":
+      return "month";
+    case "half_month":
+    case "full_month":
+    case "fractional":
+    case "":
+      return "half_month";
+    case "week":
+    case "weekly":
+      return "week";
+    case "day":
+    case "daily":
+      return "day";
+    default:
+      if (typeof import.meta !== "undefined" && (import.meta as { env?: { DEV?: boolean } }).env?.DEV) {
+        // eslint-disable-next-line no-console
+        console.warn(
+          `[loan-calculations] normalizeCalcMode: unknown calculationMode "${String(input)}" — falling back to "half_month"`,
+        );
+      }
+      return "half_month";
+  }
+}
+
 export interface InterestCalculationResult {
   interestAmount: number;
   totalPayable: number;
@@ -33,9 +88,14 @@ export class LoanCalculationsAdvanced {
     startDate: Date,
     endDate: Date,
     compoundingFrequency: "yearly" | "half_yearly" | "quarterly" | "monthly" = "yearly",
-    calculationMode: "month" | "half_month" | "week" | "day" = "half_month",
+    calculationModeInput: unknown = "half_month",
     firstMonthFull: boolean = true
   ) {
+    // Normalize incoming calculationMode to canonical underscore form
+    // (accepts hyphen forms, legacy "full_month"/"fractional", undefined, empty etc).
+    // Without this, any non-canonical value silently fell through every switch
+    // branch below and dropped the day-portion of interest to zero.
+    const calculationMode: CanonicalCalcMode = normalizeCalcMode(calculationModeInput);
     const timePeriod = this.calculateTimePeriod(startDate, endDate);
     let totalInterest = 0;
     let currentPrincipal = principal;
@@ -282,66 +342,68 @@ export class LoanCalculationsAdvanced {
     startDate: Date,
     closureDate: Date,
     interestType: 'simple' | 'compound' | 'advanced_compound' = 'simple',
-    calculationMode: 'month' | 'half-month' | 'week' | 'day' | 'daily' = 'month'
+    calculationModeInput: unknown = 'month',
+    firstMonthFull: boolean = true
   ): InterestCalculationResult {
     
-    // Use the enhanced time period calculation for proper years/months/days breakdown
+    const mode: CanonicalCalcMode = normalizeCalcMode(calculationModeInput);
+    
     const timePeriod = this.calculateTimePeriod(startDate, closureDate);
     
-    let calculatedMonths = 0;
     let interestAmount = 0;
     
-    const calFullMonths = timePeriod.calendarYears * 12 + timePeriod.calendarMonths;
-    const calDaysRemaining = timePeriod.calendarDays;
+    let effectiveMonths = timePeriod.calendarYears * 12 + timePeriod.calendarMonths;
+    let effectiveDays = timePeriod.calendarDays;
 
-    switch (calculationMode) {
-      case 'month':
-        if (calDaysRemaining > 0) {
-          calculatedMonths = calFullMonths + 1;
-        } else {
-          calculatedMonths = calFullMonths;
-        }
-        break;
-
-      case 'half-month':
-        if (calFullMonths === 0 && calDaysRemaining > 0) {
-          calculatedMonths = 1;
-        } else if (calDaysRemaining >= 1 && calDaysRemaining <= 15) {
-          calculatedMonths = calFullMonths + 0.5;
-        } else if (calDaysRemaining >= 16) {
-          calculatedMonths = calFullMonths + 1;
-        } else {
-          calculatedMonths = calFullMonths;
-        }
-        break;
-
-      case 'week':
-        if (calFullMonths === 0 && calDaysRemaining > 0) {
-          calculatedMonths = 1;
-        } else {
-          let weekMonths = 0;
-          if (calDaysRemaining >= 1 && calDaysRemaining <= 8) {
-            weekMonths = 0.25;
-          } else if (calDaysRemaining >= 9 && calDaysRemaining <= 15) {
-            weekMonths = 0.5;
-          } else if (calDaysRemaining >= 16 && calDaysRemaining <= 22) {
-            weekMonths = 0.75;
-          } else if (calDaysRemaining >= 23) {
-            weekMonths = 1;
+    if (effectiveDays > 0) {
+      if (effectiveMonths === 0 && firstMonthFull) {
+        effectiveMonths += 1;
+        effectiveDays = 0;
+      } else if (effectiveMonths === 0 && !firstMonthFull) {
+        if (mode === 'month') {
+          effectiveMonths += 1;
+          effectiveDays = 0;
+        } else if (mode === 'half_month') {
+          if (effectiveDays >= 16) {
+            effectiveMonths += 1;
+            effectiveDays = 0;
           }
-          calculatedMonths = calFullMonths + weekMonths;
+        } else if (mode === 'week') {
+          if (effectiveDays >= 23) {
+            effectiveMonths += 1;
+            effectiveDays = 0;
+          }
         }
-        break;
-
-      case 'day':
-      case 'daily':
-        calculatedMonths = (timePeriod.totalDays * 12) / 365;
-        break;
-
-      default:
-        calculatedMonths = Math.floor(timePeriod.totalDays / 30);
-        break;
+      } else if (mode === 'month') {
+        effectiveMonths += 1;
+        effectiveDays = 0;
+      } else if (mode === 'half_month') {
+        if (effectiveDays >= 16) {
+          effectiveMonths += 1;
+          effectiveDays = 0;
+        }
+      } else if (mode === 'week') {
+        if (effectiveDays >= 23) {
+          effectiveMonths += 1;
+          effectiveDays = 0;
+        }
+      }
     }
+
+    let dayFractionMonths = 0;
+    if (effectiveDays > 0) {
+      if (mode === 'half_month') {
+        if (effectiveDays >= 1 && effectiveDays <= 15) dayFractionMonths = 0.5;
+      } else if (mode === 'week') {
+        if (effectiveDays >= 1 && effectiveDays <= 8) dayFractionMonths = 0.25;
+        else if (effectiveDays >= 9 && effectiveDays <= 15) dayFractionMonths = 0.5;
+        else if (effectiveDays >= 16 && effectiveDays <= 22) dayFractionMonths = 0.75;
+      } else if (mode === 'day') {
+        dayFractionMonths = effectiveDays / 30;
+      }
+    }
+
+    const calculatedMonths = effectiveMonths + dayFractionMonths;
     
     // Calculate interest based on type
     if (interestType === 'simple') {
@@ -381,7 +443,11 @@ export class LoanCalculationsAdvanced {
         principalAmount,
         interestRate,
         calculationType: interestType,
-        calculationMode: calculationMode as any,
+        // breakdown.calculationMode uses the legacy union
+        // ('full_month' | 'fractional' | 'daily' | 'weekly') from
+        // InterestCalculationResult; cast through `unknown` since `mode`
+        // is the canonical underscore form.
+        calculationMode: mode as unknown as 'full_month' | 'fractional' | 'daily' | 'weekly',
         periodUsed: `${timePeriod.years} years, ${timePeriod.months} months, ${timePeriod.days} days`,
         totalDays: timePeriod.totalDays,
         calendarBreakdown: {

@@ -21,7 +21,7 @@ import { Sidebar } from "@/components/ui/sidebar";
 import { MobileNav } from "@/components/ui/mobile-nav";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { LoanCalculationsAdvanced } from "@/lib/loan-calculations";
+import { LoanCalculationsAdvanced, normalizeCalcMode } from "@/lib/loan-calculations";
 import { LoanCalculations } from "@/lib/calculations";
 import { DateUtils } from "@/lib/date-utils";
 import { Calculator, FileText, AlertTriangle, CheckCircle, Download, Search, X, Clock, Edit, Calendar, Lightbulb, Sparkles, TrendingUp, Info, Check, AlertCircle, Home, Trash2, Printer, Bluetooth, Loader2, Settings, Minus, Plus, Bold, RotateCcw, ChevronDown, ChevronUp, Eye } from "lucide-react";
@@ -262,7 +262,10 @@ export default function Closure() {
     const result: any = {
       interestType: cIT || 'advanced_compound',
       compoundingFrequency: cCF || 'yearly',
-      advancedCalculationMode: cACM || 'half_month',
+      // Normalize at parse time so any legacy / non-canonical mode coming
+      // from a QR-scan URL (?cACM=fractional, full_month, half-month, etc.)
+      // becomes canonical before any consumer uses it.
+      advancedCalculationMode: normalizeCalcMode(cACM),
     };
     if (cCR) {
       result.useCustomRate = true;
@@ -356,7 +359,7 @@ export default function Closure() {
     if (tenantInterestSettings && !calcSettingsFromUrl && !loanIdFromUrl && !loanIdsFromUrl) {
       form.setValue("interestType", tenantInterestSettings.interestType as any);
       form.setValue("compoundingFrequency", tenantInterestSettings.compoundingFrequency as any);
-      form.setValue("advancedCalculationMode", tenantInterestSettings.advancedCalculationMode as any);
+      form.setValue("advancedCalculationMode", normalizeCalcMode(tenantInterestSettings.advancedCalculationMode) as any);
     }
   }, [tenantInterestSettings]);
 
@@ -473,7 +476,7 @@ export default function Closure() {
         closureDate: new Date().toISOString().split('T')[0],
         interestType: (cs?.interestType as any) || tenantSettingsRef.current?.interestType || "advanced_compound",
         compoundingFrequency: (cs?.compoundingFrequency as any) || tenantSettingsRef.current?.compoundingFrequency || "yearly",
-        advancedCalculationMode: (cs?.advancedCalculationMode as any) || tenantSettingsRef.current?.advancedCalculationMode || "half_month",
+        advancedCalculationMode: normalizeCalcMode(cs?.advancedCalculationMode || tenantSettingsRef.current?.advancedCalculationMode),
         finalInterestAmount: "",
         returnOfArticles: "",
         isClosed: true,
@@ -498,7 +501,7 @@ export default function Closure() {
         if (calcSettingsFromUrl && !isEditMode) {
           form.setValue("interestType", calcSettingsFromUrl.interestType as any);
           form.setValue("compoundingFrequency", calcSettingsFromUrl.compoundingFrequency as any);
-          form.setValue("advancedCalculationMode", calcSettingsFromUrl.advancedCalculationMode as any);
+          form.setValue("advancedCalculationMode", normalizeCalcMode(calcSettingsFromUrl.advancedCalculationMode));
           if (calcSettingsFromUrl.useCustomRate && calcSettingsFromUrl.customInterestRate) {
             form.setValue("useCustomRate", true);
             form.setValue("customInterestRate", calcSettingsFromUrl.customInterestRate);
@@ -525,7 +528,10 @@ export default function Closure() {
                   form.setValue("interestType", closure.interestType as any);
                 }
                 if (closure.calculationMode) {
-                  form.setValue("advancedCalculationMode", closure.calculationMode as any);
+                  // Normalize legacy DB values ("full_month", "fractional", "half-month")
+                  // to canonical underscore form so the dropdown shows the correct
+                  // Marathi label and the calculator receives a known value.
+                  form.setValue("advancedCalculationMode", normalizeCalcMode(closure.calculationMode) as any);
                 }
               }
             })
@@ -552,7 +558,7 @@ export default function Closure() {
     const cs = calcSettingsFromUrl;
     const qrInterestType = cs?.interestType || tenantSettingsRef.current?.interestType || 'advanced_compound';
     const qrCompFreq = (cs?.compoundingFrequency || tenantSettingsRef.current?.compoundingFrequency || 'yearly') as any;
-    const qrCalcMode = (cs?.advancedCalculationMode || tenantSettingsRef.current?.advancedCalculationMode || 'half_month') as any;
+    const qrCalcMode = normalizeCalcMode(cs?.advancedCalculationMode || tenantSettingsRef.current?.advancedCalculationMode);
     const qrCustomRate = cs?.useCustomRate && cs?.customInterestRate ? parseFloat(cs.customInterestRate) : null;
 
     if (cs) {
@@ -598,7 +604,7 @@ export default function Closure() {
           } else {
             if (savedEntry?.calcInterestType) entryCalcIT = savedEntry.calcInterestType;
             if (savedEntry?.calcCompoundingFrequency) entryCalcCF = savedEntry.calcCompoundingFrequency;
-            if (savedEntry?.calcAdvancedCalculationMode) entryCalcMode = savedEntry.calcAdvancedCalculationMode;
+            if (savedEntry?.calcAdvancedCalculationMode) entryCalcMode = normalizeCalcMode(savedEntry.calcAdvancedCalculationMode);
             if (savedEntry?.calcUseCustomRate && savedEntry?.calcCustomInterestRate) {
               entryCustomRate = parseFloat(savedEntry.calcCustomInterestRate);
             }
@@ -659,7 +665,7 @@ export default function Closure() {
             closureDate: today,
             calcInterestType: savedEntry?.calcInterestType || qrInterestType,
             calcCompoundingFrequency: savedEntry?.calcCompoundingFrequency || qrCompFreq,
-            calcAdvancedCalculationMode: savedEntry?.calcAdvancedCalculationMode || qrCalcMode,
+            calcAdvancedCalculationMode: normalizeCalcMode(savedEntry?.calcAdvancedCalculationMode || qrCalcMode),
             calcUseCustomRate: savedEntry?.calcUseCustomRate || (qrCustomRate !== null),
             calcCustomInterestRate: savedEntry?.calcCustomInterestRate || (qrCustomRate !== null ? String(qrCustomRate) : ''),
           };
@@ -721,19 +727,15 @@ export default function Closure() {
           timeInDays
         );
         
-        const calcModeMap: Record<string, string> = {
-          'month': 'month',
-          'half_month': 'half-month',
-          'week': 'week',
-          'day': 'daily'
-        };
+        // Mode is normalized inside the helper — pass form value directly.
         const closureCalcResult = LoanCalculationsAdvanced.calculateInterestForClosure(
           principalNum,
           effectiveRate,
           new Date(loanStartDate),
           closureDate,
           'simple',
-          (calcModeMap[advancedCalculationMode] || 'half-month') as any
+          advancedCalculationMode,
+          tenantSettingsRef.current?.firstMonthFull !== false
         );
         
         result = {
@@ -748,11 +750,14 @@ export default function Closure() {
             principalAmount: principalNum,
             interestRate: simpleInterestRate,
             calculationType: 'simple' as const,
-            calculationMode: (calcModeMap[advancedCalculationMode] || 'daily') as any,
+            calculationMode: advancedCalculationMode as any,
             periodUsed: `${timeInDays} दिवस`
           }
         };
       } else {
+        // Mode is normalized inside both helpers — pass form value directly to
+        // both, so display and interest can no longer disagree about what mode
+        // the user picked.
         const advancedResult = LoanCalculationsAdvanced.calculateAdvancedCompoundInterest(
           Number(selectedLoan.principalAmount),
           effectiveRate,
@@ -768,19 +773,14 @@ export default function Closure() {
           closureDate
         );
 
-        const compoundCalcModeMap: Record<string, string> = {
-          'month': 'month',
-          'half_month': 'half-month',
-          'week': 'week',
-          'day': 'daily'
-        };
         const compoundClosureCalc = LoanCalculationsAdvanced.calculateInterestForClosure(
           Number(selectedLoan.principalAmount),
           effectiveRate,
           new Date(loanStartDate),
           closureDate,
           'simple',
-          (compoundCalcModeMap[formValues.advancedCalculationMode] || 'half-month') as any
+          formValues.advancedCalculationMode,
+          tenantSettingsRef.current?.firstMonthFull !== false
         );
         
         result = {
@@ -791,6 +791,17 @@ export default function Closure() {
           months: timePeriod.calendarMonths,
           days: timePeriod.calendarDays
         };
+      }
+
+      if ((import.meta as any)?.env?.DEV) {
+        // eslint-disable-next-line no-console
+        console.debug('[closure] calculateInterest', {
+          rawMode: formValues.advancedCalculationMode,
+          normalizedMode: normalizeCalcMode(formValues.advancedCalculationMode),
+          interestType,
+          durationInMonths: result?.durationInMonths,
+          interestAmount: result?.interestAmount,
+        });
       }
 
       setCalculationResult(result);
@@ -1218,7 +1229,7 @@ export default function Closure() {
       closureDate: form.getValues("closureDate"),
       calcInterestType: form.getValues("interestType"),
       calcCompoundingFrequency: form.getValues("compoundingFrequency"),
-      calcAdvancedCalculationMode: form.getValues("advancedCalculationMode"),
+      calcAdvancedCalculationMode: normalizeCalcMode(form.getValues("advancedCalculationMode")),
       calcUseCustomRate: form.getValues("useCustomRate") || false,
       calcCustomInterestRate: form.getValues("customInterestRate") || '',
     };
@@ -1607,7 +1618,9 @@ export default function Closure() {
         const calcSettings: any = {
           interestType: formValues.interestType,
           compoundingFrequency: formValues.compoundingFrequency,
-          advancedCalculationMode: formValues.advancedCalculationMode,
+          // Normalize before persisting to server's calc_settings JSON
+          // so QR-scan auto-calc later always reads canonical mode.
+          advancedCalculationMode: normalizeCalcMode(formValues.advancedCalculationMode),
           entries: currentEntries.map(e => ({
             loanId: e.loanId,
             chargesAmount: e.chargesAmount,
@@ -1615,7 +1628,7 @@ export default function Closure() {
             closureDate: e.closureDate,
             calcInterestType: e.calcInterestType,
             calcCompoundingFrequency: e.calcCompoundingFrequency,
-            calcAdvancedCalculationMode: e.calcAdvancedCalculationMode,
+            calcAdvancedCalculationMode: normalizeCalcMode(e.calcAdvancedCalculationMode),
             calcUseCustomRate: e.calcUseCustomRate,
             calcCustomInterestRate: e.calcCustomInterestRate,
           })),
@@ -1723,7 +1736,7 @@ export default function Closure() {
         rate = parseFloat(entry.calcCustomInterestRate);
       }
       const compFreq = (entry.calcCompoundingFrequency || 'yearly') as any;
-      const calcMode = (entry.calcAdvancedCalculationMode || 'half_month') as any;
+      const calcMode = normalizeCalcMode(entry.calcAdvancedCalculationMode);
       const startDate = new Date(entry.loanDate);
       const endDate = new Date(entry.closureDate);
 
@@ -1916,19 +1929,15 @@ export default function Closure() {
           timeInDays
         );
         
-        const calcModeMap: Record<string, string> = {
-          'month': 'month',
-          'half_month': 'half-month',
-          'week': 'week',
-          'day': 'daily'
-        };
+        // Mode is normalized inside the helper — pass form value directly.
         const closureCalcResult = LoanCalculationsAdvanced.calculateInterestForClosure(
           principalNum,
           effectiveRate,
           new Date(originalLoanDate),
           closureDate,
           'simple',
-          (calcModeMap[advancedCalculationMode] || 'half-month') as any
+          advancedCalculationMode,
+          tenantSettingsRef.current?.firstMonthFull !== false
         );
         
         result = {
@@ -1943,11 +1952,12 @@ export default function Closure() {
             principalAmount: principalNum,
             interestRate: simpleInterestRate,
             calculationType: 'simple' as const,
-            calculationMode: (calcModeMap[advancedCalculationMode] || 'daily') as any,
+            calculationMode: advancedCalculationMode as any,
             periodUsed: `${timeInDays} दिवस`
           }
         };
       } else {
+        // Mode is normalized inside both helpers — pass form value directly.
         const advancedResult = LoanCalculationsAdvanced.calculateAdvancedCompoundInterest(
           Number(selectedLoan.principalAmount),
           effectiveRate,
@@ -1963,19 +1973,14 @@ export default function Closure() {
           closureDate
         );
 
-        const compoundCalcModeMap: Record<string, string> = {
-          'month': 'month',
-          'half_month': 'half-month',
-          'week': 'week',
-          'day': 'daily'
-        };
         const compoundClosureCalc = LoanCalculationsAdvanced.calculateInterestForClosure(
           Number(selectedLoan.principalAmount),
           effectiveRate,
           new Date(originalLoanDate),
           closureDate,
           'simple',
-          (compoundCalcModeMap[advancedCalculationMode] || 'half-month') as any
+          advancedCalculationMode,
+          tenantSettingsRef.current?.firstMonthFull !== false
         );
         
         result = {
@@ -2049,7 +2054,9 @@ export default function Closure() {
       actualPaidAmount: totalAmount,
       balanceRefund: 0,
       interestType: data.interestType,
-      advancedCalculationMode: data.advancedCalculationMode,
+      // Persist canonical mode to DB so any later edit-mode hydration
+      // or report read sees a consistent vocabulary.
+      advancedCalculationMode: normalizeCalcMode(data.advancedCalculationMode),
       durationInMonths: finalCalcResult.durationInMonths,
       returnOfArticles: data.returnOfArticles,
       isClosed: data.isClosed,
@@ -2559,7 +2566,10 @@ export default function Closure() {
                             render={({ field }) => (
                               <FormItem>
                                 <FormLabel className="font-noto">प्रगत गणना पद्धत</FormLabel>
-                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <Select
+                                  onValueChange={(v) => field.onChange(normalizeCalcMode(v))}
+                                  defaultValue={field.value}
+                                >
                                   <FormControl>
                                     <SelectTrigger>
                                       <SelectValue placeholder="गणना पद्धत निवडा" />
