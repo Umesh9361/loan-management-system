@@ -2867,6 +2867,12 @@ export default function BorrowerListReports() {
                     event.preventDefault();
                     if (selectedRowIndex < allRows.length - 1) {
                       setSelectedRow(selectedRowIndex + 1);
+                    } else {
+                      // Already at last row — scroll total row into view
+                      var totalRow = document.querySelector('tr.total-row');
+                      if (totalRow) {
+                        totalRow.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                      }
                     }
                     break;
                   case 'ArrowUp':
@@ -2941,6 +2947,16 @@ export default function BorrowerListReports() {
                   behavior: 'smooth',
                   block: 'nearest'
                 });
+
+                // If last row selected, also scroll total row into view
+                if (index === allRows.length - 1) {
+                  var totalRow = document.querySelector('tr.total-row');
+                  if (totalRow) {
+                    setTimeout(function() {
+                      totalRow.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                    }, 200);
+                  }
+                }
               }
             }
 
