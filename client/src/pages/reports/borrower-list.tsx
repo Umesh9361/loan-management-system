@@ -1592,7 +1592,7 @@ export default function BorrowerListReports() {
     }, 0);
     const totalWeight = totalGoldWeight + totalSilverWeight;
     const formatWeight = (w: number) => w % 1 === 0 ? w.toString() : w.toFixed(2);
-    const weightDisplay = totalSilverWeight > 0 ? `सोने: ${formatWeight(totalGoldWeight)}g | चांदी: ${formatWeight(totalSilverWeight)}g` : `${formatWeight(totalWeight)}g`;
+    const weightDisplay = totalSilverWeight > 0 ? `सोने: ${formatWeight(totalGoldWeight)} | चांदी: ${formatWeight(totalSilverWeight)}` : `${formatWeight(totalWeight)}`;
     
     // Calculate total interest for closing-wise report
     const totalInterest = activeTab === 'closing-wise' ? reportData.reduce((sum, loan) => {
