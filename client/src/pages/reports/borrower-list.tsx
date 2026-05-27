@@ -1783,7 +1783,9 @@ export default function BorrowerListReports() {
               th:nth-child(2), td:nth-child(2) { width: 68px !important; min-width: 68px !important; box-sizing: border-box !important; }    /* तारीख */
               th:nth-child(3), td:nth-child(3) { width: 78px !important; min-width: 78px !important; text-align: left !important; padding-left: 5px !important; box-sizing: border-box !important; }    /* रक्कम */
               th:nth-child(4), td:nth-child(4) { width: 155px !important; min-width: 155px !important; text-align: left !important; padding-left: 4px !important; box-sizing: border-box !important; }   /* नाव */
-              tbody tr:not(.total-row):not(.summary-row) td:nth-child(4) { padding-left: 4px !important; }
+              tbody tr:not(.total-row):not(.summary-row) td:nth-child(4) { padding-left: 4px !important; overflow: hidden !important; }
+              /* Fix: inner flex div in name column must not clip td border-bottom in print */
+              td:nth-child(4) div { position: static !important; display: block !important; overflow: hidden !important; }
               th:nth-child(5), td:nth-child(5) { width: 65px !important; min-width: 65px !important; max-width: 69px !important; text-align: center !important; padding: 3px 2px !important; box-sizing: border-box !important; }    /* कोड */
               th:nth-child(6), td:nth-child(6) { width: auto !important; min-width: 60px !important; text-align: left !important; padding-left: 5px !important; box-sizing: border-box !important; }    /* वस्तूचा तपशील — उरलेली जागा */
               th:nth-child(7), td:nth-child(7) { width: 56px !important; min-width: 56px !important; box-sizing: border-box !important; }    /* वजन */
@@ -2481,13 +2483,19 @@ export default function BorrowerListReports() {
               // Remove previous highlight
               const allRows = document.querySelectorAll('.loan-row[data-row-index]');
               allRows.forEach(row => {
-                const originalBg = row.dataset.originalBg || (row.style.backgroundColor || '');
+                var isClosed = false;
+                try {
+                  var ld = JSON.parse(row.getAttribute('data-loan').replace(/&apos;/g, "'"));
+                  isClosed = ld.status === 'closed';
+                } catch(e) {}
+                
+                const originalBg = row.dataset.originalBg || (isClosed ? '#ffebee' : (row.style.backgroundColor || ''));
                 row.style.backgroundColor = originalBg;
-                row.style.color = '';
+                row.style.color = isClosed ? '#c62828' : '';
                 row.style.outline = '';
                 row.style.boxShadow = '';
                 
-                // Reset all cell colors
+                // Reset all cell colors (inherit from TR)
                 const cells = row.querySelectorAll('td');
                 cells.forEach(cell => {
                   cell.style.color = '';
