@@ -2581,7 +2581,7 @@ export default function BorrowerListReports() {
                     
                   case 'ArrowUp':
                     event.preventDefault();
-                    const newUpIndex = currentRowIndex === -1 ? allRows.length - 1 : Math.max(currentRowIndex - 1, 0);
+                    const newUpIndex = currentRowIndex === -1 ? 0 : Math.max(currentRowIndex - 1, 0);
                     if (newUpIndex !== currentRowIndex) {
                       currentRowIndex = newUpIndex;
                       highlightRow(currentRowIndex);
@@ -2641,7 +2641,7 @@ export default function BorrowerListReports() {
                     
                   case 'ArrowUp':
                     event.preventDefault();
-                    const newUpIndex = currentRowIndex === -1 ? dateRows.length - 1 : Math.max(currentRowIndex - 1, 0);
+                    const newUpIndex = currentRowIndex === -1 ? 0 : Math.max(currentRowIndex - 1, 0);
                     if (newUpIndex !== currentRowIndex) {
                       currentRowIndex = newUpIndex;
                       highlightDateWiseRow(currentRowIndex);
