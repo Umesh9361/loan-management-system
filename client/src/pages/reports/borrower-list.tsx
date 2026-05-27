@@ -1418,7 +1418,7 @@ export default function BorrowerListReports() {
             <td style="border-bottom: 1px solid #ccc; padding: 4px; text-align: center; width: 38px; font-size: 14px; vertical-align: middle; font-weight: 500; box-sizing: border-box;">${index + 1}</td>
             <td style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 4px; text-align: center; width: 68px; font-size: 14px; vertical-align: middle; font-weight: 500; box-sizing: border-box;">${shortDate}</td>
             <td style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 4px; text-align: left; width: 78px; font-size: 14px; vertical-align: middle; font-weight: 500; padding-left: 5px; box-sizing: border-box;" class="loan-amount">${Math.round(loan.principalAmount).toLocaleString('en-IN')}</td>
-            <td style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 4px; width: 155px; font-size: 14px; vertical-align: middle; font-weight: 500; box-sizing: border-box; position: relative;">${getPhotoIndicator(loan.id)}${loan.borrowerName.length > 26 ? loan.borrowerName.substring(0, 26) + '...' : loan.borrowerName}${isClosedLoan && dateWiseStatus === 'all' ? ' (बंद)' : ''}${showInterestRate && loan.interestRate ? '<span style="position: absolute; right: 1px; top: 50%; transform: translateY(-50%); font-size: 10px; color: #555; font-weight: 400;">' + (loan.interestRateType === 'monthly' ? parseFloat(loan.interestRate.toString()).toFixed(2) : Math.round(parseFloat(loan.interestRate.toString()))) + '</span>' : ''}</td>
+            <td style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 4px; width: 155px; font-size: 14px; vertical-align: middle; font-weight: 500; box-sizing: border-box;"><div style="position: relative; display: flex; align-items: center;">${getPhotoIndicator(loan.id)}${loan.borrowerName.length > 26 ? loan.borrowerName.substring(0, 26) + '...' : loan.borrowerName}${isClosedLoan && dateWiseStatus === 'all' ? ' (बंद)' : ''}${showInterestRate && loan.interestRate ? '<span style="position: absolute; right: 1px; top: 50%; transform: translateY(-50%); font-size: 10px; color: #555; font-weight: 400;">' + (loan.interestRateType === 'monthly' ? parseFloat(loan.interestRate.toString()).toFixed(2) : Math.round(parseFloat(loan.interestRate.toString()))) + '</span>' : ''}</div></td>
             <td class="mobile-hide" style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 4px; text-align: center; width: 65px; font-size: 14px; vertical-align: middle; font-weight: 500; box-sizing: border-box;">${(loan.accountNumber || loan.id.slice(0, 5)).toString().substring(0, 7)}</td>
             <td class="mobile-hide" style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 4px; width: auto; min-width: 60px; font-size: 14px; word-wrap: break-word; white-space: normal; vertical-align: middle; line-height: 1.3; overflow-wrap: break-word; font-weight: 500; box-sizing: border-box;">${loan.loanType === 'विनातारण' ? getUnsecuredDetails(loan) : (loan.itemDescription || loan.collateralDetails || 'सोन्याचे दागिने, अंगूठी, कंगन, नथ, हार इत्यादी')}</td>
             <td class="mobile-hide" style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 4px; text-align: center; width: 56px; font-size: 14px; vertical-align: middle; font-weight: 500; box-sizing: border-box;">${loan.loanType === 'विनातारण' ? '—' : (loan.weight ? parseFloat(loan.weight.toString()).toFixed(2) : '0')}</td>
@@ -1447,7 +1447,7 @@ export default function BorrowerListReports() {
             <td style="border-bottom: 1px solid #ccc; padding: 4px; text-align: center; width: 38px; font-size: 14px; vertical-align: middle; font-weight: 500; box-sizing: border-box;">${index + 1}</td>
             <td style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 4px; text-align: center; width: 68px; font-size: 14px; vertical-align: middle; font-weight: 500; box-sizing: border-box;">${shortDate}</td>
             <td style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 4px; text-align: left; width: 78px; font-size: 14px; vertical-align: middle; font-weight: 500; padding-left: 5px; box-sizing: border-box;" class="loan-amount">${Math.round(loan.principalAmount).toLocaleString('en-IN')}</td>
-            <td style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 4px; width: 155px; font-size: 14px; vertical-align: middle; font-weight: 500; box-sizing: border-box; position: relative;">${getPhotoIndicator(loan.id)}${loan.borrowerName.length > 26 ? loan.borrowerName.substring(0, 26) + '...' : loan.borrowerName}${isClosedLoan && nameWiseStatus === 'all' ? ' (बंद)' : ''}${showInterestRate && loan.interestRate ? '<span style="position: absolute; right: 1px; top: 50%; transform: translateY(-50%); font-size: 10px; color: #555; font-weight: 400;">' + (loan.interestRateType === 'monthly' ? parseFloat(loan.interestRate.toString()).toFixed(2) : Math.round(parseFloat(loan.interestRate.toString()))) + '</span>' : ''}</td>
+            <td style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 4px; width: 155px; font-size: 14px; vertical-align: middle; font-weight: 500; box-sizing: border-box;"><div style="position: relative; display: flex; align-items: center;">${getPhotoIndicator(loan.id)}${loan.borrowerName.length > 26 ? loan.borrowerName.substring(0, 26) + '...' : loan.borrowerName}${isClosedLoan && nameWiseStatus === 'all' ? ' (बंद)' : ''}${showInterestRate && loan.interestRate ? '<span style="position: absolute; right: 1px; top: 50%; transform: translateY(-50%); font-size: 10px; color: #555; font-weight: 400;">' + (loan.interestRateType === 'monthly' ? parseFloat(loan.interestRate.toString()).toFixed(2) : Math.round(parseFloat(loan.interestRate.toString()))) + '</span>' : ''}</div></td>
             <td class="mobile-hide" style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 4px; text-align: center; width: 65px; font-size: 14px; vertical-align: middle; font-weight: 500; box-sizing: border-box;">${(loan.accountNumber || loan.id.slice(0, 5)).toString().substring(0, 7)}</td>
             <td class="mobile-hide" style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 4px; width: auto; min-width: 60px; font-size: 14px; word-wrap: break-word; white-space: normal; vertical-align: middle; line-height: 1.3; overflow-wrap: break-word; font-weight: 500; box-sizing: border-box;">${loan.loanType === 'विनातारण' ? getUnsecuredDetails(loan) : (loan.itemDescription || loan.collateralDetails || 'सोन्याचे दागिने, अंगूठी, कंगन, नथ, हार इत्यादी')}</td>
             <td class="mobile-hide" style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 4px; text-align: center; width: 56px; font-size: 14px; vertical-align: middle; font-weight: 500; box-sizing: border-box;">${loan.loanType === 'विनातारण' ? '—' : (loan.weight ? parseFloat(loan.weight.toString()).toFixed(2) : '0')}</td>
@@ -2804,10 +2804,6 @@ export default function BorrowerListReports() {
             </div>
           </div>
 
-          <!-- Keyboard Navigation Help -->
-          <div style="position: fixed; bottom: 10px; left: 10px; background: #dbeafe; border: 1px solid #3b82f6; padding: 8px 12px; border-radius: 6px; font-size: 12px; color: #1e40af; box-shadow: 0 2px 4px rgba(0,0,0,0.1); z-index: 1000;" class="print-hide">
-            <strong>⌨️ Keyboard Navigation:</strong> Use ↑↓ arrows to navigate rows, <strong>Space फोटो</strong> पाहण्यासाठी, Escape to close
-          </div>
 
           <script>
             // Global variables for keyboard navigation and photo viewer
@@ -2899,9 +2895,21 @@ export default function BorrowerListReports() {
             }
 
             function setSelectedRow(index) {
-              // Remove previous selection
+              // Remove previous selection — restore closed rows to their original red style
               allRows.forEach(row => {
-                row.style.backgroundColor = '';
+                try {
+                  var loanData = JSON.parse(row.getAttribute('data-loan').replace(/&apos;/g, "'"));
+                  if (loanData.status === 'closed') {
+                    row.style.backgroundColor = '#ffebee';
+                    row.style.color = '#c62828';
+                  } else {
+                    row.style.backgroundColor = '';
+                    row.style.color = '';
+                  }
+                } catch(e) {
+                  row.style.backgroundColor = '';
+                  row.style.color = '';
+                }
                 row.style.outline = '';
               });
 
