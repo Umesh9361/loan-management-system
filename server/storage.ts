@@ -747,67 +747,39 @@ export class DatabaseStorage implements IStorage {
           loanDetails.groupName || undefined
         );
         
-        // ENHANCED DUPLICATE PREVENTION: Multiple checks to prevent any cash transaction duplication
-        const existingCashEntries = await db.select()
+        // STEP 1: Manual entry cleanup — account-number specific (safe for multi-loan borrowers)
+        const manualEntriesToDelete = await db.select()
           .from(cashTransactions)
           .where(and(
             eq(cashTransactions.tenantId, closure.tenantId),
             eq(cashTransactions.transactionDate, closure.closureDate),
+            eq(cashTransactions.transactionType, 'cash_in'),
+            eq(cashTransactions.isSystemGenerated, false),
             or(
-              // Check by account number pattern
-              sql`${cashTransactions.narration} LIKE ${`%खाते क्र. ${loanDetails.accountNumber}%`}`,
-              // Check by borrower name pattern  
-              sql`${cashTransactions.narration} LIKE ${`%${loanDetails.borrowerName}%`}`,
-              // Check by exact amount match
-              sql`ABS(${cashTransactions.amount} - ${closure.totalAmount}) < 0.01`
-            )
+              eq(cashTransactions.category, 'income'),
+              eq(cashTransactions.category, 'capital')
+            ),
+            sql`${cashTransactions.narration} LIKE ${`%खाते क्र. ${loanDetails.accountNumber}%`}`
           ));
 
-        // ADDITIONAL TIME-BASED CHECK: Prevent rapid duplicate creation (within 10 minutes)
-        const recentEntries = await db.select()
+        for (const manualEntry of manualEntriesToDelete) {
+          await db.delete(cashTransactions).where(eq(cashTransactions.id, manualEntry.id));
+        }
+
+        // STEP 2: UUID-based duplicate check — each loan has unique loanId
+        // Fixes: same-borrower multi-loan and same-amount false-positive matches
+        const existingByLoanId = await db.select()
           .from(cashTransactions)
           .where(and(
             eq(cashTransactions.tenantId, closure.tenantId),
+            eq(cashTransactions.loanId, closure.loanId),
+            eq(cashTransactions.category, 'loan_repayment'),
             eq(cashTransactions.transactionType, 'cash_in'),
-            sql`${cashTransactions.narration} LIKE ${`%खाते क्र. ${loanDetails.accountNumber}%`}`,
-            sql`${cashTransactions.createdAt} > NOW() - INTERVAL '10 minutes'`
+            eq(cashTransactions.isSystemGenerated, true)
           ));
-          
 
-        // 🚫 PERMANENT FIX: First delete ALL manual entries (income/capital) that match this closure
-        const manualEntriesToDelete = existingCashEntries.filter(entry => 
-          (entry.isSystemGenerated === false) && 
-          (entry.category === 'income' || entry.category === 'capital')
-        );
-        
-        if (manualEntriesToDelete.length > 0) {
-          for (const manualEntry of manualEntriesToDelete) {
-            await db.delete(cashTransactions).where(eq(cashTransactions.id, manualEntry.id));
-          }
-        }
-        
-        // Also delete recent manual entries within 10 minutes
-        const recentManualEntries = recentEntries.filter(entry => 
-          (entry.isSystemGenerated === false) && 
-          (entry.category === 'income' || entry.category === 'capital')
-        );
-        
-        if (recentManualEntries.length > 0) {
-          for (const recentManual of recentManualEntries) {
-            await db.delete(cashTransactions).where(eq(cashTransactions.id, recentManual.id));
-          }
-        }
-        
-        // Now check for system-generated entries only
-        const systemGeneratedExistingEntries = existingCashEntries.filter(entry => 
-          entry.isSystemGenerated === true && entry.category === 'loan_repayment'
-        );
-        
-        const systemGeneratedRecentEntries = recentEntries.filter(entry => 
-          entry.isSystemGenerated === true && entry.category === 'loan_repayment'
-        );
-        
-        if (systemGeneratedExistingEntries.length === 0 && systemGeneratedRecentEntries.length === 0) {
+        // STEP 3: Create cash entry only if this loan's entry does not exist yet
+        if (existingByLoanId.length === 0) {
           await db.insert(cashTransactions).values({
             tenantId: closure.tenantId,
             transactionDate: closure.closureDate,
@@ -815,10 +787,9 @@ export class DatabaseStorage implements IStorage {
             amount: closure.totalAmount.toString(),
             category: 'loan_repayment',
             narration: standardizedNarration,
-            isSystemGenerated: true,  // System generated - only editable through proper closure forms
-            loanId: closure.loanId    // Link to loan UUID — enables reliable reopen/delete sync
+            isSystemGenerated: true,
+            loanId: closure.loanId
           });
-        } else {
         }
       } catch (error) {
         throw error; // Re-throw to ensure closure fails if cash sync fails
