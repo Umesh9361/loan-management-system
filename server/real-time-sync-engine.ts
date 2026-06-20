@@ -433,7 +433,8 @@ export class RealTimeSyncEngine {
     const narration = this.createClosureNarration(
       newData.accountNumber,
       newData.borrowerName,
-      Number(newData.totalAmount),
+      Number(newData.principalPaid ?? newData.totalAmount),
+      Number(newData.interestPaid ?? 0),
       groupName
     );
 
@@ -564,8 +565,8 @@ export class RealTimeSyncEngine {
     );
   }
 
-  private createClosureNarration(accountNumber: string, borrowerName: string, amount: number, groupName?: string): string {
-    return NarrationEngine.createLoanClosureNarration(accountNumber, borrowerName, amount, 0, groupName);
+  private createClosureNarration(accountNumber: string, borrowerName: string, principalPaid: number, interestPaid: number, groupName?: string): string {
+    return NarrationEngine.createLoanClosureNarration(accountNumber, borrowerName, principalPaid, interestPaid, groupName);
   }
 }
 
