@@ -2163,7 +2163,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           borrowerName: loanDetails.borrowerName,
           groupId: loanDetails.groupId,
           totalAmount: closureData.totalAmount,
-          closureDate: closureData.closureDate
+          closureDate: closureData.closureDate,
+          principalPaid: closureData.principalPaid,
+          interestPaid: closureData.interestPaid
         },
         metadata: {
           performedBy: req.session.userId!,
@@ -7226,6 +7228,106 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Insert-at-position error:", error?.message || error);
       console.error("Insert-at-position stack:", error?.stack);
       res.status(500).json({ message: "खाते क्रमांक बदलताना त्रुटी आली. कोणताही बदल झालेला नाही." });
+    }
+  });
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // ADMIN: Repair wrong closure narrations (व्याज=0 bug fix for existing entries)
+  // ─────────────────────────────────────────────────────────────────────────
+  app.post("/api/admin/repair-closure-narrations", requireAuth, async (req, res) => {
+    try {
+      const tenantId = req.session.tenantId!;
+
+      // Find all loan_repayment cash entries that have loanId set
+      const entries = await db.select()
+        .from(cashTransactions)
+        .where(and(
+          eq(cashTransactions.tenantId, tenantId),
+          eq(cashTransactions.category, 'loan_repayment'),
+          eq(cashTransactions.transactionType, 'cash_in'),
+          eq(cashTransactions.isSystemGenerated, true),
+          sql`${cashTransactions.loanId} IS NOT NULL`
+        ));
+
+      const { NarrationEngine } = await import('./narration-engine');
+      let fixed = 0;
+      let skipped = 0;
+      const details: any[] = [];
+
+      for (const entry of entries) {
+        // Find the closure record for this loan
+        const [closure] = await db.select()
+          .from(loanClosures)
+          .where(and(
+            eq(loanClosures.tenantId, tenantId),
+            eq(loanClosures.loanId, entry.loanId!)
+          ))
+          .limit(1);
+
+        if (!closure) { skipped++; continue; }
+
+        const principal = Number(closure.principalPaid);
+        const interest = Number(closure.interestPaid);
+
+        // Skip if interest is genuinely 0
+        if (interest <= 0) { skipped++; continue; }
+
+        // Check if narration already shows correct interest
+        const expectedInterestStr = `व्याज: ₹${interest.toLocaleString('en-IN')}`;
+        if (entry.narration && entry.narration.includes(expectedInterestStr)) {
+          skipped++; continue;
+        }
+
+        // Get loan details for correct narration
+        const [loan] = await db.select()
+          .from(loans)
+          .where(and(
+            eq(loans.tenantId, tenantId),
+            eq(loans.id, entry.loanId!)
+          ))
+          .limit(1);
+
+        if (!loan) { skipped++; continue; }
+
+        // Get group name
+        let groupName: string | undefined;
+        if (loan.groupId) {
+          const [grp] = await db.select().from(groups)
+            .where(eq(groups.id, loan.groupId)).limit(1);
+          groupName = grp?.name;
+        }
+
+        const correctNarration = NarrationEngine.createLoanClosureNarration(
+          loan.accountNumber,
+          loan.borrowerName,
+          principal,
+          interest,
+          groupName
+        );
+
+        await db.update(cashTransactions)
+          .set({ narration: correctNarration })
+          .where(eq(cashTransactions.id, entry.id));
+
+        details.push({
+          accountNumber: loan.accountNumber,
+          borrowerName: loan.borrowerName,
+          old: entry.narration,
+          new: correctNarration
+        });
+        fixed++;
+      }
+
+      res.json({
+        success: true,
+        message: `${fixed} entries fixed, ${skipped} skipped`,
+        fixed,
+        skipped,
+        details
+      });
+    } catch (error: any) {
+      console.error('Repair narrations error:', error);
+      res.status(500).json({ message: 'Repair failed', error: error.message });
     }
   });
 
