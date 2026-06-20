@@ -7235,50 +7235,94 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ADMIN: Repair wrong closure narrations (व्याज=0 bug fix for existing entries)
   // ─────────────────────────────────────────────────────────────────────────
   app.get("/api/admin/repair-closure-narrations", requireAuth, async (req, res) => {
-    // Mobile-friendly: visit URL directly in browser to trigger repair
-    req.method = 'POST'; // treat as POST internally
-    // Send a simple HTML page showing progress
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     const tenantId = req.session.tenantId!;
     try {
       const { NarrationEngine } = await import('./narration-engine');
+
+      // Fetch ALL loan_repayment cash_in entries (loanId may be null for old entries)
       const entries = await db.select().from(cashTransactions).where(and(
         eq(cashTransactions.tenantId, tenantId),
         eq(cashTransactions.category, 'loan_repayment'),
         eq(cashTransactions.transactionType, 'cash_in'),
-        eq(cashTransactions.isSystemGenerated, true),
-        sql`${cashTransactions.loanId} IS NOT NULL`
+        eq(cashTransactions.isSystemGenerated, true)
       ));
+
       let fixed = 0, skipped = 0;
       const details: string[] = [];
+
       for (const entry of entries) {
-        const [closure] = await db.select().from(loanClosures).where(and(
-          eq(loanClosures.tenantId, tenantId), eq(loanClosures.loanId, entry.loanId!)
-        )).limit(1);
-        if (!closure) { skipped++; continue; }
+        let loan: any = null;
+        let closure: any = null;
+
+        // PATH 1: loanId present — direct lookup
+        if (entry.loanId) {
+          const rows = await db.select().from(loans).where(and(
+            eq(loans.tenantId, tenantId), eq(loans.id, entry.loanId)
+          )).limit(1);
+          loan = rows[0] || null;
+          if (loan) {
+            const crows = await db.select().from(loanClosures).where(and(
+              eq(loanClosures.tenantId, tenantId), eq(loanClosures.loanId, loan.id)
+            )).limit(1);
+            closure = crows[0] || null;
+          }
+        }
+
+        // PATH 2: loanId null — extract account number from narration
+        if (!loan && entry.narration) {
+          const match = entry.narration.match(/खाते क्र\.\s*(\d+)/);
+          if (match) {
+            const accNum = match[1];
+            const rows = await db.select().from(loans).where(and(
+              eq(loans.tenantId, tenantId),
+              eq(loans.accountNumber, accNum)
+            )).limit(1);
+            loan = rows[0] || null;
+            if (loan) {
+              const crows = await db.select().from(loanClosures).where(and(
+                eq(loanClosures.tenantId, tenantId), eq(loanClosures.loanId, loan.id)
+              )).limit(1);
+              closure = crows[0] || null;
+            }
+          }
+        }
+
+        if (!loan || !closure) { skipped++; continue; }
+
+        const principal = Number(closure.principalPaid);
         const interest = Number(closure.interestPaid);
+
+        // Skip genuinely zero-interest loans
         if (interest <= 0) { skipped++; continue; }
+
+        // Skip already-correct entries
         const expectedStr = `व्याज: ₹${interest.toLocaleString('en-IN')}`;
         if (entry.narration && entry.narration.includes(expectedStr)) { skipped++; continue; }
-        const [loan] = await db.select().from(loans).where(and(
-          eq(loans.tenantId, tenantId), eq(loans.id, entry.loanId!)
-        )).limit(1);
-        if (!loan) { skipped++; continue; }
+
+        // Get group name
         let groupName: string | undefined;
         if (loan.groupId) {
           const [grp] = await db.select().from(groups).where(eq(groups.id, loan.groupId)).limit(1);
           groupName = grp?.name;
         }
+
         const correctNarration = NarrationEngine.createLoanClosureNarration(
-          loan.accountNumber, loan.borrowerName, Number(closure.principalPaid), interest, groupName
+          loan.accountNumber, loan.borrowerName, principal, interest, groupName
         );
-        await db.update(cashTransactions).set({ narration: correctNarration }).where(eq(cashTransactions.id, entry.id));
-        details.push(`✅ खाते ${loan.accountNumber} — ${loan.borrowerName}: व्याज ₹${interest}`);
+
+        // Also link loanId if it was missing
+        await db.update(cashTransactions)
+          .set({ narration: correctNarration, loanId: loan.id })
+          .where(eq(cashTransactions.id, entry.id));
+
+        details.push(`✅ खाते ${loan.accountNumber} — ${loan.borrowerName}: व्याज ₹${interest.toLocaleString('en-IN')}`);
         fixed++;
       }
-      res.send(`<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Repair Done</title><style>body{font-family:sans-serif;padding:20px;max-width:500px;margin:0 auto}h2{color:#16a34a}.item{padding:4px 0;border-bottom:1px solid #eee;font-size:14px}</style></head><body><h2>✅ Repair Complete</h2><p><strong>${fixed} entries fixed</strong> | ${skipped} skipped</p>${details.map(d=>`<div class="item">${d}</div>`).join('')}<br><a href="/">← परत जा</a></body></html>`);
+
+      res.send(`<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Repair Done</title><style>body{font-family:'Noto Sans Devanagari',sans-serif;padding:20px;max-width:500px;margin:0 auto}h2{color:#16a34a}p{font-size:16px}.item{padding:6px 0;border-bottom:1px solid #eee;font-size:14px}a{display:inline-block;margin-top:16px;padding:10px 20px;background:#4f46e5;color:#fff;border-radius:8px;text-decoration:none}</style></head><body><h2>✅ Repair Complete</h2><p><strong>${fixed} entries fixed</strong> &nbsp;|&nbsp; ${skipped} skipped (correct or zero-interest)</p>${details.length ? details.map(d=>`<div class="item">${d}</div>`).join('') : '<p style="color:#888">कोणत्याही entries fix करण्याची गरज नव्हती.</p>'}<a href="/">← परत जा</a></body></html>`);
     } catch (err: any) {
-      res.send(`<h2>❌ Error</h2><pre>${err.message}</pre>`);
+      res.send(`<!DOCTYPE html><html><head><meta charset="utf-8"></head><body><h2>❌ Error</h2><pre>${err.message}</pre><a href="/">← परत जा</a></body></html>`);
     }
   });
 
