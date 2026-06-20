@@ -7234,6 +7234,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ─────────────────────────────────────────────────────────────────────────
   // ADMIN: Repair wrong closure narrations (व्याज=0 bug fix for existing entries)
   // ─────────────────────────────────────────────────────────────────────────
+  app.get("/api/admin/repair-closure-narrations", requireAuth, async (req, res) => {
+    // Mobile-friendly: visit URL directly in browser to trigger repair
+    req.method = 'POST'; // treat as POST internally
+    // Send a simple HTML page showing progress
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    const tenantId = req.session.tenantId!;
+    try {
+      const { NarrationEngine } = await import('./narration-engine');
+      const entries = await db.select().from(cashTransactions).where(and(
+        eq(cashTransactions.tenantId, tenantId),
+        eq(cashTransactions.category, 'loan_repayment'),
+        eq(cashTransactions.transactionType, 'cash_in'),
+        eq(cashTransactions.isSystemGenerated, true),
+        sql`${cashTransactions.loanId} IS NOT NULL`
+      ));
+      let fixed = 0, skipped = 0;
+      const details: string[] = [];
+      for (const entry of entries) {
+        const [closure] = await db.select().from(loanClosures).where(and(
+          eq(loanClosures.tenantId, tenantId), eq(loanClosures.loanId, entry.loanId!)
+        )).limit(1);
+        if (!closure) { skipped++; continue; }
+        const interest = Number(closure.interestPaid);
+        if (interest <= 0) { skipped++; continue; }
+        const expectedStr = `व्याज: ₹${interest.toLocaleString('en-IN')}`;
+        if (entry.narration && entry.narration.includes(expectedStr)) { skipped++; continue; }
+        const [loan] = await db.select().from(loans).where(and(
+          eq(loans.tenantId, tenantId), eq(loans.id, entry.loanId!)
+        )).limit(1);
+        if (!loan) { skipped++; continue; }
+        let groupName: string | undefined;
+        if (loan.groupId) {
+          const [grp] = await db.select().from(groups).where(eq(groups.id, loan.groupId)).limit(1);
+          groupName = grp?.name;
+        }
+        const correctNarration = NarrationEngine.createLoanClosureNarration(
+          loan.accountNumber, loan.borrowerName, Number(closure.principalPaid), interest, groupName
+        );
+        await db.update(cashTransactions).set({ narration: correctNarration }).where(eq(cashTransactions.id, entry.id));
+        details.push(`✅ खाते ${loan.accountNumber} — ${loan.borrowerName}: व्याज ₹${interest}`);
+        fixed++;
+      }
+      res.send(`<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Repair Done</title><style>body{font-family:sans-serif;padding:20px;max-width:500px;margin:0 auto}h2{color:#16a34a}.item{padding:4px 0;border-bottom:1px solid #eee;font-size:14px}</style></head><body><h2>✅ Repair Complete</h2><p><strong>${fixed} entries fixed</strong> | ${skipped} skipped</p>${details.map(d=>`<div class="item">${d}</div>`).join('')}<br><a href="/">← परत जा</a></body></html>`);
+    } catch (err: any) {
+      res.send(`<h2>❌ Error</h2><pre>${err.message}</pre>`);
+    }
+  });
+
   app.post("/api/admin/repair-closure-narrations", requireAuth, async (req, res) => {
     try {
       const tenantId = req.session.tenantId!;
