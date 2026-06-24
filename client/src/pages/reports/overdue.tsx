@@ -104,6 +104,13 @@ export default function OverdueReport() {
         }
         table { width: 100% !important; table-layout: auto !important; }
         th, td { font-size: 9px !important; padding: 4px 3px !important; white-space: nowrap; }
+        /* लॉस रिपोर्ट pagination: लांब टेबल पानांमध्ये नैसर्गिकरीत्या वाहू द्या,
+           पण एकही row अर्धवट तुटू देऊ नका आणि column header प्रत्येक पानावर पुन्हा दाखवा. */
+        .print-content { page-break-inside: auto !important; }
+        .print-only table { page-break-inside: auto !important; }
+        .print-only thead { display: table-header-group !important; }
+        .print-only tr { page-break-inside: avoid !important; }
+        .print-only td, .print-only th { page-break-inside: avoid !important; }
       }
     `;
     document.head.appendChild(style);
@@ -787,6 +794,10 @@ export default function OverdueReport() {
 
   const securedTotalLoss = securedLoans.reduce((sum: number, item: OverdueItem) => sum + item.lossAmount, 0);
   const unsecuredTotalLoss = unsecuredLoans.reduce((sum: number, item: OverdueItem) => sum + item.lossAmount, 0);
+
+  // तारण कर्जांची एकूण वस्तू वजन व एकूण शुद्ध सोने वजन (शुद्ध = वजन × शुद्धता%)
+  const securedTotalGoldWeight = securedLoans.reduce((sum: number, item: OverdueItem) => sum + (Number(item.goldWeight) || 0), 0);
+  const securedTotalPureGold = securedLoans.reduce((sum: number, item: OverdueItem) => sum + (Number(item.goldWeight) || 0) * ((Number(item.purityUsed) || 0) / 100), 0);
 
   const levelCounts = {
     loss: sortedOverdueData.filter(i => getSecurityLevel(i).level === 'loss').length,
@@ -1708,7 +1719,9 @@ export default function OverdueReport() {
                     <td colSpan={4} style={{border: '1px solid black', padding: '5px', textAlign: 'right', fontWeight: 'bold', fontSize: '8pt'}}>तारण कर्ज एकूण ({securedLoans.length})</td>
                     <td style={{border: '1px solid black', padding: '5px', textAlign: 'right', fontWeight: 'bold'}}>{formatCurrency(securedLoans.reduce((s, i) => s + i.principalAmount, 0))}</td>
                     <td style={{border: '1px solid black', padding: '5px', textAlign: 'right', fontWeight: 'bold'}}>{formatCurrency(securedLoans.reduce((s, i) => s + i.interestToDate, 0))}</td>
-                    <td colSpan={3} style={{border: '1px solid black', padding: '5px'}}></td>
+                    <td style={{border: '1px solid black', padding: '5px', textAlign: 'center', fontWeight: 'bold'}}>{securedTotalGoldWeight.toFixed(2)}g</td>
+                    <td style={{border: '1px solid black', padding: '5px', textAlign: 'center', fontWeight: 'bold', fontSize: '7.5pt', whiteSpace: 'nowrap'}}>शुद्ध: {securedTotalPureGold.toFixed(2)}g</td>
+                    <td style={{border: '1px solid black', padding: '5px'}}></td>
                     <td style={{border: '1px solid black', padding: '5px', textAlign: 'right', fontWeight: 'bold'}}>{formatCurrency(securedLoans.reduce((s, i) => s + i.totalAmount, 0))}</td>
                     <td style={{border: '1px solid black', padding: '5px', textAlign: 'right', fontWeight: 'bold', color: 'red'}}>{formatCurrency(securedTotalLoss)}</td>
                     <td style={{border: '1px solid black', padding: '5px'}}></td>
