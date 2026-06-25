@@ -94,6 +94,7 @@ interface LabelPrintDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   loans: LabelLoan[];
+  initialPrintMode?: 'normal' | 'qrSide' | 'qrCenter' | 'packet';
 }
 
 export const STICKER_PRESETS: { label: string; width: number; height: number }[] = [
@@ -1000,7 +1001,7 @@ function FieldItem({ field, idx, totalFields, toggleField, moveField, adjustFont
   );
 }
 
-export function LabelPrintDialog({ open, onOpenChange, loans }: LabelPrintDialogProps) {
+export function LabelPrintDialog({ open, onOpenChange, loans, initialPrintMode }: LabelPrintDialogProps) {
   const [settings, setSettings] = useState<LabelSettings>(() => loadSettings());
   const [showSettings, setShowSettings] = useState(false);
   const [settingsTab, setSettingsTab] = useState<'size' | 'fields' | 'margins'>('fields');
@@ -1149,6 +1150,19 @@ export function LabelPrintDialog({ open, onOpenChange, loans }: LabelPrintDialog
     setDbLoaded(true);
     setIsDirty(false);
   }, [dbSettings, isFetched, dbLoaded]);
+
+  // When opened with an explicit initial print mode (e.g. the sidebar packet
+  // shortcut), overlay it after settings load. Depends on dbLoaded so it
+  // re-applies after the db-load effect resets printMode to 'normal'.
+  useEffect(() => {
+    if (open && initialPrintMode) {
+      setSettings(prev => ({
+        ...prev,
+        printMode: initialPrintMode,
+        qrMode: initialPrintMode === 'qrSide' || initialPrintMode === 'qrCenter',
+      }));
+    }
+  }, [open, initialPrintMode, dbLoaded]);
 
   const saveMutation = useMutation({
     mutationFn: async (newSettings: LabelSettings) => {
