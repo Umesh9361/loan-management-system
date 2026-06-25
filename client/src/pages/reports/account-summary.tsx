@@ -29,13 +29,22 @@ interface SummaryRow {
   score?: number;
 }
 
+// चालू आर्थिक वर्ष (१ एप्रिल – ३१ मार्च) ची सुरुवात व शेवट तारीख
+// नफा-तोटा पत्रकाशी सुसंगत राहण्यासाठी चालू आर्थिक वर्ष default ठेवतो.
+function getCurrentFinancialYearRange(): { from: string; to: string } {
+  const now = new Date();
+  const fyStartYear = now.getMonth() >= 3 ? now.getFullYear() : now.getFullYear() - 1;
+  return { from: `${fyStartYear}-04-01`, to: `${fyStartYear + 1}-03-31` };
+}
+
 export default function AccountSummaryReport() {
   const [activeTab, setActiveTab] = useState<"group" | "customer">("group");
-  const [fromDate, setFromDate] = useState(new Date().toISOString().split('T')[0]);
-  const [toDate, setToDate] = useState(new Date().toISOString().split('T')[0]);
+  const [calcMode, setCalcMode] = useState<"cumulative" | "period">("cumulative");
+  const [fromDate, setFromDate] = useState(() => getCurrentFinancialYearRange().from);
+  const [toDate, setToDate] = useState(() => getCurrentFinancialYearRange().to);
 
-  const [customerFromDate, setCustomerFromDate] = useState(new Date().toISOString().split('T')[0]);
-  const [customerToDate, setCustomerToDate] = useState(new Date().toISOString().split('T')[0]);
+  const [customerFromDate, setCustomerFromDate] = useState(() => getCurrentFinancialYearRange().from);
+  const [customerToDate, setCustomerToDate] = useState(() => getCurrentFinancialYearRange().to);
   const [customerMode, setCustomerMode] = useState<"specific" | "top50">("specific");
   const [customerSearchTerm, setCustomerSearchTerm] = useState("");
   const [selectedCustomerName, setSelectedCustomerName] = useState("");
@@ -127,13 +136,17 @@ export default function AccountSummaryReport() {
     const data = activeTab === "group" ? groupSummaries : customerSummaries;
     const totals = activeTab === "group" ? groupGrandTotals : customerGrandTotals;
     const label = activeTab === "group" ? "गटाचे नाव" : "कस्टमर नाव";
-    const title = activeTab === "group" 
+    const baseTitle = activeTab === "group" 
       ? "गटनिहाय खाते सारांश अहवाल" 
       : (customerMode === "specific" ? `कस्टमर सारांश - ${selectedCustomerName}` : "टॉप ५० कस्टमर सारांश अहवाल");
+    const title = `${baseTitle} (${modeLabel})`;
     const fd = (d: string) => new Date(d).toLocaleDateString('en-GB');
     const companyName = (company as any)?.name || 'कंपनी नाव';
     const periodFrom = activeTab === "group" ? fromDate : customerFromDate;
     const periodTo = activeTab === "group" ? toDate : customerToDate;
+    const periodText = calcMode === "cumulative"
+      ? `कालावधी: ${fd(periodFrom)} ते ${fd(periodTo)} (सक्रिय शिल्लक आजपर्यंतची)`
+      : `कालावधी: ${fd(periodFrom)} ते ${fd(periodTo)}`;
 
     if (data.length === 0) {
       alert("प्रिंट करण्यासाठी डेटा उपलब्ध नाही");
@@ -207,7 +220,7 @@ export default function AccountSummaryReport() {
 <div class="header">
   <p style="font-size:15px;font-weight:700;">${companyName}</p>
   <p style="font-size:14px;font-weight:700;">${title}</p>
-  <p style="font-size:11px;color:#333;">कालावधी: ${fd(periodFrom)} ते ${fd(periodTo)}</p>
+  <p style="font-size:11px;color:#333;">${periodText}</p>
 </div>
 <table>
   <colgroup>${'<col/>'.repeat(colCount)}</colgroup>
@@ -245,124 +258,74 @@ export default function AccountSummaryReport() {
     }, 500);
   };
 
-  const groupSummaries: SummaryRow[] = (groups as any[]).map((group: any) => {
-    const allGroupLoans = (loans as any[]).filter((loan: any) => loan.groupId === group.id);
-    
-    const periodLoans = allGroupLoans.filter((loan: any) => {
-      const loanDate = new Date(loan.loanDate);
-      return loanDate >= new Date(fromDate) && loanDate <= new Date(toDate);
+  // दोन्ही मोड (एकूण हिशोब / कालावधी हिशोब) हाताळणारा सामायिक सारांश बिल्डर.
+  // गट व कस्टमर दोन्हीसाठी वापरला जातो जेणेकरून गणना सुसंगत राहते.
+  const buildSummaryRow = (name: string, entityLoans: any[], fDate: string, tDate: string): SummaryRow => {
+    const from = new Date(fDate);
+    const to = new Date(tDate);
+
+    const entityLoanIds = new Set(entityLoans.map((l: any) => l.id));
+    const entityClosures = (loanClosures as any[]).filter((c: any) => entityLoanIds.has(c.loanId));
+
+    const inRangeLoans = entityLoans.filter((l: any) => {
+      const d = new Date(l.loanDate);
+      return d >= from && d <= to;
+    });
+    const inRangeClosures = entityClosures.filter((c: any) => {
+      const d = new Date(c.closureDate);
+      return d >= from && d <= to;
     });
 
-    const periodClosures = (loanClosures as any[]).filter((closure: any) => {
-      const closureDate = new Date(closure.closureDate);
-      return closureDate >= new Date(fromDate) && 
-             closureDate <= new Date(toDate) &&
-             allGroupLoans.some((loan: any) => loan.id === closure.loanId);
-    });
+    const wt = (l: any) => parseFloat(String(l.weight || '0').replace(/[^\d.]/g, '')) || 0;
+    const pu = (l: any) => parseFloat(String(l.purity || '82')) || 82;
+    const sumPrincipal = (arr: any[]) => arr.reduce((s: number, l: any) => s + parseFloat(l.principalAmount || 0), 0);
+    const sumClosedPrincipal = (arr: any[]) => arr.reduce((s: number, c: any) => s + parseFloat(c.principalPaid || c.principalAmount || 0), 0);
+    const sumInterest = (arr: any[]) => arr.reduce((s: number, c: any) => s + parseFloat(c.interestPaid ?? c.calculatedInterest ?? c.interestAmount ?? 0), 0);
 
-    const totalLoansInPeriod = periodLoans.length;
-    const closedLoansInPeriod = periodClosures.length;
-    const activeLoansInPeriod = totalLoansInPeriod - closedLoansInPeriod;
+    let rowLoans: any[];
+    let totalLoans: number, activeLoans: number, closedLoans: number;
+    let totalAmount: number, closedAmount: number, activeBalance: number, totalInterest: number;
 
-    const totalAmountDisbursed = periodLoans.reduce((sum: number, loan: any) => 
-      sum + parseFloat(loan.principalAmount || 0), 0);
-    
-    const closedAmount = periodClosures.reduce((sum: number, closure: any) => {
-      return sum + parseFloat(closure.principalPaid || closure.principalAmount || 0);
-    }, 0);
-    
-    const activeBalance = totalAmountDisbursed - closedAmount;
+    if (calcMode === "cumulative") {
+      // एकूण हिशोब: कर्जवाटप/बंद/व्याज = निवडलेल्या कालावधीतील;
+      // सक्रिय शिल्लक = आजपर्यंतची सर्व चालू कर्जे (कालावधीचा संबंध नाही).
+      const activeLoansAll = entityLoans.filter((l: any) => l.status === 'active');
+      rowLoans = inRangeLoans;
+      totalLoans = inRangeLoans.length;
+      activeLoans = activeLoansAll.length;
+      closedLoans = new Set(inRangeClosures.map((c: any) => c.loanId)).size;
+      totalAmount = sumPrincipal(inRangeLoans);
+      closedAmount = sumClosedPrincipal(inRangeClosures);
+      activeBalance = sumPrincipal(activeLoansAll);
+      totalInterest = sumInterest(inRangeClosures);
+    } else {
+      // कालावधी हिशोब: सर्व आकडे निवडलेल्या कालावधीतील.
+      // शिल्लक = त्या काळात वाटप झालेली व आजही चालू असलेली कर्जे.
+      const activeInRangeLoans = inRangeLoans.filter((l: any) => l.status === 'active');
+      rowLoans = inRangeLoans;
+      totalLoans = inRangeLoans.length;
+      activeLoans = activeInRangeLoans.length;
+      closedLoans = new Set(inRangeClosures.map((c: any) => c.loanId)).size;
+      totalAmount = sumPrincipal(inRangeLoans);
+      closedAmount = sumClosedPrincipal(inRangeClosures);
+      activeBalance = sumPrincipal(activeInRangeLoans);
+      totalInterest = sumInterest(inRangeClosures);
+    }
 
-    const totalInterestInPeriod = periodClosures.reduce((sum: number, closure: any) => {
-      return sum + parseFloat(closure.calculatedInterest || closure.interestAmount || 0);
-    }, 0);
-
-    const totalWeight = periodLoans.reduce((sum: number, loan: any) => 
-      sum + (parseFloat(String(loan.weight || '0').replace(/[^\d.]/g, '')) || 0), 0);
-    const totalFineWeight = periodLoans.reduce((sum: number, loan: any) => {
-      const wt = parseFloat(String(loan.weight || '0').replace(/[^\d.]/g, '')) || 0;
-      const pu = parseFloat(String(loan.purity || '82')) || 82;
-      return sum + (wt * pu / 100);
-    }, 0);
-
-    const goldLoans = periodLoans.filter((l: any) => l.metalType !== 'silver' && l.loanType !== 'विनातारण');
-    const silverLoans = periodLoans.filter((l: any) => l.metalType === 'silver');
-    const goldWeight = goldLoans.reduce((s: number, l: any) => s + (parseFloat(String(l.weight || '0').replace(/[^\d.]/g, '')) || 0), 0);
-    const goldFineWeight = goldLoans.reduce((s: number, l: any) => { const w = parseFloat(String(l.weight || '0').replace(/[^\d.]/g, '')) || 0; const p = parseFloat(String(l.purity || '82')) || 82; return s + (w * p / 100); }, 0);
-    const silverWeight = silverLoans.reduce((s: number, l: any) => s + (parseFloat(String(l.weight || '0').replace(/[^\d.]/g, '')) || 0), 0);
-    const silverFineWeight = silverLoans.reduce((s: number, l: any) => { const w = parseFloat(String(l.weight || '0').replace(/[^\d.]/g, '')) || 0; const p = parseFloat(String(l.purity || '82')) || 82; return s + (w * p / 100); }, 0);
+    const totalWeight = rowLoans.reduce((s: number, l: any) => s + wt(l), 0);
+    const totalFineWeight = rowLoans.reduce((s: number, l: any) => s + (wt(l) * pu(l) / 100), 0);
+    const goldLoans = rowLoans.filter((l: any) => l.metalType !== 'silver' && l.loanType !== 'विनातारण');
+    const silverLoans = rowLoans.filter((l: any) => l.metalType === 'silver');
+    const goldWeight = goldLoans.reduce((s: number, l: any) => s + wt(l), 0);
+    const goldFineWeight = goldLoans.reduce((s: number, l: any) => s + (wt(l) * pu(l) / 100), 0);
+    const silverWeight = silverLoans.reduce((s: number, l: any) => s + wt(l), 0);
+    const silverFineWeight = silverLoans.reduce((s: number, l: any) => s + (wt(l) * pu(l) / 100), 0);
 
     return {
-      name: group.name,
-      totalLoans: totalLoansInPeriod,
-      activeLoans: activeLoansInPeriod,
-      closedLoans: closedLoansInPeriod,
-      totalWeight,
-      totalFineWeight,
-      goldWeight,
-      goldFineWeight,
-      silverWeight,
-      silverFineWeight,
-      totalAmount: totalAmountDisbursed,
-      closedAmount,
-      activeBalance,
-      totalInterest: totalInterestInPeriod
-    };
-  }).filter(summary => summary.totalLoans > 0);
-
-  const buildCustomerSummary = (customerName: string, fDate: string, tDate: string): SummaryRow => {
-    const normalizedName = customerName.trim().toLowerCase();
-    const customerLoans = (loans as any[]).filter((loan: any) => 
-      (loan.borrowerName || '').trim().toLowerCase() === normalizedName
-    );
-
-    const periodLoans = customerLoans.filter((loan: any) => {
-      const loanDate = new Date(loan.loanDate);
-      return loanDate >= new Date(fDate) && loanDate <= new Date(tDate);
-    });
-
-    const periodClosures = (loanClosures as any[]).filter((closure: any) => {
-      const closureDate = new Date(closure.closureDate);
-      return closureDate >= new Date(fDate) && 
-             closureDate <= new Date(tDate) &&
-             customerLoans.some((loan: any) => loan.id === closure.loanId);
-    });
-
-    const totalLoansCount = periodLoans.length;
-    const closedLoansCount = periodClosures.length;
-    const activeLoansCount = totalLoansCount - closedLoansCount;
-
-    const totalAmount = periodLoans.reduce((sum: number, loan: any) => 
-      sum + parseFloat(loan.principalAmount || 0), 0);
-
-    const closedAmount = periodClosures.reduce((sum: number, closure: any) => 
-      sum + parseFloat(closure.principalPaid || closure.principalAmount || 0), 0);
-
-    const activeBalance = totalAmount - closedAmount;
-
-    const totalInterest = periodClosures.reduce((sum: number, closure: any) => 
-      sum + parseFloat(closure.calculatedInterest || closure.interestAmount || 0), 0);
-
-    const totalWeight = periodLoans.reduce((sum: number, loan: any) => 
-      sum + (parseFloat(String(loan.weight || '0').replace(/[^\d.]/g, '')) || 0), 0);
-    const totalFineWeight = periodLoans.reduce((sum: number, loan: any) => {
-      const wt = parseFloat(String(loan.weight || '0').replace(/[^\d.]/g, '')) || 0;
-      const pu = parseFloat(String(loan.purity || '82')) || 82;
-      return sum + (wt * pu / 100);
-    }, 0);
-
-    const goldLoans = periodLoans.filter((l: any) => l.metalType !== 'silver' && l.loanType !== 'विनातारण');
-    const silverLoans = periodLoans.filter((l: any) => l.metalType === 'silver');
-    const goldWeight = goldLoans.reduce((s: number, l: any) => s + (parseFloat(String(l.weight || '0').replace(/[^\d.]/g, '')) || 0), 0);
-    const goldFineWeight = goldLoans.reduce((s: number, l: any) => { const w = parseFloat(String(l.weight || '0').replace(/[^\d.]/g, '')) || 0; const p = parseFloat(String(l.purity || '82')) || 82; return s + (w * p / 100); }, 0);
-    const silverWeight = silverLoans.reduce((s: number, l: any) => s + (parseFloat(String(l.weight || '0').replace(/[^\d.]/g, '')) || 0), 0);
-    const silverFineWeight = silverLoans.reduce((s: number, l: any) => { const w = parseFloat(String(l.weight || '0').replace(/[^\d.]/g, '')) || 0; const p = parseFloat(String(l.purity || '82')) || 82; return s + (w * p / 100); }, 0);
-
-    return {
-      name: customerName,
-      totalLoans: totalLoansCount,
-      activeLoans: activeLoansCount,
-      closedLoans: closedLoansCount,
+      name,
+      totalLoans,
+      activeLoans,
+      closedLoans,
       totalWeight,
       totalFineWeight,
       goldWeight,
@@ -376,10 +339,37 @@ export default function AccountSummaryReport() {
     };
   };
 
+  const hasRowActivity = (s: SummaryRow) => s.totalLoans > 0 || s.closedLoans > 0 || s.totalInterest > 0 || s.activeLoans > 0;
+
+  const groupSummaries: SummaryRow[] = (() => {
+    const rows = (groups as any[]).map((group: any) => {
+      const allGroupLoans = (loans as any[]).filter((loan: any) => loan.groupId === group.id);
+      return buildSummaryRow(group.name, allGroupLoans, fromDate, toDate);
+    });
+    // विना गट / इतर: कोणत्याही गटात नसलेली (किंवा हटवलेल्या गटाची) कर्जे —
+    // नफा-तोटा पत्रकाशी एकूण व्याज जुळावे यासाठी हीही कर्जे एकूण योगात धरतो.
+    const groupIdSet = new Set((groups as any[]).map((g: any) => g.id));
+    const ungroupedLoans = (loans as any[]).filter(
+      (loan: any) => !loan.groupId || !groupIdSet.has(loan.groupId)
+    );
+    if (ungroupedLoans.length > 0) {
+      rows.push(buildSummaryRow("विना गट / इतर", ungroupedLoans, fromDate, toDate));
+    }
+    return rows.filter(hasRowActivity);
+  })();
+
+  const buildCustomerSummary = (customerName: string, fDate: string, tDate: string): SummaryRow => {
+    const normalizedName = customerName.trim().toLowerCase();
+    const customerLoans = (loans as any[]).filter((loan: any) => 
+      (loan.borrowerName || '').trim().toLowerCase() === normalizedName
+    );
+    return buildSummaryRow(customerName, customerLoans, fDate, tDate);
+  };
+
   const specificCustomerSummary: SummaryRow[] = (() => {
     if (!selectedCustomerName || customerMode !== "specific") return [];
     const summary = buildCustomerSummary(selectedCustomerName, customerFromDate, customerToDate);
-    return summary.totalLoans > 0 ? [summary] : [];
+    return hasRowActivity(summary) ? [summary] : [];
   })();
 
   const top50Customers: SummaryRow[] = (() => {
@@ -395,7 +385,7 @@ export default function AccountSummaryReport() {
     const allSummaries: SummaryRow[] = [];
     borrowerNames.forEach(name => {
       const summary = buildCustomerSummary(name, customerFromDate, customerToDate);
-      if (summary.totalLoans > 0) {
+      if (hasRowActivity(summary)) {
         allSummaries.push(summary);
       }
     });
@@ -470,7 +460,7 @@ export default function AccountSummaryReport() {
         totalInterest: row.totalInterest
       }));
 
-      const success = exportAccountSummaryToExcel(cleanReportData);
+      const success = exportAccountSummaryToExcel(cleanReportData, modeLabel);
       if (success) {
         alert(`${label} यशस्वीरित्या एक्सेल फाइलमध्ये एक्सपोर्ट झाला!`);
       } else {
@@ -744,6 +734,42 @@ export default function AccountSummaryReport() {
     </table>
   );
 
+  const modeLabel = calcMode === "cumulative" ? "एकूण हिशोब" : "कालावधी हिशोब";
+
+  const renderModeToggle = () => (
+    <div className="mb-4">
+      <div className="flex bg-gray-100 rounded-lg p-1">
+        <button
+          type="button"
+          onClick={() => setCalcMode("cumulative")}
+          className={`flex-1 py-2 px-2 rounded-md text-sm font-medium transition-all ${
+            calcMode === "cumulative"
+              ? "bg-white text-indigo-700 shadow-sm"
+              : "text-gray-500 hover:text-gray-700"
+          }`}
+        >
+          एकूण हिशोब
+        </button>
+        <button
+          type="button"
+          onClick={() => setCalcMode("period")}
+          className={`flex-1 py-2 px-2 rounded-md text-sm font-medium transition-all ${
+            calcMode === "period"
+              ? "bg-white text-indigo-700 shadow-sm"
+              : "text-gray-500 hover:text-gray-700"
+          }`}
+        >
+          कालावधी हिशोब
+        </button>
+      </div>
+      <p className="text-xs text-gray-500 mt-1.5">
+        {calcMode === "cumulative"
+          ? "कर्जवाटप, बंद व व्याज = निवडलेल्या कालावधीतील. सक्रिय शिल्लक = आजपर्यंतची सर्व चालू कर्जे."
+          : "सर्व आकडे निवडलेल्या कालावधीतील. सक्रिय शिल्लक = त्या काळातील आजही चालू कर्जे."}
+      </p>
+    </div>
+  );
+
   const currentPrintData = activeTab === "group" ? groupSummaries : customerSummaries;
   const currentPrintTotals = activeTab === "group" ? groupGrandTotals : customerGrandTotals;
   const currentPrintLabel = activeTab === "group" ? "गटाचे नाव" : "कस्टमर नाव";
@@ -798,24 +824,24 @@ export default function AccountSummaryReport() {
             <div className="flex mb-4 bg-white rounded-lg border border-gray-200 p-1 shadow-sm">
               <button
                 onClick={() => setActiveTab("group")}
-                className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-md text-sm font-medium transition-all ${
+                className={`flex-1 min-w-0 flex items-center justify-center gap-1.5 py-2.5 px-2 sm:px-3 rounded-md text-xs sm:text-sm font-medium transition-all ${
                   activeTab === "group"
                     ? "bg-indigo-600 text-white shadow-sm"
                     : "text-gray-600 hover:bg-gray-100"
                 }`}
               >
-                <Users className="h-4 w-4" />
+                <Users className="h-4 w-4 shrink-0" />
                 गट प्रमाणे
               </button>
               <button
                 onClick={() => setActiveTab("customer")}
-                className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-md text-sm font-medium transition-all ${
+                className={`flex-1 min-w-0 flex items-center justify-center gap-1.5 py-2.5 px-2 sm:px-3 rounded-md text-xs sm:text-sm font-medium transition-all ${
                   activeTab === "customer"
                     ? "bg-indigo-600 text-white shadow-sm"
                     : "text-gray-600 hover:bg-gray-100"
                 }`}
               >
-                <User className="h-4 w-4" />
+                <User className="h-4 w-4 shrink-0" />
                 कस्टमर नावाप्रमाणे
               </button>
             </div>
@@ -831,7 +857,11 @@ export default function AccountSummaryReport() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    {renderModeToggle()}
+                    <Label className="text-xs text-indigo-600 font-medium">
+                      {calcMode === "cumulative" ? "अहवाल कालावधी (शिल्लक आजपर्यंतची)" : "अहवाल कालावधी"}
+                    </Label>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 mt-1">
                       <div>
                         <Label htmlFor="fromDate">सुरुवातीची तारीख</Label>
                         <Input id="fromDate" type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} className="font-inter" />
@@ -1082,6 +1112,7 @@ export default function AccountSummaryReport() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
+                    {renderModeToggle()}
                     {/* Mode Switcher */}
                     <div className="flex mb-4 bg-gray-100 rounded-lg p-1">
                       <button
@@ -1179,7 +1210,10 @@ export default function AccountSummaryReport() {
                     )}
 
                     {/* Date Range */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <Label className="text-xs text-indigo-600 font-medium">
+                      {calcMode === "cumulative" ? "अहवाल कालावधी (शिल्लक आजपर्यंतची)" : "अहवाल कालावधी"}
+                    </Label>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 mt-1">
                       <div>
                         <Label htmlFor="customerFromDate">सुरुवातीची तारीख</Label>
                         <Input id="customerFromDate" type="date" value={customerFromDate} onChange={(e) => setCustomerFromDate(e.target.value)} className="font-inter" />
@@ -1230,6 +1264,7 @@ export default function AccountSummaryReport() {
                     <div className="bg-indigo-50 px-4 py-3 border-b border-indigo-100">
                       <h3 className="font-semibold text-indigo-900 text-lg">
                         {customerMode === "specific" ? selectedCustomerName : "टॉप ५० कस्टमर (व्यवहार प्रमाणे)"}
+                        <span className="ml-2 text-xs font-medium text-indigo-600">({modeLabel})</span>
                       </h3>
                       <p className="text-sm text-indigo-600">
                         कालावधी: {new Date(customerFromDate).toLocaleDateString('en-GB')} ते {new Date(customerToDate).toLocaleDateString('en-GB')}
