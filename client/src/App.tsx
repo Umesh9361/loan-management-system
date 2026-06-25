@@ -4,11 +4,13 @@ import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider, useQuery } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { ReportsNavFix, reportsFixStyles } from "@/components/reports-nav-fix";
+import { LiveRefresh } from "@/components/live-refresh";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { I18nProvider } from "@/providers/I18nProvider";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { useMidnightLogout } from "@/hooks/use-midnight-logout";
 import { useSafeNavigation } from "@/hooks/use-safe-navigation";
+import { useGlobalDeviceScanner } from "@/hooks/use-global-device-scanner";
 import { AuthService } from "@/lib/auth";
 import { DedicatedModeProvider } from "@/contexts/dedicated-mode";
 import "@/lib/date-locale";
@@ -251,6 +253,7 @@ function AppContent() {
 
   useMidnightLogout(!!rawUser);
   useInactivityRedirect(!!rawUser);
+  useGlobalDeviceScanner(!!rawUser);
 
   const userRole = normalizeRole(rawUser?.role);
 
@@ -498,6 +501,7 @@ function App() {
             <style dangerouslySetInnerHTML={{ __html: reportsFixStyles }} />
             <ReportsNavFix />
             <Toaster />
+            <LiveRefresh />
             <AppContent />
           </div>
         </TooltipProvider>
