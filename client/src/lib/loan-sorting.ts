@@ -5,6 +5,7 @@
 
 export interface LoanSortData {
   loanDate?: string;
+  closureDate?: string;
   createdAt?: string;
   loanNumber?: string;
   accountNumber?: string;
@@ -155,6 +156,7 @@ export function normalizeAccountNumber(loan: LoanSortData): number {
 
 export interface SortOptions {
   dateOrder?: 'asc' | 'desc';
+  sortByClosureDate?: boolean;
 }
 
 /**
@@ -163,12 +165,18 @@ export interface SortOptions {
  * Supports selective date ordering while keeping other tiers ascending
  */
 export function createLoanComparator(groups?: any[], options: SortOptions = {}) {
-  const { dateOrder = 'asc' } = options; // Default to oldest dates first
+  const { dateOrder = 'asc', sortByClosureDate = false } = options; // Default to oldest dates first
   
   return (a: LoanSortData, b: LoanSortData): number => {
     // 1. Sort by Calendar Day (with selective ordering)
-    const aDateKey = normalizeDateKey(a.loanDate, a.createdAt);
-    const bDateKey = normalizeDateKey(b.loanDate, b.createdAt);
+    // When sortByClosureDate is on, use the closure date as the primary key
+    // (falling back to loan date when a closure date is missing).
+    const aDateKey = sortByClosureDate
+      ? normalizeDateKey(a.closureDate, a.loanDate)
+      : normalizeDateKey(a.loanDate, a.createdAt);
+    const bDateKey = sortByClosureDate
+      ? normalizeDateKey(b.closureDate, b.loanDate)
+      : normalizeDateKey(b.loanDate, b.createdAt);
     if (aDateKey !== bDateKey) {
       const dateComparison = aDateKey - bDateKey;
       return dateOrder === 'desc' ? -dateComparison : dateComparison;
