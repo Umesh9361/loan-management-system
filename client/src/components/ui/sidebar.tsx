@@ -5,9 +5,10 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { useQuery } from "@tanstack/react-query";
 import { useCurrentUser } from "@/hooks/use-current-user";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useDedicatedMode } from "@/contexts/dedicated-mode";
 import { NotificationBell } from "@/components/maturity-reminder";
+import { LabelPrintDialog } from "@/components/label-print-dialog";
 import { 
   Building, 
   Users, 
@@ -31,7 +32,8 @@ import {
   AlertTriangle,
   Scale,
   Settings,
-  PackageSearch
+  PackageSearch,
+  Package
 } from "lucide-react";
 
 const navigation = [
@@ -230,16 +232,18 @@ const reports = [
 
 interface SidebarProps {
   className?: string;
+  onPacketLabel?: () => void;
 }
 
-export function Sidebar({ className }: SidebarProps) {
+export function Sidebar({ className, onPacketLabel }: SidebarProps) {
   const { isDedicatedMode } = useDedicatedMode();
   if (isDedicatedMode) return null;
-  return <SidebarInner className={className} />;
+  return <SidebarInner className={className} onPacketLabel={onPacketLabel} />;
 }
 
-function SidebarInner({ className }: SidebarProps) {
+function SidebarInner({ className, onPacketLabel }: SidebarProps) {
   const [location] = useLocation();
+  const [packetDialogOpen, setPacketDialogOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   
   const { user: currentUser } = useCurrentUser();
@@ -367,6 +371,25 @@ function SidebarInner({ className }: SidebarProps) {
               </Link>
             );
           })}
+
+          {(user?.role === 'admin' || user?.role === 'super_admin' || (user?.role === 'user' && (perms as any)?.canAccessLoanRegistration)) && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                if (onPacketLabel) {
+                  onPacketLabel();
+                } else {
+                  setPacketDialogOpen(true);
+                }
+              }}
+              className="w-full justify-start text-sm py-3 lg:py-2.5 lg:text-sm h-auto font-medium rounded-lg transition-all duration-200 hover:bg-indigo-50/80 hover:text-indigo-700 lg:text-gray-700"
+              data-testid="sidebar-packet-label"
+            >
+              <Package className="mr-2 lg:mr-2.5 h-4 w-4 flex-shrink-0" />
+              <span className="truncate font-noto">📦 पॅकेट लेबल</span>
+            </Button>
+          )}
           
           <Separator className="my-3 lg:my-2" />
           
@@ -504,6 +527,15 @@ function SidebarInner({ className }: SidebarProps) {
         </div>
         
       </div>
+
+      {!onPacketLabel && (
+        <LabelPrintDialog
+          open={packetDialogOpen}
+          onOpenChange={setPacketDialogOpen}
+          loans={[]}
+          initialPrintMode="packet"
+        />
+      )}
 
     </div>
   );
