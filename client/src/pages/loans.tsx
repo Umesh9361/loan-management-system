@@ -888,11 +888,28 @@ function Loans() {
 
 
   // Data fetching queries - MUST BE FIRST before any functions use them
-  const { data: loans, isLoading: loansLoading } = useQuery({
+  const { data: loans, isLoading: loansLoading, isFetching: loansFetching, refetch: refetchLoans } = useQuery({
     queryKey: ["/api/loans"],
-    staleTime: 2 * 60 * 1000, // 2 minutes cache for better performance
+    staleTime: 15 * 1000, // 15s — keeps cross-device additions fresh while still caching
     gcTime: 10 * 60 * 1000, // 10 minutes garbage collection
+    refetchOnMount: "always", // re-entering the page always pulls latest loans
   });
+
+  // Cross-device freshness: when a new search term is entered, pull the latest
+  // loans in the background once per term so accounts added on another device
+  // (e.g. on mobile) surface on this device without a manual reload.
+  const lastSearchRefetchRef = useRef<string>("");
+  useEffect(() => {
+    const q = debouncedSearchQuery.trim();
+    if (q.length === 0) {
+      lastSearchRefetchRef.current = "";
+      return;
+    }
+    if (lastSearchRefetchRef.current !== q) {
+      lastSearchRefetchRef.current = q;
+      refetchLoans();
+    }
+  }, [debouncedSearchQuery, refetchLoans]);
 
   const { data: company } = useQuery({
     queryKey: ["/api/company"],
@@ -3113,6 +3130,16 @@ function Loans() {
               >
                 <Search className="h-4 w-4 mr-1.5" />
                 शोध
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => refetchLoans()}
+                disabled={loansFetching}
+                title="ताजी माहिती मिळवा"
+                className="border-gray-300 px-3"
+              >
+                <RotateCcw className={`h-4 w-4 ${loansFetching ? "animate-spin" : ""}`} />
               </Button>
             </div>
           </div>
