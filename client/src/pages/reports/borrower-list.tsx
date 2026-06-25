@@ -1064,6 +1064,22 @@ export default function BorrowerListReports() {
     return getFilteredLoans.slice(startIndex, endIndex);
   }, [getFilteredLoans, currentPage, itemsPerPage]);
 
+  // Totals for the on-screen closing-wise table (computed over the full filtered
+  // list, not just the current page) — एकूण रक्कम + एकूण व्याज, mirroring the print report.
+  const closingWiseScreenTotals = useMemo(() => {
+    if (activeTab !== 'closing-wise') return { totalAmount: 0, totalInterest: 0 };
+    let totalAmount = 0;
+    let totalInterest = 0;
+    for (const loan of getFilteredLoans as any[]) {
+      totalAmount += Math.round(loan.principalAmount || 0);
+      const closureData = (loanClosures as any[]).find((c: any) => c.loanId === loan.id);
+      if (closureData && closureData.interestPaid) {
+        totalInterest += Math.round(parseFloat(closureData.interestPaid));
+      }
+    }
+    return { totalAmount, totalInterest };
+  }, [activeTab, getFilteredLoans, loanClosures]);
+
   // Calculate pagination info
   const totalItems = getFilteredLoans.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage);
@@ -4045,18 +4061,35 @@ export default function BorrowerListReports() {
               </div>
             </div>
 
-            {/* Table Display - All 7 columns visible on mobile with horizontal scroll */}
+            {/* Table Display - columns visible on mobile with horizontal scroll.
+                Closing-wise tab shows extra बंद तारीख + व्याज columns to match the print report. */}
             <div className="overflow-x-auto sm:overflow-x-visible border border-indigo-200 rounded-lg -mx-1 sm:mx-0">
-              <table className="w-full border-collapse min-w-[700px] sm:min-w-0">
+              <table className={`w-full border-collapse ${activeTab === 'closing-wise' ? 'min-w-[880px]' : 'min-w-[700px]'} sm:min-w-0`}>
                 <thead>
                   <tr className="bg-gradient-to-r from-indigo-600 to-indigo-700">
-                    <th className="border border-indigo-500 p-2 md:p-3 text-center text-xs sm:text-sm md:text-base font-semibold text-white">अ.क्र.</th>
-                    <th className="border border-indigo-500 p-2 md:p-3 text-center text-xs sm:text-sm md:text-base font-semibold text-white">तारीख</th>
-                    <th className="border border-indigo-500 p-2 md:p-3 text-right text-xs sm:text-sm md:text-base font-semibold text-white">रक्कम</th>
-                    <th className="border border-indigo-500 p-2 md:p-3 text-left text-xs sm:text-sm md:text-base font-semibold text-white">नाव</th>
-                    <th className="border border-indigo-500 p-2 md:p-3 text-center text-xs sm:text-sm md:text-base font-semibold text-white">खाते नं</th>
-                    <th className="border border-indigo-500 p-2 md:p-3 text-left text-xs sm:text-sm md:text-base font-semibold text-white">तपशील</th>
-                    <th className="border border-indigo-500 p-2 md:p-3 text-center text-xs sm:text-sm md:text-base font-semibold text-white">वजन</th>
+                    {activeTab === 'closing-wise' ? (
+                      <>
+                        <th className="border border-indigo-500 p-2 md:p-3 text-center text-xs sm:text-sm md:text-base font-semibold text-white">अ.क्र.</th>
+                        <th className="border border-indigo-500 p-2 md:p-3 text-center text-xs sm:text-sm md:text-base font-semibold text-white">कर्ज तारीख</th>
+                        <th className="border border-indigo-500 p-2 md:p-3 text-center text-xs sm:text-sm md:text-base font-semibold text-white">बंद तारीख</th>
+                        <th className="border border-indigo-500 p-2 md:p-3 text-right text-xs sm:text-sm md:text-base font-semibold text-white">रक्कम</th>
+                        <th className="border border-indigo-500 p-2 md:p-3 text-right text-xs sm:text-sm md:text-base font-semibold text-white">व्याज</th>
+                        <th className="border border-indigo-500 p-2 md:p-3 text-left text-xs sm:text-sm md:text-base font-semibold text-white">नाव</th>
+                        <th className="border border-indigo-500 p-2 md:p-3 text-center text-xs sm:text-sm md:text-base font-semibold text-white">खाते नं</th>
+                        <th className="border border-indigo-500 p-2 md:p-3 text-left text-xs sm:text-sm md:text-base font-semibold text-white">तपशील</th>
+                        <th className="border border-indigo-500 p-2 md:p-3 text-center text-xs sm:text-sm md:text-base font-semibold text-white">वजन</th>
+                      </>
+                    ) : (
+                      <>
+                        <th className="border border-indigo-500 p-2 md:p-3 text-center text-xs sm:text-sm md:text-base font-semibold text-white">अ.क्र.</th>
+                        <th className="border border-indigo-500 p-2 md:p-3 text-center text-xs sm:text-sm md:text-base font-semibold text-white">तारीख</th>
+                        <th className="border border-indigo-500 p-2 md:p-3 text-right text-xs sm:text-sm md:text-base font-semibold text-white">रक्कम</th>
+                        <th className="border border-indigo-500 p-2 md:p-3 text-left text-xs sm:text-sm md:text-base font-semibold text-white">नाव</th>
+                        <th className="border border-indigo-500 p-2 md:p-3 text-center text-xs sm:text-sm md:text-base font-semibold text-white">खाते नं</th>
+                        <th className="border border-indigo-500 p-2 md:p-3 text-left text-xs sm:text-sm md:text-base font-semibold text-white">तपशील</th>
+                        <th className="border border-indigo-500 p-2 md:p-3 text-center text-xs sm:text-sm md:text-base font-semibold text-white">वजन</th>
+                      </>
+                    )}
                   </tr>
                 </thead>
                 <tbody>
@@ -4065,7 +4098,46 @@ export default function BorrowerListReports() {
                     const isClosedLoan = loan.status === 'closed';
                     const loanDate = new Date(loan.loanDate);
                     const shortDate = `${String(loanDate.getDate()).padStart(2, '0')}/${String(loanDate.getMonth() + 1).padStart(2, '0')}/${String(loanDate.getFullYear()).slice(-2)}`;
-                    
+
+                    if (activeTab === 'closing-wise') {
+                      const closureData = (loanClosures as any[]).find((c: any) => c.loanId === loan.id);
+                      let shortClosureDate = '-';
+                      if (closureData && closureData.closureDate) {
+                        const cd = new Date(closureData.closureDate);
+                        shortClosureDate = `${String(cd.getDate()).padStart(2, '0')}/${String(cd.getMonth() + 1).padStart(2, '0')}/${String(cd.getFullYear()).slice(-2)}`;
+                      }
+                      const interestPaid = closureData && closureData.interestPaid
+                        ? Math.round(parseFloat(closureData.interestPaid)).toLocaleString('en-IN')
+                        : '0';
+
+                      return (
+                        <tr
+                          key={loan.id}
+                          className={`${isClosedLoan ? 'bg-red-50 text-red-800' : index % 2 === 0 ? 'bg-white' : 'bg-indigo-50/30'} hover:bg-indigo-50`}
+                        >
+                          <td className="border border-indigo-100 p-1.5 sm:p-2 md:p-3 text-center text-xs sm:text-sm md:text-base">{globalIndex}</td>
+                          <td className="border border-indigo-100 p-1.5 sm:p-2 md:p-3 text-center text-xs sm:text-sm md:text-base whitespace-nowrap">{shortDate}</td>
+                          <td className="border border-indigo-100 p-1.5 sm:p-2 md:p-3 text-center text-xs sm:text-sm md:text-base whitespace-nowrap">{shortClosureDate}</td>
+                          <td className="border border-indigo-100 p-1.5 sm:p-2 md:p-3 text-right text-xs sm:text-sm md:text-base font-medium whitespace-nowrap">{Math.round(loan.principalAmount).toLocaleString('en-IN')}</td>
+                          <td className="border border-indigo-100 p-1.5 sm:p-2 md:p-3 text-right text-xs sm:text-sm md:text-base font-medium whitespace-nowrap">{interestPaid}</td>
+                          <td className="border border-indigo-100 p-1.5 sm:p-2 md:p-3 text-xs sm:text-sm md:text-base">
+                            <span className="sm:hidden">{loan.borrowerName.length > 20 ? loan.borrowerName.substring(0, 20) + '...' : loan.borrowerName}</span>
+                            <span className="hidden sm:inline">{loan.borrowerName}</span>
+                            {isClosedLoan && <span className="text-red-600 ml-1">(बंद)</span>}
+                          </td>
+                          <td className="border border-indigo-100 p-1.5 sm:p-2 md:p-3 text-center text-xs sm:text-sm md:text-base">
+                            {(loan.accountNumber || loan.id.slice(0, 5)).toString().substring(0, 7)}
+                          </td>
+                          <td className="border border-indigo-100 p-1.5 sm:p-2 md:p-3 text-xs sm:text-sm md:text-base">
+                            {loan.loanType === 'विनातारण' ? ([loan.specialConditions, loan.documentDetails, loan.otherInfo].filter((v: string) => v && v !== '—' && v.trim() !== '').join(' | ') || '—') : (loan.itemDescription || loan.collateralDetails || 'सोन्याचे दागिने')}
+                          </td>
+                          <td className="border border-indigo-100 p-1.5 sm:p-2 md:p-3 text-center text-xs sm:text-sm md:text-base">
+                            {loan.loanType === 'विनातारण' ? '—' : (loan.weight || '0')}
+                          </td>
+                        </tr>
+                      );
+                    }
+
                     return (
                       <tr 
                         key={loan.id} 
@@ -4091,6 +4163,19 @@ export default function BorrowerListReports() {
                       </tr>
                     );
                   })}
+                  {activeTab === 'closing-wise' && getPaginatedData.length > 0 && (
+                    <tr className="bg-indigo-100 font-bold text-indigo-900 border-t-2 border-indigo-400">
+                      <td className="border border-indigo-200 p-1.5 sm:p-2 md:p-3"></td>
+                      <td className="border border-indigo-200 p-1.5 sm:p-2 md:p-3"></td>
+                      <td className="border border-indigo-200 p-1.5 sm:p-2 md:p-3 text-right text-xs sm:text-sm md:text-base">एकूण:</td>
+                      <td className="border border-indigo-200 p-1.5 sm:p-2 md:p-3 text-right text-xs sm:text-sm md:text-base whitespace-nowrap">{closingWiseScreenTotals.totalAmount.toLocaleString('en-IN')}</td>
+                      <td className="border border-indigo-200 p-1.5 sm:p-2 md:p-3 text-right text-xs sm:text-sm md:text-base whitespace-nowrap">{closingWiseScreenTotals.totalInterest.toLocaleString('en-IN')}</td>
+                      <td className="border border-indigo-200 p-1.5 sm:p-2 md:p-3"></td>
+                      <td className="border border-indigo-200 p-1.5 sm:p-2 md:p-3"></td>
+                      <td className="border border-indigo-200 p-1.5 sm:p-2 md:p-3"></td>
+                      <td className="border border-indigo-200 p-1.5 sm:p-2 md:p-3"></td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>
