@@ -1067,17 +1067,31 @@ export default function BorrowerListReports() {
   // Totals for the on-screen closing-wise table (computed over the full filtered
   // list, not just the current page) — एकूण रक्कम + एकूण व्याज, mirroring the print report.
   const closingWiseScreenTotals = useMemo(() => {
-    if (activeTab !== 'closing-wise') return { totalAmount: 0, totalInterest: 0 };
+    if (activeTab !== 'closing-wise') return { totalAmount: 0, totalInterest: 0, weightDisplay: '0' };
     let totalAmount = 0;
     let totalInterest = 0;
+    let totalGoldWeight = 0;
+    let totalSilverWeight = 0;
     for (const loan of getFilteredLoans as any[]) {
       totalAmount += Math.round(loan.principalAmount || 0);
       const closureData = (loanClosures as any[]).find((c: any) => c.loanId === loan.id);
       if (closureData && closureData.interestPaid) {
         totalInterest += Math.round(parseFloat(closureData.interestPaid));
       }
+      const w = parseFloat((loan.weight || '0').toString().replace(/[^0-9.]/g, '')) || 0;
+      // Mirror the print report's weightDisplay logic exactly:
+      // gold = non-विनातारण, non-silver; silver = any metalType==='silver' (regardless of loanType).
+      if (loan.metalType === 'silver') {
+        totalSilverWeight += w;
+      } else if (loan.loanType !== 'विनातारण') {
+        totalGoldWeight += w;
+      }
     }
-    return { totalAmount, totalInterest };
+    const formatWeight = (val: number) => (val % 1 === 0 ? val.toString() : val.toFixed(2));
+    const weightDisplay = totalSilverWeight > 0
+      ? `सोने: ${formatWeight(totalGoldWeight)} | चांदी: ${formatWeight(totalSilverWeight)}`
+      : `${formatWeight(totalGoldWeight + totalSilverWeight)}`;
+    return { totalAmount, totalInterest, weightDisplay };
   }, [activeTab, getFilteredLoans, loanClosures]);
 
   // Calculate pagination info
@@ -1252,14 +1266,26 @@ export default function BorrowerListReports() {
 
       await new Promise(resolve => setTimeout(resolve, 600));
 
+      const renderScale = 2;
       const canvas = await html2canvas(container, {
-        scale: 2,
+        scale: renderScale,
         useCORS: true,
         logging: false,
         backgroundColor: '#ffffff',
         width: 1123,
         windowWidth: 1123,
       });
+
+      // Capture safe page-break positions (in canvas px) at table row boundaries so
+      // pagination never splits a data row or the totals row across two pages.
+      const containerRect = container.getBoundingClientRect();
+      const rowBoundaries: number[] = [];
+      container.querySelectorAll('tr').forEach((row) => {
+        const r = (row as HTMLElement).getBoundingClientRect();
+        const bottom = Math.round((r.bottom - containerRect.top) * renderScale);
+        if (bottom > 0) rowBoundaries.push(bottom);
+      });
+      const sortedBoundaries = Array.from(new Set(rowBoundaries)).sort((a, b) => a - b);
 
       document.body.removeChild(container);
 
@@ -1272,10 +1298,9 @@ export default function BorrowerListReports() {
       const imgWidth = canvas.width;
       const imgHeight = canvas.height;
       const ratio = contentWidth / imgWidth;
-      const scaledHeight = imgHeight * ratio;
 
-      const pageContentHeight = contentHeight;
-      const totalPages = Math.ceil(scaledHeight / pageContentHeight);
+      // Max canvas px that fit on one A4 content page.
+      const maxPagePx = contentHeight / ratio;
 
       const pdf = new jsPDF({
         orientation: 'portrait',
@@ -1283,13 +1308,29 @@ export default function BorrowerListReports() {
         format: 'a4',
       });
 
-      for (let page = 0; page < totalPages; page++) {
-        if (page > 0) {
-          pdf.addPage();
+      let sourceY = 0;
+      let firstPage = true;
+      while (sourceY < imgHeight - 1) {
+        const targetEnd = sourceY + maxPagePx;
+        let cut = Math.min(targetEnd, imgHeight);
+
+        // Snap the cut to the last row boundary that fits within this page so rows
+        // aren't sliced in half. Only do this when more content remains below.
+        if (targetEnd < imgHeight) {
+          let snapped = -1;
+          for (const b of sortedBoundaries) {
+            if (b > sourceY && b <= targetEnd) snapped = b;
+            else if (b > targetEnd) break;
+          }
+          // Fall back to a hard cut only if no row boundary fits (e.g. a single
+          // row taller than a full page).
+          if (snapped > sourceY) cut = snapped;
         }
 
-        const sourceY = (page * pageContentHeight) / ratio;
-        const sourceHeight = Math.min(pageContentHeight / ratio, imgHeight - sourceY);
+        const sourceHeight = Math.max(1, Math.round(cut - sourceY));
+
+        if (!firstPage) pdf.addPage();
+        firstPage = false;
 
         const pageCanvas = document.createElement('canvas');
         pageCanvas.width = imgWidth;
@@ -1304,6 +1345,8 @@ export default function BorrowerListReports() {
         const pageImgData = pageCanvas.toDataURL('image/jpeg', 0.95);
         const drawHeight = sourceHeight * ratio;
         pdf.addImage(pageImgData, 'JPEG', margin, margin, contentWidth, drawHeight);
+
+        sourceY = cut;
       }
 
       const tabName = activeTab === 'date-wise' ? 'डेटवाईज' : activeTab === 'closing-wise' ? 'क्लोजिंगवाईज' : activeTab === 'name-wise' ? 'नेमवाईज' : 'मुदतवाईज';
@@ -4173,7 +4216,7 @@ export default function BorrowerListReports() {
                       <td className="border border-indigo-200 p-1.5 sm:p-2 md:p-3"></td>
                       <td className="border border-indigo-200 p-1.5 sm:p-2 md:p-3"></td>
                       <td className="border border-indigo-200 p-1.5 sm:p-2 md:p-3"></td>
-                      <td className="border border-indigo-200 p-1.5 sm:p-2 md:p-3"></td>
+                      <td className="border border-indigo-200 p-1.5 sm:p-2 md:p-3 text-center text-xs sm:text-sm md:text-base whitespace-nowrap">{closingWiseScreenTotals.weightDisplay}</td>
                     </tr>
                   )}
                 </tbody>
