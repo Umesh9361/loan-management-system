@@ -888,7 +888,7 @@ function Loans() {
 
 
   // Data fetching queries - MUST BE FIRST before any functions use them
-  const { data: loans, isLoading: loansLoading, isFetching: loansFetching, refetch: refetchLoans } = useQuery({
+  const { data: loans, isLoading: loansLoading, refetch: refetchLoans } = useQuery({
     queryKey: ["/api/loans"],
     staleTime: 15 * 1000, // 15s — keeps cross-device additions fresh while still caching
     gcTime: 10 * 60 * 1000, // 10 minutes garbage collection
@@ -3130,16 +3130,6 @@ function Loans() {
               >
                 <Search className="h-4 w-4 mr-1.5" />
                 शोध
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => refetchLoans()}
-                disabled={loansFetching}
-                title="ताजी माहिती मिळवा"
-                className="border-gray-300 px-3"
-              >
-                <RotateCcw className={`h-4 w-4 ${loansFetching ? "animate-spin" : ""}`} />
               </Button>
             </div>
           </div>
