@@ -22,7 +22,7 @@ import { db } from "./db";
 import { eq, and, or, desc, asc, gte, lte, sum, count, sql, like, not, inArray } from "drizzle-orm";
 import bcrypt from "bcrypt";
 import { performanceCache, memoizedCalculations, cacheWarming } from "./performance-cache";
-import { getNameTranslations, normalizeMarathiVowels } from "./name-translations";
+import { getNameTranslations, normalizeMarathiVowels, transliterateToDevanagari } from "./name-translations";
 
 export interface IStorage {
   // User operations
@@ -63,6 +63,7 @@ export interface IStorage {
   
   // Loan operations
   getLoans(tenantId: string, filters?: { groupId?: string; borrowerId?: string; status?: string }): Promise<(Loan & { borrower: Borrower | null; group: Group })[]>;
+  searchLoans(tenantId: string, query: string, limit?: number): Promise<(Loan & { borrower: Borrower | null; group: Group })[]>;
   createLoan(loan: InsertLoan): Promise<Loan>;
   updateLoan(id: string, tenantId: string, loan: Partial<InsertLoan>): Promise<Loan | undefined>;
   deleteLoan(id: string, tenantId: string): Promise<boolean>;
@@ -455,6 +456,115 @@ export class DatabaseStorage implements IStorage {
     
     // 🚀 PERFORMANCE: Cache for 2 minutes - loans data changes frequently
     performanceCache.setQuery(cacheKey, result, 120);
+    return result;
+  }
+
+  // 🔍 Server-side loan search — tenant-scoped, bilingual (account number + borrower name + related fields).
+  // Returns only matching loans straight from the DB so search is fast and always reflects the latest data
+  // regardless of any client-side cache. The client re-scores/sorts the returned candidate set.
+  async searchLoans(tenantId: string, query: string, limit: number = 300): Promise<(Loan & { borrower: Borrower | null; group: Group })[]> {
+    const rawTerm = (query || '').trim();
+    if (rawTerm.length === 0) return [];
+
+    // Build bilingual search variations (mirrors borrower autocomplete logic).
+    const searchVariations = new Set<string>([rawTerm]);
+    getNameTranslations(rawTerm).forEach(v => searchVariations.add(v));
+    transliterateToDevanagari(rawTerm).forEach(v => searchVariations.add(v));
+
+    const normalizedTerm = normalizeMarathiVowels(rawTerm);
+    if (normalizedTerm !== rawTerm) {
+      getNameTranslations(normalizedTerm).forEach(v => searchVariations.add(v));
+    }
+
+    const vowelFrom = 'ीूैौॅॉआईऊऐऔ';
+    const vowelTo   = 'िुेोेोअइउएओ';
+
+    // Fields the client scoring searches across — keep the candidate set broad so no client match is lost.
+    const textFields = [
+      loans.borrowerName,
+      loans.accountNumber,
+      loans.borrowerMobile,
+      loans.collateralDetails,
+      loans.businessType,
+      loans.otherInfo,
+    ];
+
+    const conditions: any[] = [];
+    for (const variation of Array.from(searchVariations)) {
+      const likeTerm = `%${variation}%`;
+      const normLikeTerm = `%${normalizeMarathiVowels(variation)}%`;
+      for (const field of textFields) {
+        conditions.push(sql`${field} ILIKE ${likeTerm}`);
+        conditions.push(sql`translate(${field}, ${vowelFrom}, ${vowelTo}) ILIKE ${normLikeTerm}`);
+      }
+    }
+
+    const searchCondition = conditions.length > 1
+      ? sql`(${conditions.reduce((acc, curr, idx) => idx === 0 ? curr : sql`${acc} OR ${curr}`)})`
+      : conditions[0];
+
+    const result = await db.select({
+      id: loans.id,
+      tenantId: loans.tenantId,
+      loanNumber: loans.loanNumber,
+      borrowerId: loans.borrowerId,
+      groupId: loans.groupId,
+      borrowerName: loans.borrowerName,
+      borrowerMobile: loans.borrowerMobile,
+      borrowerAddress: loans.borrowerAddress,
+      businessType: loans.businessType,
+      loanType: loans.loanType,
+      accountNumber: loans.accountNumber,
+      principalAmount: loans.principalAmount,
+      loanDate: loans.loanDate,
+      maturityDate: loans.maturityDate,
+      hasMaturity: loans.hasMaturity,
+      maturityMonths: loans.maturityMonths,
+      calculatedMaturityDate: loans.calculatedMaturityDate,
+      interestRate: loans.interestRate,
+      interestRateType: loans.interestRateType,
+      collateralDetails: loans.collateralDetails,
+      weight: loans.weight,
+      purity: loans.purity,
+      metalType: loans.metalType,
+      marketValue: loans.marketValue,
+      documentDetails: loans.documentDetails,
+      specialConditions: loans.specialConditions,
+      otherInfo: loans.otherInfo,
+      status: loans.status,
+      createdAt: loans.createdAt,
+      updatedAt: loans.updatedAt,
+      closureDate: loanClosures.closureDate,
+      borrower: sql`CASE WHEN ${borrowers.id} IS NOT NULL THEN json_build_object(
+        'id', ${borrowers.id},
+        'tenantId', ${borrowers.tenantId},
+        'name', ${borrowers.name},
+        'mobile', ${borrowers.mobile},
+        'address', ${borrowers.address},
+        'bankDetails', ${borrowers.bankDetails},
+        'groupId', ${borrowers.groupId},
+        'isActive', ${borrowers.isActive},
+        'createdAt', ${borrowers.createdAt},
+        'updatedAt', ${borrowers.updatedAt}
+      ) ELSE NULL END`.as('borrower'),
+      group: sql`json_build_object(
+        'id', ${groups.id},
+        'tenantId', ${groups.tenantId},
+        'name', ${groups.name},
+        'description', ${groups.description},
+        'isActive', ${groups.isActive},
+        'createdAt', ${groups.createdAt},
+        'updatedAt', ${groups.updatedAt}
+      )`.as('group'),
+    })
+    .from(loans)
+    .leftJoin(borrowers, eq(loans.borrowerId, borrowers.id))
+    .leftJoin(loanClosures, eq(loans.id, loanClosures.loanId))
+    .innerJoin(groups, eq(loans.groupId, groups.id))
+    .where(and(eq(loans.tenantId, tenantId), searchCondition))
+    .orderBy(desc(loans.createdAt))
+    .limit(limit) as any;
+
     return result;
   }
 
