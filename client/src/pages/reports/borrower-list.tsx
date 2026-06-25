@@ -39,6 +39,7 @@ export default function BorrowerListReports() {
   
   // Closing-wise specific
   const [dateFilter, setDateFilter] = useState<'loan-date' | 'closure-date'>('loan-date');
+  const [sortByClosureDate, setSortByClosureDate] = useState(false);
   
   // Name-wise specific
   const [selectedBorrowerName, setSelectedBorrowerName] = useState("");
@@ -876,8 +877,17 @@ export default function BorrowerListReports() {
         return checkDate >= dateFrom && checkDate <= dateTo;
       });
       
-      // Apply centralized sorting for consistent ordering with proper date normalization
-      filteredLoans = sortLoans(filteredLoans, Array.isArray(groups) ? groups : [], { dateOrder: 'asc' });
+      // When sorting by closure date (closure-date radio + checkbox on), attach the
+      // resolved closure date to each loan (shallow copy — does not mutate the cache)
+      // so the final centralized sort can order by it. Falls back to loan date when
+      // a closure record is missing. The actual sort happens in the single final
+      // sortLoans call below.
+      if (dateFilter === 'closure-date' && sortByClosureDate) {
+        filteredLoans = filteredLoans.map(loan => {
+          const closureData = (loanClosures as any[]).find((closure: any) => closure.loanId === loan.id);
+          return { ...loan, closureDate: closureData ? closureData.closureDate : loan.loanDate };
+        });
+      }
     } else if (activeTab === 'name-wise' && selectedBorrowerName) {
       filteredLoans = filteredLoans.filter(loan => {
         // Match borrower name
@@ -1040,9 +1050,12 @@ export default function BorrowerListReports() {
       filteredLoans = filteredLoans.filter(loan => loan.status !== 'closed');
     }
     
-    // Apply centralized sorting for consistent ordering with proper date normalization
-    return sortLoans(filteredLoans, Array.isArray(groups) ? groups : [], { dateOrder: 'asc' });
-  }, [activeTab, groupId, dateFrom, dateTo, dateWiseStatus, dateFilter, selectedBorrowerName, nameWiseStatus, maturityWiseStatus, includeSpecificPeriod, includeFutureMaturity, futureMaturityPeriod, dateFilterEnabled, startDate, endDate, loans, loanClosures, groups]);
+    // Apply centralized sorting for consistent ordering with proper date normalization.
+    // For the closing-wise tab with the closure-date radio + checkbox on, order
+    // ascending by closure date (closureDate was attached above); otherwise by loan date.
+    const useClosureSort = activeTab === 'closing-wise' && dateFilter === 'closure-date' && sortByClosureDate;
+    return sortLoans(filteredLoans, Array.isArray(groups) ? groups : [], { dateOrder: 'asc', sortByClosureDate: useClosureSort });
+  }, [activeTab, groupId, dateFrom, dateTo, dateWiseStatus, dateFilter, sortByClosureDate, selectedBorrowerName, nameWiseStatus, maturityWiseStatus, includeSpecificPeriod, includeFutureMaturity, futureMaturityPeriod, dateFilterEnabled, startDate, endDate, loans, loanClosures, groups]);
 
   // Pagination logic for current page data
   const getPaginatedData = useMemo(() => {
@@ -3732,6 +3745,20 @@ export default function BorrowerListReports() {
                     </Label>
                   </div>
                 </RadioGroup>
+                {dateFilter === 'closure-date' && (
+                  <div className="flex items-center space-x-2 mt-2">
+                    <input
+                      type="checkbox"
+                      id="sort-by-closure-date"
+                      checked={sortByClosureDate}
+                      onChange={(e) => setSortByClosureDate(e.target.checked)}
+                      className="h-4 w-4 rounded border-gray-300"
+                    />
+                    <Label htmlFor="sort-by-closure-date" className="font-normal text-sm">
+                      असेंडिंग ऑर्डर कर्ज बंद दिनांक प्रमाणे
+                    </Label>
+                  </div>
+                )}
               </div>
             )}
             
