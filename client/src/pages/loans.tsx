@@ -895,21 +895,24 @@ function Loans() {
     refetchOnMount: "always", // re-entering the page always pulls latest loans
   });
 
-  // Cross-device freshness: when a new search term is entered, pull the latest
-  // loans in the background once per term so accounts added on another device
-  // (e.g. on mobile) surface on this device without a manual reload.
-  const lastSearchRefetchRef = useRef<string>("");
-  useEffect(() => {
-    const q = debouncedSearchQuery.trim();
-    if (q.length === 0) {
-      lastSearchRefetchRef.current = "";
-      return;
-    }
-    if (lastSearchRefetchRef.current !== q) {
-      lastSearchRefetchRef.current = q;
-      refetchLoans();
-    }
-  }, [debouncedSearchQuery, refetchLoans]);
+  // 🔍 Server-side search: when a search term is entered, query the DB directly so results are
+  // instant, always reflect the latest data (including accounts added on another device), and don't
+  // depend on the full cached list being in memory. The list view still uses the cached /api/loans.
+  const trimmedSearch = debouncedSearchQuery.trim();
+  const { data: searchResults, isFetching: searchFetching } = useQuery({
+    queryKey: ["/api/loans/search", trimmedSearch],
+    queryFn: async () => {
+      const res = await fetch(`/api/loans/search?q=${encodeURIComponent(trimmedSearch)}`, {
+        credentials: 'include',
+      });
+      if (!res.ok) throw new Error('Failed to search loans');
+      return res.json();
+    },
+    enabled: trimmedSearch.length > 0,
+    staleTime: 0, // always fetch latest matches for a term
+    gcTime: 2 * 60 * 1000,
+    refetchOnMount: 'always',
+  });
 
   const { data: company } = useQuery({
     queryKey: ["/api/company"],
@@ -1560,7 +1563,12 @@ function Loans() {
 
   // 🔍 COMPREHENSIVE FILTERING - Search + Date + Status + Group with Smart Ranking
   // COMPLETELY FIXED: Search works independently, show all loans when no filters
-  const filteredLoans = Array.isArray(loans) ? loans.map((loan: any) => {
+  // Source: when searching, use the server-side search results (DB-fresh, only matches);
+  // otherwise use the cached full list for browsing.
+  const loansSource = hasSearchQuery
+    ? (Array.isArray(searchResults) ? searchResults : [])
+    : (Array.isArray(loans) ? loans : []);
+  const filteredLoans = Array.isArray(loansSource) ? loansSource.map((loan: any) => {
     
     // Calculate search score
     const searchScore = debouncedSearchQuery ? getSearchScore(loan) : 1;
@@ -3243,7 +3251,7 @@ function Loans() {
       </Card>
 
       {/* Search Results Card - Show ALL loans OR when any filters are active */}
-      {(Array.isArray(loans) && loans.length > 0) && (
+      {((Array.isArray(loans) && loans.length > 0) || (hasSearchQuery && Array.isArray(searchResults))) && (
         <div ref={searchResultsRef}>
         <Card className="border-indigo-200">
           <CardHeader>
