@@ -584,6 +584,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     font-family: 'Noto Sans Devanagari', 'Inter', sans-serif;
     font-size: 15px;
     line-height: 1.6;
+    overscroll-behavior-y: contain;
   }
 }
 
