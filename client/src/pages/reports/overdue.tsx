@@ -131,7 +131,7 @@ export default function OverdueReport() {
   };
 
   const [activeTab, setActiveTab] = useState<"group" | "customer">("group");
-  const [viewMode, setViewMode] = useState<"default" | "all">("default");
+  const [viewMode, setViewMode] = useState<"default" | "all" | "loss" | "low">("default");
 
   const [filters, setFilters] = useState<OverdueReportFilters>({
     dateFrom: new Date().toISOString().split('T')[0],
@@ -763,12 +763,14 @@ export default function OverdueReport() {
     }
   }, [shouldScrollToReport, reportGenerated, isGenerating, overdueData, dataTableRef]);
 
-  const filteredOverdueData = viewMode === "default" 
-    ? [...(overdueData as OverdueItem[])].filter(item => {
+  const filteredOverdueData = viewMode === "all"
+    ? [...(overdueData as OverdueItem[])]
+    : [...(overdueData as OverdueItem[])].filter(item => {
         const security = getSecurityLevel(item);
+        if (viewMode === "loss") return security.level === 'loss';
+        if (viewMode === "low") return security.level === 'low';
         return security.level === 'loss' || security.level === 'low';
-      })
-    : [...(overdueData as OverdueItem[])];
+      });
 
   const sortedOverdueData = filteredOverdueData.sort((a, b) => {
     const secA = getSecurityLevel(a);
@@ -804,6 +806,13 @@ export default function OverdueReport() {
     low: sortedOverdueData.filter(i => getSecurityLevel(i).level === 'low').length,
     medium: sortedOverdueData.filter(i => getSecurityLevel(i).level === 'medium').length,
     safe: sortedOverdueData.filter(i => getSecurityLevel(i).level === 'safe').length,
+  };
+
+  // नुकसान / कमी सुरक्षित chips toggle filters, so their counts come from the full
+  // dataset and stay visible/clickable regardless of the active filter.
+  const allLevelCounts = {
+    loss: (overdueData as OverdueItem[]).filter(i => getSecurityLevel(i).level === 'loss').length,
+    low: (overdueData as OverdueItem[]).filter(i => getSecurityLevel(i).level === 'low').length,
   };
 
   const renderFilters = () => (
@@ -1271,16 +1280,33 @@ export default function OverdueReport() {
                   <p className="text-sm sm:text-base md:text-lg font-semibold text-gray-700">
                     Total Loans: {totalLoans} (तारण: {securedLoans.length}, विनातारण: {unsecuredLoans.length}) {viewMode === "default" && `| सुरक्षित वगळले: ${filteredOutCount}`} | Total Loss: {formatCurrency(totalLoss)}
                   </p>
+                  <p className="text-sm sm:text-base font-semibold text-amber-700 mt-1">
+                    एकूण वजन: {securedTotalGoldWeight.toFixed(2)}g | शुद्ध सोने वजन: {securedTotalPureGold.toFixed(2)}g
+                  </p>
                   <div className="flex flex-wrap gap-2 justify-center mt-3">
-                    {levelCounts.loss > 0 && (
-                      <span className="px-3 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700">
-                        नुकसान: {levelCounts.loss}
-                      </span>
+                    {allLevelCounts.loss > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setViewMode(viewMode === "loss" ? "default" : "loss")}
+                        className={cn(
+                          "px-3 py-1 rounded-full text-xs font-bold transition-all bg-red-100 text-red-700 hover:bg-red-200",
+                          viewMode === "loss" && "ring-2 ring-red-500 ring-offset-1"
+                        )}
+                      >
+                        नुकसान: {allLevelCounts.loss}
+                      </button>
                     )}
-                    {levelCounts.low > 0 && (
-                      <span className="px-3 py-1 rounded-full text-xs font-bold bg-orange-100 text-orange-700">
-                        कमी सुरक्षित: {levelCounts.low}
-                      </span>
+                    {allLevelCounts.low > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setViewMode(viewMode === "low" ? "default" : "low")}
+                        className={cn(
+                          "px-3 py-1 rounded-full text-xs font-bold transition-all bg-orange-100 text-orange-700 hover:bg-orange-200",
+                          viewMode === "low" && "ring-2 ring-orange-500 ring-offset-1"
+                        )}
+                      >
+                        कमी सुरक्षित: {allLevelCounts.low}
+                      </button>
                     )}
                     {levelCounts.medium > 0 && (
                       <span className="px-3 py-1 rounded-full text-xs font-bold bg-yellow-100 text-yellow-700">
