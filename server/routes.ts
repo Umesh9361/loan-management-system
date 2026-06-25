@@ -1292,6 +1292,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Loans routes - NO CACHE for real-time updates
+  // 🔍 Server-side loan search — tenant-scoped, bilingual, returns only matching loans from the DB.
+  // Always reflects the latest data (no cache dependency) so cross-device additions surface instantly.
+  app.get("/api/loans/search", requireAuth, async (req, res) => {
+    res.set({
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0',
+    });
+
+    try {
+      const q = ((req.query.q as string) || '').trim();
+      if (q.length === 0) {
+        return res.json([]);
+      }
+      const limitParam = parseInt((req.query.limit as string) || '', 10);
+      const limit = Number.isFinite(limitParam) && limitParam > 0 ? Math.min(limitParam, 1000) : 300;
+
+      const results = await storage.searchLoans(req.session.tenantId!, q, limit);
+      res.json(results);
+    } catch (error) {
+      console.error("Loan search error:", error);
+      res.status(500).json({ message: "Failed to search loans" });
+    }
+  });
+
   app.get("/api/loans", requireAuth, async (req, res) => {
     // Disable all caching for real-time loan updates
     res.set({
