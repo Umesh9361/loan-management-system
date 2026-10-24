@@ -9,7 +9,7 @@ import { Search, Printer, Calendar, Download, Users, User, Trophy, BarChart3, Tr
 import { exportAccountSummaryToExcel } from "@/utils/excel-export";
 import { Sidebar } from "@/components/ui/sidebar";
 import { MobileNav } from "@/components/ui/mobile-nav";
-import { DateUtils } from "@/lib/date-utils";
+import { formatSummaryCurrency, formatSummaryDate } from "@shared/account-summary-format";
 import { formatWeight, uniqueBorrowerNames } from "@shared/report-weights";
 import { AccountSummaryOverview } from "@/components/reports/account-summary-overview";
 import { buildAccountSummaryRow, accountSummaryTotals, accountSummaryContext, createSummaryRanges, initializeSummaryRanges, updateSummaryRange, firstSummaryLoanDate, localISODate, summaryRangeError, summaryDataState, checkedSummaryLoans, checkedSummaryClosures, summaryArray, accountSummaryPrintRows, escapeSummaryHtml, createSummaryInterestSettings } from "@shared/account-summary";
@@ -142,13 +142,14 @@ export default function AccountSummaryReport() {
   const selectedFrom = activeTab === 'group' ? fromDate : customerFromDate;
   const selectedTo = activeTab === 'group' ? toDate : customerToDate;
   const scopeLabel = activeTab === 'group' ? 'सर्व गट व विना गट / इतर'
-    : customerMode === 'top50' ? 'फक्त दर्शवलेले टॉप ५० कर्जदार; संपूर्ण व्यवसायाची टोटल नाही'
+    : customerMode === 'top50' ? 'फक्त दर्शवलेले टॉप 50 कर्जदार; संपूर्ण व्यवसायाची टोटल नाही'
     : `कर्जदार: ${selectedCustomerName || 'निवडलेला नाही'}`;
   const coreFrom = dateRanges[activeTab].cumulative.from ?? today;
   const selectedInterest = interestSettings[activeTab].allTime
     ? { allTime: true, from: coreFrom, to: today } : interestSettings[activeTab];
   const reportContext = accountSummaryContext(calcMode, calcMode === 'cumulative' ? coreFrom : selectedFrom,
     calcMode === 'cumulative' ? today : selectedTo, scopeLabel, calcMode === 'cumulative' ? selectedInterest : undefined);
+  const overviewPeriodText = `${formatSummaryDate(reportContext.from)} ते ${formatSummaryDate(reportContext.to)}`;
 
   const handlePrint = () => {
     if (!reportReady) { alert(reportProblem); return; }
@@ -158,7 +159,7 @@ export default function AccountSummaryReport() {
     const label = activeTab === "group" ? "गटाचे नाव" : "कस्टमर नाव";
     const baseTitle = activeTab === "group" 
       ? "गटनिहाय खाते सारांश अहवाल" 
-      : (customerMode === "specific" ? `कस्टमर सारांश - ${selectedCustomerName}` : "टॉप ५० कस्टमर सारांश अहवाल");
+      : (customerMode === "specific" ? `कस्टमर सारांश - ${selectedCustomerName}` : "टॉप 50 कस्टमर सारांश अहवाल");
     const title = `${baseTitle} (${modeLabel})`;
     const companyName = (company as any)?.name || 'कंपनी नाव';
     const periodText = `${reportContext.periodText} — ${reportContext.balanceNote}`;
@@ -355,18 +356,7 @@ ${overviewHTML}
     }
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('hi-IN', {
-      style: 'currency',
-      currency: 'INR',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 2
-    }).format(amount || 0);
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('hi-IN');
-  };
+  const formatCurrency = formatSummaryCurrency;
 
   const renderSummaryTable = (data: SummaryRow[], grandTotals: ReturnType<typeof calcGrandTotals>, nameLabel: string, showRank?: boolean) => !reportReady ? null : (
     <>
@@ -594,10 +584,10 @@ ${overviewHTML}
             <td style={{ border: '2px solid #1e40af', padding: '10px', textAlign: 'center', fontSize: '13px' }}>{row.totalLoans}</td>
             <td style={{ border: '2px solid #1e40af', padding: '10px', textAlign: 'center', fontSize: '13px' }}>{row.activeLoans}</td>
             <td style={{ border: '2px solid #1e40af', padding: '10px', textAlign: 'center', fontSize: '13px' }}>{row.closedLoans}</td>
-            <td className="amount-col" style={{ border: '2px solid #1e40af', padding: '10px', textAlign: 'right', fontSize: '13px' }}>₹{row.totalAmount.toLocaleString('en-IN')}</td>
-            <td className="amount-col" style={{ border: '2px solid #1e40af', padding: '10px', textAlign: 'right', fontSize: '13px' }}>₹{row.closedAmount.toLocaleString('en-IN')}</td>
-            <td className="amount-col" style={{ border: '2px solid #1e40af', padding: '10px', textAlign: 'right', fontSize: '13px' }}>₹{row.activeBalance.toLocaleString('en-IN')}</td>
-            <td className="amount-col" style={{ border: '2px solid #1e40af', padding: '10px', textAlign: 'right', fontSize: '13px' }}>₹{row.totalInterest.toLocaleString('en-IN')}</td>
+            <td className="amount-col" style={{ border: '2px solid #1e40af', padding: '10px', textAlign: 'right', fontSize: '13px' }}>{formatCurrency(row.totalAmount)}</td>
+            <td className="amount-col" style={{ border: '2px solid #1e40af', padding: '10px', textAlign: 'right', fontSize: '13px' }}>{formatCurrency(row.closedAmount)}</td>
+            <td className="amount-col" style={{ border: '2px solid #1e40af', padding: '10px', textAlign: 'right', fontSize: '13px' }}>{formatCurrency(row.activeBalance)}</td>
+            <td className="amount-col" style={{ border: '2px solid #1e40af', padding: '10px', textAlign: 'right', fontSize: '13px' }}>{formatCurrency(row.totalInterest)}</td>
           </tr>
         ))}
         <tr className="total-row">
@@ -608,10 +598,10 @@ ${overviewHTML}
           <td style={{ border: '2px solid #1e40af', padding: '10px', textAlign: 'center', fontWeight: 'bold', background: '#e3f2fd', fontSize: '13px' }}>{grandTotals.totalLoans}</td>
           <td style={{ border: '2px solid #1e40af', padding: '10px', textAlign: 'center', fontWeight: 'bold', background: '#e3f2fd', fontSize: '13px' }}>{grandTotals.activeLoans}</td>
           <td style={{ border: '2px solid #1e40af', padding: '10px', textAlign: 'center', fontWeight: 'bold', background: '#e3f2fd', fontSize: '13px' }}>{grandTotals.closedLoans}</td>
-          <td className="amount-col" style={{ border: '2px solid #1e40af', padding: '10px', textAlign: 'right', fontWeight: 'bold', background: '#e3f2fd', fontSize: '13px' }}>₹{grandTotals.totalAmount.toLocaleString('en-IN')}</td>
-          <td className="amount-col" style={{ border: '2px solid #1e40af', padding: '10px', textAlign: 'right', fontWeight: 'bold', background: '#e3f2fd', fontSize: '13px' }}>₹{grandTotals.closedAmount.toLocaleString('en-IN')}</td>
-          <td className="amount-col" style={{ border: '2px solid #1e40af', padding: '10px', textAlign: 'right', fontWeight: 'bold', background: '#e3f2fd', fontSize: '13px' }}>₹{grandTotals.activeBalance.toLocaleString('en-IN')}</td>
-          <td className="amount-col" style={{ border: '2px solid #1e40af', padding: '10px', textAlign: 'right', fontWeight: 'bold', background: '#e3f2fd', fontSize: '13px' }}>₹{grandTotals.totalInterest.toLocaleString('en-IN')}</td>
+          <td className="amount-col" style={{ border: '2px solid #1e40af', padding: '10px', textAlign: 'right', fontWeight: 'bold', background: '#e3f2fd', fontSize: '13px' }}>{formatCurrency(grandTotals.totalAmount)}</td>
+          <td className="amount-col" style={{ border: '2px solid #1e40af', padding: '10px', textAlign: 'right', fontWeight: 'bold', background: '#e3f2fd', fontSize: '13px' }}>{formatCurrency(grandTotals.closedAmount)}</td>
+          <td className="amount-col" style={{ border: '2px solid #1e40af', padding: '10px', textAlign: 'right', fontWeight: 'bold', background: '#e3f2fd', fontSize: '13px' }}>{formatCurrency(grandTotals.activeBalance)}</td>
+          <td className="amount-col" style={{ border: '2px solid #1e40af', padding: '10px', textAlign: 'right', fontWeight: 'bold', background: '#e3f2fd', fontSize: '13px' }}>{formatCurrency(grandTotals.totalInterest)}</td>
         </tr>
       </tbody>
     </table>
@@ -672,7 +662,7 @@ ${overviewHTML}
   const currentPrintLabel = activeTab === "group" ? "गटाचे नाव" : "कस्टमर नाव";
   const currentPrintTitle = activeTab === "group" 
     ? "गटनिहाय खाते सारांश अहवाल" 
-    : (customerMode === "specific" ? `कस्टमर सारांश - ${selectedCustomerName}` : "टॉप ५० कस्टमर सारांश अहवाल");
+    : (customerMode === "specific" ? `कस्टमर सारांश - ${selectedCustomerName}` : "टॉप 50 कस्टमर सारांश अहवाल");
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -776,11 +766,11 @@ ${overviewHTML}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 mt-1">
                       <div>
                         <Label htmlFor="fromDate">सुरुवातीची तारीख</Label>
-                        <Input id="fromDate" type="date" value={fromDate} disabled={calcMode === 'cumulative' && interestSettings.group.allTime} onChange={(e) => setFromDate(e.target.value)} className="font-inter" />
+                        <Input id="fromDate" type="date" lang="en-GB" value={fromDate} disabled={calcMode === 'cumulative' && interestSettings.group.allTime} onChange={(e) => setFromDate(e.target.value)} className="font-inter" />
                       </div>
                       <div>
                         <Label htmlFor="toDate">शेवटची तारीख</Label>
-                        <Input id="toDate" type="date" value={toDate} disabled={calcMode === 'cumulative' && interestSettings.group.allTime} onChange={(e) => setToDate(e.target.value)} className="font-inter" />
+                        <Input id="toDate" type="date" lang="en-GB" value={toDate} disabled={calcMode === 'cumulative' && interestSettings.group.allTime} onChange={(e) => setToDate(e.target.value)} className="font-inter" />
                       </div>
                     </div>
                     <div className="flex gap-2 flex-wrap">
@@ -808,8 +798,8 @@ ${overviewHTML}
                   </CardContent>
                 </Card>
 
-                {reportReady && <div ref={overviewRef} className="no-print"><AccountSummaryOverview totals={groupGrandTotals} mode={calcMode} periodText={reportContext.periodText} interestLabel={reportContext.interestText} /></div>}
-                {reportReady && <p className="my-3 text-xs text-gray-600">{reportContext.balanceNote}</p>}
+                {reportReady && <div ref={overviewRef} className="no-print"><AccountSummaryOverview totals={groupGrandTotals} mode={calcMode} periodText={overviewPeriodText} subsetLabel={scopeLabel} interestLabel={reportContext.interestText} /></div>}
+                {reportReady && <details className="my-3 text-xs text-gray-600"><summary className="cursor-pointer font-medium">हिशोबाचा आधार</summary><p className="mt-2 leading-relaxed">{reportContext.balanceNote}</p></details>}
                 <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
                   {groupSummaries.length > 0 ? (
                     renderSummaryTable(groupSummaries, groupGrandTotals, "गट नाव")
@@ -848,7 +838,7 @@ ${overviewHTML}
                   return (
                     <div id="group-performance-section" className="mt-6 space-y-5 no-print">
                       <p className="rounded border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
-                        खालील जुनी क्रमवारी तुलनात्मक निर्देशांक आहे; अधिकृत वसुली कार्यक्षमता नाही. बंद रक्कमेमध्ये पूर्वीच्या कर्जांचे मुद्दलही येते; वाटप व बंद रकमेचा आधार समान कर्जांचा असेलच असे नाही. शिल्लक वजाबाकीने काढलेली नाही. खालील गुणांकनातील वसुली गुणोत्तर १००% पर्यंत मर्यादित आहे.
+                        तुलनात्मक क्रमवारी; अधिकृत वसुली कार्यक्षमता नाही. वाटप व बंद रक्कम वेगवेगळ्या कर्जांची असू शकते. शिल्लक वजाबाकीने काढलेली नाही; वसुली गुणोत्तर कमाल 100%.
                       </p>
 
                       {/* KPI Summary Row */}
@@ -949,7 +939,7 @@ ${overviewHTML}
                             गट परफॉर्मन्स रँकिंग
                           </CardTitle>
                           <p className="text-xs text-gray-500 mt-1">
-                            सक्रिय कर्जे (३५%) + वसुली दर (३०%) + एकूण उलाढाल (२०%) + कर्ज संख्या (१५%)
+                            सक्रिय कर्जे (35%) + वसुली दर (30%) + एकूण उलाढाल (20%) + कर्ज संख्या (15%)
                           </p>
                         </CardHeader>
                         <CardContent>
@@ -1002,12 +992,12 @@ ${overviewHTML}
                           </div>
                           <div className="mt-4 pt-3 border-t border-gray-100 text-xs text-gray-500 space-y-1">
                             <div className="flex flex-wrap gap-x-4 gap-y-1">
-                              <span><span className="font-medium text-gray-700">सक्रिय कर्जे ३५%</span> - सध्या किती कर्जे चालू आहेत</span>
-                              <span><span className="font-medium text-gray-700">वसुली दर ३०%</span> - किती % रक्कम वसूल झाली</span>
+                              <span><span className="font-medium text-gray-700">सक्रिय कर्जे 35%</span> - सध्या किती कर्जे चालू आहेत</span>
+                              <span><span className="font-medium text-gray-700">वसुली दर 30%</span> - किती % रक्कम वसूल झाली</span>
                             </div>
                             <div className="flex flex-wrap gap-x-4 gap-y-1">
-                              <span><span className="font-medium text-gray-700">उलाढाल २०%</span> - एकूण किती रक्कम फिरवली</span>
-                              <span><span className="font-medium text-gray-700">कर्ज संख्या १५%</span> - एकूण किती व्यवहार झाले</span>
+                              <span><span className="font-medium text-gray-700">उलाढाल 20%</span> - एकूण किती रक्कम फिरवली</span>
+                              <span><span className="font-medium text-gray-700">कर्ज संख्या 15%</span> - एकूण किती व्यवहार झाले</span>
                             </div>
                           </div>
                         </CardContent>
@@ -1052,7 +1042,7 @@ ${overviewHTML}
                         }`}
                       >
                         <Trophy className="h-3.5 w-3.5" />
-                        टॉप ५० व्यवहार
+                        टॉप 50 व्यवहार
                       </button>
                     </div>
 
@@ -1066,7 +1056,7 @@ ${overviewHTML}
                             ref={customerInputRef}
                             id="customerSearch"
                             type="text"
-                            placeholder="कस्टमरचे नाव टाईप करा (किमान २ अक्षरे)..."
+                            placeholder="कस्टमरचे नाव टाईप करा (किमान 2 अक्षरे)..."
                             value={customerSearchTerm}
                             onChange={(e) => {
                               const val = e.target.value;
@@ -1133,11 +1123,11 @@ ${overviewHTML}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 mt-1">
                       <div>
                         <Label htmlFor="customerFromDate">सुरुवातीची तारीख</Label>
-                        <Input id="customerFromDate" type="date" value={customerFromDate} disabled={calcMode === 'cumulative' && interestSettings.customer.allTime} onChange={(e) => setCustomerFromDate(e.target.value)} className="font-inter" />
+                        <Input id="customerFromDate" type="date" lang="en-GB" value={customerFromDate} disabled={calcMode === 'cumulative' && interestSettings.customer.allTime} onChange={(e) => setCustomerFromDate(e.target.value)} className="font-inter" />
                       </div>
                       <div>
                         <Label htmlFor="customerToDate">शेवटची तारीख</Label>
-                        <Input id="customerToDate" type="date" value={customerToDate} disabled={calcMode === 'cumulative' && interestSettings.customer.allTime} onChange={(e) => setCustomerToDate(e.target.value)} className="font-inter" />
+                        <Input id="customerToDate" type="date" lang="en-GB" value={customerToDate} disabled={calcMode === 'cumulative' && interestSettings.customer.allTime} onChange={(e) => setCustomerToDate(e.target.value)} className="font-inter" />
                       </div>
                     </div>
 
@@ -1151,7 +1141,7 @@ ${overviewHTML}
                         प्रिंट करा
                       </Button>
                       <Button 
-                        onClick={() => handleExcelExport(customerSummaries, customerMode === "specific" ? 'कस्टमर सारांश' : 'टॉप ५० सारांश')} 
+                        onClick={() => handleExcelExport(customerSummaries, customerMode === "specific" ? 'कस्टमर सारांश' : 'टॉप 50 सारांश')}
                         variant="outline" 
                         className="bg-green-50 hover:bg-green-100 border-green-300 no-print hidden sm:flex"
                         disabled={!reportReady || !customerSummaries.length || (customerMode === "specific" && !selectedCustomerName)}
@@ -1177,14 +1167,14 @@ ${overviewHTML}
 
                 {/* Results */}
                 {reportReady && (customerMode === 'top50' || selectedCustomerName) && <>
-                  <div ref={overviewRef} className="no-print"><AccountSummaryOverview totals={customerGrandTotals} mode={calcMode} periodText={reportContext.periodText} subsetLabel={scopeLabel} interestLabel={reportContext.interestText} /></div>
-                  <p className="my-3 text-xs text-gray-600">{reportContext.balanceNote}</p>
+                  <div ref={overviewRef} className="no-print"><AccountSummaryOverview totals={customerGrandTotals} mode={calcMode} periodText={overviewPeriodText} subsetLabel={scopeLabel} interestLabel={reportContext.interestText} /></div>
+                  <details className="my-3 text-xs text-gray-600"><summary className="cursor-pointer font-medium">हिशोबाचा आधार</summary><p className="mt-2 leading-relaxed">{reportContext.balanceNote}</p></details>
                 </>}
                 {customerSummaries.length > 0 ? (
                   <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
                     <div className="bg-indigo-50 px-4 py-3 border-b border-indigo-100">
                       <h3 className="font-semibold text-indigo-900 text-lg">
-                        {customerMode === "specific" ? selectedCustomerName : "टॉप ५० कस्टमर (व्यवहार प्रमाणे)"}
+                        {customerMode === "specific" ? selectedCustomerName : "टॉप 50 कस्टमर (व्यवहार प्रमाणे)"}
                         <span className="ml-2 text-xs font-medium text-indigo-600">({modeLabel})</span>
                       </h3>
                       <p className="text-sm text-indigo-600">
@@ -1200,7 +1190,7 @@ ${overviewHTML}
                       <>
                         <Search className="h-12 w-12 mx-auto mb-3 text-gray-300" />
                         <p className="text-lg font-medium text-gray-500">कस्टमरचे नाव शोधा</p>
-                        <p className="text-sm text-gray-400 mt-1">वरील सर्च बॉक्समध्ये किमान २ अक्षरे टाईप करा</p>
+                        <p className="text-sm text-gray-400 mt-1">वरील सर्च बॉक्समध्ये किमान 2 अक्षरे टाईप करा</p>
                       </>
                     ) : (
                       <>
@@ -1235,7 +1225,7 @@ ${overviewHTML}
                   return (
                     <div id="customer-performance-section" className="mt-6 space-y-5 no-print">
                       <p className="rounded border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
-                        टोटल फक्त दर्शवलेल्या टॉप ५० कर्जदारांची आहे. खालील जुनी क्रमवारी तुलनात्मक निर्देशांक आहे, अधिकृत वसुली कार्यक्षमता नाही. बंद रकमेतील जुनी कर्जे आणि या काळातील वाटप यांचा आधार वेगळा असू शकतो; गुणांकनातील वसुली गुणोत्तर १००% पर्यंत मर्यादित आहे.
+                        टोटल फक्त दर्शवलेल्या टॉप 50 कर्जदारांची. तुलनात्मक क्रमवारी; अधिकृत वसुली कार्यक्षमता नाही. वाटप व बंद रक्कम वेगवेगळ्या कर्जांची असू शकते; वसुली गुणोत्तर कमाल 100%.
                       </p>
 
                       {/* KPI Summary */}
@@ -1264,12 +1254,12 @@ ${overviewHTML}
                         </div>
                       </div>
 
-                      {/* टॉप ५० कस्टमर वाटप vs वसुली */}
+                      {/* टॉप 50 कस्टमर वाटप vs वसुली */}
                       <Card>
                         <CardHeader className="pb-3">
                           <CardTitle className="text-base flex items-center gap-2">
                             <BarChart3 className="h-5 w-5 text-indigo-600" />
-                            टॉप ५० कस्टमर - वाटप व वसुली तुलना
+                            टॉप 50 कस्टमर - वाटप व वसुली तुलना
                           </CardTitle>
                         </CardHeader>
                         <CardContent>
@@ -1328,15 +1318,15 @@ ${overviewHTML}
                         </CardContent>
                       </Card>
 
-                      {/* टॉप ५० कस्टमर Smart Score रँकिंग */}
+                      {/* टॉप 50 कस्टमर Smart Score रँकिंग */}
                       <Card id="customer-ranking-section">
                         <CardHeader className="pb-3">
                           <CardTitle className="text-base flex items-center gap-2">
                             <TrendingUp className="h-5 w-5 text-indigo-600" />
-                            टॉप ५० कस्टमर परफॉर्मन्स रँकिंग
+                            टॉप 50 कस्टमर परफॉर्मन्स रँकिंग
                           </CardTitle>
                           <p className="text-xs text-gray-500 mt-1">
-                            सक्रिय कर्जे (३५%) + वसुली दर (३०%) + एकूण उलाढाल (२०%) + कर्ज संख्या (१५%)
+                            सक्रिय कर्जे (35%) + वसुली दर (30%) + एकूण उलाढाल (20%) + कर्ज संख्या (15%)
                           </p>
                         </CardHeader>
                         <CardContent>
@@ -1389,12 +1379,12 @@ ${overviewHTML}
                           </div>
                           <div className="mt-4 pt-3 border-t border-gray-100 text-xs text-gray-500 space-y-1">
                             <div className="flex flex-wrap gap-x-4 gap-y-1">
-                              <span><span className="font-medium text-gray-700">सक्रिय कर्जे ३५%</span> - सध्या किती कर्जे चालू आहेत</span>
-                              <span><span className="font-medium text-gray-700">वसुली दर ३०%</span> - किती % रक्कम वसूल झाली</span>
+                              <span><span className="font-medium text-gray-700">सक्रिय कर्जे 35%</span> - सध्या किती कर्जे चालू आहेत</span>
+                              <span><span className="font-medium text-gray-700">वसुली दर 30%</span> - किती % रक्कम वसूल झाली</span>
                             </div>
                             <div className="flex flex-wrap gap-x-4 gap-y-1">
-                              <span><span className="font-medium text-gray-700">उलाढाल २०%</span> - एकूण किती रक्कम फिरवली</span>
-                              <span><span className="font-medium text-gray-700">कर्ज संख्या १५%</span> - एकूण किती व्यवहार झाले</span>
+                              <span><span className="font-medium text-gray-700">उलाढाल 20%</span> - एकूण किती रक्कम फिरवली</span>
+                              <span><span className="font-medium text-gray-700">कर्ज संख्या 15%</span> - एकूण किती व्यवहार झाले</span>
                             </div>
                           </div>
                         </CardContent>

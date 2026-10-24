@@ -14,9 +14,8 @@ import { MobileNav } from "@/components/ui/mobile-nav";
 import { Sidebar } from "@/components/ui/sidebar";
 import { toast } from "@/hooks/use-toast";
 import { DateUtils } from "@/lib/date-utils";
-import { jsPDF } from "jspdf";
+import { createBorrowerListPdf } from "@/lib/borrower-list-pdf";
 import "jspdf-autotable";
-import html2canvas from "html2canvas";
 import { exportToExcel } from "@/utils/excel-export";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { PhotoViewer } from "@/components/ui/photo-viewer";
@@ -1127,262 +1126,9 @@ export default function BorrowerListReports() {
       description: "कृपया थांबा, A4 PDF डाउनलोड होईल",
     });
 
-    let pdfContainer: HTMLDivElement | undefined;
     try {
       const reportHTML = generateReportHTML(reportData, groupName);
-
-      const container = document.createElement('div');
-      pdfContainer = container;
-      container.className = 'borrower-mobile-pdf';
-      container.dataset.reportType = activeTab;
-      container.style.position = 'absolute';
-      container.style.left = '-9999px';
-      container.style.top = '0';
-      container.style.width = '1123px';
-      container.style.background = '#ffffff';
-
-      const parser = new DOMParser();
-      const htmlDoc = parser.parseFromString(reportHTML, 'text/html');
-      const bodyContent = htmlDoc.body.innerHTML;
-      const originalStyle = htmlDoc.head.querySelector('style')?.textContent || '';
-
-      let printCss = '';
-      const printStartIdx = originalStyle.indexOf('@media print');
-      if (printStartIdx !== -1) {
-        let braceCount = 0;
-        let started = false;
-        let contentStart = 0;
-        for (let i = printStartIdx; i < originalStyle.length; i++) {
-          if (originalStyle[i] === '{') {
-            if (!started) { started = true; contentStart = i + 1; }
-            braceCount++;
-          } else if (originalStyle[i] === '}') {
-            braceCount--;
-            if (braceCount === 0 && started) {
-              printCss = originalStyle.substring(contentStart, i);
-              break;
-            }
-          }
-        }
-      }
-
-      // Keep indices aligned with originalStyle while removing the print block.
-      let baseStyle = originalStyle;
-      if (printStartIdx !== -1) {
-        const printBlockStart = printStartIdx;
-        let bc = 0; let st = false;
-        for (let i = printBlockStart; i < baseStyle.length; i++) {
-          if (baseStyle[i] === '{') { st = true; bc++; }
-          else if (baseStyle[i] === '}') { bc--; if (bc === 0 && st) { baseStyle = baseStyle.substring(0, printBlockStart) + baseStyle.substring(i + 1); break; } }
-        }
-      }
-
-      baseStyle = baseStyle.replace(/@page\s*\{[^}]*\}/g, '');
-      // The generated body's data-report-type is not retained by body.innerHTML.
-      // Apply those selectors to the PDF root instead so name wrapping works.
-      const pdfStyle = `${baseStyle}\n${printCss}`.replace(/\bbody\b/g, '.borrower-mobile-pdf');
-      container.innerHTML = `
-        <style>
-          ${pdfStyle}
-          .borrower-mobile-pdf {
-            width: 1123px !important;
-            max-width: none !important;
-            margin: 0 !important;
-            padding: 0 !important;
-          }
-          .mobile-hide { display: table-cell !important; }
-          .no-print { display: none !important; }
-          * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-
-          .header {
-            display: none !important;
-          }
-          .company-name {
-            display: none !important;
-          }
-          .report-info {
-            background: none !important;
-            border: none !important;
-            border-radius: 0 !important;
-            border-bottom: 1.5px solid #000 !important;
-            padding: 4px 4px 6px !important;
-            margin-bottom: 6px !important;
-          }
-          .report-info div {
-            color: #000 !important;
-          }
-
-          table {
-            table-layout: fixed !important;
-            width: 100% !important;
-            border-collapse: collapse !important;
-            box-shadow: none !important;
-            border-radius: 0 !important;
-          }
-          th {
-            background: #e8e8e8 !important;
-            color: #000 !important;
-            font-weight: 700 !important;
-            border-top: 1.5px solid #000 !important;
-            border-bottom: 1.5px solid #000 !important;
-            border-left: none !important;
-            border-right: none !important;
-            text-align: center !important;
-            padding: 8px 4px !important;
-            font-size: 15px !important;
-            line-height: 1.3 !important;
-            height: 44px !important;
-          }
-          th:nth-child(1) { min-width: 55px !important; width: 55px !important; }
-          ${(activeTab === 'date-wise' || activeTab === 'name-wise') ? `
-          th:nth-child(4), td:nth-child(4) {
-            width: 205px !important;
-            min-width: 205px !important;
-            max-width: 205px !important;
-            white-space: normal !important;
-            overflow-wrap: anywhere !important;
-            word-break: break-word !important;
-          }
-          ` : ''}
-          td:nth-child(4) > div {
-            display: block !important;
-            position: static !important;
-            overflow: visible !important;
-            white-space: normal !important;
-            overflow-wrap: anywhere !important;
-            word-break: break-word !important;
-          }
-          th[style*="font-size: 10px"] {
-            font-size: 11px !important;
-            line-height: 1.15 !important;
-            word-break: keep-all !important;
-          }
-          td {
-            border-bottom: 0.5px solid #bbb !important;
-            border-left: none !important;
-            border-right: none !important;
-            border-top: none !important;
-            color: #000 !important;
-            background: transparent !important;
-          }
-          tr:nth-child(even) { background-color: transparent !important; }
-          tr:nth-child(odd) { background-color: transparent !important; }
-          tr:hover { background-color: transparent !important; }
-
-          .footer {
-            border-top: 1px solid #000 !important;
-            color: #333 !important;
-            background: none !important;
-          }
-
-          td:nth-child(1) { text-align: center !important; min-width: 55px !important; width: 55px !important; }
-          td:nth-child(5) { text-align: center !important; }
-
-          .closing-wise-table td:nth-child(7) { text-align: center !important; }
-          .closing-wise-table td:nth-child(9) { text-align: center !important; }
-          .maturity-wise-table td:nth-child(5) { text-align: center !important; }
-          .borrower-mobile-pdf[data-report-type] tbody tr:not(.total-row) td:nth-child(${activeTab === 'closing-wise' ? 6 : 4}) {
-            white-space: normal !important;
-            overflow: visible !important;
-            text-overflow: clip !important;
-            overflow-wrap: anywhere !important;
-            line-height: 1.65 !important;
-            padding-top: 7px !important;
-            padding-bottom: 9px !important;
-            height: auto !important;
-            max-height: none !important;
-          }
-        </style>
-        ${bodyContent}
-      `;
-
-      document.body.appendChild(container);
-
-      await document.fonts.load('500 14px "Noto Sans Devanagari"');
-      await document.fonts.ready;
-
-      const renderScale = 2;
-      const canvas = await html2canvas(container, {
-        scale: renderScale,
-        useCORS: true,
-        logging: false,
-        backgroundColor: '#ffffff',
-        width: 1123,
-        windowWidth: 1123,
-      });
-
-      // Capture safe page-break positions (in canvas px) at table row boundaries so
-      // pagination never splits a data row or the totals row across two pages.
-      const containerRect = container.getBoundingClientRect();
-      const rowBoundaries: number[] = [];
-      container.querySelectorAll('tr').forEach((row) => {
-        const r = (row as HTMLElement).getBoundingClientRect();
-        const bottom = Math.round((r.bottom - containerRect.top) * renderScale);
-        if (bottom > 0) rowBoundaries.push(bottom);
-      });
-      const sortedBoundaries = Array.from(new Set(rowBoundaries)).sort((a, b) => a - b);
-
-      document.body.removeChild(container);
-
-      const a4Width = 210;
-      const a4Height = 297;
-      const margin = 5;
-      const contentWidth = a4Width - (margin * 2);
-      const contentHeight = a4Height - (margin * 2);
-
-      const imgWidth = canvas.width;
-      const imgHeight = canvas.height;
-      const ratio = contentWidth / imgWidth;
-
-      // Max canvas px that fit on one A4 content page.
-      const maxPagePx = contentHeight / ratio;
-
-      const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4',
-      });
-
-      let sourceY = 0;
-      let firstPage = true;
-      while (sourceY < imgHeight - 1) {
-        const targetEnd = sourceY + maxPagePx;
-        let cut = Math.min(targetEnd, imgHeight);
-
-        // Snap the cut to the last row boundary that fits within this page so rows
-        // aren't sliced in half. Only do this when more content remains below.
-        if (targetEnd < imgHeight) {
-          let snapped = -1;
-          for (const b of sortedBoundaries) {
-            if (b > sourceY && b <= targetEnd) snapped = b;
-            else if (b > targetEnd) break;
-          }
-          // Fall back to a hard cut only if no row boundary fits (e.g. a single
-          // row taller than a full page).
-          if (snapped > sourceY) cut = snapped;
-        }
-
-        const sourceHeight = Math.max(1, Math.round(cut - sourceY));
-
-        if (!firstPage) pdf.addPage();
-        firstPage = false;
-
-        const pageCanvas = document.createElement('canvas');
-        pageCanvas.width = imgWidth;
-        pageCanvas.height = sourceHeight;
-        const ctx = pageCanvas.getContext('2d');
-        if (ctx) {
-          ctx.fillStyle = '#ffffff';
-          ctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
-          ctx.drawImage(canvas, 0, sourceY, imgWidth, sourceHeight, 0, 0, imgWidth, sourceHeight);
-        }
-
-        const pageImgData = pageCanvas.toDataURL('image/jpeg', 0.95);
-        const drawHeight = sourceHeight * ratio;
-        pdf.addImage(pageImgData, 'JPEG', margin, margin, contentWidth, drawHeight);
-
-        sourceY = cut;
-      }
+      const pdf = await createBorrowerListPdf(reportHTML);
 
       const tabName = activeTab === 'date-wise' ? 'डेटवाईज' : activeTab === 'closing-wise' ? 'क्लोजिंगवाईज' : activeTab === 'name-wise' ? 'नेमवाईज' : 'मुदतवाईज';
       pdf.save(`कर्जदार_यादी_${tabName}_${groupName}.pdf`);
@@ -1395,11 +1141,9 @@ export default function BorrowerListReports() {
       console.error('PDF generation error:', error);
       toast({
         title: "PDF त्रुटी",
-        description: "PDF तयार करताना समस्या आली, कृपया पुन्हा प्रयत्न करा",
+        description: error instanceof Error ? error.message : "PDF तयार करताना समस्या आली, कृपया पुन्हा प्रयत्न करा",
         variant: "destructive",
       });
-    } finally {
-      pdfContainer?.remove();
     }
   };
 
@@ -2556,6 +2300,53 @@ export default function BorrowerListReports() {
               /* Hide mobile columns properly */
               .mobile-hide {
                 display: table-cell !important;
+              }
+            }
+            /* Shared print/PDF safety: leave room below Devanagari glyphs. */
+            @media print {
+              .report-info {
+                padding-top: 8px !important;
+                min-height: 40px !important;
+              }
+              body[data-report-type] tr.total-row {
+                height: auto !important;
+                break-inside: avoid !important;
+                page-break-inside: avoid !important;
+              }
+              body[data-report-type] tr.total-row > td {
+                height: auto !important;
+                line-height: 1.65 !important;
+                padding: 8px 4px 10px !important;
+                vertical-align: middle !important;
+                overflow: visible !important;
+              }
+              body[data-report-type="date-wise"] tr.total-row > td:nth-child(7),
+              body[data-report-type="name-wise"] tr.total-row > td:nth-child(7),
+              body[data-report-type="maturity-wise"] tr.total-row > td:nth-child(7),
+              body[data-report-type="closing-wise"] tr.total-row > td:nth-child(9) {
+                white-space: normal !important;
+                overflow-wrap: anywhere !important;
+                word-break: normal !important;
+              }
+              body[data-report-type="date-wise"] tbody tr:not(.total-row) td:nth-child(4),
+              body[data-report-type="name-wise"] tbody tr:not(.total-row) td:nth-child(4),
+              body[data-report-type="maturity-wise"] tbody tr:not(.total-row) td:nth-child(4),
+              body[data-report-type="closing-wise"] tbody tr:not(.total-row) td:nth-child(6) {
+                line-height: 1.65 !important;
+                padding-top: 7px !important;
+                padding-bottom: 9px !important;
+              }
+              body[data-report-type="date-wise"] td:nth-child(4) > div,
+              body[data-report-type="name-wise"] td:nth-child(4) > div {
+                display: block !important;
+                position: static !important;
+                overflow: visible !important;
+              }
+              body[data-report-type="date-wise"] td:nth-child(4) > div > span:not(.no-print),
+              body[data-report-type="name-wise"] td:nth-child(4) > div > span:not(.no-print) {
+                position: static !important;
+                transform: none !important;
+                margin-left: 4px !important;
               }
             }
           </style>
