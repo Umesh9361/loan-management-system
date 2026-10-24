@@ -1,4 +1,4 @@
-import jsPDF from 'jspdf';
+import { jsPDF } from 'jspdf';
 import { NOTO_SANS_DEVANAGARI_BASE64 } from './fonts/noto-devanagari-font';
 
 const initializedDocs = new WeakSet<jsPDF>();

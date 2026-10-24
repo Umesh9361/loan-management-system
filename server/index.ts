@@ -1,4 +1,4 @@
-import express, { type Request, Response, NextFunction } from "express";
+import express from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { initializeDatabase } from "./init-db";
@@ -7,6 +7,7 @@ import { repairMissingCashEntries } from "./real-time-sync-engine";
 import { db } from "./db";
 import { notificationWarnings } from "@shared/schema";
 import { lt } from "drizzle-orm";
+import { installSecurity, sessionOptions, safeErrorHandler } from "./security";
 
 async function cleanupOldNotifications() {
   try {
@@ -24,43 +25,9 @@ async function cleanupOldNotifications() {
 }
 
 const app = express();
-
-// Enhanced CORS configuration for all environments
-app.use((req, res, next) => {
-  const origin = req.headers.origin;
-  
-  // More comprehensive origin checking for Replit environments
-  const allowedOrigins = [
-    'localhost',
-    '127.0.0.1',
-    '.replit.app',
-    '.replit.dev',
-    '.replit.co',
-    '.repl.co',
-    '.replitapp.com',
-    '.railway.app',
-    '.up.railway.app'
-  ];
-  
-  const isAllowedOrigin = !origin || allowedOrigins.some(allowed => 
-    origin.includes(allowed) || origin === `http://localhost:5000` || origin === `https://localhost:5000`
-  );
-  
-  if (isAllowedOrigin) {
-    res.header("Access-Control-Allow-Origin", origin || "*");
-    res.header("Access-Control-Allow-Credentials", "true");
-  }
-  
-  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization, Cookie, X-Requested-With");
-  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, PATCH");
-  res.header("Access-Control-Expose-Headers", "Set-Cookie");
-  
-  if (req.method === "OPTIONS") {
-    res.sendStatus(200);
-  } else {
-    next();
-  }
-});
+// Fail before database initialization if production session signing is unset.
+sessionOptions();
+installSecurity(app);
 
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: false, limit: '50mb' }));
@@ -68,23 +35,11 @@ app.use(express.urlencoded({ extended: false, limit: '50mb' }));
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
-  let capturedJsonResponse: Record<string, any> | undefined = undefined;
-
-  const originalResJson = res.json;
-  res.json = function (bodyJson, ...args) {
-    if (!path.includes('/data-management/create-backup') && !path.includes('/data-management/restore-from-backup')) {
-      capturedJsonResponse = bodyJson;
-    }
-    return originalResJson.apply(res, [bodyJson, ...args]);
-  };
 
   res.on("finish", () => {
     const duration = Date.now() - start;
     if (path.startsWith("/api")) {
       let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
-      if (capturedJsonResponse) {
-        logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
-      }
 
       if (logLine.length > 80) {
         logLine = logLine.slice(0, 79) + "…";
@@ -146,13 +101,7 @@ app.use((req, res, next) => {
     const server = await registerRoutes(app);
     console.log("Routes registered successfully");
 
-  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-    const status = err.status || err.statusCode || 500;
-    const message = err.message || "Internal Server Error";
-
-    res.status(status).json({ message });
-    throw err;
-  });
+  app.use(safeErrorHandler);
 
   // importantly only setup vite in development and after
   // setting up all the other routes so the catch-all route

@@ -11,7 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Printer, FileDown, ClipboardList, ArrowLeft, CheckSquare, FileSpreadsheet } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useSafeNavigation } from "@/hooks/use-safe-navigation";
-import jsPDF from "jspdf";
+import { jsPDF } from "jspdf";
 import html2canvas from "html2canvas";
 
 interface RegisterEntry {

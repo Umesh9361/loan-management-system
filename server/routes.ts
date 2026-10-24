@@ -1,6 +1,6 @@
 import express, { type Express } from "express";
 import { createServer, type Server } from "http";
-import session, { SessionOptions } from "express-session";
+import session from "express-session";
 import { storage } from "./storage";
 import { db } from "./db";
 import bcrypt from "bcrypt";
@@ -20,6 +20,11 @@ import userManagementRoutes from "./routes/user-management";
 import { ACCOUNT_TYPES } from "@shared/constants";
 import { createAutomaticPrevention } from "./automatic-duplicate-prevention";
 import { performanceCache } from "./performance-cache";
+import { reportLoanWeight, WeightFormatError } from "@shared/report-weights";
+import { sessionOptions } from "./security";
+import { activeSessionGuard, establishSession, endSession, ownPasswordChange } from "./session-security";
+import { tenantReferenceGuard, loanOwnershipGuard } from "./tenant-security";
+import { borrowers, parties } from "@shared/schema";
 
 async function invalidateOtherSessions(userId: string, currentSessionId: string): Promise<number> {
   try {
@@ -33,8 +38,8 @@ async function invalidateOtherSessions(userId: string, currentSessionId: string)
     }
     return deletedCount;
   } catch (error) {
-    console.error("Failed to invalidate other sessions:", error);
-    return 0;
+    console.error("Failed to invalidate other sessions");
+    throw new Error("Session invalidation failed");
   }
 }
 import { nameMap, getNameTranslations, normalizeMarathiVowels, transliterateToDevanagari } from "./name-translations";
@@ -56,9 +61,9 @@ function convertIndianDateToISO(dateStr: string): string {
 
 // Login schema
 const loginSchema = z.object({
-  tenantId: z.string().min(1),
-  username: z.string().min(1),
-  password: z.string().min(1),
+  tenantId: z.string().min(1).max(100),
+  username: z.string().min(1).max(100),
+  password: z.string().min(1).max(256),
 });
 
 declare module "express-session" {
@@ -117,28 +122,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     console.log('Migration note:', e.message);
   }
 
-  // Enhanced session configuration for Replit environments
-  const isProduction = process.env.NODE_ENV === "production";
-  const isReplit = !!(process.env.REPLIT_DOMAINS || process.env.REPLIT_APP_NAME || process.env.REPL_ID);
-  
-  // Always trust proxy for Replit
+  // Session cookies must recognize HTTPS terminated by the hosting proxy.
   app.set('trust proxy', 1);
   
-  const sessionConfig: SessionOptions = {
-    secret: process.env.SESSION_SECRET || "your-secret-key-loan-mgmt-2025-replit",
-    resave: true, // Force save to ensure persistence in Replit
-    saveUninitialized: true, // Create session for better tracking
-    name: 'connect.sid', // Explicit session name
-    rolling: true, // Extend session on activity
-    cookie: {
-      secure: false, // Always false for Replit compatibility
-      httpOnly: false, // Allow frontend access for debugging
-      maxAge: 24 * 60 * 60 * 1000, // 24 hours
-      sameSite: 'lax' as const,
-      path: '/',
-      domain: undefined, // Let Replit handle domain automatically
-    },
-  };
+  const sessionConfig = sessionOptions();
 
   // Use PostgreSQL for session storage for better multi-tenant isolation
   const pgStore = connectPgSimple(session);
@@ -153,6 +140,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use(session({
     ...sessionConfig,
     store: sessionStore
+  }));
+  app.use("/api", activeSessionGuard(
+    id => storage.getUser(id),
+    tenantId => storage.getCompany(tenantId),
+  ));
+  app.use("/api", tenantReferenceGuard(async (type, id, tenantId) => {
+    const table = type === "loan" ? loans : type === "group" ? groups :
+      type === "borrower" ? borrowers : parties;
+    const [record] = await db.select({ id: table.id }).from(table)
+      .where(and(eq(table.id, id), eq(table.tenantId, tenantId))).limit(1);
+    return !!record;
   }));
 
   // Authentication middleware  
@@ -272,7 +270,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
       
       // Test database connection with a lightweight query
-      await storage.getAllUsers();
+      await db.execute(sql`SELECT 1`);
       
       res.status(200).json(healthStatus);
     } catch (error) {
@@ -283,7 +281,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         database: "disconnected",
         environment: process.env.NODE_ENV || "development",
         uptime: process.uptime(),
-        error: error instanceof Error ? error.message : "Unknown error"
+        message: "Service temporarily unavailable"
       });
     }
   });
@@ -300,7 +298,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Test database connection
       try {
-        await storage.getAllUsers();
+        await db.execute(sql`SELECT 1`);
         checks.database = true;
       } catch (e) {
         console.error("Database readiness check failed:", e);
@@ -350,26 +348,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Auth routes
   app.post("/api/auth/login", async (req, res) => {
     try {
-      const startTime = Date.now();
       const parsed = loginSchema.parse(req.body);
-      const rawUsername = parsed.username;
       const tenantId = parsed.tenantId.toUpperCase().trim();
       const username = parsed.username.toLowerCase().trim();
       const password = parsed.password;
       
-      console.log(`🔑 LOGIN ATTEMPT: tenant=${tenantId}, rawUser="${rawUsername}", user=${username}, UA=${req.get('User-Agent')?.substring(0, 50)}`);
       
       const user = await storage.getUserByCredentials(tenantId, username);
       
       if (!user) {
-        console.log(`❌ LOGIN FAILED: No user found for tenant=${tenantId}, user=${username}`);
         return res.status(401).json({ message: "Invalid credentials" });
       }
 
       const isValid = await bcrypt.compare(password, user.password);
       
       if (!isValid) {
-        console.log(`❌ LOGIN FAILED: Wrong password for tenant=${tenantId}, user=${username}`);
         return res.status(401).json({ message: "Invalid credentials" });
       }
 
@@ -380,13 +373,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      const loginDuration = Date.now() - startTime;
-
-      req.session.userId = user.id;
-      req.session.tenantId = user.tenantId;
-      req.session.role = user.role;
-      const nowIST = new Date(Date.now() + 5.5 * 60 * 60 * 1000);
-      req.session.loginDate = nowIST.toISOString().split('T')[0];
+      await establishSession(req, user);
 
       // Update login info and log activity
       try {
@@ -406,16 +393,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Set session data for authenticated user
 
-      req.session.save((err) => {
-        if (err) {
-          // Session save error
-          console.error(`❌ SESSION SAVE FAILED: ${user.username}@${user.tenantId}`, err);
-          return res.status(500).json({ message: "Session save failed" });
-        }
-        
-        // Session saved successfully
-        console.log(`💾 SESSION SAVED: ${user.username}@${user.tenantId}`);
-        
         res.json({ 
           user: { 
             id: user.id, 
@@ -424,7 +401,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
             role: user.role 
           } 
         });
-      });
     } catch (error) {
       // Login processing error
       res.status(400).json({ message: "Invalid request data" });
@@ -432,25 +408,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Change own password endpoint
-  app.put("/api/auth/change-password", requireAuth, async (req, res) => {
-    try {
-      const { newPassword } = req.body;
-      
-      if (!newPassword || newPassword.length < 6) {
-        return res.status(400).json({ message: "Password must be at least 6 characters" });
-      }
-
-      const userId = req.session.userId!;
-      await storage.resetUserPassword(userId, req.session.tenantId!, newPassword, "self");
-
-      await invalidateOtherSessions(userId, req.sessionID);
-
-      res.json({ message: "Password updated successfully" });
-    } catch (error) {
-      console.error("Password change error:", error);
-      res.status(500).json({ message: "Failed to change password" });
-    }
-  });
+  const changeOwnPassword = ownPasswordChange(
+    id => storage.getUser(id),
+    (id, tenantId, password) => storage.resetUserPassword(id, tenantId, password, "self"),
+    invalidateOtherSessions,
+  );
+  app.put("/api/auth/change-password", requireAuth, changeOwnPassword);
 
   app.post("/api/auth/logout", async (req, res) => {
     const userId = req.session.userId;
@@ -473,41 +436,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     }
     
-    req.session.destroy(() => {
+    try {
+      await endSession(req, res);
       res.json({ message: "Logged out successfully" });
-    });
+    } catch {
+      res.status(500).json({ message: "Logout failed. Please try again." });
+    }
   });
 
   // Self-service password change
-  app.patch("/api/auth/change-password", requireAuth, async (req, res) => {
-    try {
-      const { currentPassword, newPassword } = req.body;
-      
-      if (!currentPassword || !newPassword) {
-        return res.status(400).json({ message: "Current password and new password are required" });
-      }
-      
-      // Get current user
-      const currentUser = await storage.getUser(req.session.userId!);
-      if (!currentUser) {
-        return res.status(404).json({ message: "User not found" });
-      }
-      
-      // Verify current password
-      if (!await bcrypt.compare(currentPassword, currentUser.password)) {
-        return res.status(400).json({ message: "Current password is incorrect" });
-      }
-      
-      const hashedNewPassword = await bcrypt.hash(newPassword, 10);
-      await storage.updateUser(req.session.userId!, { password: hashedNewPassword });
-      
-      await invalidateOtherSessions(req.session.userId!, req.sessionID);
-
-      res.json({ message: "Password changed successfully" });
-    } catch (error) {
-      res.status(500).json({ message: "Failed to change password" });
-    }
-  });
+  app.patch("/api/auth/change-password", requireAuth, changeOwnPassword);
 
   app.get("/api/auth/me", async (req, res) => {
     try {
@@ -1455,8 +1393,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/loans", requireAuth, cacheBuster(['dashboard:', 'loans:', 'borrowers:']), async (req, res) => {
     try {
-      console.log("Received loan data:", req.body);
-      console.log("Session tenant ID:", req.session.tenantId);
       
       const dateWarningConfirmed = req.body.dateWarningConfirmed === true;
       
@@ -1476,7 +1412,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         tenantId: req.session.tenantId!,
       });
       
-      console.log("Parsed loan data:", loanData);
       
       // 🔔 PRE-SAVE DATE CHECK: If not confirmed, check date and return warning if needed
       if (!dateWarningConfirmed) {
@@ -1657,7 +1592,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         maturityDate: req.body.maturityDate ? convertIndianDateToISO(req.body.maturityDate) : req.body.maturityDate,
       };
       
-      const loanData = insertLoanSchema.partial().parse(bodyWithConvertedDates);
+      const loanData = insertLoanSchema.partial().parse({
+        ...bodyWithConvertedDates,
+        tenantId: req.session.tenantId!,
+      });
       
       // Get old loan data to check changes
       const loans = await storage.getLoans(req.session.tenantId!);
@@ -3004,8 +2942,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const principal = parseFloat(loan.principalAmount?.toString() || '0');
         if (principal <= 0) continue;
 
-        const weightStr = loan.weight?.toString() || '0';
-        const weightNum = parseFloat(weightStr.replace(/[^\d.]/g, '')) || 0;
+        const weightNum = reportLoanWeight(loan);
         const collateralText = loan.collateralDetails || '';
         const isSilver = loan.metalType === 'silver';
         const dbPurity = loan.purity ? parseFloat(loan.purity.toString()) : 0;
@@ -3169,14 +3106,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error('❌ LOADING REPORT ERROR:', error);
+      if (error instanceof WeightFormatError) {
+        return res.status(422).json({ error: error.message });
+      }
       res.status(500).json({ error: 'Failed to generate loading report' });
     }
   });
 
   // Overdue Report API - WORKING VERSION WITH PROPER AUTH
   app.get("/api/overdue-report", requireAuth, async (req: any, res: any) => {
-    console.log('✅ OVERDUE API REACHED WITH PROPER AUTH');
-    
     // Add timeout protection
     const timeout = setTimeout(() => {
       console.error("⏰ OVERDUE REPORT TIMEOUT: 30 seconds elapsed");
@@ -3186,10 +3124,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }, 30000);
 
     try {
-      console.log('🔍 OVERDUE: Parsing parameters...');
       const { dateFrom, dateTo, groupId, currentGoldRate, currentSilverRate, finePurityPercentage, purityMode, monthlyInterestRate, interestRateMode, projectionMode, futureProjectionPeriod, customerName } = req.query;
-      
-      console.log('🔍 PROJECTION PARAMS:', { projectionMode, futureProjectionPeriod, customerName });
       
       const filters: any = {
         dateFrom: dateFrom as string || new Date().toISOString().split('T')[0],
@@ -3208,17 +3143,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         filters.customerName = customerName as string;
       }
 
-      console.log('🔍 OVERDUE: Calling storage method for tenant:', req.session.tenantId);
       const overdueData = await storage.getOverdueReportWithCorrectMath(req.session.tenantId!, filters);
       
       clearTimeout(timeout);
-      console.log(`📊 OVERDUE: Successfully processed ${overdueData.length} items`);
       
       res.json(overdueData);
     } catch (error) {
       clearTimeout(timeout);
       console.error("❌ OVERDUE ERROR:", error);
       if (!res.headersSent) {
+        if (error instanceof WeightFormatError) {
+          return res.status(422).json({ error: error.message });
+        }
         res.status(500).json({ 
           error: "Failed to generate overdue report", 
           details: error instanceof Error ? error.message : String(error)
@@ -4652,60 +4588,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 
 
-  // Emergency Recovery Endpoints
-  // Emergency password reset for super admin (for development/emergency only)
-  app.post('/emergency/reset-admin', async (req, res) => {
-    try {
-      // Only allow in development or emergency mode
-      if (process.env.NODE_ENV === 'production' && !process.env.EMERGENCY_MODE) {
-        return res.status(403).json({ message: 'Emergency endpoints disabled in production' });
-      }
-
-      const { tenantId = 'TEST', username = 'admin', newPassword } = req.body;
-      
-      if (!newPassword) {
-        return res.status(400).json({ message: 'New password required' });
-      }
-
-      const hashedPassword = await bcrypt.hash(newPassword, 10);
-      
-      // Get user first
-      const user = await storage.getUserByCredentials(tenantId, username);
-      if (!user) {
-        return res.status(404).json({ message: 'Admin user not found' });
-      }
-      
-      // Update password directly in database
-      const success = await storage.updateUser(user.id, { password: hashedPassword });
-
-      console.log('Emergency password reset for:', { username, tenantId });
-      
-      res.json({ 
-        message: 'Password reset successful',
-        warning: 'Change this password immediately after login'
-      });
-    } catch (error) {
-      console.error('Emergency reset error:', error);
-      res.status(500).json({ message: 'Reset failed' });
-    }
-  });
-
-  // Emergency admin list (for development/debugging)
-  app.get('/emergency/list-admins', async (req, res) => {
-    try {
-      if (process.env.NODE_ENV === 'production' && !process.env.EMERGENCY_MODE) {
-        return res.status(403).json({ message: 'Emergency endpoints disabled in production' });
-      }
-
-      const admins = await storage.getAllUsers();
-
-      const adminUsers = admins.filter(user => user.role === 'admin');
-      res.json({ admins: adminUsers });
-    } catch (error) {
-      console.error('Emergency list error:', error);
-      res.status(500).json({ message: 'List failed' });
-    }
-  });
+  // HTTP emergency recovery is deliberately unavailable in every environment.
+  // Authorized recovery is an explicit operator action, never a public route.
 
   // 🤖 AUTOMATIC SYSTEM ENDPOINT - Run full automatic checks
   app.post("/api/automatic-system-check", requireAuth, async (req, res) => {
@@ -4819,6 +4703,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const { userId } = req.params;
+      const targetUser = await storage.getUser(userId);
+      if (!targetUser || targetUser.tenantId !== req.session.tenantId) {
+        return res.status(404).json({ message: "User not found" });
+      }
       const permissions = await storage.getUserPermissions(userId, req.session.tenantId!);
       
       if (!permissions) {
@@ -4984,15 +4872,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // =================================
   
   // Serve static photo files with proper security and caching
-  app.use('/uploads/photos', express.static(path.join(process.cwd(), 'server', 'uploads', 'photos'), {
-    maxAge: '7d', // 7 days cache for photos
+  app.use('/uploads/photos', activeSessionGuard(
+    id => storage.getUser(id), tenantId => storage.getCompany(tenantId),
+  ), async (req, res, next) => {
+    try {
+      const filename = decodeURIComponent(req.path.slice(1));
+      if (!/^[a-zA-Z0-9_.-]+(?:\/[a-zA-Z0-9_.-]+)*\.(jpg|jpeg|png|webp)$/i.test(filename) ||
+          filename.split("/").some(part => part === "." || part === "..")) {
+        return res.sendStatus(404);
+      }
+      const candidates = [`uploads/photos/${filename}`, `server/uploads/photos/${filename}`];
+      const [photo] = await db.select({ id: loanPhotos.id }).from(loanPhotos).where(and(
+        eq(loanPhotos.tenantId, req.session.tenantId!),
+        eq(loanPhotos.isActive, true),
+        or(inArray(loanPhotos.storagePath, candidates), inArray(loanPhotos.thumbnailPath, candidates)),
+      )).limit(1);
+      if (!photo) return res.sendStatus(404);
+      next();
+    } catch {
+      res.sendStatus(503);
+    }
+  }, express.static(path.join(process.cwd(), 'server', 'uploads', 'photos'), {
+    maxAge: 0,
     etag: true,
     lastModified: true,
     setHeaders: (res, filePath) => {
       // Security headers for photo serving
       res.set('X-Content-Type-Options', 'nosniff');
       res.set('X-Frame-Options', 'DENY');
-      res.set('Cache-Control', 'public, max-age=604800'); // 7 days
+      res.set('Cache-Control', 'private, no-store');
       
       // Content type based on file extension
       const ext = path.extname(filePath).toLowerCase();
@@ -5007,7 +4915,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // =================================
   
   // Upload photos for a loan (maximum 2 photos)
-  app.post('/api/loans/:loanId/photos', photoUpload.array('photos', 2), async (req, res) => {
+  app.post('/api/loans/:loanId/photos', requireAuth,
+    loanOwnershipGuard((id, tenantId) => storage.getLoanById(id, tenantId)),
+    photoUpload.array('photos', 2), async (req, res) => {
     try {
       const { loanId } = req.params;
       const files = req.files as Express.Multer.File[];
@@ -5101,7 +5011,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Auto-delete photos when loan is closed
-  app.patch('/api/loans/:loanId/auto-delete-photos', async (req, res) => {
+  app.patch('/api/loans/:loanId/auto-delete-photos', requireAuth,
+    loanOwnershipGuard((id, tenantId) => storage.getLoanById(id, tenantId)), async (req, res) => {
     try {
       const { loanId } = req.params;
       const tenantId = req.session.tenantId!;

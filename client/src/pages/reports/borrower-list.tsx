@@ -22,6 +22,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { PhotoViewer } from "@/components/ui/photo-viewer";
 import { LoanCalculations } from "@/lib/calculations";
 import { sortLoans, createLoanComparator } from "@/lib/loan-sorting";
+import { formatWeight, weightGrams, loanWeightTotals, checkedReportLoans } from "@shared/report-weights";
+import { borrowerReportArray, borrowerScreenTotals, borrowerTotalsState } from "@shared/borrower-list-totals";
+import { BorrowerListTotals, type BorrowerListTotalsProps } from "@/components/reports/borrower-list-totals";
 
 export default function BorrowerListReports() {
   const [location] = useLocation();
@@ -69,27 +72,34 @@ export default function BorrowerListReports() {
   const [itemsPerPage] = useState(100); // 100 entries per page
   
   // Fetch data with performance optimization
-  const { data: groups = [] } = useQuery({
+  const groupsQuery = useQuery<any[]>({
     queryKey: ["/api/groups"],
+    select: borrowerReportArray,
     staleTime: 2 * 60 * 1000, // 2 minutes cache
     gcTime: 5 * 60 * 1000, // 5 minutes in memory
     refetchOnWindowFocus: false,
   });
+  const groups = groupsQuery.data ?? [];
   
-  const { data: loans = [] } = useQuery({
+  const loansQuery = useQuery<any[]>({
     queryKey: ["/api/loans"],
+    select: (data: any[]) => checkedReportLoans(data),
     staleTime: 1 * 60 * 1000, // 1 minute cache
     gcTime: 3 * 60 * 1000, // 3 minutes in memory
     refetchOnWindowFocus: false,
   });
+  const { data: reportLoans = [], error: loanDataError } = loansQuery;
+  const loans = loanDataError ? [] : reportLoans;
 
   // Fetch loan closures for accurate closure data
-  const { data: loanClosures = [] } = useQuery({
+  const closuresQuery = useQuery<any[]>({
     queryKey: ["/api/loan-closures"],
+    select: borrowerReportArray,
     staleTime: 2 * 60 * 1000, // 2 minutes cache
     gcTime: 5 * 60 * 1000, // 5 minutes in memory
     refetchOnWindowFocus: false,
   });
+  const loanClosures = closuresQuery.data ?? [];
   
   const { data: company } = useQuery({
     queryKey: ["/api/company"],
@@ -832,7 +842,7 @@ export default function BorrowerListReports() {
   }, [groupId]);
   
   // Filter loans based on report type - Memoized for performance
-  const getFilteredLoans = useMemo(() => {
+  const getFilteredLoans = useMemo<any[]>(() => {
     const loansArray = Array.isArray(loans) ? loans : [];
     let filteredLoans = [...loansArray] as any[];
     
@@ -1064,35 +1074,16 @@ export default function BorrowerListReports() {
     return getFilteredLoans.slice(startIndex, endIndex);
   }, [getFilteredLoans, currentPage, itemsPerPage]);
 
-  // Totals for the on-screen closing-wise table (computed over the full filtered
-  // list, not just the current page) — एकूण रक्कम + एकूण व्याज, mirroring the print report.
-  const closingWiseScreenTotals = useMemo(() => {
-    if (activeTab !== 'closing-wise') return { totalAmount: 0, totalInterest: 0, weightDisplay: '0' };
-    let totalAmount = 0;
-    let totalInterest = 0;
-    let totalGoldWeight = 0;
-    let totalSilverWeight = 0;
-    for (const loan of getFilteredLoans as any[]) {
-      totalAmount += Math.round(loan.principalAmount || 0);
-      const closureData = (loanClosures as any[]).find((c: any) => c.loanId === loan.id);
-      if (closureData && closureData.interestPaid) {
-        totalInterest += Math.round(parseFloat(closureData.interestPaid));
-      }
-      const w = parseFloat((loan.weight || '0').toString().replace(/[^0-9.]/g, '')) || 0;
-      // Mirror the print report's weightDisplay logic exactly:
-      // gold = non-विनातारण, non-silver; silver = any metalType==='silver' (regardless of loanType).
-      if (loan.metalType === 'silver') {
-        totalSilverWeight += w;
-      } else if (loan.loanType !== 'विनातारण') {
-        totalGoldWeight += w;
-      }
+  // All filtered results, independent of pagination. Do not present stale/partial totals.
+  const totalsStatus = borrowerTotalsState([groupsQuery, loansQuery, ...(activeTab === 'closing-wise' ? [closuresQuery] : [])]);
+  const screenSummary = useMemo<BorrowerListTotalsProps>(() => {
+    if (totalsStatus !== 'ready') return { totals: null, status: totalsStatus, errorMessage: 'संपूर्ण माहिती मिळाली नाही; यादीची टोटल दाखवता आली नाही.' };
+    try {
+      return { totals: borrowerScreenTotals(getFilteredLoans, activeTab, loanClosures), status: 'ready' as const };
+    } catch (error) {
+      return { totals: null, status: 'error' as const, errorMessage: error instanceof Error ? error.message : 'टोटल तयार करता आली नाही.' };
     }
-    const formatWeight = (val: number) => (val % 1 === 0 ? val.toString() : val.toFixed(2));
-    const weightDisplay = totalSilverWeight > 0
-      ? `सोने: ${formatWeight(totalGoldWeight)} | चांदी: ${formatWeight(totalSilverWeight)}`
-      : `${formatWeight(totalGoldWeight + totalSilverWeight)}`;
-    return { totalAmount, totalInterest, weightDisplay };
-  }, [activeTab, getFilteredLoans, loanClosures]);
+  }, [getFilteredLoans, activeTab, loanClosures, totalsStatus]);
 
   // Calculate pagination info
   const totalItems = getFilteredLoans.length;
@@ -1136,10 +1127,14 @@ export default function BorrowerListReports() {
       description: "कृपया थांबा, A4 PDF डाउनलोड होईल",
     });
 
+    let pdfContainer: HTMLDivElement | undefined;
     try {
       const reportHTML = generateReportHTML(reportData, groupName);
 
       const container = document.createElement('div');
+      pdfContainer = container;
+      container.className = 'borrower-mobile-pdf';
+      container.dataset.reportType = activeTab;
       container.style.position = 'absolute';
       container.style.left = '-9999px';
       container.style.top = '0';
@@ -1171,7 +1166,8 @@ export default function BorrowerListReports() {
         }
       }
 
-      let baseStyle = originalStyle.replace(/@page\s*\{[^}]*\}/g, '');
+      // Keep indices aligned with originalStyle while removing the print block.
+      let baseStyle = originalStyle;
       if (printStartIdx !== -1) {
         const printBlockStart = printStartIdx;
         let bc = 0; let st = false;
@@ -1181,10 +1177,19 @@ export default function BorrowerListReports() {
         }
       }
 
+      baseStyle = baseStyle.replace(/@page\s*\{[^}]*\}/g, '');
+      // The generated body's data-report-type is not retained by body.innerHTML.
+      // Apply those selectors to the PDF root instead so name wrapping works.
+      const pdfStyle = `${baseStyle}\n${printCss}`.replace(/\bbody\b/g, '.borrower-mobile-pdf');
       container.innerHTML = `
         <style>
-          ${baseStyle}
-          ${printCss}
+          ${pdfStyle}
+          .borrower-mobile-pdf {
+            width: 1123px !important;
+            max-width: none !important;
+            margin: 0 !important;
+            padding: 0 !important;
+          }
           .mobile-hide { display: table-cell !important; }
           .no-print { display: none !important; }
           * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
@@ -1229,6 +1234,24 @@ export default function BorrowerListReports() {
             height: 44px !important;
           }
           th:nth-child(1) { min-width: 55px !important; width: 55px !important; }
+          ${(activeTab === 'date-wise' || activeTab === 'name-wise') ? `
+          th:nth-child(4), td:nth-child(4) {
+            width: 205px !important;
+            min-width: 205px !important;
+            max-width: 205px !important;
+            white-space: normal !important;
+            overflow-wrap: anywhere !important;
+            word-break: break-word !important;
+          }
+          ` : ''}
+          td:nth-child(4) > div {
+            display: block !important;
+            position: static !important;
+            overflow: visible !important;
+            white-space: normal !important;
+            overflow-wrap: anywhere !important;
+            word-break: break-word !important;
+          }
           th[style*="font-size: 10px"] {
             font-size: 11px !important;
             line-height: 1.15 !important;
@@ -1258,13 +1281,25 @@ export default function BorrowerListReports() {
           .closing-wise-table td:nth-child(7) { text-align: center !important; }
           .closing-wise-table td:nth-child(9) { text-align: center !important; }
           .maturity-wise-table td:nth-child(5) { text-align: center !important; }
+          .borrower-mobile-pdf[data-report-type] tbody tr:not(.total-row) td:nth-child(${activeTab === 'closing-wise' ? 6 : 4}) {
+            white-space: normal !important;
+            overflow: visible !important;
+            text-overflow: clip !important;
+            overflow-wrap: anywhere !important;
+            line-height: 1.65 !important;
+            padding-top: 7px !important;
+            padding-bottom: 9px !important;
+            height: auto !important;
+            max-height: none !important;
+          }
         </style>
         ${bodyContent}
       `;
 
       document.body.appendChild(container);
 
-      await new Promise(resolve => setTimeout(resolve, 600));
+      await document.fonts.load('500 14px "Noto Sans Devanagari"');
+      await document.fonts.ready;
 
       const renderScale = 2;
       const canvas = await html2canvas(container, {
@@ -1363,6 +1398,8 @@ export default function BorrowerListReports() {
         description: "PDF तयार करताना समस्या आली, कृपया पुन्हा प्रयत्न करा",
         variant: "destructive",
       });
+    } finally {
+      pdfContainer?.remove();
     }
   };
 
@@ -1490,10 +1527,10 @@ export default function BorrowerListReports() {
             <td style="border-bottom: 1px solid #ccc; padding: 4px; text-align: center; width: 38px; font-size: 14px; vertical-align: middle; font-weight: 500; box-sizing: border-box;">${index + 1}</td>
             <td style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 4px; text-align: center; width: 68px; font-size: 14px; vertical-align: middle; font-weight: 500; box-sizing: border-box;">${shortDate}</td>
             <td style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 4px; text-align: left; width: 78px; font-size: 14px; vertical-align: middle; font-weight: 500; padding-left: 5px; box-sizing: border-box;" class="loan-amount">${Math.round(loan.principalAmount).toLocaleString('en-IN')}</td>
-            <td style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 4px; width: 155px; font-size: 14px; vertical-align: middle; font-weight: 500; box-sizing: border-box;"><div style="position: relative; display: flex; align-items: center;">${getPhotoIndicator(loan.id)}${loan.borrowerName.length > 26 ? loan.borrowerName.substring(0, 26) + '...' : loan.borrowerName}${isClosedLoan && dateWiseStatus === 'all' ? ' (बंद)' : ''}${showInterestRate && loan.interestRate ? '<span style="position: absolute; right: 1px; top: 50%; transform: translateY(-50%); font-size: 10px; color: #555; font-weight: 400;">' + (loan.interestRateType === 'monthly' ? parseFloat(loan.interestRate.toString()).toFixed(2) : Math.round(parseFloat(loan.interestRate.toString()))) + '</span>' : ''}</div></td>
+        <td style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 4px; width: 155px; font-size: 14px; vertical-align: middle; font-weight: 500; box-sizing: border-box; white-space: normal; overflow-wrap: anywhere; word-break: break-word;"><div style="position: relative; display: flex; align-items: center; min-width: 0;">${getPhotoIndicator(loan.id)}${loan.borrowerName}${isClosedLoan && dateWiseStatus === 'all' ? ' (बंद)' : ''}${showInterestRate && loan.interestRate ? '<span style="position: absolute; right: 1px; top: 50%; transform: translateY(-50%); font-size: 10px; color: #555; font-weight: 400;">' + (loan.interestRateType === 'monthly' ? parseFloat(loan.interestRate.toString()).toFixed(2) : Math.round(parseFloat(loan.interestRate.toString()))) + '</span>' : ''}</div></td>
             <td class="mobile-hide" style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 4px; text-align: center; width: 65px; font-size: 14px; vertical-align: middle; font-weight: 500; box-sizing: border-box;">${(loan.accountNumber || loan.id.slice(0, 5)).toString().substring(0, 7)}</td>
             <td class="mobile-hide" style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 4px; width: auto; min-width: 60px; font-size: 14px; word-wrap: break-word; white-space: normal; vertical-align: middle; line-height: 1.3; overflow-wrap: break-word; font-weight: 500; box-sizing: border-box;">${loan.loanType === 'विनातारण' ? getUnsecuredDetails(loan) : (loan.itemDescription || loan.collateralDetails || 'सोन्याचे दागिने, अंगूठी, कंगन, नथ, हार इत्यादी')}</td>
-            <td class="mobile-hide" style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 4px; text-align: center; width: 56px; font-size: 14px; vertical-align: middle; font-weight: 500; box-sizing: border-box;">${loan.loanType === 'विनातारण' ? '—' : (loan.weight ? parseFloat(loan.weight.toString()).toFixed(2) : '0')}</td>
+            <td class="mobile-hide" style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 4px; text-align: center; width: 56px; font-size: 14px; vertical-align: middle; font-weight: 500; box-sizing: border-box;">${loan.loanType === 'विनातारण' ? '—' : formatWeight(weightGrams(loan.weight))}</td>
           </tr>
         `;
       }).join('');
@@ -1519,10 +1556,10 @@ export default function BorrowerListReports() {
             <td style="border-bottom: 1px solid #ccc; padding: 4px; text-align: center; width: 38px; font-size: 14px; vertical-align: middle; font-weight: 500; box-sizing: border-box;">${index + 1}</td>
             <td style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 4px; text-align: center; width: 68px; font-size: 14px; vertical-align: middle; font-weight: 500; box-sizing: border-box;">${shortDate}</td>
             <td style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 4px; text-align: left; width: 78px; font-size: 14px; vertical-align: middle; font-weight: 500; padding-left: 5px; box-sizing: border-box;" class="loan-amount">${Math.round(loan.principalAmount).toLocaleString('en-IN')}</td>
-            <td style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 4px; width: 155px; font-size: 14px; vertical-align: middle; font-weight: 500; box-sizing: border-box;"><div style="position: relative; display: flex; align-items: center;">${getPhotoIndicator(loan.id)}${loan.borrowerName.length > 26 ? loan.borrowerName.substring(0, 26) + '...' : loan.borrowerName}${isClosedLoan && nameWiseStatus === 'all' ? ' (बंद)' : ''}${showInterestRate && loan.interestRate ? '<span style="position: absolute; right: 1px; top: 50%; transform: translateY(-50%); font-size: 10px; color: #555; font-weight: 400;">' + (loan.interestRateType === 'monthly' ? parseFloat(loan.interestRate.toString()).toFixed(2) : Math.round(parseFloat(loan.interestRate.toString()))) + '</span>' : ''}</div></td>
+        <td style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 4px; width: 155px; font-size: 14px; vertical-align: middle; font-weight: 500; box-sizing: border-box; white-space: normal; overflow-wrap: anywhere; word-break: break-word;"><div style="position: relative; display: flex; align-items: center; min-width: 0;">${getPhotoIndicator(loan.id)}${loan.borrowerName}${isClosedLoan && nameWiseStatus === 'all' ? ' (बंद)' : ''}${showInterestRate && loan.interestRate ? '<span style="position: absolute; right: 1px; top: 50%; transform: translateY(-50%); font-size: 10px; color: #555; font-weight: 400;">' + (loan.interestRateType === 'monthly' ? parseFloat(loan.interestRate.toString()).toFixed(2) : Math.round(parseFloat(loan.interestRate.toString()))) + '</span>' : ''}</div></td>
             <td class="mobile-hide" style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 4px; text-align: center; width: 65px; font-size: 14px; vertical-align: middle; font-weight: 500; box-sizing: border-box;">${(loan.accountNumber || loan.id.slice(0, 5)).toString().substring(0, 7)}</td>
             <td class="mobile-hide" style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 4px; width: auto; min-width: 60px; font-size: 14px; word-wrap: break-word; white-space: normal; vertical-align: middle; line-height: 1.3; overflow-wrap: break-word; font-weight: 500; box-sizing: border-box;">${loan.loanType === 'विनातारण' ? getUnsecuredDetails(loan) : (loan.itemDescription || loan.collateralDetails || 'सोन्याचे दागिने, अंगूठी, कंगन, नथ, हार इत्यादी')}</td>
-            <td class="mobile-hide" style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 4px; text-align: center; width: 56px; font-size: 14px; vertical-align: middle; font-weight: 500; box-sizing: border-box;">${loan.loanType === 'विनातारण' ? '—' : (loan.weight ? parseFloat(loan.weight.toString()).toFixed(2) : '0')}</td>
+            <td class="mobile-hide" style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 4px; text-align: center; width: 56px; font-size: 14px; vertical-align: middle; font-weight: 500; box-sizing: border-box;">${loan.loanType === 'विनातारण' ? '—' : formatWeight(weightGrams(loan.weight))}</td>
           </tr>
         `;
       }).join('');
@@ -1581,7 +1618,7 @@ export default function BorrowerListReports() {
             <td style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 3px 2px; width: 150px; font-size: 13px; vertical-align: middle; font-weight: 500; text-align: left; padding-left: 4px; white-space: normal; word-break: break-word;">${getPhotoIndicator(loan.id)}${loan.borrowerName}</td>
             <td class="mobile-hide" style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 3px 2px; text-align: center; width: 48px; font-size: 13px; vertical-align: middle; font-weight: 500;">${(loan.accountNumber || loan.id.slice(0, 5)).toString().substring(0, 7)}</td>
             <td class="mobile-hide" style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 3px 2px; width: auto; min-width: 50px; font-size: 13px; word-wrap: break-word; white-space: normal; vertical-align: middle; line-height: 1.3; overflow-wrap: break-word; font-weight: 500; text-align: left;">${loan.loanType === 'विनातारण' ? getUnsecuredDetails(loan) : ((loan.itemDescription || loan.collateralDetails || 'सोन्याचे दागिने, अंगूठी, कंगन, नथ, हार इत्यादी').replace(/^\d+[\s-]*/, '').trim() || 'सोन्याचे दागिने, अंगूठी, कंगन, नथ, हार इत्यादी')}</td>
-            <td class="mobile-hide" style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 3px 2px; text-align: center; width: 46px; font-size: 13px; vertical-align: middle; font-weight: 500;">${loan.loanType === 'विनातारण' ? '—' : (loan.weight ? parseFloat(loan.weight.toString()).toFixed(2) : '0')}</td>
+            <td class="mobile-hide" style="border-bottom: 1px solid #ccc; border-left: 1px solid #ccc; padding: 3px 2px; text-align: center; width: 46px; font-size: 13px; vertical-align: middle; font-weight: 500;">${loan.loanType === 'विनातारण' ? '—' : formatWeight(weightGrams(loan.weight))}</td>
           </tr>
         `;
       }).join('');
@@ -1643,7 +1680,7 @@ export default function BorrowerListReports() {
             <td class="maturity-cell-name" style="border-left: 1px solid #e5e7eb; padding: 8px 4px; width: 155px; font-size: 14px; font-weight: 500; color: #1f2937; vertical-align: middle; white-space: normal; word-break: break-word;">${getPhotoIndicator(loan.id)}${loan.borrowerName}</td>
             <td class="maturity-cell-code mobile-hide" style="border-left: 1px solid #e5e7eb; padding: 8px 4px; text-align: center; width: 50px; font-size: 14px; font-weight: 600; color: #000000; vertical-align: middle;">${(loan.accountNumber || loan.id.slice(0, 5)).toString().substring(0, 7)}</td>
             <td class="maturity-cell-details mobile-hide" style="border-left: 1px solid #e5e7eb; padding: 8px 4px; width: auto; font-size: 13px; font-weight: 400; color: #4b5563; vertical-align: middle; line-height: 1.4; word-wrap: break-word; overflow-wrap: break-word;">${loan.loanType === 'विनातारण' ? getUnsecuredDetails(loan) : ((loan.itemDescription || loan.collateralDetails || 'सोन्याचे दागिने, अंगूठी, कंगन, नथ, हार इत्यादी').replace(/^\d+[\s-]*/, '').trim() || 'सोन्याचे दागिने, अंगूठी, कंगन, नथ, हार इत्यादी')}</td>
-            <td class="maturity-cell-weight mobile-hide" style="border-left: 1px solid #e5e7eb; padding: 8px 4px; text-align: center; width: 50px; font-size: 14px; font-weight: 500; color: #6b7280; vertical-align: middle;">${loan.loanType === 'विनातारण' ? '—' : (loan.weight ? parseFloat(loan.weight.toString()).toFixed(2) : '0')}</td>
+            <td class="maturity-cell-weight mobile-hide" style="border-left: 1px solid #e5e7eb; padding: 8px 4px; text-align: center; width: 50px; font-size: 14px; font-weight: 500; color: #6b7280; vertical-align: middle;">${loan.loanType === 'विनातारण' ? '—' : formatWeight(weightGrams(loan.weight))}</td>
             <td class="maturity-cell-maturity mobile-hide" style="border-left: 1px solid #e5e7eb; padding: 8px 4px; text-align: center; width: 68px; font-size: 14px; font-weight: 500; color: #dc2626; vertical-align: middle; background-color: #fef2f2;">${shortMaturityDate}</td>
           </tr>
         `;
@@ -1652,18 +1689,8 @@ export default function BorrowerListReports() {
 
     // Calculate totals
     const totalAmount = reportData.reduce((sum, loan) => sum + Math.round(loan.principalAmount), 0);
-    const totalGoldWeight = reportData.reduce((sum, loan) => {
-      if (loan.loanType === 'विनातारण' || loan.metalType === 'silver') return sum;
-      const w = parseFloat((loan.weight || '0').toString().replace(/[^0-9.]/g, '')) || 0;
-      return sum + w;
-    }, 0);
-    const totalSilverWeight = reportData.reduce((sum, loan) => {
-      if (loan.metalType !== 'silver') return sum;
-      const w = parseFloat((loan.weight || '0').toString().replace(/[^0-9.]/g, '')) || 0;
-      return sum + w;
-    }, 0);
+    const { goldWeight: totalGoldWeight, silverWeight: totalSilverWeight } = loanWeightTotals(reportData);
     const totalWeight = totalGoldWeight + totalSilverWeight;
-    const formatWeight = (w: number) => w % 1 === 0 ? w.toString() : w.toFixed(2);
     const weightDisplay = totalSilverWeight > 0 ? `सोने: ${formatWeight(totalGoldWeight)} | चांदी: ${formatWeight(totalSilverWeight)}` : `${formatWeight(totalWeight)}`;
     
     // Calculate total interest for closing-wise report
@@ -1855,9 +1882,9 @@ export default function BorrowerListReports() {
               th:nth-child(2), td:nth-child(2) { width: 68px !important; min-width: 68px !important; box-sizing: border-box !important; }    /* तारीख */
               th:nth-child(3), td:nth-child(3) { width: 78px !important; min-width: 78px !important; text-align: left !important; padding-left: 5px !important; box-sizing: border-box !important; }    /* रक्कम */
               th:nth-child(4), td:nth-child(4) { width: 155px !important; min-width: 155px !important; text-align: left !important; padding-left: 4px !important; box-sizing: border-box !important; }   /* नाव */
-              tbody tr:not(.total-row):not(.summary-row) td:nth-child(4) { padding-left: 4px !important; overflow: hidden !important; }
+              tbody tr:not(.total-row):not(.summary-row) td:nth-child(4) { padding-left: 4px !important; overflow: visible !important; white-space: normal !important; overflow-wrap: anywhere !important; word-break: break-word !important; }
               /* Fix: inner flex div in name column must not clip td border-bottom in print */
-              td:nth-child(4) div { position: static !important; display: block !important; overflow: hidden !important; }
+              td:nth-child(4) div { position: static !important; display: block !important; overflow: visible !important; white-space: normal !important; overflow-wrap: anywhere !important; word-break: break-word !important; }
               th:nth-child(5), td:nth-child(5) { width: 65px !important; min-width: 65px !important; max-width: 69px !important; text-align: center !important; padding: 3px 2px !important; box-sizing: border-box !important; }    /* कोड */
               th:nth-child(6), td:nth-child(6) { width: auto !important; min-width: 60px !important; text-align: left !important; padding-left: 5px !important; box-sizing: border-box !important; }    /* वस्तूचा तपशील — उरलेली जागा */
               th:nth-child(7), td:nth-child(7) { width: 56px !important; min-width: 56px !important; box-sizing: border-box !important; }    /* वजन */
@@ -3462,8 +3489,13 @@ export default function BorrowerListReports() {
         <aside className="hidden lg:block lg:w-72 lg:fixed lg:inset-y-0 print:hidden">
           <Sidebar />
         </aside>
-        <main className="flex-1 w-full lg:pl-72 pb-20 lg:pb-4">
+        <main className="flex-1 w-full min-w-0 lg:pl-72 pb-[calc(5rem+env(safe-area-inset-bottom,0px))] lg:pb-4">
       <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-6 max-w-7xl">
+        {loanDataError && (
+          <div role="alert" className="mb-4 rounded-lg border border-red-300 bg-red-50 p-4 text-red-800">
+            वजनाची अचूक टोटल तयार करता आली नाही: {loanDataError.message}
+          </div>
+        )}
         
         {/* Header - Mobile Responsive */}
         <div className="mb-6 flex flex-col gap-4">
@@ -3568,7 +3600,7 @@ export default function BorrowerListReports() {
                     loanType: loan.loanType || '',
                     status: loan.status === 'active' ? 'सक्रिय' : 'बंद',
                     collateralDetails: loan.collateralDetails || '',
-                    weight: loan.weight || '',
+                    weight: loan.loanType === 'विनातारण' ? '—' : formatWeight(weightGrams(loan.weight)),
                     marketValue: loan.marketValue ? `₹${Number(loan.marketValue).toLocaleString('en-IN')}` : '',
                     documentDetails: loan.documentDetails || '',
                     specialConditions: loan.specialConditions || '',
@@ -4175,7 +4207,7 @@ export default function BorrowerListReports() {
                             {loan.loanType === 'विनातारण' ? ([loan.specialConditions, loan.documentDetails, loan.otherInfo].filter((v: string) => v && v !== '—' && v.trim() !== '').join(' | ') || '—') : (loan.itemDescription || loan.collateralDetails || 'सोन्याचे दागिने')}
                           </td>
                           <td className="border border-indigo-100 p-1.5 sm:p-2 md:p-3 text-center text-xs sm:text-sm md:text-base">
-                            {loan.loanType === 'विनातारण' ? '—' : (loan.weight || '0')}
+                            {loan.loanType === 'विनातारण' ? '—' : formatWeight(weightGrams(loan.weight))}
                           </td>
                         </tr>
                       );
@@ -4201,24 +4233,11 @@ export default function BorrowerListReports() {
                           {loan.loanType === 'विनातारण' ? ([loan.specialConditions, loan.documentDetails, loan.otherInfo].filter((v: string) => v && v !== '—' && v.trim() !== '').join(' | ') || '—') : (loan.itemDescription || loan.collateralDetails || 'सोन्याचे दागिने')}
                         </td>
                         <td className="border border-indigo-100 p-1.5 sm:p-2 md:p-3 text-center text-xs sm:text-sm md:text-base">
-                          {loan.loanType === 'विनातारण' ? '—' : (loan.weight || '0')}
+                          {loan.loanType === 'विनातारण' ? '—' : formatWeight(weightGrams(loan.weight))}
                         </td>
                       </tr>
                     );
                   })}
-                  {activeTab === 'closing-wise' && getPaginatedData.length > 0 && (
-                    <tr className="bg-indigo-100 font-bold text-indigo-900 border-t-2 border-indigo-400">
-                      <td className="border border-indigo-200 p-1.5 sm:p-2 md:p-3"></td>
-                      <td className="border border-indigo-200 p-1.5 sm:p-2 md:p-3"></td>
-                      <td className="border border-indigo-200 p-1.5 sm:p-2 md:p-3 text-right text-xs sm:text-sm md:text-base">एकूण:</td>
-                      <td className="border border-indigo-200 p-1.5 sm:p-2 md:p-3 text-right text-xs sm:text-sm md:text-base whitespace-nowrap">{closingWiseScreenTotals.totalAmount.toLocaleString('en-IN')}</td>
-                      <td className="border border-indigo-200 p-1.5 sm:p-2 md:p-3 text-right text-xs sm:text-sm md:text-base whitespace-nowrap">{closingWiseScreenTotals.totalInterest.toLocaleString('en-IN')}</td>
-                      <td className="border border-indigo-200 p-1.5 sm:p-2 md:p-3"></td>
-                      <td className="border border-indigo-200 p-1.5 sm:p-2 md:p-3"></td>
-                      <td className="border border-indigo-200 p-1.5 sm:p-2 md:p-3"></td>
-                      <td className="border border-indigo-200 p-1.5 sm:p-2 md:p-3 text-center text-xs sm:text-sm md:text-base whitespace-nowrap">{closingWiseScreenTotals.weightDisplay}</td>
-                    </tr>
-                  )}
                 </tbody>
               </table>
             </div>
@@ -4298,7 +4317,7 @@ export default function BorrowerListReports() {
               </div>
             )}
           </Card>
-        ) : (
+        ) : screenSummary.status === 'ready' ? (
           /* Empty State */
           <Card className="mt-6 p-4 sm:p-6 border-2 border-indigo-100 shadow-sm rounded-xl">
             <div className="text-center text-indigo-400">
@@ -4306,7 +4325,8 @@ export default function BorrowerListReports() {
               <p className="text-sm sm:text-base text-indigo-500">रिपोर्ट पाहण्यासाठी वरील फिल्टर निवडा</p>
             </div>
           </Card>
-        )}
+        ) : null}
+        <BorrowerListTotals {...screenSummary} />
         
       </div>
         </main>

@@ -40,7 +40,7 @@ const adminOnlyMiddleware = (req: any, res: any, next: any) => {
 router.get("/users", requireAuth, adminOnlyMiddleware, async (req: any, res) => {
   try {
     const users = await storage.getUsersForTenant(req.user.tenantId);
-    res.json(users);
+    res.json(users.map(({ password, ...user }) => user));
   } catch (error) {
     console.error("❌ Error fetching users:", error);
     res.status(500).json({ message: "Failed to fetch users" });
@@ -51,6 +51,9 @@ router.get("/users", requireAuth, adminOnlyMiddleware, async (req: any, res) => 
 router.post("/users", requireAuth, adminOnlyMiddleware, async (req: any, res) => {
   try {
     const { userData, permissions } = req.body;
+    if (!["user", "admin"].includes(userData?.role || "user")) {
+      return res.status(403).json({ message: "Cannot create privileged system roles" });
+    }
 
     // Validate user data
     const validatedUserData = insertUserSchema.parse({
@@ -130,7 +133,7 @@ router.put("/users/:userId/permissions", requireAuth, adminOnlyMiddleware, async
     const permissions = req.body;
 
     // Validate permissions data
-    const validatedPermissions = insertUserPermissionsSchema.partial().parse(permissions);
+    const validatedPermissions = insertUserPermissionsSchema.omit({ userId: true, tenantId: true }).partial().parse(permissions);
 
     // Update permissions
     const updatedPermissions = await storage.updateUserPermissions(userId, req.user.tenantId, validatedPermissions);
@@ -213,7 +216,7 @@ router.put("/users/:userId/status", requireAuth, adminOnlyMiddleware, async (req
 
     res.json({ 
       message: "User status updated successfully", 
-      user: updatedUser 
+      user: { ...updatedUser, password: undefined }
     });
   } catch (error) {
     console.error("Error updating user status:", error);

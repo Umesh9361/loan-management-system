@@ -17,7 +17,7 @@ import {
   Camera, Keyboard, Mic, MicOff
 } from "lucide-react";
 import html2canvas from "html2canvas";
-import jsPDF from "jspdf";
+import { jsPDF } from "jspdf";
 import { decodeQrData } from "@/lib/qr-utils";
 import { PageErrorBoundary } from "@/components/error-boundary";
 import { parseSpokenNumber, processTranscriptSegments } from "@/lib/number-parser";

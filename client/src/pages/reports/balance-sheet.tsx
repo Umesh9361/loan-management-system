@@ -7,7 +7,7 @@ import { Search, Printer, CheckCircle, AlertTriangle, TrendingUp, TrendingDown, 
 import { useQuery } from "@tanstack/react-query";
 import { Sidebar } from "@/components/ui/sidebar";
 import { MobileNav } from "@/components/ui/mobile-nav";
-import jsPDF from "jspdf";
+import { jsPDF } from "jspdf";
 
 function getDefaultFY() {
   const now = new Date();

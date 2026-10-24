@@ -18,7 +18,7 @@ import { Sidebar } from "@/components/ui/sidebar";
 import { MobileNav } from "@/components/ui/mobile-nav";
 import { useRealTimeSync } from "@/hooks/use-real-time-sync";
 import type { Company } from "@shared/schema";
-import jsPDF from 'jspdf';
+import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
 
 export default function AccountLedger() {

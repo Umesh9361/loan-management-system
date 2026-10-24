@@ -10,6 +10,7 @@ import { DateUtils } from "@/lib/date-utils";
 import { encodeQrData } from "@/lib/qr-utils";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { checkedReportLoans, sumWeightGrams, formatWeight, weightGrams } from "@shared/report-weights";
 
 export interface LabelLoan {
   id: number | string;
@@ -252,7 +253,7 @@ function getFieldValue(fieldId: string, loan: LabelLoan, displayMode?: string): 
       return g ? `${g} (${b})` : b;
     }
     case 'details': return loan.collateralDetails || "";
-    case 'weight': return loan.weight ? `वजन: ${parseFloat(String(loan.weight)).toFixed(2)}` : "";
+    case 'weight': return loan.weight ? `वजन: ${formatWeight(weightGrams(loan.weight))}` : "";
     case 'date': return formatShortDate(loan.loanDate);
     case 'interestRate': {
       if (!loan.interestRate) return "";
@@ -629,7 +630,7 @@ function generateQrLabelHtml(loan: LabelLoan, qrDataUrl: string, settings: Label
     ? (loan.borrowerName || '')
     : (loan.groupName ? `${loan.groupName} (${loan.borrowerName})` : (loan.borrowerName || ''));
   const intStr = (show_int && loan.interestRate) ? `${loan.interestRate}` : '';
-  const wtStr  = (show_wt  && loan.weight)       ? `${parseFloat(String(loan.weight)).toFixed(2)}g`      : '';
+  const wtStr  = (show_wt  && loan.weight)       ? `${formatWeight(weightGrams(loan.weight))}g`      : '';
   const hasExtra = !!(intStr || wtStr);
   const showRow1 = show_acct || show_amt;
 
@@ -738,7 +739,7 @@ export function generatePacketLabelHtml(
   const safeMarginLeft = Math.min(margins.left, stickerSize.width / 2);
   const safeMarginRight = Math.min(margins.right, stickerSize.width / 2);
 
-  const sorted = [...loansSlice].sort((a, b) => {
+  const sorted = checkedReportLoans(loansSlice).sort((a, b) => {
     const na = parseInt(String(a.accountNumber)) || 0;
     const nb = parseInt(String(b.accountNumber)) || 0;
     return na - nb;
@@ -760,7 +761,7 @@ export function generatePacketLabelHtml(
   const dateRange = minDate === maxDate ? minDate : `${minDate} — ${maxDate}`;
 
   const totalCount = sorted.length;
-  const totalWeight = sorted.reduce((sum, l) => sum + (parseFloat(String(l.weight || '0')) || 0), 0);
+  const totalWeight = sumWeightGrams(checkedReportLoans(sorted).map(l => l.weight));
   const totalAmount = sorted.reduce((sum, l) => sum + (Number(l.principalAmount) || 0), 0);
 
   const devaFont = `'${fontFamily || 'Noto Sans Devanagari'}','Mangal','Arial Unicode MS',sans-serif`;
@@ -786,7 +787,7 @@ export function generatePacketLabelHtml(
   lines.push(`<div style="font-family:${numFont};font-size:${dateFontPt}pt;font-weight:${dateBold ? 600 : 400};text-align:center;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:0.4pt;">${dateRange}</div>`);
 
   if (pf.showWeight || pf.showCount) {
-    const weightHtml = pf.showWeight ? `<span style="font-family:${numFont};font-size:${weightFontPt}pt;font-weight:${weightBold ? 600 : 400};white-space:nowrap;"><span style="font-family:${devaFont};font-size:${Math.max(weightFontPt - 2, 6)}pt;color:#666;">वजन </span>${totalWeight.toFixed(2)}g</span>` : '';
+    const weightHtml = pf.showWeight ? `<span style="font-family:${numFont};font-size:${weightFontPt}pt;font-weight:${weightBold ? 600 : 400};white-space:nowrap;"><span style="font-family:${devaFont};font-size:${Math.max(weightFontPt - 2, 6)}pt;color:#666;">वजन </span>${formatWeight(totalWeight)}g</span>` : '';
     const countHtml = pf.showCount ? `<span style="font-family:${devaFont};font-size:${countFontPt}pt;font-weight:${countBold ? 600 : 400};white-space:nowrap;"><span style="font-size:${Math.max(countFontPt - 2, 6)}pt;color:#666;">एकूण </span>${totalCount} <span style="font-size:${Math.max(countFontPt - 2, 6)}pt;color:#666;">खाती</span></span>` : '';
     if (pf.showWeight && pf.showCount) {
       lines.push(`<div style="display:flex;justify-content:space-between;align-items:center;width:100%;line-height:1.25;">${weightHtml}${countHtml}</div>`);
@@ -830,7 +831,7 @@ export function generatePacketPrintPage(loans: LabelLoan[], settings: LabelSetti
   const selectedFont = settings.fontFamily || 'Noto Sans Devanagari';
   const fontOption = FONT_OPTIONS.find(f => f.value === selectedFont) || FONT_OPTIONS[0];
 
-  const sorted = [...loans].sort((a, b) => {
+  const sorted = checkedReportLoans(loans).sort((a, b) => {
     const na = parseInt(String(a.accountNumber)) || 0;
     const nb = parseInt(String(b.accountNumber)) || 0;
     return na - nb;
@@ -1001,7 +1002,12 @@ function FieldItem({ field, idx, totalFields, toggleField, moveField, adjustFont
   );
 }
 
-export function LabelPrintDialog({ open, onOpenChange, loans, initialPrintMode }: LabelPrintDialogProps) {
+export function LabelPrintDialog({ open, onOpenChange, loans: inputLoans, initialPrintMode }: LabelPrintDialogProps) {
+  const labelCheck = useMemo(() => {
+    try { return { loans: checkedReportLoans(inputLoans), error: '' }; }
+    catch (error) { return { loans: [] as LabelLoan[], error: (error as Error).message }; }
+  }, [inputLoans]);
+  const loans = labelCheck.loans;
   const [settings, setSettings] = useState<LabelSettings>(() => loadSettings());
   const [showSettings, setShowSettings] = useState(false);
   const [settingsTab, setSettingsTab] = useState<'size' | 'fields' | 'margins'>('fields');
@@ -1078,8 +1084,8 @@ export function LabelPrintDialog({ open, onOpenChange, loans, initialPrintMode }
     gcTime: 0,
     placeholderData: undefined,
   });
-  const packetAllLoans = packetFetchedLoans || [];
-  const packetLoans = useMemo(() => {
+  const packetAllLoans = packetLoansError ? [] : packetFetchedLoans || [];
+  const filteredPacketLoans = useMemo(() => {
     if (packetAllLoans.length === 0) return [];
     const acctFromNum = appliedAcctFrom ? parseInt(appliedAcctFrom) : null;
     const acctToNum = appliedAcctTo ? parseInt(appliedAcctTo) : null;
@@ -1091,13 +1097,18 @@ export function LabelPrintDialog({ open, onOpenChange, loans, initialPrintMode }
       return true;
     });
   }, [packetAllLoans, appliedAcctFrom, appliedAcctTo]);
+  const packetCheck = useMemo(() => {
+    try { return { loans: checkedReportLoans(filteredPacketLoans), error: '' }; }
+    catch (error) { return { loans: [] as LabelLoan[], error: (error as Error).message }; }
+  }, [filteredPacketLoans]);
+  const packetLoans = packetCheck.loans;
   const packetSummary = useMemo(() => {
     if (packetLoans.length === 0) return null;
     const sorted = [...packetLoans].sort((a, b) => (parseInt(String(a.accountNumber)) || 0) - (parseInt(String(b.accountNumber)) || 0));
     const minAcct = sorted[0]?.accountNumber || '';
     const maxAcct = sorted[sorted.length - 1]?.accountNumber || '';
-    const totalWeight = sorted.reduce((sum, l) => sum + (parseFloat(String(l.weight || '0')) || 0), 0);
-    return { count: sorted.length, minAcct, maxAcct, acctRange: minAcct === maxAcct ? minAcct : `${minAcct} — ${maxAcct}`, totalWeight: totalWeight.toFixed(2) };
+    const totalWeight = sumWeightGrams(sorted.map(l => l.weight));
+    return { count: sorted.length, minAcct, maxAcct, acctRange: minAcct === maxAcct ? minAcct : `${minAcct} — ${maxAcct}`, totalWeight: formatWeight(totalWeight) };
   }, [packetLoans]);
   const isPacketMode = settings.printMode === 'packet';
   const effectiveLoans = isPacketMode ? packetLoans : loans;
@@ -1416,6 +1427,9 @@ export function LabelPrintDialog({ open, onOpenChange, loans, initialPrintMode }
   }, [updateSettings]);
 
   const openPrintWindow = useCallback(async (loansToprint: LabelLoan[]) => {
+    try { loansToprint = checkedReportLoans(loansToprint); }
+    catch (error) { alert((error as Error).message); return; }
+    if (!loansToprint.length) return;
     const printWindow = window.open('', '_blank', 'width=600,height=400');
     if (!printWindow) {
       alert("पॉप-अप ब्लॉक झाले. कृपया ब्राउझर सेटिंग्ज मध्ये पॉप-अप अनुमती द्या.");
@@ -1467,6 +1481,11 @@ export function LabelPrintDialog({ open, onOpenChange, loans, initialPrintMode }
               : `${settings.stickerSize.width} x ${settings.stickerSize.height} mm स्टिकर लेबल`}
           </DialogDescription>
         </DialogHeader>
+        {(isPacketMode ? packetCheck.error : labelCheck.error) && (
+          <div role="alert" className="rounded border border-red-300 bg-red-50 p-3 text-sm text-red-800">
+            {isPacketMode ? packetCheck.error : labelCheck.error}
+          </div>
+        )}
 
         {isLoadingSettings && !dbLoaded && (
           <div className="flex items-center justify-center py-4 gap-2 text-sm text-gray-500">
@@ -2041,7 +2060,7 @@ export function LabelPrintDialog({ open, onOpenChange, loans, initialPrintMode }
                       const grpDM2 = settings.fields.find(f => f.id === 'groupBorrower')?.displayMode ?? 'groupBorrower';
                       const grpLine2 = grpDM2 === 'groupOnly' ? (loan.groupName || '') : grpDM2 === 'borrowerOnly' ? (loan.borrowerName || '') : (loan.groupName ? `${loan.groupName} (${loan.borrowerName})` : (loan.borrowerName || ''));
                       const intStr2 = (sv_int && loan.interestRate) ? `${loan.interestRate}` : '';
-                      const wtStr2  = (sv_wt && loan.weight) ? `${parseFloat(String(loan.weight)).toFixed(2)}g` : '';
+                      const wtStr2  = (sv_wt && loan.weight) ? `${formatWeight(weightGrams(loan.weight))}g` : '';
                       const hasExtra2 = !!(intStr2 || wtStr2);
                       const showRow1v = sv_acct || sv_amt;
                       const panelWpx = realWPx - qrSizePx - Math.round(3 * 3.78);

@@ -28,7 +28,7 @@ import { Calculator, FileText, AlertTriangle, CheckCircle, Download, Search, X, 
 import html2canvas from "html2canvas";
 import { printReceiptViaBluetooth, connectBluetoothPrinter, sendPrintData, isBluetoothSupported } from "@/lib/bluetooth-printer";
 import { encodeCodeQr } from "@/lib/qr-utils";
-import jsPDF from "jspdf";
+import { jsPDF } from "jspdf";
 import { PhotoViewer } from "@/components/ui/photo-viewer";
 import { Link } from "wouter";
 import { useIsMobile } from "@/hooks/use-mobile";

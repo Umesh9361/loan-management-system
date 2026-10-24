@@ -3,6 +3,7 @@ import { users, userActivityLogs, notificationWarnings } from "@shared/schema";
 import { eq, and, sql, lt } from "drizzle-orm";
 import bcrypt from "bcrypt";
 import SuperAdminGuardian from "./super-admin-guardian";
+import { bootstrapAdminPassword } from "./security";
 
 export async function initializeDatabase() {
   const maxRetries = 5;
@@ -150,7 +151,7 @@ export async function initializeDatabase() {
         console.log("Creating SUPER ADMIN (System Administrator)...");
         
         try {
-          const hashedPassword = await bcrypt.hash("admin123", 10);
+          const hashedPassword = await bcrypt.hash(bootstrapAdminPassword(), 10);
           await db.insert(users).values({
             username: "admin",
             password: hashedPassword,

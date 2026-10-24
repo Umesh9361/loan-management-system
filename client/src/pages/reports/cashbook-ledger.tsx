@@ -10,7 +10,7 @@ import { Calendar, Download, Printer, FileText } from "lucide-react";
 import { displayNarration } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import { useReactToPrint } from 'react-to-print';
-import jsPDF from 'jspdf';
+import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
 import { initDevanagariFont } from '@/lib/pdf-text-generator';
 

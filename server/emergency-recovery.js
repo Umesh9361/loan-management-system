@@ -39,7 +39,7 @@ class EmergencyRecovery {
         console.log('✅ Password reset successful!');
         console.log(`📝 Login credentials:`);
         console.log(`   Username: ${username}`);
-        console.log(`   Password: ${newPassword}`);
+        console.log('   Password is not logged');
         console.log(`   Tenant ID: ${tenantId}`);
         console.log('⚠️  CHANGE THIS PASSWORD IMMEDIATELY AFTER LOGIN!');
         return true;
@@ -57,7 +57,10 @@ class EmergencyRecovery {
     try {
       console.log(`🔄 Creating emergency admin account...`);
       
-      const password = 'Emergency2025!';
+      const password = process.env.BOOTSTRAP_ADMIN_PASSWORD;
+      if (!password || password.length < 16) {
+        throw new Error('Set an explicit BOOTSTRAP_ADMIN_PASSWORD (16+ characters) before recovery');
+      }
       const hashedPassword = await bcrypt.hash(password, 10);
       
       // First check if user exists
@@ -83,7 +86,7 @@ class EmergencyRecovery {
       console.log('✅ Emergency admin created successfully!');
       console.log(`📝 Emergency login credentials:`);
       console.log(`   Username: ${username}`);
-      console.log(`   Password: ${password}`);
+      console.log('   Password is not logged');
       console.log(`   Tenant ID: ${tenantId}`);
       console.log('⚠️  DELETE THIS ACCOUNT AFTER RECOVERY!');
       return true;
@@ -151,7 +154,10 @@ async function main() {
       case 'reset-password':
         const tenantId = args[1] || 'TEST';
         const username = args[2] || 'admin';
-        const password = args[3] || 'EmergencyReset123';
+        const password = process.env.BOOTSTRAP_ADMIN_PASSWORD;
+        if (!password || password.length < 16) {
+          throw new Error('Explicit BOOTSTRAP_ADMIN_PASSWORD (16+ characters) required for recovery');
+        }
         await recovery.resetAdminPassword(tenantId, username, password);
         break;
 
@@ -167,12 +173,12 @@ async function main() {
         console.log('🔧 Emergency Super Admin Recovery Tool');
         console.log('');
         console.log('Usage:');
-        console.log('  node emergency-recovery.js reset-password [tenant] [username] [password]');
+        console.log('  Set BOOTSTRAP_ADMIN_PASSWORD in secrets, then: node emergency-recovery.js reset-password [tenant] [username]');
         console.log('  node emergency-recovery.js create-emergency');
         console.log('  node emergency-recovery.js list-admins');
         console.log('');
         console.log('Examples:');
-        console.log('  node emergency-recovery.js reset-password TEST admin NewPassword123');
+        console.log('  node emergency-recovery.js reset-password TEST admin');
         console.log('  node emergency-recovery.js create-emergency');
         console.log('  node emergency-recovery.js list-admins');
         break;

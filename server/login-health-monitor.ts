@@ -7,6 +7,7 @@ import bcrypt from "bcrypt";
 import { db } from "./db";
 import { users } from "@shared/schema";
 import { eq, and } from "drizzle-orm";
+import { bootstrapAdminPassword } from "./security";
 
 export class LoginHealthMonitor {
   
@@ -53,11 +54,12 @@ export class LoginHealthMonitor {
         return true;
       }
       
-      console.log(`⚠️  Found ${health.issues.length} issues:`, health.issues);
+      console.log(`Login health check found ${health.issues.length} configuration issues`);
       
       if (!health.superAdmin.exists) {
         console.log("🔧 Creating missing SUPER_ADMIN account...");
-        const hashedPassword = await bcrypt.hash("admin123", 10);
+        if (health.issues.includes("Database connection failed")) return false;
+        const hashedPassword = await bcrypt.hash(bootstrapAdminPassword(), 10);
         await db.insert(users).values({
           username: "admin",
           password: hashedPassword,
@@ -67,7 +69,7 @@ export class LoginHealthMonitor {
           fullName: "System Administrator",
           email: "superadmin@system.com"
         });
-        console.log("✅ SUPER_ADMIN account created with default password");
+        console.log("SUPER_ADMIN account created with explicitly configured bootstrap credentials");
       }
       
       return true;

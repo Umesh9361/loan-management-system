@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Printer, FileText, Receipt, Search, X, Download, Loader2, Layers } from "lucide-react";
 import { ReceiptGenerator } from "@/components/receipt-generator";
 import { useIsMobile } from "@/hooks/use-mobile";
-import jsPDF from "jspdf";
+import { jsPDF } from "jspdf";
 
 export default function ReceiptGeneratorPage() {
   const isMobile = useIsMobile();

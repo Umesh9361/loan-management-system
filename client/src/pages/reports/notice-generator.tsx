@@ -10,7 +10,7 @@ import { MobileNav } from "@/components/ui/mobile-nav";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Printer, FileText, Search, X, Download, AlertTriangle } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
-import jsPDF from "jspdf";
+import { jsPDF } from "jspdf";
 
 const NOTICE_STYLES = `
   @page {

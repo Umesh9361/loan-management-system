@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { AlertTriangle, ArrowUpDown, CheckCircle, Database, Download, Eye, HardDrive, RefreshCw, Scale, Shield, Trash2, Upload } from "lucide-react";
-import jsPDF from "jspdf";
+import { jsPDF } from "jspdf";
 import "jspdf-autotable";
 import html2canvas from "html2canvas";
 import { initDevanagariFont } from "@/lib/pdf-text-generator";

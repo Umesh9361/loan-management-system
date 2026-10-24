@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, decimal, timestamp, boolean, date, uuid, json } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, decimal, timestamp, boolean, date, uuid, json, index } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -204,7 +204,11 @@ export const loans = pgTable("loans", {
   status: varchar("status", { length: 20 }).notNull().default("active"), // active, closed
   createdAt: timestamp("created_at").notNull().default(sql`now()`),
   updatedAt: timestamp("updated_at").notNull().default(sql`now()`),
-});
+}, (table) => [
+  // Separate paths support both all-groups and selected-group date ranges.
+  index("loans_tenant_status_date_idx").on(table.tenantId, table.status, table.loanDate),
+  index("loans_tenant_status_group_date_idx").on(table.tenantId, table.status, table.groupId, table.loanDate),
+]);
 
 // Transactions table for all financial transactions
 export const transactions = pgTable("transactions", {
@@ -314,7 +318,9 @@ export const loanClosures = pgTable("loan_closures", {
   interestVariance: decimal("interest_variance", { precision: 12, scale: 2 }).default("0"), // Difference between calculated vs actual
   varianceReason: text("variance_reason"), // Reason for interest variance
   createdAt: timestamp("created_at").notNull().default(sql`now()`),
-});
+}, (table) => [
+  index("loan_closures_tenant_loan_idx").on(table.tenantId, table.loanId),
+]);
 
 // Relations
 export const usersRelations = relations(users, ({ one, many }) => ({

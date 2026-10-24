@@ -436,7 +436,7 @@ export class DataManagementService {
                            affectedRecords.loanPhotos + affectedRecords.activityLogs +
                            affectedRecords.loanRecord + affectedRecords.borrowerRecord;
 
-      console.log(`🎯 CLEANUP COMPLETE: ${totalAffected} total records cleaned for loan ${loan.accountNumber}`);
+      console.log(`Cleanup complete: ${totalAffected} records processed`);
 
       return {
         success: true,

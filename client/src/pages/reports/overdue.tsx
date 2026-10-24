@@ -14,6 +14,9 @@ import { cn } from "@/lib/utils";
 import { Sidebar } from "@/components/ui/sidebar";
 import { MobileNav } from "@/components/ui/mobile-nav";
 import { PhotoViewer } from "@/components/ui/photo-viewer";
+import { checkedReportLoans, formatWeight } from "@shared/report-weights";
+import { overdueMetalWeightTotals } from "@shared/overdue-weights";
+import { OverdueWeightSummary } from "@/components/reports/overdue-weight-summary";
 
 declare global {
   interface Window {
@@ -247,7 +250,7 @@ export default function OverdueReport() {
     }
   }, [silverRateData, silverRateManuallyEdited]);
 
-  const { data: overdueData = [], isLoading: isGenerating, refetch: generateReport } = useQuery({
+  const { data: reportItems = [], error: reportError, isLoading: isGenerating, refetch: generateReport } = useQuery({
     queryKey: ['/api/overdue-report', filters, activeTab, selectedCustomerName],
     queryFn: async () => {
       const params = new URLSearchParams({
@@ -274,12 +277,17 @@ export default function OverdueReport() {
         credentials: 'include',
       });
       if (!response.ok) {
-        throw new Error('Failed to fetch overdue report');
+        const body = await response.json();
+        throw new Error(body.error || 'रिपोर्ट तयार करता आला नाही.');
       }
-      return response.json();
+      const items: OverdueItem[] = await response.json();
+      return checkedReportLoans(items.map(item => ({
+        ...item, id: item.loanId, weight: item.goldWeight,
+      })));
     },
     enabled: false,
   });
+  const overdueData = reportError ? [] : reportItems;
 
   const handleKeyDown = (event: KeyboardEvent) => {
     if (!reportGenerated || overdueData.length === 0) return;
@@ -660,7 +668,7 @@ export default function OverdueReport() {
       'मुद्दल': item.principalAmount,
       'व्याज': item.interestToDate,
       'एकूण': item.totalAmount,
-      'वजन (ग्राम)': item.loanType === 'विनातारण' ? '—' : (item.goldWeight || '—'),
+      'वजन (ग्राम)': item.loanType === 'विनातारण' ? '—' : formatWeight(item.goldWeight),
       'तारण मूल्य': item.loanType === 'विनातारण' ? '—' : item.currentGoldValue,
       'नुकसान': item.lossAmount,
       'नुकसान %': `${item.lossPercentage}%`,
@@ -797,9 +805,8 @@ export default function OverdueReport() {
   const securedTotalLoss = securedLoans.reduce((sum: number, item: OverdueItem) => sum + item.lossAmount, 0);
   const unsecuredTotalLoss = unsecuredLoans.reduce((sum: number, item: OverdueItem) => sum + item.lossAmount, 0);
 
-  // तारण कर्जांची एकूण वस्तू वजन व एकूण शुद्ध सोने वजन (शुद्ध = वजन × शुद्धता%)
-  const securedTotalGoldWeight = securedLoans.reduce((sum: number, item: OverdueItem) => sum + (Number(item.goldWeight) || 0), 0);
-  const securedTotalPureGold = securedLoans.reduce((sum: number, item: OverdueItem) => sum + (Number(item.goldWeight) || 0) * ((Number(item.purityUsed) || 0) / 100), 0);
+  // Filtered secured entries only; gross/fine totals remain separate by metal.
+  const metalWeightTotals = overdueMetalWeightTotals(securedLoans);
 
   const levelCounts = {
     loss: sortedOverdueData.filter(i => getSecurityLevel(i).level === 'loss').length,
@@ -1247,7 +1254,8 @@ export default function OverdueReport() {
 
         {renderFilters()}
 
-        {reportGenerated && (
+        {reportError && <div role="alert" className="m-4 rounded border border-red-300 bg-red-50 p-4 text-red-800">{reportError.message}</div>}
+        {reportGenerated && !reportError && (
           <div ref={reportSectionRef} className="bg-white shadow-lg print:shadow-none print-content">
             <div className="p-4 md:p-6 border-b-2 border-gray-200 print:hidden">
               <div className="text-center">
@@ -1280,9 +1288,10 @@ export default function OverdueReport() {
                   <p className="text-sm sm:text-base md:text-lg font-semibold text-gray-700">
                     Total Loans: {totalLoans} (तारण: {securedLoans.length}, विनातारण: {unsecuredLoans.length}) {viewMode === "default" && `| सुरक्षित वगळले: ${filteredOutCount}`} | Total Loss: {formatCurrency(totalLoss)}
                   </p>
-                  <p className="text-sm sm:text-base font-semibold text-amber-700 mt-1">
-                    एकूण वजन: {securedTotalGoldWeight.toFixed(2)}g | शुद्ध सोने वजन: {securedTotalPureGold.toFixed(2)}g
-                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm sm:text-base font-semibold text-amber-700 mt-1">
+                    <OverdueWeightSummary totals={metalWeightTotals} kind="gross" />
+                    <OverdueWeightSummary totals={metalWeightTotals} kind="fine" />
+                  </div>
                   <div className="flex flex-wrap gap-2 justify-center mt-3">
                     {allLevelCounts.loss > 0 && (
                       <button
@@ -1469,7 +1478,7 @@ export default function OverdueReport() {
                           <div className="grid grid-cols-4 gap-2 text-xs mt-1">
                             <div>
                               <span className="text-gray-500">वजन</span>
-                              <div className="font-semibold text-amber-700">{item.goldWeight ? `${item.goldWeight}g` : '—'}</div>
+                              <div className="font-semibold text-amber-700">{formatWeight(item.goldWeight)}g</div>
                             </div>
                             <div>
                               <span className="text-gray-500">शुद्धता</span>
@@ -1536,7 +1545,7 @@ export default function OverdueReport() {
                               <td className="border border-gray-300 px-2 py-2 text-sm text-center text-gray-700 whitespace-nowrap">{formatDate(item.loanDate)}</td>
                               <td className="border border-gray-300 px-2 py-2 text-sm text-right font-semibold text-purple-700 whitespace-nowrap">{formatCurrency(item.principalAmount)}</td>
                               <td className="border border-gray-300 px-2 py-2 text-sm text-right font-semibold text-orange-700 whitespace-nowrap">{formatCurrency(item.interestToDate)}</td>
-                              <td className="border border-gray-300 px-2 py-2 text-sm text-center font-semibold text-amber-700 whitespace-nowrap">{item.goldWeight || '—'}</td>
+                              <td className="border border-gray-300 px-2 py-2 text-sm text-center font-semibold text-amber-700 whitespace-nowrap">{formatWeight(item.goldWeight)}</td>
                               <td className="border border-gray-300 px-2 py-2 text-sm text-center font-semibold text-blue-700 whitespace-nowrap">{`${item.purityUsed}%`}</td>
                               <td className="border border-gray-300 px-2 py-2 text-sm text-right font-semibold text-green-700 whitespace-nowrap">{formatCurrency(item.currentGoldValue)}</td>
                               <td className="border border-gray-300 px-2 py-2 text-sm text-right font-bold text-indigo-700 whitespace-nowrap">{formatCurrency(item.totalAmount)}</td>
@@ -1731,7 +1740,7 @@ export default function OverdueReport() {
                       <td style={{border: '1px solid black', padding: '3px', textAlign: 'center'}}>{formatDate(item.loanDate)}</td>
                       <td style={{border: '1px solid black', padding: '3px', textAlign: 'right'}}>{formatCurrency(item.principalAmount)}</td>
                       <td style={{border: '1px solid black', padding: '3px', textAlign: 'right'}}>{formatCurrency(item.interestToDate)}</td>
-                      <td style={{border: '1px solid black', padding: '3px', textAlign: 'center'}}>{item.goldWeight || '—'}</td>
+                      <td style={{border: '1px solid black', padding: '3px', textAlign: 'center'}}>{formatWeight(item.goldWeight)}</td>
                       <td style={{border: '1px solid black', padding: '3px', textAlign: 'center'}}>{`${item.purityUsed}%`}</td>
                       <td style={{border: '1px solid black', padding: '3px', textAlign: 'right'}}>{formatCurrency(item.currentGoldValue)}</td>
                       <td style={{border: '1px solid black', padding: '3px', textAlign: 'right', fontWeight: 'bold'}}>{formatCurrency(item.totalAmount)}</td>
@@ -1745,8 +1754,12 @@ export default function OverdueReport() {
                     <td colSpan={4} style={{border: '1px solid black', padding: '5px', textAlign: 'right', fontWeight: 'bold', fontSize: '8pt'}}>तारण कर्ज एकूण ({securedLoans.length})</td>
                     <td style={{border: '1px solid black', padding: '5px', textAlign: 'right', fontWeight: 'bold'}}>{formatCurrency(securedLoans.reduce((s, i) => s + i.principalAmount, 0))}</td>
                     <td style={{border: '1px solid black', padding: '5px', textAlign: 'right', fontWeight: 'bold'}}>{formatCurrency(securedLoans.reduce((s, i) => s + i.interestToDate, 0))}</td>
-                    <td style={{border: '1px solid black', padding: '5px', textAlign: 'center', fontWeight: 'bold'}}>{securedTotalGoldWeight.toFixed(2)}g</td>
-                    <td style={{border: '1px solid black', padding: '5px', textAlign: 'center', fontWeight: 'bold', fontSize: '7.5pt', whiteSpace: 'nowrap'}}>शुद्ध: {securedTotalPureGold.toFixed(2)}g</td>
+                    <td style={{border: '1px solid black', padding: '5px', textAlign: 'center', fontWeight: 'bold', whiteSpace: 'normal'}}>
+                      <OverdueWeightSummary totals={metalWeightTotals} kind="gross" />
+                    </td>
+                    <td style={{border: '1px solid black', padding: '5px', textAlign: 'center', fontWeight: 'bold', fontSize: '7.5pt', whiteSpace: 'normal'}}>
+                      <OverdueWeightSummary totals={metalWeightTotals} kind="fine" />
+                    </td>
                     <td style={{border: '1px solid black', padding: '5px'}}></td>
                     <td style={{border: '1px solid black', padding: '5px', textAlign: 'right', fontWeight: 'bold'}}>{formatCurrency(securedLoans.reduce((s, i) => s + i.totalAmount, 0))}</td>
                     <td style={{border: '1px solid black', padding: '5px', textAlign: 'right', fontWeight: 'bold', color: 'red'}}>{formatCurrency(securedTotalLoss)}</td>

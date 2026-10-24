@@ -10,6 +10,7 @@ import { useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 import { Sidebar } from "@/components/ui/sidebar";
 import { MobileNav } from "@/components/ui/mobile-nav";
+import { formatWeight, weightGrams } from "@shared/report-weights";
 
 interface LoadingItem {
   loanId: string;
@@ -205,26 +206,26 @@ export default function LoadingReport() {
     return params;
   };
 
-  const { data: reportData, isLoading: isGenerating, refetch: generateReport } = useQuery<LoadingReportData>({
+  const { data: reportData, error: reportError, isLoading: isGenerating, refetch: generateReport } = useQuery<LoadingReportData>({
     queryKey: ['/api/loading-report', activeTab, groupId, selectedCustomerName, goldRateInput, silverRateInput, currentPage],
     queryFn: async () => {
       const params = buildQueryParams(currentPage);
       const res = await fetch(`/api/loading-report?${params.toString()}`, { credentials: 'include' });
-      if (!res.ok) throw new Error('Failed to fetch loading report');
+      if (!res.ok) throw new Error((await res.json()).error || 'रिपोर्ट तयार करता आला नाही.');
       return res.json();
     },
     enabled: false,
     staleTime: 60 * 1000,
   });
 
-  const items = reportData?.items || [];
-  const summary = reportData?.summary;
+  const items = reportError ? [] : reportData?.items || [];
+  const summary = reportError ? undefined : reportData?.summary;
   const hasSilverLoans = items.some(item => item.metalType === 'silver');
 
   const fetchAllForExport = async () => {
     const params = buildQueryParams(1, true);
     const res = await fetch(`/api/loading-report?${params.toString()}`, { credentials: 'include' });
-    if (!res.ok) throw new Error('Failed to fetch loading report');
+    if (!res.ok) throw new Error((await res.json()).error || 'रिपोर्ट तयार करता आला नाही.');
     return res.json() as Promise<LoadingReportData>;
   };
 
@@ -311,7 +312,7 @@ export default function LoadingReport() {
       try {
         const allData = await fetchAllForExport();
         exportItems = allData.items;
-      } catch { }
+      } catch (error) { alert((error as Error).message); return; }
     }
 
     const excelData = exportItems.map((item, index) => ({
@@ -322,10 +323,10 @@ export default function LoadingReport() {
       'कर्ज दिनांक': formatDate(item.loanDate),
       'तारण वस्तू': item.collateralDetails,
       'धातू': item.metalType === 'silver' ? 'चांदी' : 'सोने',
-      'वजन (ग्रॅम)': item.weight ? parseFloat(String(item.weight)).toFixed(2) : '0',
+      'वजन (ग्रॅम)': formatWeight(weightGrams(item.weight)),
       'शुद्धता %': (item as any).purityUsed,
       'व्याजदर': `${item.interestRate}%${item.interestRateType === 'yearly' ? ' वार्षिक' : ''}`,
-      'शुद्ध वजन': item.fineWeight,
+      'शुद्ध वजन': formatWeight(item.fineWeight),
       'बाजार मूल्य': item.marketValue,
       'व्याजासहित': item.totalWithInterest,
       '80% मानक कर्ज': item.standard80Loan,
@@ -357,7 +358,7 @@ export default function LoadingReport() {
       try {
         const allData = await fetchAllForExport();
         printItems = allData.items;
-      } catch { }
+      } catch (error) { alert((error as Error).message); return; }
     }
 
     const printHTML = `
@@ -420,7 +421,7 @@ export default function LoadingReport() {
               <td>${formatDate(item.loanDate)}</td>
               <td>${item.groupName}</td>
               <td>${item.metalType === 'silver' ? 'चांदी' : 'सोने'}</td>
-              <td>${item.weight ? parseFloat(String(item.weight)).toFixed(2) : '0'}g</td>
+              <td>${formatWeight(weightGrams(item.weight))}g</td>
               <td style="color:#1d4ed8;font-weight:bold">${(item as any).purityUsed}%</td>
               <td style="color:#c2410c;font-weight:bold">${item.interestRate}%${item.interestRateType === 'yearly' ? ' वा.' : ''}</td>
               <td>${formatCurrency(item.marketValue)}</td>
@@ -462,6 +463,7 @@ export default function LoadingReport() {
         )}
 
         <main className={cn("flex-1 w-full pb-16 lg:pb-0 print:pl-0 print:pb-0", sidebarHidden ? "" : "lg:pl-72")}>
+          {reportError && <div role="alert" className="m-4 rounded border border-red-300 bg-red-50 p-4 text-red-800">{reportError.message}</div>}
           <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-purple-50 p-4 print:min-h-0 print:bg-white print:p-0">
             <div className="space-y-3 print:max-w-none print:mx-0 print:space-y-0 px-2 lg:px-4">
 
@@ -851,7 +853,7 @@ export default function LoadingReport() {
                               <div className="grid grid-cols-5 gap-2 text-xs">
                                 <div>
                                   <span className="text-gray-500">वजन</span>
-                                  <div className="font-semibold text-amber-700">{item.weight ? parseFloat(String(item.weight)).toFixed(2) : '0'}g</div>
+                                  <div className="font-semibold text-amber-700">{formatWeight(weightGrams(item.weight))}g</div>
                                 </div>
                                 <div>
                                   <span className="text-gray-500">शुद्धता</span>
@@ -958,7 +960,7 @@ export default function LoadingReport() {
                                 <div className="grid grid-cols-8 gap-3 text-xs">
                                   <div className="text-center bg-amber-50 rounded px-2 py-1.5">
                                     <div className="text-gray-500 mb-0.5">वजन</div>
-                                    <div className="font-semibold text-amber-700">{item.weight ? parseFloat(String(item.weight)).toFixed(2) : '0'}g</div>
+                                    <div className="font-semibold text-amber-700">{formatWeight(weightGrams(item.weight))}g</div>
                                   </div>
                                   <div className="text-center bg-blue-50 rounded px-2 py-1.5">
                                     <div className="text-gray-500 mb-0.5">शुद्धता</div>

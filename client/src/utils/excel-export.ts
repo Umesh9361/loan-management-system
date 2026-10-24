@@ -1,14 +1,16 @@
 import * as XLSX from 'xlsx';
 import { DateUtils } from '@/lib/date-utils';
+import { accountSummaryExcelRows, type accountSummaryContext } from '@shared/account-summary';
 
 export interface ExcelExportOptions {
   filename: string;
   sheetName: string;
   data: any[];
   columns?: { key: string; header: string; width?: number }[];
+  preserveArrayRows?: boolean;
 }
 
-export const exportToExcel = ({ filename, sheetName, data, columns }: ExcelExportOptions) => {
+export const exportToExcel = ({ filename, sheetName, data, columns, preserveArrayRows = false }: ExcelExportOptions) => {
   try {
     console.log('Excel export starting...', { filename, sheetName, dataLength: data?.length, columns });
     
@@ -42,7 +44,7 @@ export const exportToExcel = ({ filename, sheetName, data, columns }: ExcelExpor
       
       formattedData = [headers, ...rows];
       console.log('Data formatted, rows:', formattedData.length);
-    } else {
+    } else if (!preserveArrayRows) {
       // No columns specified - convert object data to array format
       console.log('No columns specified, converting objects to arrays...');
       if (data.length > 0 && typeof data[0] === 'object') {
@@ -308,9 +310,18 @@ export const exportAccountLedgerToExcel = (data: any[], accountName: string, dat
   });
 };
 
-export const exportAccountSummaryToExcel = (data: any[]) => {
+export const exportAccountSummaryToExcel = (data: any[], modeLabel?: string, context?: ReturnType<typeof accountSummaryContext>) => {
+  if (context) {
+    // Scoped to this report: arrays retain numeric zero, and metadata survives file sharing.
+    return exportToExcel({
+      filename: `खाते_सारांश_${context.modeLabel}_${context.from}_${context.to}${context.interestText ? (context.interestText.includes('सुरुवातीपासून') ? '_व्याज_आजपर्यंत' : '_व्याज_निवडलेला_कालावधी') : ''}`,
+      sheetName: 'Account Summary',
+      data: accountSummaryExcelRows(data, context),
+      preserveArrayRows: true,
+    });
+  }
   return exportToExcel({
-    filename: 'खाते_सारांश_अहवाल',
+    filename: modeLabel ? `खाते_सारांश_अहवाल_${modeLabel}` : 'खाते_सारांश_अहवाल',
     sheetName: 'Account Summary',
     data: data.map((item, index) => ({
       serialNo: index + 1,

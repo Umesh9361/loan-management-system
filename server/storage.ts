@@ -23,6 +23,8 @@ import { eq, and, or, desc, asc, gte, lte, sum, count, sql, like, not, inArray }
 import bcrypt from "bcrypt";
 import { performanceCache, memoizedCalculations, cacheWarming } from "./performance-cache";
 import { getNameTranslations, normalizeMarathiVowels, transliterateToDevanagari } from "./name-translations";
+import { latestLoanClosureDate } from "./loan-closure-projection";
+import { reportLoanWeight } from "@shared/report-weights";
 
 export interface IStorage {
   // User operations
@@ -423,7 +425,7 @@ export class DatabaseStorage implements IStorage {
       status: loans.status,
       createdAt: loans.createdAt,
       updatedAt: loans.updatedAt,
-      closureDate: loanClosures.closureDate,
+      closureDate: latestLoanClosureDate,
       borrower: sql`CASE WHEN ${borrowers.id} IS NOT NULL THEN json_build_object(
         'id', ${borrowers.id},
         'tenantId', ${borrowers.tenantId},
@@ -448,7 +450,6 @@ export class DatabaseStorage implements IStorage {
     })
     .from(loans)
     .leftJoin(borrowers, eq(loans.borrowerId, borrowers.id))
-    .leftJoin(loanClosures, eq(loans.id, loanClosures.loanId))
     .innerJoin(groups, eq(loans.groupId, groups.id))
     .where(and(...conditions));
 
@@ -534,7 +535,7 @@ export class DatabaseStorage implements IStorage {
       status: loans.status,
       createdAt: loans.createdAt,
       updatedAt: loans.updatedAt,
-      closureDate: loanClosures.closureDate,
+      closureDate: latestLoanClosureDate,
       borrower: sql`CASE WHEN ${borrowers.id} IS NOT NULL THEN json_build_object(
         'id', ${borrowers.id},
         'tenantId', ${borrowers.tenantId},
@@ -559,7 +560,6 @@ export class DatabaseStorage implements IStorage {
     })
     .from(loans)
     .leftJoin(borrowers, eq(loans.borrowerId, borrowers.id))
-    .leftJoin(loanClosures, eq(loans.id, loanClosures.loanId))
     .innerJoin(groups, eq(loans.groupId, groups.id))
     .where(and(eq(loans.tenantId, tenantId), searchCondition))
     .orderBy(desc(loans.createdAt))
@@ -596,6 +596,7 @@ export class DatabaseStorage implements IStorage {
   async updateLoan(id: string, tenantId: string, loan: Partial<InsertLoan>): Promise<Loan | undefined> {
     const updateData = {
       ...loan,
+      tenantId,
       updatedAt: new Date(),
       // Ensure proper type conversion for decimal fields
       principalAmount: loan.principalAmount ? String(loan.principalAmount) : undefined,
@@ -2274,19 +2275,10 @@ export class DatabaseStorage implements IStorage {
     const totalMonths = timePeriod.years * 12 + timePeriod.months + (timePeriod.days > 0 ? 1 : 0); // Any day = full month
     const fullCompoundingPeriods = Math.floor(totalMonths / compoundingPeriodMonths);
     
-    console.log(`🔧 COMPOUND SETUP: ${totalMonths} total months, ${fullCompoundingPeriods} compounding periods`);
-    
     // Calculate compound interest for full periods
     for (let period = 0; period < fullCompoundingPeriods; period++) {
       const monthlyInterestForPeriod = Math.round((currentPrincipal * monthlyRate) / 100);
       const periodInterest = monthlyInterestForPeriod * compoundingPeriodMonths;
-      
-      console.log(`🔧 COMPOUND Period ${period + 1}:`, {
-        principal: currentPrincipal,
-        monthlyRate: `${monthlyRate}%`,
-        periodInterest,
-        formula: `${currentPrincipal} × ${monthlyRate}% × ${compoundingPeriodMonths} = ${periodInterest}`
-      });
       
       totalInterest += periodInterest;
       currentPrincipal += periodInterest; // Add to principal for compounding
@@ -2298,11 +2290,7 @@ export class DatabaseStorage implements IStorage {
       const monthlyInterestRate = Math.round((currentPrincipal * monthlyRate) / 100);
       const remainingInterest = monthlyInterestRate * remainingMonths;
       totalInterest += remainingInterest;
-      
-      console.log(`🔧 REMAINING: ${remainingMonths} months on principal ${currentPrincipal} = ${remainingInterest}`);
     }
-    
-    console.log(`🔧 TOTAL COMPOUND INTEREST: ${totalInterest} (vs simple: ${(principal * monthlyRate * totalMonths) / 100})`);
     
     return totalInterest;
   }
@@ -2341,7 +2329,7 @@ export class DatabaseStorage implements IStorage {
       customerName?: string;
     }
   ): Promise<any[]> {
-    console.log(`🔍 OVERDUE STORAGE START: tenant=${tenantId}`);
+    console.log('Overdue report started');
     
     try {
       // Build query conditions
@@ -2358,9 +2346,6 @@ export class DatabaseStorage implements IStorage {
       if (filters.dateTo) {
         conditions.push(lte(loans.loanDate, filters.dateTo));
       }
-      console.log(`📅 DATE FILTER: ${filters.dateFrom} to ${filters.dateTo}`);
-
-      console.log('📋 Fetching active loans with group info...');
       const activeLoans = await db
         .select({
           loanId: loans.id,
@@ -2387,10 +2372,18 @@ export class DatabaseStorage implements IStorage {
         .where(and(...conditions, eq(loans.status, 'active')))
         .orderBy(loans.loanDate);
 
-      console.log(`📊 Found ${activeLoans.length} active loans`);
-      
       if (activeLoans.length === 0) {
+        console.log('Overdue report completed: 0 rows');
         return [];
+      }
+
+      // One tenant-scoped query instead of one query per loan. Keep each loan's
+      // existing descending closure-date order and JS reduction/rounding intact.
+      const closuresByLoan = new Map<string, LoanClosure[]>();
+      for (const closure of await this.getLoanClosures(tenantId)) {
+        const payments = closuresByLoan.get(closure.loanId);
+        if (payments) payments.push(closure);
+        else closuresByLoan.set(closure.loanId, [closure]);
       }
 
       const overdueResults = [];
@@ -2400,34 +2393,26 @@ export class DatabaseStorage implements IStorage {
         ? this.getProjectionDate(filters.futureProjectionPeriod || '3months')
         : new Date();
       
-      console.log(`🔮 CALCULATION MODE: ${filters.projectionMode} | DATE: ${calculationDate.toISOString().split('T')[0]}`);
-
       for (const loan of activeLoans) {
-        console.log(`💼 Processing loan: ${loan.borrowerName}`);
-        
         const principal = parseFloat(loan.principalAmount.toString());
         const loanDate = new Date(loan.loanDate);
         const daysDiff = Math.floor((calculationDate.getTime() - loanDate.getTime()) / (1000 * 60 * 60 * 24));
 
         // Get loan payments
-        const loanPayments = await this.getLoanClosures(tenantId, loan.loanId);
+        const loanPayments = closuresByLoan.get(loan.loanId) || [];
         const totalPaid = loanPayments.reduce((sum: number, closure: any) => sum + parseFloat(closure.totalAmount || '0'), 0);
 
         // CRITICAL FIX: Calculate interest based on projection mode AND rate mode
         let monthlyRate: number;
         
         // DEEP FIX: Handle interest rate mode properly
-        console.log(`🔧 RATE MODE DEBUG: ${loan.borrowerName} | Mode: "${filters.interestRateMode}" | Loan Rate: ${loan.interestRate}% ${loan.interestRateType} | Form Rate: ${filters.monthlyInterestRate}%`);
-        
         if (filters.interestRateMode === 'loan-wise') {
           // Use individual loan's interest rate
           const loanInterestRate = parseFloat(loan.interestRate?.toString() || '0');
           monthlyRate = loan.interestRateType === 'monthly' ? loanInterestRate : loanInterestRate / 12;
-          console.log(`✏️ LOAN-WISE RATE: ${loan.borrowerName} | Rate: ${loanInterestRate}% ${loan.interestRateType} → ${monthlyRate}% monthly`);
         } else {
           // Use manual rate from form
           monthlyRate = filters.monthlyInterestRate;
-          console.log(`📊 MANUAL RATE: ${loan.borrowerName} | Rate: ${monthlyRate}% monthly from form`);
         }
         
         let totalMonths: number;
@@ -2439,8 +2424,6 @@ export class DatabaseStorage implements IStorage {
           const fullMonths = Math.floor(totalDays / 30);
           const remainingDays = totalDays % 30;
           totalMonths = fullMonths + (remainingDays > 0 ? 1 : 0);
-          
-          console.log(`🔮 FUTURE CALC: ${loan.borrowerName} | Days: ${totalDays} | Months: ${totalMonths}`);
         } else {
           // CURRENT ANALYSIS: Calculate from loan date to today only
           const currentDate = new Date();
@@ -2448,8 +2431,6 @@ export class DatabaseStorage implements IStorage {
           const fullMonths = Math.floor(currentDaysDiff / 30);
           const remainingDays = currentDaysDiff % 30;
           totalMonths = fullMonths + (remainingDays > 0 ? 1 : 0);
-          
-          console.log(`📊 CURRENT CALC: ${loan.borrowerName} | Days: ${currentDaysDiff} | Months: ${totalMonths}`);
         }
 
         // FIXED: Compound yearly interest calculation
@@ -2463,7 +2444,7 @@ export class DatabaseStorage implements IStorage {
         const outstandingAmount = totalAmountDue - totalPaid;
 
         const isSilverLoan = loan.metalType === 'silver';
-        const metalWeightNum = parseFloat(loan.weight?.toString() || '0');
+        const metalWeightNum = loan.loanType === 'विनातारण' ? 0 : reportLoanWeight(loan);
         const dbPurity = loan.purity ? parseFloat(loan.purity.toString()) : 0;
 
         function detectPurityFromCollateral(collateral: string): number {
@@ -2535,7 +2516,7 @@ export class DatabaseStorage implements IStorage {
         });
       }
 
-      console.log(`✅ OVERDUE COMPLETED: ${overdueResults.length} results generated`);
+      console.log(`Overdue report completed: ${overdueResults.length} rows`);
       return overdueResults;
       
     } catch (error) {
@@ -3008,6 +2989,8 @@ export class DatabaseStorage implements IStorage {
       .update(userPermissions)
       .set({
         ...permissions,
+        userId,
+        tenantId,
         updatedAt: new Date()
       })
       .where(and(
