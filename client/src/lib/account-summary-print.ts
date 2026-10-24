@@ -32,19 +32,19 @@ export function accountSummaryPrintDocument(options: SummaryPrintOptions) {
 @page { size: A4 portrait; margin: 10mm 8mm; }
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }
-body { font: 10px/1.5 'Noto Sans Devanagari', Arial, sans-serif; color: #241d3f; }
-.summary-document-header { border-bottom: 2px solid #7050ca; padding-bottom: 7px; margin-bottom: 10px; text-align: center; }
+body { font: 10px/1.5 'Noto Sans Devanagari', Arial, sans-serif; color: #1e293b; }
+.summary-document-header { border-bottom: 2px solid #4f46e5; padding-bottom: 7px; margin-bottom: 10px; text-align: center; }
 .summary-document-header h1 { font-size: 16px; margin: 0 0 2px; }
 .summary-document-header h2 { font-size: 12px; margin: 0 0 3px; }
 .summary-document-header p { margin: 2px 0; font-size: 9px; overflow-wrap: anywhere; }
-.summary-document-notes { font-size: 9px; margin: 8px 0; color: #514964; }
+.summary-document-notes { font-size: 9px; margin: 8px 0; color: #475569; }
 table { width: 100%; table-layout: fixed; border-collapse: collapse; }
 thead { display: table-header-group; }
 tr { break-inside: avoid; page-break-inside: avoid; }
-th, td { border: 1px solid #81758f; padding: 6px 3px 7px; text-align: center; font-size: 10px; overflow-wrap: anywhere; vertical-align: middle; }
-th { background: #f0ebfa; font-weight: 700; }
+th, td { border: 1px solid #94a3b8; padding: 6px 3px 7px; text-align: center; font-size: 10px; overflow-wrap: anywhere; vertical-align: middle; }
+th { background: #eef2ff; font-weight: 700; }
 td:first-child { text-align: left; }
-.total-row td { background: #ece5fb; font-weight: 700; border-top: 2px solid #7050ca; }
+.total-row td { background: #eef2ff; font-weight: 700; border-top: 2px solid #4f46e5; }
 .summary-document-closing { break-inside: avoid; page-break-inside: avoid; }
 .summary-document-signature td { border: 0; padding: 14px 0 0; text-align: right; font-size: 10px; }
 body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }

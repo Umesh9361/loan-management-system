@@ -662,16 +662,16 @@ export default function AccountSummaryReport() {
               <p className="text-gray-600">गटनिहाय व कस्टमरनिहाय कर्ज वाटप सारांश</p>
             </div>
 
-            <fieldset className="mb-4 rounded-xl border border-violet-200 bg-violet-50/60 px-4 py-3 no-print">
-              <legend className="px-1 text-sm font-semibold text-violet-900">प्रिंट / PDF पर्याय</legend>
-              <p className="mb-2 text-xs text-violet-800">डिफॉल्ट: मूळ टेबल. हवी असल्यास खालील माहिती जोडा.</p>
-              <div className="flex flex-wrap gap-x-6 gap-y-3 text-sm text-violet-950">
+            <fieldset className="mb-4 rounded-xl border border-indigo-100 bg-white px-4 py-3 no-print">
+              <legend className="px-1 text-sm font-semibold text-indigo-700">प्रिंट / PDF पर्याय</legend>
+              <p className="mb-2 text-xs text-slate-500">डिफॉल्ट: मूळ टेबल. हवी असल्यास खालील माहिती जोडा.</p>
+              <div className="flex flex-wrap gap-x-6 gap-y-3 text-sm text-slate-700">
                 <label className="flex cursor-pointer items-center gap-2">
-                  <input type="checkbox" className="h-4 w-4 accent-violet-600" checked={includePrintOverview} onChange={e => setIncludePrintOverview(e.target.checked)} />
+                  <input type="checkbox" className="h-4 w-4 accent-indigo-600" checked={includePrintOverview} onChange={e => setIncludePrintOverview(e.target.checked)} />
                   सारांश बॉक्स व ग्राफ
                 </label>
                 <label className="flex cursor-pointer items-center gap-2">
-                  <input type="checkbox" className="h-4 w-4 accent-violet-600" checked={includePrintNotes} onChange={e => setIncludePrintNotes(e.target.checked)} />
+                  <input type="checkbox" className="h-4 w-4 accent-indigo-600" checked={includePrintNotes} onChange={e => setIncludePrintNotes(e.target.checked)} />
                   हिशोबाचे सविस्तर स्पष्टीकरण
                 </label>
               </div>

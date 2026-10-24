@@ -275,7 +275,8 @@ test('both mode overview renders real rupee/count charts without claiming a hist
   const zero = renderToStaticMarkup(<AccountSummaryOverview totals={row('period', [])} mode="period" periodText="रिकामा कालावधी" />);
   assert.doesNotMatch(zero, /NaN|Infinity/);
   const signed = renderToStaticMarkup(<AccountSummaryOverview totals={{ ...row('period'), totalInterest: -1200 }} mode="period" periodText="परतावा" />);
-  assert.match(signed, /fill="#D8524F"/); // signed values are not silently flattened to zero
+  assert.match(signed, /fill="var\(--aso-danger\)"/); // signed values are not silently flattened to zero
+  assert.match(signed, /--aso-danger: #D8524F/);
 });
 
 test('page wires guarded exports, shared context, independent date updates and both print overviews', () => {

@@ -91,7 +91,7 @@ function HorizontalBars({
                   y1={top - 3}
                   x2={x}
                   y2={chartHeight - 18}
-                  stroke="#ded9eb"
+                  stroke="#e2e8f0"
                   strokeDasharray={index === 0 ? undefined : "3 5"}
                 />
                 <text
@@ -119,7 +119,7 @@ function HorizontalBars({
                   width={plotWidth}
                   height={12}
                   rx={6}
-                  fill="#eeeaf5"
+                  fill="#f1f5f9"
                 />
                 {barWidth > 0 && (
                   <rect
@@ -128,7 +128,7 @@ function HorizontalBars({
                     width={barWidth}
                     height={12}
                     rx={6}
-                    fill={item.value < 0 ? "#D8524F" : item.color}
+                    fill={item.value < 0 ? "var(--aso-danger)" : item.color}
                   />
                 )}
               </g>
@@ -174,27 +174,27 @@ export function AccountSummaryOverview({
     : interestLabel ? englishSummaryDigits(interestLabel) : "प्रत्यक्ष मिळालेले; बाकी व्याज नाही";
 
   const rupeeItems: BarDatum[] = [
-    { label: "वाटप केलेले मुद्दल", value: totals.totalAmount, color: "#6546a5" },
-    { label: "बंद खात्यांतून परत आलेले मुद्दल", value: totals.closedAmount, color: "#a17acb" },
-    { label: "प्रत्यक्ष मिळालेले व्याज", value: totals.totalInterest, color: "#c06f9b" },
+    { label: "वाटप केलेले मुद्दल", value: totals.totalAmount, color: "var(--aso-disbursements)" },
+    { label: "बंद खात्यांतून परत आलेले मुद्दल", value: totals.closedAmount, color: "var(--aso-closures)" },
+    { label: "प्रत्यक्ष मिळालेले व्याज", value: totals.totalInterest, color: "var(--aso-interest)" },
   ];
   if (isCumulative) {
     rupeeItems.push({
       label: "आजची मुद्दल शिल्लक",
       value: totals.activeBalance,
-      color: "#805db6",
+      color: "var(--aso-balance)",
     });
   }
 
   const accountItems: BarDatum[] = [
-    { label: "दिलेली कर्जखाती", value: totals.totalLoans, color: "#6546a5" },
-    { label: "बंद झालेली खाती", value: totals.closedLoans, color: "#c06f9b" },
+    { label: "दिलेली कर्जखाती", value: totals.totalLoans, color: "var(--aso-disbursements)" },
+    { label: "बंद झालेली खाती", value: totals.closedLoans, color: "var(--aso-closures)" },
   ];
   if (isCumulative) {
     accountItems.push({
       label: "आज सक्रिय खाती",
       value: totals.activeLoans,
-      color: "#a17acb",
+      color: "var(--aso-balance)",
     });
   }
 
@@ -218,7 +218,7 @@ export function AccountSummaryOverview({
         </div>
       </header>
 
-      <div className="aso-key-totals" aria-label="मुख्य एकूण">
+      <div className={`aso-key-totals${[totals.totalAmount, totals.closedAmount, totals.totalInterest, ...(isCumulative ? [totals.activeBalance] : [])].some(value => formatRupees(value).length > 14) ? " aso-key-totals-long" : ""}`} aria-label="मुख्य एकूण">
         <article className="aso-total aso-total-primary">
           <span>वाटप केलेले मुद्दल</span>
           <strong>{formatRupees(totals.totalAmount)}</strong>
@@ -273,21 +273,25 @@ export function AccountSummaryOverview({
 
 const styles = `
   .aso {
-    --aso-ink: #30234a;
-    --aso-muted: #716781;
-    --aso-paper: #f7f4fb;
-    --aso-line: #e3dced;
-    --aso-primary: #6546a5;
-    --aso-secondary: #a17acb;
-    --aso-accent: #c06f9b;
+    --aso-ink: #1e293b;
+    --aso-muted: #64748b;
+    --aso-paper: #ffffff;
+    --aso-line: #e2e8f0;
+    --aso-primary: #4f46e5;
+    --aso-disbursements: #4f46e5;
+    --aso-closures: #0d9488;
+    --aso-interest: #f59e0b;
+    --aso-balance: #0284c7;
+    --aso-danger: #D8524F;
     color: var(--aso-ink);
     background: var(--aso-paper);
     border: 1px solid var(--aso-line);
-    border-radius: 16px;
+    border-top: 3px solid var(--aso-primary);
+    border-radius: 12px;
     padding: clamp(14px, 2.5vw, 24px);
     margin: 0 0 24px;
     font-family: inherit;
-    box-shadow: 0 5px 20px rgb(57 37 91 / 6%);
+    box-shadow: 0 2px 8px rgb(15 23 42 / 5%);
   }
   .aso * { box-sizing: border-box; }
   .aso-header {
@@ -325,12 +329,12 @@ const styles = `
     gap: 4px;
     min-width: 0;
     max-width: 100%;
-    border-left: 3px solid var(--aso-secondary);
+    border-left: 3px solid var(--aso-primary);
     border-radius: 0 9px 9px 0;
     padding: 6px 10px 6px 12px;
     color: var(--aso-ink);
     font-size: 11px;
-    background: #eee8f7;
+    background: #eef2ff;
   }
   .aso-scope span { font-weight: 800; color: var(--aso-primary); }
   .aso-scope strong { color: var(--aso-ink); font-size: 12px; line-height: 1.4; }
@@ -348,8 +352,10 @@ const styles = `
     padding: 11px 12px 10px;
     background: #fff;
   }
-  .aso-total-primary { background: #eee8f7; border-color: #d9ccea; }
-  .aso-total-current { background: #f8edf3; border-color: #ead3df; }
+  .aso-total-primary { background: #eef2ff; border-color: #c7d2fe; border-left: 3px solid var(--aso-disbursements); }
+  .aso-total:nth-child(2) { border-left: 3px solid var(--aso-closures); }
+  .aso-total:nth-child(3) { border-left: 3px solid var(--aso-interest); }
+  .aso-total-current { background: #f0f9ff; border-color: #bae6fd; border-left: 3px solid var(--aso-balance); }
   .aso-total > span {
     display: block;
     color: var(--aso-muted);
@@ -362,11 +368,11 @@ const styles = `
     display: block;
     margin-top: 7px;
     color: var(--aso-ink);
-    font-size: clamp(15px, 2.3vw, 23px);
+    font-size: clamp(14px, 2.3vw, 23px);
     line-height: 1.15;
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
-    letter-spacing: -.045em;
+    letter-spacing: -.035em;
   }
   .aso-total small { display: block; margin-top: 7px; color: var(--aso-muted); font-size: 10px; line-height: 1.4; }
   .aso-charts {
@@ -379,7 +385,7 @@ const styles = `
     min-width: 0;
     padding: 12px 12px 10px;
     border: 1px solid var(--aso-line);
-    border-radius: 12px;
+    border-radius: 10px;
     background: #fff;
   }
   .aso-chart-heading { display: flex; justify-content: space-between; gap: 8px; }
@@ -395,14 +401,14 @@ const styles = `
     flex: 0 0 auto;
     border-radius: 9px;
     color: var(--aso-primary);
-    background: #eee8f7;
+    background: #eef2ff;
     font-size: 12px;
     font-weight: 800;
   }
   .aso-visual { width: 100%; margin-top: 9px; }
   .aso-bars { display: block; width: 100%; height: auto; overflow: visible; }
-  .aso-axis-label { fill: #716781; font-size: 10px; }
-  .aso-row-label { fill: #493666; font-size: 11px; font-weight: 700; }
+  .aso-axis-label { fill: #64748b; font-size: 10px; }
+  .aso-row-label { fill: #334155; font-size: 11px; font-weight: 700; }
   .aso-values {
     list-style: none;
     margin: 2px 0 0;
@@ -415,7 +421,7 @@ const styles = `
     grid-template-columns: 9px minmax(0, 1fr) auto;
     align-items: start;
     gap: 7px;
-    color: #655c73;
+    color: #475569;
     font-size: 11px;
     line-height: 1.4;
   }
@@ -427,10 +433,10 @@ const styles = `
     text-align: right;
     white-space: nowrap;
   }
-  .aso-zero-note { color: #81768f; font-size: 10px; margin: 7px 0 0; }
+  .aso-zero-note { color: #64748b; font-size: 10px; margin: 7px 0 0; }
   .aso-footnote {
     margin: 13px 1px 0;
-    color: #655c73;
+    color: #475569;
     font-size: 11px;
     line-height: 1.5;
   }
@@ -442,22 +448,24 @@ const styles = `
     .aso-charts { grid-template-columns: minmax(0, 1fr); }
     .aso-key-totals { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .aso-total > span { min-height: 0; }
-    .aso-axis-label { font-size: 14px; }
-    .aso-row-label { font-size: 15px; }
+    .aso-axis-label { font-size: 12px; }
+    .aso-row-label { font-size: 13px; }
   }
   @media (max-width: 460px) {
     .aso { padding: 13px 11px; }
-    .aso-key-totals { grid-template-columns: minmax(0, 1fr); gap: 7px; }
-    .aso-total { padding: 10px 9px; }
+    .aso-key-totals { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
+    .aso-key-totals-long { grid-template-columns: minmax(0, 1fr); }
+    .aso-total { padding: 10px 8px; }
     .aso-total > span { font-size: 10px; }
-    .aso-total strong { font-size: clamp(18px, 6vw, 25px); letter-spacing: -.04em; }
-    .aso-total small { font-size: 9px; }
+    .aso-total strong { font-size: clamp(12px, 3.8vw, 17px); letter-spacing: -.035em; }
+    .aso-key-totals-long .aso-total strong { font-size: clamp(18px, 6vw, 25px); }
+    .aso-total small { font-size: 9px; overflow-wrap: anywhere; }
     .aso-chart { padding: 13px 11px 11px; }
     .aso-values li { font-size: 11px; }
     .aso-values strong { font-size: 11px; }
   }
   @media print {
-    .aso { color: #30234a; background: #fff; border: 1px solid #c9bfd7; border-radius: 0; padding: 7px 8px; margin: 0 0 5px; box-shadow: none; font-size: 9pt; }
+    .aso { color: #1e293b; background: #fff; border: 1px solid #cbd5e1; border-top: 2px solid var(--aso-primary); border-radius: 0; padding: 7px 8px; margin: 0 0 5px; box-shadow: none; font-size: 9pt; }
     .aso-header { gap: 6px; margin-bottom: 6px; align-items: center; }
     .aso-eyebrow { margin-bottom: 1px; font-size: 8pt; }
     .aso-title-block h2 { font-size: 13pt; }
@@ -465,20 +473,24 @@ const styles = `
     .aso-scope { flex: 0 1 auto; margin: 0; padding: 3px 6px; font-size: 7pt; border-left-width: 2px; }
     .aso-scope strong { font-size: 8pt; }
     .aso-scope small { font-size: 7pt; }
-    .aso-key-totals { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; margin-bottom: 5px; }
+    .aso-key-totals, .aso-key-totals-long { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; margin-bottom: 5px; }
     .aso-total, .aso-chart { background: #fff; break-inside: avoid; }
     .aso-total { padding: 5px 7px; border-radius: 0; }
     .aso-total > span { min-height: 0; font-size: 7pt; }
-    .aso-total strong { margin-top: 2px; font-size: 10pt; }
+    .aso-total strong, .aso-key-totals-long .aso-total strong { margin-top: 2px; font-size: 10pt; }
     .aso-total small { display: none; }
     .aso-charts { grid-template-columns: 1fr 1fr; }
     .aso-chart { padding: 5px 6px; border-radius: 0; }
     .aso-chart-heading h3 { font-size: 9pt; }
-    .aso-chart-heading p, .aso-chart-unit, .aso-values, .aso-zero-note, .aso-footnote { display: none; }
+    .aso-chart-heading p, .aso-chart-unit, .aso-zero-note, .aso-footnote { display: none; }
     .aso-visual { margin-top: 2px; }
     .aso-bars { max-height: 125px; }
-    .aso-axis-label { fill: #493666; font-size: 9px; }
-    .aso-row-label { fill: #30234a; font-size: 10px; }
+    .aso-values { gap: 2px; margin-top: 1px; }
+    .aso-values li { font-size: 7pt; line-height: 1.2; gap: 4px; }
+    .aso-values strong { font-size: 7pt; }
+    .aso-swatch { width: 7px; height: 7px; margin-top: 1px; }
+    .aso-axis-label { fill: #475569; font-size: 9px; }
+    .aso-row-label { fill: #1e293b; font-size: 10px; }
   }
 `;
 

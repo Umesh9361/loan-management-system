@@ -15,7 +15,7 @@ import type { SummaryRow } from '../shared/account-summary';
 const fixtures = {
   cumulative: {
     totalLoans: 100, activeLoans: 40, closedLoans: 60,
-    totalAmount: 1234567890.12, closedAmount: 734567, activeBalance: 500000, totalInterest: 98765.43,
+    totalAmount: 3087700, closedAmount: 2178500, activeBalance: 909200, totalInterest: 138846,
   },
   period: {
     totalLoans: 3, activeLoans: 1, closedLoans: 2,
@@ -28,22 +28,28 @@ createServer((req, res) => {
   const context = accountSummaryContext(mode, mode === 'cumulative' ? '2020-01-01' : '2026-04-01',
     '2026-06-30', 'कृत्रिम चाचणी डेटा',
     mode === 'cumulative' ? createSummaryInterestSettings('2026-06-30').group : undefined);
-  const body = renderToStaticMarkup(<AccountSummaryOverview totals={fixtures[mode]} mode={mode}
+  const values = { ...fixtures[mode], ...(url.searchParams.has('large') ? { totalAmount: 1234567890.12 } : {}) };
+  const body = renderToStaticMarkup(<AccountSummaryOverview totals={values} mode={mode}
     periodText={`${formatSummaryDate(context.from)} ते ${formatSummaryDate(context.to)}`}
     subsetLabel={context.scope} interestLabel={context.interestText} />);
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
   if (url.pathname === '/print') {
     const count = Math.min(50, Number(url.searchParams.get('rows') || 1));
     const rows: SummaryRow[] = Array.from({ length: count }, (_, index) => ({
-      ...fixtures[mode], name: `नमुना गट ${index + 1}`,
+      ...values, name: `नमुना गट ${index + 1}`,
+      totalWeight: 0, totalFineWeight: 0, goldWeight: 0, goldFineWeight: 0, silverWeight: 0, silverFineWeight: 0,
     }));
+    const totals = accountSummaryTotals(rows);
+    const printOverview = renderToStaticMarkup(<AccountSummaryOverview totals={totals} mode={mode}
+      periodText={`${formatSummaryDate(context.from)} ते ${formatSummaryDate(context.to)}`}
+      subsetLabel={context.scope} interestLabel={context.interestText} />);
     res.end(accountSummaryPrintDocument({
       company: 'नमुना फायनान्स — कृत्रिम डेटा', title: 'खाते सारांश अहवाल',
-      period: '01/04/2026 ते 24/10/2026', scope: 'सर्व गट व विना गट / इतर',
+      period: `${formatSummaryDate(context.from)} ते ${formatSummaryDate(context.to)}`, scope: context.scope,
       interest: 'व्याज: आर्थिक वर्ष 01/04/2026 ते 31/03/2027',
-      notes: context.balanceNote, label: 'गटाचे नाव', rows, totals: accountSummaryTotals(rows),
+      notes: context.balanceNote, label: 'गटाचे नाव', rows, totals,
       showRank: url.searchParams.has('rank'), includeOverview: url.searchParams.has('overview'),
-      includeNotes: url.searchParams.has('notes'), overviewHTML: body,
+      includeNotes: url.searchParams.has('notes'), overviewHTML: printOverview,
     }));
     return;
   }

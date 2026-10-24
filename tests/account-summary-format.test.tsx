@@ -71,3 +71,26 @@ test('group and customer views share formatter and short scope without changing 
   assert.doesNotMatch(page, /new Intl\.NumberFormat\('(?:mr|hi)-IN'/);
   assert.doesNotMatch(page, /[०-९]/);
 });
+
+test('chart metrics have distinct semantic colors shared between cards, both charts and legends', () => {
+  const html = renderToStaticMarkup(<AccountSummaryOverview totals={totals} mode="cumulative" periodText="01/04/2026 ते 24/10/2026" />);
+  const charts = [...html.matchAll(/<svg\b[\s\S]*?<\/svg>/g)].map(match => match[0]);
+  const fills = (svg: string) => [...svg.matchAll(/fill="var\((--aso-[^)]+)\)"/g)].map(match => match[1]);
+  const money = fills(charts[0]);
+  const accounts = fills(charts[1]);
+  assert.deepEqual(money, ['--aso-disbursements', '--aso-closures', '--aso-interest', '--aso-balance']);
+  assert.equal(new Set(money).size, 4);
+  assert.deepEqual(accounts, ['--aso-disbursements', '--aso-closures', '--aso-balance']);
+  for (const token of money) {
+    assert.match(html, new RegExp(`background-color:var\\(${token}\\)`));
+  }
+  const colors = money.map(token => html.match(new RegExp(`${token}:\\s*(#[0-9a-f]{6})`, 'i'))?.[1]);
+  assert.equal(new Set(colors).size, 4);
+  assert.ok(colors.every(Boolean));
+});
+
+test('very large metric amounts expand the mobile grid rather than clipping or truncating values', () => {
+  const html = renderToStaticMarkup(<AccountSummaryOverview totals={totals} mode="cumulative" periodText="" />);
+  assert.match(html, /class="aso-key-totals aso-key-totals-long"/);
+  assert.match(html, /₹1,23,45,67,890\.12/);
+});
