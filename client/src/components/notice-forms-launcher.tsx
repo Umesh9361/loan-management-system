@@ -1,5 +1,5 @@
 import { Link } from "wouter";
-import { ArrowRight, FileStack, PenLine, ReceiptText } from "lucide-react";
+import { ArrowRight, FileStack, PenLine } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const destinations = [
@@ -7,17 +7,9 @@ const destinations = [
     href: "/reports/pledge-forms",
     title: "सर्व तारण फॉर्म",
     description: "सहा नमुने · कोरा फॉर्म",
-    detail: "पूर्वदृश्य, प्रिंट किंवा PDF",
+    detail: "यातून एक किंवा अनेक फॉर्म निवडून प्रिंट / PDF",
     Icon: FileStack,
     tone: "indigo",
-  },
-  {
-    href: "/reports/pledge-forms?form=receipt",
-    title: "परतफेड पावती",
-    description: "परतफेड / तारण सोडविण्याची पावती",
-    detail: "फक्त पावतीचा नमुना",
-    Icon: ReceiptText,
-    tone: "teal",
   },
   {
     href: "/reports/pledge-forms?mode=manual",
@@ -34,11 +26,6 @@ const toneClasses = {
     icon: "bg-indigo-100 text-indigo-800",
     arrow: "text-indigo-700",
     hover: "hover:border-indigo-300 hover:bg-indigo-50/50",
-  },
-  teal: {
-    icon: "bg-teal-100 text-teal-800",
-    arrow: "text-teal-700",
-    hover: "hover:border-teal-300 hover:bg-teal-50/50",
   },
   amber: {
     icon: "bg-amber-100 text-amber-900",
@@ -69,7 +56,7 @@ export function NoticeFormsLauncher() {
         </p>
       </CardHeader>
 
-      <CardContent className="grid min-w-0 grid-cols-1 gap-2.5 p-3 sm:grid-cols-3 sm:gap-3 sm:p-4">
+      <CardContent className="grid min-w-0 grid-cols-1 gap-2.5 p-3 sm:grid-cols-2 sm:gap-3 sm:p-4">
         {destinations.map(({ href, title, description, detail, Icon, tone }) => {
           const classes = toneClasses[tone];
           return (

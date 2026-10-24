@@ -11,6 +11,9 @@ test("notice shortcuts open the requested form without forcing customer registra
   assert.deepEqual(getPledgeFormEntry("?form=unknown&mode=admin"), { selection: "all", mode: "blank" });
 });
 test("notice entry remains above notice preview and preserves the existing loan search", () => {
+  const launcher = readFileSync("client/src/components/notice-forms-launcher.tsx", "utf8");
+  assert.doesNotMatch(launcher, /form=receipt|title: "परतफेड पावती"/);
+  assert.match(launcher, /sm:grid-cols-2/);
   const notice = readFileSync("client/src/pages/reports/notice-generator.tsx", "utf8");
   assert.ok(notice.indexOf("<NoticeFormsLauncher />") > notice.indexOf("<main"));
   assert.ok(notice.indexOf("<NoticeFormsLauncher />") < notice.indexOf("{showInlinePreview &&", notice.indexOf("<main")));

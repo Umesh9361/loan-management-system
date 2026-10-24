@@ -198,10 +198,16 @@ await waitFor("document.querySelector('iframe').contentDocument.body.textContent
 assert.equal(await evaluate("document.documentElement.scrollWidth>innerWidth"), false);
 results.push({ mobileUI: "pass", selectedBorrower: "pass", typedManualMode: "pass", blankCopyWithoutErasingData: "pass", independentForm: "pass", printHelper: "pass", oversizedTextBlocked: "pass", temporaryMatterNotPersisted: "pass", defaultSaveReloadReset: "pass", tenantIsolation: "pass", regularUserTemporaryOnly: "pass", mobile320px: "pass" });
 await navigate("/notice-ui");
-await waitFor("!!document.querySelector('a[href=\"/reports/pledge-forms?form=receipt\"]')");
+await waitFor("!!document.querySelector('a[href=\"/reports/pledge-forms\"]')");
+assert.equal(await evaluate("!!document.querySelector('a[href=\"/reports/pledge-forms?form=receipt\"]')"), false);
 assert.equal(await evaluate("document.documentElement.scrollWidth>innerWidth"), false);
-await evaluate("document.querySelector('a[href=\"/reports/pledge-forms?form=receipt\"]').click()");
-await waitFor("location.pathname==='/reports/pledge-forms'&&document.querySelector('iframe')?.contentDocument.querySelectorAll('[data-form]').length===1");
+await evaluate("document.querySelector('a[href=\"/reports/pledge-forms\"]').click()");
+await waitFor("location.pathname==='/reports/pledge-forms'&&document.querySelector('iframe')?.contentDocument.querySelectorAll('[data-form]').length===6");
+await clickText("एक");
+await evaluate("document.getElementById('form-selection').click()");
+await waitFor("document.querySelectorAll('[role=option]').length===6");
+await evaluate("[...document.querySelectorAll('[role=option]')].find(o=>o.textContent.includes('परतफेड')).click()");
+await waitFor("document.querySelector('iframe').contentDocument.querySelectorAll('[data-form]').length===1");
 assert.equal(await evaluate("document.querySelector('iframe').contentDocument.querySelector('[data-form]').dataset.form"), "receipt");
 await evaluate("document.querySelector('a[href=\"/reports/notice-generator\"]').click()");
 await waitFor("!!document.querySelector('a[href=\"/reports/pledge-forms?mode=manual\"]')");
@@ -210,7 +216,7 @@ await waitFor("!!document.getElementById('borrower-name')&&!document.getElementB
 assert.equal(await evaluate("!!document.getElementById('borrower-search')"), false);
 await waitFor("![...document.querySelectorAll('button')].find(b=>b.textContent.trim()==='छपाई संवाद उघडा')?.disabled");
 assert.equal(await evaluate("document.documentElement.scrollWidth>innerWidth"), false);
-results.push({ noticeShortcutReceipt: "pass", noticeBackLink: "pass", noticeManualWithoutRegistration: "pass", noticeMobile320px: "pass" });
+results.push({ noticeNoSeparateReceiptShortcut: "pass", noticeReceiptViaFormSelection: "pass", noticeBackLink: "pass", noticeManualWithoutRegistration: "pass", noticeMobile320px: "pass" });
 console.log(JSON.stringify(results, null, 2));
 await call("Page.close");
 ws.close();
