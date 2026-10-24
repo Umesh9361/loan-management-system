@@ -16,7 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { DualLanguageInput } from "@/components/ui/dual-language-input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogClose } from "@/components/ui/dialog";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -34,6 +34,7 @@ import { Link, useLocation } from "wouter";
 import { ReceiptGenerator } from "@/components/receipt-generator";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { LabelPrintDialog } from "@/components/label-print-dialog";
+import { normalizeLoanWeightInput, normalizeLoanWeight, loanWeightError, loanWeightWarning } from "@shared/loan-weight-validation";
 
 
 const loanSchema = z.object({
@@ -48,7 +49,7 @@ const loanSchema = z.object({
   loanType: z.string().min(1, "कर्जाचा प्रकार निवडा"),
   metalType: z.string().default("gold"),
   accountNumber: z.string().min(1, "खाते क्रमांक आवश्यक आहे"),
-  principalAmount: z.string().min(1, "कर्जाची रक्कम आवश्यक आहे"),
+  principalAmount: z.string().min(1, "कर्जाची रक्कम आवश्यक आहे").refine(value => Number.isFinite(Number(value)) && Number(value) > 0, "कर्जाची रक्कम शून्यापेक्षा जास्त असावी"),
   loanDate: z.string().min(1, "कर्जाची तारीख आवश्यक आहे"),
   maturityDate: z.string().min(1, "कर्ज मुदत दिनांक आवश्यक आहे"),
   
@@ -59,7 +60,9 @@ const loanSchema = z.object({
   interestRate: z.string().min(1, "व्याजाचा दर आवश्यक आहे"),
   interestRateType: z.string().default("monthly"), // yearly, monthly
   collateralDetails: z.string().optional().default(""),
-  weight: z.string().optional().default(""),
+  weight: z.string().optional().default("").transform(normalizeLoanWeight).refine(value => !loanWeightError(value), {
+    message: "वजन वैध धन संख्या असावे. ग्राममध्ये लिहा, उदा. 1.490; आकड्यांमधील स्पेस किंवा स्वल्पविराम तपासा.",
+  }),
   purity: z.string().optional().default("82"),
   marketValue: z.string().optional(),
   documentDetails: z.string().optional().default("—"),
@@ -108,6 +111,11 @@ function Loans() {
     message: string;
     formData: LoanFormData | null;
   }>({ open: false, title: '', message: '', formData: null });
+  const [weightWarningDialog, setWeightWarningDialog] = useState<{
+    message: string;
+    formData: LoanFormData | null;
+  } | null>(null);
+  const [weightSpacingCorrected, setWeightSpacingCorrected] = useState(false);
   
   const savedScrollPositionRef = useRef<number | null>(null);
   const scrollLockActiveRef = useRef<boolean>(false);
@@ -263,14 +271,31 @@ function Loans() {
   const currentRateSource = watchedMetalType === 'silver' ? silverRateSource : goldRateSource;
   const currentRateStatus = watchedMetalType === 'silver' ? silverRateStatus : goldRateStatus;
   const currentRateLabel = watchedMetalType === 'silver' ? 'चांदीचा दर' : 'सोन्याचा दर';
+  const watchedWeight = form.watch("weight") || "";
+  const watchedPrincipal = form.watch("principalAmount");
+  const watchedPurity = form.watch("purity");
+  const liveWeightWarning = loanWeightWarning({
+    weight: watchedWeight, principal: watchedPrincipal, purity: watchedPurity || "",
+    metalType: watchedMetalType, loanType: watchedLoanType, ratePerGram: currentLiveRate,
+  });
+  useEffect(() => {
+    if (!isDialogOpen) {
+      setWeightWarningDialog(null);
+      setWeightSpacingCorrected(false);
+    }
+  }, [isDialogOpen]);
 
   const recalcMarketValue = useCallback((weightStr?: string, purityStr?: string, metalType?: string) => {
     const vals = form.getValues();
     const loanType = vals.loanType;
     if (loanType === 'विनातारण') return;
-    const w = parseFloat(((weightStr ?? vals.weight) || '0').replace(/[^\d.]/g, '')) || 0;
+    const weightText = normalizeLoanWeight((weightStr ?? vals.weight) || '');
+    const w = loanWeightError(weightText, true) ? 0 : Number(weightText);
     const p = parseFloat((purityStr ?? vals.purity) || '82') || 82;
-    if (w <= 0) return;
+    if (w <= 0) {
+      if (!marketValueManual && !editOriginalRate) form.setValue('marketValue', '', { shouldValidate: false });
+      return;
+    }
     const fineWeight = w * (p / 100);
     const mt = metalType ?? vals.metalType;
     const activeRate = mt === 'silver' ? liveSilverRate : liveGoldRate;
@@ -515,8 +540,9 @@ function Loans() {
   // Form submission handler with real database integration
   const createLoanMutation = useMutation({
     mutationFn: async (data: LoanFormData & { dateWarningConfirmed?: boolean }) => {
+      const { weightWarningConfirmed: _weightConfirmed, ltvWarningConfirmed: _ltvConfirmed, ...persistedData } = data as typeof data & { weightWarningConfirmed?: boolean; ltvWarningConfirmed?: boolean };
       const apiData: any = {
-        ...data,
+        ...persistedData,
         groupId: data.groupId || undefined,
         borrowerId: data.borrowerId || undefined,
         principalAmount: data.principalAmount,
@@ -791,7 +817,7 @@ function Loans() {
     }
   };
 
-  const onSubmit = async (data: LoanFormData & { ltvWarningConfirmed?: boolean }) => {
+  const onSubmit = async (data: LoanFormData & { ltvWarningConfirmed?: boolean; weightWarningConfirmed?: boolean }) => {
     if (createdLoanId) {
       await handlePhotoUpload(createdLoanId);
       return;
@@ -802,8 +828,21 @@ function Loans() {
         toast({ title: "कृपया तारणाचा तपशील भरा", variant: "destructive" });
         return;
       }
-      if (!data.weight || data.weight.trim() === '') {
-        toast({ title: "कृपया वजन भरा", variant: "destructive" });
+      const weightProblem = loanWeightError(data.weight, true);
+      if (weightProblem) {
+        form.setError('weight', { type: 'validate', message: weightProblem });
+        form.setFocus('weight');
+        return;
+      }
+      data = { ...data, weight: normalizeLoanWeight(data.weight) };
+      form.setValue('weight', data.weight, { shouldValidate: true });
+      const warning = loanWeightWarning({
+        weight: data.weight, principal: data.principalAmount, purity: data.purity || "",
+        metalType: data.metalType, loanType: data.loanType,
+        ratePerGram: data.metalType === 'silver' ? liveSilverRate : liveGoldRate,
+      });
+      if (warning && !data.weightWarningConfirmed) {
+        setWeightWarningDialog({ message: warning, formData: data });
         return;
       }
     }
@@ -2774,16 +2813,30 @@ function Loans() {
                         <FormControl>
                           <Input
                             {...field}
-                            placeholder=""
+                            type="text"
+                            inputMode="decimal"
+                            placeholder="उदा. 1.490"
                             tabIndex={15}
                             className="text-base"
                             value={field.value || ''}
                             onChange={(e) => {
-                              const converted = e.target.value.replace(/[०-९]/g, (d: string) => String('०१२३४५६७८९'.indexOf(d)));
+                              const converted = normalizeLoanWeightInput(e.target.value);
+                              if (/\s/.test(e.target.value) && converted !== e.target.value) setWeightSpacingCorrected(true);
                               field.onChange(converted);
+                            }}
+                            onBlur={() => {
+                              const normalized = normalizeLoanWeight(field.value || '');
+                              if (/\s/.test(field.value || '') && normalized !== field.value) setWeightSpacingCorrected(true);
+                              field.onChange(normalized);
+                              field.onBlur();
+                              void form.trigger('weight');
                             }}
                           />
                         </FormControl>
+                        <FormDescription className="text-xs text-slate-500">वजन ग्राममध्ये भरा. दशांशासाठी बिंदू वापरा: 1.490</FormDescription>
+                        {weightSpacingCorrected && <p role="status" className="text-xs text-emerald-700">दशांशाजवळील किंवा बाहेरील अनावश्यक स्पेस दुरुस्त केला आहे. वजन तपासा.</p>}
+                        {liveWeightWarning && <p id="loan-weight-warning" role="status" className="rounded-md border border-amber-200 bg-amber-50 p-2 text-xs leading-relaxed text-amber-900">{liveWeightWarning}</p>}
+                        {!liveWeightWarning && watchedWeight && !loanWeightError(watchedWeight, true) && currentRateStatus !== 'success' && <p className="text-xs text-slate-500">धातूचा दर {currentRateStatus === 'loading' ? 'लोड होत आहे' : 'उपलब्ध नाही'}; वजन–रक्कम तुलना सध्या पूर्ण झालेली नाही.</p>}
                         <FormMessage />
                       </FormItem>
                     )}
@@ -4287,6 +4340,26 @@ function Loans() {
             <Button size="sm" onClick={handleDuplicateWarningConfirm} className="text-sm text-white bg-orange-600 hover:bg-orange-700">
               होय, नवीन कर्ज नोंद करा
             </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!weightWarningDialog} onOpenChange={(open) => { if (!open) setWeightWarningDialog(null); }}>
+        <DialogContent className="w-[92%] max-w-md border-t-4 border-amber-500">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-amber-900"><AlertTriangle className="h-5 w-5 shrink-0" />तारणाचे वजन पुन्हा तपासा</DialogTitle>
+            <DialogDescription className="pt-2 text-left leading-relaxed text-slate-700">{weightWarningDialog?.message}</DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-wrap justify-end gap-2">
+            <Button type="button" variant="outline" onClick={() => {
+              setWeightWarningDialog(null);
+              window.setTimeout(() => form.setFocus('weight'), 0);
+            }}>वजन दुरुस्त करा</Button>
+            <Button type="button" className="bg-amber-600 hover:bg-amber-700" onClick={() => {
+              const snapshot = weightWarningDialog?.formData;
+              setWeightWarningDialog(null);
+              if (snapshot) void onSubmit({ ...snapshot, weightWarningConfirmed: true });
+            }}>वजन बरोबर आहे, पुढे जा</Button>
           </div>
         </DialogContent>
       </Dialog>

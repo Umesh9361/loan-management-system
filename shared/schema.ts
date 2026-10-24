@@ -3,6 +3,7 @@ import { pgTable, text, varchar, integer, decimal, timestamp, boolean, date, uui
 import { relations } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+import { normalizeLoanWeight, loanWeightError } from "./loan-weight-validation";
 
 // Users table for authentication
 export const users = pgTable("users", {
@@ -559,6 +560,9 @@ export const insertLoanSchema = createInsertSchema(loans).omit({
   updatedAt: true,
 }).extend({
   borrowerId: z.string().optional().nullable(), // Make borrowerId optional again for auto-create
+  weight: z.string().transform(normalizeLoanWeight).refine(value => !loanWeightError(value), {
+    message: "वजन वैध धन संख्या असावे (ग्राममध्ये, उदा. 1.490).",
+  }).optional().nullable(),
   principalAmount: z.union([z.string(), z.number()]).transform(val => Number(val)),
   marketValue: z.union([z.string(), z.number()]).optional().transform(val => val ? Number(val) : undefined),
   interestRate: z.union([z.string(), z.number()]).transform(val => Number(val)),
