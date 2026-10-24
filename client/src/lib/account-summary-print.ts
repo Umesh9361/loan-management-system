@@ -46,7 +46,7 @@ th { background: #eef2ff; font-weight: 700; }
 td:first-child { text-align: left; }
 .total-row td { background: #eef2ff; font-weight: 700; border-top: 2px solid #4f46e5; }
 .summary-document-closing { break-inside: avoid; page-break-inside: avoid; }
-.summary-document-signature td { border: 0; padding: 14px 0 0; text-align: right; font-size: 10px; }
+.summary-document-signature td { border: 0; padding: 14px 15mm 0 0; text-align: right; font-size: 10px; }
 body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 </style></head><body>
 <header class="summary-document-header">

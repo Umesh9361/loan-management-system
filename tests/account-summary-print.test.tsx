@@ -52,6 +52,7 @@ test('ranked customer print retains all nine original columns and repeating tabl
   assert.match(html, /size: A4 portrait/);
   assert.match(html, /<tbody class="summary-document-closing"><tr class="total-row">/);
   assert.match(html, /colspan="9">सावकाराची सही/);
+  assert.match(html, /\.summary-document-signature td \{[^}]*padding: 14px 15mm 0 0;/);
   assert.doesNotMatch(html, /margin-top: 50px|padding: 3mm 5mm 3mm 20mm/);
 });
 
