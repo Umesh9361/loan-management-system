@@ -43,6 +43,7 @@ import AccountSummaryReport from "@/pages/reports/account-summary";
 import OverdueReport from "@/pages/reports/overdue";
 import LoadingReport from "@/pages/reports/loading-report";
 import NoticeGeneratorPage from "@/pages/reports/notice-generator";
+import PledgeFormsPage from "@/pages/reports/pledge-forms";
 import InformationRegister from "@/pages/reports/information-register";
 import BalanceSheet from "@/pages/reports/balance-sheet";
 import ProfitLoss from "@/pages/reports/profit-loss";
@@ -341,6 +342,7 @@ function AppContent() {
         <Route path="/reports/profit-loss" component={ProfitLoss} />
         <Route path="/reports/receipt-generator" component={ReceiptGeneratorPage} />
         <Route path="/reports/notice-generator" component={NoticeGeneratorPage} />
+        <Route path="/reports/pledge-forms" component={PledgeFormsPage} />
         <Route path="/reports/jawab-generator" component={JawabGeneratorPage} />
         <Route path="/reports/receipt">{() => { window.location.replace('/reports/receipt-generator'); return null; }}</Route>
         
@@ -414,6 +416,7 @@ function AppContent() {
         
         {perms.canViewReceiptGenerator && <Route path="/reports/receipt-generator" component={ReceiptGeneratorPage} />}
         {perms.canViewNoticeGenerator && <Route path="/reports/notice-generator" component={NoticeGeneratorPage} />}
+        {perms.canViewNoticeGenerator && <Route path="/reports/pledge-forms" component={PledgeFormsPage} />}
         {perms.canViewReceiptGenerator && <Route path="/reports/jawab-generator" component={JawabGeneratorPage} />}
         {perms.canViewReceiptGenerator && <Route path="/reports/receipt">{() => { window.location.replace('/reports/receipt-generator'); return null; }}</Route>}
         {perms.canViewCashBookReport && <Route path="/reports/cashbook" component={CashBook} />}
@@ -463,6 +466,7 @@ function AppContent() {
         <Route path="/storage-settings" component={StorageSettings} />
         <Route path="/reports/receipt-generator" component={ReceiptGeneratorPage} />
         <Route path="/reports/notice-generator" component={NoticeGeneratorPage} />
+        <Route path="/reports/pledge-forms" component={PledgeFormsPage} />
         <Route path="/reports/jawab-generator" component={JawabGeneratorPage} />
         <Route path="/reports/receipt">{() => { window.location.replace('/reports/receipt-generator'); return null; }}</Route>
         <Route path="/reports/cashbook" component={CashBook} />

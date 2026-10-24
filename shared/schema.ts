@@ -130,6 +130,13 @@ export const companies = pgTable("companies", {
   updatedAt: timestamp("updated_at").notNull().default(sql`now()`),
 });
 
+// Company-wide form wording only; customer/transaction values never belong here.
+export const pledgeFormDefaults = pgTable("pledge_form_defaults", {
+  tenantId: varchar("tenant_id", { length: 20 }).primaryKey().references(() => companies.tenantId, { onDelete: "cascade" }),
+  matter: text("matter").notNull(),
+  updatedAt: timestamp("updated_at").notNull().default(sql`now()`),
+});
+
 // Groups table
 export const groups = pgTable("groups", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),

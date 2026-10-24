@@ -188,10 +188,16 @@ const reports = [
     description: "डेट वाईज, क्लोजिंग वाईज, नेम वाईज, मुदत संपलेले रिपोर्ट"
   },
   {
-    name: "नोटीस",
+    name: "नोटीस व फॉर्म",
     href: "/reports/notice-generator",
     icon: AlertTriangle,
-    description: "कायदेशीर नोटीस - कलम १७६"
+    description: "नोटीस, तारण फॉर्म आणि परतफेड पावत्या"
+  },
+  {
+    name: "फॉर्म व नोटीस नमुने",
+    href: "/reports/pledge-forms",
+    icon: FileText,
+    description: "A4 तारण फॉर्म व कापता येणाऱ्या पावत्या"
   },
   {
     name: "लॉस रिपोर्ट",
@@ -428,6 +434,7 @@ function SidebarInner({ className, onPacketLabel, onBluetoothPrintSettings }: Si
                 '/reports/capital-account': 'canViewCapitalReport',
                 '/reports/borrower-list': 'canViewBorrowerListReport',
                 '/reports/notice-generator': 'canViewNoticeGenerator',
+                '/reports/pledge-forms': 'canViewNoticeGenerator',
                 '/reports/overdue': 'canViewOverdueReport',
                 '/reports/loading-report': 'canViewLoadingReport',
                 '/reports/account-summary': 'canViewAccountSummaryReport',

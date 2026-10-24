@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Printer, FileText, Search, X, Download, AlertTriangle } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { jsPDF } from "jspdf";
+import { NoticeFormsLauncher } from "@/components/notice-forms-launcher";
 
 const NOTICE_STYLES = `
   @page {
@@ -668,6 +669,8 @@ export default function NoticeGeneratorPage() {
               <h1 className="text-2xl font-semibold text-foreground heading-professional">कायदेशीर नोटीस</h1>
               <p className="text-muted-foreground">भारतीय करार अधिनियम, १८७२ कलम १७६ अन्वये</p>
             </div>
+
+            <NoticeFormsLauncher />
 
             {showInlinePreview && !!inlineNoticeHTML && !isMobileFullPage && (
               <div className="fixed top-0 right-0 bottom-0 left-0 lg:left-64 z-40 bg-gray-100 flex flex-col">

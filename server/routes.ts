@@ -2,6 +2,7 @@ import express, { type Express } from "express";
 import { createServer, type Server } from "http";
 import session from "express-session";
 import { storage } from "./storage";
+import { registerPledgeFormSettings } from "./pledge-form-settings";
 import { db } from "./db";
 import bcrypt from "bcrypt";
 import { insertUserSchema, insertCompanySchema, insertGroupSchema, insertLoanSchema, insertTransactionSchema, insertLoanClosureSchema, insertPartySchema, insertCashTransactionSchema, cashTransactions, loans, groups, loanPhotos, loanClosures, transactions, insertLoanPhotoSchema, systemSettings, tenantStorageSettings, userActivityLogs, users, companies, notificationWarnings, userPermissions, journalEntries } from "@shared/schema";
@@ -212,6 +213,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   };
 
   app.use('/api', checkSubscription);
+  registerPledgeFormSettings(app, requireAuth);
 
   // Session verification endpoint for frontend
   app.get("/api/auth/verify", (req, res) => {
