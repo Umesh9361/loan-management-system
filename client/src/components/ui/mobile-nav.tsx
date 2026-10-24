@@ -13,6 +13,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Sidebar } from "./sidebar";
 import { LabelPrintDialog } from "@/components/label-print-dialog";
+import { ReceiptPrintSettingsDialog } from "@/components/receipt-print-settings-dialog";
 import { AuthService } from "@/lib/auth";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { useSafeNavigation } from "@/hooks/use-safe-navigation";
@@ -72,6 +73,7 @@ function MobileNavInner({ hideBottomNav = false }: MobileNavProps = {}) {
   const [location, setLocation] = useLocation();
   const [isOpen, setIsOpen] = useState(false);
   const [packetOpen, setPacketOpen] = useState(false);
+  const [bluetoothSettingsOpen, setBluetoothSettingsOpen] = useState(false);
   const { safeNavigate } = useSafeNavigation();
   const { user } = useCurrentUser();
 
@@ -117,6 +119,7 @@ function MobileNavInner({ hideBottomNav = false }: MobileNavProps = {}) {
       />
 
       {/* Mobile Header - Enhanced */}
+      <ReceiptPrintSettingsDialog open={bluetoothSettingsOpen} onOpenChange={setBluetoothSettingsOpen} />
       <div className="lg:hidden">
         <div className="flex items-center justify-between bg-white px-3 py-2.5 border-b border-gray-200 shadow-sm">
           <Sheet open={isOpen} onOpenChange={setIsOpen}>
@@ -127,6 +130,10 @@ function MobileNavInner({ hideBottomNav = false }: MobileNavProps = {}) {
             </SheetTrigger>
             <SheetContent side="left" className="p-0 w-60 sm:w-72" hideClose>
               <Sidebar
+                onBluetoothPrintSettings={() => {
+                  setIsOpen(false);
+                  setBluetoothSettingsOpen(true);
+                }}
                 onPacketLabel={() => {
                   setIsOpen(false);
                   setPacketOpen(true);

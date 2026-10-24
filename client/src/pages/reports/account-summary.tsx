@@ -154,6 +154,7 @@ export default function AccountSummaryReport() {
   const reportContext = accountSummaryContext(calcMode, calcMode === 'cumulative' ? coreFrom : selectedFrom,
     calcMode === 'cumulative' ? today : selectedTo, scopeLabel, calcMode === 'cumulative' ? selectedInterest : undefined);
   const overviewPeriodText = `${formatSummaryDate(reportContext.from)} ते ${formatSummaryDate(reportContext.to)}`;
+  const showSummaryOverview = activeTab !== "customer" || customerMode !== "top50";
 
   const handlePrint = async () => {
     if (!reportReady) { alert(reportProblem); return; }
@@ -183,7 +184,7 @@ export default function AccountSummaryReport() {
           ? `व्याज: ${overviewPeriodText}`
           : `व्याज: ${selectedInterest.allTime ? "सुरुवातीपासून" : "निवडलेल्या आर्थिक वर्षातील"} · ${formatSummaryDate(selectedInterest.allTime ? coreFrom : selectedInterest.from)} ते ${formatSummaryDate(selectedInterest.allTime ? today : selectedInterest.to)}`,
         notes: reportContext.balanceNote, overviewHTML,
-        includeOverview: includePrintOverview, includeNotes: includePrintNotes,
+        includeOverview: includePrintOverview && showSummaryOverview, includeNotes: includePrintNotes,
       }));
     } catch (error) {
       alert(error instanceof Error ? error.message : "प्रिंट तयार करता आली नाही.");
@@ -637,7 +638,7 @@ export default function AccountSummaryReport() {
                 </p>
                 {includePrintNotes && <p>{reportContext.balanceNote}</p>}
               </div>
-              {includePrintOverview && reportReady && currentPrintData.length > 0 && <AccountSummaryOverview
+              {showSummaryOverview && includePrintOverview && reportReady && currentPrintData.length > 0 && <AccountSummaryOverview
                 totals={currentPrintTotals} mode={calcMode} periodText={overviewPeriodText} subsetLabel={scopeLabel} interestLabel={reportContext.interestText}
               />}
               
@@ -666,10 +667,10 @@ export default function AccountSummaryReport() {
               <legend className="px-1 text-sm font-semibold text-indigo-700">प्रिंट / PDF पर्याय</legend>
               <p className="mb-2 text-xs text-slate-500">डिफॉल्ट: मूळ टेबल. हवी असल्यास खालील माहिती जोडा.</p>
               <div className="flex flex-wrap gap-x-6 gap-y-3 text-sm text-slate-700">
-                <label className="flex cursor-pointer items-center gap-2">
+                {showSummaryOverview && <label className="flex cursor-pointer items-center gap-2">
                   <input type="checkbox" className="h-4 w-4 accent-indigo-600" checked={includePrintOverview} onChange={e => setIncludePrintOverview(e.target.checked)} />
                   सारांश बॉक्स व ग्राफ
-                </label>
+                </label>}
                 <label className="flex cursor-pointer items-center gap-2">
                   <input type="checkbox" className="h-4 w-4 accent-indigo-600" checked={includePrintNotes} onChange={e => setIncludePrintNotes(e.target.checked)} />
                   हिशोबाचे सविस्तर स्पष्टीकरण
@@ -1121,7 +1122,7 @@ export default function AccountSummaryReport() {
                 </Card>
 
                 {/* Results */}
-                {reportReady && (customerMode === 'top50' || selectedCustomerName) && <>
+                {reportReady && showSummaryOverview && selectedCustomerName && <>
                   <div ref={overviewRef} className="no-print"><AccountSummaryOverview totals={customerGrandTotals} mode={calcMode} periodText={overviewPeriodText} subsetLabel={scopeLabel} interestLabel={reportContext.interestText} /></div>
                   <details className="my-3 text-xs text-gray-600"><summary className="cursor-pointer font-medium">हिशोबाचा आधार</summary><p className="mt-2 leading-relaxed">{reportContext.balanceNote}</p></details>
                 </>}

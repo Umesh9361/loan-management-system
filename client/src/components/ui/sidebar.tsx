@@ -9,6 +9,7 @@ import { useEffect, useRef, useState } from "react";
 import { useDedicatedMode } from "@/contexts/dedicated-mode";
 import { NotificationBell } from "@/components/maturity-reminder";
 import { LabelPrintDialog } from "@/components/label-print-dialog";
+import { ReceiptPrintSettingsDialog } from "@/components/receipt-print-settings-dialog";
 import { 
   Building, 
   Users, 
@@ -33,7 +34,8 @@ import {
   Scale,
   Settings,
   PackageSearch,
-  Package
+  Package,
+  Bluetooth
 } from "lucide-react";
 
 const navigation = [
@@ -233,17 +235,19 @@ const reports = [
 interface SidebarProps {
   className?: string;
   onPacketLabel?: () => void;
+  onBluetoothPrintSettings?: () => void;
 }
 
-export function Sidebar({ className, onPacketLabel }: SidebarProps) {
+export function Sidebar({ className, onPacketLabel, onBluetoothPrintSettings }: SidebarProps) {
   const { isDedicatedMode } = useDedicatedMode();
   if (isDedicatedMode) return null;
-  return <SidebarInner className={className} onPacketLabel={onPacketLabel} />;
+  return <SidebarInner className={className} onPacketLabel={onPacketLabel} onBluetoothPrintSettings={onBluetoothPrintSettings} />;
 }
 
-function SidebarInner({ className, onPacketLabel }: SidebarProps) {
+function SidebarInner({ className, onPacketLabel, onBluetoothPrintSettings }: SidebarProps) {
   const [location] = useLocation();
   const [packetDialogOpen, setPacketDialogOpen] = useState(false);
+  const [bluetoothSettingsOpen, setBluetoothSettingsOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   
   const { user: currentUser } = useCurrentUser();
@@ -391,6 +395,19 @@ function SidebarInner({ className, onPacketLabel }: SidebarProps) {
             </Button>
           )}
           
+          {(user?.role === 'admin' || user?.role === 'super_admin' || (user?.role === 'user' && (perms as any)?.canAccessLoanClosure)) && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onBluetoothPrintSettings ? onBluetoothPrintSettings() : setBluetoothSettingsOpen(true)}
+              className="w-full justify-start text-sm py-3 lg:py-2.5 lg:text-sm h-auto font-medium rounded-lg transition-all duration-200 hover:bg-indigo-50/80 hover:text-indigo-700 lg:text-gray-700"
+              data-testid="sidebar-bluetooth-print-settings"
+            >
+              <Bluetooth className="mr-2 lg:mr-2.5 h-4 w-4 flex-shrink-0" />
+              <span className="min-w-0 whitespace-normal text-left font-noto">ब्लूटूथ प्रिंट सेटिंग</span>
+            </Button>
+          )}
+
           <Separator className="my-3 lg:my-2" />
           
           <div className="px-2 lg:px-1.5 py-2 lg:py-1">
@@ -535,6 +552,9 @@ function SidebarInner({ className, onPacketLabel }: SidebarProps) {
           loans={[]}
           initialPrintMode="packet"
         />
+      )}
+      {!onBluetoothPrintSettings && (
+        <ReceiptPrintSettingsDialog open={bluetoothSettingsOpen} onOpenChange={setBluetoothSettingsOpen} />
       )}
 
     </div>

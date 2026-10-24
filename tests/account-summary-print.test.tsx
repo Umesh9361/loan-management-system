@@ -20,6 +20,13 @@ const options: SummaryPrintOptions = {
   overviewHTML: renderToStaticMarkup(<AccountSummaryOverview totals={totals} mode="cumulative" periodText="01/04/2026 ते 24/10/2026" />),
 };
 
+test('top 50 print/PDF omits overview cards and charts even if previously selected', () => {
+  const html = accountSummaryPrintDocument({ ...options, showRank: true, includeOverview: true });
+  assert.doesNotMatch(html, /<svg|class="aso"/);
+  assert.match(html, /<th>#<\/th>/);
+  assert.match(html, /नमुना &amp; &lt;गट&gt;/);
+});
+
 test('default print contains original table and concise context, no added summary/notes', () => {
   const html = accountSummaryPrintDocument(options);
   assert.match(html, /₹30,87,700/);

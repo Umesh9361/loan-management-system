@@ -54,7 +54,7 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 <p>${safe(options.period)} · ${safe(options.scope)}</p>
 <p>${safe(options.interest)}</p>
 </header>
-${options.includeOverview ? options.overviewHTML : ""}
+${options.includeOverview && !showRank ? options.overviewHTML : ""}
 ${options.includeNotes ? `<p class="summary-document-notes">${safe(options.notes)}</p>` : ""}
 <table><colgroup>${widths.map(width => `<col style="width:${width}%">`).join("")}</colgroup>
 <thead><tr>${showRank ? "<th>#</th>" : ""}<th>${safe(options.label)}</th><th>एकूण कर्ज</th><th>सक्रिय</th><th>बंद</th><th>एकूण वाटप</th><th>बंद रक्कम</th><th>सक्रिय शिल्लक</th><th>एकूण व्याज</th></tr></thead>

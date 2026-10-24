@@ -1,4 +1,6 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { useReceiptPrintSettings } from "@/hooks/use-receipt-print-settings";
+import { ReceiptPrintSettingsEditor } from "@/components/receipt-print-settings-editor";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -24,7 +26,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { LoanCalculationsAdvanced, normalizeCalcMode } from "@/lib/loan-calculations";
 import { LoanCalculations } from "@/lib/calculations";
 import { DateUtils } from "@/lib/date-utils";
-import { Calculator, FileText, AlertTriangle, CheckCircle, Download, Search, X, Clock, Edit, Calendar, Lightbulb, Sparkles, TrendingUp, Info, Check, AlertCircle, Home, Trash2, Printer, Bluetooth, Loader2, Settings, Minus, Plus, Bold, RotateCcw, ChevronDown, ChevronUp, Eye } from "lucide-react";
+import { Calculator, FileText, AlertTriangle, CheckCircle, Download, Search, X, Clock, Edit, Calendar, Lightbulb, Sparkles, TrendingUp, Info, Check, AlertCircle, Home, Trash2, Printer, Bluetooth, Loader2, Settings, ChevronDown, ChevronUp, Eye } from "lucide-react";
 import html2canvas from "html2canvas";
 import { printReceiptViaBluetooth, connectBluetoothPrinter, sendPrintData, isBluetoothSupported } from "@/lib/bluetooth-printer";
 import { encodeCodeQr } from "@/lib/qr-utils";
@@ -68,92 +70,6 @@ interface SummaryEntry {
   calcAdvancedCalculationMode?: string;
   calcUseCustomRate?: boolean;
   calcCustomInterestRate?: string;
-}
-
-interface ReceiptFieldSetting {
-  fontSize: number;
-  bold: boolean;
-}
-
-interface ReceiptPrintSettings {
-  standard: {
-    name: ReceiptFieldSetting;
-    date: ReceiptFieldSetting;
-    title: ReceiptFieldSetting;
-    tableHeader: ReceiptFieldSetting;
-    tableData: ReceiptFieldSetting;
-    total: ReceiptFieldSetting;
-    grandTotal: ReceiptFieldSetting;
-  };
-  thermal: {
-    name: ReceiptFieldSetting;
-    date: ReceiptFieldSetting;
-    title: ReceiptFieldSetting;
-    colSerial: ReceiptFieldSetting;
-    colAccount: ReceiptFieldSetting;
-    colDate: ReceiptFieldSetting;
-    colRate: ReceiptFieldSetting;
-    colDetails: ReceiptFieldSetting;
-    colMonths: ReceiptFieldSetting;
-    colPrincipal: ReceiptFieldSetting;
-    colCharges: ReceiptFieldSetting;
-    hdrSerial: ReceiptFieldSetting;
-    hdrAccount: ReceiptFieldSetting;
-    hdrDate: ReceiptFieldSetting;
-    hdrPrincipal: ReceiptFieldSetting;
-    hdrCharges: ReceiptFieldSetting;
-    total: ReceiptFieldSetting;
-    grandTotal: ReceiptFieldSetting;
-    showQrCode?: boolean;
-  };
-}
-
-const DEFAULT_RECEIPT_SETTINGS: ReceiptPrintSettings = {
-  standard: {
-    name: { fontSize: 13, bold: true },
-    date: { fontSize: 12, bold: true },
-    title: { fontSize: 13, bold: true },
-    tableHeader: { fontSize: 12, bold: true },
-    tableData: { fontSize: 12, bold: true },
-    total: { fontSize: 12, bold: true },
-    grandTotal: { fontSize: 13, bold: true },
-  },
-  thermal: {
-    name: { fontSize: 26, bold: true },
-    date: { fontSize: 22, bold: true },
-    title: { fontSize: 24, bold: true },
-    colSerial: { fontSize: 16, bold: true },
-    colAccount: { fontSize: 22, bold: true },
-    colDate: { fontSize: 22, bold: true },
-    colRate: { fontSize: 20, bold: true },
-    colDetails: { fontSize: 18, bold: false },
-    colMonths: { fontSize: 18, bold: false },
-    colPrincipal: { fontSize: 22, bold: true },
-    colCharges: { fontSize: 22, bold: true },
-    hdrSerial: { fontSize: 22, bold: true },
-    hdrAccount: { fontSize: 22, bold: true },
-    hdrDate: { fontSize: 22, bold: true },
-    hdrPrincipal: { fontSize: 22, bold: true },
-    hdrCharges: { fontSize: 22, bold: true },
-    total: { fontSize: 22, bold: true },
-    grandTotal: { fontSize: 32, bold: true },
-  },
-};
-
-const RECEIPT_SETTINGS_KEY = 'lms_receipt_print_settings';
-
-function loadReceiptSettings(): ReceiptPrintSettings {
-  try {
-    const saved = localStorage.getItem(RECEIPT_SETTINGS_KEY);
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      return {
-        standard: { ...DEFAULT_RECEIPT_SETTINGS.standard, ...parsed.standard },
-        thermal: { ...DEFAULT_RECEIPT_SETTINGS.thermal, ...parsed.thermal },
-      };
-    }
-  } catch {}
-  return { ...DEFAULT_RECEIPT_SETTINGS };
 }
 
 const formatRate = (rate: string | number): string => {
@@ -216,21 +132,9 @@ export default function Closure() {
   const [isBtBreakdownPrinting, setIsBtBreakdownPrinting] = useState(false);
   const [isBulkClosing, setIsBulkClosing] = useState(false);
   const [bulkCloseProgress, setBulkCloseProgress] = useState({ current: 0, total: 0, failed: 0 });
-  const [receiptSettings, setReceiptSettings] = useState<ReceiptPrintSettings>(loadReceiptSettings);
+  const { receiptSettings, updateReceiptSettings, resetReceiptSettings } = useReceiptPrintSettings();
   const [showPrintSettings, setShowPrintSettings] = useState(false);
 
-  const updateReceiptSettings = useCallback((updater: (prev: ReceiptPrintSettings) => ReceiptPrintSettings) => {
-    setReceiptSettings(prev => {
-      const next = updater(prev);
-      try { localStorage.setItem(RECEIPT_SETTINGS_KEY, JSON.stringify(next)); } catch {}
-      return next;
-    });
-  }, []);
-
-  const resetReceiptSettings = useCallback(() => {
-    setReceiptSettings({ ...DEFAULT_RECEIPT_SETTINGS, standard: { ...DEFAULT_RECEIPT_SETTINGS.standard }, thermal: { ...DEFAULT_RECEIPT_SETTINGS.thermal } });
-    try { localStorage.removeItem(RECEIPT_SETTINGS_KEY); } catch {}
-  }, []);
   const [summaryReceiptHTML, setSummaryReceiptHTML] = useState<string | null>(null);
   const [printNameMode, setPrintNameMode] = useState<'group' | 'customer'>(() => {
     try { const v = localStorage.getItem('closure_printNameMode'); if (v === 'customer') return 'customer'; } catch {}
@@ -3043,99 +2947,8 @@ export default function Closure() {
                         </div>
                       </div>
                       {showPrintSettings && (
-                        <div className="mt-2 p-3 bg-amber-50 border border-amber-200 rounded-lg space-y-3">
-                          <div className="flex items-center justify-between">
-                            <div className="text-xs font-semibold text-amber-800 flex items-center gap-1.5">
-                              <Settings className="h-3.5 w-3.5" /> प्रिंट सेटिंग्स
-                            </div>
-                            <button onClick={resetReceiptSettings} className="text-[10px] text-red-600 hover:text-red-800 hover:bg-red-50 border border-red-200 rounded-md px-2 py-0.5 transition-colors flex items-center gap-1">
-                              <RotateCcw className="h-2.5 w-2.5" /> डिफॉल्ट
-                            </button>
-                          </div>
-                          {(() => {
-                            const renderRow = (mode: 'standard' | 'thermal', key: string, label: string, setting: ReceiptFieldSetting) => (
-                              <div key={key} className="flex items-center gap-1.5 py-0.5 px-1 bg-white rounded">
-                                <span className="text-[10px] font-medium text-amber-800 flex-1 min-w-0 truncate">{label}</span>
-                                <div className="flex items-center gap-0.5 bg-amber-100 rounded px-0.5 py-0.5 flex-shrink-0">
-                                  <button onClick={() => updateReceiptSettings(prev => ({ ...prev, [mode]: { ...prev[mode], [key]: { ...prev[mode][key as keyof typeof prev[typeof mode]], fontSize: Math.max(6, setting.fontSize - 1) } } }))} className="p-0.5 rounded hover:bg-amber-200 active:bg-amber-300">
-                                    <Minus className="h-2.5 w-2.5 text-amber-700" />
-                                  </button>
-                                  <span className="text-[9px] font-mono w-6 text-center text-amber-800 font-semibold">{setting.fontSize}</span>
-                                  <button onClick={() => updateReceiptSettings(prev => ({ ...prev, [mode]: { ...prev[mode], [key]: { ...prev[mode][key as keyof typeof prev[typeof mode]], fontSize: Math.min(50, setting.fontSize + 1) } } }))} className="p-0.5 rounded hover:bg-amber-200 active:bg-amber-300">
-                                    <Plus className="h-2.5 w-2.5 text-amber-700" />
-                                  </button>
-                                </div>
-                                <button
-                                  onClick={() => updateReceiptSettings(prev => ({ ...prev, [mode]: { ...prev[mode], [key]: { ...prev[mode][key as keyof typeof prev[typeof mode]], bold: !setting.bold } } }))}
-                                  className={`p-0.5 rounded transition-colors flex-shrink-0 ${setting.bold ? 'bg-indigo-100 text-indigo-700' : 'hover:bg-amber-200 text-amber-400'}`}
-                                  title="बोल्ड"
-                                >
-                                  <Bold className="h-3 w-3" />
-                                </button>
-                              </div>
-                            );
-                            const stdFields: { key: keyof ReceiptPrintSettings['standard']; label: string }[] = [
-                              { key: 'name', label: 'नाव' },
-                              { key: 'date', label: 'तारीख' },
-                              { key: 'title', label: 'शीर्षक (Estimate)' },
-                              { key: 'tableHeader', label: 'टेबल हेडर' },
-                              { key: 'tableData', label: 'टेबल डेटा' },
-                              { key: 'total', label: 'एकूण' },
-                              { key: 'grandTotal', label: 'Grand Total' },
-                            ];
-                            const btFields: { key: keyof ReceiptPrintSettings['thermal']; label: string; group?: string }[] = [
-                              { key: 'name', label: 'नाव' },
-                              { key: 'date', label: 'तारीख' },
-                              { key: 'title', label: 'शीर्षक (Estimate)' },
-                              { key: 'hdrSerial', label: '🔤 अ.नं. (हेडर)', group: 'हेडर' },
-                              { key: 'hdrAccount', label: '🔤 कोड नं (हेडर)', group: 'हेडर' },
-                              { key: 'hdrDate', label: '🔤 दिनांक (हेडर)', group: 'हेडर' },
-                              { key: 'hdrPrincipal', label: '🔤 बाजारमूल्य (हेडर)', group: 'हेडर' },
-                              { key: 'hdrCharges', label: '🔤 चार्जेस (हेडर)', group: 'हेडर' },
-                              { key: 'colSerial', label: '📊 अ.नं. (डेटा)', group: 'डेटा' },
-                              { key: 'colAccount', label: '📊 कोड नं (डेटा)', group: 'डेटा' },
-                              { key: 'colDate', label: '📊 दिनांक (डेटा)', group: 'डेटा' },
-                              { key: 'colRate', label: '📊 व्याजदर (डेटा)', group: 'डेटा' },
-                              { key: 'colDetails', label: '📊 तपशील (डेटा)', group: 'डेटा' },
-                              { key: 'colMonths', label: '📊 महिने (डेटा)', group: 'डेटा' },
-                              { key: 'colPrincipal', label: '📊 बाजारमूल्य (डेटा)', group: 'डेटा' },
-                              { key: 'colCharges', label: '📊 चार्जेस (डेटा)', group: 'डेटा' },
-                              { key: 'total', label: 'एकूण' },
-                              { key: 'grandTotal', label: 'Grand Total' },
-                            ];
-                            return (
-                              <>
-                                <div className="space-y-1">
-                                  <div className="text-[10px] font-semibold text-amber-700 flex items-center gap-1 border-b border-amber-200 pb-0.5">
-                                    <Printer className="h-3 w-3" /> पावती प्रिंट
-                                  </div>
-                                  {stdFields.map(f => renderRow('standard', f.key, f.label, receiptSettings.standard[f.key]))}
-                                </div>
-                                <div className="space-y-1">
-                                  <div className="text-[10px] font-semibold text-amber-700 flex items-center gap-1 border-b border-amber-200 pb-0.5">
-                                    <Bluetooth className="h-3 w-3" /> ब्लूटूथ प्रिंट
-                                  </div>
-                                  <div className="flex items-center justify-between py-1 px-1 bg-indigo-50/60 rounded">
-                                    <span className="text-[10px] font-medium text-indigo-700">QR कोड दाखवा</span>
-                                    <label className="relative inline-flex items-center cursor-pointer">
-                                      <input
-                                        type="checkbox"
-                                        checked={!!receiptSettings.thermal.showQrCode}
-                                        onChange={(e) => updateReceiptSettings(prev => ({
-                                          ...prev,
-                                          thermal: { ...prev.thermal, showQrCode: e.target.checked }
-                                        }))}
-                                        className="sr-only peer"
-                                        autoComplete="off"
-                                      />
-                                      <div className="w-8 h-4 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[1px] after:left-[1px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3.5 after:w-3.5 after:transition-all peer-checked:bg-indigo-600"></div>
-                                    </label>
-                                  </div>
-                                  {btFields.map(f => renderRow('thermal', f.key, f.label, receiptSettings.thermal[f.key]))}
-                                </div>
-                              </>
-                            );
-                          })()}
+                        <div className="mt-2">
+                          <ReceiptPrintSettingsEditor settings={receiptSettings} onChange={updateReceiptSettings} onReset={resetReceiptSettings} />
                         </div>
                       )}
                     </CardHeader>
