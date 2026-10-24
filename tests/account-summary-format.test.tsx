@@ -66,7 +66,7 @@ test('concise interest caption retains dates and expandable full FY/lifetime mea
 test('group and customer views share formatter and short scope without changing accounting code', () => {
   const page = readFileSync('client/src/pages/reports/account-summary.tsx', 'utf8');
   assert.match(page, /const formatCurrency = formatSummaryCurrency/);
-  assert.equal((page.match(/periodText=\{overviewPeriodText\}/g) || []).length, 2);
+  assert.equal((page.match(/periodText=\{overviewPeriodText\}/g) || []).length, 3);
   assert.equal((page.match(/type="date" lang="en-GB"/g) || []).length, 4);
   assert.doesNotMatch(page, /new Intl\.NumberFormat\('(?:mr|hi)-IN'/);
   assert.doesNotMatch(page, /[०-९]/);

@@ -282,8 +282,10 @@ test('page wires guarded exports, shared context, independent date updates and b
   const source = readFileSync('client/src/pages/reports/account-summary.tsx', 'utf8');
   assert.match(source, /if \(!reportReady\) \{ alert\(reportProblem\); return; \}/);
   assert.match(source, /exportAccountSummaryToExcel\(cleanReportData, modeLabel, reportContext\)/);
-  assert.match(source, /accountSummaryPrintRows\(data, totals, showRank\)/);
-  assert.match(source, /doc.fonts\?\.ready/);
+  assert.match(source, /printAccountSummary\(accountSummaryPrintDocument/);
+  const printHelper = readFileSync('client/src/lib/account-summary-print.ts', 'utf8');
+  assert.match(printHelper, /accountSummaryPrintRows\(rows, totals, showRank\)/);
+  assert.match(printHelper, /await doc.fonts.ready/);
   assert.match(source, /\.account-summary-print \{ display: block !important/);
   assert.match(source, /checked=\{interestSettings\[activeTab\]\.allTime\}/);
   assert.match(source, /disabled=\{calcMode === 'cumulative' && interestSettings\.group\.allTime\}/);

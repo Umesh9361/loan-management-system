@@ -12,7 +12,8 @@ import { MobileNav } from "@/components/ui/mobile-nav";
 import { formatSummaryCurrency, formatSummaryDate } from "@shared/account-summary-format";
 import { formatWeight, uniqueBorrowerNames } from "@shared/report-weights";
 import { AccountSummaryOverview } from "@/components/reports/account-summary-overview";
-import { buildAccountSummaryRow, accountSummaryTotals, accountSummaryContext, createSummaryRanges, initializeSummaryRanges, updateSummaryRange, firstSummaryLoanDate, localISODate, summaryRangeError, summaryDataState, checkedSummaryLoans, checkedSummaryClosures, summaryArray, accountSummaryPrintRows, escapeSummaryHtml, createSummaryInterestSettings } from "@shared/account-summary";
+import { accountSummaryPrintDocument, printAccountSummary } from "@/lib/account-summary-print";
+import { buildAccountSummaryRow, accountSummaryTotals, accountSummaryContext, createSummaryRanges, initializeSummaryRanges, updateSummaryRange, firstSummaryLoanDate, localISODate, summaryRangeError, summaryDataState, checkedSummaryLoans, checkedSummaryClosures, summaryArray, createSummaryInterestSettings } from "@shared/account-summary";
 import type { SummaryRow } from "@shared/account-summary";
 import { rankAccountSummaryCustomers } from "@shared/account-summary";
 
@@ -43,6 +44,9 @@ export default function AccountSummaryReport() {
   const customerInputRef = useRef<HTMLInputElement>(null);
   const customerSuggestionsRef = useRef<HTMLDivElement>(null);
   const overviewRef = useRef<HTMLDivElement>(null);
+  const [includePrintOverview, setIncludePrintOverview] = useState(false);
+  const [includePrintNotes, setIncludePrintNotes] = useState(false);
+  const [isPrinting, setIsPrinting] = useState(false);
 
   const { data: customerAutocompleteSuggestions = [] } = useQuery<any[]>({
     queryKey: ["/api/borrowers/autocomplete", customerSearchTerm],
@@ -151,7 +155,7 @@ export default function AccountSummaryReport() {
     calcMode === 'cumulative' ? today : selectedTo, scopeLabel, calcMode === 'cumulative' ? selectedInterest : undefined);
   const overviewPeriodText = `${formatSummaryDate(reportContext.from)} ते ${formatSummaryDate(reportContext.to)}`;
 
-  const handlePrint = () => {
+  const handlePrint = async () => {
     if (!reportReady) { alert(reportProblem); return; }
     const showRank = activeTab === "customer" && customerMode === "top50";
     const data = activeTab === "group" ? groupSummaries : customerSummaries;
@@ -162,7 +166,6 @@ export default function AccountSummaryReport() {
       : (customerMode === "specific" ? `कस्टमर सारांश - ${selectedCustomerName}` : "टॉप 50 कस्टमर सारांश अहवाल");
     const title = `${baseTitle} (${modeLabel})`;
     const companyName = (company as any)?.name || 'कंपनी नाव';
-    const periodText = `${reportContext.periodText} — ${reportContext.balanceNote}`;
     const overviewHTML = overviewRef.current?.innerHTML || '';
 
     if (data.length === 0) {
@@ -170,87 +173,23 @@ export default function AccountSummaryReport() {
       return;
     }
 
-    const tableRows = accountSummaryPrintRows(data, totals, showRank);
-
-    const colCount = showRank ? 9 : 8;
-
-    const printHTML = `<!DOCTYPE html><html><head><meta charset="utf-8"/><title>खाते सारांश अहवाल</title>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;600;700&display=swap" rel="stylesheet">
-<style>
-  @page { size: A4 portrait; margin: 12mm 5mm 12mm 5mm; }
-  body { font-family: 'Noto Sans Devanagari', Arial, sans-serif; margin: 0; padding: 3mm 5mm 3mm 20mm; box-sizing: border-box; font-size: 11px; line-height: 1.4; }
-  .header { text-align: center; margin-bottom: 12px; font-weight: bold; }
-  .header p { margin: 0 0 4px 0; }
-  table { width: 100%; border-collapse: collapse; table-layout: fixed; page-break-inside: auto; }
-  thead { display: table-header-group; }
-  tr { page-break-inside: avoid !important; break-inside: avoid !important; }
-  ${showRank ? `
-  col:nth-child(1) { width: 4%; }
-  col:nth-child(2) { width: 18%; }
-  col:nth-child(3) { width: 7%; }
-  col:nth-child(4) { width: 7%; }
-  col:nth-child(5) { width: 6%; }
-  col:nth-child(6) { width: 15%; }
-  col:nth-child(7) { width: 14%; }
-  col:nth-child(8) { width: 15%; }
-  col:nth-child(9) { width: 14%; }
-  ` : `
-  col:nth-child(1) { width: 20%; }
-  col:nth-child(2) { width: 8%; }
-  col:nth-child(3) { width: 8%; }
-  col:nth-child(4) { width: 7%; }
-  col:nth-child(5) { width: 16%; }
-  col:nth-child(6) { width: 14%; }
-  col:nth-child(7) { width: 14%; }
-  col:nth-child(8) { width: 13%; }
-  `}
-  th, td { border: 1.5px solid #333; padding: 6px 4px; text-align: center; font-size: 11px; font-weight: 600; }
-  th { background: #f0f0f0; color: #111; font-weight: 700; font-size: 11px; word-wrap: break-word; overflow-wrap: break-word; line-height: 1.3; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  .total-row td { background: #e0e7ff; font-weight: 700; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  .footer { margin-top: 50px; display: flex; justify-content: flex-end; font-size: 11px; font-weight: 600; padding-right: 25%; }
-</style></head><body>
-<div class="header">
-  <p style="font-size:15px;font-weight:700;">${escapeSummaryHtml(companyName)}</p>
-  <p style="font-size:14px;font-weight:700;">${escapeSummaryHtml(title)}</p>
-  <p style="font-size:11px;color:#333;">${escapeSummaryHtml(periodText)}</p>
-</div>
-${overviewHTML}
-<table>
-  <colgroup>${'<col/>'.repeat(colCount)}</colgroup>
-  <thead><tr>
-    ${showRank ? '<th>#</th>' : ''}
-    <th>${label}</th><th>एकूण कर्ज</th><th>सक्रिय</th><th>बंद</th><th>एकूण वाटप</th><th>बंद रक्कम</th><th>सक्रिय शिल्लक</th><th>एकूण व्याज</th>
-  </tr></thead>
-  <tbody>${tableRows}</tbody>
-</table>
-<div class="footer">
-  <span>सावकाराची सही</span>
-</div>
-</body></html>`;
-
-    const iframe = document.createElement("iframe");
-    iframe.style.position = "fixed";
-    iframe.style.left = "-9999px";
-    iframe.style.top = "-9999px";
-    iframe.style.width = "794px";
-    iframe.style.height = "1123px";
-    document.body.appendChild(iframe);
-    const doc = iframe.contentDocument || iframe.contentWindow?.document;
-    if (!doc) { document.body.removeChild(iframe); return; }
-    doc.open();
-    doc.write(printHTML);
-    doc.close();
-    const printWhenReady = () => {
-      try {
-        iframe.contentWindow?.focus();
-        iframe.contentWindow?.print();
-      } catch(e) {
-        window.print();
-      }
-      setTimeout(() => { document.body.removeChild(iframe); }, 2000);
-    };
-    // Marathi text must finish loading before the browser lays out the PDF.
-    void (doc.fonts?.ready ?? Promise.resolve()).then(printWhenReady);
+    if (isPrinting) return;
+    setIsPrinting(true);
+    try {
+      await printAccountSummary(accountSummaryPrintDocument({
+        company: companyName, title, label, rows: data, totals, showRank,
+        period: overviewPeriodText, scope: scopeLabel,
+        interest: calcMode === "period"
+          ? `व्याज: ${overviewPeriodText}`
+          : `व्याज: ${selectedInterest.allTime ? "सुरुवातीपासून" : "निवडलेल्या आर्थिक वर्षातील"} · ${formatSummaryDate(selectedInterest.allTime ? coreFrom : selectedInterest.from)} ते ${formatSummaryDate(selectedInterest.allTime ? today : selectedInterest.to)}`,
+        notes: reportContext.balanceNote, overviewHTML,
+        includeOverview: includePrintOverview, includeNotes: includePrintNotes,
+      }));
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "प्रिंट तयार करता आली नाही.");
+    } finally {
+      setIsPrinting(false);
+    }
   };
 
   // दोन्ही मोड (एकूण हिशोब / कालावधी हिशोब) हाताळणारा सामायिक सारांश बिल्डर.
@@ -694,11 +633,12 @@ ${overviewHTML}
                 <h1 style={{ fontSize: '20px', marginBottom: '4px' }}>{(company as any)?.name || "गजलक्ष्मी फायनान्स"}</h1>
                 <h2 style={{ fontSize: '16px', marginBottom: '4px' }}>{currentPrintTitle} ({modeLabel})</h2>
                 <p style={{ fontSize: '13px', marginBottom: '20px' }}>
-                  {reportContext.periodText}<br />{reportContext.balanceNote}
+                  {overviewPeriodText} · {scopeLabel}
                 </p>
+                {includePrintNotes && <p>{reportContext.balanceNote}</p>}
               </div>
-              {reportReady && currentPrintData.length > 0 && <AccountSummaryOverview
-                totals={currentPrintTotals} mode={calcMode} periodText={reportContext.periodText} subsetLabel={scopeLabel} interestLabel={reportContext.interestText}
+              {includePrintOverview && reportReady && currentPrintData.length > 0 && <AccountSummaryOverview
+                totals={currentPrintTotals} mode={calcMode} periodText={overviewPeriodText} subsetLabel={scopeLabel} interestLabel={reportContext.interestText}
               />}
               
               {currentPrintData.length > 0 ? (
@@ -721,6 +661,21 @@ ${overviewHTML}
               <h1 className="text-2xl font-semibold text-gray-900">खाते सारांश अहवाल</h1>
               <p className="text-gray-600">गटनिहाय व कस्टमरनिहाय कर्ज वाटप सारांश</p>
             </div>
+
+            <fieldset className="mb-4 rounded-xl border border-violet-200 bg-violet-50/60 px-4 py-3 no-print">
+              <legend className="px-1 text-sm font-semibold text-violet-900">प्रिंट / PDF पर्याय</legend>
+              <p className="mb-2 text-xs text-violet-800">डिफॉल्ट: मूळ टेबल. हवी असल्यास खालील माहिती जोडा.</p>
+              <div className="flex flex-wrap gap-x-6 gap-y-3 text-sm text-violet-950">
+                <label className="flex cursor-pointer items-center gap-2">
+                  <input type="checkbox" className="h-4 w-4 accent-violet-600" checked={includePrintOverview} onChange={e => setIncludePrintOverview(e.target.checked)} />
+                  सारांश बॉक्स व ग्राफ
+                </label>
+                <label className="flex cursor-pointer items-center gap-2">
+                  <input type="checkbox" className="h-4 w-4 accent-violet-600" checked={includePrintNotes} onChange={e => setIncludePrintNotes(e.target.checked)} />
+                  हिशोबाचे सविस्तर स्पष्टीकरण
+                </label>
+              </div>
+            </fieldset>
 
             {/* Tab Switcher */}
             <div className="flex mb-4 bg-white rounded-lg border border-gray-200 p-1 shadow-sm">
@@ -774,7 +729,7 @@ ${overviewHTML}
                       </div>
                     </div>
                     <div className="flex gap-2 flex-wrap">
-                      <Button onClick={handlePrint} disabled={!reportReady || !groupSummaries.length} className="flex items-center gap-2 no-print">
+                      <Button onClick={handlePrint} disabled={isPrinting || !reportReady || !groupSummaries.length} className="flex items-center gap-2 no-print">
                         <Printer className="h-4 w-4" />
                         प्रिंट करा
                       </Button>
@@ -1135,7 +1090,7 @@ ${overviewHTML}
                       <Button 
                         onClick={handlePrint} 
                         className="flex items-center gap-2 no-print" 
-                        disabled={!reportReady || !customerSummaries.length || (customerMode === "specific" && !selectedCustomerName)}
+                        disabled={isPrinting || !reportReady || !customerSummaries.length || (customerMode === "specific" && !selectedCustomerName)}
                       >
                         <Printer className="h-4 w-4" />
                         प्रिंट करा
