@@ -270,6 +270,7 @@ test('both mode overview renders real rupee/count charts without claiming a hist
     assert.match(html, /2026-04-01/);
     assert.match(html, /चाचणी गट/);
     assert.match(html, /प्रत्यक्ष मिळालेले व्याज/);
+    assert.doesNotMatch(html, /<article class="aso-total|aria-label="मुख्य एकूण"/);
     if (mode === 'period') assert.doesNotMatch(html, /आज सक्रिय मुद्दल शिल्लक/);
   }
   const zero = renderToStaticMarkup(<AccountSummaryOverview totals={row('period', [])} mode="period" periodText="रिकामा कालावधी" />);
@@ -277,6 +278,14 @@ test('both mode overview renders real rupee/count charts without claiming a hist
   const signed = renderToStaticMarkup(<AccountSummaryOverview totals={{ ...row('period'), totalInterest: -1200 }} mode="period" periodText="परतावा" />);
   assert.match(signed, /fill="var\(--aso-danger\)"/); // signed values are not silently flattened to zero
   assert.match(signed, /--aso-danger: #D8524F/);
+});
+
+test('screen financial totals have a single canonical table/mobile location outside charts', () => {
+  const source = readFileSync('client/src/pages/reports/account-summary.tsx', 'utf8');
+  const performance = source.slice(source.indexOf('<div id="group-performance-section"'));
+  assert.doesNotMatch(performance, /formatCurrency\(groupGrandTotals\./);
+  assert.match(source, /आजपर्यंतचे सर्व व्याज/);
+  assert.doesNotMatch(source, /बंद असताना खालील आर्थिक वर्षाच्या|वाटप व बंद खाती सुरुवातीपासून आजपर्यंतची/);
 });
 
 test('page wires guarded exports, shared context, independent date updates and both print overviews', () => {

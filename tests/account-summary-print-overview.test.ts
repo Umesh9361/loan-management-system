@@ -11,6 +11,7 @@ test("print overview uses exact values without stretched dashboard SVG or a dupl
   const html = accountSummaryPrintOverview(totals);
   for (const amount of ["₹3,11,15,363", "₹1,29,00,500", "₹1,82,14,863", "₹15,30,024"]) assert.ok(html.includes(amount));
   assert.doesNotMatch(html, /<svg|aso-|[०-९]|\.00/);
+  assert.doesNotMatch(html, /class="summary-overview-metrics"/);
   assert.equal((html.match(/<section class="summary-overview-chart">/g) || []).length, 2);
   assert.match(html, /width:100%/);
   assert.doesNotMatch(html, /summary-overview-axis-zero/); // zero already has an endpoint label

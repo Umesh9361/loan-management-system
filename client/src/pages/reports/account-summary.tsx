@@ -589,15 +589,15 @@ export default function AccountSummaryReport() {
               setInterestSettings(state => ({ ...state, [activeTab]: { ...state[activeTab], allTime } }));
             }}
           />
-          <span>सुरुवातीपासून आजपर्यंतचे सर्व मिळालेले व्याज दाखवा
-            <span className="block text-xs mt-1">बंद असताना खालील आर्थिक वर्षाच्या / निवडलेल्या तारखांतील व्याज दाखवले जाते. इतर आकडे बदलत नाहीत.</span>
+          <span>आजपर्यंतचे सर्व व्याज
+            <span className="block text-xs mt-1">बंद: निवडलेल्या कालावधीचे व्याज.</span>
           </span>
         </label>
       )}
       <p className="text-xs text-gray-500 mt-1.5">
         {calcMode === "cumulative"
-          ? "वाटप व बंद खाती सुरुवातीपासून आजपर्यंतची; सक्रिय शिल्लक आजच्या सर्व चालू कर्जांची. खालील तारखा फक्त मिळालेल्या व्याजासाठी आहेत. व्याजाचा डिफॉल्ट कालावधी चालू आर्थिक वर्ष आहे."
-          : "फक्त निवडलेल्या काळातील वाटप व बंद व्यवहारांचे व्याज. पूर्वी दिलेली पण या काळात बंद झालेली खातीही समाविष्ट. सक्रिय/शिल्लक ही या काळात दिलेली व आजही चालू कर्जे; ऐतिहासिक शिल्लक नाही."}
+          ? "वाटप व बंद कर्जे सुरुवातीपासून; सक्रिय शिल्लक आजची. व्याज निवडलेल्या कालावधीचे किंवा आजपर्यंतचे."
+          : "वाटप व बंद व्यवहार निवडलेल्या कालावधीचे; आधीचे कर्ज या काळात बंद झाले असल्यास समाविष्ट. सक्रिय शिल्लक या काळात दिलेल्या व आजही चालू कर्जांची."}
       </p>
     </div>
   );
@@ -722,7 +722,7 @@ export default function AccountSummaryReport() {
                   <CardContent>
                     {renderModeToggle()}
                     <Label className="text-xs text-indigo-600 font-medium">
-                      {calcMode === "cumulative" ? "फक्त व्याजाचा कालावधी (चेकबॉक्स बंद असताना)" : "अहवाल कालावधी"}
+                      व्याजाचा कालावधी
                     </Label>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 mt-1">
                       <div>
@@ -797,34 +797,8 @@ export default function AccountSummaryReport() {
                   return (
                     <div id="group-performance-section" className="mt-6 space-y-5 no-print">
                       <p className="rounded border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
-                        तुलनात्मक क्रमवारी; अधिकृत वसुली कार्यक्षमता नाही. वाटप व बंद रक्कम वेगवेगळ्या कर्जांची असू शकते. शिल्लक वजाबाकीने काढलेली नाही; वसुली गुणोत्तर कमाल 100%.
+                        ही तुलनात्मक क्रमवारी आहे, अधिकृत वसुली मोजमाप नाही. वाटप व बंद रक्कम वेगवेगळ्या कर्जसमूहांची असू शकते; गुणोत्तर १००% पर्यंत मर्यादित.
                       </p>
-
-                      {/* KPI Summary Row */}
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                        <div className="bg-white border border-gray-200 rounded-lg p-3 sm:p-4">
-                          <div className="text-xs text-gray-500 mb-1">एकूण वाटप</div>
-                          <div className="text-base sm:text-lg font-bold text-gray-900">{formatCurrency(groupGrandTotals.totalAmount)}</div>
-                          <div className="text-xs text-gray-400 mt-0.5">{groupGrandTotals.totalLoans} कर्जे</div>
-                        </div>
-                        <div className="bg-white border border-gray-200 rounded-lg p-3 sm:p-4">
-                          <div className="text-xs text-gray-500 mb-1">वसुली (बंद)</div>
-                          <div className="text-base sm:text-lg font-bold text-green-700">{formatCurrency(groupGrandTotals.closedAmount)}</div>
-                          <div className="text-xs text-gray-400 mt-0.5">{groupGrandTotals.closedLoans} बंद कर्जे</div>
-                        </div>
-                        <div className="bg-white border border-gray-200 rounded-lg p-3 sm:p-4">
-                          <div className="text-xs text-gray-500 mb-1">बाकी रक्कम</div>
-                          <div className="text-base sm:text-lg font-bold text-red-600">{formatCurrency(Math.max(0, groupGrandTotals.activeBalance))}</div>
-                          <div className="text-xs text-gray-400 mt-0.5">{groupGrandTotals.activeLoans} सक्रिय कर्जे</div>
-                        </div>
-                        <div className="bg-white border border-gray-200 rounded-lg p-3 sm:p-4">
-                          <div className="text-xs text-gray-500 mb-1">व्याज उत्पन्न</div>
-                          <div className="text-base sm:text-lg font-bold text-amber-700">{formatCurrency(groupGrandTotals.totalInterest)}</div>
-                          <div className="text-xs text-gray-400 mt-0.5">
-                            वसुली दर: {groupGrandTotals.totalAmount > 0 ? Math.round(Math.min(100, (groupGrandTotals.closedAmount / groupGrandTotals.totalAmount) * 100)) : 0}%
-                          </div>
-                        </div>
-                      </div>
 
                       {/* गटनिहाय वाटप vs वसुली तुलना */}
                       <Card>
@@ -1077,7 +1051,7 @@ export default function AccountSummaryReport() {
 
                     {/* Date Range */}
                     <Label className="text-xs text-indigo-600 font-medium">
-                      {calcMode === "cumulative" ? "फक्त व्याजाचा कालावधी (चेकबॉक्स बंद असताना)" : "अहवाल कालावधी"}
+                      व्याजाचा कालावधी
                     </Label>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 mt-1">
                       <div>

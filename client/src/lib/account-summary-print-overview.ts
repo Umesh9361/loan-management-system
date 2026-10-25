@@ -47,13 +47,6 @@ function compactCurrency(value: number) {
   return `${sign}₹${formatted(absolute)}`;
 }
 
-function renderMetric(metric: Metric) {
-  return `<div class="summary-overview-metric" style="--metric-color:${metric.color}">
-    <span>${escapeSummaryHtml(metric.label)}</span>
-    <strong>${escapeSummaryHtml(formatSummaryCurrency(finite(metric.value)))}</strong>
-  </div>`;
-}
-
 function renderChart(
   title: string,
   items: Metric[],
@@ -113,18 +106,7 @@ export function accountSummaryPrintOverview(
     { label: "दिलेली कर्जखाती", value: totals.totalLoans, color: colors.accounts },
     { label: "बंद झालेली खाती", value: totals.closedLoans, color: colors.closures },
   ];
-  const keyMetrics: Metric[] = [
-    amountMetrics[0],
-    amountMetrics[1],
-    amountMetrics[2],
-  ];
-
   if (cumulative) {
-    keyMetrics.push({
-      label: "आजची मुद्दल शिल्लक",
-      value: totals.activeBalance,
-      color: colors.balance,
-    });
     amountMetrics.push({
       label: "आजची मुद्दल शिल्लक",
       value: totals.activeBalance,
@@ -145,7 +127,6 @@ export function accountSummaryPrintOverview(
       </div>
       <p class="summary-overview-mode">${cumulative ? "एकूण हिशोब" : "निवडलेल्या कालावधीतील व्यवहार"}</p>
     </div>
-    <div class="summary-overview-metrics">${keyMetrics.map(renderMetric).join("")}</div>
     <div class="summary-overview-charts">
       ${renderChart("रकमेची तुलना", amountMetrics, "currency")}
       ${renderChart("खात्यांची तुलना", accountMetrics, "count")}
@@ -225,6 +206,7 @@ export const accountSummaryPrintOverviewStyles = `
   }
   .summary-overview-charts {
     display: grid;
+    margin-top: 3mm;
     grid-template-columns: minmax(0, 1.2fr) minmax(0, .8fr);
     gap: 3mm;
     align-items: start;

@@ -218,30 +218,7 @@ export function AccountSummaryOverview({
         </div>
       </header>
 
-      <div className={`aso-key-totals${[totals.totalAmount, totals.closedAmount, totals.totalInterest, ...(isCumulative ? [totals.activeBalance] : [])].some(value => formatRupees(value).length > 14) ? " aso-key-totals-long" : ""}`} aria-label="मुख्य एकूण">
-        <article className="aso-total aso-total-primary">
-          <span>वाटप केलेले मुद्दल</span>
-          <strong>{formatRupees(totals.totalAmount)}</strong>
-          <small>एकूण कर्जवाटप</small>
-        </article>
-        <article className="aso-total">
-          <span>परत आलेले मुद्दल</span>
-          <strong>{formatRupees(totals.closedAmount)}</strong>
-          <small>बंद कर्जांतून</small>
-        </article>
-        <article className="aso-total">
-          <span>प्रत्यक्ष मिळालेले व्याज</span>
-          <strong>{formatRupees(totals.totalInterest)}</strong>
-          <small>{shortInterestLabel}</small>
-        </article>
-        {isCumulative && (
-          <article className="aso-total aso-total-current">
-            <span>आज सक्रिय मुद्दल शिल्लक</span>
-            <strong>{formatRupees(totals.activeBalance)}</strong>
-            <small>{formatCount(totals.activeLoans)} सक्रिय खाती</small>
-          </article>
-        )}
-      </div>
+      {interestLabel && <p className="aso-interest-period">{shortInterestLabel}</p>}
 
       <div className="aso-charts">
         <HorizontalBars
@@ -294,6 +271,7 @@ const styles = `
     box-shadow: 0 2px 8px rgb(15 23 42 / 5%);
   }
   .aso * { box-sizing: border-box; }
+  .aso-interest-period { margin: 0 0 14px; color: var(--aso-muted); font-size: 12px; line-height: 1.5; }
   .aso-header {
     display: flex;
     flex-wrap: wrap;
