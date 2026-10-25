@@ -209,9 +209,6 @@ export default function PledgeFormsPage() {
         <div className="mx-auto max-w-[1500px] px-3 py-4 sm:px-6 sm:py-6 lg:px-8">
           <header className="mb-5 flex flex-col justify-between gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:p-5">
             <div>
-              <div className="mb-2 flex items-center gap-2 text-[11px] font-bold tracking-[0.12em] text-indigo-700">
-                <span className="h-px w-6 bg-indigo-600" /> फॉर्म व पावत्या
-              </div>
               <h1 className="text-[1.65rem] font-bold tracking-tight text-slate-900 sm:text-3xl">तारण कर्ज फॉर्म</h1>
               <p className="mt-1 max-w-2xl text-sm leading-5 text-slate-600">माहिती भरा, नमुने निवडा आणि प्रिंट किंवा PDF तयार करा.</p>
             </div>
