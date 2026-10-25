@@ -7,6 +7,15 @@ import { accountSummaryPrintDocument } from "../client/src/lib/account-summary-p
 import { renderToStaticMarkup } from "react-dom/server";
 import React from "react";
 import { AccountSummaryOverview } from "../client/src/components/reports/account-summary-overview";
+import { accountSummaryTotals } from "../shared/account-summary";
+import sharp from "sharp";
+
+const samplePhoto = async (width: number, height: number, fill: string) => "data:image/png;base64," +
+  (await sharp(Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><rect width="100%" height="100%" fill="#f8fafc"/><ellipse cx="${width / 2}" cy="${height / 2}" rx="${width / 3}" ry="${height / 3}" fill="${fill}"/></svg>`)).png().toBuffer()).toString("base64");
+const photoFixture = {
+  borrowerPhoto: await samplePhoto(180, 240, "#4f46e5"),
+  collateralPhotos: [await samplePhoto(320, 160, "#eab308"), await samplePhoto(180, 180, "#b45309")],
+};
 
 const bundle = await build({
   stdin: { contents: `
@@ -21,26 +30,29 @@ const bundle = await build({
   `, resolveDir: process.cwd(), loader: "ts" },
   bundle: true, write: false, format: "esm",
 });
-const row = { name: "नमुना ग्राहक", totalLoans: 10, activeLoans: 6, closedLoans: 4, totalAmount: 100000, closedAmount: 40000, activeBalance: 60000, totalInterest: 3210 };
+const row = { name: "नमुना ग्राहक", totalLoans: 843, activeLoans: 532, closedLoans: 311, totalAmount: 31115363, closedAmount: 12900500, activeBalance: 18214863, totalInterest: 1530024 };
 createServer((req, res) => {
   const url = new URL(req.url!, "http://localhost");
   if (url.pathname === "/bundle.js") { res.setHeader("Content-Type", "text/javascript"); res.end(bundle.outputFiles[0].text); return; }
   if (url.pathname === "/document") {
     const kind = url.searchParams.get("kind") || "compact";
+    const summaryRows = Array.from({ length: kind.includes("long") ? 100 : 3 }, (_, index) => ({ ...row, name: `नमुना ${index + 1}` }));
+    const mode = kind === "summary-period" ? "period" : "cumulative";
     res.setHeader("Content-Type", "text/html;charset=utf-8");
     const overviewHTML = renderToStaticMarkup(React.createElement(AccountSummaryOverview, {
       totals: row, mode: "cumulative", periodText: "01/04/2026 ते 25/10/2026",
     }));
     res.end(kind.startsWith("summary") ? accountSummaryPrintDocument({
       company: "नमुना फायनान्स", title: "खाते सारांश", label: "गटाचे नाव",
-      rows: Array.from({ length: kind === "summary-long" ? 100 : 3 }, (_, index) => ({ ...row, name: `नमुना ${index + 1}` })),
-      totals: row, period: "01/04/2026 ते 25/10/2026", scope: "सर्व", interest: "व्याज",
-      notes: "नमुना", overviewHTML, includeOverview: kind === "summary-full", includeNotes: kind === "summary-full",
+      rows: summaryRows,
+      totals: accountSummaryTotals(summaryRows), period: "01/04/2026 ते 25/10/2026", scope: "सर्व", interest: "व्याज",
+      notes: "नमुना", overviewHTML, overviewMode: mode, includeOverview: kind !== "summary" && kind !== "summary-long", includeNotes: kind.includes("full"),
     }) : pledgeFormsDocument({
       company: "नमुना फायनान्स", companyAddress: "नमुना गाव, महाराष्ट्र", companyContactNumber: "1234567890", companyLicenseNumber: "123",
       borrowerName: "नमुना रामचंद्र पाटील", borrowerAddress: "नमुना गाव, महाराष्ट्र",
       accountNumber: "621", principalAmount: "25000", loanDate: "2026-10-25",
-    }, kind === "single" ? ["receipt"] : "all", DEFAULT_PLEDGE_MATTER, kind === "spacious" ? "spacious" : "compact"));
+      ...(kind.startsWith("photos") ? photoFixture : {}),
+    }, kind.endsWith("single") ? ["receipt"] : "all", DEFAULT_PLEDGE_MATTER, kind.includes("spacious") ? "spacious" : "compact"));
     return;
   }
   res.setHeader("Content-Type", "text/html");

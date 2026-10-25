@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -7,6 +7,7 @@ import { Eye, ZoomIn, ZoomOut, RotateCw, Download, X, Camera, Image as ImageIcon
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
 import type { LoanPhoto } from "@/../../shared/schema";
+type ViewerPhoto = LoanPhoto & { url?: string; thumbnailUrl?: string };
 
 interface PhotoViewerProps {
   loanId: string;
@@ -17,17 +18,24 @@ interface PhotoViewerProps {
 
 export function PhotoViewer({ loanId, loanAccountNumber, readonly = false }: PhotoViewerProps) {
   const { toast } = useToast();
-  const [selectedPhoto, setSelectedPhoto] = useState<LoanPhoto | null>(null);
+  const [selectedPhoto, setSelectedPhoto] = useState<ViewerPhoto | null>(null);
   const [zoom, setZoom] = useState(100);
   const [rotation, setRotation] = useState(0);
 
   // Fetch photos for this loan
-  const { data: photos = [], isLoading, error } = useQuery<LoanPhoto[]>({
+  const { data: photos = [], isLoading, error } = useQuery<ViewerPhoto[]>({
     queryKey: ["/api/loans", loanId, "photos"],
     enabled: !!loanId,
   });
 
-  const handlePhotoSelect = (photo: LoanPhoto) => {
+  useEffect(() => { setSelectedPhoto(null); setZoom(100); setRotation(0); }, [loanId]);
+  const groups = [
+    { title: "कर्जदाराचा फोटो", label: "कर्जदाराचा फोटो", photos: photos.filter(photo => photo.photoType === "borrower") },
+    { title: "तारण वस्तूंचे फोटो", label: "वस्तूचा फोटो", photos: photos.filter(photo => !photo.photoType || photo.photoType === "collateral") },
+    { title: "इतर फोटो / कागदपत्रे", label: "कागदपत्र", photos: photos.filter(photo => photo.photoType && !["borrower", "collateral"].includes(photo.photoType)) },
+  ];
+  const photoLabel = (photo: ViewerPhoto) => photo.photoType === "borrower" ? "कर्जदाराचा फोटो" : photo.photoType === "document" || photo.photoType === "other" ? "इतर फोटो / कागदपत्र" : "वस्तूचा फोटो";
+  const handlePhotoSelect = (photo: ViewerPhoto) => {
     setSelectedPhoto(photo);
     setZoom(100);
     setRotation(0);
@@ -45,11 +53,11 @@ export function PhotoViewer({ loanId, loanAccountNumber, readonly = false }: Pho
     setRotation(prev => (prev + 90) % 360);
   };
 
-  const getPhotoSrc = (photo: LoanPhoto) => {
+  const getPhotoSrc = (photo: ViewerPhoto) => {
     return photo.url || photo.thumbnailUrl || `/uploads/photos/${photo.filename}`;
   };
 
-  const handleDownload = (photo: LoanPhoto) => {
+  const handleDownload = (photo: ViewerPhoto) => {
     const link = document.createElement('a');
     link.href = getPhotoSrc(photo);
     link.download = photo.originalName;
@@ -69,7 +77,7 @@ export function PhotoViewer({ loanId, loanAccountNumber, readonly = false }: Pho
       <div className="space-y-4">
         <h4 className="text-base font-semibold text-amber-800 flex items-center gap-2">
           <Camera className="h-5 w-5" />
-          तारणाचे फोटो
+          खात्याचे फोटो
         </h4>
         <div className="text-center py-8">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-600 mx-auto"></div>
@@ -84,7 +92,7 @@ export function PhotoViewer({ loanId, loanAccountNumber, readonly = false }: Pho
       <div className="space-y-4">
         <h4 className="text-base font-semibold text-amber-800 flex items-center gap-2">
           <Camera className="h-5 w-5" />
-          तारणाचे फोटो
+          खात्याचे फोटो
         </h4>
         <div className="text-center py-8 text-gray-500">
           <ImageIcon className="h-12 w-12 mx-auto mb-2 text-gray-400" />
@@ -99,7 +107,7 @@ export function PhotoViewer({ loanId, loanAccountNumber, readonly = false }: Pho
       <div className="flex items-center justify-between">
         <h4 className="text-base font-semibold text-amber-800 flex items-center gap-2">
           <Camera className="h-5 w-5" />
-          तारणाचे फोटो ({photos.length}/2)
+          खात्याचे फोटो ({photos.length})
         </h4>
         {readonly && photos.length > 0 && (
           <Badge variant="secondary" className="text-xs">
@@ -118,37 +126,29 @@ export function PhotoViewer({ loanId, loanAccountNumber, readonly = false }: Pho
         </div>
       ) : (
         <div className="space-y-4">
+          {!groups[0].photos.length && <p className="rounded-md bg-indigo-50 p-3 text-sm text-indigo-900">कर्जदाराचा स्वतंत्र फोटो सेव्ह केलेला नाही.{!readonly && " संपादन करा → कर्जदाराचा स्वतंत्र फोटो येथे जोडता येतो."}</p>}
           {/* Photo Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {photos.map((photo, index) => (
+          {groups.filter(group => group.photos.length).map(group => <section key={group.title} aria-label={group.title} className="space-y-2">
+          <h5 className="text-sm font-semibold text-slate-800">{group.title} ({group.photos.length})</h5>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {group.photos.map((photo, index) => (
               <Card key={photo.id} className="overflow-hidden hover:shadow-lg transition-shadow">
                 <CardContent className="p-0">
-                  <div className="relative group">
+                  <button type="button" className="relative block w-full bg-slate-50 text-left" onClick={() => handlePhotoSelect(photo)} aria-label={`${group.label} ${index + 1} मोठा पहा`}>
                     <img
                       src={getPhotoSrc(photo)}
-                      alt={photo.originalName}
-                      className="w-full h-40 object-cover cursor-pointer transition-transform hover:scale-105"
-                      onClick={() => handlePhotoSelect(photo)}
+                      alt={`${group.label} ${index + 1}`}
+                      className="w-full h-40 object-contain"
                     />
-                    <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100">
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        onClick={() => handlePhotoSelect(photo)}
-                        className="bg-white/90 hover:bg-white text-black"
-                      >
-                        <Eye className="h-4 w-4 mr-1" />
-                        पाहा
-                      </Button>
-                    </div>
-                  </div>
+                    <span className="absolute bottom-2 right-2 flex items-center rounded bg-white/95 px-2 py-1 text-xs text-slate-800 shadow-sm"><Eye className="mr-1 h-3 w-3" />मोठा पहा</span>
+                  </button>
                   <div className="p-3">
                     <p className="font-medium text-sm text-gray-900 truncate">
-                      फोटो {index + 1}
+                      {group.label} {group.photos.length > 1 ? index + 1 : ""}
                     </p>
                     <div className="flex items-center justify-center mt-1">
                       <p className="text-xs text-gray-600">
-                        {(photo.compressedSize || photo.fileSize / 1024).toFixed(0)} KB
+                        {((photo.compressedSize ?? photo.fileSize) / 1024).toFixed(0)} KB
                       </p>
                     </div>
                   </div>
@@ -156,15 +156,16 @@ export function PhotoViewer({ loanId, loanAccountNumber, readonly = false }: Pho
               </Card>
             ))}
           </div>
+          </section>)}
 
           {/* Photo Preview Modal */}
           {selectedPhoto && (
             <Dialog open={!!selectedPhoto} onOpenChange={() => setSelectedPhoto(null)}>
-              <DialogContent className="max-w-[95vw] sm:max-w-4xl max-h-[90vh] overflow-hidden">
+              <DialogContent className="flex max-w-[95vw] sm:max-w-4xl max-h-[90vh] flex-col overflow-hidden">
                 <DialogHeader>
-                  <DialogTitle className="flex items-center justify-between">
+                  <DialogTitle className="flex flex-wrap items-center justify-between gap-2">
                     <span className="font-noto">
-                      फोटो प्रिव्ह्यू - {loanAccountNumber ? `खाते ${loanAccountNumber}` : 'कर्ज फोटो'}
+                      {photoLabel(selectedPhoto)} · {loanAccountNumber ? `खाते ${loanAccountNumber}` : 'कर्ज फोटो'}
                     </span>
                     <div className="flex items-center gap-2">
                       <Badge variant="outline">{zoom}%</Badge>
@@ -211,12 +212,12 @@ export function PhotoViewer({ loanId, loanAccountNumber, readonly = false }: Pho
                 </div>
 
                 {/* Photo Display */}
-                <div className="flex-1 overflow-auto bg-gray-100 rounded-lg p-4">
-                  <div className="flex items-center justify-center min-h-[400px]">
+                <div className="min-h-0 flex-1 overflow-auto bg-gray-100 rounded-lg p-4">
+                  <div className="flex items-center justify-center min-h-[200px] sm:min-h-[360px]">
                     <img
                       src={getPhotoSrc(selectedPhoto)}
                       alt={selectedPhoto.originalName}
-                      className="max-w-full max-h-full object-contain transition-transform duration-200"
+                      className="max-w-full max-h-[50vh] object-contain transition-transform duration-200"
                       style={{
                         transform: `scale(${zoom / 100}) rotate(${rotation}deg)`,
                       }}
@@ -225,18 +226,18 @@ export function PhotoViewer({ loanId, loanAccountNumber, readonly = false }: Pho
                 </div>
 
                 {/* Photo Info */}
-                <div className="grid grid-cols-3 gap-4 text-xs text-gray-600 bg-gray-50 p-3 rounded">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs text-gray-600 bg-gray-50 p-3 rounded break-words">
                   <div>
                     <span className="font-medium">फाइलचे नाव:</span><br />
                     {selectedPhoto.originalName}
                   </div>
                   <div>
                     <span className="font-medium">साइज:</span><br />
-                    {(selectedPhoto.compressedSize || selectedPhoto.fileSize / 1024).toFixed(0)} KB
+                    {((selectedPhoto.compressedSize ?? selectedPhoto.fileSize) / 1024).toFixed(0)} KB
                   </div>
                   <div>
                     <span className="font-medium">अपलोड दिनांक:</span><br />
-                    {new Date(selectedPhoto.createdAt).toLocaleDateString('hi-IN')}
+                    {new Date(selectedPhoto.createdAt).toLocaleDateString('en-IN')}
                   </div>
                 </div>
               </DialogContent>

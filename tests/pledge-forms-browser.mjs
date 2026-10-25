@@ -43,6 +43,7 @@ const navigate = async path => {
 const setInput = async (id, value) => evaluate(`(()=>{const el=document.getElementById(${JSON.stringify(id)});Object.getOwnPropertyDescriptor(el.tagName==='TEXTAREA'?HTMLTextAreaElement.prototype:HTMLInputElement.prototype,'value').set.call(el,${JSON.stringify(value)});el.dispatchEvent(new Event('input',{bubbles:true}));})()`);
 const clickText = async text => evaluate(`(()=>{const button=[...document.querySelectorAll('button')].find(b=>b.textContent.trim()===${JSON.stringify(text)});if(!button)throw Error('Button missing');button.click();})()`);
 await call("Page.enable");
+await call("Page.bringToFront");
 await fs.mkdir("generated-artifacts/pledge-forms", { recursive: true });
 const results = [];
 for (const [path, name, expectedPages] of [
@@ -87,6 +88,29 @@ await waitFor("!!document.getElementById('borrower-search')||document.body.textC
 await waitFor("![...document.querySelectorAll('button')].find(b=>b.textContent.trim()==='प्रिंट करा')?.disabled");
 assert.equal(await evaluate("[...document.querySelectorAll('button')].some(b=>b.textContent.trim()==='PDF डाउनलोड')"), true, "direct PDF download is separate from native print");
 assert.equal(await evaluate("document.body.textContent.includes('Letter नाही')"), false, "technical paper instructions must not clutter the page");
+for (const width of [320, 402]) {
+  await call("Emulation.setDeviceMetricsOverride", { width, height: 874, deviceScaleFactor: 1, mobile: true });
+  const pair = await evaluate(`(()=>{
+    const pdf=document.querySelector('[data-report-action="pdf"]').getBoundingClientRect();
+    const print=document.querySelector('[data-report-action="print"]').getBoundingClientRect();
+    return {top:Math.abs(pdf.top-print.top),width:Math.abs(pdf.width-print.width),height:Math.abs(pdf.height-print.height),right:print.right};
+  })()`);
+  assert.ok(pair.top < 1 && pair.width < 1 && pair.height < 1 && pair.right <= width, `equal side-by-side buttons at ${width}px: ${JSON.stringify(pair)}`);
+}
+await evaluate("document.querySelector('[data-report-action=\"pdf\"]').click()");
+await waitFor("typeof window.__resolvePDF==='function'");
+assert.equal(await evaluate("document.querySelector('[data-report-action=\"pdf\"]').textContent.trim()"), "PDF तयार होत आहे…");
+assert.equal(await evaluate("document.querySelector('[data-report-action=\"print\"]').textContent.trim()"), "प्रिंट करा");
+assert.equal(await evaluate("document.querySelector('[data-report-action=\"print\"]').getAttribute('aria-busy')"), "false");
+assert.equal(await evaluate("document.querySelector('[data-report-action=\"print\"]').disabled"), true);
+await evaluate("window.__resolvePDF()");
+await waitFor("!document.querySelector('[data-report-action=\"pdf\"]').disabled");
+await evaluate("document.querySelector('[data-report-action=\"pdf\"]').click()");
+await waitFor("document.querySelector('[data-report-action=\"pdf\"]').getAttribute('aria-busy')==='true'");
+await evaluate("window.__rejectPDF(new Error('fixture PDF failed'))");
+await waitFor("!document.querySelector('[data-report-action=\"pdf\"]').disabled");
+assert.equal(await evaluate("document.querySelector('[data-report-action=\"print\"]').textContent.trim()"), "प्रिंट करा");
+await call("Emulation.setDeviceMetricsOverride", { width: 402, height: 874, deviceScaleFactor: 1, mobile: true });
 assert.equal(await evaluate("!!document.getElementById('pledge-field-releaseDate')||!!document.getElementById('pledge-field-itemCount')||!!document.getElementById('pledge-field-conditionNote')"), false, "receipt must not request removed date/count/complaint-note fields");
 await evaluate(`(()=>{
   window.__pdfDialogCalls=0;
@@ -128,6 +152,7 @@ await waitFor("document.querySelector('iframe').contentDocument.querySelector('m
 assert.equal(await evaluate("document.querySelector('iframe').contentDocument.querySelectorAll('.pf-page').length"), 1);
 await clickText("प्रिंट करा");
 await waitFor("window.__pdfDialogCalls===3");
+await waitFor("!document.querySelector('[data-report-action=\"print\"]').disabled");
 assert.equal(await evaluate("window.__pdfPages"), 1);
 await clickText("सर्व");
 await evaluate("document.querySelector('input[value=\"compact\"]').click()");

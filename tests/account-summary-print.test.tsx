@@ -22,7 +22,7 @@ const options: SummaryPrintOptions = {
 
 test('top 50 print/PDF omits overview cards and charts even if previously selected', () => {
   const html = accountSummaryPrintDocument({ ...options, showRank: true, includeOverview: true });
-  assert.doesNotMatch(html, /<svg|class="aso"/);
+  assert.doesNotMatch(html, /<svg|class="aso"|<section class="summary-overview"/);
   assert.match(html, /<th>#<\/th>/);
   assert.match(html, /नमुना &amp; &lt;गट&gt;/);
 });
@@ -30,7 +30,7 @@ test('top 50 print/PDF omits overview cards and charts even if previously select
 test('default print contains original table and concise context, no added summary/notes', () => {
   const html = accountSummaryPrintDocument(options);
   assert.match(html, /@page \{ size: A4 portrait; margin: 5mm; \}/);
-  assert.match(html, /body \{ width: 200mm; margin: 5mm auto; \}/);
+  assert.match(html, /body \{ width: 200mm; max-width: 200mm; margin: 5mm auto; \}/);
   assert.match(html, /@media print \{ body \{ margin: 0; \} \}/);
   assert.match(html, /₹30,87,700/);
   assert.match(html, /₹1,38,846\.25/);
@@ -46,7 +46,8 @@ test('summary and explanation independently optional for print and Save as PDF',
   for (const includeOverview of [false, true]) {
     for (const includeNotes of [false, true]) {
       const html = accountSummaryPrintDocument({ ...options, includeOverview, includeNotes });
-      assert.equal((html.match(/<svg/g) || []).length, includeOverview ? 2 : 0);
+      assert.equal((html.match(/<section class="summary-overview-chart">/g) || []).length, includeOverview ? 2 : 0);
+      assert.doesNotMatch(html, /<svg|preserveAspectRatio="none"/);
       assert.equal(html.includes('सविस्तर हिशोबाचे स्पष्टीकरण'), includeNotes);
       assert.match(html, /₹30,87,700/);
       assert.match(html, /दर्शवलेल्या ओळींची एकूण टोटल/);
@@ -71,8 +72,9 @@ test('group and customer print share options and await fonts/layout before openi
   const helper = readFileSync('client/src/lib/account-summary-print.ts', 'utf8');
   assert.match(page, /includePrintOverview.*useState\(false\)/);
   assert.match(page, /includePrintNotes.*useState\(false\)/);
-  assert.equal((page.match(/onClick=\{\(\) => handlePrint\(\)\}/g) || []).length, 2);
-  assert.equal((page.match(/onClick=\{\(\) => handlePrint\(true\)\}/g) || []).length, 2);
+  assert.equal((page.match(/onPrint=\{\(\) => handlePrint\(\)\}/g) || []).length, 2);
+  assert.equal((page.match(/onPdf=\{\(\) => handlePrint\(true\)\}/g) || []).length, 2);
+  assert.match(page, /setPendingAction\(asPdf \? "pdf" : "print"\)/);
   assert.match(page, /downloadPrintDocumentPdf\(html/);
   assert.match(helper, /doc\.fonts\.load/);
   assert.match(helper, /await doc\.fonts\.ready/);

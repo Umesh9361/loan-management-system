@@ -58,9 +58,7 @@ export class PhotoService {
       const provider = await PhotoStorageFactory.getProvider(tenantId);
       const result = await provider.upload(fileBuffer, originalName, tenantId, loanId);
       
-      const config = await PhotoStorageFactory.getStorageConfig(tenantId);
-      
-      console.log(`📸 PROCESSED [${config.provider.toUpperCase()}]: ${originalName} → ${result.filename}`);
+      console.log(`📸 PROCESSED [${result.storageProvider.toUpperCase()}]: ${originalName} → ${result.filename}`);
       
       return {
         filename: result.filename,
@@ -70,7 +68,8 @@ export class PhotoService {
         size: result.size,
         width: result.width,
         height: result.height,
-        storageProvider: config.provider,
+        // Record where the upload actually went, including local fallback.
+        storageProvider: result.storageProvider,
         cloudinaryPublicId: result.cloudinaryPublicId,
       };
     } catch (error) {
@@ -357,8 +356,8 @@ export class PhotoService {
 
   static getPhotoUrl(req: any, photo: any): string {
     const storagePath = typeof photo === 'string' ? photo : photo.storagePath;
-    const isCloudinary = (typeof photo !== 'string' && photo.storageProvider === 'cloudinary') ||
-      (storagePath && storagePath.includes('cloudinary.com'));
+    // The saved path is authoritative, including older mislabelled fallbacks.
+    const isCloudinary = /^https:\/\/res\.cloudinary\.com\//i.test(storagePath);
 
     if (isCloudinary) {
       return storagePath;
@@ -372,8 +371,7 @@ export class PhotoService {
   static getPhotoThumbnailUrl(req: any, photo: any): string | null {
     if (!photo.thumbnailPath) return null;
     
-    const isCloudinary = photo.storageProvider === 'cloudinary' ||
-      (photo.storagePath && photo.storagePath.includes('cloudinary.com'));
+    const isCloudinary = /^https:\/\/res\.cloudinary\.com\//i.test(photo.thumbnailPath);
 
     if (isCloudinary) {
       return photo.thumbnailPath;

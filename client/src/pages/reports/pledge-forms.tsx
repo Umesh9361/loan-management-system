@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Check, Download, Loader2, Printer, Search, UserRound, X } from "lucide-react";
+import { Check, Loader2, Printer, Search, UserRound, X } from "lucide-react";
+import { ReportPrintActions } from "@/components/report-print-actions";
 import { downloadPrintDocumentPdf } from "@/lib/print-document-pdf";
 import { useToast } from "@/hooks/use-toast";
 import { usePledgeFormDefaults } from "@/hooks/use-pledge-form-defaults";
@@ -17,6 +18,8 @@ import { PledgeFormSelector } from "@/components/pledge-form-selector";
 import { getPledgeFormEntry } from "@/lib/pledge-form-navigation";
 import { PledgeOrganizationEditor } from "@/components/pledge-organization-editor";
 import { PledgeLoanPicker } from "@/components/pledge-loan-picker";
+import { PledgePrintPhotoOptions } from "@/components/pledge-print-photo-options";
+import { applyPledgePrintPatch } from "@/lib/pledge-print-overrides";
 import { getPledgeOrganization, type PledgeCompanyProfile, type PledgeOrganizationData } from "@shared/pledge-form-editor";
 import { pledgeMatterSchema } from "@shared/pledge-form-editor";
 import type { PledgeLoanRecord } from "@/lib/pledge-loan-autofill";
@@ -52,13 +55,16 @@ export default function PledgeFormsPage() {
   const [selected, setSelected] = useState<Borrower | null>(null);
   const [personal, setPersonal] = useState<PersonalData>(emptyPersonal);
   const [selectedLoan, setSelectedLoan] = useState<PledgeLoanRecord | null>(null);
+  const activePhotoLoanId = useRef<string | null>(null);
   const [loanLookupBusy, setLoanLookupBusy] = useState(false);
   const [formDirty, setFormDirty] = useState(false);
+  const [editing, setEditing] = useState(() => mode !== "loan");
+  const [photoOptions, setPhotoOptions] = useState({ includeBorrowerPhoto: true, includeCollateralPhotos: true });
   const [openSuggestions, setOpenSuggestions] = useState(false);
   const [selection, setSelection] = useState<PledgeFormChoice>(() => getPledgeFormEntry(window.location.search).selection);
   const [layout, setLayout] = useState<PledgeFormLayout>("compact");
-  const [printPending, setPrintPending] = useState(false);
-  const working = printPending;
+  const [pendingAction, setPendingAction] = useState<"pdf" | "print" | "blank" | null>(null);
+  const working = pendingAction !== null;
   const selectedForms = getSelectedPledgeForms(selection);
   const noForms = selectedForms.length === 0;
   const expectedPages = getPledgePageGroups(selection, layout).length;
@@ -103,7 +109,8 @@ export default function PledgeFormsPage() {
   const data = useMemo<PledgeFormData>(() => ({
     ...organization,
     ...(mode === "blank" ? {} : { ...personal, ...details }),
-  }), [organization, mode, personal, details]);
+    ...photoOptions,
+  }), [organization, mode, personal, details, photoOptions]);
   const previewDocument = useMemo(() => noForms ? "" : pledgeFormsDocument(data, selection, defaults.matter, layout), [data, selection, defaults.matter, layout, noForms]);
 
   const clearBorrower = () => {
@@ -121,7 +128,9 @@ export default function PledgeFormsPage() {
     clearBorrower();
     setDetails(emptyDetails);
     setSelectedLoan(null);
+    activePhotoLoanId.current = null;
     setFormDirty(false);
+    setEditing(next !== "loan");
   };
   const changeSearch = (value: string) => {
     setSearch(value);
@@ -160,8 +169,10 @@ export default function PledgeFormsPage() {
     setSelected(null);
     setPersonal({ borrowerName, borrowerAddress, borrowerMobile });
     setDetails(mappedDetails);
+    activePhotoLoanId.current = loan.id;
     setSelectedLoan(loan);
     setFormDirty(false);
+    setEditing(false);
     return true;
   };
   const handlePrint = async (blankCopy = false, asPdf = false) => {
@@ -178,16 +189,16 @@ export default function PledgeFormsPage() {
     if (!validMatter.success) {
       toast({ title: "मजकूर तपासा", description: validMatter.error.issues[0]?.message, variant: "destructive" }); return;
     }
-    setPrintPending(true);
+    setPendingAction(asPdf ? "pdf" : blankCopy ? "blank" : "print");
     try {
-      const html = pledgeFormsDocument(blankCopy ? organization : data, selection, validMatter.data, layout);
+      const html = pledgeFormsDocument(blankCopy ? { ...organization, ...photoOptions } : data, selection, validMatter.data, layout);
       if (asPdf) await downloadPrintDocumentPdf(html, "तारण_कर्ज_फॉर्म.pdf", ".pf-page");
       else await printPledgeForms(html);
       toast({ title: asPdf ? "PDF तयार झाली" : "प्रिंट पर्याय उघडले" });
     } catch (error) {
-      toast({ title: "प्रिंट सुरू करता आला नाही", description: error instanceof Error ? error.message : "कृपया पुन्हा प्रयत्न करा.", variant: "destructive" });
+      toast({ title: asPdf ? "PDF तयार करता आली नाही" : "प्रिंट सुरू करता आला नाही", description: error instanceof Error ? error.message : "कृपया पुन्हा प्रयत्न करा.", variant: "destructive" });
     } finally {
-      setPrintPending(false);
+      setPendingAction(null);
     }
   };
   const updatePersonal = (key: keyof PersonalData, value: string) => {
@@ -196,7 +207,7 @@ export default function PledgeFormsPage() {
   };
   const updateDetails = (patch: Partial<PledgeFormData>) => {
     setFormDirty(true);
-    setDetails(previous => ({ ...previous, ...patch }));
+    setDetails(previous => applyPledgePrintPatch(previous, patch));
   };
 
   return (
@@ -210,15 +221,11 @@ export default function PledgeFormsPage() {
               <h1 className="text-[1.65rem] font-bold tracking-tight text-slate-900 sm:text-3xl">तारण कर्ज फॉर्म</h1>
               <p className="mt-1 max-w-2xl text-sm leading-5 text-slate-600">माहिती भरा, नमुने निवडा आणि प्रिंट किंवा PDF तयार करा.</p>
             </div>
-            <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:justify-end">
-            {mode !== "blank" && <Button variant="outline" onClick={() => handlePrint(true)} disabled={noForms || working || loanLookupBusy || defaults.busy || !defaults.ready} className="h-11 border-indigo-200 bg-white text-indigo-700 hover:bg-indigo-50">कोरी प्रत प्रिंट</Button>}
-            <Button variant="outline" onClick={() => handlePrint(false, true)} disabled={noForms || working || loanLookupBusy || defaults.busy || !defaults.ready || (mode === "borrower" && !selected) || (mode === "loan" && !selectedLoan)} className="h-11 border-indigo-200 text-indigo-700">
-              <Download className="mr-2 h-4 w-4" /> PDF डाउनलोड
-            </Button>
-            <Button onClick={() => handlePrint()} disabled={noForms || working || loanLookupBusy || defaults.busy || !defaults.ready || (mode === "borrower" && !selected) || (mode === "loan" && !selectedLoan)} className="col-span-2 h-11 shrink-0 bg-indigo-600 px-5 text-white hover:bg-indigo-700 sm:col-span-1">
-              {printPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Printer className="mr-2 h-4 w-4" />}
-              {printPending ? "तयार होत आहे…" : "प्रिंट करा"}
-            </Button>
+            <div className="w-full space-y-2 sm:w-auto">
+              <ReportPrintActions pending={pendingAction === "blank" ? null : pendingAction}
+                onPdf={() => handlePrint(false, true)} onPrint={() => handlePrint()}
+                disabled={noForms || working || loanLookupBusy || defaults.busy || !defaults.ready || (mode === "borrower" && !selected) || (mode === "loan" && !selectedLoan)} />
+              {mode !== "blank" && <Button variant="outline" onClick={() => handlePrint(true)} disabled={noForms || working || loanLookupBusy || defaults.busy || !defaults.ready} className="h-11 w-full border-indigo-200 bg-white text-indigo-700 hover:bg-indigo-50">{pendingAction === "blank" ? "कोरी प्रत तयार होत आहे…" : "कोरी प्रत प्रिंट"}</Button>}
             </div>
           </header>
           {!defaults.ready && <Alert className="mb-4 border-amber-200 bg-amber-50"><AlertDescription>{defaults.error ? "डिफॉल्ट मजकूर मिळाला नाही." : "डिफॉल्ट मजकूर लोड होत आहे…"}{defaults.error && <Button variant="outline" size="sm" onClick={() => defaults.refetch()} className="ml-2">पुन्हा प्रयत्न करा</Button>}</AlertDescription></Alert>}
@@ -241,7 +248,12 @@ export default function PledgeFormsPage() {
                     <button type="button" aria-pressed={mode === "loan"} onClick={() => changeMode("loan")} className={`min-h-10 rounded-md px-2 py-2 text-sm font-semibold transition-colors ${mode === "loan" ? "bg-white text-indigo-900 shadow-sm" : "text-slate-600 hover:text-slate-900"}`}>कर्ज खाते</button>
                   </div>
 
-                  {mode === "loan" && <PledgeLoanPicker onApply={applyLoan} onBusyChange={setLoanLookupBusy} />}
+                  {mode === "loan" && <PledgeLoanPicker onApply={applyLoan} onBusyChange={setLoanLookupBusy}
+                    onCollateralPhotosChange={(photos, loanId, labels) => {
+                      if (activePhotoLoanId.current !== loanId) return;
+                      setDetails(previous => ({ ...previous, collateralPhotos: photos, collateralPhotoLabels: labels }));
+                      setFormDirty(true);
+                    }} />}
 
                   {mode === "borrower" && (
                     <div ref={searchWrap} className="relative">
@@ -279,9 +291,9 @@ export default function PledgeFormsPage() {
 
                   {mode !== "blank" && (
                     <div className="space-y-3 border-t border-slate-100 pt-4">
-                      <div><Label htmlFor="borrower-name">कर्जदाराचे नाव</Label><Input id="borrower-name" className="mt-1" value={personal.borrowerName} onChange={(e) => updatePersonal("borrowerName", e.target.value)} disabled={mode === "borrower" && !selected} /></div>
-                      <div><Label htmlFor="borrower-address">पत्ता</Label><Input id="borrower-address" className="mt-1" value={personal.borrowerAddress} onChange={(e) => updatePersonal("borrowerAddress", e.target.value)} disabled={mode === "borrower" && !selected} /></div>
-                      <div><Label htmlFor="borrower-mobile">मोबाईल</Label><Input id="borrower-mobile" className="mt-1" inputMode="tel" value={personal.borrowerMobile} onChange={(e) => updatePersonal("borrowerMobile", e.target.value)} disabled={mode === "borrower" && !selected} /></div>
+                      <div><Label htmlFor="borrower-name">कर्जदाराचे नाव</Label><Input id="borrower-name" className="mt-1" value={personal.borrowerName} onChange={(e) => updatePersonal("borrowerName", e.target.value)} disabled={!editing || working || (mode === "borrower" && !selected)} /></div>
+                      <div><Label htmlFor="borrower-address">पत्ता</Label><Input id="borrower-address" className="mt-1" value={personal.borrowerAddress} onChange={(e) => updatePersonal("borrowerAddress", e.target.value)} disabled={!editing || working || (mode === "borrower" && !selected)} /></div>
+                      <div><Label htmlFor="borrower-mobile">मोबाईल</Label><Input id="borrower-mobile" className="mt-1" inputMode="tel" value={personal.borrowerMobile} onChange={(e) => updatePersonal("borrowerMobile", e.target.value)} disabled={!editing || working || (mode === "borrower" && !selected)} /></div>
                     </div>
                   )}
                 </CardContent>
@@ -290,12 +302,17 @@ export default function PledgeFormsPage() {
               <PledgeFormSelector value={selection} onChange={setSelection} disabled={working} />
 
               <PledgeLayoutPicker value={layout} onChange={setLayout} disabled={working} selection={selection} />
+              <PledgePrintPhotoOptions {...photoOptions}
+                borrowerAvailable={Boolean(data.borrowerPhoto)} collateralCount={data.collateralPhotos?.length || 0}
+                disabled={working || loanLookupBusy}
+                onChange={patch => setPhotoOptions(previous => ({ ...previous, ...patch }))} />
 
               {!noForms && <PledgeFormEditor data={data} onChange={updateDetails} selection={selection}
+                editing={editing} onEditingChange={mode === "blank" ? undefined : setEditing}
                 matter={defaults.matter} onMatterChange={defaults.onMatterChange}
                 onUseSaved={defaults.onUseSaved} onUseOriginal={defaults.onUseOriginal}
                 onSaveDefault={defaults.onSaveDefault} onResetDefault={defaults.onResetDefault}
-                canSaveDefault={defaults.canSaveDefault} busy={defaults.busy || !defaults.ready}
+                canSaveDefault={defaults.canSaveDefault} busy={working || loanLookupBusy || defaults.busy || !defaults.ready}
                 blankMode={mode === "blank" || (mode === "borrower" && !selected) || (mode === "loan" && !selectedLoan)} />}
 
               <p className="px-1 text-xs leading-relaxed text-slate-500">हे संपादनयोग्य नमुने आहेत, कायदेशीर वैधतेची हमी नाही. नोटिसीतील 15 दिवस ही नमुना मुदत आहे; लागू राज्य कायदा, परवान्याच्या अटी व आवश्यक सूचना स्थानिक वकिलाकडून तपासून वापरा. संस्थेचा आधी जतन केलेला मजकूर स्वतःहून बदलला जात नाही.</p>

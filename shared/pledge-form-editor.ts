@@ -52,6 +52,12 @@ export type PledgeFormData = Partial<PledgeOrganizationData> & Partial<Record<Pl
   // Kept for previously edited templates; the built-in receipt no longer repeats these fields.
   releaseDate?: string; itemCount?: string; conditionNote?: string;
   loanItems?: PledgeItem[]; saleItems?: PledgeItem[];
+  borrowerPhoto?: string;
+  collateralPhotos?: string[];
+  collateralPhotoLabels?: string[];
+  // Print-only choices; never persisted to the loan/photo records.
+  includeBorrowerPhoto?: boolean;
+  includeCollateralPhotos?: boolean;
 };
 export const emptyPledgeItems = (): PledgeItem[] => Array.from({ length: 3 }, () => ({ description: "", purity: "", weight: "", value: "" }));
 

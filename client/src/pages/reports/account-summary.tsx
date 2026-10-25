@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 import { Label } from "@/components/ui/label";
-import { Search, Printer, Calendar, Download, Users, User, Trophy, BarChart3, TrendingUp, ChevronDown, ArrowUp } from "lucide-react";
+import { Search, Calendar, Download, Users, User, Trophy, BarChart3, TrendingUp, ChevronDown, ArrowUp } from "lucide-react";
 import { exportAccountSummaryToExcel } from "@/utils/excel-export";
 import { Sidebar } from "@/components/ui/sidebar";
 import { MobileNav } from "@/components/ui/mobile-nav";
@@ -14,6 +14,7 @@ import { formatWeight, uniqueBorrowerNames } from "@shared/report-weights";
 import { AccountSummaryOverview } from "@/components/reports/account-summary-overview";
 import { accountSummaryPrintDocument, printAccountSummary } from "@/lib/account-summary-print";
 import { downloadPrintDocumentPdf } from "@/lib/print-document-pdf";
+import { ReportPrintActions, type ReportPrintAction } from "@/components/report-print-actions";
 import { buildAccountSummaryRow, accountSummaryTotals, accountSummaryContext, createSummaryRanges, initializeSummaryRanges, updateSummaryRange, firstSummaryLoanDate, localISODate, summaryRangeError, summaryDataState, checkedSummaryLoans, checkedSummaryClosures, summaryArray, createSummaryInterestSettings } from "@shared/account-summary";
 import type { SummaryRow } from "@shared/account-summary";
 import { rankAccountSummaryCustomers } from "@shared/account-summary";
@@ -47,7 +48,8 @@ export default function AccountSummaryReport() {
   const overviewRef = useRef<HTMLDivElement>(null);
   const [includePrintOverview, setIncludePrintOverview] = useState(false);
   const [includePrintNotes, setIncludePrintNotes] = useState(false);
-  const [isPrinting, setIsPrinting] = useState(false);
+  const [pendingAction, setPendingAction] = useState<ReportPrintAction>(null);
+  const isPrinting = pendingAction !== null;
 
   const { data: customerAutocompleteSuggestions = [] } = useQuery<any[]>({
     queryKey: ["/api/borrowers/autocomplete", customerSearchTerm],
@@ -176,7 +178,7 @@ export default function AccountSummaryReport() {
     }
 
     if (isPrinting) return;
-    setIsPrinting(true);
+    setPendingAction(asPdf ? "pdf" : "print");
     try {
       const html = accountSummaryPrintDocument({
         company: companyName, title, label, rows: data, totals, showRank,
@@ -184,15 +186,15 @@ export default function AccountSummaryReport() {
         interest: calcMode === "period"
           ? `व्याज: ${overviewPeriodText}`
           : `व्याज: ${selectedInterest.allTime ? "सुरुवातीपासून" : "निवडलेल्या आर्थिक वर्षातील"} · ${formatSummaryDate(selectedInterest.allTime ? coreFrom : selectedInterest.from)} ते ${formatSummaryDate(selectedInterest.allTime ? today : selectedInterest.to)}`,
-        notes: reportContext.balanceNote, overviewHTML,
+        notes: reportContext.balanceNote, overviewHTML, overviewMode: calcMode,
         includeOverview: includePrintOverview && showSummaryOverview, includeNotes: includePrintNotes,
       });
       if (asPdf) await downloadPrintDocumentPdf(html, "खाते_सारांश.pdf");
       else await printAccountSummary(html);
     } catch (error) {
-      alert(error instanceof Error ? error.message : "प्रिंट तयार करता आली नाही.");
+      alert(error instanceof Error ? error.message : asPdf ? "PDF तयार करता आली नाही." : "प्रिंट तयार करता आली नाही.");
     } finally {
-      setIsPrinting(false);
+      setPendingAction(null);
     }
   };
 
@@ -733,13 +735,8 @@ export default function AccountSummaryReport() {
                       </div>
                     </div>
                     <div className="flex gap-2 flex-wrap">
-                      <Button onClick={() => handlePrint(true)} disabled={isPrinting || !reportReady || !groupSummaries.length} variant="outline" className="no-print">
-                        <Download className="mr-2 h-4 w-4" /> {isPrinting ? "तयार होत आहे…" : "PDF डाउनलोड"}
-                      </Button>
-                      <Button onClick={() => handlePrint()} disabled={isPrinting || !reportReady || !groupSummaries.length} className="flex items-center gap-2 no-print">
-                        <Printer className="h-4 w-4" />
-                        प्रिंट करा
-                      </Button>
+                      <ReportPrintActions pending={pendingAction} onPdf={() => handlePrint(true)} onPrint={() => handlePrint()}
+                        disabled={!reportReady || !groupSummaries.length} className="no-print" />
                       <Button onClick={() => handleExcelExport(groupSummaries, 'गट सारांश')} disabled={!reportReady || !groupSummaries.length} variant="outline" className="bg-green-50 hover:bg-green-100 border-green-300 no-print hidden sm:flex">
                         <Download className="mr-2 h-4 w-4" />
                         Excel एक्सपोर्ट
@@ -1094,18 +1091,8 @@ export default function AccountSummaryReport() {
                     </div>
 
                     <div className="flex gap-2 flex-wrap">
-                      <Button 
-                        onClick={() => handlePrint()}
-                        className="flex items-center gap-2 no-print" 
-                        disabled={isPrinting || !reportReady || !customerSummaries.length || (customerMode === "specific" && !selectedCustomerName)}
-                      >
-                        <Printer className="h-4 w-4" />
-                        प्रिंट करा
-                      </Button>
-                      <Button onClick={() => handlePrint(true)} variant="outline" className="no-print"
-                        disabled={isPrinting || !reportReady || !customerSummaries.length || (customerMode === "specific" && !selectedCustomerName)}>
-                        <Download className="mr-2 h-4 w-4" /> {isPrinting ? "तयार होत आहे…" : "PDF डाउनलोड"}
-                      </Button>
+                      <ReportPrintActions pending={pendingAction} onPdf={() => handlePrint(true)} onPrint={() => handlePrint()}
+                        disabled={!reportReady || !customerSummaries.length || (customerMode === "specific" && !selectedCustomerName)} className="no-print" />
                       <Button 
                         onClick={() => handleExcelExport(customerSummaries, customerMode === "specific" ? 'कस्टमर सारांश' : 'टॉप 50 सारांश')}
                         variant="outline" 

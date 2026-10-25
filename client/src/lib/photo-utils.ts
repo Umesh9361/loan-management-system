@@ -12,8 +12,9 @@ export interface UploadedPhoto {
 }
 
 // Utility function to convert photos to FormData for API upload
-export function photosToFormData(photos: UploadedPhoto[], loanId: string): FormData {
+export function photosToFormData(photos: UploadedPhoto[], loanId: string, photoType: "collateral" | "borrower" = "collateral"): FormData {
   const formData = new FormData();
+  formData.append("photoType", photoType);
   
   // Filter only new photos for upload (exclude existing ones)
   const newPhotos = photos.filter(photo => !photo.isExisting);

@@ -1,4 +1,5 @@
 import { borrowerPrintCss } from "./borrower-list-pdf";
+import { waitForPrintImages } from "./print-images";
 
 type Block = { top: number; bottom: number };
 
@@ -45,6 +46,7 @@ export async function downloadPrintDocumentPdf(html: string, filename: string, p
     doc.body.style.setProperty("margin", "0", "important");
     await Promise.all([400, 500, 600, 700].map(weight => doc.fonts.load(`${weight} 12px "Noto Sans Devanagari"`)));
     await doc.fonts.ready;
+    await waitForPrintImages(doc);
     await new Promise<void>(resolve => win.requestAnimationFrame(() => win.requestAnimationFrame(() => resolve())));
     const [{ default: html2canvas }, { jsPDF }] = await Promise.all([import("html2canvas"), import("jspdf")]);
     const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait", compress: true });
@@ -76,7 +78,7 @@ export async function downloadPrintDocumentPdf(html: string, filename: string, p
     } else {
       const origin = doc.body.getBoundingClientRect().top;
       const height = Math.ceil(doc.body.getBoundingClientRect().height);
-      const blocks = Array.from(doc.querySelectorAll<HTMLElement>("tr, .summary-document-closing, .summary-document-header, .summary-document-notes, .aso-header, .aso-key-totals, .aso-chart"))
+      const blocks = Array.from(doc.querySelectorAll<HTMLElement>("tr, .summary-document-closing, .summary-document-header, .summary-document-notes, .summary-overview-heading, .summary-overview-metrics, .summary-overview-chart, .summary-overview-note, .aso-header, .aso-key-totals, .aso-chart"))
         .map(node => { const rect = node.getBoundingClientRect(); return { top: rect.top - origin, bottom: rect.bottom - origin }; });
       const head = doc.querySelector("thead")?.getBoundingClientRect();
       const firstRow = doc.querySelector("tbody tr")?.getBoundingClientRect();

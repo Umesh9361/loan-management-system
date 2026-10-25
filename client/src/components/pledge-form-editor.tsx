@@ -27,6 +27,8 @@ type Props = {
   canSaveDefault: boolean;
   busy: boolean;
   blankMode: boolean;
+  editing?: boolean;
+  onEditingChange?: (editing: boolean) => void;
 };
 
 const selected = (forms: readonly string[], selection: PledgeFormChoice) =>
@@ -48,6 +50,8 @@ export function PledgeFormEditor({
   canSaveDefault,
   busy,
   blankMode,
+  editing = true,
+  onEditingChange,
 }: Props) {
   const visibleFieldGroups = useMemo(
     () => PLEDGE_FIELD_GROUPS.filter(group => selected(group.forms, selection)),
@@ -68,17 +72,35 @@ export function PledgeFormEditor({
   return (
     <section className="min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm" aria-label="फॉर्म मजकूर संपादन">
       <header className="border-b border-slate-200 bg-slate-50/80 p-4">
-        <div className="flex items-start gap-3">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-100 text-indigo-700">
-            <SlidersHorizontal className="h-5 w-5" aria-hidden="true" />
-          </span>
-          <div className="min-w-0">
-            <h2 className="text-base font-semibold text-slate-900">फॉर्ममध्ये भरण्याची माहिती</h2>
-            <p className="mt-1 text-xs leading-5 text-slate-600">
-              निवडलेल्या फॉर्मचे तपशील भरा आणि गरज असल्यास मजकूर बदला.
-            </p>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div className="flex min-w-0 items-start gap-3">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-100 text-indigo-700">
+              <SlidersHorizontal className="h-5 w-5" aria-hidden="true" />
+            </span>
+            <div className="min-w-0">
+              <h2 className="text-base font-semibold text-slate-900">फॉर्ममध्ये भरण्याची माहिती</h2>
+              <p className="mt-1 text-xs leading-5 text-slate-600">
+                निवडलेल्या फॉर्मचे तपशील भरा आणि गरज असल्यास मजकूर बदला.
+              </p>
+            </div>
           </div>
+          {onEditingChange && (
+            <Button
+              type="button"
+              variant={editing ? "default" : "outline"}
+              data-testid="pledge-edit-toggle"
+              aria-pressed={editing}
+              disabled={busy || blankMode}
+              onClick={() => onEditingChange(!editing)}
+              className={`min-h-10 w-full shrink-0 whitespace-normal sm:w-auto ${editing ? "bg-indigo-600 text-white hover:bg-indigo-700" : "border-indigo-300 text-indigo-800 hover:bg-indigo-50"}`}
+            >
+              {editing ? "संपादन पूर्ण" : "माहिती संपादित करा"}
+            </Button>
+          )}
         </div>
+        <p className="mt-3 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs leading-5 text-slate-600">
+          येथे केलेले बदल फक्त या फॉर्म / प्रिंटसाठी आहेत. मूळ कर्ज नोंदीत कोणताही बदल होत नाही.
+        </p>
         {blankMode && (
           <div className="mt-3 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2.5 text-sm leading-5 text-indigo-950">
             कोऱ्या फॉर्ममध्ये तपशील रिकामे राहतील. भरायचे असल्यास “टाइप करून भरा” किंवा “कर्जदार निवडा” निवडा. फॉर्मवरील मजकूर बदलता येईल.
@@ -88,7 +110,7 @@ export function PledgeFormEditor({
 
       <div className="space-y-4 p-4">
         {visibleFieldGroups.map((group, groupIndex) => (
-          <details key={group.title} open={groupIndex === 0} className="group min-w-0 rounded-lg border border-slate-200">
+          <details key={group.title} open={(editing && !blankMode) || groupIndex === 0} className="group min-w-0 rounded-lg border border-slate-200">
             <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 rounded-lg px-3 py-3 text-sm font-semibold text-slate-800 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 [&::-webkit-details-marker]:hidden">
               <span className="min-w-0">{group.title}</span>
               <span className="shrink-0 text-xs font-medium text-slate-500">{group.fields.length} तपशील</span>
@@ -106,7 +128,7 @@ export function PledgeFormEditor({
                     inputMode={field.type === "money" || field.type === "number" ? "decimal" : undefined}
                     value={data[field.key] || ""}
                     onChange={event => changeField(field.key, event.target.value)}
-                    disabled={blankMode || busy}
+                    disabled={blankMode || busy || !editing}
                     className="h-10 min-w-0 border-slate-300 bg-white"
                   />
                 </div>
@@ -120,7 +142,8 @@ export function PledgeFormEditor({
             title="तारण वस्तू"
             testId="pledge-loan-items"
             items={data.loanItems?.length ? data.loanItems : emptyPledgeItems()}
-            disabled={blankMode || busy}
+            disabled={blankMode || busy || !editing}
+            defaultOpen={editing}
             onChange={(index, field, value) => updateItem("loanItems", index, field, value)}
           />
         )}
@@ -129,7 +152,8 @@ export function PledgeFormEditor({
             title="विक्री / निपटारा वस्तू"
             testId="pledge-sale-items"
             items={data.saleItems?.length ? data.saleItems : emptyPledgeItems()}
-            disabled={blankMode || busy}
+            disabled={blankMode || busy || !editing}
+            defaultOpen={editing}
             onChange={(index, field, value) => updateItem("saleItems", index, field, value)}
           />
         )}
@@ -158,7 +182,7 @@ export function PledgeFormEditor({
                             data-testid={`pledge-matter-${field.key}`}
                             value={matter[field.key]}
                             onChange={event => onMatterChange(field.key, event.target.value)}
-                            disabled={busy}
+                             disabled={busy || !editing}
                             rows={Math.min(5, Math.max(2, Math.ceil(matter[field.key].length / 95)))}
                             className="block min-h-20 w-full min-w-0 resize-y rounded-md border border-slate-300 bg-white px-3 py-2 text-sm leading-6 text-slate-900 shadow-sm outline-none transition focus-visible:ring-2 focus-visible:ring-indigo-500 disabled:cursor-not-allowed disabled:opacity-60"
                           />
@@ -168,7 +192,7 @@ export function PledgeFormEditor({
                             data-testid={`pledge-matter-${field.key}`}
                             value={matter[field.key]}
                             onChange={event => onMatterChange(field.key, event.target.value)}
-                            disabled={busy}
+                             disabled={busy || !editing}
                             maxLength={140}
                             className="h-10 min-w-0 border-slate-300"
                           />
@@ -239,22 +263,24 @@ function ItemRows({
   testId,
   items,
   disabled,
+  defaultOpen,
   onChange,
 }: {
   title: string;
   testId: string;
   items: ItemRow[];
   disabled: boolean;
+  defaultOpen: boolean;
   onChange: (index: number, field: ItemField, value: string) => void;
 }) {
   const columns: { key: ItemField; label: string }[] = [
     { key: "description", label: "वस्तूचे वर्णन" },
     { key: "purity", label: "शुद्धता" },
     { key: "weight", label: "वजन" },
-    { key: "value", label: "मूल्य (₹)" },
+    { key: "value", label: testId === "pledge-loan-items" ? "अंदाजे बाजारमूल्य (₹)" : "विक्री रक्कम (₹)" },
   ];
   return (
-    <details className="group min-w-0 rounded-lg border border-slate-200">
+    <details open={defaultOpen} className="group min-w-0 rounded-lg border border-slate-200">
       <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 px-3 py-3 text-sm font-semibold text-slate-800 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 [&::-webkit-details-marker]:hidden">
         <span>{title}</span><span className="shrink-0 text-xs font-medium text-slate-500">३ ओळी</span>
       </summary>

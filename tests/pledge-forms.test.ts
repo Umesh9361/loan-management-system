@@ -169,8 +169,8 @@ test("switching blank/new borrower clears previous personal and loan data in the
   const emptyPersonal = { borrowerName: "", borrowerAddress: "", borrowerMobile: "" };
   const emptyDetails = { accountNumber: "", principalAmount: "", loanDate: "", interestRate: "", printDate: "" };
   const state: Record<string, unknown> = {};
-  const context: Record<string, unknown> = { emptyPersonal, emptyDetails, mode: "borrower", formDirty: false };
-  for (const key of ["Mode", "Search", "DebouncedSearch", "OpenSuggestions", "Selected", "Personal", "Details", "SelectedLoan", "FormDirty"]) context[`set${key}`] = (value: unknown) => { state[key] = value; };
+  const context: Record<string, unknown> = { emptyPersonal, emptyDetails, mode: "borrower", formDirty: false, activePhotoLoanId: { current: "previous-loan" } };
+  for (const key of ["Mode", "Search", "DebouncedSearch", "OpenSuggestions", "Selected", "Personal", "Details", "SelectedLoan", "FormDirty", "Editing"]) context[`set${key}`] = (value: unknown) => { state[key] = value; };
   context.clearBorrower = execute(initializer("clearBorrower"), context);
   const changeMode = execute(initializer("changeMode"), context);
   changeMode("blank");

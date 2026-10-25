@@ -8,6 +8,7 @@ import { systemSettings, tenantStorageSettings } from '../shared/schema';
 import { eq } from 'drizzle-orm';
 
 export interface PhotoUploadResult {
+  storageProvider: 'local' | 'cloudinary';
   filename: string;
   storagePath: string;
   thumbnailPath: string;
@@ -71,17 +72,25 @@ export class LocalStorageProvider implements IPhotoStorageProvider {
 
     console.log(`📸 LOCAL UPLOAD: ${originalName} → ${filename} (${detectedFormat.toUpperCase()})`);
 
-    await this.compressAndSave(fileBuffer, absolutePath, detectedFormat);
-    await this.createThumbnail(fileBuffer, thumbnailAbsolutePath, detectedFormat);
+    try {
+      await this.compressAndSave(fileBuffer, absolutePath, detectedFormat);
+      await this.createThumbnail(fileBuffer, thumbnailAbsolutePath, detectedFormat);
+    } catch (error) {
+      // Never leave a half-created local upload when thumbnail/disk writes fail.
+      await Promise.allSettled([fs.unlink(absolutePath), fs.unlink(thumbnailAbsolutePath)]);
+      throw error;
+    }
+    const savedMetadata = await sharp(absolutePath).metadata();
 
     return {
+      storageProvider: 'local',
       filename,
       storagePath: relativePath,
       thumbnailPath: thumbnailRelativePath,
       format: detectedFormat,
-      size: fileBuffer.length,
-      width: metadata.width,
-      height: metadata.height,
+      size: (await fs.stat(absolutePath)).size,
+      width: savedMetadata.width,
+      height: savedMetadata.height,
     };
   }
 
@@ -124,6 +133,7 @@ export class LocalStorageProvider implements IPhotoStorageProvider {
 
   private async compressAndSave(inputBuffer: Buffer, outputPath: string, format: string): Promise<void> {
     let sharpInstance = sharp(inputBuffer)
+      .rotate()
       .resize({ width: 1920, height: 1080, fit: 'inside', withoutEnlargement: true });
 
     if (format === 'png') {
@@ -139,6 +149,7 @@ export class LocalStorageProvider implements IPhotoStorageProvider {
 
   private async createThumbnail(inputBuffer: Buffer, thumbnailPath: string, format: string): Promise<void> {
     let sharpInstance = sharp(inputBuffer)
+      .rotate()
       .resize(300, 300, { fit: 'cover', position: 'center' });
 
     if (format === 'png') {
@@ -158,15 +169,18 @@ export class CloudinaryStorageProvider implements IPhotoStorageProvider {
 
   constructor(config: StorageProviderConfig) {
     this.config = config;
-    this.initCloudinary();
   }
 
-  private initCloudinary(): void {
-    cloudinary.config({
+  private requestOptions() {
+    // SDK configuration is process-global; cached tenant providers must not
+    // change one another's credentials. Scope credentials to each request.
+    return {
       cloud_name: this.config.cloudinaryCloudName,
       api_key: this.config.cloudinaryApiKey,
       api_secret: this.config.cloudinaryApiSecret,
-    });
+      secure: true,
+      timeout: 30000,
+    };
   }
 
   async upload(fileBuffer: Buffer, originalName: string, tenantId: string, loanId: string): Promise<PhotoUploadResult> {
@@ -188,6 +202,7 @@ export class CloudinaryStorageProvider implements IPhotoStorageProvider {
     const mainResult = await new Promise<any>((resolve, reject) => {
       const uploadStream = cloudinary.uploader.upload_stream(
         {
+          ...this.requestOptions(),
           public_id: publicId,
           folder: '',
           resource_type: 'image',
@@ -206,6 +221,8 @@ export class CloudinaryStorageProvider implements IPhotoStorageProvider {
     });
 
     const thumbnailUrl = cloudinary.url(mainResult.public_id, {
+      cloud_name: this.config.cloudinaryCloudName,
+      secure: true,
       width: 300,
       height: 300,
       crop: 'fill',
@@ -218,6 +235,7 @@ export class CloudinaryStorageProvider implements IPhotoStorageProvider {
     const filename = `loan_${Date.now()}_${uniqueId}.${correctExtension}`;
 
     return {
+      storageProvider: 'cloudinary',
       filename,
       storagePath: mainResult.secure_url,
       thumbnailPath: thumbnailUrl,
@@ -234,7 +252,7 @@ export class CloudinaryStorageProvider implements IPhotoStorageProvider {
     try {
       const publicId = this.extractPublicId(storagePath);
       if (publicId) {
-        await cloudinary.uploader.destroy(publicId);
+        await cloudinary.uploader.destroy(publicId, { ...this.requestOptions(), resource_type: 'image' });
         console.log(`📸 CLOUDINARY DELETE: ${publicId}`);
         return { success: true, deletedFiles: 1 };
       }
@@ -271,6 +289,7 @@ export class CloudinaryStorageProvider implements IPhotoStorageProvider {
 
   private async compressBuffer(inputBuffer: Buffer, format: string): Promise<Buffer> {
     let sharpInstance = sharp(inputBuffer)
+      .rotate()
       .resize({ width: 1920, height: 1080, fit: 'inside', withoutEnlargement: true });
 
     if (format === 'png') {
@@ -286,13 +305,12 @@ export class CloudinaryStorageProvider implements IPhotoStorageProvider {
 
   static async testConnection(config: StorageProviderConfig): Promise<{ success: boolean; message: string }> {
     try {
-      cloudinary.config({
+      const result = await cloudinary.api.ping({
         cloud_name: config.cloudinaryCloudName,
         api_key: config.cloudinaryApiKey,
         api_secret: config.cloudinaryApiSecret,
+        timeout: 30000,
       });
-
-      const result = await cloudinary.api.ping();
       if (result.status === 'ok') {
         return { success: true, message: 'Cloudinary connection successful!' };
       }
@@ -318,8 +336,9 @@ class NoOpDeleteProvider implements IPhotoStorageProvider {
 
 export class PhotoProviderResolver {
   static async getProviderForPhoto(photo: { storageProvider?: string; storagePath?: string; cloudinaryPublicId?: string }, tenantId: string): Promise<IPhotoStorageProvider> {
-    const isCloudinaryPhoto = photo.storageProvider === 'cloudinary' ||
-      (photo.storagePath && photo.storagePath.includes('cloudinary.com'));
+    const isCloudinaryPhoto = photo.storagePath
+      ? /^https:\/\/res\.cloudinary\.com\//i.test(photo.storagePath)
+      : photo.storageProvider === 'cloudinary';
 
     if (isCloudinaryPhoto) {
       const config = await PhotoStorageFactory.getStorageConfig(tenantId);

@@ -7,6 +7,7 @@ import { Camera, Upload, X, Image as ImageIcon, Eye, Trash2, Download } from "lu
 import { useToast } from "@/hooks/use-toast";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import imageCompression from "browser-image-compression";
+import { isPhotoOfType, type LoanPhotoType } from "@shared/loan-photo-types";
 
 interface PhotoUploadProps {
   maxPhotos?: number;
@@ -16,6 +17,7 @@ interface PhotoUploadProps {
   className?: string;
   loanId?: string; // For existing loans to show/manage photos
   onCameraDialogChange?: (isOpen: boolean) => void; // Notify parent when camera dialog opens/closes
+  photoType?: LoanPhotoType;
 }
 
 import { UploadedPhoto } from "@/lib/photo-utils";
@@ -41,7 +43,8 @@ export function PhotoUpload({
   disabled = false,
   className = "",
   loanId,
-  onCameraDialogChange 
+  onCameraDialogChange,
+  photoType = "collateral",
 }: PhotoUploadProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -51,15 +54,15 @@ export function PhotoUpload({
   const [previewPhoto, setPreviewPhoto] = useState<UploadedPhoto | null>(null);
 
   // Fetch existing photos when editing a loan
-  const { data: existingLoanPhotos = [] } = useQuery<LoanPhoto[]>({
+  const { data: existingLoanPhotos } = useQuery<LoanPhoto[]>({
     queryKey: ["/api/loans", loanId, "photos"],
     enabled: !!loanId,
   });
 
   // Convert server photos to UploadedPhoto format for component
   useEffect(() => {
-    if (existingLoanPhotos.length > 0) {
-      const convertedPhotos: UploadedPhoto[] = existingLoanPhotos.map((loanPhoto) => ({
+    if (existingLoanPhotos) {
+      const convertedPhotos: UploadedPhoto[] = existingLoanPhotos.filter(photo => isPhotoOfType(photo, photoType)).map((loanPhoto) => ({
         id: loanPhoto.id,
         file: new File([], loanPhoto.filename),
         preview: loanPhoto.url || (loanPhoto.storagePath?.includes('cloudinary.com') ? loanPhoto.storagePath : `/${loanPhoto.storagePath.replace(/\\/g, '/')}`),
@@ -70,7 +73,7 @@ export function PhotoUpload({
       }));
       setPhotos(convertedPhotos);
     }
-  }, [existingLoanPhotos]);
+  }, [existingLoanPhotos, photoType]);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
@@ -221,7 +224,7 @@ export function PhotoUpload({
       // Progressive permission request with mobile fallback
       let constraints = { 
         video: { 
-          facingMode: 'environment', // Back camera preferred
+          facingMode: photoType === "borrower" ? "user" : "environment",
           width: { ideal: 1920 },
           height: { ideal: 1080 }
         } 
@@ -237,7 +240,7 @@ export function PhotoUpload({
         // Fallback to basic camera settings for older mobile browsers
         constraints = { 
           video: { 
-            facingMode: 'environment',
+            facingMode: photoType === "borrower" ? "user" : "environment",
             width: { ideal: 1920 },
             height: { ideal: 1080 }
           } 
@@ -298,7 +301,7 @@ export function PhotoUpload({
         }, 1500);
       }
     }
-  }, [toast]);
+  }, [toast, photoType]);
 
   const capturePhoto = useCallback(async () => {
     console.log('📸 CAMERA: Capturing photo from video stream...');
@@ -396,7 +399,7 @@ export function PhotoUpload({
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-lg">
           <ImageIcon className="h-5 w-5" />
-          वस्तूंचे फोटो ({photos.length}/{maxPhotos})
+          {photoType === "borrower" ? "कर्जदाराचा फोटो" : "वस्तूंचे फोटो"} ({photos.length}/{maxPhotos})
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -567,7 +570,7 @@ export function PhotoUpload({
             ref={cameraInputRef}
             type="file"
             accept="image/*"
-            capture="environment"
+            capture={photoType === "borrower" ? "user" : "environment"}
             onChange={handleCameraSelect}
             className="hidden"
             data-testid="input-camera-file"

@@ -6,11 +6,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { latestPledgeClosure, mapLoanToPledgeForm, sortPledgeLoanMatches, type PledgeClosureRecord, type PledgeLoanRecord } from "@/lib/pledge-loan-autofill";
 import type { PledgeFormData } from "@/lib/pledge-forms";
+import { loadPledgeLoanPhotos } from "@/lib/pledge-loan-photos";
+import { PledgePhotoSelection } from "@/components/pledge-photo-selection";
 
 type LoanWithDisplay = PledgeLoanRecord & Record<string, unknown>;
 type Props = {
   onApply: (data: PledgeFormData, loan: PledgeLoanRecord) => boolean;
   onBusyChange: (busy: boolean) => void;
+  onCollateralPhotosChange: (photos: string[], loanId: string, labels: string[]) => void;
 };
 
 function displayDate(loan: LoanWithDisplay) {
@@ -20,7 +23,7 @@ function displayDate(loan: LoanWithDisplay) {
   return Number.isNaN(date.getTime()) ? String(value) : new Intl.DateTimeFormat("en-IN", { day: "2-digit", month: "2-digit", year: "numeric" }).format(date);
 }
 
-export function PledgeLoanPicker({ onApply, onBusyChange }: Props) {
+export function PledgeLoanPicker({ onApply, onBusyChange, onCollateralPhotosChange }: Props) {
   const [search, setSearch] = useState("");
   const currentSearch = useRef(search);
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -28,6 +31,7 @@ export function PledgeLoanPicker({ onApply, onBusyChange }: Props) {
   const [lookupId, setLookupId] = useState<string | null>(null);
   const [failedLoanId, setFailedLoanId] = useState<string | null>(null);
   const [closureError, setClosureError] = useState("");
+  const [photoBusy, setPhotoBusy] = useState(false);
   const requestId = useRef(0);
   const onBusyRef = useRef(onBusyChange);
   onBusyRef.current = onBusyChange;
@@ -85,10 +89,10 @@ export function PledgeLoanPicker({ onApply, onBusyChange }: Props) {
   const busy = lookupId !== null;
 
   useEffect(() => {
-    onBusyRef.current(searching || busy);
-  }, [searching, busy]);
+    onBusyRef.current(searching || busy || photoBusy);
+  }, [searching, busy, photoBusy]);
 
-  const applyLoan = async (loan: PledgeLoanRecord) => {
+  const applyLoan = async (loan: PledgeLoanRecord, withoutPhotos = false) => {
     const token = ++requestId.current;
     const requestedSearch = currentSearch.current.trim();
     setLookupId(loan.id);
@@ -107,8 +111,9 @@ export function PledgeLoanPicker({ onApply, onBusyChange }: Props) {
         closure = latestPledgeClosure(loan.id, rows.filter(row => row && typeof row === "object") as PledgeClosureRecord[]);
         if (!closure) throw new Error("या बंद खात्याची पुष्टी केलेली समाप्ती माहिती सापडली नाही.");
       }
+      const photos = withoutPhotos ? { borrowerPhoto: "", collateralPhotos: [] } : await loadPledgeLoanPhotos(loan.id);
       if (requestId.current !== token || currentSearch.current.trim() !== requestedSearch) return;
-      const accepted = onApply(mapLoanToPledgeForm(loan, closure), loan);
+      const accepted = onApply({ ...mapLoanToPledgeForm(loan, closure), ...photos }, loan);
       if (accepted) {
         setSelectedLoan(loan);
         setClosureError("");
@@ -182,7 +187,11 @@ export function PledgeLoanPicker({ onApply, onBusyChange }: Props) {
           {failedLoanId && <Button type="button" size="sm" variant="outline" onClick={() => {
             const loan = loansQuery.data?.find(row => row.id === failedLoanId);
             if (loan) void applyLoan(loan);
-          }}>समाप्ती माहिती पुन्हा मिळवा</Button>}
+          }}>{closureError.includes("फोटो") ? "फोटो पुन्हा मिळवा" : "समाप्ती माहिती पुन्हा मिळवा"}</Button>}
+          {failedLoanId && closureError.includes("फोटो") && <Button type="button" size="sm" variant="outline" className="ml-2" onClick={() => {
+            const loan = loansQuery.data?.find(row => row.id === failedLoanId);
+            if (loan) void applyLoan(loan, true);
+          }}>फोटोविना माहिती भरा</Button>}
         </div>
       )}
       {selectedDisplay && (
@@ -191,6 +200,7 @@ export function PledgeLoanPicker({ onApply, onBusyChange }: Props) {
           <p className="mt-1 text-xs text-indigo-800">खात्याची माहिती फॉर्ममध्ये भरली आहे. प्रिंटपूर्वी तपशील संपादित करा.</p>
         </div>
       )}
+      {selectedLoan && <PledgePhotoSelection key={selectedLoan.id} loanId={selectedLoan.id} onChange={onCollateralPhotosChange} onBusyChange={setPhotoBusy} />}
     </div>
   );
 }

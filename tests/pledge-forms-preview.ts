@@ -7,6 +7,15 @@ import { readFileSync, readdirSync } from "node:fs";
 import { build } from "esbuild";
 import { pledgeFormsDocument } from "../client/src/lib/pledge-forms";
 import { DEFAULT_PLEDGE_MATTER, PLEDGE_FIELD_GROUPS, pledgeDefaultsRequestSchema, getPledgeOrganization, type PledgeFormMatter } from "../shared/pledge-form-editor";
+import sharp from "sharp";
+const fixturePhotoBytes = await sharp({ create: { width: 160, height: 120, channels: 3, background: "#4f46e5" } }).png().toBuffer();
+const fixturePhotos = [
+  { id: "borrower-photo", photoType: "borrower" },
+  ...[1, 2, 3].map(index => ({ id: `item-photo-${index}`, photoType: "collateral" })),
+  { id: "document-photo", photoType: "document" },
+].map(photo => ({ ...photo, filename: `${photo.id}.png`, originalName: `${photo.id}.png`,
+  fileSize: 2048, compressedSize: 1024, createdAt: "2026-10-25T00:00:00Z",
+  url: `/api/loans/fixture-loan-621/photos/${photo.id}/image` }));
 
 const bundle = await build({
   stdin: {
@@ -14,16 +23,22 @@ const bundle = await build({
       import {QueryClient,QueryClientProvider} from '@tanstack/react-query';
       import Page from './client/src/pages/reports/pledge-forms';
       import NoticePage from './client/src/pages/reports/notice-generator';
+      import {PhotoViewer} from './client/src/components/ui/photo-viewer';
       import {Switch,Route} from 'wouter';
       import {Toaster} from './client/src/components/ui/toaster';
-      const client=new QueryClient({defaultOptions:{queries:{retry:false,queryFn:async({queryKey})=>{const r=await fetch(queryKey[0]);if(!r.ok)throw Error('fixture error');return r.json();}}}});
-      createRoot(document.getElementById('root')).render(<QueryClientProvider client={client}><Switch><Route path="/notice-ui" component={NoticePage}/><Route path="/reports/notice-generator" component={NoticePage}/><Route component={Page}/></Switch><Toaster/></QueryClientProvider>);`,
+      const client=new QueryClient({defaultOptions:{queries:{retry:false,queryFn:async({queryKey})=>{const url=queryKey[0]==='/api/loans'&&queryKey[2]==='photos'?queryKey.slice(0,3).join('/'):queryKey[0];const r=await fetch(url);if(!r.ok)throw Error('fixture error');return r.json();}}}});
+      createRoot(document.getElementById('root')).render(<QueryClientProvider client={client}>{new URLSearchParams(location.search).has('viewer')?<div className="mx-auto max-w-3xl p-4"><PhotoViewer loanId="fixture-loan-621" loanAccountNumber="621" readonly/></div>:<Switch><Route path="/notice-ui" component={NoticePage}/><Route path="/reports/notice-generator" component={NoticePage}/><Route component={Page}/></Switch>}<Toaster/></QueryClientProvider>);`,
     resolveDir: process.cwd(), loader: "tsx",
   },
   bundle: true, write: false, format: "esm", jsx: "automatic",
   plugins: [{
     name: "fixture-only-navigation",
     setup(build) {
+      build.onResolve({ filter: /^@\/lib\/print-document-pdf$/ }, args => ({ path: args.path, namespace: "fixture-pdf" }));
+      build.onLoad({ filter: /.*/, namespace: "fixture-pdf" }, () => ({
+        contents: "export const downloadPrintDocumentPdf=(html)=>new Promise((resolve,reject)=>{window.__lastPDFHTML=html;window.__resolvePDF=resolve;window.__rejectPDF=reject;});",
+        loader: "js",
+      }));
       build.onResolve({ filter: /^@\/components\/ui\/(sidebar|mobile-nav)$/ }, args => ({ path: args.path, namespace: "fixture-nav" }));
       build.onLoad({ filter: /.*/, namespace: "fixture-nav" }, () => ({
         contents: "export const Sidebar=()=>null; export const MobileNav=()=>null;",
@@ -93,6 +108,12 @@ createServer(async (req, res) => {
       { ...fixtureLoan, id: "fixture-loan-failed", accountNumber: "623", status: "closed" },
     ])); return;
   }
+  if (/^\/api\/loans\/[^/]+\/photos$/.test(url.pathname)) {
+    res.setHeader("Content-Type", "application/json"); res.end(JSON.stringify(url.pathname.includes("fixture-loan-621") ? fixturePhotos : [])); return;
+  }
+  if (/^\/api\/loans\/fixture-loan-621\/photos\/[^/]+\/image$/.test(url.pathname)) {
+    res.setHeader("Content-Type", "image/png"); res.end(fixturePhotoBytes); return;
+  }
   if (url.pathname === "/api/loan-closures") {
     res.setHeader("Content-Type", "application/json");
     if (url.searchParams.get("loanId") === "fixture-loan-failed") { res.statusCode = 500; res.end("{}"); return; }
@@ -106,7 +127,7 @@ createServer(async (req, res) => {
     res.end(JSON.stringify([fixture])); return;
   }
   res.setHeader("Content-Type", "text/html;charset=utf-8");
-  if (["/ui", "/notice-ui", "/reports/notice-generator", "/reports/pledge-forms"].includes(url.pathname)) { res.end('<!doctype html><html><head><link rel="stylesheet" href="/style.css"></head><body><div id="root"></div><script type="module" src="/bundle.js"></script></body></html>'); return; }
+  if (["/ui", "/notice-ui", "/reports/notice-generator", "/reports/pledge-forms"].includes(url.pathname)) { res.end('<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="/style.css"></head><body><div id="root"></div><script type="module" src="/bundle.js"></script></body></html>'); return; }
   const allFields = Object.fromEntries(PLEDGE_FIELD_GROUPS.flatMap(group => group.fields).map(field => [
     field.key, field.type === "date" ? "2026-10-28" : field.type === "money" || field.type === "number" ? "1000" : "1234",
   ]));

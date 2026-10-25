@@ -47,7 +47,7 @@ createServer((req, res) => {
       company: 'नमुना फायनान्स — कृत्रिम डेटा', title: 'खाते सारांश अहवाल',
       period: `${formatSummaryDate(context.from)} ते ${formatSummaryDate(context.to)}`, scope: context.scope,
       interest: 'व्याज: आर्थिक वर्ष 01/04/2026 ते 31/03/2027',
-      notes: context.balanceNote, label: 'गटाचे नाव', rows, totals,
+      notes: context.balanceNote, label: 'गटाचे नाव', rows, totals, overviewMode: mode,
       showRank: url.searchParams.has('rank'), includeOverview: url.searchParams.has('overview'),
       includeNotes: url.searchParams.has('notes'), overviewHTML: printOverview,
     }));

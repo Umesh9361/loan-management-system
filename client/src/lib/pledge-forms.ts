@@ -1,5 +1,6 @@
 import { DEFAULT_PLEDGE_MATTER, type PledgeFormData, type PledgeFormMatter, type PledgeItem } from "@shared/pledge-form-editor";
 import { PLEDGE_FORM_POLISH_STYLES } from "./pledge-form-polish-styles";
+import { waitForPrintImages } from "./print-images";
 export type { PledgeFormData } from "@shared/pledge-form-editor";
 export type PledgeFormKey = "loan" | "declaration" | "interim" | "final" | "receipt" | "disposal";
 export type PledgeFormSelection = "all" | PledgeFormKey;
@@ -49,6 +50,8 @@ const amount = (value?: string) => {
   return raw && Number.isFinite(number) && number >= 0 ? number.toLocaleString("en-IN", { maximumFractionDigits: 2 }) : raw;
 };
 const blankDate = "____/____/________";
+const validPhoto = (value?: string) => typeof value === "string" && /^data:image\/(?:jpeg|png|webp|gif);base64,[a-z0-9+/=\r\n]+$/i.test(value) ? value : "";
+const borrowerPhotoBox = (value?: string) => `<div class="pf-photo">${validPhoto(value) ? `<img src="${safe(validPhoto(value))}" alt="कर्जदाराचा फोटो">` : "फोटो<br>(कर्जदार)"}</div>`;
 const line = (label: string, value = "", extra = "") => `<div class="pf-line ${extra}"><span>${safe(label)}</span><span class="pf-fill">${value ? safe(value) : "&nbsp;"}</span></div>`;
 const moneyLines = (rows: [string, string?][]) => rows.map(([label, value]) => line(label, amount(value))).join("");
 const signatures = (middle = false) => `<div class="pf-signatures">${[
@@ -91,6 +94,15 @@ body { font-family:"Noto Sans Devanagari","Mangal",sans-serif; font-size:8pt; li
 .pf-fill { flex:1; min-width:0; min-height:3mm; border-bottom:.15mm solid #94a3b8; overflow-wrap:anywhere; white-space:pre-wrap; }
 .pf-person { display:grid; grid-template-columns:minmax(0,1fr) 18mm; gap:2mm; }
 .pf-photo { width:18mm; height:23mm; border:.2mm solid #64748b; border-radius:1mm; display:flex; align-items:center; justify-content:center; text-align:center; font-size:7pt; }
+.pf-photo img { display:block; width:100%; height:100%; object-fit:contain; }
+.pf-receipt-photos { grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto; }
+.pf-photo-strip { display:flex; gap:1mm; align-items:flex-start; }
+.pf-photo-thumb { width:15mm; margin:0; text-align:center; font-size:5.5pt; line-height:1.2; }
+.pf-photo-thumb img { display:block; width:15mm; height:9mm; object-fit:contain; border:.2mm solid #94a3b8; }
+.pf-photo-thumb figcaption { margin-top:.5mm; }
+.pf-compact .pf-receipt-has-photos { height:59.5mm; }
+.pf-spacious .pf-photo-thumb { width:20mm; font-size:7pt; }
+.pf-spacious .pf-photo-thumb img { width:20mm; height:20mm; }
 .pf-subtitle { font-weight:700; background:#eef2ff; padding:.5mm 1mm; text-align:center; font-size:7.4pt; margin:1mm 0 .5mm; border-bottom:.15mm solid #64748b; }
 .pf-table { width:100%; border-collapse:collapse; table-layout:fixed; margin:.4mm 0; font-size:7pt; }
 .pf-table th,.pf-table td { border:.2mm solid #475569; padding:.4mm .7mm; height:4mm; text-align:center; line-height:1.2; overflow-wrap:anywhere; }
@@ -155,6 +167,12 @@ export function pledgeFormsDocument(data: PledgeFormData, selection: PledgeFormC
   const keys = getSelectedPledgeForms(selection);
   if (!keys.length) throw new Error("किमान एक फॉर्म निवडा.");
   if (layout !== "compact" && layout !== "spacious") throw new Error("चुकीची पान मांडणी.");
+  const receiptPhotos = [
+    ...(data.includeBorrowerPhoto !== false && validPhoto(data.borrowerPhoto) ? [{ src: data.borrowerPhoto!, label: "कर्जदार" }] : []),
+    ...(data.includeCollateralPhotos === false ? [] : data.collateralPhotos || []).map((src, index) => ({ src, label: data.collateralPhotoLabels?.[index] || `तारण वस्तू ${index + 1}` })).filter(photo => validPhoto(photo.src)).slice(0, 2),
+  ];
+  const borrowerBox = data.includeBorrowerPhoto === false ? "" : borrowerPhotoBox(data.borrowerPhoto);
+  const receiptPhotoStrip = receiptPhotos.length ? `<div class="pf-photo-strip">${receiptPhotos.map(photo => `<figure class="pf-photo-thumb"><img src="${safe(photo.src)}" alt="${safe(photo.label)}"><figcaption>${safe(photo.label)}</figcaption></figure>`).join("")}</div>` : "";
   const organization = `<div class="pf-organization"><div class="pf-organization-name">${data.company?.trim() ? safe(data.company) : "संस्था / फर्मचे नाव: ____________________"}</div>${data.companyAddress?.trim() || data.companyContactNumber?.trim() || data.companyLicenseNumber?.trim() ? `<div class="pf-organization-details">${data.companyAddress?.trim() ? `<span class="pf-organization-address">${safe(data.companyAddress).replace(/\r?\n/g, "<br>")}</span>` : ""}${data.companyContactNumber?.trim() || data.companyLicenseNumber?.trim() ? `<span class="pf-organization-meta">${data.companyContactNumber?.trim() ? `<span>संपर्क: ${safe(data.companyContactNumber)}</span>` : ""}${data.companyLicenseNumber?.trim() ? `<span>परवाना क्र.: ${safe(data.companyLicenseNumber)}</span>` : ""}</span>` : ""}</div>` : ""}</div>`;
   const heading = (title: string) => `${organization}<header class="pf-heading"><div><h2>${safe(title)}</h2></div><span class="pf-date">दिनांक: ${safe(date(data.printDate) || blankDate)}</span></header>`;
   const profile = () => `${line("कर्जदाराचे नाव:", data.borrowerName)}${line("पत्ता:", data.borrowerAddress)}`;
@@ -169,17 +187,17 @@ export function pledgeFormsDocument(data: PledgeFormData, selection: PledgeFormC
   </section>`;
   const sections: Record<Exclude<PledgeFormSelection, "all">, string> = {
     loan: `<section class="pf-section pf-loan" data-form="loan">${heading(matter.loanTitle)}
-      <div class="pf-columns"><div class="pf-person"><div>${profile()}${line("मोबाईल:", data.borrowerMobile)}${line("आधार क्र. (शेवटचे 4 अंक):", data.aadhaarLast4)}${line("पॅन क्र. (असल्यास):", data.panNumber)}</div><div class="pf-photo">फोटो<br>(कर्जदार)</div></div>
+      <div class="pf-columns"><div class="pf-person"><div>${profile()}${line("मोबाईल:", data.borrowerMobile)}${line("आधार क्र. (शेवटचे 4 अंक):", data.aadhaarLast4)}${line("पॅन क्र. (असल्यास):", data.panNumber)}</div>${borrowerBox}</div>
       <div>${line("कर्ज खाते क्र.:", data.accountNumber)}${line("कर्ज रक्कम (₹):", amount(data.principalAmount))}${line("व्याजदर (%):", data.interestRate)}${line("दराचा कालावधी:", data.ratePeriod || "मासिक / वार्षिक")}${line("कर्ज दिनांक:", date(data.loanDate))}${line("मुदत / परतफेड दिनांक:", date(data.repaymentDate))}</div></div>
       <div class="pf-subtitle">तारण वस्तूंचा तपशील</div>${goodsTable(data.loanItems)}${signatures()}
     </section>`,
     declaration: `<section class="pf-section pf-declaration" data-form="declaration">${heading(matter.declarationTitle)}
       <div class="pf-declaration-body"><div>${line("कर्जदाराचे नाव:", data.borrowerName)}
-      <ol class="pf-terms">${(["declaration1", "declaration2", "declaration3", "declaration4"] as const).map(key => `<li>${text(key)}</li>`).join("")}</ol></div><div class="pf-photo">फोटो<br>(कर्जदार)</div></div>${signatures()}
+      <ol class="pf-terms">${(["declaration1", "declaration2", "declaration3", "declaration4"] as const).map(key => `<li>${text(key)}</li>`).join("")}</ol></div>${borrowerBox}</div>${signatures()}
     </section>`,
     interim: notice(false), final: notice(true),
-    receipt: `<section class="pf-section pf-receipt" data-form="receipt">${heading(matter.receiptTitle)}
-      <div class="pf-columns"><div>${profile()}</div><div>${line("कर्ज खाते क्र.:", data.accountNumber)}${line("कर्ज दिनांक:", date(data.loanDate))}</div></div>
+    receipt: `<section class="pf-section pf-receipt${receiptPhotos.length ? " pf-receipt-has-photos" : ""}" data-form="receipt">${heading(matter.receiptTitle)}
+      <div class="pf-columns${receiptPhotos.length ? " pf-receipt-photos" : ""}"><div>${profile()}</div><div>${line("कर्ज खाते क्र.:", data.accountNumber)}${line("कर्ज दिनांक:", date(data.loanDate))}</div>${receiptPhotoStrip}</div>
       <div class="pf-columns pf-receipt-body"><div class="pf-box"><div class="pf-subtitle">रकमेचा तपशील</div>${moneyLines([["मुद्दल रक्कम (₹):", data.receiptPrincipal], ["व्याज (₹):", data.receiptInterest], ["मान्य इतर शुल्क (₹):", data.receiptFees], ["एकूण प्राप्त रक्कम (₹):", data.receiptTotal]])}${line("प्राप्तीचा प्रकार:", data.paymentMethod)}</div>
       <div class="pf-box"><div class="pf-subtitle">ग्राहकाची तपासणी व स्वीकृती घोषणा</div><p class="pf-release">${text("releaseText")}</p></div></div>${signatures()}
     </section>`,
@@ -225,6 +243,7 @@ export async function preparePledgeForms(html: string) {
     if (!win || !doc) throw new Error("प्रिंट उघडता आली नाही.");
     await Promise.all([400, 600, 700].map(weight => doc.fonts.load(`${weight} 10px "Noto Sans Devanagari"`)));
     await doc.fonts.ready;
+    await waitForPrintImages(doc);
     await new Promise<void>(resolve => win.requestAnimationFrame(() => win.requestAnimationFrame(() => resolve())));
     const overflowing = Array.from(doc.querySelectorAll<HTMLElement>(".pf-section")).some(section =>
       section.scrollHeight > section.clientHeight + 2 || section.scrollWidth > section.clientWidth + 2 ||

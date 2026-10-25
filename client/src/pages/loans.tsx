@@ -83,6 +83,9 @@ function Loans() {
   
   // Photo state for new loans (deferred upload)
   const [pendingPhotos, setPendingPhotos] = useState<any[]>([]);
+  const [pendingBorrowerPhotos, setPendingBorrowerPhotos] = useState<any[]>([]);
+  const [isUploadingBorrowerPhoto, setIsUploadingBorrowerPhoto] = useState(false);
+  const [photoDraftKey, setPhotoDraftKey] = useState(0);
   const [isUploadingPhotos, setIsUploadingPhotos] = useState(false);
   const [createdLoanId, setCreatedLoanId] = useState<string | null>(null);
   const [isPhotoSectionOpen, setIsPhotoSectionOpen] = useState(false);
@@ -597,9 +600,13 @@ function Loans() {
           : `खाते ${newLoan.accountNumber} यशस्वीपणे तयार केले गेले`,
       });
       
-      if (!editingLoan && pendingPhotos.length > 0) {
+      if (!editingLoan && (pendingPhotos.length > 0 || pendingBorrowerPhotos.length > 0)) {
         setCreatedLoanId(newLoan.id);
-        await handlePhotoUpload(newLoan.id);
+        const uploaded = await handlePhotoUpload(newLoan.id);
+        if (!uploaded) {
+          queryClient.invalidateQueries({ queryKey: ["/api/loans"] });
+          return;
+        }
       }
       
       if (editingLoan) {
@@ -705,6 +712,8 @@ function Loans() {
         setBorrowerSearchQuery("");
         setShowBorrowerSuggestions(false);
         setPendingPhotos([]);
+        setPendingBorrowerPhotos([]);
+        setPhotoDraftKey(key => key + 1);
         setCreatedLoanId(null);
         setIsPhotoSectionOpen(false);
       }
@@ -722,7 +731,7 @@ function Loans() {
 
   // Photo upload function that can be called for new loans or retry
   const handlePhotoUpload = async (loanId: string) => {
-    if (pendingPhotos.length === 0) return;
+    if (pendingPhotos.length === 0 && pendingBorrowerPhotos.length === 0) return true;
     
     setIsUploadingPhotos(true);
     
@@ -734,19 +743,22 @@ function Loans() {
       
       // Upload pending photos
       const { photosToFormData } = await import('@/lib/photo-utils');
-      const formData = photosToFormData(pendingPhotos, loanId);
-      
-      const response = await fetch(`/api/loans/${loanId}/photos`, {
-        method: 'POST',
-        body: formData
-      });
-      
-      if (!response.ok) {
-        throw new Error('Photo upload failed');
+      for (const [photos, photoType, clear] of [
+        [pendingPhotos, "collateral", () => setPendingPhotos([])],
+        [pendingBorrowerPhotos, "borrower", () => setPendingBorrowerPhotos([])],
+      ] as const) {
+        if (!photos.length) continue;
+        const response = await fetch(`/api/loans/${loanId}/photos`, {
+          method: 'POST', credentials: "include", body: photosToFormData(photos, loanId, photoType),
+        });
+        if (!response.ok) throw new Error((await response.json()).error || "Photo upload failed");
+        clear(); // Retrying a later failed batch must not upload this one again.
       }
       
       // Success: Clear all states and close dialog
       setPendingPhotos([]);
+      setPendingBorrowerPhotos([]);
+      setPhotoDraftKey(key => key + 1);
       setIsUploadingPhotos(false);
       setCreatedLoanId(null);
       
@@ -802,6 +814,7 @@ function Loans() {
         setShowBorrowerSuggestions(false);
         setIsPhotoSectionOpen(false);
       }
+      return true;
       
     } catch (error) {
       console.error('Photo upload error:', error);
@@ -813,11 +826,32 @@ function Loans() {
         variant: "destructive",
       });
       
-      // Keep dialog open and states for retry
+      // Keep the saved loan and remaining photo batches for retry, not another loan insert.
+      return false;
+    }
+  };
+
+  const uploadBorrowerPhotoForExistingLoan = async (photos: any[]) => {
+    if (!editingLoan || !photos.length || isUploadingBorrowerPhoto) return;
+    setIsUploadingBorrowerPhoto(true);
+    try {
+      const { photosToFormData } = await import("@/lib/photo-utils");
+      const response = await fetch(`/api/loans/${editingLoan.id}/photos`, {
+        method: "POST", credentials: "include", body: photosToFormData(photos, editingLoan.id, "borrower"),
+      });
+      if (!response.ok) throw new Error((await response.json()).error || "फोटो सेव्ह झाला नाही.");
+      setPendingBorrowerPhotos([]);
+      await queryClient.invalidateQueries({ queryKey: ["/api/loans", editingLoan.id, "photos"] });
+      toast({ title: "कर्जदाराचा फोटो सेव्ह झाला" });
+    } catch (error) {
+      toast({ title: "कर्जदाराचा फोटो सेव्ह झाला नाही", description: error instanceof Error ? error.message : "पुन्हा प्रयत्न करा.", variant: "destructive" });
+    } finally {
+      setIsUploadingBorrowerPhoto(false);
     }
   };
 
   const onSubmit = async (data: LoanFormData & { ltvWarningConfirmed?: boolean; weightWarningConfirmed?: boolean }) => {
+    if (isUploadingBorrowerPhoto || isUploadingPhotos) return;
     if (createdLoanId) {
       await handlePhotoUpload(createdLoanId);
       return;
@@ -1805,6 +1839,8 @@ function Loans() {
       
       if (!editingLoan) {
         setPendingPhotos([]);
+        setPendingBorrowerPhotos([]);
+        setPhotoDraftKey(key => key + 1);
         setCreatedLoanId(null);
         setIsPhotoSectionOpen(false);
       }
@@ -3011,7 +3047,9 @@ function Loans() {
                 {isPhotoSectionOpen && (
                   <div className="p-3 sm:p-4 space-y-3">
                     <PhotoUpload 
+                      key={`collateral-${editingLoan?.id || `new-${photoDraftKey}`}`}
                       loanId={editingLoan?.id}
+                      existingPhotos={pendingPhotos}
                       onCameraDialogChange={setIsCameraDialogOpen}
                       onPhotosChange={(photos) => {
                         if (editingLoan?.id) {
@@ -3049,8 +3087,28 @@ function Loans() {
                 )}
               </div>
 
+              <details className="rounded-lg border border-indigo-200 bg-indigo-50/40 p-3">
+                <summary className="cursor-pointer text-sm font-semibold text-indigo-900">कर्जदाराचा स्वतंत्र फोटो (ऐच्छिक)</summary>
+                <p className="my-2 text-xs leading-5 text-slate-600">दागिन्यांच्या फोटोपासून वेगळा सेव्ह होतो. खाते निवडल्यावर तारण फॉर्म व घोषणापत्रात आपोआप येतो.</p>
+                <PhotoUpload key={`borrower-${editingLoan?.id || `new-${photoDraftKey}`}`} photoType="borrower" maxPhotos={1}
+                  loanId={editingLoan?.id} existingPhotos={pendingBorrowerPhotos}
+                  disabled={isUploadingBorrowerPhoto || isUploadingPhotos}
+                  onCameraDialogChange={setIsCameraDialogOpen}
+                  onPhotosChange={(photos) => {
+                    const fresh = photos.filter(photo => !photo.isExisting);
+                    setPendingBorrowerPhotos(fresh);
+                    if (editingLoan && fresh.length) void uploadBorrowerPhotoForExistingLoan(fresh);
+                  }} />
+                {editingLoan && pendingBorrowerPhotos.length > 0 && (
+                  <Button type="button" variant="outline" disabled={isUploadingBorrowerPhoto}
+                    onClick={() => uploadBorrowerPhotoForExistingLoan(pendingBorrowerPhotos)} className="mt-2 w-full">
+                    {isUploadingBorrowerPhoto ? "फोटो सेव्ह होत आहे…" : "कर्जदाराचा फोटो पुन्हा सेव्ह करा"}
+                  </Button>
+                )}
+              </details>
+
               {/* Photo Upload Status */}
-              {!editingLoan && pendingPhotos.length > 0 && createdLoanId && (
+              {!editingLoan && (pendingPhotos.length > 0 || pendingBorrowerPhotos.length > 0) && createdLoanId && (
                 <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 flex items-center gap-2">
                   {isUploadingPhotos ? (
                     <>
@@ -3108,11 +3166,11 @@ function Loans() {
                 {/* Cancel and Submit - Right side */}
                 <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 sm:justify-end w-full sm:w-auto">
                   <DialogClose asChild>
-                    <Button type="button" variant="outline" tabIndex={22} disabled={isUploadingPhotos}>
+                    <Button type="button" variant="outline" tabIndex={22} disabled={isUploadingPhotos || isUploadingBorrowerPhoto}>
                       रद्द करा
                     </Button>
                   </DialogClose>
-                  <Button type="submit" disabled={createLoanMutation.isPending || isUploadingPhotos} tabIndex={23} title="Alt+S">
+                  <Button type="submit" disabled={createLoanMutation.isPending || isUploadingPhotos || isUploadingBorrowerPhoto} tabIndex={23} title="Alt+S">
                     {isUploadingPhotos ? "अपलोड करत आहे..." : 
                      createdLoanId ? "फोटो अपलोड करा" :
                      editingLoan ? "अपडेट करा" : "जतन करा"}<span className="hidden sm:inline"> (Alt+S)</span>

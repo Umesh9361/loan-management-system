@@ -7,6 +7,7 @@ import { db } from "./db";
 import bcrypt from "bcrypt";
 import { insertUserSchema, insertCompanySchema, insertGroupSchema, insertLoanSchema, insertTransactionSchema, insertLoanClosureSchema, insertPartySchema, insertCashTransactionSchema, cashTransactions, loans, groups, loanPhotos, loanClosures, transactions, insertLoanPhotoSchema, systemSettings, tenantStorageSettings, userActivityLogs, users, companies, notificationWarnings, userPermissions, journalEntries } from "@shared/schema";
 import { photoUpload, PhotoService } from "./photo-service";
+import { parseLoanPhotoType } from "../shared/loan-photo-types";
 import { PhotoStorageFactory, CloudinaryStorageProvider } from "./photo-storage-provider";
 import path from 'path';
 import fs from 'fs/promises';
@@ -4926,6 +4927,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const tenantId = req.session.tenantId!;
       const userId = req.session.userId!;
 
+      const photoType = parseLoanPhotoType(req.body.photoType);
+      if (!photoType) return res.status(400).json({ error: "फोटोचा प्रकार चुकीचा आहे." });
+      if (photoType === "borrower") {
+        if (files?.length !== 1) return res.status(400).json({ error: "कर्जदाराचा एकच फोटो निवडा." });
+      }
+
       if (!files || files.length === 0) {
         return res.status(400).json({ error: 'कोणतेही फोटो अपलोड केले नाहीत' });
       }
@@ -4934,8 +4941,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'फक्त 2 फोटो अपलोड करता येतील' });
       }
 
+      const savePhotos = async (savePhoto: typeof storage.saveLoanPhoto) => {
       const savedPhotos = [];
-
       for (const file of files) {
         // 🎯 NEW FORMAT-AWARE PROCESSING: Use memory buffer with Sharp detection
         const processedPhoto = await PhotoService.processAndSavePhoto(file.buffer, file.originalname, tenantId, loanId);
@@ -4955,25 +4962,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
           thumbnailPath: processedPhoto.thumbnailPath,
           storageProvider: processedPhoto.storageProvider,
           cloudinaryPublicId: processedPhoto.cloudinaryPublicId || null,
-          photoType: 'collateral',
-          description: `सोन्याच्या वस्तूचा फोटो - ${file.originalname}`,
+          photoType,
+          description: `${photoType === "borrower" ? "कर्जदाराचा फोटो" : "तारण वस्तूचा फोटो"} - ${file.originalname}`,
           uploadedBy: userId,
           width: processedPhoto.width,
           height: processedPhoto.height,
           detectedFormat: processedPhoto.format
         };
 
-        const savedPhoto = await storage.saveLoanPhoto(photoData);
+        const savedPhoto = await savePhoto(photoData);
         savedPhotos.push(savedPhoto);
         
         // 🔍 VALIDATION: Verify photo integrity after processing
-        const validation = await PhotoService.validatePhotoIntegrity(processedPhoto.storagePath, processedPhoto.format);
-        if (!validation.isValid) {
-          console.warn(`⚠️ VALIDATION WARNING: ${processedPhoto.filename} - ${validation.error}`);
-        } else {
-          console.log(`✅ VALIDATION: ${processedPhoto.filename} integrity confirmed`);
+        // Cloudinary URLs are remote assets, not local filesystem paths.
+        if (processedPhoto.storageProvider === "local") {
+          const validation = await PhotoService.validatePhotoIntegrity(processedPhoto.storagePath, processedPhoto.format);
+          if (!validation.isValid) {
+            console.warn(`⚠️ VALIDATION WARNING: ${processedPhoto.filename} - ${validation.error}`);
+          } else {
+            console.log(`✅ VALIDATION: ${processedPhoto.filename} integrity confirmed`);
+          }
         }
       }
+      return savedPhotos;
+      };
+      // Serialise borrower-photo creation on this loan across server instances.
+      // The existing table/type column is reused; no schema or storage migration.
+      const savedPhotos = photoType === "borrower" ? await db.transaction(async (tx: typeof db) => {
+        await tx.select({ id: loans.id }).from(loans).where(and(
+          eq(loans.id, loanId), eq(loans.tenantId, tenantId),
+        )).for("update");
+        const existing = await tx.select({ id: loanPhotos.id }).from(loanPhotos).where(and(
+          eq(loanPhotos.loanId, loanId), eq(loanPhotos.tenantId, tenantId),
+          eq(loanPhotos.photoType, "borrower"), eq(loanPhotos.isActive, true),
+        )).limit(1);
+        if (existing.length) throw Object.assign(new Error("कर्जदाराचा फोटो आधीच आहे. बदलण्यासाठी आधी तो काढा."), { photoConflict: true });
+        return savePhotos(async data => {
+          const [saved] = await tx.insert(loanPhotos).values(data).returning();
+          return saved;
+        });
+      }) : await savePhotos(data => storage.saveLoanPhoto(data));
 
       // Invalidate photos cache for this loan
       invalidateTenantCache(tenantId);
@@ -4985,12 +5013,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
         message: `${savedPhotos.length} फोटो यशस्वीरित्या अपलोड केले` 
       });
     } catch (error) {
+      if (error instanceof Error && "photoConflict" in error) return res.status(409).json({ error: error.message });
       console.error('Photo upload error:', error);
       res.status(500).json({ error: 'फोटो अपलोड करताना त्रुटी झाली' });
     }
   });
 
   // Get photos for a loan
+  app.get('/api/loans/:loanId/photos/:photoId/image', requireAuth,
+    loanOwnershipGuard((id, tenantId) => storage.getLoanById(id, tenantId)), async (req, res) => {
+    try {
+      const [photo] = await db.select().from(loanPhotos).where(and(
+        eq(loanPhotos.id, req.params.photoId), eq(loanPhotos.loanId, req.params.loanId),
+        eq(loanPhotos.tenantId, req.session.tenantId!), eq(loanPhotos.isActive, true),
+      ));
+      if (!photo) return res.sendStatus(404);
+      res.set("Cache-Control", "private, no-store");
+      res.set("X-Content-Type-Options", "nosniff");
+      if (/^https?:\/\//i.test(photo.storagePath)) {
+        const url = new URL(photo.storagePath);
+        if (url.protocol !== "https:" || url.hostname !== "res.cloudinary.com" || url.username || url.password || url.port) return res.sendStatus(400);
+        const upstream = await fetch(url, { redirect: "error", signal: AbortSignal.timeout(15000) });
+        if (!upstream.ok || !upstream.headers.get("content-type")?.startsWith("image/")) return res.sendStatus(502);
+        const bytes = Buffer.from(await upstream.arrayBuffer());
+        if (bytes.length > 10 * 1024 * 1024) return res.sendStatus(413);
+        res.type(upstream.headers.get("content-type")!);
+        return res.send(bytes);
+      }
+      const root = path.resolve(process.cwd(), "server", "uploads", "photos");
+      const filename = path.resolve(PhotoService.getAbsolutePath(photo.storagePath));
+      if (!filename.startsWith(root + path.sep)) return res.sendStatus(400);
+      return res.sendFile(filename);
+    } catch (error) {
+      console.error("Loan print photo failed:", error);
+      return res.status(500).json({ error: "फोटो उघडता आला नाही." });
+    }
+  });
+
   app.get('/api/loans/:loanId/photos', requireAuth, async (req, res) => {
     try {
       const { loanId } = req.params;

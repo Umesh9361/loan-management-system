@@ -27,20 +27,35 @@ const evaluate = async expression => {
 };
 await mkdir("generated-artifacts/direct-a4", { recursive: true });
 try {
-  for (const kind of ["compact", "spacious", "single", "summary", "summary-full", "summary-long"]) {
+  for (const kind of ["compact", "spacious", "single", "summary", "summary-full", "summary-long", "summary-period", "summary-full-long"]) {
     await call("Page.navigate", { url: `http://127.0.0.1:5002/?kind=${kind}` });
     for (let i = 0; i < 100 && !await evaluate("typeof window.runPdf==='function'"); i++) await new Promise(resolve => setTimeout(resolve, 100));
     await evaluate("window.runPdf()");
     assert.equal(await evaluate("window.pdfError||null"), null, `${kind} export error`);
     const result = await evaluate("window.pdfResult");
     assert.ok(result?.data, `${kind} produced a downloadable PDF`);
-    if (kind !== "summary-long") assert.equal(result.pages, kind === "spacious" ? 2 : 1, kind);
+    if (!kind.includes("long")) assert.equal(result.pages, kind === "spacious" ? 2 : 1, kind);
     else assert.ok(result.pages >= 3, "long summary spans multiple complete pages");
     const file = `generated-artifacts/direct-a4/${kind}.pdf`;
     await writeFile(file, Buffer.from(result.data.split(",")[1], "base64"));
     const info = execFileSync("pdfinfo", [file], { encoding: "utf8" });
     assert.match(info, /Page size:\s+595\.\d+ x 841\.\d+ pts \(A4\)/);
     assert.equal(await evaluate("document.querySelectorAll('iframe').length"), 0, "export frame cleaned up");
+    if (kind.startsWith("summary")) {
+      await call("Page.navigate", { url: `http://127.0.0.1:5002/document?kind=${kind}` });
+      await new Promise(resolve => setTimeout(resolve, 200));
+      await evaluate("document.fonts.ready");
+      const native = await call("Page.printToPDF", { preferCSSPageSize: true, printBackground: true, displayHeaderFooter: false });
+      const nativeFile = `generated-artifacts/direct-a4/${kind}-native.pdf`;
+      await writeFile(nativeFile, Buffer.from(native.data, "base64"));
+      const nativeInfo = execFileSync("pdfinfo", [nativeFile], { encoding: "utf8" });
+      if (!kind.includes("long")) assert.match(nativeInfo, /Pages:\s+1\b/);
+      const geometry = await evaluate(`({
+        charts:[...document.querySelectorAll('.summary-overview-chart')].map(node=>({width:node.clientWidth,overflow:node.scrollWidth-node.clientWidth})),
+        numbers:[...document.querySelectorAll('.summary-overview-metric strong')].map(node=>({width:node.clientWidth,overflow:node.scrollWidth-node.clientWidth}))
+      })`);
+      for (const box of [...geometry.charts, ...geometry.numbers]) assert.ok(box.overflow <= 1 && box.width > 0, `${kind}: no clipped content`);
+    }
     console.log(`${kind}: direct A4 PDF, ${result.pages} page(s)`);
   }
 } finally {
