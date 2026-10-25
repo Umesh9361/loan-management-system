@@ -17,6 +17,25 @@ export type AccountSummaryOverviewProps = {
   periodText: string;
   subsetLabel?: string;
   interestLabel?: string;
+  position?: {
+    activeLoans: number;
+    activeBalance: number;
+    goldWeight: number;
+    silverWeight: number;
+    totalInterest: number;
+  };
+  yearlyProgress?: Array<{
+    year: number;
+    label: string;
+    from: string;
+    to: string;
+    partial: boolean;
+    disbursed: number;
+    interest: number;
+    loanCount: number;
+    previousComparableDisbursed: number | null;
+    disbursementChange: number | null;
+  }>;
 };
 
 function formatRupees(value: number) {
@@ -165,8 +184,20 @@ export function AccountSummaryOverview({
   periodText,
   subsetLabel,
   interestLabel,
+  position,
+  yearlyProgress,
 }: AccountSummaryOverviewProps) {
   const id = useId().replace(/:/g, "");
+  if (mode === "cumulative" && position) {
+    return <CurrentPositionOverview
+      id={id}
+      position={position}
+      yearlyProgress={yearlyProgress ?? []}
+      periodText={periodText}
+      subsetLabel={subsetLabel}
+      interestLabel={interestLabel}
+    />;
+  }
   const isCumulative = mode === "cumulative";
   const interestDates = interestLabel?.match(/\(([^)]+)\)/)?.[1];
   const shortInterestLabel = interestDates
@@ -244,6 +275,128 @@ export function AccountSummaryOverview({
           ? "परत आलेले मुद्दल व प्रत्यक्ष व्याज स्वतंत्र आहेत. सक्रिय शिल्लक फक्त आजची संचयी स्थिती आहे."
           : "कालावधीतील बंद मुद्दल व प्रत्यक्ष व्याज प्राप्ती म्हणून दाखवले आहेत; ऐतिहासिक शिल्लक दाखवलेली नाही."}</p>
       </details>
+    </section>
+  );
+}
+
+function CurrentPositionOverview({
+  id,
+  position,
+  yearlyProgress,
+  periodText,
+  subsetLabel,
+  interestLabel,
+}: {
+  id: string;
+  position: NonNullable<AccountSummaryOverviewProps["position"]>;
+  yearlyProgress: NonNullable<AccountSummaryOverviewProps["yearlyProgress"]>;
+  periodText: string;
+  subsetLabel?: string;
+  interestLabel?: string;
+}) {
+  const currency = (value: number) => formatRupees(value).replace(/\.00(?=\s|$)/, "");
+  const maxDisbursed = Math.max(1, ...yearlyProgress.map((item) => item.disbursed));
+  const maxInterest = Math.max(1, ...yearlyProgress.map((item) => item.interest));
+  const interestDates = interestLabel?.match(/\(([^)]+)\)/)?.[1];
+  const money = (value: number) => `₹${englishSummaryDigits(value.toLocaleString("en-IN", { maximumFractionDigits: 2 }))}`;
+  const date = (value: string) => {
+    const [year, month, day] = value.split("-");
+    return `${day}/${month}/${year}`;
+  };
+  return (
+    <section className="aso aso-current" data-testid="account-summary-current-position" aria-labelledby={`${id}-heading`}>
+      <style>{styles}</style>
+      <header className="aso-header">
+        <div className="aso-title-block">
+          <span className="aso-eyebrow">खाते सारांश</span>
+          <h2 id={`${id}-heading`}>आजची स्थिती</h2>
+          <p>सक्रिय तारणाची आजची स्थिती आणि आर्थिक वर्षानुसार व्यवहार.</p>
+        </div>
+        <div className="aso-scope">
+          <span>आजची स्थिती</span>
+          <strong>{englishSummaryDigits(periodText)}</strong>
+          {subsetLabel && <small>{englishSummaryDigits(subsetLabel)}</small>}
+        </div>
+      </header>
+
+      <div className="aso-position" aria-label="आजची सक्रिय तारण स्थिती">
+        <article className="aso-position-main">
+          <span>आज सक्रिय मुद्दल</span>
+          <strong>{currency(position.activeBalance)}</strong>
+          <small>{formatSummaryCount(position.activeLoans)} सक्रिय खाती</small>
+        </article>
+        <article className="aso-position-metal aso-gold">
+          <span>तारण सोने</span>
+          <strong>{englishSummaryDigits(position.goldWeight.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 }))} <small>ग्रॅ</small></strong>
+        </article>
+        <article className="aso-position-metal aso-silver">
+          <span>तारण चांदी</span>
+          <strong>{englishSummaryDigits(position.silverWeight.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 }))} <small>ग्रॅ</small></strong>
+        </article>
+        <article className="aso-position-interest">
+          <span>प्रत्यक्ष मिळालेले व्याज</span>
+          <strong>{currency(position.totalInterest)}</strong>
+          <small>{interestDates ? `व्याज कालावधी: ${englishSummaryDigits(interestDates)}` : "निवडलेल्या व्याज कालावधीत"}</small>
+        </article>
+      </div>
+
+      <section className="aso-yearly" data-testid="account-summary-yearly-progress" aria-labelledby={`${id}-yearly-title`}>
+        <div className="aso-yearly-heading">
+          <div>
+            <span className="aso-eyebrow">वर्षनिहाय तुलना</span>
+            <h3 id={`${id}-yearly-title`}>आर्थिक वर्षनिहाय प्रगती</h3>
+          </div>
+          <span className="aso-yearly-note">वाटप मुद्दल आणि प्रत्यक्ष मिळालेले व्याज</span>
+        </div>
+        {yearlyProgress.length === 0 ? (
+          <p className="aso-yearly-empty">वर्षनिहाय व्यवहार उपलब्ध नाहीत.</p>
+        ) : (
+          <div className="aso-years">
+            {yearlyProgress.map((item) => (
+              <article className="aso-year" data-testid="account-summary-year" key={item.year}>
+                <div className="aso-year-meta">
+                  <h4>{englishSummaryDigits(item.label)}</h4>
+                  {item.partial && <span className="aso-partial">चालू वर्ष · {date(item.from)}–{date(item.to)}</span>}
+                  {!item.partial && <span>{date(item.from)}–{date(item.to)}</span>}
+                </div>
+                <div className="aso-year-values">
+                  <div className="aso-year-metric">
+                    <div className="aso-year-label"><span>वाटप</span><strong>{money(item.disbursed)}</strong></div>
+                    <div className="aso-track" role="img" aria-label={`वाटप ${money(item.disbursed)}`}>
+                      <span className="aso-track-disbursed" style={{ width: `${Math.max(0, item.disbursed / maxDisbursed * 100)}%` }} />
+                    </div>
+                  </div>
+                  <div className="aso-year-metric">
+                    <div className="aso-year-label"><span>व्याज</span><strong>{money(item.interest)}</strong></div>
+                    <div className="aso-track" role="img" aria-label={`मिळालेले व्याज ${money(item.interest)}`}>
+                      <span className="aso-track-interest" style={{ width: `${Math.max(0, item.interest / maxInterest * 100)}%` }} />
+                    </div>
+                  </div>
+                </div>
+                <div className="aso-year-foot">
+                  <span>{formatSummaryCount(item.loanCount)} कर्जे</span>
+                  {item.disbursementChange !== null && item.previousComparableDisbursed !== null && (
+                    <span className="aso-comparison">
+                      {item.disbursementChange > 0 ? "+" : ""}{englishSummaryDigits(item.disbursementChange.toLocaleString("en-IN", { maximumFractionDigits: 1 }))}% {item.partial ? "मागील समान कालावधीपेक्षा" : "मागील वर्षापेक्षा"}
+                    </span>
+                  )}
+                  {item.disbursementChange === null && item.previousComparableDisbursed === null && (
+                    <span className="aso-comparison-muted">तुलनेसाठी मागील कालावधी उपलब्ध नाही</span>
+                  )}
+                  {item.disbursementChange === null && item.previousComparableDisbursed === 0 && (
+                    <span className="aso-comparison-muted">मागील समान कालावधीचे वाटप ₹0 · बदल लागू नाही</span>
+                  )}
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
+        <div className="aso-year-legend" aria-label="आलेख रंगसूची">
+          <span><i className="aso-track-disbursed" /> वाटप मुद्दल</span>
+          <span><i className="aso-track-interest" /> मिळालेले व्याज</span>
+        </div>
+        <p className="aso-footnote">नोंदवलेल्या व्यवहारांवर आधारित. चालू वर्षाची तुलना मागील वर्षाच्या समान कालावधीशी; दोन्ही आलेखांचे प्रमाण स्वतंत्र.</p>
+      </section>
     </section>
   );
 }
@@ -420,11 +573,50 @@ const styles = `
   }
   .aso-footnote summary { cursor: pointer; font-weight: 650; }
   .aso-footnote p { margin: 7px 0 0; }
+  .aso-current { --aso-primary: #4f46e5; --aso-disbursements: #4f46e5; --aso-interest: #168578; --aso-line: #e2e8f0; --aso-muted: #64748b; --aso-ink: #1e293b; --aso-paper: #ffffff; border-top-color: #4f46e5; }
+  .aso-separator { color: #9db4ae; font-weight: 400; }
+  .aso-position { display: grid; grid-template-columns: 1.25fr 1fr 1fr 1.2fr; gap: 9px; margin: 0 0 14px; }
+  .aso-position article { display: flex; flex-direction: column; justify-content: center; min-width: 0; padding: 13px; border: 1px solid var(--aso-line); border-radius: 10px; background: #fff; }
+  .aso-position article > span { color: var(--aso-muted); font-size: 11px; font-weight: 700; line-height: 1.4; }
+  .aso-position article > strong { margin-top: 8px; color: var(--aso-ink); font-size: clamp(16px, 2.4vw, 22px); line-height: 1.1; font-variant-numeric: tabular-nums; letter-spacing: -.03em; overflow-wrap: anywhere; }
+  .aso-position article > small { margin-top: 6px; color: var(--aso-muted); font-size: 10px; line-height: 1.4; }
+  .aso-position-main { border-left: 3px solid #4f46e5 !important; background: #eef2ff !important; }
+  .aso-position-metal { border-left: 3px solid #c18428 !important; }
+  .aso-position-metal.aso-silver { border-left-color: #688c9b !important; }
+  .aso-position-metal strong small { color: var(--aso-muted); font-size: 11px; font-weight: 600; letter-spacing: 0; }
+  .aso-position-interest { border-left: 3px solid #168578 !important; }
+  .aso-yearly { padding: 14px; border: 1px solid var(--aso-line); border-radius: 10px; background: #fff; }
+  .aso-yearly-heading { display: flex; justify-content: space-between; align-items: end; gap: 12px; margin-bottom: 8px; }
+  .aso-yearly-heading .aso-eyebrow { margin-bottom: 3px; color: #4f46e5; }
+  .aso-yearly-heading h3 { margin: 0; color: var(--aso-ink); font-size: 17px; }
+  .aso-yearly-note { color: var(--aso-muted); font-size: 10px; text-align: right; }
+  .aso-years { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 20px; }
+  .aso-year { padding: 12px 0; border-bottom: 1px solid #edf2ef; min-width: 0; }
+  .aso-year-meta { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+  .aso-year-meta h4 { margin: 0; color: var(--aso-ink); font-size: 13px; }
+  .aso-year-meta > span { color: var(--aso-muted); font-size: 9px; text-align: right; }
+  .aso-partial { color: #9a6418 !important; }
+  .aso-year-values { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 9px; }
+  .aso-year-label { display: flex; justify-content: space-between; gap: 6px; margin-bottom: 4px; color: var(--aso-muted); font-size: 10px; }
+  .aso-year-label strong { color: var(--aso-ink); font-size: 10px; font-variant-numeric: tabular-nums; }
+  .aso-track { height: 7px; overflow: hidden; border-radius: 8px; background: #edf2ef; }
+  .aso-track > span { display: block; height: 100%; min-width: 0; border-radius: inherit; }
+  .aso-track-disbursed { background: #4f46e5; }
+  .aso-track-interest { background: #168578; }
+  .aso-year-foot { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 5px; margin-top: 8px; color: var(--aso-muted); font-size: 10px; }
+  .aso-comparison { color: #475569; font-weight: 700; }
+  .aso-comparison-muted { color: #798984; }
+  .aso-year-legend { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 11px; color: var(--aso-muted); font-size: 10px; }
+  .aso-year-legend span { display: inline-flex; align-items: center; gap: 5px; }
+  .aso-year-legend i { width: 9px; height: 9px; border-radius: 3px; }
+  .aso-yearly-empty { margin: 0; padding: 20px 0; color: var(--aso-muted); font-size: 12px; }
   @media (max-width: 700px) {
     .aso-header { display: block; }
     .aso-scope { margin-top: 13px; }
     .aso-charts { grid-template-columns: minmax(0, 1fr); }
     .aso-key-totals { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .aso-position { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .aso-years { grid-template-columns: minmax(0, 1fr); }
     .aso-total > span { min-height: 0; }
     .aso-axis-label { font-size: 12px; }
     .aso-row-label { font-size: 13px; }
@@ -439,6 +631,15 @@ const styles = `
     .aso-key-totals-long .aso-total strong { font-size: clamp(18px, 6vw, 25px); }
     .aso-total small { font-size: 9px; overflow-wrap: anywhere; }
     .aso-chart { padding: 13px 11px 11px; }
+    .aso-position { gap: 7px; }
+    .aso-position article { padding: 11px 9px; }
+    .aso-position article > strong { font-size: clamp(15px, 5vw, 20px); }
+    .aso-yearly { padding: 12px 10px; }
+    .aso-yearly-heading { display: block; }
+    .aso-yearly-note { display: block; margin-top: 4px; text-align: left; }
+    .aso-year-values { gap: 8px; }
+    .aso-year-label { display: block; }
+    .aso-year-label strong { display: block; margin-top: 2px; }
     .aso-values li { font-size: 11px; }
     .aso-values strong { font-size: 11px; }
   }

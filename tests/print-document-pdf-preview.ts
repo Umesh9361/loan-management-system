@@ -47,6 +47,16 @@ createServer((req, res) => {
       rows: summaryRows,
       totals: accountSummaryTotals(summaryRows), period: "01/04/2026 ते 25/10/2026", scope: "सर्व", interest: "व्याज",
       notes: "नमुना", overviewHTML, overviewMode: mode, includeOverview: kind !== "summary" && kind !== "summary-long", includeNotes: kind.includes("full"),
+      ...(kind.includes("position") ? {
+        position: { activeLoans: 532, activeBalance: 18214863, goldWeight: 7181.62, silverWeight: 1245, totalInterest: 1530024 },
+        yearlyProgress: Array.from({ length: 7 }, (_, i) => ({
+          year: 2020 + i, label: `${2020 + i}–${String(2021 + i).slice(-2)}`,
+          from: `${2020 + i}-04-01`, to: i === 6 ? "2026-10-25" : `${2021 + i}-03-31`,
+          partial: i === 6, disbursed: (i + 1) * 1111536, interest: (i + 1) * 110024,
+          loanCount: 100 + i, previousComparableDisbursed: i ? i * 1111536 : null,
+          disbursementChange: i ? 15.4 : null,
+        })),
+      } : {}),
     }) : pledgeFormsDocument({
       company: "नमुना फायनान्स", companyAddress: "नमुना गाव, महाराष्ट्र", companyContactNumber: "1234567890", companyLicenseNumber: "123",
       borrowerName: "नमुना रामचंद्र पाटील", borrowerAddress: "नमुना गाव, महाराष्ट्र",

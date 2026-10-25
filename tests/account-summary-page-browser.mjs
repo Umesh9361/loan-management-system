@@ -30,43 +30,75 @@ const totals = `(()=>{
  return [...document.querySelectorAll('div')].find(node=>node.firstElementChild?.textContent==='एकूण योग').innerText;
 })()`;
 const click = expression => evaluate(`(async()=>{${expression};await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));})()`);
+const waitFor = async expression => {
+  for (let n = 0; n < 100; n++) {
+    if (await evaluate(expression)) return;
+    await new Promise(resolve => setTimeout(resolve, 100));
+  }
+  throw Error(`Timed out: ${expression}`);
+};
+const button = label => `[...document.querySelectorAll('button')].find(n=>n.textContent.trim()===${JSON.stringify(label)}).click()`;
+const positionText = "document.querySelector('[data-testid=\"account-summary-current-position\"] .aso-position').innerText";
+const setInput = (selector, value) => click(`{
+ const input=document.querySelector(${JSON.stringify(selector)});
+ Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,${JSON.stringify(value)});
+ input.dispatchEvent(new Event('input',{bubbles:true})); input.dispatchEvent(new Event('change',{bubbles:true}));
+}`);
 try {
   for (const width of [360, 1280]) {
     await call("Emulation.setDeviceMetricsOverride", { width, height: 900, deviceScaleFactor: 1, mobile: width < 500 });
     await call("Page.navigate", { url: "http://127.0.0.1:5001/" });
-    for (let n = 0; n < 100; n++) {
-      if (await evaluate("!!document.querySelector('.aso')")) break;
-      await new Promise(resolve => setTimeout(resolve, 100));
-    }
+    await waitFor("!!document.querySelector('[data-testid=\"account-summary-current-position\"]')");
     assert.equal(await evaluate("document.querySelectorAll('.aso-total').length"), 0);
-    assert.equal(await evaluate("document.querySelectorAll('#group-performance-section .grid.grid-cols-2.lg\\\\:grid-cols-4').length"), 0);
-    let values = await evaluate(totals);
-    for (const amount of ["25,000", "18,000", "7,000", "1,500"]) assert.ok(values.includes(amount), `${width}: ${amount} in canonical totals`);
-    const visibleMain = await evaluate(`(()=>{
-      const walker=document.createTreeWalker(document.getElementById('root'),NodeFilter.SHOW_TEXT);
-      let text='',node;while(node=walker.nextNode()){
-        const parent=node.parentElement;
-        if(parent&&!parent.closest('.aso,#group-performance-section,style,svg')&&parent.getBoundingClientRect().width>0)text+=node.textContent+' ';
-      }return text;
-    })()`);
-    assert.equal((visibleMain.match(/25,000/g)||[]).length, 1, "grand disbursement shown once outside charts");
+    assert.equal(await evaluate("document.querySelectorAll('input[type=date]').length"), 0, "today has no date pickers");
+    assert.equal(await evaluate("document.querySelector('[data-testid=\"account-summary-recorded-transactions\"]').open"), false);
+    assert.equal(await evaluate("document.querySelectorAll('fieldset input[type=checkbox]').length"), 1, "one unified print option");
+    let values = await evaluate(positionText);
+    for (const amount of ["7,000", "1,500", "1.25"]) assert.ok(values.includes(amount), `${width}: today ${amount}`);
+    assert.ok(values.includes("2 सक्रिय खाती"));
+    assert.ok(!values.includes("25,000") && !values.includes("18,000"), "no lifetime turnover in current position");
     const before = values;
-    const dates = await evaluate("[...document.querySelectorAll('input[type=date]')].map(n=>n.value)");
     await click("[...document.querySelectorAll('label')].find(n=>n.textContent.includes('आजपर्यंतचे सर्व व्याज')).querySelector('input').click()");
-    values = await evaluate(totals);
+    values = await evaluate(positionText);
     assert.ok(values.includes("1,600"), "lifetime interest includes previous FY");
-    for (const amount of ["25,000", "18,000", "7,000"]) assert.ok(values.includes(amount), "principal unaffected");
+    for (const amount of ["7,000", "1.25"]) assert.ok(values.includes(amount), "principal and weights unaffected");
     await click("[...document.querySelectorAll('label')].find(n=>n.textContent.includes('आजपर्यंतचे सर्व व्याज')).querySelector('input').click()");
-    assert.equal(await evaluate(totals), before, "FY interest restored");
-    await click("[...document.querySelectorAll('button')].find(n=>n.textContent.trim()==='कालावधी हिशोब').click()");
+    assert.equal(await evaluate(positionText), before, "FY interest restored");
+    const years = await evaluate("[...document.querySelectorAll('[data-testid=\"account-summary-year\"]')].map(n=>n.innerText)");
+    assert.equal(years.length, 3, "years without activity remain visible, not silently skipped");
+    assert.ok(years.at(-1).includes("12,000") && years.at(-1).includes("1,500"), "annual flow independent of stock");
+    await click("document.querySelector('[data-testid=\"account-summary-recorded-transactions\"] summary').click()");
+    values = await evaluate(totals);
+    for (const amount of ["25,000", "18,000", "7,000", "1,500"]) assert.ok(values.includes(amount), "original historical transaction totals retained");
+    await click(button("कालावधी हिशोब"));
+    assert.equal(await evaluate("document.querySelectorAll('input[type=date]').length"), 2);
+    const periodDates = await evaluate("[...document.querySelectorAll('input[type=date]')].map(n=>n.value)");
     values = await evaluate(totals);
     for (const amount of ["12,000", "17,000", "5,000", "1,500"]) assert.ok(values.includes(amount), `period independently calculated: ${amount}`);
-    await click("[...document.querySelectorAll('button')].find(n=>n.textContent.trim()==='एकूण हिशोब').click()");
-    assert.deepEqual(await evaluate("[...document.querySelectorAll('input[type=date]')].map(n=>n.value)"), dates);
-    assert.equal(await evaluate(totals), before);
+    const priorStart = `${Number(periodDates[0].slice(0, 4)) - 2}-04-01`;
+    await setInput("#fromDate", priorStart);
+    await click(button("आजची स्थिती"));
+    assert.equal(await evaluate("document.querySelectorAll('input[type=date]').length"), 0);
+    assert.equal(await evaluate(positionText), before, "period custom dates never affect today's FY interest");
+    await click(button("कालावधी हिशोब"));
+    assert.equal(await evaluate("document.querySelector('#fromDate').value"), priorStart, "custom period retained");
+    await click(button("कस्टमर नावाप्रमाणे"));
+    assert.deepEqual(await evaluate("[...document.querySelectorAll('input[type=date]')].map(n=>n.value)"), periodDates, "customer period independent");
+    await click(button("आजची स्थिती"));
+    await setInput("#customerSearch", "नमुना");
+    await waitFor("[...document.querySelectorAll('button')].some(n=>n.textContent.trim()==='नमुना ग्राहक 2')");
+    await click(button("नमुना ग्राहक 2"));
+    values = await evaluate(positionText);
+    assert.ok(values.includes("5,000") && values.includes("1 सक्रिय खाती"), "specific customer snapshot scoped correctly");
+    assert.ok(!values.includes("7,000"), "all-business amounts do not leak into customer view");
+    await click("document.querySelector('fieldset input[type=checkbox]').click()");
+    await click(button("टॉप 50 व्यवहार"));
+    assert.equal(await evaluate("document.querySelectorAll('.aso').length"), 0, "no summary or annual overview for top50");
+    assert.equal(await evaluate("document.querySelector('[data-testid=\"account-summary-recorded-transactions\"]').open"), true, "top50 table immediately available");
+    assert.equal(await evaluate("document.querySelectorAll('fieldset input[type=checkbox]').length"), 0, "top50 cannot add unsupported summary charts");
     assert.ok(await evaluate("document.documentElement.scrollWidth<=innerWidth+1"), "no horizontal overflow");
     assert.ok((await evaluate(outsideCharts)).includes("आजपर्यंतचे सर्व व्याज"));
-    console.log(`${width}px: single summary presentation, FY/lifetime/period calculations and date isolation passed`);
+    console.log(`${width}px: current stock, annual flows, FY/lifetime, legacy table, period isolation, customer scope and top50 passed`);
   }
 } finally {
   socket.close();

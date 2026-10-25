@@ -72,7 +72,8 @@ test('group and customer print share options and await fonts/layout before openi
   const page = readFileSync('client/src/pages/reports/account-summary.tsx', 'utf8');
   const helper = readFileSync('client/src/lib/account-summary-print.ts', 'utf8');
   assert.match(page, /includePrintOverview.*useState\(false\)/);
-  assert.match(page, /includePrintNotes.*useState\(false\)/);
+  assert.match(page, /const includePrintNotes = includePrintOverview/);
+  assert.doesNotMatch(page, /setIncludePrintNotes/);
   assert.equal((page.match(/onPrint=\{\(\) => handlePrint\(\)\}/g) || []).length, 2);
   assert.equal((page.match(/onPdf=\{\(\) => handlePrint\(true\)\}/g) || []).length, 2);
   assert.match(page, /setPendingAction\(asPdf \? "pdf" : "print"\)/);

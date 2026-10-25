@@ -17,7 +17,7 @@ const loans = [
 ].map(([id, groupId, loanDate, principalAmount, status], index) => ({
   id, groupId, loanDate, principalAmount, status, tenantId: "fixture",
   borrowerName: `नमुना ग्राहक ${index + 1}`, accountNumber: String(index + 1),
-  weight: "1.25", purity: "82", metalType: "gold", loanType: "तारण",
+  weight: "1.25", purity: "82", metalType: index === 4 ? "silver" : "gold", loanType: "तारण",
 }));
 const closures = [
   ["old", fy, 10000, 1200], ["closed1", fy, 3000, 300],
@@ -47,6 +47,7 @@ createServer((req, res) => {
     "/api/company": { name: "नमुना फायनान्स" },
     "/api/groups": [{ id: "A", name: "गट A" }, { id: "B", name: "गट B" }],
     "/api/loans": loans, "/api/loan-closures": closures,
+    "/api/borrowers/autocomplete": loans.map(loan => ({ borrowerName: loan.borrowerName })),
   };
   if (path in data) { res.setHeader("Content-Type", "application/json"); res.end(JSON.stringify(data[path])); return; }
   if (path === "/bundle.js") { res.setHeader("Content-Type", "text/javascript"); res.end(result.outputFiles[0].text); return; }

@@ -23,15 +23,97 @@ export interface SummaryRow {
   score?: number;
   rankingInterest?: number;
 }
-interface SummaryLoan extends WeightedLoan {
+export interface SummaryLoan extends WeightedLoan {
   id: string; loanDate: string; status: string; principalAmount: string | number;
   purity?: string | number | null;
 }
-interface SummaryClosure {
+export interface SummaryClosure {
   id?: string; tenantId?: string; loanId: string; closureDate: string;
   principalPaid?: string | number | null; principalAmount?: string | number | null;
   interestPaid?: string | number | null; calculatedInterest?: string | number | null;
   interestAmount?: string | number | null;
+}
+
+export interface SummaryPosition {
+  activeLoans: number;
+  activeBalance: number;
+  goldWeight: number;
+  silverWeight: number;
+  totalInterest: number;
+}
+export interface SummaryYearProgress {
+  year: number;
+  label: string;
+  from: string;
+  to: string;
+  partial: boolean;
+  disbursed: number;
+  interest: number;
+  loanCount: number;
+  previousComparableDisbursed: number | null;
+  disbursementChange: number | null;
+}
+
+/** Today's stock and received-interest flow are deliberately separate from turnover. */
+export function accountSummaryPosition(
+  inputLoans: SummaryLoan[], closures: SummaryClosure[], today: string,
+  interestRange: { from: string; to: string },
+): SummaryPosition {
+  const loans = checkedSummaryLoans(inputLoans);
+  checkedSummaryClosures(closures);
+  const active = loans.filter(loan => loan.status === 'active' && loan.loanDate <= today);
+  const summary = buildAccountSummaryRow('position', loans, closures, 'cumulative',
+    firstSummaryLoanDate(loans, today), today, today, interestRange);
+  const weights = loanWeightTotals(active);
+  return {
+    activeLoans: active.length,
+    activeBalance: summary.activeBalance,
+    goldWeight: weights.goldWeight,
+    silverWeight: weights.silverWeight,
+    totalInterest: summary.totalInterest,
+  };
+}
+
+/** Recorded FY activity, with like-for-like elapsed-period comparison for this FY. */
+export function accountSummaryYearlyProgress(
+  inputLoans: SummaryLoan[], closures: SummaryClosure[], today: string,
+): SummaryYearProgress[] {
+  if (!validSummaryDate(today)) throw new Error('आजची तारीख अवैध आहे.');
+  const loans = checkedSummaryLoans(inputLoans).filter(loan => loan.loanDate <= today);
+  const ids = new Set(loans.map(loan => loan.id));
+  const events = checkedSummaryClosures(closures).filter(event =>
+    ids.has(event.loanId) && event.closureDate <= today);
+  if (!loans.length) return [];
+  const financialYear = (date: string) => Number(date.slice(0, 4)) - (Number(date.slice(5, 7)) < 4 ? 1 : 0);
+  const current = financialYear(today);
+  const first = events.reduce((year, event) => Math.min(year, financialYear(event.closureDate)),
+    loans.reduce((year, loan) => Math.min(year, financialYear(loan.loanDate)), current));
+  const rows: SummaryYearProgress[] = [];
+  // Same calendar cutoff in the previous year; clamp 29 February to 28 February.
+  let previousCutoff = `${Number(today.slice(0, 4)) - 1}${today.slice(4)}`;
+  if (!validSummaryDate(previousCutoff)) previousCutoff = `${Number(today.slice(0, 4)) - 1}-02-28`;
+  for (let year = first; year <= current; year++) {
+    const from = `${year}-04-01`;
+    const yearEnd = `${year + 1}-03-31`;
+    const to = year === current ? today : yearEnd;
+    const summary = buildAccountSummaryRow('year', loans, events, 'period', from, to, today);
+    const previous = rows.at(-1);
+    const previousComparableDisbursed = previous
+      ? year === current && to < yearEnd
+        ? buildAccountSummaryRow('previous elapsed', loans, events, 'period',
+          `${year - 1}-04-01`, previousCutoff, today).totalAmount
+        : previous.disbursed
+      : null;
+    rows.push({
+      year, label: `${year}–${String(year + 1).slice(-2)}`, from, to,
+      partial: to < yearEnd, disbursed: summary.totalAmount, interest: summary.totalInterest,
+      loanCount: summary.totalLoans, previousComparableDisbursed,
+      disbursementChange: previousComparableDisbursed !== null && previousComparableDisbursed > 0
+        ? ((summary.totalAmount - previousComparableDisbursed) / previousComparableDisbursed) * 100
+        : null,
+    });
+  }
+  return rows;
 }
 
 export function localISODate(now = new Date()) {

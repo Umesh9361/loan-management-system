@@ -27,7 +27,7 @@ const evaluate = async expression => {
 };
 await mkdir("generated-artifacts/direct-a4", { recursive: true });
 try {
-  for (const kind of ["compact", "spacious", "single", "summary", "summary-full", "summary-long", "summary-period", "summary-full-long"]) {
+  for (const kind of ["compact", "spacious", "single", "summary", "summary-full", "summary-long", "summary-period", "summary-full-long", "summary-position"]) {
     await call("Page.navigate", { url: `http://127.0.0.1:5002/?kind=${kind}` });
     for (let i = 0; i < 100 && !await evaluate("typeof window.runPdf==='function'"); i++) await new Promise(resolve => setTimeout(resolve, 100));
     await evaluate("window.runPdf()");

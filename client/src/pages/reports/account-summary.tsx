@@ -15,7 +15,7 @@ import { AccountSummaryOverview } from "@/components/reports/account-summary-ove
 import { accountSummaryPrintDocument, printAccountSummary } from "@/lib/account-summary-print";
 import { downloadPrintDocumentPdf } from "@/lib/print-document-pdf";
 import { ReportPrintActions, type ReportPrintAction } from "@/components/report-print-actions";
-import { buildAccountSummaryRow, accountSummaryTotals, accountSummaryContext, createSummaryRanges, initializeSummaryRanges, updateSummaryRange, firstSummaryLoanDate, localISODate, summaryRangeError, summaryDataState, checkedSummaryLoans, checkedSummaryClosures, summaryArray, createSummaryInterestSettings } from "@shared/account-summary";
+import { buildAccountSummaryRow, accountSummaryTotals, accountSummaryContext, createSummaryRanges, initializeSummaryRanges, updateSummaryRange, firstSummaryLoanDate, localISODate, summaryRangeError, summaryDataState, checkedSummaryLoans, checkedSummaryClosures, summaryArray, createSummaryInterestSettings, accountSummaryPosition, accountSummaryYearlyProgress } from "@shared/account-summary";
 import type { SummaryRow } from "@shared/account-summary";
 import { rankAccountSummaryCustomers } from "@shared/account-summary";
 
@@ -25,14 +25,12 @@ export default function AccountSummaryReport() {
   const today = localISODate();
   const [dateRanges, setDateRanges] = useState(() => createSummaryRanges(today));
   const [interestSettings, setInterestSettings] = useState(() => createSummaryInterestSettings(today));
-  const fromDate = calcMode === 'cumulative' ? interestSettings.group.from : dateRanges.group.period.from ?? today;
-  const toDate = calcMode === 'cumulative' ? interestSettings.group.to : dateRanges.group.period.to;
-  const customerFromDate = calcMode === 'cumulative' ? interestSettings.customer.from : dateRanges.customer.period.from ?? today;
-  const customerToDate = calcMode === 'cumulative' ? interestSettings.customer.to : dateRanges.customer.period.to;
+  const fromDate = dateRanges.group.period.from ?? today;
+  const toDate = dateRanges.group.period.to;
+  const customerFromDate = dateRanges.customer.period.from ?? today;
+  const customerToDate = dateRanges.customer.period.to;
   const updateDate = (view: 'group' | 'customer', field: 'from' | 'to', value: string) => {
-    if (calcMode === 'cumulative') {
-      setInterestSettings(state => ({ ...state, [view]: { ...state[view], [field]: value } }));
-    } else setDateRanges(state => updateSummaryRange(state, view, 'period', field, value));
+    setDateRanges(state => updateSummaryRange(state, view, 'period', field, value));
   };
   const setFromDate = (value: string) => updateDate('group', 'from', value);
   const setToDate = (value: string) => updateDate('group', 'to', value);
@@ -47,7 +45,7 @@ export default function AccountSummaryReport() {
   const customerSuggestionsRef = useRef<HTMLDivElement>(null);
   const overviewRef = useRef<HTMLDivElement>(null);
   const [includePrintOverview, setIncludePrintOverview] = useState(false);
-  const [includePrintNotes, setIncludePrintNotes] = useState(false);
+  const includePrintNotes = includePrintOverview;
   const [pendingAction, setPendingAction] = useState<ReportPrintAction>(null);
   const isPrinting = pendingAction !== null;
 
@@ -138,8 +136,12 @@ export default function AccountSummaryReport() {
   }, [loansQuery.isSuccess, loansQuery.isFetching, loansQuery.error, reportLoans]);
   const queryState = summaryDataState([groupsQuery, loansQuery, closuresQuery]);
   const dataState = queryState === 'ready' && dateRanges[activeTab].cumulative.from === null ? 'loading' : queryState;
-  const groupDateError = calcMode === 'cumulative' && interestSettings.group.allTime ? '' : summaryRangeError(fromDate, toDate);
-  const customerDateError = calcMode === 'cumulative' && interestSettings.customer.allTime ? '' : summaryRangeError(customerFromDate, customerToDate);
+  const groupDateError = calcMode === 'cumulative'
+    ? (interestSettings.group.allTime ? '' : summaryRangeError(interestSettings.group.from, interestSettings.group.to))
+    : summaryRangeError(fromDate, toDate);
+  const customerDateError = calcMode === 'cumulative'
+    ? (interestSettings.customer.allTime ? '' : summaryRangeError(interestSettings.customer.from, interestSettings.customer.to))
+    : summaryRangeError(customerFromDate, customerToDate);
   const selectedDateError = activeTab === 'group' ? groupDateError : customerDateError;
   const reportProblem = dataState === 'error'
     ? `रिपोर्टची संपूर्ण माहिती मिळाली नाही. ${loansQuery.error?.message || groupsQuery.error?.message || closuresQuery.error?.message || 'पुन्हा प्रयत्न करा.'}`
@@ -152,11 +154,24 @@ export default function AccountSummaryReport() {
     : customerMode === 'top50' ? 'फक्त दर्शवलेले टॉप 50 कर्जदार; संपूर्ण व्यवसायाची टोटल नाही'
     : `कर्जदार: ${selectedCustomerName || 'निवडलेला नाही'}`;
   const coreFrom = dateRanges[activeTab].cumulative.from ?? today;
-  const selectedInterest = interestSettings[activeTab].allTime
-    ? { allTime: true, from: coreFrom, to: today } : interestSettings[activeTab];
-  const reportContext = accountSummaryContext(calcMode, calcMode === 'cumulative' ? coreFrom : selectedFrom,
+  const effectiveInterest = (view: "group" | "customer") => {
+    const setting = interestSettings[view];
+    return setting.allTime
+      ? { allTime: true, from: dateRanges[view].cumulative.from ?? today, to: today }
+      : { ...setting, to: setting.to > today ? today : setting.to };
+  };
+  const selectedInterest = effectiveInterest(activeTab);
+  const baseReportContext = accountSummaryContext(calcMode, calcMode === 'cumulative' ? coreFrom : selectedFrom,
     calcMode === 'cumulative' ? today : selectedTo, scopeLabel, calcMode === 'cumulative' ? selectedInterest : undefined);
-  const overviewPeriodText = `${formatSummaryDate(reportContext.from)} ते ${formatSummaryDate(reportContext.to)}`;
+  const reportContext = calcMode === "cumulative" ? {
+    ...baseReportContext,
+    modeLabel: "आजची स्थिती",
+    balanceNote: `आजची स्थिती: सक्रिय खात्यांचे मुद्दल व तारण. मूळ तक्ता: सुरुवातीपासूनचे वाटप व बंद व्यवहार; सक्रिय शिल्लक आजची. ${baseReportContext.interestText}`,
+    periodText: `आजची स्थिती · ${formatSummaryDate(today)} · सर्व नोंदवलेले व्यवहार · ${scopeLabel}${baseReportContext.interestText ? ` · ${baseReportContext.interestText}` : ""}`,
+  } : baseReportContext;
+  const overviewPeriodText = calcMode === 'cumulative'
+    ? `आजची स्थिती · ${formatSummaryDate(today)}`
+    : `${formatSummaryDate(reportContext.from)} ते ${formatSummaryDate(reportContext.to)}`;
   const showSummaryOverview = activeTab !== "customer" || customerMode !== "top50";
 
   const handlePrint = async (asPdf = false) => {
@@ -168,7 +183,9 @@ export default function AccountSummaryReport() {
     const baseTitle = activeTab === "group" 
       ? "गटनिहाय खाते सारांश अहवाल" 
       : (customerMode === "specific" ? `कस्टमर सारांश - ${selectedCustomerName}` : "टॉप 50 कस्टमर सारांश अहवाल");
-    const title = `${baseTitle} (${modeLabel})`;
+    const title = calcMode === "cumulative"
+      ? `${baseTitle} (${modeLabel}) · सर्व नोंदवलेले व्यवहार`
+      : `${baseTitle} (${modeLabel})`;
     const companyName = (company as any)?.name || 'कंपनी नाव';
     const overviewHTML = overviewRef.current?.innerHTML || '';
 
@@ -182,12 +199,18 @@ export default function AccountSummaryReport() {
     try {
       const html = accountSummaryPrintDocument({
         company: companyName, title, label, rows: data, totals, showRank,
-        period: overviewPeriodText, scope: scopeLabel,
+        period: calcMode === "cumulative"
+          ? `${formatSummaryDate(coreFrom)} ते ${formatSummaryDate(today)} · नोंदवलेले व्यवहार`
+          : overviewPeriodText,
+        scope: scopeLabel,
         interest: calcMode === "period"
           ? `व्याज: ${overviewPeriodText}`
           : `व्याज: ${selectedInterest.allTime ? "सुरुवातीपासून" : "निवडलेल्या आर्थिक वर्षातील"} · ${formatSummaryDate(selectedInterest.allTime ? coreFrom : selectedInterest.from)} ते ${formatSummaryDate(selectedInterest.allTime ? today : selectedInterest.to)}`,
-        notes: reportContext.balanceNote, overviewHTML, overviewMode: calcMode,
-        includeOverview: includePrintOverview && showSummaryOverview, includeNotes: includePrintNotes,
+        notes: reportContext.balanceNote,
+        overviewHTML, overviewMode: calcMode,
+        includeOverview: includePrintOverview && showSummaryOverview, includeNotes: includePrintNotes && showSummaryOverview,
+        position: calcMode === "cumulative" && showSummaryOverview ? currentPosition : undefined,
+        yearlyProgress: calcMode === "cumulative" && showSummaryOverview ? yearlyProgress : undefined,
       });
       if (asPdf) await downloadPrintDocumentPdf(html, "खाते_सारांश.pdf");
       else await printAccountSummary(html);
@@ -202,7 +225,7 @@ export default function AccountSummaryReport() {
   // गट व कस्टमर दोन्हीसाठी वापरला जातो जेणेकरून गणना सुसंगत राहते.
   const buildSummaryRow = (name: string, entityLoans: any[], fDate: string, tDate: string, view: 'group' | 'customer'): SummaryRow => {
     const first = dateRanges[view].cumulative.from ?? today;
-    const interest = interestSettings[view].allTime ? { from: first, to: today } : interestSettings[view];
+    const interest = effectiveInterest(view);
     return buildAccountSummaryRow(name, entityLoans, loanClosures, calcMode,
       calcMode === 'cumulative' ? first : fDate, calcMode === 'cumulative' ? today : tDate, today,
       calcMode === 'cumulative' ? interest : undefined);
@@ -268,6 +291,18 @@ export default function AccountSummaryReport() {
 
   const groupGrandTotals = calcGrandTotals(groupSummaries);
   const customerGrandTotals = calcGrandTotals(customerSummaries);
+  const positionLoans = activeTab === "group"
+    ? (loans as any[])
+    : customerMode === "specific" && selectedCustomerName
+      ? (loans as any[]).filter(loan => (loan.borrowerName || '').trim().toLowerCase() === selectedCustomerName.trim().toLowerCase())
+      : [];
+  const positionInterestRange = effectiveInterest(activeTab);
+  const currentPosition = showSummaryOverview
+    ? accountSummaryPosition(positionLoans, loanClosures, today, positionInterestRange)
+    : undefined;
+  const yearlyProgress = showSummaryOverview
+    ? accountSummaryYearlyProgress(positionLoans, loanClosures, today)
+    : [];
 
   const handleExcelExport = (data: SummaryRow[], label: string) => {
     if (!reportReady) { alert(reportProblem); return; }
@@ -552,7 +587,7 @@ export default function AccountSummaryReport() {
     </table>
   );
 
-  const modeLabel = calcMode === "cumulative" ? "एकूण हिशोब" : "कालावधी हिशोब";
+  const modeLabel = calcMode === "cumulative" ? "आजची स्थिती" : "कालावधी हिशोब";
 
   const renderModeToggle = () => (
     <div className="mb-4">
@@ -566,7 +601,7 @@ export default function AccountSummaryReport() {
               : "text-gray-500 hover:text-gray-700"
           }`}
         >
-          एकूण हिशोब
+          आजची स्थिती
         </button>
         <button
           type="button"
@@ -590,13 +625,13 @@ export default function AccountSummaryReport() {
             }}
           />
           <span>आजपर्यंतचे सर्व व्याज
-            <span className="block text-xs mt-1">बंद: निवडलेल्या कालावधीचे व्याज.</span>
+            <span className="block text-xs mt-1">हे सेटिंग फक्त मिळालेल्या व्याजाच्या कालावधीस लागू.</span>
           </span>
         </label>
       )}
       <p className="text-xs text-gray-500 mt-1.5">
         {calcMode === "cumulative"
-          ? "वाटप व बंद कर्जे सुरुवातीपासून; सक्रिय शिल्लक आजची. व्याज निवडलेल्या कालावधीचे किंवा आजपर्यंतचे."
+          ? "आजची सक्रिय मुद्दल व तारण वजन वेगळे; आर्थिक वर्षानुसार वाटप/व्याज तुलना. व्याजाचा कालावधी स्वतंत्र."
           : "वाटप व बंद व्यवहार निवडलेल्या कालावधीचे; आधीचे कर्ज या काळात बंद झाले असल्यास समाविष्ट. सक्रिय शिल्लक या काळात दिलेल्या व आजही चालू कर्जांची."}
       </p>
     </div>
@@ -645,10 +680,15 @@ export default function AccountSummaryReport() {
               </div>
               {showSummaryOverview && includePrintOverview && reportReady && currentPrintData.length > 0 && <AccountSummaryOverview
                 totals={currentPrintTotals} mode={calcMode} periodText={overviewPeriodText} subsetLabel={scopeLabel} interestLabel={reportContext.interestText}
+                position={calcMode === "cumulative" ? currentPosition : undefined}
+                yearlyProgress={calcMode === "cumulative" ? yearlyProgress : undefined}
               />}
               
               {currentPrintData.length > 0 ? (
-                renderPrintTable(currentPrintData, currentPrintTotals, currentPrintLabel, activeTab === "customer" && customerMode === "top50")
+                <>
+                  {calcMode === "cumulative" && <p className="text-xs">नोंदवलेले व्यवहार — सुरुवातीपासूनचा व्यवहार इतिहास; आजची स्थिती स्वतंत्र आहे.</p>}
+                  {renderPrintTable(currentPrintData, currentPrintTotals, currentPrintLabel, activeTab === "customer" && customerMode === "top50")}
+                </>
               ) : (
                 <div style={{ textAlign: 'center', padding: '40px', fontSize: '16px' }}>
                   {reportProblem || "निवडलेल्या तारखेच्या कालावधीत कोणतेही व्यवहार नाहीत"}
@@ -671,16 +711,10 @@ export default function AccountSummaryReport() {
             <fieldset className="mb-4 rounded-xl border border-indigo-100 bg-white px-4 py-3 no-print">
               <legend className="px-1 text-sm font-semibold text-indigo-700">प्रिंट / PDF पर्याय</legend>
               <p className="mb-2 text-xs text-slate-500">डिफॉल्ट: मूळ टेबल. हवी असल्यास खालील माहिती जोडा.</p>
-              <div className="flex flex-wrap gap-x-6 gap-y-3 text-sm text-slate-700">
-                {showSummaryOverview && <label className="flex cursor-pointer items-center gap-2">
+              {showSummaryOverview && <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-700">
                   <input type="checkbox" className="h-4 w-4 accent-indigo-600" checked={includePrintOverview} onChange={e => setIncludePrintOverview(e.target.checked)} />
-                  सारांश बॉक्स व ग्राफ
+                  आलेख व हिशोबाची माहिती
                 </label>}
-                <label className="flex cursor-pointer items-center gap-2">
-                  <input type="checkbox" className="h-4 w-4 accent-indigo-600" checked={includePrintNotes} onChange={e => setIncludePrintNotes(e.target.checked)} />
-                  हिशोबाचे सविस्तर स्पष्टीकरण
-                </label>
-              </div>
             </fieldset>
 
             {/* Tab Switcher */}
@@ -721,19 +755,13 @@ export default function AccountSummaryReport() {
                   </CardHeader>
                   <CardContent>
                     {renderModeToggle()}
-                    <Label className="text-xs text-indigo-600 font-medium">
-                      व्याजाचा कालावधी
-                    </Label>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 mt-1">
-                      <div>
-                        <Label htmlFor="fromDate">सुरुवातीची तारीख</Label>
-                        <Input id="fromDate" type="date" lang="en-GB" value={fromDate} disabled={calcMode === 'cumulative' && interestSettings.group.allTime} onChange={(e) => setFromDate(e.target.value)} className="font-inter" />
+                    {calcMode === "period" ? <>
+                      <Label className="text-xs text-indigo-600 font-medium">कालावधी</Label>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 mt-1">
+                        <div><Label htmlFor="fromDate">सुरुवातीची तारीख</Label><Input id="fromDate" type="date" lang="en-GB" value={fromDate} onChange={(e) => setFromDate(e.target.value)} /></div>
+                        <div><Label htmlFor="toDate">शेवटची तारीख</Label><Input id="toDate" type="date" lang="en-GB" value={toDate} onChange={(e) => setToDate(e.target.value)} /></div>
                       </div>
-                      <div>
-                        <Label htmlFor="toDate">शेवटची तारीख</Label>
-                        <Input id="toDate" type="date" lang="en-GB" value={toDate} disabled={calcMode === 'cumulative' && interestSettings.group.allTime} onChange={(e) => setToDate(e.target.value)} className="font-inter" />
-                      </div>
-                    </div>
+                    </> : <p className="mb-4 text-xs text-slate-600">व्याज कालावधी: {formatSummaryDate(effectiveInterest("group").from)} ते {formatSummaryDate(effectiveInterest("group").to)}</p>}
                     <div className="flex gap-2 flex-wrap">
                       <ReportPrintActions pending={pendingAction} onPdf={() => handlePrint(true)} onPrint={() => handlePrint()}
                         disabled={!reportReady || !groupSummaries.length} className="no-print" />
@@ -746,7 +774,12 @@ export default function AccountSummaryReport() {
                           variant="outline"
                           size="default"
                           className="text-indigo-600 border-indigo-200 hover:bg-indigo-50 gap-1.5 no-print"
-                          onClick={() => document.getElementById('group-performance-section')?.scrollIntoView({ behavior: 'smooth' })}
+                          onClick={() => {
+                            const target = document.getElementById('group-performance-section');
+                            const disclosure = target?.closest('details');
+                            if (disclosure) disclosure.open = true;
+                            target?.scrollIntoView({ behavior: 'smooth' });
+                          }}
                         >
                           <BarChart3 className="h-4 w-4" />
                           परफॉर्मन्स विश्लेषण पहा
@@ -757,8 +790,13 @@ export default function AccountSummaryReport() {
                   </CardContent>
                 </Card>
 
-                {reportReady && <div ref={overviewRef} className="no-print"><AccountSummaryOverview totals={groupGrandTotals} mode={calcMode} periodText={overviewPeriodText} subsetLabel={scopeLabel} interestLabel={reportContext.interestText} /></div>}
+                {reportReady && <div ref={overviewRef} className="no-print"><AccountSummaryOverview totals={groupGrandTotals} mode={calcMode} periodText={overviewPeriodText} subsetLabel={scopeLabel} interestLabel={reportContext.interestText} position={calcMode === "cumulative" ? currentPosition : undefined} yearlyProgress={calcMode === "cumulative" ? yearlyProgress : undefined} /></div>}
                 {reportReady && <details className="my-3 text-xs text-gray-600"><summary className="cursor-pointer font-medium">हिशोबाचा आधार</summary><p className="mt-2 leading-relaxed">{reportContext.balanceNote}</p></details>}
+                <details data-testid="account-summary-recorded-transactions" open={calcMode === "period"} className="my-3 rounded-xl border border-slate-200 bg-white">
+                  <summary className="cursor-pointer px-4 py-3 text-sm font-semibold text-slate-700">
+                    {calcMode === "cumulative" ? "सर्व नोंदवलेले व्यवहार — सविस्तर तक्ता" : "कालावधीतील व्यवहार"}
+                  </summary>
+                  {calcMode === "cumulative" && <p className="px-4 pb-3 text-xs text-slate-500">हा सुरुवातीपासूनचा नोंदवलेला व्यवहार इतिहास आहे; आजची सक्रिय शिल्लक वर स्वतंत्र दाखवली आहे.</p>}
                 <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
                   {groupSummaries.length > 0 ? (
                     renderSummaryTable(groupSummaries, groupGrandTotals, "गट नाव")
@@ -938,6 +976,7 @@ export default function AccountSummaryReport() {
                     </div>
                   );
                 })()}
+                </details>
               </>
             )}
 
@@ -1049,20 +1088,13 @@ export default function AccountSummaryReport() {
                       </div>
                     )}
 
-                    {/* Date Range */}
-                    <Label className="text-xs text-indigo-600 font-medium">
-                      व्याजाचा कालावधी
-                    </Label>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 mt-1">
-                      <div>
-                        <Label htmlFor="customerFromDate">सुरुवातीची तारीख</Label>
-                        <Input id="customerFromDate" type="date" lang="en-GB" value={customerFromDate} disabled={calcMode === 'cumulative' && interestSettings.customer.allTime} onChange={(e) => setCustomerFromDate(e.target.value)} className="font-inter" />
+                    {calcMode === "period" ? <>
+                      <Label className="text-xs text-indigo-600 font-medium">कालावधी</Label>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 mt-1">
+                        <div><Label htmlFor="customerFromDate">सुरुवातीची तारीख</Label><Input id="customerFromDate" type="date" lang="en-GB" value={customerFromDate} onChange={(e) => setCustomerFromDate(e.target.value)} /></div>
+                        <div><Label htmlFor="customerToDate">शेवटची तारीख</Label><Input id="customerToDate" type="date" lang="en-GB" value={customerToDate} onChange={(e) => setCustomerToDate(e.target.value)} /></div>
                       </div>
-                      <div>
-                        <Label htmlFor="customerToDate">शेवटची तारीख</Label>
-                        <Input id="customerToDate" type="date" lang="en-GB" value={customerToDate} disabled={calcMode === 'cumulative' && interestSettings.customer.allTime} onChange={(e) => setCustomerToDate(e.target.value)} className="font-inter" />
-                      </div>
-                    </div>
+                    </> : <p className="mb-4 text-xs text-slate-600">व्याज कालावधी: {formatSummaryDate(effectiveInterest("customer").from)} ते {formatSummaryDate(effectiveInterest("customer").to)}</p>}
 
                     <div className="flex gap-2 flex-wrap">
                       <ReportPrintActions pending={pendingAction} onPdf={() => handlePrint(true)} onPrint={() => handlePrint()}
@@ -1094,15 +1126,20 @@ export default function AccountSummaryReport() {
 
                 {/* Results */}
                 {reportReady && showSummaryOverview && selectedCustomerName && <>
-                  <div ref={overviewRef} className="no-print"><AccountSummaryOverview totals={customerGrandTotals} mode={calcMode} periodText={overviewPeriodText} subsetLabel={scopeLabel} interestLabel={reportContext.interestText} /></div>
+                  <div ref={overviewRef} className="no-print"><AccountSummaryOverview totals={customerGrandTotals} mode={calcMode} periodText={overviewPeriodText} subsetLabel={scopeLabel} interestLabel={reportContext.interestText} position={calcMode === "cumulative" ? currentPosition : undefined} yearlyProgress={calcMode === "cumulative" ? yearlyProgress : undefined} /></div>
                   <details className="my-3 text-xs text-gray-600"><summary className="cursor-pointer font-medium">हिशोबाचा आधार</summary><p className="mt-2 leading-relaxed">{reportContext.balanceNote}</p></details>
                 </>}
                 {customerSummaries.length > 0 ? (
+                  <details data-testid="account-summary-recorded-transactions" open={calcMode === "period" || customerMode === "top50"} className="rounded-xl border border-slate-200 bg-white">
+                  <summary className="cursor-pointer px-4 py-3 text-sm font-semibold text-slate-700">
+                    {calcMode === "cumulative" ? "सर्व नोंदवलेले व्यवहार — सविस्तर तक्ता" : "कालावधीतील व्यवहार"}
+                  </summary>
+                  {calcMode === "cumulative" && <p className="px-4 pb-3 text-xs text-slate-500">हा सुरुवातीपासूनचा नोंदवलेला व्यवहार इतिहास आहे; आजची सक्रिय स्थिती वर स्वतंत्र दाखवली आहे.</p>}
                   <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
                     <div className="bg-indigo-50 px-4 py-3 border-b border-indigo-100">
                       <h3 className="font-semibold text-indigo-900 text-lg">
                         {customerMode === "specific" ? selectedCustomerName : "टॉप 50 कस्टमर (व्यवहार प्रमाणे)"}
-                        <span className="ml-2 text-xs font-medium text-indigo-600">({modeLabel})</span>
+                        <span className="ml-2 text-xs font-medium text-indigo-600">({calcMode === "cumulative" ? "सर्व नोंदवलेले व्यवहार" : modeLabel})</span>
                       </h3>
                       <p className="text-sm text-indigo-600">
                         {reportContext.periodText}
@@ -1111,6 +1148,7 @@ export default function AccountSummaryReport() {
                     </div>
                     {renderSummaryTable(customerSummaries, customerGrandTotals, "कस्टमर नाव", customerMode === "top50")}
                   </div>
+                  </details>
                 ) : !reportReady ? null : (
                   <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-8 text-center">
                     {customerMode === "specific" && !selectedCustomerName ? (

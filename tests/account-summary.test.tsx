@@ -12,6 +12,7 @@ import {
   buildAccountSummaryRow, accountSummaryTotals, accountSummaryContext,
   accountSummaryExcelRows, accountSummaryPrintRows, checkedSummaryLoans, checkedSummaryClosures,
   createSummaryInterestSettings, rankAccountSummaryCustomers,
+  accountSummaryPosition, accountSummaryYearlyProgress,
 } from '../shared/account-summary';
 import { uniqueBorrowerNames, formatWeight } from '../shared/report-weights';
 import { AccountSummaryOverview } from '../client/src/components/reports/account-summary-overview';
@@ -288,6 +289,19 @@ test('screen financial totals have a single canonical table/mobile location outs
   assert.doesNotMatch(source, /बंद असताना खालील आर्थिक वर्षाच्या|वाटप व बंद खाती सुरुवातीपासून आजपर्यंतची/);
 });
 
+test('today overview renders real scoped active stock and FY progress without lifetime turnover cards', () => {
+  const position = accountSummaryPosition(loans, closures, today, createSummaryInterestSettings(today).group);
+  const html = renderToStaticMarkup(<AccountSummaryOverview totals={row('cumulative')} mode="cumulative"
+    periodText={today} position={position} yearlyProgress={accountSummaryYearlyProgress(loans, closures, today)} />);
+  assert.match(html, /account-summary-current-position/);
+  assert.match(html, /2 सक्रिय खाती/);
+  assert.match(html, /₹7,000/);
+  assert.match(html, /1\.11/);
+  assert.match(html, /2\.22/);
+  assert.match(html, /आर्थिक वर्षनिहाय प्रगती/);
+  assert.doesNotMatch(html, /NaN|Infinity|class="aso-total /);
+});
+
 test('page wires guarded exports, shared context, independent date updates and both print overviews', () => {
   const source = readFileSync('client/src/pages/reports/account-summary.tsx', 'utf8');
   assert.match(source, /if \(!reportReady\) \{ alert\(reportProblem\); return; \}/);
@@ -301,7 +315,9 @@ test('page wires guarded exports, shared context, independent date updates and b
   assert.match(printHelper, /await doc.fonts.ready/);
   assert.match(source, /\.account-summary-print \{ display: block !important/);
   assert.match(source, /checked=\{interestSettings\[activeTab\]\.allTime\}/);
-  assert.match(source, /disabled=\{calcMode === 'cumulative' && interestSettings\.group\.allTime\}/);
+  assert.match(source, /calcMode === "period" \? <>/);
+  assert.match(source, /accountSummaryPosition\(positionLoans/);
+  assert.match(source, /accountSummaryYearlyProgress\(positionLoans/);
   assert.match(source, /queryState === 'ready' && dateRanges\[activeTab\]\.cumulative\.from === null/);
   assert.equal((source.match(/<AccountSummaryOverview/g) || []).length, 3);
   assert.doesNotMatch(source, /queryKey: \["\/api\/transactions"\]/);

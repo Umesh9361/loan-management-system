@@ -1,5 +1,6 @@
 import { accountSummaryPrintRows, escapeSummaryHtml } from "../../../shared/account-summary";
-import type { SummaryRow } from "../../../shared/account-summary";
+import type { SummaryRow, SummaryPosition, SummaryYearProgress } from "../../../shared/account-summary";
+import { accountSummaryPositionPrint, accountSummaryPositionPrintStyles } from "./account-summary-position-print";
 import { englishSummaryDigits } from "../../../shared/account-summary-format";
 import {
   accountSummaryPrintOverview,
@@ -21,6 +22,8 @@ export type SummaryPrintOptions = {
   includeNotes: boolean;
   overviewHTML: string;
   overviewMode?: "cumulative" | "period";
+  position?: SummaryPosition;
+  yearlyProgress?: SummaryYearProgress[];
 };
 
 /** One document for desktop print and Android's Save as PDF. */
@@ -56,6 +59,7 @@ td:first-child { text-align: left; }
 .summary-document-closing { break-inside: avoid; page-break-inside: avoid; }
 .summary-document-signature td { border: 0; padding: 5mm 15mm 3mm 0; text-align: right; font-size: 9pt; line-height: 1.7; }
 ${accountSummaryPrintOverviewStyles}
+${accountSummaryPositionPrintStyles}
 body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 </style></head><body>
 <header class="summary-document-header">
@@ -63,7 +67,9 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 <p>${safe(englishSummaryDigits(options.period))} · ${safe(englishSummaryDigits(options.scope))}</p>
 <p>${safe(englishSummaryDigits(options.interest))}</p>
 </header>
-${options.includeOverview && !showRank ? accountSummaryPrintOverview(totals, options.overviewMode ?? "cumulative") : ""}
+${options.includeOverview && !showRank ? options.position
+  ? accountSummaryPositionPrint(options.position, options.yearlyProgress)
+  : accountSummaryPrintOverview(totals, options.overviewMode ?? "cumulative") : ""}
 ${options.includeNotes ? `<p class="summary-document-notes">${safe(options.notes)}</p>` : ""}
 <table><colgroup>${widths.map(width => `<col style="width:${width}%">`).join("")}</colgroup>
 <thead><tr>${showRank ? "<th>#</th>" : ""}<th>${safe(options.label)}</th><th>एकूण कर्ज</th><th>सक्रिय</th><th>बंद</th><th>एकूण वाटप</th><th>बंद रक्कम</th><th>सक्रिय शिल्लक</th><th>एकूण व्याज</th></tr></thead>
