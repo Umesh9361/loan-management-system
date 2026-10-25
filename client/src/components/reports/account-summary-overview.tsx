@@ -1,5 +1,6 @@
 import React, { useId } from "react";
 import { englishSummaryDigits, formatSummaryCount, formatSummaryCurrency } from "@shared/account-summary-format";
+import type { SummaryYearSelection } from "@shared/account-summary";
 
 type AccountSummaryTotals = {
   totalLoans: number;
@@ -36,6 +37,10 @@ export type AccountSummaryOverviewProps = {
     previousComparableDisbursed: number | null;
     disbursementChange: number | null;
   }>;
+  yearSelection?: SummaryYearSelection;
+  onYearSelectionChange?: (selection: SummaryYearSelection) => void;
+  yearlyPeriod?: string;
+  yearlyError?: string;
 };
 
 function formatRupees(value: number) {
@@ -186,6 +191,10 @@ export function AccountSummaryOverview({
   interestLabel,
   position,
   yearlyProgress,
+  yearSelection,
+  onYearSelectionChange,
+  yearlyPeriod,
+  yearlyError,
 }: AccountSummaryOverviewProps) {
   const id = useId().replace(/:/g, "");
   if (mode === "cumulative" && position) {
@@ -196,6 +205,10 @@ export function AccountSummaryOverview({
       periodText={periodText}
       subsetLabel={subsetLabel}
       interestLabel={interestLabel}
+      yearSelection={yearSelection}
+      onYearSelectionChange={onYearSelectionChange}
+      yearlyPeriod={yearlyPeriod}
+      yearlyError={yearlyError}
     />;
   }
   const isCumulative = mode === "cumulative";
@@ -286,6 +299,10 @@ function CurrentPositionOverview({
   periodText,
   subsetLabel,
   interestLabel,
+  yearSelection,
+  onYearSelectionChange,
+  yearlyPeriod,
+  yearlyError,
 }: {
   id: string;
   position: NonNullable<AccountSummaryOverviewProps["position"]>;
@@ -293,6 +310,10 @@ function CurrentPositionOverview({
   periodText: string;
   subsetLabel?: string;
   interestLabel?: string;
+  yearSelection?: SummaryYearSelection;
+  onYearSelectionChange?: (selection: SummaryYearSelection) => void;
+  yearlyPeriod?: string;
+  yearlyError?: string;
 }) {
   const currency = (value: number) => formatRupees(value).replace(/\.00(?=\s|$)/, "");
   const maxDisbursed = Math.max(1, ...yearlyProgress.map((item) => item.disbursed));
@@ -346,9 +367,73 @@ function CurrentPositionOverview({
             <span className="aso-eyebrow">वर्षनिहाय तुलना</span>
             <h3 id={`${id}-yearly-title`}>आर्थिक वर्षनिहाय प्रगती</h3>
           </div>
-          <span className="aso-yearly-note">वाटप मुद्दल आणि प्रत्यक्ष मिळालेले व्याज</span>
+          <span className="aso-yearly-note">{yearlyPeriod || "निवडलेल्या आर्थिक वर्षांचा कालावधी"}</span>
         </div>
-        {yearlyProgress.length === 0 ? (
+        {yearSelection && onYearSelectionChange && (
+          <div className="aso-year-controls" aria-label="तुलनेसाठी आर्थिक वर्षे निवडा">
+            <div className="aso-year-presets" role="group" aria-label="तुलना कालावधी">
+              {([
+                ["5", "मागील 5 वर्षे"],
+                ["10", "मागील 10 वर्षे"],
+                ["custom", "वर्षे निवडा"],
+              ] as const).map(([preset, label]) => (
+                <button
+                  type="button"
+                  key={preset}
+                  aria-pressed={yearSelection.preset === preset}
+                  className={yearSelection.preset === preset ? "aso-year-choice is-selected" : "aso-year-choice"}
+                  onClick={() => onYearSelectionChange({
+                    ...yearSelection,
+                    preset,
+                  })}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            {yearSelection.preset === "custom" && (
+              <div className="aso-year-custom">
+                <label>
+                  <span>पासूनचे आर्थिक वर्ष</span>
+                  <input
+                    aria-label="पासूनचे आर्थिक वर्ष"
+                    type="number"
+                    inputMode="numeric"
+                    min={1}
+                    aria-invalid={Boolean(yearlyError)}
+                    aria-describedby={`${id}-year-help`}
+                    value={yearSelection.fromYear || ""}
+                    onChange={(event) => onYearSelectionChange({
+                      ...yearSelection,
+                      fromYear: Number(event.currentTarget.value),
+                    })}
+                  />
+                </label>
+                <span className="aso-year-to">ते</span>
+                <label>
+                  <span>पर्यंतचे आर्थिक वर्ष</span>
+                  <input
+                    aria-label="पर्यंतचे आर्थिक वर्ष"
+                    type="number"
+                    inputMode="numeric"
+                    min={1}
+                    aria-invalid={Boolean(yearlyError)}
+                    aria-describedby={`${id}-year-help`}
+                    value={yearSelection.toYear || ""}
+                    onChange={(event) => onYearSelectionChange({
+                      ...yearSelection,
+                      toYear: Number(event.currentTarget.value),
+                    })}
+                  />
+                </label>
+              </div>
+            )}
+          </div>
+        )}
+        {yearSelection?.preset === "custom" && <p id={`${id}-year-help`} className="aso-year-help">सुरुवातीचे वर्ष लिहा: 2022 म्हणजे आर्थिक वर्ष 2022–23.</p>}
+        {yearlyError ? (
+          <p className="aso-year-error" role="alert">{englishSummaryDigits(yearlyError)}</p>
+        ) : yearlyProgress.length === 0 ? (
           <p className="aso-yearly-empty">वर्षनिहाय व्यवहार उपलब्ध नाहीत.</p>
         ) : (
           <div className="aso-years">
@@ -395,7 +480,7 @@ function CurrentPositionOverview({
           <span><i className="aso-track-disbursed" /> वाटप मुद्दल</span>
           <span><i className="aso-track-interest" /> मिळालेले व्याज</span>
         </div>
-        <p className="aso-footnote">नोंदवलेल्या व्यवहारांवर आधारित. चालू वर्षाची तुलना मागील वर्षाच्या समान कालावधीशी; दोन्ही आलेखांचे प्रमाण स्वतंत्र.</p>
+        <p className="aso-footnote">नोंदवलेल्या व्यवहारांवर आधारित. चालू आर्थिक वर्ष अपूर्ण असल्यास तुलना मागील वर्षाच्या त्याच गेलेल्या कालावधीशी; दोन्ही आलेखांचे प्रमाण स्वतंत्र.</p>
       </section>
     </section>
   );
@@ -589,27 +674,39 @@ const styles = `
   .aso-yearly-heading { display: flex; justify-content: space-between; align-items: end; gap: 12px; margin-bottom: 8px; }
   .aso-yearly-heading .aso-eyebrow { margin-bottom: 3px; color: #4f46e5; }
   .aso-yearly-heading h3 { margin: 0; color: var(--aso-ink); font-size: 17px; }
-  .aso-yearly-note { color: var(--aso-muted); font-size: 10px; text-align: right; }
+  .aso-yearly-note { color: #4338a6; font-size: 11px; font-weight: 700; text-align: right; }
+  .aso-year-controls { display: grid; gap: 9px; margin: 12px 0 7px; }
+  .aso-year-presets { display: flex; flex-wrap: wrap; gap: 6px; }
+  .aso-year-choice { min-height: 36px; padding: 7px 11px; border: 1px solid #d8def3; border-radius: 8px; background: #f8f9ff; color: #39436c; font: inherit; font-size: 11px; font-weight: 650; cursor: pointer; transition: background-color .16s ease, color .16s ease, border-color .16s ease; }
+  .aso-year-choice:hover { border-color: #8183d9; background: #f0f0ff; }
+  .aso-year-choice:focus-visible, .aso-year-custom input:focus-visible { outline: 3px solid #a5b4fc; outline-offset: 2px; }
+  .aso-year-choice.is-selected { border-color: #4f46e5; background: #4f46e5; color: #fff; }
+  .aso-year-custom { display: flex; flex-wrap: wrap; align-items: end; gap: 8px; max-width: 100%; padding: 10px; border: 1px solid #e2e5f5; border-radius: 9px; background: #fafaff; }
+  .aso-year-custom label { display: grid; gap: 4px; flex: 1 1 125px; min-width: 0; color: #566078; font-size: 10px; font-weight: 650; }
+  .aso-year-custom input { width: 100%; min-width: 0; height: 36px; padding: 5px 9px; border: 1px solid #cfd5e7; border-radius: 7px; background: white; color: #202746; font: inherit; font-size: 14px; font-variant-numeric: tabular-nums; }
+  .aso-year-to { padding-bottom: 10px; color: var(--aso-muted); font-size: 11px; }
+  .aso-year-error { margin: 8px 0; padding: 9px 11px; border-left: 3px solid #c34949; border-radius: 5px; background: #fff3f2; color: #873a38; font-size: 11px; line-height: 1.5; }
   .aso-years { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 20px; }
   .aso-year { padding: 12px 0; border-bottom: 1px solid #edf2ef; min-width: 0; }
   .aso-year-meta { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
-  .aso-year-meta h4 { margin: 0; color: var(--aso-ink); font-size: 13px; }
-  .aso-year-meta > span { color: var(--aso-muted); font-size: 9px; text-align: right; }
+  .aso-year-meta h4 { margin: 0; color: var(--aso-ink); font-size: 14px; }
+  .aso-year-meta > span { color: var(--aso-muted); font-size: 10px; text-align: right; }
   .aso-partial { color: #9a6418 !important; }
   .aso-year-values { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 9px; }
-  .aso-year-label { display: flex; justify-content: space-between; gap: 6px; margin-bottom: 4px; color: var(--aso-muted); font-size: 10px; }
-  .aso-year-label strong { color: var(--aso-ink); font-size: 10px; font-variant-numeric: tabular-nums; }
+  .aso-year-label { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px; margin-bottom: 6px; color: var(--aso-muted); font-size: 11px; }
+  .aso-year-label strong { color: var(--aso-ink); font-size: 12px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
   .aso-track { height: 7px; overflow: hidden; border-radius: 8px; background: #edf2ef; }
   .aso-track > span { display: block; height: 100%; min-width: 0; border-radius: inherit; }
   .aso-track-disbursed { background: #4f46e5; }
   .aso-track-interest { background: #168578; }
-  .aso-year-foot { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 5px; margin-top: 8px; color: var(--aso-muted); font-size: 10px; }
+  .aso-year-foot { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 5px; margin-top: 8px; color: var(--aso-muted); font-size: 11px; }
   .aso-comparison { color: #475569; font-weight: 700; }
   .aso-comparison-muted { color: #798984; }
   .aso-year-legend { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 11px; color: var(--aso-muted); font-size: 10px; }
   .aso-year-legend span { display: inline-flex; align-items: center; gap: 5px; }
   .aso-year-legend i { width: 9px; height: 9px; border-radius: 3px; }
   .aso-yearly-empty { margin: 0; padding: 20px 0; color: var(--aso-muted); font-size: 12px; }
+  .aso-year-help { margin: 3px 0 10px; color: var(--aso-muted); font-size: 11px; line-height: 1.6; }
   @media (max-width: 700px) {
     .aso-header { display: block; }
     .aso-scope { margin-top: 13px; }
@@ -637,6 +734,10 @@ const styles = `
     .aso-yearly { padding: 12px 10px; }
     .aso-yearly-heading { display: block; }
     .aso-yearly-note { display: block; margin-top: 4px; text-align: left; }
+    .aso-year-presets { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .aso-year-choice { min-width: 0; padding-inline: 7px; }
+    .aso-year-choice:last-child { grid-column: 1 / -1; }
+    .aso-year-custom { gap: 7px; }
     .aso-year-values { gap: 8px; }
     .aso-year-label { display: block; }
     .aso-year-label strong { display: block; margin-top: 2px; }
@@ -644,6 +745,7 @@ const styles = `
     .aso-values strong { font-size: 11px; }
   }
   @media print {
+    .aso-year-controls { display: none !important; }
     .aso { color: #1e293b; background: #fff; border: 1px solid #cbd5e1; border-top: 2px solid var(--aso-primary); border-radius: 0; padding: 7px 8px; margin: 0 0 5px; box-shadow: none; font-size: 9pt; }
     .aso-header { gap: 6px; margin-bottom: 6px; align-items: center; }
     .aso-eyebrow { margin-bottom: 1px; font-size: 8pt; }

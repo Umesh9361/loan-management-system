@@ -27,14 +27,15 @@ const evaluate = async expression => {
 };
 await mkdir("generated-artifacts/direct-a4", { recursive: true });
 try {
-  for (const kind of ["compact", "spacious", "single", "summary", "summary-full", "summary-long", "summary-period", "summary-full-long", "summary-position"]) {
+  for (const kind of ["compact", "spacious", "single", "summary", "summary-full", "summary-long", "summary-period", "summary-full-long", "summary-position", "summary-position-ten", "summary-position-custom"]) {
     await call("Page.navigate", { url: `http://127.0.0.1:5002/?kind=${kind}` });
     for (let i = 0; i < 100 && !await evaluate("typeof window.runPdf==='function'"); i++) await new Promise(resolve => setTimeout(resolve, 100));
     await evaluate("window.runPdf()");
     assert.equal(await evaluate("window.pdfError||null"), null, `${kind} export error`);
     const result = await evaluate("window.pdfResult");
     assert.ok(result?.data, `${kind} produced a downloadable PDF`);
-    if (!kind.includes("long")) assert.equal(result.pages, kind === "spacious" ? 2 : 1, kind);
+    if (kind.includes("position-ten")) assert.ok(result.pages >= 1 && result.pages <= 2, "ten-year print remains readable without shrinking");
+    else if (!kind.includes("long")) assert.equal(result.pages, kind === "spacious" ? 2 : 1, kind);
     else assert.ok(result.pages >= 3, "long summary spans multiple complete pages");
     const file = `generated-artifacts/direct-a4/${kind}.pdf`;
     await writeFile(file, Buffer.from(result.data.split(",")[1], "base64"));
@@ -49,7 +50,11 @@ try {
       const nativeFile = `generated-artifacts/direct-a4/${kind}-native.pdf`;
       await writeFile(nativeFile, Buffer.from(native.data, "base64"));
       const nativeInfo = execFileSync("pdfinfo", [nativeFile], { encoding: "utf8" });
-      if (!kind.includes("long")) assert.match(nativeInfo, /Pages:\s+1\b/);
+      if (!kind.includes("long") && !kind.includes("position-ten")) assert.match(nativeInfo, /Pages:\s+1\b/);
+      if (kind.includes("position")) {
+        assert.equal(await evaluate("document.querySelectorAll('.summary-position-year').length"), kind.includes("ten") ? 10 : kind.includes("custom") ? 3 : 5);
+        assert.ok(await evaluate("!!document.querySelector('.summary-position-selected')"), "selected years included in PDF/native print");
+      }
       const geometry = await evaluate(`({
         charts:[...document.querySelectorAll('.summary-overview-chart')].map(node=>({width:node.clientWidth,overflow:node.scrollWidth-node.clientWidth})),
         numbers:[...document.querySelectorAll('.summary-overview-metric strong')].map(node=>({width:node.clientWidth,overflow:node.scrollWidth-node.clientWidth})),

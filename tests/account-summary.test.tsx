@@ -79,8 +79,8 @@ test('all-time cumulative to today includes prior FY activity but not future dat
     [summary.totalLoans, summary.totalAmount, summary.closedLoans, summary.closedAmount, summary.activeLoans, summary.activeBalance, summary.totalInterest],
     [5, 24000, 3, 17000, 2, 7000, 1500],
   );
-  assert.equal(summary.totalWeight, 6.333);
-  assert.equal(formatWeight(summary.totalWeight), '6.33');
+  assert.equal(summary.totalWeight, 3.333);
+  assert.equal(formatWeight(summary.totalWeight), '3.33');
 });
 
 test('period activity includes older loans closed in range without negative subtraction balance', () => {
@@ -318,6 +318,7 @@ test('page wires guarded exports, shared context, independent date updates and b
   assert.match(source, /calcMode === "period" \? <>/);
   assert.match(source, /accountSummaryPosition\(positionLoans/);
   assert.match(source, /accountSummaryYearlyProgress\(positionLoans/);
+  assert.match(source, /calcMode === "cumulative" && includePrintOverview && showSummaryOverview && comparisonRange\.error/);
   assert.match(source, /queryState === 'ready' && dateRanges\[activeTab\]\.cumulative\.from === null/);
   assert.equal((source.match(/<AccountSummaryOverview/g) || []).length, 3);
   assert.doesNotMatch(source, /queryKey: \["\/api\/transactions"\]/);

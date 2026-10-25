@@ -78,7 +78,7 @@ export async function downloadPrintDocumentPdf(html: string, filename: string, p
     } else {
       const origin = doc.body.getBoundingClientRect().top;
       const height = Math.ceil(doc.body.getBoundingClientRect().height);
-      const blocks = Array.from(doc.querySelectorAll<HTMLElement>("tr, .summary-document-closing, .summary-document-header, .summary-document-notes, .summary-overview-heading, .summary-overview-metrics, .summary-overview-chart, .summary-overview-note, .aso-header, .aso-key-totals, .aso-chart"))
+      const blocks = Array.from(doc.querySelectorAll<HTMLElement>("tr, .summary-document-closing, .summary-document-header, .summary-document-notes, .summary-overview-heading, .summary-overview-metrics, .summary-overview-chart, .summary-overview-note, .summary-position-metrics, .summary-position-year, .summary-position-footnote, .aso-header, .aso-key-totals, .aso-chart"))
         .map(node => { const rect = node.getBoundingClientRect(); return { top: rect.top - origin, bottom: rect.bottom - origin }; });
       const head = doc.querySelector("thead")?.getBoundingClientRect();
       const firstRow = doc.querySelector("tbody tr")?.getBoundingClientRect();

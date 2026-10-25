@@ -16,13 +16,29 @@ import { accountSummaryPrintDocument, printAccountSummary } from "@/lib/account-
 import { downloadPrintDocumentPdf } from "@/lib/print-document-pdf";
 import { ReportPrintActions, type ReportPrintAction } from "@/components/report-print-actions";
 import { buildAccountSummaryRow, accountSummaryTotals, accountSummaryContext, createSummaryRanges, initializeSummaryRanges, updateSummaryRange, firstSummaryLoanDate, localISODate, summaryRangeError, summaryDataState, checkedSummaryLoans, checkedSummaryClosures, summaryArray, createSummaryInterestSettings, accountSummaryPosition, accountSummaryYearlyProgress } from "@shared/account-summary";
-import type { SummaryRow } from "@shared/account-summary";
-import { rankAccountSummaryCustomers } from "@shared/account-summary";
+import type { SummaryRow, SummaryYearSelection } from "@shared/account-summary";
+import { rankAccountSummaryCustomers, createSummaryYearSelections, summaryYearRange } from "@shared/account-summary";
 
 export default function AccountSummaryReport() {
   const [activeTab, setActiveTab] = useState<"group" | "customer">("group");
   const [calcMode, setCalcMode] = useState<"cumulative" | "period">("cumulative");
   const today = localISODate();
+  const [yearSelections, setYearSelections] = useState(() => createSummaryYearSelections(today));
+  const yearSelection = yearSelections[activeTab];
+  const comparisonRange = summaryYearRange(yearSelection, today);
+  const financialYearLabel = (year: number) => `${year}–${String(year + 1).slice(-2)}`;
+  const yearPeriodLabel = comparisonRange.error
+    ? ""
+    : comparisonRange.fromYear === comparisonRange.toYear
+      ? financialYearLabel(comparisonRange.fromYear)
+      : `${financialYearLabel(comparisonRange.fromYear)} ते ${financialYearLabel(comparisonRange.toYear)}`;
+  const updateYearSelection = (selection: SummaryYearSelection) => {
+    const currentYear = createSummaryYearSelections(today)[activeTab].toYear;
+    const next = selection.preset === "custom"
+      ? selection
+      : { ...selection, toYear: currentYear, fromYear: currentYear - Number(selection.preset) + 1 };
+    setYearSelections(state => ({ ...state, [activeTab]: next }));
+  };
   const [dateRanges, setDateRanges] = useState(() => createSummaryRanges(today));
   const [interestSettings, setInterestSettings] = useState(() => createSummaryInterestSettings(today));
   const fromDate = dateRanges.group.period.from ?? today;
@@ -176,6 +192,10 @@ export default function AccountSummaryReport() {
 
   const handlePrint = async (asPdf = false) => {
     if (!reportReady) { alert(reportProblem); return; }
+    if (calcMode === "cumulative" && includePrintOverview && showSummaryOverview && comparisonRange.error) {
+      alert(comparisonRange.error);
+      return;
+    }
     const showRank = activeTab === "customer" && customerMode === "top50";
     const data = activeTab === "group" ? groupSummaries : customerSummaries;
     const totals = activeTab === "group" ? groupGrandTotals : customerGrandTotals;
@@ -211,6 +231,7 @@ export default function AccountSummaryReport() {
         includeOverview: includePrintOverview && showSummaryOverview, includeNotes: includePrintNotes && showSummaryOverview,
         position: calcMode === "cumulative" && showSummaryOverview ? currentPosition : undefined,
         yearlyProgress: calcMode === "cumulative" && showSummaryOverview ? yearlyProgress : undefined,
+        yearlyPeriod: yearPeriodLabel,
       });
       if (asPdf) await downloadPrintDocumentPdf(html, "खाते_सारांश.pdf");
       else await printAccountSummary(html);
@@ -300,8 +321,8 @@ export default function AccountSummaryReport() {
   const currentPosition = showSummaryOverview
     ? accountSummaryPosition(positionLoans, loanClosures, today, positionInterestRange)
     : undefined;
-  const yearlyProgress = showSummaryOverview
-    ? accountSummaryYearlyProgress(positionLoans, loanClosures, today)
+  const yearlyProgress = calcMode === "cumulative" && showSummaryOverview && !comparisonRange.error
+    ? accountSummaryYearlyProgress(positionLoans, loanClosures, today, comparisonRange)
     : [];
 
   const handleExcelExport = (data: SummaryRow[], label: string) => {
@@ -434,21 +455,21 @@ export default function AccountSummaryReport() {
             </div>
             <div className="grid grid-cols-2 gap-1 text-xs mb-2">
               <div className="bg-amber-50 rounded p-1.5 text-center">
-                <div className="text-amber-600">सोने वजन</div>
+                <div className="text-amber-600">सक्रिय सोने वजन</div>
                 <div className="font-bold text-amber-800">{formatWeight(row.goldWeight || 0)} ग्रॅ</div>
                 {(row.silverWeight || 0) > 0 && (
                   <>
-                    <div className="text-gray-500 mt-0.5">चांदी</div>
+                    <div className="text-gray-500 mt-0.5">सक्रिय चांदी</div>
                     <div className="font-bold text-gray-700">{formatWeight(row.silverWeight)} ग्रॅ</div>
                   </>
                 )}
               </div>
               <div className="bg-yellow-50 rounded p-1.5 text-center">
-                <div className="text-yellow-600">सोने शुद्ध</div>
+                <div className="text-yellow-600">सक्रिय सोने शुद्ध</div>
                 <div className="font-bold text-yellow-800">{formatWeight(row.goldFineWeight || 0)} ग्रॅ</div>
                 {(row.silverFineWeight || 0) > 0 && (
                   <>
-                    <div className="text-gray-500 mt-0.5">चांदी शुद्ध</div>
+                    <div className="text-gray-500 mt-0.5">सक्रिय चांदी शुद्ध</div>
                     <div className="font-bold text-gray-700">{formatWeight(row.silverFineWeight)} ग्रॅ</div>
                   </>
                 )}
@@ -494,21 +515,21 @@ export default function AccountSummaryReport() {
           </div>
           <div className="grid grid-cols-2 gap-1 text-xs mb-2">
             <div className="bg-amber-100 rounded p-1.5 text-center">
-              <div className="text-amber-700">सोने वजन</div>
+              <div className="text-amber-700">सक्रिय सोने वजन</div>
               <div className="font-bold text-amber-900">{formatWeight(grandTotals.goldWeight || 0)} ग्रॅ</div>
               {(grandTotals.silverWeight || 0) > 0 && (
                 <>
-                  <div className="text-gray-600 mt-0.5">चांदी</div>
+                  <div className="text-gray-600 mt-0.5">सक्रिय चांदी</div>
                   <div className="font-bold text-gray-800">{formatWeight(grandTotals.silverWeight)} ग्रॅ</div>
                 </>
               )}
             </div>
             <div className="bg-yellow-100 rounded p-1.5 text-center">
-              <div className="text-yellow-700">सोने शुद्ध</div>
+              <div className="text-yellow-700">सक्रिय सोने शुद्ध</div>
               <div className="font-bold text-yellow-900">{formatWeight(grandTotals.goldFineWeight || 0)} ग्रॅ</div>
               {(grandTotals.silverFineWeight || 0) > 0 && (
                 <>
-                  <div className="text-gray-600 mt-0.5">चांदी शुद्ध</div>
+                  <div className="text-gray-600 mt-0.5">सक्रिय चांदी शुद्ध</div>
                   <div className="font-bold text-gray-800">{formatWeight(grandTotals.silverFineWeight)} ग्रॅ</div>
                 </>
               )}
@@ -682,6 +703,7 @@ export default function AccountSummaryReport() {
                 totals={currentPrintTotals} mode={calcMode} periodText={overviewPeriodText} subsetLabel={scopeLabel} interestLabel={reportContext.interestText}
                 position={calcMode === "cumulative" ? currentPosition : undefined}
                 yearlyProgress={calcMode === "cumulative" ? yearlyProgress : undefined}
+                yearlyPeriod={yearPeriodLabel}
               />}
               
               {currentPrintData.length > 0 ? (
@@ -790,7 +812,7 @@ export default function AccountSummaryReport() {
                   </CardContent>
                 </Card>
 
-                {reportReady && <div ref={overviewRef} className="no-print"><AccountSummaryOverview totals={groupGrandTotals} mode={calcMode} periodText={overviewPeriodText} subsetLabel={scopeLabel} interestLabel={reportContext.interestText} position={calcMode === "cumulative" ? currentPosition : undefined} yearlyProgress={calcMode === "cumulative" ? yearlyProgress : undefined} /></div>}
+                {reportReady && <div ref={overviewRef} className="no-print"><AccountSummaryOverview totals={groupGrandTotals} mode={calcMode} periodText={overviewPeriodText} subsetLabel={scopeLabel} interestLabel={reportContext.interestText} position={calcMode === "cumulative" ? currentPosition : undefined} yearlyProgress={calcMode === "cumulative" ? yearlyProgress : undefined} yearSelection={yearSelection} onYearSelectionChange={updateYearSelection} yearlyPeriod={yearPeriodLabel} yearlyError={comparisonRange.error} /></div>}
                 {reportReady && <details className="my-3 text-xs text-gray-600"><summary className="cursor-pointer font-medium">हिशोबाचा आधार</summary><p className="mt-2 leading-relaxed">{reportContext.balanceNote}</p></details>}
                 <details data-testid="account-summary-recorded-transactions" open={calcMode === "period"} className="my-3 rounded-xl border border-slate-200 bg-white">
                   <summary className="cursor-pointer px-4 py-3 text-sm font-semibold text-slate-700">
@@ -1126,7 +1148,7 @@ export default function AccountSummaryReport() {
 
                 {/* Results */}
                 {reportReady && showSummaryOverview && selectedCustomerName && <>
-                  <div ref={overviewRef} className="no-print"><AccountSummaryOverview totals={customerGrandTotals} mode={calcMode} periodText={overviewPeriodText} subsetLabel={scopeLabel} interestLabel={reportContext.interestText} position={calcMode === "cumulative" ? currentPosition : undefined} yearlyProgress={calcMode === "cumulative" ? yearlyProgress : undefined} /></div>
+                  <div ref={overviewRef} className="no-print"><AccountSummaryOverview totals={customerGrandTotals} mode={calcMode} periodText={overviewPeriodText} subsetLabel={scopeLabel} interestLabel={reportContext.interestText} position={calcMode === "cumulative" ? currentPosition : undefined} yearlyProgress={calcMode === "cumulative" ? yearlyProgress : undefined} yearSelection={yearSelection} onYearSelectionChange={updateYearSelection} yearlyPeriod={yearPeriodLabel} yearlyError={comparisonRange.error} /></div>
                   <details className="my-3 text-xs text-gray-600"><summary className="cursor-pointer font-medium">हिशोबाचा आधार</summary><p className="mt-2 leading-relaxed">{reportContext.balanceNote}</p></details>
                 </>}
                 {customerSummaries.length > 0 ? (

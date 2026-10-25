@@ -38,6 +38,8 @@ createServer((req, res) => {
     const kind = url.searchParams.get("kind") || "compact";
     const summaryRows = Array.from({ length: kind.includes("long") ? 100 : 3 }, (_, index) => ({ ...row, name: `नमुना ${index + 1}` }));
     const mode = kind === "summary-period" ? "period" : "cumulative";
+    const progressYearCount = kind.includes("ten") ? 10 : kind.includes("custom") ? 3 : 5;
+    const progressFirstYear = kind.includes("ten") ? 2017 : kind.includes("custom") ? 2020 : 2022;
     res.setHeader("Content-Type", "text/html;charset=utf-8");
     const overviewHTML = renderToStaticMarkup(React.createElement(AccountSummaryOverview, {
       totals: row, mode: "cumulative", periodText: "01/04/2026 ते 25/10/2026",
@@ -49,10 +51,13 @@ createServer((req, res) => {
       notes: "नमुना", overviewHTML, overviewMode: mode, includeOverview: kind !== "summary" && kind !== "summary-long", includeNotes: kind.includes("full"),
       ...(kind.includes("position") ? {
         position: { activeLoans: 532, activeBalance: 18214863, goldWeight: 7181.62, silverWeight: 1245, totalInterest: 1530024 },
-        yearlyProgress: Array.from({ length: 7 }, (_, i) => ({
-          year: 2020 + i, label: `${2020 + i}–${String(2021 + i).slice(-2)}`,
-          from: `${2020 + i}-04-01`, to: i === 6 ? "2026-10-25" : `${2021 + i}-03-31`,
-          partial: i === 6, disbursed: (i + 1) * 1111536, interest: (i + 1) * 110024,
+        yearlyPeriod: kind.includes("ten") ? "2017–18 ते 2026–27" : kind.includes("custom") ? "2020–21 ते 2022–23" : "2022–23 ते 2026–27",
+        yearlyProgress: Array.from({ length: progressYearCount }, (_, i) => ({
+          year: progressFirstYear + i,
+          label: `${progressFirstYear + i}–${String(progressFirstYear + i + 1).slice(-2)}`,
+          from: `${progressFirstYear + i}-04-01`,
+          to: !kind.includes("custom") && i === progressYearCount - 1 ? "2026-10-25" : `${progressFirstYear + i + 1}-03-31`,
+          partial: !kind.includes("custom") && i === progressYearCount - 1, disbursed: (i + 1) * 1111536, interest: (i + 1) * 110024,
           loanCount: 100 + i, previousComparableDisbursed: i ? i * 1111536 : null,
           disbursementChange: i ? 15.4 : null,
         })),

@@ -53,6 +53,27 @@ export interface SummaryYearProgress {
   previousComparableDisbursed: number | null;
   disbursementChange: number | null;
 }
+export interface SummaryYearSelection {
+  preset: '5' | '10' | 'custom';
+  fromYear: number;
+  toYear: number;
+}
+export function createSummaryYearSelections(today: string): Record<SummaryView, SummaryYearSelection> {
+  const current = Number(createSummaryRanges(today).group.period.from!.slice(0, 4));
+  return {
+    group: { preset: '5', fromYear: current - 4, toYear: current },
+    customer: { preset: '5', fromYear: current - 4, toYear: current },
+  };
+}
+export function summaryYearRange(selection: SummaryYearSelection, today: string) {
+  const current = Number(createSummaryRanges(today).group.period.from!.slice(0, 4));
+  const fromYear = selection.preset === 'custom' ? selection.fromYear : current - (selection.preset === '10' ? 9 : 4);
+  const toYear = selection.preset === 'custom' ? selection.toYear : current;
+  const error = !Number.isInteger(fromYear) || !Number.isInteger(toYear) ||
+    fromYear < 1 || toYear > current || fromYear > toYear
+    ? 'सुरुवात व शेवटची वैध आर्थिक वर्षे निवडा; शेवटचे वर्ष चालू आर्थिक वर्षापुढे नसावे.' : '';
+  return { fromYear, toYear, error };
+}
 
 /** Today's stock and received-interest flow are deliberately separate from turnover. */
 export function accountSummaryPosition(
@@ -61,15 +82,13 @@ export function accountSummaryPosition(
 ): SummaryPosition {
   const loans = checkedSummaryLoans(inputLoans);
   checkedSummaryClosures(closures);
-  const active = loans.filter(loan => loan.status === 'active' && loan.loanDate <= today);
   const summary = buildAccountSummaryRow('position', loans, closures, 'cumulative',
     firstSummaryLoanDate(loans, today), today, today, interestRange);
-  const weights = loanWeightTotals(active);
   return {
-    activeLoans: active.length,
+    activeLoans: summary.activeLoans,
     activeBalance: summary.activeBalance,
-    goldWeight: weights.goldWeight,
-    silverWeight: weights.silverWeight,
+    goldWeight: summary.goldWeight,
+    silverWeight: summary.silverWeight,
     totalInterest: summary.totalInterest,
   };
 }
@@ -77,8 +96,13 @@ export function accountSummaryPosition(
 /** Recorded FY activity, with like-for-like elapsed-period comparison for this FY. */
 export function accountSummaryYearlyProgress(
   inputLoans: SummaryLoan[], closures: SummaryClosure[], today: string,
+  range?: { fromYear: number; toYear: number },
 ): SummaryYearProgress[] {
   if (!validSummaryDate(today)) throw new Error('आजची तारीख अवैध आहे.');
+  const selected = summaryYearRange(range
+    ? { preset: 'custom', ...range }
+    : createSummaryYearSelections(today).group, today);
+  if (selected.error) throw new Error(selected.error);
   const loans = checkedSummaryLoans(inputLoans).filter(loan => loan.loanDate <= today);
   const ids = new Set(loans.map(loan => loan.id));
   const events = checkedSummaryClosures(closures).filter(event =>
@@ -89,20 +113,21 @@ export function accountSummaryYearlyProgress(
   const first = events.reduce((year, event) => Math.min(year, financialYear(event.closureDate)),
     loans.reduce((year, loan) => Math.min(year, financialYear(loan.loanDate)), current));
   const rows: SummaryYearProgress[] = [];
+  const fyDate = (year: number, suffix: string) => `${String(year).padStart(4, '0')}${suffix}`;
   // Same calendar cutoff in the previous year; clamp 29 February to 28 February.
   let previousCutoff = `${Number(today.slice(0, 4)) - 1}${today.slice(4)}`;
   if (!validSummaryDate(previousCutoff)) previousCutoff = `${Number(today.slice(0, 4)) - 1}-02-28`;
-  for (let year = first; year <= current; year++) {
-    const from = `${year}-04-01`;
-    const yearEnd = `${year + 1}-03-31`;
+  for (let year = Math.max(first, selected.fromYear); year <= selected.toYear; year++) {
+    const from = fyDate(year, '-04-01');
+    const yearEnd = fyDate(year + 1, '-03-31');
     const to = year === current ? today : yearEnd;
     const summary = buildAccountSummaryRow('year', loans, events, 'period', from, to, today);
-    const previous = rows.at(-1);
-    const previousComparableDisbursed = previous
-      ? year === current && to < yearEnd
-        ? buildAccountSummaryRow('previous elapsed', loans, events, 'period',
-          `${year - 1}-04-01`, previousCutoff, today).totalAmount
-        : previous.disbursed
+    // The baseline may be outside the visible window; never compare the
+    // first displayed year with zero merely because the prior row is hidden.
+    const previousComparableDisbursed = first < year
+      ? buildAccountSummaryRow('previous comparable', loans, events, 'period',
+        fyDate(year - 1, '-04-01'),
+        year === current && to < yearEnd ? previousCutoff : fyDate(year, '-03-31'), today).totalAmount
       : null;
     rows.push({
       year, label: `${year}–${String(year + 1).slice(-2)}`, from, to,
@@ -212,12 +237,14 @@ export function buildAccountSummaryRow(name: string, inputLoans: SummaryLoan[], 
   const sumPrincipal = (loans: SummaryLoan[]) => loans.reduce((sum, loan) => sum + Number(loan.principalAmount || 0), 0);
   const fine = (loans: SummaryLoan[]) => loans.reduce((sum, loan) =>
     sum + weightGrams(loan.weight) * (parseFloat(String(loan.purity || '82')) || 82) / 100, 0);
-  const gold = rowLoans.filter(loan => loan.metalType !== 'silver' && loan.loanType !== 'विनातारण');
-  const silver = rowLoans.filter(loan => loan.metalType === 'silver');
+  // Weight is the current pledged stock, not lifetime turnover. Use the same
+  // active set as the balance in both the overview and every summary row.
+  const gold = active.filter(loan => loan.metalType !== 'silver' && loan.loanType !== 'विनातारण');
+  const silver = active.filter(loan => loan.metalType === 'silver');
   return {
     name, totalLoans: rowLoans.length, activeLoans: active.length,
     closedLoans: new Set(inRangeClosures.map(closure => closure.loanId)).size,
-    ...loanWeightTotals(rowLoans), totalFineWeight: fine(rowLoans),
+    ...loanWeightTotals(active), totalFineWeight: fine(active),
     goldFineWeight: fine(gold), silverFineWeight: fine(silver),
     totalAmount: sumPrincipal(rowLoans), activeBalance: sumPrincipal(active),
     closedAmount: inRangeClosures.reduce((sum, closure) => sum + Number(closure.principalPaid ?? closure.principalAmount ?? 0), 0),

@@ -24,6 +24,7 @@ export type SummaryPrintOptions = {
   overviewMode?: "cumulative" | "period";
   position?: SummaryPosition;
   yearlyProgress?: SummaryYearProgress[];
+  yearlyPeriod?: string;
 };
 
 /** One document for desktop print and Android's Save as PDF. */
@@ -68,7 +69,7 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 <p>${safe(englishSummaryDigits(options.interest))}</p>
 </header>
 ${options.includeOverview && !showRank ? options.position
-  ? accountSummaryPositionPrint(options.position, options.yearlyProgress)
+  ? accountSummaryPositionPrint(options.position, options.yearlyProgress, options.yearlyPeriod)
   : accountSummaryPrintOverview(totals, options.overviewMode ?? "cumulative") : ""}
 ${options.includeNotes ? `<p class="summary-document-notes">${safe(options.notes)}</p>` : ""}
 <table><colgroup>${widths.map(width => `<col style="width:${width}%">`).join("")}</colgroup>

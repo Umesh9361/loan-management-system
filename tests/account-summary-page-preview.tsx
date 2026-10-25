@@ -31,7 +31,7 @@ const result = await build({
     import {QueryClient,QueryClientProvider} from '@tanstack/react-query';
     import Page from './client/src/pages/reports/account-summary';
     const client=new QueryClient({defaultOptions:{queries:{retry:false,queryFn:async({queryKey})=>{
-      const r=await fetch(queryKey[0]);if(!r.ok)throw Error('Fixture request failed');return r.json();
+      const r=await fetch(queryKey[0]+(location.search.includes('century')?'?history=century':''));if(!r.ok)throw Error('Fixture request failed');return r.json();
     }}}});
     createRoot(document.getElementById('root')).render(<QueryClientProvider client={client}><Page/></QueryClientProvider>);
   `, resolveDir: process.cwd(), loader: "tsx" },
@@ -42,11 +42,15 @@ const result = await build({
   } }],
 });
 createServer((req, res) => {
-  const path = new URL(req.url!, "http://fixture").pathname;
+  const url = new URL(req.url!, "http://fixture");
+  const path = url.pathname;
   const data: Record<string, unknown> = {
     "/api/company": { name: "नमुना फायनान्स" },
     "/api/groups": [{ id: "A", name: "गट A" }, { id: "B", name: "गट B" }],
-    "/api/loans": loans, "/api/loan-closures": closures,
+    "/api/loans": url.searchParams.get("history") === "century"
+      ? [...loans, { ...loans[0], id: "century", loanDate: `${year - 100}-04-01`, principalAmount: 0, weight: "0", status: "closed" }]
+      : loans,
+    "/api/loan-closures": closures,
     "/api/borrowers/autocomplete": loans.map(loan => ({ borrowerName: loan.borrowerName })),
   };
   if (path in data) { res.setHeader("Content-Type", "application/json"); res.end(JSON.stringify(data[path])); return; }

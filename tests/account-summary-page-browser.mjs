@@ -70,6 +70,10 @@ try {
     await click("document.querySelector('[data-testid=\"account-summary-recorded-transactions\"] summary').click()");
     values = await evaluate(totals);
     for (const amount of ["25,000", "18,000", "7,000", "1,500"]) assert.ok(values.includes(amount), "original historical transaction totals retained");
+    if (width === 360) {
+      assert.ok(values.includes("सक्रिय सोने वजन") && values.includes("सक्रिय चांदी"), "weight scope is explicit");
+      assert.equal((values.match(/1\.25/g) || []).length, 2, "grand-total raw gold and silver weights match current position, excluding closed loans");
+    }
     await click(button("कालावधी हिशोब"));
     assert.equal(await evaluate("document.querySelectorAll('input[type=date]').length"), 2);
     const periodDates = await evaluate("[...document.querySelectorAll('input[type=date]')].map(n=>n.value)");
@@ -99,6 +103,38 @@ try {
     assert.ok(await evaluate("document.documentElement.scrollWidth<=innerWidth+1"), "no horizontal overflow");
     assert.ok((await evaluate(outsideCharts)).includes("आजपर्यंतचे सर्व व्याज"));
     console.log(`${width}px: current stock, annual flows, FY/lifetime, legacy table, period isolation, customer scope and top50 passed`);
+    await call("Page.navigate", { url: "http://127.0.0.1:5001/?history=century" });
+    await waitFor("document.querySelectorAll('[data-testid=\"account-summary-year\"]').length===5");
+    const currentYear = Number(await evaluate("[...document.querySelectorAll('[data-testid=\"account-summary-year\"] h4')].at(-1).textContent.slice(0,4)"));
+    const centuryPosition = await evaluate(positionText);
+    await click(button("मागील 10 वर्षे"));
+    assert.equal(await evaluate("document.querySelectorAll('[data-testid=\"account-summary-year\"]').length"), 10);
+    assert.equal(await evaluate(positionText), centuryPosition, "comparison preset leaves current position untouched");
+    await click(button("वर्षे निवडा"));
+    await setInput('input[aria-label="पासूनचे आर्थिक वर्ष"]', String(currentYear - 2));
+    await setInput('input[aria-label="पर्यंतचे आर्थिक वर्ष"]', String(currentYear - 1));
+    assert.equal(await evaluate("document.querySelectorAll('[data-testid=\"account-summary-year\"]').length"), 2);
+    assert.equal(await evaluate("document.querySelectorAll('.aso-partial').length"), 0, "completed-year custom range excludes current partial year");
+    assert.equal(await evaluate(positionText), centuryPosition, "custom range does not filter stock or interest");
+    await setInput('input[aria-label="पासूनचे आर्थिक वर्ष"]', String(currentYear));
+    assert.ok(await evaluate("!!document.querySelector('.aso-year-error[role=alert]')"), "reversed selection has explicit error");
+    assert.equal(await evaluate("document.querySelectorAll('[data-testid=\"account-summary-year\"]').length"), 0, "invalid range never leaves stale bars");
+    await click("document.querySelector('fieldset input[type=checkbox]').click()");
+    await evaluate("window.alert=message=>window.lastSummaryAlert=message");
+    await click(button("PDF डाउनलोड"));
+    assert.ok((await evaluate("window.lastSummaryAlert")).includes("वैध आर्थिक वर्षे"), "invalid comparison cannot be exported as valid analysis");
+    await setInput('input[aria-label="पासूनचे आर्थिक वर्ष"]', String(currentYear - 2));
+    await click(button("कस्टमर नावाप्रमाणे"));
+    await setInput("#customerSearch", "नमुना");
+    await waitFor("[...document.querySelectorAll('button')].some(n=>n.textContent.trim()==='नमुना ग्राहक 2')");
+    await click(button("नमुना ग्राहक 2"));
+    assert.equal(await evaluate("[...document.querySelectorAll('.aso-year-choice[aria-pressed=true]')][0].textContent"), "मागील 5 वर्षे", "customer comparison independent");
+    await click(button("मागील 10 वर्षे"));
+    await click(button("गट प्रमाणे"));
+    assert.equal(await evaluate("document.querySelector('input[aria-label=\"पासूनचे आर्थिक वर्ष\"]').value"), String(currentYear - 2), "group custom years restored");
+    assert.equal(await evaluate("document.querySelector('input[aria-label=\"पर्यंतचे आर्थिक वर्ष\"]').value"), String(currentYear - 1));
+    assert.ok(await evaluate("document.documentElement.scrollWidth<=innerWidth+1"), "custom-year controls have no horizontal overflow");
+    console.log(`${width}px: century-old history bounded to 5/10/custom FYs, validation and independent selections passed`);
   }
 } finally {
   socket.close();

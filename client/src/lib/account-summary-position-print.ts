@@ -4,7 +4,7 @@ import { formatSummaryCount, formatSummaryCurrency } from "../../../shared/accou
 import { formatWeight } from "../../../shared/report-weights";
 
 /** Optional analysis only. The original transaction table is authored elsewhere. */
-export function accountSummaryPositionPrint(position: SummaryPosition, years: SummaryYearProgress[] = []) {
+export function accountSummaryPositionPrint(position: SummaryPosition, years: SummaryYearProgress[] = [], yearlyPeriod?: string) {
   const safe = escapeSummaryHtml;
   const metrics = [
     ["सक्रिय खाती", formatSummaryCount(position.activeLoans)],
@@ -21,6 +21,7 @@ export function accountSummaryPositionPrint(position: SummaryPosition, years: Su
     <h2>आजची स्थिती</h2>
     <div class="summary-position-metrics">${metrics.map(([label, value]) =>
       `<div><span>${safe(label)}</span><strong>${safe(value)}</strong></div>`).join("")}</div>
+    ${yearlyPeriod ? `<p class="summary-position-selected">तुलनेची आर्थिक वर्षे: ${safe(yearlyPeriod)}</p>` : ""}
     ${years.length ? `<h3>आर्थिक वर्षनिहाय प्रगती</h3>
     <div class="summary-position-year-head"><span>आर्थिक वर्ष</span><span>कर्जवाटप · ₹</span><span>मिळालेले व्याज · ₹</span></div>
     ${years.map(year => `<div class="summary-position-year">
@@ -30,7 +31,7 @@ export function accountSummaryPositionPrint(position: SummaryPosition, years: Su
           `${year.disbursementChange > 0 ? "+" : ""}${year.disbursementChange.toLocaleString("en-IN", { maximumFractionDigits: 1 })}% ${year.partial ? "मागील वर्षाच्या समान कालावधीपेक्षा" : "मागील वर्षापेक्षा"}`}</small></div>
       <div><strong>${safe(formatSummaryCurrency(year.interest))}</strong>${bar(year.interest, maxInterest, "#168578")}</div>
     </div>`).join("")}
-    <p class="summary-position-footnote">नोंदवलेल्या व्यवहारांवर आधारित. चालू वर्षाची वाढ मागील वर्षाच्या समान कालावधीशी; इतर वर्षांची पूर्ण वर्षाशी तुलना. दोन्ही आलेखांचे प्रमाण स्वतंत्र आहे.</p>` : ""}
+    <p class="summary-position-footnote">नोंदवलेल्या व्यवहारांवर आधारित. चालू वर्षाची वाढ मागील वर्षाच्या समान कालावधीशी; इतर वर्षांची पूर्ण वर्षाशी तुलना. दोन्ही आलेखांचे प्रमाण स्वतंत्र आहे.</p>` : `<p class="summary-position-footnote">निवडलेल्या वर्षांत व्यवहार उपलब्ध नाहीत.</p>`}
   </section>`;
 }
 
@@ -38,6 +39,7 @@ export const accountSummaryPositionPrintStyles = `
 .summary-position-print { margin: 0 0 3mm; padding: 3mm; border: 1px solid #d9d8eb; }
 .summary-position-print h2 { font-size: 12pt; line-height: 1.7; margin: 0 0 2mm; color: #343252; }
 .summary-position-print h3 { font-size: 10pt; line-height: 1.7; margin: 3mm 0 2mm; }
+.summary-position-selected { margin: 2mm 0; font-size: 8pt; line-height: 1.7; color: #5147b8; }
 .summary-position-metrics { display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); gap: 2mm; break-inside: avoid; }
 .summary-position-metrics > div { padding: 2mm; border-left: 2px solid #5147b8; background: #f7f6fc; }
 .summary-position-metrics > div:nth-child(2) { border-color: #3977a5; }
