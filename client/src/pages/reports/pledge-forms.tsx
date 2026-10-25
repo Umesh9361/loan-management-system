@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle, Check, Download, Loader2, Printer, Search, UserRound, X } from "lucide-react";
+import { AlertCircle, Check, Loader2, Printer, Search, UserRound, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { usePledgeFormDefaults } from "@/hooks/use-pledge-form-defaults";
 import { PledgeFormEditor } from "@/components/pledge-form-editor";
@@ -57,8 +57,7 @@ export default function PledgeFormsPage() {
   const [selection, setSelection] = useState<PledgeFormChoice>(() => getPledgeFormEntry(window.location.search).selection);
   const [layout, setLayout] = useState<PledgeFormLayout>("compact");
   const [printPending, setPrintPending] = useState(false);
-  const [pdfPending, setPdfPending] = useState(false);
-  const working = printPending || pdfPending;
+  const working = printPending;
   const selectedForms = getSelectedPledgeForms(selection);
   const noForms = selectedForms.length === 0;
   const expectedPages = getPledgePageGroups(selection, layout).length;
@@ -164,7 +163,7 @@ export default function PledgeFormsPage() {
     setFormDirty(false);
     return true;
   };
-  const handlePrint = async (blankCopy = false, asPdf = false) => {
+  const handlePrint = async (blankCopy = false) => {
     if (working || loanLookupBusy || defaults.busy || !defaults.ready || noForms) return;
     if (!blankCopy && mode === "borrower" && !selected) {
       toast({ title: "कर्जदार निवडा", description: "प्रिंट करण्यापूर्वी यादीतून कर्जदार निवडा.", variant: "destructive" });
@@ -178,18 +177,14 @@ export default function PledgeFormsPage() {
     if (!validMatter.success) {
       toast({ title: "मजकूर तपासा", description: validMatter.error.issues[0]?.message, variant: "destructive" }); return;
     }
-    if (asPdf) setPdfPending(true);
-    else setPrintPending(true);
+    setPrintPending(true);
     try {
       await printPledgeForms(pledgeFormsDocument(blankCopy ? organization : data, selection, validMatter.data, layout));
-      toast(asPdf
-        ? { title: "PDF तयार करा", description: `“Save as PDF” निवडा आणि Paper size मध्ये A4 ठेवा (Letter नाही). मांडणी: ${expectedPages} A4 ${expectedPages === 1 ? "पान" : "पाने"}.` }
-        : { title: "प्रिंट पर्याय उघडले", description: "Paper size: A4 निवडा (Letter नाही). प्रिंटर किंवा Save as PDF निवडा." });
+      toast({ title: "प्रिंट / PDF पर्याय उघडले", description: "प्रिंटर किंवा Save as PDF निवडा. Paper size: A4 ठेवा (Letter नाही)." });
     } catch (error) {
       toast({ title: "प्रिंट सुरू करता आला नाही", description: error instanceof Error ? error.message : "कृपया पुन्हा प्रयत्न करा.", variant: "destructive" });
     } finally {
       setPrintPending(false);
-      setPdfPending(false);
     }
   };
   const updatePersonal = (key: keyof PersonalData, value: string) => {
@@ -214,13 +209,9 @@ export default function PledgeFormsPage() {
             </div>
             <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:justify-end">
             {mode !== "blank" && <Button variant="outline" onClick={() => handlePrint(true)} disabled={noForms || working || loanLookupBusy || defaults.busy || !defaults.ready} className="h-11 border-indigo-200 bg-white text-indigo-700 hover:bg-indigo-50">कोरी प्रत प्रिंट</Button>}
-            <Button variant="outline" onClick={() => handlePrint(false, true)} disabled={noForms || working || loanLookupBusy || defaults.busy || !defaults.ready || (mode === "borrower" && !selected) || (mode === "loan" && !selectedLoan)} className="h-11 border-indigo-200 bg-white text-indigo-700 hover:bg-indigo-50">
-              {pdfPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
-              {pdfPending ? "PDF तयार होत आहे…" : "PDF तयार करा"}
-            </Button>
             <Button onClick={() => handlePrint()} disabled={noForms || working || loanLookupBusy || defaults.busy || !defaults.ready || (mode === "borrower" && !selected) || (mode === "loan" && !selectedLoan)} className="col-span-2 h-11 shrink-0 bg-indigo-600 px-5 text-white hover:bg-indigo-700 sm:col-span-1">
               {printPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Printer className="mr-2 h-4 w-4" />}
-              {printPending ? "तयार होत आहे…" : "प्रिंट करा"}
+              {printPending ? "तयार होत आहे…" : "प्रिंट / PDF"}
             </Button>
             </div>
           </header>
@@ -304,7 +295,7 @@ export default function PledgeFormsPage() {
               <Alert className="border-indigo-200 bg-indigo-50 text-indigo-950">
                 <AlertCircle className="h-4 w-4 text-indigo-800" />
                 <AlertDescription className="text-xs leading-relaxed">
-                  प्रिंट व PDF दोन्हीसाठी <strong>Paper size: A4</strong>, <strong>Actual size / 100%</strong> आणि headers/footers बंद ठेवा. मोबाईलमध्ये Letter दिसल्यास प्रिंट पर्याय उघडून A4 निवडा. PDFसाठी <strong>Save as PDF</strong> निवडा.
+                  <strong>प्रिंट / PDF</strong> बटणातून प्रिंटर किंवा <strong>Save as PDF</strong> निवडा. <strong>Paper size: A4</strong>, <strong>Actual size / 100%</strong> आणि headers/footers बंद ठेवा. मोबाईलमध्ये Letter दिसल्यास A4 निवडा.
                 </AlertDescription>
               </Alert>
               <p className="px-1 text-xs leading-relaxed text-slate-500">हे संपादनयोग्य नमुने आहेत, कायदेशीर वैधतेची हमी नाही. नोटिसीतील 15 दिवस ही नमुना मुदत आहे; लागू राज्य कायदा, परवान्याच्या अटी व आवश्यक सूचना स्थानिक वकिलाकडून तपासून वापरा. संस्थेचा आधी जतन केलेला मजकूर स्वतःहून बदलला जात नाही.</p>
@@ -313,7 +304,7 @@ export default function PledgeFormsPage() {
             <section className="min-w-0">
               <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                 <div><h2 className="text-sm font-semibold text-slate-800">पूर्वदृश्य</h2><p className="text-xs text-slate-500">A4 आकार · {expectedPages} {expectedPages === 1 ? "पान" : "पाने"}</p></div>
-                <Button variant="outline" size="sm" onClick={() => handlePrint()} disabled={noForms || working || loanLookupBusy || defaults.busy || !defaults.ready || (mode === "borrower" && !selected) || (mode === "loan" && !selectedLoan)} className="border-indigo-700 text-indigo-900 hover:bg-indigo-50"><Printer className="mr-2 h-4 w-4" /> प्रिंट करा</Button>
+                <Button variant="outline" size="sm" onClick={() => handlePrint()} disabled={noForms || working || loanLookupBusy || defaults.busy || !defaults.ready || (mode === "borrower" && !selected) || (mode === "loan" && !selectedLoan)} className="border-indigo-700 text-indigo-900 hover:bg-indigo-50"><Printer className="mr-2 h-4 w-4" /> प्रिंट / PDF</Button>
               </div>
               <div className="overflow-x-auto rounded-xl border border-slate-300 bg-slate-200 p-2 sm:p-5">
                 <div className="mx-auto w-[210mm] min-w-[210mm] bg-white shadow-[0_8px_30px_rgba(15,23,42,0.14)]">
