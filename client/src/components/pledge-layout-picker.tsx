@@ -20,7 +20,7 @@ const layouts: {
   {
     value: "compact",
     label: "1 पान — संक्षिप्त",
-    description: "सहा कट-आउट फॉर्म एका A4 पानावर.",
+    description: "सहा फॉर्म एका A4 पानावर.",
     pages: 1,
     formsPerPage: 6,
   },
@@ -68,8 +68,8 @@ export function PledgeLayoutPicker({
       <legend className="text-sm font-semibold text-slate-900">पानांची मांडणी</legend>
       <p className="mt-1 text-xs leading-5 text-slate-600">
         {isFullSheet
-          ? "सहा फॉर्मची पूर्ण शीट कशी छापायची ते निवडा."
-          : "स्वतंत्र फॉर्मसाठी मांडणी निवडा."}
+          ? "सहा फॉर्म एका किंवा दोन पानांत कसे मांडायचे ते निवडा."
+          : "निवडलेल्या फॉर्मची मांडणी निवडा."}
       </p>
 
       <div className="mt-3 grid gap-2 sm:grid-cols-2">

@@ -36,7 +36,19 @@ export const PLEDGE_FIELD_GROUPS = [
 ] as const;
 export type PledgeFieldKey = typeof PLEDGE_FIELD_GROUPS[number]["fields"][number]["key"];
 export type PledgeItem = { description: string; purity: string; weight: string; value: string };
-export type PledgeFormData = Partial<Record<PledgeFieldKey | "company" | "borrowerName" | "borrowerAddress" | "borrowerMobile", string>> & {
+export type PledgeCompanyProfile = Partial<Record<"name" | "address" | "contactNumber" | "licenseNumber", string | null>>;
+export type PledgeOrganizationData = {
+  company: string; companyAddress: string; companyContactNumber: string; companyLicenseNumber: string;
+};
+export function getPledgeOrganization(profile?: PledgeCompanyProfile | null, overrides: Partial<PledgeOrganizationData> = {}): PledgeOrganizationData {
+  return {
+    company: overrides.company ?? profile?.name ?? "",
+    companyAddress: overrides.companyAddress ?? profile?.address ?? "",
+    companyContactNumber: overrides.companyContactNumber ?? profile?.contactNumber ?? "",
+    companyLicenseNumber: overrides.companyLicenseNumber ?? profile?.licenseNumber ?? "",
+  };
+}
+export type PledgeFormData = Partial<PledgeOrganizationData> & Partial<Record<PledgeFieldKey | "borrowerName" | "borrowerAddress" | "borrowerMobile", string>> & {
   // Kept for previously edited templates; the built-in receipt no longer repeats these fields.
   releaseDate?: string; itemCount?: string; conditionNote?: string;
   loanItems?: PledgeItem[]; saleItems?: PledgeItem[];

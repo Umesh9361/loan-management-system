@@ -96,7 +96,7 @@ export function PledgeFormSelector({
         <div className="mt-3 rounded-lg border border-indigo-200 bg-indigo-50/70 px-3 py-3">
           <p className="text-sm font-semibold text-indigo-950">सर्व सहा नमुने</p>
           <p className="mt-1 text-xs leading-5 text-indigo-900/80">
-            पूर्ण फॉर्म संच एकाच पूर्वदृश्यात, छपाईत किंवा PDF मध्ये.
+            सर्व नमुने एकाच पूर्वदृश्यात, प्रिंट किंवा PDFमध्ये.
           </p>
         </div>
       )}
@@ -126,7 +126,7 @@ export function PledgeFormSelector({
             </SelectContent>
           </Select>
           <p className="text-xs leading-relaxed text-slate-500">
-            निवडलेला नमुना स्वतंत्रपणे पूर्वदृश्य, छापता किंवा PDF म्हणून जतन करता येईल.
+            निवडलेला नमुना स्वतंत्रपणे पाहता, प्रिंट करता किंवा PDF म्हणून जतन करता येईल.
           </p>
         </div>
       )}
@@ -186,7 +186,7 @@ export function PledgeFormSelector({
             </button>
           </div>
           <p className="mt-1 text-xs leading-relaxed text-slate-500">
-            फॉर्म ठरलेल्या क्रमाने येतील. एकही फॉर्म निवडलेला नसेल तर प्रिंट आणि PDF उपलब्ध होणार नाहीत.
+            नमुने ठरलेल्या क्रमाने येतील. एकही नमुना निवडलेला नसेल तर प्रिंट आणि PDF उपलब्ध होणार नाहीत.
           </p>
         </div>
       )}

@@ -155,7 +155,8 @@ export function pledgeFormsDocument(data: PledgeFormData, selection: PledgeFormC
   const keys = getSelectedPledgeForms(selection);
   if (!keys.length) throw new Error("किमान एक फॉर्म निवडा.");
   if (layout !== "compact" && layout !== "spacious") throw new Error("चुकीची पान मांडणी.");
-  const heading = (title: string) => `<header class="pf-heading"><div><h2>${safe(title)}</h2>${data.company ? `<div class="pf-brand">${safe(data.company)}</div>` : ""}</div><span class="pf-date">दिनांक: ${safe(date(data.printDate) || blankDate)}</span></header>`;
+  const organization = `<div class="pf-organization"><div class="pf-organization-name">${data.company?.trim() ? safe(data.company) : "संस्था / फर्मचे नाव: ____________________"}</div>${data.companyAddress?.trim() || data.companyContactNumber?.trim() || data.companyLicenseNumber?.trim() ? `<div class="pf-organization-details">${data.companyAddress?.trim() ? `<span class="pf-organization-address">${safe(data.companyAddress).replace(/\r?\n/g, "<br>")}</span>` : ""}${data.companyContactNumber?.trim() || data.companyLicenseNumber?.trim() ? `<span class="pf-organization-meta">${data.companyContactNumber?.trim() ? `<span>संपर्क: ${safe(data.companyContactNumber)}</span>` : ""}${data.companyLicenseNumber?.trim() ? `<span>परवाना क्र.: ${safe(data.companyLicenseNumber)}</span>` : ""}</span>` : ""}</div>` : ""}</div>`;
+  const heading = (title: string) => `${organization}<header class="pf-heading"><div><h2>${safe(title)}</h2></div><span class="pf-date">दिनांक: ${safe(date(data.printDate) || blankDate)}</span></header>`;
   const profile = () => `${line("कर्जदाराचे नाव:", data.borrowerName)}${line("पत्ता:", data.borrowerAddress)}`;
   const text = (key: keyof PledgeFormMatter) => renderPledgeMatter(matter[key], data);
   const notice = (final: boolean) => `<section class="pf-section pf-${final ? "final" : "interim"}" data-form="${final ? "final" : "interim"}">

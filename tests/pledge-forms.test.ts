@@ -4,7 +4,35 @@ import { readFileSync } from "node:fs";
 import vm from "node:vm";
 import ts from "typescript";
 import { PLEDGE_FORM_OPTIONS, pledgeFormsDocument, getSelectedPledgeForms, getPledgePageGroups, type PledgeFormKey } from "../client/src/lib/pledge-forms";
-import { DEFAULT_PLEDGE_MATTER, PLEDGE_FIELD_GROUPS, emptyPledgeItems } from "../shared/pledge-form-editor";
+import { DEFAULT_PLEDGE_MATTER, PLEDGE_FIELD_GROUPS, emptyPledgeItems, getPledgeOrganization } from "../shared/pledge-form-editor";
+
+test("each cut-apart form repeats its own institution name, address, phone and license", () => {
+  const organization = getPledgeOrganization({ name: "नमुना फायनान्स", address: "मुख्य रस्ता, नमुना गाव", contactNumber: "9000000000", licenseNumber: "TEST-123" });
+  for (const choice of ["all", ...PLEDGE_FORM_OPTIONS.filter(option => option.value !== "all").map(option => option.value)] as const) {
+    const html = pledgeFormsDocument(organization, choice);
+    const sections = [...html.matchAll(/<section\b[^>]*data-form="([^"]+)"[^>]*>([\s\S]*?)<\/section>/g)];
+    assert.equal(sections.length, choice === "all" ? 6 : 1);
+    for (const [, form, body] of sections) {
+      assert.equal((body.match(/class="pf-organization"/g) || []).length, 1, form);
+      for (const value of Object.values(organization)) assert.ok(body.includes(value), `${form}: ${value}`);
+      assert.ok(body.indexOf('class="pf-organization"') < body.indexOf("<h2>"), form);
+    }
+  }
+  const escaped = pledgeFormsDocument({ company: "<script>not-html</script>", companyAddress: "A & B\nदुसरी ओळ", companyContactNumber: '"123"', companyLicenseNumber: "<XYZ>" }, "receipt");
+  assert.doesNotMatch(escaped, /<script>not-html<\/script>|<XYZ>/);
+  assert.match(escaped, /A &amp; B<br>दुसरी ओळ/);
+  assert.match(pledgeFormsDocument({}, "receipt"), /संस्था \/ फर्मचे नाव: _+/);
+});
+test("typed institution overrides survive late profile loading, blanks, mode changes and explicit reset without changing the profile", () => {
+  const profile = { name: "प्रोफाइल संस्था", address: "मूळ पत्ता", contactNumber: "9000000000", licenseNumber: "TEST-1" };
+  const copy = { ...profile };
+  const override = { company: "टाइप केलेली संस्था", companyAddress: "" };
+  assert.equal(getPledgeOrganization(undefined, override).company, override.company);
+  assert.deepEqual(getPledgeOrganization(profile, override), { company: override.company, companyAddress: "", companyContactNumber: profile.contactNumber, companyLicenseNumber: profile.licenseNumber });
+  assert.equal(getPledgeOrganization(profile).company, profile.name);
+  assert.deepEqual(profile, copy);
+  assert.deepEqual(getPledgeOrganization(), { company: "", companyAddress: "", companyContactNumber: "", companyLicenseNumber: "" });
+});
 
 test("all six independent cut-apart templates fit the intended A4 print grid", () => {
   const html = pledgeFormsDocument({});
@@ -140,8 +168,8 @@ test("switching blank/new borrower clears previous personal and loan data in the
   const emptyPersonal = { borrowerName: "", borrowerAddress: "", borrowerMobile: "" };
   const emptyDetails = { accountNumber: "", principalAmount: "", loanDate: "", interestRate: "", printDate: "" };
   const state: Record<string, unknown> = {};
-  const context: Record<string, unknown> = { emptyPersonal, emptyDetails };
-  for (const key of ["Mode", "Search", "DebouncedSearch", "OpenSuggestions", "Selected", "Personal", "Details"]) context[`set${key}`] = (value: unknown) => { state[key] = value; };
+  const context: Record<string, unknown> = { emptyPersonal, emptyDetails, mode: "borrower", formDirty: false };
+  for (const key of ["Mode", "Search", "DebouncedSearch", "OpenSuggestions", "Selected", "Personal", "Details", "SelectedLoan", "FormDirty"]) context[`set${key}`] = (value: unknown) => { state[key] = value; };
   context.clearBorrower = execute(initializer("clearBorrower"), context);
   const changeMode = execute(initializer("changeMode"), context);
   changeMode("blank");
@@ -159,7 +187,7 @@ test("switching blank/new borrower clears previous personal and loan data in the
 test("selecting a real suggestion fills the actual editable profile and closes suggestions", () => {
   const state: Record<string, unknown> = {};
   const context: Record<string, unknown> = {};
-  for (const key of ["Selected", "Personal", "Search", "OpenSuggestions"]) context[`set${key}`] = (value: unknown) => { state[key] = value; };
+  for (const key of ["Selected", "Personal", "Search", "OpenSuggestions", "FormDirty"]) context[`set${key}`] = (value: unknown) => { state[key] = value; };
   const borrower = { borrowerName: "नमुना", borrowerAddress: "पत्ता", borrowerMobile: "1234567890" };
   execute(initializer("chooseBorrower"), context)(borrower);
   assert.equal(state.Selected, borrower);

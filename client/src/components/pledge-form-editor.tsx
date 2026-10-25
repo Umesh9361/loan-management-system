@@ -75,13 +75,13 @@ export function PledgeFormEditor({
           <div className="min-w-0">
             <h2 className="text-base font-semibold text-slate-900">फॉर्ममध्ये भरण्याची माहिती</h2>
             <p className="mt-1 text-xs leading-5 text-slate-600">
-              निवडलेल्या फॉर्मचे रिकामे तपशील भरा आणि आवश्यक असल्यास छापील मजकूर तात्पुरता बदला.
+              निवडलेल्या फॉर्मचे तपशील भरा आणि गरज असल्यास मजकूर बदला.
             </p>
           </div>
         </div>
         {blankMode && (
           <div className="mt-3 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2.5 text-sm leading-5 text-indigo-950">
-            कोरा हस्तलिखित फॉर्म छापण्यासाठी माहिती भरणे बंद आहे. तपशील टाइप करण्यासाठी “टाइप करून भरा” किंवा “कर्जदार निवडा” मोड निवडा. छापील मजकूर संपादन मात्र सुरू राहील.
+            कोऱ्या फॉर्ममध्ये तपशील रिकामे राहतील. भरायचे असल्यास “टाइप करून भरा” किंवा “कर्जदार निवडा” निवडा. फॉर्मवरील मजकूर बदलता येईल.
           </div>
         )}
       </header>
@@ -136,7 +136,7 @@ export function PledgeFormEditor({
 
         <section className="min-w-0 rounded-lg border border-indigo-100 bg-indigo-50/40 p-3" aria-labelledby="pledge-matter-heading">
           <div className="mb-3">
-            <h3 id="pledge-matter-heading" className="text-sm font-semibold text-slate-900">फॉर्मवरील छापील मजकूर</h3>
+            <h3 id="pledge-matter-heading" className="text-sm font-semibold text-slate-900">फॉर्मवरील मजकूर</h3>
             <p className="mt-1 text-xs leading-5 text-slate-600">बदल सध्या तात्पुरते आहेत. कंपनीचा डीफॉल्ट बदलण्यासाठी “डीफॉल्ट जतन करा” निवडा.</p>
           </div>
           <div className="space-y-2">
@@ -193,7 +193,7 @@ export function PledgeFormEditor({
             ))}
           </div>
           <p className="mt-3 rounded-md bg-white/80 px-3 py-2 text-xs leading-5 text-slate-600">
-            मजकुरातील {"{{loanDate}}"}, {"{{noticeDate}}"} आणि {"{{finalNoticeDate}}"} हे placeholder जसेच्या तसे ठेवा; छपाईत संबंधित दिनांकाची मूल्ये वापरली जातात.
+            मजकुरातील {"{{loanDate}}"}, {"{{noticeDate}}"} आणि {"{{finalNoticeDate}}"} तसेच ठेवा; प्रिंटमध्ये संबंधित तारखा दिसतील.
           </p>
         </section>
 

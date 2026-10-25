@@ -6,7 +6,7 @@ import { createServer } from "node:http";
 import { readFileSync, readdirSync } from "node:fs";
 import { build } from "esbuild";
 import { pledgeFormsDocument } from "../client/src/lib/pledge-forms";
-import { DEFAULT_PLEDGE_MATTER, PLEDGE_FIELD_GROUPS, pledgeDefaultsRequestSchema, type PledgeFormMatter } from "../shared/pledge-form-editor";
+import { DEFAULT_PLEDGE_MATTER, PLEDGE_FIELD_GROUPS, pledgeDefaultsRequestSchema, getPledgeOrganization, type PledgeFormMatter } from "../shared/pledge-form-editor";
 
 const bundle = await build({
   stdin: {
@@ -32,7 +32,16 @@ const bundle = await build({
     },
   }],
 });
-const fixture = { company: "नमुना संस्था", borrowerName: "नमुना कर्जदार", borrowerAddress: "नमुना गाव, नमुना रस्ता", borrowerMobile: "1234567890" };
+const fixtureProfile = { name: "नमुना फायनान्स", address: "मुख्य रस्ता, नमुना गाव", contactNumber: "9000000000", licenseNumber: "TEST-123/2026" };
+const fixture = { ...getPledgeOrganization(fixtureProfile), borrowerName: "नमुना कर्जदार", borrowerAddress: "नमुना गाव, नमुना रस्ता", borrowerMobile: "1234567890" };
+const fixtureLoan = {
+  id: "fixture-loan-621", accountNumber: "621", borrowerName: "नमुना कर्जदार",
+  borrowerAddress: "नमुना गाव", borrowerMobile: "9000000000",
+  principalAmount: "25000", loanDate: "2026-04-05", interestRate: "1.5",
+  interestRateType: "monthly", collateralDetails: "नमुना अंगठी", weight: "4.731",
+  purity: "91.6", marketValue: "42000", status: "active", hasMaturity: true,
+  maturityDate: "2027-04-05", group: { name: "नमुना गट" },
+};
 const savedDefaults = new Map<string, PledgeFormMatter>();
 let fixtureTenant = "fixture-A", fixtureRole = "admin";
 let lastDefaultsPayload: unknown = null;
@@ -72,7 +81,24 @@ createServer(async (req, res) => {
     const file = readdirSync("dist/public/assets").find(file => /^index-.*\.css$/.test(file))!;
     res.end(readFileSync(`dist/public/assets/${file}`)); return;
   }
-  if (url.pathname === "/api/company") { res.setHeader("Content-Type", "application/json"); res.end(JSON.stringify({ name: fixture.company })); return; }
+  if (url.pathname === "/api/company") { res.setHeader("Content-Type", "application/json"); res.end(JSON.stringify(fixtureProfile)); return; }
+  if (url.pathname === "/api/loans/search") {
+    res.setHeader("Content-Type", "application/json");
+    const q = url.searchParams.get("q");
+    if (q === "error") { res.statusCode = 500; res.end("{}"); return; }
+    res.end(JSON.stringify(q === "none" ? [] : [
+      { ...fixtureLoan, id: "fixture-loan-1621", accountNumber: "1621" },
+      fixtureLoan,
+      { ...fixtureLoan, id: "fixture-loan-closed", accountNumber: "622", status: "closed" },
+      { ...fixtureLoan, id: "fixture-loan-failed", accountNumber: "623", status: "closed" },
+    ])); return;
+  }
+  if (url.pathname === "/api/loan-closures") {
+    res.setHeader("Content-Type", "application/json");
+    if (url.searchParams.get("loanId") === "fixture-loan-failed") { res.statusCode = 500; res.end("{}"); return; }
+    await new Promise(resolve => setTimeout(resolve, 350));
+    res.end(JSON.stringify([{ loanId: "fixture-loan-closed", isClosed: true, closureDate: "2026-10-25", principalPaid: "25000", interestPaid: "2000", totalAmount: "27000", actualPaidAmount: "27000" }])); return;
+  }
   if (url.pathname === "/api/loans") { res.setHeader("Content-Type", "application/json"); res.end("[]"); return; }
   if (url.pathname === "/api/borrowers/autocomplete") {
     res.setHeader("Content-Type", "application/json");
@@ -85,6 +111,7 @@ createServer(async (req, res) => {
     field.key, field.type === "date" ? "2026-10-28" : field.type === "money" || field.type === "number" ? "1000" : "1234",
   ]));
   const data = url.pathname === "/all-filled" ? { ...fixture, ...allFields, loanItems: [{ description: "अंगठी", purity: "91.6", weight: "1.49", value: "12000" }], saleItems: [{ description: "अंगठी", purity: "91.6", weight: "1.49", value: "13000" }] }
+    : url.pathname === "/profile-blank" ? getPledgeOrganization(fixtureProfile)
     : url.pathname === "/filled" ? fixture
     : url.pathname === "/realistic" ? { ...fixture, borrowerName: "नमुना रामचंद्र भास्कर पाटील", borrowerAddress: "मु.पो. नमुना गाव, तालुका नमुना, जिल्हा नमुना, मुख्य रस्ता" }
     : url.pathname === "/long" ? { ...fixture, borrowerAddress: "फार मोठा पत्ता ".repeat(120) } : {};

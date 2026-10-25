@@ -12,13 +12,64 @@ export const PLEDGE_FORM_POLISH_STYLES = `
 .pf-section {
   border-color: #546575;
   background: #fff;
-  padding: 1.45mm 2.1mm;
+  padding: 1.25mm 2mm;
+}
+.pf-organization {
+  display: flex;
+  align-items: center;
+  gap: 1.2mm;
+  margin: 0 0 .35mm;
+  color: #46596b;
+  line-height: 1.22;
+  overflow-wrap: anywhere;
+}
+.pf-organization-name {
+  flex: 0 1 42%;
+  min-width: 0;
+  color: #273b68;
+  font-size: 8.8pt;
+  font-weight: 700;
+  line-height: 1.2;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+.pf-organization-details {
+  display: flex;
+  flex: 1 1 56%;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 0;
+  column-gap: 1.2mm;
+  color: #526274;
+  font-size: 6.1pt;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+.pf-organization-details > span {
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+.pf-organization-meta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  column-gap: 1.2mm;
+  color: #46596b;
+  font-size: inherit;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+.pf-organization-meta > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 .pf-heading {
   align-items: center;
   gap: 2.5mm;
-  margin-bottom: 1.35mm;
-  padding-bottom: .75mm;
+  margin-bottom: .7mm;
+  padding-bottom: .45mm;
   border-bottom: .22mm solid #9aa8b4;
 }
 .pf-heading > div {
@@ -150,11 +201,20 @@ export const PLEDGE_FORM_POLISH_STYLES = `
   padding: 2.65mm 3.1mm;
 }
 .pf-spacious .pf-heading {
-  margin-bottom: 2mm;
-  padding-bottom: 1mm;
+  margin-bottom: 1mm;
+  padding-bottom: .6mm;
+}
+.pf-spacious .pf-organization {
+  margin-bottom: .5mm;
+}
+.pf-spacious .pf-organization-name {
+  font-size: 13pt;
+}
+.pf-spacious .pf-organization-meta {
+  font-size: inherit;
 }
 .pf-spacious .pf-heading h2 {
-  font-size: 12.2pt;
+  font-size: 10.5pt;
 }
 .pf-spacious .pf-brand,
 .pf-spacious .pf-date {
@@ -197,6 +257,45 @@ export const PLEDGE_FORM_POLISH_STYLES = `
 }
 .pf-all.pf-compact .pf-disposal .pf-signatures {
   margin-top: 2.4mm;
+}
+/* Full institution details must fit every cut section without reducing body type. */
+.pf-organization-name:only-child {
+  flex-basis: 100%;
+}
+.pf-all.pf-compact .pf-section {
+  padding-top: 1mm;
+  padding-bottom: 1mm;
+}
+.pf-all.pf-compact .pf-organization {
+  margin-bottom: .05mm;
+}
+.pf-all.pf-compact .pf-organization-name {
+  font-size: 10pt;
+}
+.pf-all.pf-compact .pf-heading {
+  margin-bottom: .2mm;
+  padding-bottom: .2mm;
+}
+.pf-all.pf-compact .pf-heading h2 {
+  font-size: 9.2pt;
+}
+.pf-all.pf-compact .pf-signatures > div {
+  padding-top: 1mm;
+}
+.pf-all.pf-compact .pf-disposal .pf-heading {
+  margin-bottom: .2mm;
+  padding-bottom: .2mm;
+}
+.pf-all.pf-compact .pf-disposal .pf-signatures {
+  margin-top: 1.6mm;
+}
+.pf-all.pf-compact .pf-notice-body {
+  margin-top: .7mm;
+  margin-bottom: .7mm;
+}
+.pf-all.pf-compact .pf-disposal .pf-box {
+  padding-top: .4mm;
+  padding-bottom: .4mm;
 }
 @media print {
   .pf-section,
