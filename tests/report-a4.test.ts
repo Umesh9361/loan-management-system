@@ -9,7 +9,7 @@ test("loading print uses landscape A4, equal margins and only real summary field
   assert.match(source, /flex-wrap: wrap/);
   assert.match(source, /इनपुट तपासा: \$\{summary\?\.suspectCount\}/);
   assert.doesNotMatch(source, /summary\?\.safeCount/);
-  assert.match(source, /Paper size: A4, Layout: Landscape/);
+  assert.doesNotMatch(source, /Paper size: A4|Letter नाही|headers\/footers/);
 });
 
 for (const report of ["profit-loss", "balance-sheet"]) {
@@ -21,6 +21,6 @@ test(`${report} native print and direct A4 PDF do not add asymmetric or viewport
   assert.match(source, /const margin = 5;/);
   assert.doesNotMatch(source, /minHeight|3mm 5mm 3mm 20mm/);
   assert.match(source, /doc\.fonts\.ready/);
-  assert.match(source, /Paper size: A4/);
+  assert.doesNotMatch(source, /Paper size: A4|Letter नाही|headers\/footers/);
 });
 }

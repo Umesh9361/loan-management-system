@@ -84,8 +84,9 @@ for (const [path, name, expectedPages] of [
 await call("Emulation.setDeviceMetricsOverride", { width: 402, height: 874, deviceScaleFactor: 1, mobile: true });
 await navigate("/ui");
 await waitFor("!!document.getElementById('borrower-search')||document.body.textContent.includes('कोरा फॉर्म')");
-await waitFor("![...document.querySelectorAll('button')].find(b=>b.textContent.trim()==='प्रिंट / PDF')?.disabled");
-assert.equal(await evaluate("[...document.querySelectorAll('button')].some(b=>b.textContent.trim()==='PDF तयार करा')"), false, "separate duplicate PDF action must be removed");
+await waitFor("![...document.querySelectorAll('button')].find(b=>b.textContent.trim()==='प्रिंट करा')?.disabled");
+assert.equal(await evaluate("[...document.querySelectorAll('button')].some(b=>b.textContent.trim()==='PDF डाउनलोड')"), true, "direct PDF download is separate from native print");
+assert.equal(await evaluate("document.body.textContent.includes('Letter नाही')"), false, "technical paper instructions must not clutter the page");
 assert.equal(await evaluate("!!document.getElementById('pledge-field-releaseDate')||!!document.getElementById('pledge-field-itemCount')||!!document.getElementById('pledge-field-conditionNote')"), false, "receipt must not request removed date/count/complaint-note fields");
 await evaluate(`(()=>{
   window.__pdfDialogCalls=0;
@@ -96,12 +97,12 @@ await evaluate(`(()=>{
 for (const layout of ["compact", "spacious"]) {
   await evaluate(`document.querySelector('input[value="${layout}"]').click()`);
   await waitFor(`document.querySelector('iframe').contentDocument.querySelector('main')?.dataset.layout==='${layout}'`);
-  await clickText("प्रिंट / PDF");
+  await clickText("प्रिंट करा");
   const expected = layout === "compact" ? 1 : 2;
   await waitFor(`window.__pdfDialogCalls===${expected}`);
   assert.equal(await evaluate("window.__pdfPages"), expected);
-  await waitFor("document.body.textContent.includes('Save as PDF')");
-  await waitFor("![...document.querySelectorAll('button')].find(b=>b.textContent.trim()==='प्रिंट / PDF')?.disabled");
+  await waitFor("document.body.textContent.includes('प्रिंट पर्याय उघडले')");
+  await waitFor("![...document.querySelectorAll('button')].find(b=>b.textContent.trim()==='प्रिंट करा')?.disabled");
 }
 await evaluate("document.querySelector('input[value=\"compact\"]').click()");
 await evaluate("window.confirm=()=>true");
@@ -115,7 +116,7 @@ await setInput("pledge-matter-finalTitle", "अंतिम नोटीस");
 await clickText("अनेक");
 await clickText("निवड पुसा");
 await waitFor("!document.querySelector('iframe')");
-assert.equal(await evaluate("[...document.querySelectorAll('button')].find(b=>b.textContent.trim()==='प्रिंट / PDF').disabled"), true);
+assert.equal(await evaluate("[...document.querySelectorAll('button')].find(b=>b.textContent.trim()==='प्रिंट करा').disabled"), true);
 for (const text of ["अंतरिम पूर्वसूचना", "अंतिम नोटीस"]) {
   await evaluate(`[...document.querySelectorAll('label')].find(l=>l.textContent.trim()===${JSON.stringify(text)}).querySelector('input').click()`);
   await waitFor(`[...document.querySelectorAll('label')].find(l=>l.textContent.trim()===${JSON.stringify(text)}).querySelector('input').checked`);
@@ -125,7 +126,7 @@ assert.deepEqual(await evaluate("[...document.querySelector('iframe').contentDoc
 await evaluate("document.querySelector('input[value=\"spacious\"]').click()");
 await waitFor("document.querySelector('iframe').contentDocument.querySelector('main')?.dataset.layout==='spacious'");
 assert.equal(await evaluate("document.querySelector('iframe').contentDocument.querySelectorAll('.pf-page').length"), 1);
-await clickText("प्रिंट / PDF");
+await clickText("प्रिंट करा");
 await waitFor("window.__pdfDialogCalls===3");
 assert.equal(await evaluate("window.__pdfPages"), 1);
 await clickText("सर्व");
@@ -143,20 +144,20 @@ await waitFor("document.querySelector('iframe').contentDocument.body.textContent
 await evaluate(`window.__printCalls=0;new MutationObserver(records=>records.forEach(record=>record.addedNodes.forEach(node=>{
   if(node.tagName==='IFRAME'&&node.title==='A4 फॉर्म प्रिंट') node.addEventListener('load',()=>{node.contentWindow.print=()=>{window.__printCalls++;window.__printedText=node.contentDocument.body.textContent;};});
 }))).observe(document.body,{childList:true});`);
-await clickText("प्रिंट / PDF");
+await clickText("प्रिंट करा");
 await waitFor("window.__printCalls===1");
 await clickText("कोरी प्रत प्रिंट");
 await waitFor("window.__printCalls===2");
 assert.equal(await evaluate("window.__printedText.includes('नमुना कर्जदार')||window.__printedText.includes('777')"), false);
 assert.equal(await evaluate("document.getElementById('borrower-name').value"), "नमुना कर्जदार", "blank-copy printing must not erase the working filled form");
 await setInput("borrower-address", "फार मोठा पत्ता ".repeat(120));
-await clickText("प्रिंट / PDF");
+await clickText("प्रिंट करा");
 await waitFor("document.body.textContent.includes('मजकूर A4 नमुन्याच्या जागेपेक्षा मोठा आहे')");
 assert.equal(await evaluate("window.__printCalls"), 2, "oversized form must not silently clip or print");
 await setInput("borrower-search", "दुसरा");
 await waitFor("document.getElementById('borrower-name').value===''");
 assert.equal(await evaluate("document.getElementById('pledge-field-accountNumber').value"), "");
-assert.equal(await evaluate("[...document.querySelectorAll('button')].find(b=>b.textContent.trim()==='प्रिंट / PDF').disabled"), true);
+assert.equal(await evaluate("[...document.querySelectorAll('button')].find(b=>b.textContent.trim()==='प्रिंट करा').disabled"), true);
 await clickText("कोरा फॉर्म");
 await waitFor("!document.querySelector('iframe').contentDocument.body.textContent.includes('नमुना कर्जदार')");
 await clickText("एक");
@@ -229,7 +230,7 @@ await clickText("टाइप करून भरा");
 await clickText("सर्व");
 await waitFor("!!document.getElementById('borrower-name')&&!document.getElementById('borrower-name').disabled");
 assert.equal(await evaluate("!!document.getElementById('borrower-search')"), false);
-await waitFor("![...document.querySelectorAll('button')].find(b=>b.textContent.trim()==='प्रिंट / PDF')?.disabled");
+await waitFor("![...document.querySelectorAll('button')].find(b=>b.textContent.trim()==='प्रिंट करा')?.disabled");
 assert.equal(await evaluate("document.documentElement.scrollWidth>innerWidth"), false);
 results.push({ independentNoticePage: "pass", independentFormsPage: "pass", receiptViaFormSelection: "pass", internalManualWithoutRegistration: "pass", noticeMobile320px: "pass" });
 await waitFor("document.getElementById('pledge-company')?.value==='नमुना फायनान्स'");
@@ -249,7 +250,7 @@ assert.equal(await evaluate("document.documentElement.scrollWidth>innerWidth"), 
 results.push({ organizationProfileHeaderOnEachCut: "pass", organizationTypedOverrides: "pass", organizationBlankCopyKeepsHeader: "pass", organizationProfileNotChanged: "pass", organizationReset: "pass" });
 await clickText("कर्ज खाते");
 await waitFor("!!document.getElementById('pledge-loan-search')");
-assert.equal(await evaluate("[...document.querySelectorAll('button')].find(b=>b.textContent.trim()==='प्रिंट / PDF').disabled"), true);
+assert.equal(await evaluate("[...document.querySelectorAll('button')].find(b=>b.textContent.trim()==='प्रिंट करा').disabled"), true);
 await setInput("pledge-loan-search", "621");
 await waitFor("document.querySelectorAll('[data-loan-id]').length===4");
 assert.equal(await evaluate("document.querySelector('[data-loan-id]').dataset.loanId"), "fixture-loan-621");

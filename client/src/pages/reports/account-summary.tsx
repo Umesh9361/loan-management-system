@@ -13,6 +13,7 @@ import { formatSummaryCurrency, formatSummaryDate } from "@shared/account-summar
 import { formatWeight, uniqueBorrowerNames } from "@shared/report-weights";
 import { AccountSummaryOverview } from "@/components/reports/account-summary-overview";
 import { accountSummaryPrintDocument, printAccountSummary } from "@/lib/account-summary-print";
+import { downloadPrintDocumentPdf } from "@/lib/print-document-pdf";
 import { buildAccountSummaryRow, accountSummaryTotals, accountSummaryContext, createSummaryRanges, initializeSummaryRanges, updateSummaryRange, firstSummaryLoanDate, localISODate, summaryRangeError, summaryDataState, checkedSummaryLoans, checkedSummaryClosures, summaryArray, createSummaryInterestSettings } from "@shared/account-summary";
 import type { SummaryRow } from "@shared/account-summary";
 import { rankAccountSummaryCustomers } from "@shared/account-summary";
@@ -156,7 +157,7 @@ export default function AccountSummaryReport() {
   const overviewPeriodText = `${formatSummaryDate(reportContext.from)} ते ${formatSummaryDate(reportContext.to)}`;
   const showSummaryOverview = activeTab !== "customer" || customerMode !== "top50";
 
-  const handlePrint = async () => {
+  const handlePrint = async (asPdf = false) => {
     if (!reportReady) { alert(reportProblem); return; }
     const showRank = activeTab === "customer" && customerMode === "top50";
     const data = activeTab === "group" ? groupSummaries : customerSummaries;
@@ -177,7 +178,7 @@ export default function AccountSummaryReport() {
     if (isPrinting) return;
     setIsPrinting(true);
     try {
-      await printAccountSummary(accountSummaryPrintDocument({
+      const html = accountSummaryPrintDocument({
         company: companyName, title, label, rows: data, totals, showRank,
         period: overviewPeriodText, scope: scopeLabel,
         interest: calcMode === "period"
@@ -185,7 +186,9 @@ export default function AccountSummaryReport() {
           : `व्याज: ${selectedInterest.allTime ? "सुरुवातीपासून" : "निवडलेल्या आर्थिक वर्षातील"} · ${formatSummaryDate(selectedInterest.allTime ? coreFrom : selectedInterest.from)} ते ${formatSummaryDate(selectedInterest.allTime ? today : selectedInterest.to)}`,
         notes: reportContext.balanceNote, overviewHTML,
         includeOverview: includePrintOverview && showSummaryOverview, includeNotes: includePrintNotes,
-      }));
+      });
+      if (asPdf) await downloadPrintDocumentPdf(html, "खाते_सारांश.pdf");
+      else await printAccountSummary(html);
     } catch (error) {
       alert(error instanceof Error ? error.message : "प्रिंट तयार करता आली नाही.");
     } finally {
@@ -666,7 +669,6 @@ export default function AccountSummaryReport() {
             <fieldset className="mb-4 rounded-xl border border-indigo-100 bg-white px-4 py-3 no-print">
               <legend className="px-1 text-sm font-semibold text-indigo-700">प्रिंट / PDF पर्याय</legend>
               <p className="mb-2 text-xs text-slate-500">डिफॉल्ट: मूळ टेबल. हवी असल्यास खालील माहिती जोडा.</p>
-              <p className="mb-3 text-xs leading-5 text-slate-600">प्रिंट व Save as PDF साठी <strong>Paper size: A4</strong> निवडा. मोबाईलमध्ये Letter दिसल्यास प्रिंट पर्यायांत A4 करा. Scale: 100% आणि headers/footers बंद ठेवा.</p>
               <div className="flex flex-wrap gap-x-6 gap-y-3 text-sm text-slate-700">
                 {showSummaryOverview && <label className="flex cursor-pointer items-center gap-2">
                   <input type="checkbox" className="h-4 w-4 accent-indigo-600" checked={includePrintOverview} onChange={e => setIncludePrintOverview(e.target.checked)} />
@@ -731,7 +733,10 @@ export default function AccountSummaryReport() {
                       </div>
                     </div>
                     <div className="flex gap-2 flex-wrap">
-                      <Button onClick={handlePrint} disabled={isPrinting || !reportReady || !groupSummaries.length} className="flex items-center gap-2 no-print">
+                      <Button onClick={() => handlePrint(true)} disabled={isPrinting || !reportReady || !groupSummaries.length} variant="outline" className="no-print">
+                        <Download className="mr-2 h-4 w-4" /> {isPrinting ? "तयार होत आहे…" : "PDF डाउनलोड"}
+                      </Button>
+                      <Button onClick={() => handlePrint()} disabled={isPrinting || !reportReady || !groupSummaries.length} className="flex items-center gap-2 no-print">
                         <Printer className="h-4 w-4" />
                         प्रिंट करा
                       </Button>
@@ -1090,12 +1095,16 @@ export default function AccountSummaryReport() {
 
                     <div className="flex gap-2 flex-wrap">
                       <Button 
-                        onClick={handlePrint} 
+                        onClick={() => handlePrint()}
                         className="flex items-center gap-2 no-print" 
                         disabled={isPrinting || !reportReady || !customerSummaries.length || (customerMode === "specific" && !selectedCustomerName)}
                       >
                         <Printer className="h-4 w-4" />
                         प्रिंट करा
+                      </Button>
+                      <Button onClick={() => handlePrint(true)} variant="outline" className="no-print"
+                        disabled={isPrinting || !reportReady || !customerSummaries.length || (customerMode === "specific" && !selectedCustomerName)}>
+                        <Download className="mr-2 h-4 w-4" /> {isPrinting ? "तयार होत आहे…" : "PDF डाउनलोड"}
                       </Button>
                       <Button 
                         onClick={() => handleExcelExport(customerSummaries, customerMode === "specific" ? 'कस्टमर सारांश' : 'टॉप 50 सारांश')}

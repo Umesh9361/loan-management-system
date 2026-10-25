@@ -802,9 +802,6 @@ export default function LoadingReport() {
                   )}
 
                   {items.length > 0 && (
-                    <p className="mt-3 text-xs leading-5 text-slate-600 print:hidden">प्रिंट / Save as PDF: Paper size: A4, Layout: Landscape (आडवा) निवडा; Letter नाही. Scale: 100% आणि headers/footers बंद ठेवा.</p>
-                  )}
-                  {items.length > 0 && (
                     <div className="flex items-center justify-between print:hidden mt-2">
                       <div className="flex gap-2">
                         <Button onClick={handlePrint} variant="outline" size="sm" className="text-indigo-600 border-indigo-300">

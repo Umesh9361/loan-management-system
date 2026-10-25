@@ -3297,7 +3297,6 @@ export default function BorrowerListReports() {
               </div>
               <div>
                 <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 mb-0.5">कर्जदाराची यादी</h1>
-                <p className="text-xs leading-5 text-slate-600 print:hidden">PDF डाउनलोड थेट A4 मध्ये होते. प्रिंट → Save as PDF वापरताना Paper size: A4 निवडा (Letter नाही), Scale: 100% आणि headers/footers बंद ठेवा.</p>
                 <p className="text-xs sm:text-sm text-gray-500">विविध प्रकारचे कर्जदार अहवाल तयार करा</p>
               </div>
             </div>

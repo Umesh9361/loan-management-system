@@ -356,7 +356,6 @@ export default function ProfitLoss() {
           {plData && (
             <>
               <div className="print:hidden mb-3">
-                <p className="mb-2 text-xs leading-5 text-slate-600">PDF डाउनलोड थेट A4 मध्ये होते. प्रिंट → Save as PDF वापरताना Paper size: A4 निवडा (Letter नाही), Scale: 100% आणि headers/footers बंद ठेवा.</p>
                 <div className="flex flex-wrap gap-2">
                   <Button onClick={downloadAsPDF} size="sm" disabled={isGeneratingPDF} className="bg-red-600 hover:bg-red-700 h-9">
                     <FileText className="w-4 h-4 mr-1" />

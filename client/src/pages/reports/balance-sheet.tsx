@@ -405,7 +405,6 @@ export default function BalanceSheet() {
 
           {balanceSheet && (
             <>
-              <p className="mb-2 text-xs leading-5 text-slate-600 print:hidden">PDF डाउनलोड थेट A4 मध्ये होते. प्रिंट → Save as PDF साठी Paper size: A4 निवडा (Letter नाही), Scale: 100% आणि headers/footers बंद ठेवा.</p>
               <div className="print:hidden mb-3 flex items-center justify-between">
                 <div className="flex items-center gap-1.5">
                   <Button onClick={downloadAsPDF} size="sm" disabled={isGeneratingPDF} className="bg-red-600 hover:bg-red-700 h-8 text-xs px-3">
