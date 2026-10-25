@@ -60,8 +60,18 @@ for (const [path, name, expectedPages] of [
   const sizes = await evaluate(`({sections:[...document.querySelectorAll('.pf-section')].map(s=>({form:s.dataset.form,height:s.clientHeight,scroll:s.scrollHeight,width:s.clientWidth,scrollWidth:s.scrollWidth,signatureClearance:s.getBoundingClientRect().bottom-s.lastElementChild.getBoundingClientRect().bottom})),pageHeights:[...document.querySelectorAll('.pf-page')].map(p=>p.getBoundingClientRect().height)})`);
   assert.ok(sizes.sections.every(s => s.scroll <= s.height + 2 && s.scrollWidth <= s.width + 2), JSON.stringify({name,...sizes}));
   assert.ok(sizes.sections.every(s => s.signatureClearance >= 3), `Signatures must leave a quiet gap before the cutting border: ${JSON.stringify(sizes)}`);
-  assert.ok(sizes.pageHeights.every(height => height <= 281 / 25.4 * 96 + 1), JSON.stringify(sizes));
+  assert.ok(sizes.pageHeights.every(height => height <= 287 / 25.4 * 96 + 1), JSON.stringify(sizes));
   assert.equal(sizes.pageHeights.length, expectedPages);
+  const geometry = await evaluate(`({
+    widths:[...document.querySelectorAll('.pf-page')].map(p=>p.getBoundingClientRect().width),
+    formCount:document.querySelectorAll('.pf-section').length,
+    bottomGaps:[...document.querySelectorAll('.pf-page')].map(p=>p.getBoundingClientRect().bottom-p.lastElementChild.getBoundingClientRect().bottom)
+  })`);
+  assert.ok(geometry.widths.every(width => Math.abs(width - 200 / 25.4 * 96) < 1), "A4 must use the 200mm area inside equal 5mm margins");
+  if (geometry.formCount === 6) {
+    assert.ok(sizes.pageHeights.every(height => Math.abs(height - 287 / 25.4 * 96) < 1), "all-six layouts must use the full A4 content height on every page");
+    assert.ok(geometry.bottomGaps.every(gap => Math.abs(gap) < 1), "last receipt must reach the bottom content margin without an unused page gap");
+  }
   assert.equal(await evaluate("[...document.querySelectorAll('.pf-signatures')].some(s=>s.textContent.includes('दिनांक'))"), false);
   const pdf = await call("Page.printToPDF", { preferCSSPageSize: true, printBackground: true, displayHeaderFooter: false });
   const file = `generated-artifacts/pledge-forms/${name}-A4.pdf`;

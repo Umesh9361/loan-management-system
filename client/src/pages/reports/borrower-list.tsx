@@ -1161,8 +1161,8 @@ export default function BorrowerListReports() {
       iframe.style.position = 'absolute';
       iframe.style.top = '-9999px';
       iframe.style.left = '-9999px';
-      iframe.style.width = '0px';
-      iframe.style.height = '0px';
+      iframe.style.width = '210mm';
+      iframe.style.height = '297mm';
       iframe.style.border = 'none';
       
       document.body.appendChild(iframe);
@@ -1508,8 +1508,8 @@ export default function BorrowerListReports() {
           <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
           <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
           <style>
-            @page { size: A4 portrait; margin: 8mm 8mm 10mm 5mm; }
-            @page:first { margin-top: 10mm; }
+            @page { size: A4 portrait; margin: 5mm; }
+            @page:first { margin-top: 5mm; }
             * { box-sizing: border-box; }
             html { margin: 0 !important; padding: 0 !important; width: 100% !important; }
             body { 
@@ -1561,8 +1561,8 @@ export default function BorrowerListReports() {
               border: none;
             }
             @media print {
-              @page { margin: 8mm 8mm 10mm 5mm !important; }
-              @page:first { margin-top: 10mm !important; }
+              @page { margin: 5mm !important; }
+              @page:first { margin-top: 5mm !important; }
               * { 
                 -webkit-print-color-adjust: exact !important; 
                 print-color-adjust: exact !important; 
@@ -3297,6 +3297,7 @@ export default function BorrowerListReports() {
               </div>
               <div>
                 <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 mb-0.5">कर्जदाराची यादी</h1>
+                <p className="text-xs leading-5 text-slate-600 print:hidden">PDF डाउनलोड थेट A4 मध्ये होते. प्रिंट → Save as PDF वापरताना Paper size: A4 निवडा (Letter नाही), Scale: 100% आणि headers/footers बंद ठेवा.</p>
                 <p className="text-xs sm:text-sm text-gray-500">विविध प्रकारचे कर्जदार अहवाल तयार करा</p>
               </div>
             </div>

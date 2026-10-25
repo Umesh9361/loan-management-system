@@ -366,14 +366,14 @@ export default function LoadingReport() {
       <html><head><title>लोडिंग रिपोर्ट</title>
       <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;500;600;700&display=swap" rel="stylesheet">
       <style>
-        @page { size: A4 landscape; margin: 12mm 8mm 8mm 8mm; }
+        @page { size: A4 landscape; margin: 5mm; }
         * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-        body { font-family: 'Noto Sans Devanagari', Arial, sans-serif; font-size: 10px; margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Noto Sans Devanagari', Arial, sans-serif; font-size: 10px; width: 287mm; margin: 0; padding: 0; box-sizing: border-box; }
         h1 { text-align: center; font-size: 15px; font-weight: 700; margin: 5px 0; }
         h2 { text-align: center; font-size: 11px; font-weight: 600; margin: 3px 0; color: #555; }
         .info { display: flex; justify-content: space-between; margin: 8px 0; font-size: 9px; border-bottom: 1px solid #ccc; padding-bottom: 5px; }
-        .summary { display: flex; gap: 8px; margin: 8px 0; font-size: 9px; }
-        .summary-card { flex: 1; text-align: center; padding: 4px; border: 1px solid #ddd; border-radius: 4px; }
+        .summary { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0; font-size: 9px; break-inside: avoid; }
+        .summary-card { flex: 1 1 100px; min-width: 0; overflow-wrap: anywhere; box-sizing: border-box; text-align: center; padding: 4px; border: 1px solid #ddd; border-radius: 4px; }
         .summary-card.high { background: #fee; border-color: #f99; }
         .summary-card.medium { background: #fff3e0; border-color: #ffb74d; }
         .summary-card.slight { background: #fff8e1; border-color: #ffd54f; }
@@ -403,7 +403,7 @@ export default function LoadingReport() {
         <div class="summary-card high">उच्च: ${summary?.highCount}</div>
         <div class="summary-card medium">मध्यम: ${summary?.mediumCount}</div>
         <div class="summary-card slight">किंचित: ${summary?.slightCount}</div>
-        <div class="summary-card" style="background:#f0fdf4;border-color:#86efac">सुरक्षित: ${summary?.safeCount}</div>
+        <div class="summary-card" style="background:#faf5ff;border-color:#d8b4fe">इनपुट तपासा: ${summary?.suspectCount}</div>
         <div class="summary-card">अतिरिक्त: ${formatCurrency(summary?.totalOverloadAmount || 0)}</div>
       </div>
       <table>
@@ -443,7 +443,9 @@ export default function LoadingReport() {
     if (printWindow) {
       printWindow.document.write(printHTML);
       printWindow.document.close();
-      setTimeout(() => printWindow.print(), 500);
+      await printWindow.document.fonts.ready;
+      await new Promise<void>(resolve => printWindow.requestAnimationFrame(() => printWindow.requestAnimationFrame(() => resolve())));
+      printWindow.print();
     }
   };
 
@@ -740,7 +742,7 @@ export default function LoadingReport() {
 
               {!isGenerating && reportGenerated && summary && (
                 <div ref={reportSectionRef}>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2 print:hidden">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2 print:hidden [&>div]:min-w-0 [overflow-wrap:anywhere]">
                     <Card className="bg-white border-l-4 border-l-indigo-500">
                       <CardContent className="p-3">
                         <p className="text-[10px] text-gray-500">एकूण कर्ज</p>
@@ -789,7 +791,7 @@ export default function LoadingReport() {
 
                   {summary.totalOverloadAmount > 0 && (
                     <Card className="bg-gradient-to-r from-red-50 to-orange-50 border border-red-200 print:hidden mt-2">
-                      <CardContent className="p-3 flex items-center justify-between">
+                      <CardContent className="p-3 flex flex-wrap gap-2 items-center justify-between [overflow-wrap:anywhere]">
                         <div className="flex items-center gap-2">
                           <AlertTriangle className="h-5 w-5 text-red-600" />
                           <span className="font-semibold text-red-700">एकूण अतिरिक्त लोडिंग रक्कम:</span>
@@ -800,10 +802,13 @@ export default function LoadingReport() {
                   )}
 
                   {items.length > 0 && (
+                    <p className="mt-3 text-xs leading-5 text-slate-600 print:hidden">प्रिंट / Save as PDF: Paper size: A4, Layout: Landscape (आडवा) निवडा; Letter नाही. Scale: 100% आणि headers/footers बंद ठेवा.</p>
+                  )}
+                  {items.length > 0 && (
                     <div className="flex items-center justify-between print:hidden mt-2">
                       <div className="flex gap-2">
                         <Button onClick={handlePrint} variant="outline" size="sm" className="text-indigo-600 border-indigo-300">
-                          <Printer className="h-4 w-4 mr-1" /> प्रिंट
+                          <Printer className="h-4 w-4 mr-1" /> प्रिंट / PDF
                         </Button>
                         <Button onClick={handleExportExcel} variant="outline" size="sm" className="text-green-600 border-green-300">
                           <FileSpreadsheet className="h-4 w-4 mr-1" /> Excel

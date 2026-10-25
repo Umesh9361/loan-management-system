@@ -47,7 +47,7 @@ for (const mode of modes) {
 }
 const bundle = await build({
   stdin: { resolveDir: process.cwd(), loader: 'ts', contents: `
-    import { createBorrowerListPdf, borrowerPrintCss } from './client/src/lib/borrower-list-pdf';
+    import { createBorrowerListPdf, borrowerPrintCss, BORROWER_PDF_PAGE } from './client/src/lib/borrower-list-pdf';
     window.runPdf = async () => {
       const pdf = await createBorrowerListPdf(window.fixtureHtml);
       await fetch('/result?mode=' + window.fixtureMode + '&rows=' + window.fixtureRows,
@@ -59,8 +59,9 @@ const bundle = await build({
       extra.textContent = borrowerPrintCss(style.sheet.cssRules, q => matchMedia(q).matches);
       document.head.append(extra);
     }
-    document.documentElement.style.setProperty('width', (197 * 96 / 25.4) + 'px', 'important');
-    document.body.style.setProperty('width', (197 * 96 / 25.4) + 'px', 'important');
+    const contentWidth = (BORROWER_PDF_PAGE.width - BORROWER_PDF_PAGE.left - BORROWER_PDF_PAGE.right) * 96 / 25.4;
+    document.documentElement.style.setProperty('width', contentWidth + 'px', 'important');
+    document.body.style.setProperty('width', contentWidth + 'px', 'important');
     window.fixtureReady = true;
   ` },
   bundle: true, write: false, platform: 'browser', format: 'iife',

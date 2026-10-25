@@ -183,8 +183,8 @@ export default function PledgeFormsPage() {
     try {
       await printPledgeForms(pledgeFormsDocument(blankCopy ? organization : data, selection, validMatter.data, layout));
       toast(asPdf
-        ? { title: "PDF तयार करा", description: `उघडलेल्या पर्यायांत “Save as PDF” निवडा. ${expectedPages} A4 ${expectedPages === 1 ? "पान" : "पाने"} जतन होतील.` }
-        : { title: "प्रिंट पर्याय उघडले", description: "प्रिंटर किंवा Save as PDF निवडा." });
+        ? { title: "PDF तयार करा", description: `“Save as PDF” निवडा आणि Paper size मध्ये A4 ठेवा (Letter नाही). मांडणी: ${expectedPages} A4 ${expectedPages === 1 ? "पान" : "पाने"}.` }
+        : { title: "प्रिंट पर्याय उघडले", description: "Paper size: A4 निवडा (Letter नाही). प्रिंटर किंवा Save as PDF निवडा." });
     } catch (error) {
       toast({ title: "प्रिंट सुरू करता आला नाही", description: error instanceof Error ? error.message : "कृपया पुन्हा प्रयत्न करा.", variant: "destructive" });
     } finally {
@@ -304,7 +304,7 @@ export default function PledgeFormsPage() {
               <Alert className="border-indigo-200 bg-indigo-50 text-indigo-950">
                 <AlertCircle className="h-4 w-4 text-indigo-800" />
                 <AlertDescription className="text-xs leading-relaxed">
-                  प्रिंटसाठी A4, <strong>Actual size / 100%</strong> आणि headers/footers बंद ठेवा. PDFसाठी “PDF तयार करा” दाबून पर्यायांत <strong>Save as PDF</strong> निवडा.
+                  प्रिंट व PDF दोन्हीसाठी <strong>Paper size: A4</strong>, <strong>Actual size / 100%</strong> आणि headers/footers बंद ठेवा. मोबाईलमध्ये Letter दिसल्यास प्रिंट पर्याय उघडून A4 निवडा. PDFसाठी <strong>Save as PDF</strong> निवडा.
                 </AlertDescription>
               </Alert>
               <p className="px-1 text-xs leading-relaxed text-slate-500">हे संपादनयोग्य नमुने आहेत, कायदेशीर वैधतेची हमी नाही. नोटिसीतील 15 दिवस ही नमुना मुदत आहे; लागू राज्य कायदा, परवान्याच्या अटी व आवश्यक सूचना स्थानिक वकिलाकडून तपासून वापरा. संस्थेचा आधी जतन केलेला मजकूर स्वतःहून बदलला जात नाही.</p>

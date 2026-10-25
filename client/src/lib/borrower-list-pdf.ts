@@ -1,9 +1,9 @@
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 
-// Match generateReportHTML's @page, including its distinct first-page top margin.
+// Match generateReportHTML's @page on every page, including the first.
 export const BORROWER_PDF_PAGE = {
-  width: 210, height: 297, left: 5, right: 8, top: 8, firstTop: 10, bottom: 10,
+  width: 210, height: 297, left: 5, right: 5, top: 5, firstTop: 5, bottom: 5,
 } as const;
 
 /** Apply every print block, in source order, without any screen-only overrides. */

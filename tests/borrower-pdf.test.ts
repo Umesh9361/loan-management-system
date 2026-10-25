@@ -34,7 +34,7 @@ test('multi-page PDF keeps every row and total whole, repeats headings and loses
   assert(pages.length > 2);
   assert.equal(pages[0].sourceY, 0);
   assert.equal(pages[0].repeatedHeaderHeight, 0);
-  const mmPerPixel = (210 - 5 - 8) / 1490;
+  const mmPerPixel = (210 - 5 - 5) / 1490;
   for (const [i, page] of pages.entries()) {
     if (i) {
       assert.equal(page.sourceY, pages[i - 1].sourceY + pages[i - 1].sourceHeight);
@@ -42,7 +42,7 @@ test('multi-page PDF keeps every row and total whole, repeats headings and loses
     }
     assert(Number.isInteger(page.sourceY) && Number.isInteger(page.sourceHeight));
     assert((page.sourceHeight + page.repeatedHeaderHeight) * mmPerPixel
-      <= 297 - (i ? 8 : 10) - 10);
+      <= 297 - 5 - 5);
     if (i < pages.length - 1) assert(bottoms.includes(page.sourceY + page.sourceHeight));
   }
   assert.equal(pages.reduce((sum, page) => sum + page.sourceHeight, 0), 6242);
@@ -67,7 +67,9 @@ test('mobile and native print share HTML, grid styling and total padding for all
   assert.match(source, /body\[data-report-type\] tr\.total-row > td/);
   assert.match(source, /padding: 8px 4px 10px !important/);
   assert.match(source, /body\[data-report-type="maturity-wise"\] tr\.total-row > td:nth-child\(7\)/);
-  assert.equal(BORROWER_PDF_PAGE.width - BORROWER_PDF_PAGE.left - BORROWER_PDF_PAGE.right, 197);
+  assert.equal(BORROWER_PDF_PAGE.width - BORROWER_PDF_PAGE.left - BORROWER_PDF_PAGE.right, 200);
+  assert.match(source, /@page \{ size: A4 portrait; margin: 5mm; \}/);
+  assert.deepEqual([BORROWER_PDF_PAGE.left, BORROWER_PDF_PAGE.right, BORROWER_PDF_PAGE.top, BORROWER_PDF_PAGE.firstTop, BORROWER_PDF_PAGE.bottom], [5, 5, 5, 5, 5]);
   const helper = readFileSync('client/src/lib/borrower-list-pdf.ts', 'utf8');
   assert.match(helper, /querySelectorAll\('style'\)/);
   assert.match(helper, /doc\.fonts\.ready/);

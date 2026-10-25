@@ -29,6 +29,9 @@ test('top 50 print/PDF omits overview cards and charts even if previously select
 
 test('default print contains original table and concise context, no added summary/notes', () => {
   const html = accountSummaryPrintDocument(options);
+  assert.match(html, /@page \{ size: A4 portrait; margin: 5mm; \}/);
+  assert.match(html, /body \{ width: 200mm; margin: 5mm auto; \}/);
+  assert.match(html, /@media print \{ body \{ margin: 0; \} \}/);
   assert.match(html, /₹30,87,700/);
   assert.match(html, /₹1,38,846\.25/);
   assert.match(html, /31\/03\/2027/);

@@ -13,6 +13,7 @@ export const PLEDGE_FORM_POLISH_STYLES = `
   border-color: #546575;
   background: #fff;
   padding: 1.25mm 2mm;
+  min-width: 0;
 }
 .pf-organization {
   display: flex;
@@ -176,7 +177,7 @@ export const PLEDGE_FORM_POLISH_STYLES = `
 .pf-signatures {
   align-items: flex-end;
   margin-top: 3.6mm;
-  padding: 0 2.2mm;
+  padding: 0 4mm;
   color: #34495a;
   font-size: 7pt;
 }
@@ -210,6 +211,10 @@ export const PLEDGE_FORM_POLISH_STYLES = `
 .pf-spacious .pf-organization-name {
   font-size: 13pt;
 }
+.pf-spacious .pf-organization-details {
+  font-size: 7.1pt;
+  line-height: 1.28;
+}
 .pf-spacious .pf-organization-meta {
   font-size: inherit;
 }
@@ -230,17 +235,17 @@ export const PLEDGE_FORM_POLISH_STYLES = `
   font-size: 8.8pt;
 }
 .pf-spacious .pf-terms {
-  line-height: 1.56;
+  line-height: 1.48;
 }
 .pf-spacious .pf-notice-body {
-  line-height: 1.68;
+  line-height: 1.52;
 }
 .pf-spacious .pf-signatures {
-  margin-top: 5.7mm;
+  margin-top: 3.2mm;
   font-size: 9pt;
 }
 .pf-single .pf-signatures {
-  margin-top: 6.5mm;
+  margin-top: 4mm;
 }
 .pf-all.pf-compact .pf-heading > div {
   display: flex;
@@ -296,6 +301,104 @@ export const PLEDGE_FORM_POLISH_STYLES = `
 .pf-all.pf-compact .pf-disposal .pf-box {
   padding-top: .4mm;
   padding-bottom: .4mm;
+}
+/*
+ * The six-form sheet is packed to the printable A4 height, then its spare
+ * millimetres are shared by the actual receipts (not left as a bottom void).
+ * Single-form selection deliberately keeps its own receipt-sized dimensions.
+ */
+.pf-all.pf-compact .pf-page,
+.pf-spacious.pf-all .pf-page {
+  display: flex;
+  flex-direction: column;
+  height: 287mm;
+}
+.pf-all.pf-compact .pf-page > .pf-section,
+.pf-all.pf-compact .pf-page > .pf-notices,
+.pf-spacious.pf-all .pf-page > .pf-section,
+.pf-spacious.pf-all .pf-page > .pf-notices {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+.pf-all.pf-spacious .pf-section {
+  display: flex;
+  flex-direction: column;
+}
+.pf-all.pf-spacious .pf-section > .pf-signatures {
+  margin-top: 3.2mm;
+  padding-top: 0;
+  flex-shrink: 0;
+}
+.pf-all.pf-compact .pf-notices .pf-section {
+  height: 100%;
+}
+.pf-all.pf-compact .pf-page > .pf-cut {
+  flex: 0 0 1.6mm;
+}
+.pf-spacious.pf-all .pf-page > .pf-cut {
+  flex: 0 0 2mm;
+}
+.pf-spacious.pf-all .pf-notices .pf-section {
+  height: auto;
+}
+.pf-spacious.pf-all .pf-notices {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: stretch;
+}
+/* Use space for readable writing rows and content, not a blank push to the footer. */
+.pf-all.pf-compact .pf-line {
+  min-height: 3.8mm;
+}
+.pf-all.pf-compact .pf-table th,
+.pf-all.pf-compact .pf-table td {
+  height: 4.3mm;
+  padding-top: .55mm;
+  padding-bottom: .55mm;
+}
+.pf-spacious .pf-line {
+  min-height: 5.5mm;
+}
+.pf-spacious .pf-fill {
+  min-height: 5mm;
+}
+.pf-spacious .pf-table th,
+.pf-spacious .pf-table td {
+  height: 6.2mm;
+  padding: .8mm .8mm;
+}
+.pf-spacious .pf-signatures {
+  padding-right: 5mm;
+  padding-left: 5mm;
+}
+.pf-spacious .pf-declaration .pf-terms {
+  margin-top: 1.4mm;
+  font-size: 10.5pt;
+  line-height: 1.75;
+}
+.pf-spacious .pf-declaration .pf-terms li {
+  margin-bottom: 2mm;
+}
+.pf-spacious .pf-notice-body {
+  font-size: 11.5pt;
+  line-height: 1.85;
+  margin-top: 2.2mm;
+  margin-bottom: 1.2mm;
+}
+.pf-spacious .pf-notice-body p {
+  margin-bottom: 1.6mm;
+}
+.pf-spacious .pf-release {
+  line-height: 1.48;
+}
+.pf-spacious .pf-disposal-text {
+  line-height: 1.48;
+  margin-top: 1mm;
+  margin-bottom: 1.5mm;
+}
+.pf-spacious .pf-signatures > div {
+  min-height: 8mm;
+  padding-top: 1.5mm;
 }
 @media print {
   .pf-section,

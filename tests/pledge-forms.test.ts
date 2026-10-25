@@ -38,7 +38,8 @@ test("all six independent cut-apart templates fit the intended A4 print grid", (
   const html = pledgeFormsDocument({});
   assert.equal((html.match(/data-form="/g) || []).length, 6);
   assert.equal((html.match(/class="pf-cut"/g) || []).length, 4);
-  assert.match(html, /size: A4 portrait; margin: 8mm/);
+  assert.match(html, /size: A4 portrait; margin: 5mm/);
+  assert.match(html, /\.pf-page \{ width:200mm;/);
   assert.match(html, /border-left:.2mm dashed/);
   assert.match(html, /border-top:.2mm dashed/);
   assert.doesNotMatch(html, /WhatsApp|SMS|FORM\s*-?\s*[1-6]|करार/i);

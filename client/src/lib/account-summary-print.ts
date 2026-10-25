@@ -29,9 +29,11 @@ export function accountSummaryPrintDocument(options: SummaryPrintOptions) {
 <title>${safe(options.title)}</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
-@page { size: A4 portrait; margin: 10mm 8mm; }
+@page { size: A4 portrait; margin: 5mm; }
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }
+body { width: 200mm; margin: 5mm auto; }
+@media print { body { margin: 0; } }
 body { font: 10px/1.5 'Noto Sans Devanagari', Arial, sans-serif; color: #1e293b; }
 .summary-document-header { border-bottom: 2px solid #4f46e5; padding-bottom: 7px; margin-bottom: 10px; text-align: center; }
 .summary-document-header h1 { font-size: 16px; margin: 0 0 2px; }
@@ -67,7 +69,7 @@ ${options.includeNotes ? `<p class="summary-document-notes">${safe(options.notes
 export async function printAccountSummary(html: string) {
   const iframe = document.createElement("iframe");
   iframe.setAttribute("aria-hidden", "true");
-  Object.assign(iframe.style, { position: "fixed", left: "-10000px", top: "0", width: "794px", height: "1123px", border: "0" });
+  Object.assign(iframe.style, { position: "fixed", left: "-10000px", top: "0", width: "210mm", height: "297mm", border: "0" });
   const remove = () => iframe.remove();
   try {
     await new Promise<void>((resolve, reject) => {

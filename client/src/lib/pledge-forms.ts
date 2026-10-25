@@ -66,23 +66,23 @@ export function renderPledgeMatter(text: string, data: PledgeFormData): string {
 }
 
 export const PLEDGE_FORMS_STYLES = `
-@page { size: A4 portrait; margin: 8mm; }
+@page { size: A4 portrait; margin: 5mm; }
 * { box-sizing: border-box; }
 html,body { margin:0; padding:0; color:#111827; background:#fff; }
 body { font-family:"Noto Sans Devanagari","Mangal",sans-serif; font-size:8pt; line-height:1.4; }
-.pf-sheet { width:194mm; margin:8mm auto; }
-.pf-page { width:194mm; break-inside:avoid; page-break-inside:avoid; }
+.pf-sheet { width:200mm; margin:5mm auto; }
+.pf-page { width:200mm; break-inside:avoid; page-break-inside:avoid; }
 .pf-page + .pf-page { margin-top:16mm; }
 .pf-section { border:.25mm solid #475569; padding:1.3mm 2mm; position:relative; break-inside:avoid; page-break-inside:avoid; overflow:visible; }
 .pf-heading { display:flex; align-items:start; justify-content:space-between; gap:2mm; margin:0 0 1.2mm; }
 .pf-heading h2 { font-size:10pt; line-height:1.3; margin:0; font-weight:700; }
 .pf-brand { font-size:7pt; line-height:1.3; overflow-wrap:anywhere; }
 .pf-date { font-size:7pt; white-space:nowrap; }
-.pf-loan { height:67mm; } .pf-declaration { height:39mm; }
+.pf-loan { height:68mm; } .pf-declaration { height:40mm; }
 .pf-notices { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:1.8mm; position:relative; }
-.pf-notices .pf-section { height:53mm; }
+.pf-notices .pf-section { height:54mm; }
 .pf-notices:after { content:""; position:absolute; top:0; bottom:0; left:50%; border-left:.2mm dashed #64748b; }
-.pf-receipt { height:56mm; } .pf-disposal { height:59mm; }
+.pf-receipt { height:57mm; } .pf-disposal { height:60mm; }
 .pf-cut { height:1.6mm; position:relative; }
 .pf-cut:after { content:""; position:absolute; top:50%; left:0; right:0; border-top:.2mm dashed #64748b; }
 .pf-columns { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:3mm; }
@@ -143,7 +143,7 @@ body { font-family:"Noto Sans Devanagari","Mangal",sans-serif; font-size:8pt; li
 .pf-single .pf-line { font-size:9pt; min-height:5mm; }
 .pf-single .pf-signatures { margin-top:7mm; }
 @media print {
- html,body,.pf-sheet { width:194mm; }
+  html,body,.pf-sheet { width:200mm; }
  .pf-sheet { margin:0; }
  .pf-page + .pf-page { margin-top:0; break-before:page; page-break-before:always; }
  body { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
@@ -231,7 +231,7 @@ export async function preparePledgeForms(html: string) {
       (section.lastElementChild?.getBoundingClientRect().bottom ?? 0) > section.getBoundingClientRect().bottom - 3
     );
     const pages = Array.from(doc.querySelectorAll<HTMLElement>(".pf-page"));
-    const overPage = !pages.length || pages.some(page => page.getBoundingClientRect().height > 281 / 25.4 * 96 + 1);
+    const overPage = !pages.length || pages.some(page => page.getBoundingClientRect().height > 287 / 25.4 * 96 + 1);
     if (overflowing || overPage) throw new Error("मजकूर A4 नमुन्याच्या जागेपेक्षा मोठा आहे. 2 पानांची मांडणी / स्वतंत्र फॉर्म निवडा किंवा मजकूर कमी करा.");
     return { iframe, win, doc, pages, remove };
   } catch (error) {

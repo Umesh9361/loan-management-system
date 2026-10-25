@@ -666,6 +666,7 @@ export default function AccountSummaryReport() {
             <fieldset className="mb-4 rounded-xl border border-indigo-100 bg-white px-4 py-3 no-print">
               <legend className="px-1 text-sm font-semibold text-indigo-700">प्रिंट / PDF पर्याय</legend>
               <p className="mb-2 text-xs text-slate-500">डिफॉल्ट: मूळ टेबल. हवी असल्यास खालील माहिती जोडा.</p>
+              <p className="mb-3 text-xs leading-5 text-slate-600">प्रिंट व Save as PDF साठी <strong>Paper size: A4</strong> निवडा. मोबाईलमध्ये Letter दिसल्यास प्रिंट पर्यायांत A4 करा. Scale: 100% आणि headers/footers बंद ठेवा.</p>
               <div className="flex flex-wrap gap-x-6 gap-y-3 text-sm text-slate-700">
                 {showSummaryOverview && <label className="flex cursor-pointer items-center gap-2">
                   <input type="checkbox" className="h-4 w-4 accent-indigo-600" checked={includePrintOverview} onChange={e => setIncludePrintOverview(e.target.checked)} />

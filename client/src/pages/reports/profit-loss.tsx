@@ -173,18 +173,22 @@ export default function ProfitLoss() {
     doc.write(`<!DOCTYPE html><html><head><meta charset="utf-8"/><title>नफा-तोटा पत्रक</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
-  @page { size: A4 portrait; margin: 12mm 5mm 12mm 5mm; }
-  body { font-family: 'Noto Sans Devanagari', Arial, sans-serif; margin: 0; padding: 3mm 5mm 3mm 20mm; box-sizing: border-box; }
+  @page { size: A4 portrait; margin: 5mm; }
+  body { font-family: 'Noto Sans Devanagari', Arial, sans-serif; width: 200mm; margin: 0; padding: 0; box-sizing: border-box; }
   table { width: 100%; border-collapse: collapse; table-layout: fixed; page-break-inside: auto; }
   thead { display: table-header-group; }
   tr { page-break-inside: avoid !important; break-inside: avoid !important; }
 </style></head><body>${html}</body></html>`);
     doc.close();
-    iframe.onload = () => {
-      setTimeout(() => {
-        iframe.contentWindow?.print();
-        setTimeout(() => { document.body.removeChild(iframe); }, 2000);
-      }, 500);
+    iframe.onload = async () => {
+      await Promise.all([400, 600, 700].map(weight => doc.fonts.load(`${weight} 12px "Noto Sans Devanagari"`)));
+      await doc.fonts.ready;
+      const win = iframe.contentWindow;
+      if (!win) { iframe.remove(); return; }
+      await new Promise<void>(resolve => win.requestAnimationFrame(() => win.requestAnimationFrame(() => resolve())));
+      win.addEventListener("afterprint", () => iframe.remove(), { once: true });
+      win.print();
+      window.setTimeout(() => iframe.remove(), 600000);
     };
   };
 
@@ -199,8 +203,7 @@ export default function ProfitLoss() {
   const createOffscreenRendered = async (): Promise<{ container: HTMLElement, cleanup: () => void } | null> => {
     if (!plData) return null;
 
-    const a4WidthPx = 794;
-    const a4HeightPx = 1123;
+    const a4WidthPx = 200 * 96 / 25.4;
 
     const html = buildProfitLossHTML(plData, company, dateFrom, dateTo);
 
@@ -209,7 +212,6 @@ export default function ProfitLoss() {
     wrapper.style.left = '-9999px';
     wrapper.style.top = '0';
     wrapper.style.width = a4WidthPx + 'px';
-    wrapper.style.minHeight = a4HeightPx + 'px';
     wrapper.style.zIndex = '-9999';
     wrapper.style.pointerEvents = 'none';
     wrapper.style.overflow = 'visible';
@@ -217,7 +219,9 @@ export default function ProfitLoss() {
     wrapper.innerHTML = html;
     document.body.appendChild(wrapper);
 
-    await new Promise(resolve => setTimeout(resolve, 300));
+    await Promise.all([400, 600, 700].map(weight => document.fonts.load(`${weight} 12px "Noto Sans Devanagari"`)));
+    await document.fonts.ready;
+    await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
 
     return {
       container: wrapper,
@@ -234,7 +238,7 @@ export default function ProfitLoss() {
 
       const { default: html2canvas } = await import('html2canvas');
 
-      const a4WidthPx = 794;
+      const a4WidthPx = 200 * 96 / 25.4;
       const contentHeight = container.scrollHeight;
 
       const canvas = await html2canvas(container, {
@@ -261,7 +265,7 @@ export default function ProfitLoss() {
 
       const pdfWidth = 210;
       const pdfHeight = 297;
-      const margin = 10;
+      const margin = 5;
       const contentWidth = pdfWidth - (margin * 2);
       const imgAspect = canvas.height / canvas.width;
       const imgHeight = contentWidth * imgAspect;
@@ -352,6 +356,7 @@ export default function ProfitLoss() {
           {plData && (
             <>
               <div className="print:hidden mb-3">
+                <p className="mb-2 text-xs leading-5 text-slate-600">PDF डाउनलोड थेट A4 मध्ये होते. प्रिंट → Save as PDF वापरताना Paper size: A4 निवडा (Letter नाही), Scale: 100% आणि headers/footers बंद ठेवा.</p>
                 <div className="flex flex-wrap gap-2">
                   <Button onClick={downloadAsPDF} size="sm" disabled={isGeneratingPDF} className="bg-red-600 hover:bg-red-700 h-9">
                     <FileText className="w-4 h-4 mr-1" />
@@ -363,7 +368,7 @@ export default function ProfitLoss() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4 print:hidden">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4 print:hidden [&>div]:min-w-0 [overflow-wrap:anywhere]">
                 <Card className="border-green-200">
                   <CardContent className="p-3 text-center">
                     <ArrowUpRight className="w-5 h-5 mx-auto mb-1 text-green-500" />
