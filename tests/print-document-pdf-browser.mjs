@@ -52,9 +52,17 @@ try {
       if (!kind.includes("long")) assert.match(nativeInfo, /Pages:\s+1\b/);
       const geometry = await evaluate(`({
         charts:[...document.querySelectorAll('.summary-overview-chart')].map(node=>({width:node.clientWidth,overflow:node.scrollWidth-node.clientWidth})),
-        numbers:[...document.querySelectorAll('.summary-overview-metric strong')].map(node=>({width:node.clientWidth,overflow:node.scrollWidth-node.clientWidth}))
+        numbers:[...document.querySelectorAll('.summary-overview-metric strong')].map(node=>({width:node.clientWidth,overflow:node.scrollWidth-node.clientWidth})),
+        barGaps:[...document.querySelectorAll('.summary-overview-chart-row')].map(node=>
+          node.querySelector('.summary-overview-track').getBoundingClientRect().top -
+          node.querySelector('.summary-overview-row-heading').getBoundingClientRect().bottom),
+        signaturePadding:parseFloat(getComputedStyle(document.querySelector('.summary-document-signature td')).paddingBottom),
+        signatureTail:document.body.getBoundingClientRect().bottom-document.querySelector('.summary-document-signature td').getBoundingClientRect().bottom
       })`);
       for (const box of [...geometry.charts, ...geometry.numbers]) assert.ok(box.overflow <= 1 && box.width > 0, `${kind}: no clipped content`);
+      for (const gap of geometry.barGaps) assert.ok(gap >= 7, `${kind}: Devanagari labels separated from chart bars`);
+      assert.ok(geometry.signaturePadding >= 11, `${kind}: signature descenders have bottom breathing room`);
+      assert.ok(geometry.signatureTail >= 7, `${kind}: final PDF crop includes signature clearance`);
     }
     console.log(`${kind}: direct A4 PDF, ${result.pages} page(s)`);
   }

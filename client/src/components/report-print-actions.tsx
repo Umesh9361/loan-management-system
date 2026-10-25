@@ -20,15 +20,15 @@ export function ReportPrintActions({ pending, disabled, onPdf, onPrint, classNam
     <div className={cn("grid w-full min-w-0 grid-cols-2 gap-2 sm:w-auto sm:min-w-[300px]", className)}>
       <Button variant="outline" onClick={onPdf} disabled={disabled || pending !== null}
         aria-busy={pending === "pdf"} data-report-action="pdf"
-        className={cn(buttonClass, "border-indigo-200 text-indigo-700 hover:bg-indigo-50")}>
+        className={cn(buttonClass, "border-indigo-200 text-indigo-700 hover:bg-indigo-50 disabled:border-indigo-300 disabled:bg-indigo-50 disabled:text-indigo-900 disabled:opacity-100")}>
         {pending === "pdf" ? <Loader2 className="animate-spin" /> : <Download />}
-        <span>{pending === "pdf" ? "PDF तयार होत आहे…" : "PDF डाउनलोड"}</span>
+        <span aria-live="polite" aria-atomic="true">{pending === "pdf" ? "PDF तयार होत आहे…" : "PDF डाउनलोड"}</span>
       </Button>
       <Button onClick={onPrint} disabled={disabled || pending !== null}
         aria-busy={pending === "print"} data-report-action="print"
-        className={cn(buttonClass, "bg-indigo-600 text-white hover:bg-indigo-700")}>
+        className={cn(buttonClass, "bg-indigo-600 text-white hover:bg-indigo-700 disabled:bg-indigo-800 disabled:text-white disabled:opacity-100")}>
         {pending === "print" ? <Loader2 className="animate-spin" /> : <Printer />}
-        <span>{pending === "print" ? "प्रिंट तयार होत आहे…" : "प्रिंट करा"}</span>
+        <span aria-live="polite" aria-atomic="true">{pending === "print" ? "प्रिंट तयार होत आहे…" : "प्रिंट करा"}</span>
       </Button>
     </div>
   );

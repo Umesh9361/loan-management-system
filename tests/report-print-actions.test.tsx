@@ -18,5 +18,8 @@ for (const pending of [null, "pdf", "print"] as ReportPrintAction[]) {
       assert.match(button, /h-12 w-full min-w-0/);
     }
     assert.match(html, /grid-cols-2/);
+    assert.match(buttons[0], /disabled:text-indigo-900/);
+    assert.match(buttons[1], /disabled:text-white/);
+    for (const button of buttons) assert.match(button, /disabled:opacity-100/);
   });
 }

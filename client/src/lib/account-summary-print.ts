@@ -40,7 +40,7 @@ export function accountSummaryPrintDocument(options: SummaryPrintOptions) {
 html, body { margin: 0; padding: 0; }
 body { width: 200mm; max-width: 200mm; margin: 5mm auto; }
 @media print { body { margin: 0; } }
-body { font: 10px/1.5 'Noto Sans Devanagari', sans-serif; color: #282744; }
+body { font: 10px/1.5 'Noto Sans Devanagari', sans-serif; color: #282744; padding-bottom: 2mm; }
 .summary-document-header { border-bottom: 2px solid #5147b8; padding: 0 0 2mm; margin-bottom: 3mm; text-align: center; break-inside: avoid; page-break-inside: avoid; }
 .summary-document-header h1 { font-size: 14pt; line-height: 1.35; margin: 0 0 1mm; overflow-wrap: anywhere; }
 .summary-document-header h2 { font-size: 11pt; margin: 0 0 1mm; }
@@ -54,7 +54,7 @@ th { background: #eeedf8; color: #343252; font-weight: 700; }
 td:first-child { text-align: left; }
 .total-row td { background: #eeedf8; font-weight: 700; border-top: 2px solid #5147b8; }
 .summary-document-closing { break-inside: avoid; page-break-inside: avoid; }
-.summary-document-signature td { border: 0; padding: 14px 15mm 0 0; text-align: right; font-size: 9pt; }
+.summary-document-signature td { border: 0; padding: 5mm 15mm 3mm 0; text-align: right; font-size: 9pt; line-height: 1.7; }
 ${accountSummaryPrintOverviewStyles}
 body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 </style></head><body>

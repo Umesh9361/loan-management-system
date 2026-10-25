@@ -255,7 +255,8 @@ export const accountSummaryPrintOverviewStyles = `
     gap: 2mm;
     color: #454458;
     font-size: 8.5pt;
-    line-height: 1.35;
+    line-height: 1.7;
+    padding-bottom: 1mm;
   }
   .summary-overview-row-label {
     min-width: 0;
@@ -274,7 +275,7 @@ export const accountSummaryPrintOverviewStyles = `
   .summary-overview-track {
     position: relative;
     height: 2.4mm;
-    margin-top: 1mm;
+    margin-top: 2mm;
     background: #f0eff5;
   }
   .summary-overview-zero {

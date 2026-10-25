@@ -3088,7 +3088,7 @@ function Loans() {
               </div>
 
               <details className="rounded-lg border border-indigo-200 bg-indigo-50/40 p-3">
-                <summary className="cursor-pointer text-sm font-semibold text-indigo-900">कर्जदाराचा स्वतंत्र फोटो (ऐच्छिक)</summary>
+                <summary className="cursor-pointer text-sm font-semibold text-indigo-900">कर्जदाराचा स्वतंत्र फोटो</summary>
                 <p className="my-2 text-xs leading-5 text-slate-600">दागिन्यांच्या फोटोपासून वेगळा सेव्ह होतो. खाते निवडल्यावर तारण फॉर्म व घोषणापत्रात आपोआप येतो.</p>
                 <PhotoUpload key={`borrower-${editingLoan?.id || `new-${photoDraftKey}`}`} photoType="borrower" maxPhotos={1}
                   loanId={editingLoan?.id} existingPhotos={pendingBorrowerPhotos}
