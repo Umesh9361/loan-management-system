@@ -188,13 +188,13 @@ const reports = [
     description: "डेट वाईज, क्लोजिंग वाईज, नेम वाईज, मुदत संपलेले रिपोर्ट"
   },
   {
-    name: "कायदेशीर नोटीस",
+    name: "नोटीस",
     href: "/reports/notice-generator",
     icon: AlertTriangle,
     description: "कर्जदारांसाठी कलम १७६ अन्वये कायदेशीर नोटीस तयार करा"
   },
   {
-    name: "तारण कर्ज फॉर्म",
+    name: "फॉर्म",
     href: "/reports/pledge-forms",
     icon: FileText,
     description: "A4 तारण कर्ज फॉर्म व पावती नमुने संपादित, प्रिंट किंवा PDF करा"
