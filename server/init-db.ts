@@ -41,6 +41,11 @@ export async function initializeDatabase() {
         matter TEXT NOT NULL,
         updated_at TIMESTAMP NOT NULL DEFAULT NOW()
       )`);
+      await db.execute(sql`CREATE TABLE IF NOT EXISTS notice_defaults (
+        tenant_id VARCHAR(20) PRIMARY KEY REFERENCES companies(tenant_id) ON DELETE CASCADE,
+        matter TEXT NOT NULL,
+        updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+      )`);
       // 6. AUTO-MIGRATION: Ensure new columns exist in database
       try {
         await db.execute(sql`ALTER TABLE companies ADD COLUMN IF NOT EXISTS bottom_nav_enabled BOOLEAN NOT NULL DEFAULT true`);

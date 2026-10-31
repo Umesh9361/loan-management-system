@@ -10,9 +10,12 @@ import { MobileNav } from "@/components/ui/mobile-nav";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Printer, FileText, Search, X, Download, AlertTriangle } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { jsPDF } from "jspdf";
+import { noticeMatterSchema, renderNoticeContent } from "@shared/notice-matter";
+import { useNoticeDefaults } from "@/hooks/use-notice-defaults";
+import { NoticeMatterEditor } from "@/components/notice-matter-editor";
+import { downloadNoticePdf, noticeImageData } from "@/lib/notice-export";
 
-const NOTICE_STYLES = `
+export const NOTICE_STYLES = `
   @page {
     size: A5;
     margin: 5mm 5mm 5mm 25.4mm;
@@ -93,15 +96,15 @@ const NOTICE_STYLES = `
       margin: 5mm 5mm 5mm 25.4mm;
     }
     body {
-      width: 148mm !important;
-      height: 210mm !important;
+      width: auto !important;
+      height: auto !important;
       margin: 0 !important;
       padding: 0 !important;
     }
     .notice-container {
-      width: 148mm !important;
-      height: 210mm !important;
-      padding: 38mm 12mm 12mm 15mm !important;
+      width: auto !important;
+      height: auto !important;
+      padding: 12mm 0 !important;
     }
   }
   @media screen and (min-width: 600px) {
@@ -117,100 +120,7 @@ const NOTICE_STYLES = `
   }
 `;
 
-function generateNoticeContent(loan: any): string {
-  let loanDateStr = '';
-  if (loan.loanDate) {
-    const ld = new Date(loan.loanDate);
-    loanDateStr = `${String(ld.getDate()).padStart(2, '0')}/${String(ld.getMonth() + 1).padStart(2, '0')}/${ld.getFullYear()}`;
-  }
-
-  const borrowerName = loan.borrowerName || '';
-  const borrowerAddress = loan.borrowerAddress || '';
-  const borrowerPhone = loan.borrowerPhone || loan.phone || '';
-  const accountNumber = loan.accountNumber || '';
-
-  return `<div class="notice-container">
-  <div class="notice-title">नोटीस</div>
-  <div class="notice-date">दिनांक: ____/____/________</div>
-
-  <div class="notice-to">
-    प्रति,<br/>
-    <span class="name">${borrowerName}</span><br/>
-    ${borrowerAddress ? borrowerAddress + '<br/>' : ''}
-    ${borrowerPhone ? '<span class="phone">मो: ' + borrowerPhone + '</span>' : ''}
-  </div>
-
-  <div class="notice-subject">
-    विषय: कर्ज खाते क्र. ${accountNumber} - तारण कर्ज परतफेड व कलम १७६ अन्वये सूचना
-  </div>
-
-  <div class="notice-body">
-    <p>सदर नोटीसद्वारे आपणास कळविण्यात येते की, दि. ${loanDateStr} रोजी आपण तारण कर्ज घेतले असून, कर्जाची विहित मुदत संपुष्टात आली आहे.</p>
-
-    <p>भारतीय करार अधिनियम, १८७२ कलम १७६ अन्वये, तारणदाराला कर्जाची मुदत संपल्यानंतर वाजवी सूचना देऊन तारण वस्तूची विक्री/विल्हेवाट लावण्याचा कायदेशीर अधिकार आहे. त्यानुसार, सदर नोटीस प्राप्त झाल्यापासून १५ (पंधरा) दिवसांच्या आत कर्जाची संपूर्ण मूळ रक्कम व देय व्याज अदा करावे.</p>
-
-    <p>वरील दिलेल्या मुदतीत रक्कम अदा न केल्यास, तारण ठेवलेल्या वस्तूची विक्री / मोड / विल्हेवाट करण्यात येईल. त्यातून प्राप्त रकमेतील तूट, बाजारभावातील फरक व इतर नुकसानीची संपूर्ण जबाबदारी कर्जदाराची (तुमची) राहील.</p>
-
-    <p>सदर नोटीसची गंभीर दखल घ्यावी.</p>
-  </div>
-
-  <div class="notice-signature">
-    <div>अधिकृत स्वाक्षरी</div>
-  </div>
-</div>`;
-}
-
-function generateBlankNoticeContent(): string {
-  const fullLine = '<span style="display:inline-block; border-bottom: 1px solid #000; width: 70%;">&nbsp;</span>';
-
-  return `<div class="notice-container">
-  <div class="notice-title">नोटीस</div>
-  <div class="notice-date">दिनांक: ____/____/________</div>
-
-  <div class="notice-to" style="margin-bottom: 24px;">
-    प्रति,<br/>
-    <div style="margin-top: 6px;">${fullLine}</div>
-    <div style="margin-top: 10px;">${fullLine}</div>
-    <div style="margin-top: 10px;">${fullLine}</div>
-    <div style="margin-top: 10px;">${fullLine}</div>
-  </div>
-
-  <div class="notice-subject">
-    विषय: कर्ज खाते क्र. &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; - तारण कर्ज परतफेड व कलम १७६ अन्वये सूचना
-  </div>
-
-  <div class="notice-body">
-    <p>सदर नोटीसद्वारे आपणास कळविण्यात येते की, दि. &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; रोजी आपण तारण कर्ज घेतले असून, कर्जाची विहित मुदत संपुष्टात आली आहे.</p>
-
-    <p>भारतीय करार अधिनियम, १८७२ कलम १७६ अन्वये, तारणदाराला कर्जाची मुदत संपल्यानंतर वाजवी सूचना देऊन तारण वस्तूची विक्री/विल्हेवाट लावण्याचा कायदेशीर अधिकार आहे. त्यानुसार, सदर नोटीस प्राप्त झाल्यापासून १५ (पंधरा) दिवसांच्या आत कर्जाची संपूर्ण मूळ रक्कम व देय व्याज अदा करावे.</p>
-
-    <p>वरील दिलेल्या मुदतीत रक्कम अदा न केल्यास, तारण ठेवलेल्या वस्तूची विक्री / मोड / विल्हेवाट करण्यात येईल. त्यातून प्राप्त रकमेतील तूट, बाजारभावातील फरक व इतर नुकसानीची संपूर्ण जबाबदारी कर्जदाराची (तुमची) राहील.</p>
-
-    <p>सदर नोटीसची गंभीर दखल घ्यावी.</p>
-  </div>
-
-  <div class="notice-signature">
-    <div>अधिकृत स्वाक्षरी</div>
-  </div>
-</div>`;
-}
-
-function generateFullBlankNoticeHTML(): string {
-  const content = generateBlankNoticeContent();
-  return `<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<style>${NOTICE_STYLES}</style>
-</head>
-<body>
-${content}
-</body>
-</html>`;
-}
-
-function generateFullNoticeHTML(loan: any): string {
-  const content = generateNoticeContent(loan);
+export function fullNoticeHTML(content: string): string {
   return `<!DOCTYPE html>
 <html>
 <head>
@@ -225,6 +135,7 @@ ${content}
 
 export default function NoticeGeneratorPage() {
   const isMobile = useIsMobile();
+  const defaults = useNoticeDefaults();
   const [noticeType, setNoticeType] = useState<'filled' | 'blank'>('filled');
   const [selectedLoanId, setSelectedLoanId] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState("");
@@ -354,48 +265,6 @@ export default function NoticeGeneratorPage() {
 
   const selectedLoan = filteredLoans.find((loan: any) => loan.id === selectedLoanId);
 
-  const createOffscreenExportContainer = (html: string): HTMLDivElement => {
-    const a5WidthPx = 560;
-    const a5HeightPx = 794;
-
-    const wrapper = document.createElement('div');
-    wrapper.style.position = 'absolute';
-    wrapper.style.left = '-9999px';
-    wrapper.style.top = '0';
-    wrapper.style.width = a5WidthPx + 'px';
-    wrapper.style.minWidth = a5WidthPx + 'px';
-    wrapper.style.maxWidth = a5WidthPx + 'px';
-    wrapper.style.height = a5HeightPx + 'px';
-    wrapper.style.overflow = 'hidden';
-    wrapper.style.background = 'white';
-    wrapper.style.zIndex = '-9999';
-
-    const styleEl = document.createElement('style');
-    styleEl.textContent = NOTICE_STYLES + `
-      .notice-container {
-        width: ${a5WidthPx}px !important;
-        min-width: ${a5WidthPx}px !important;
-        max-width: ${a5WidthPx}px !important;
-        height: ${a5HeightPx}px !important;
-        padding: 144px 45px 45px 57px !important;
-        overflow: hidden !important;
-        box-shadow: none !important;
-        margin: 0 !important;
-        font-size: 12px !important;
-        line-height: 1.8 !important;
-        box-sizing: border-box !important;
-      }
-    `;
-    wrapper.appendChild(styleEl);
-
-    const contentDiv = document.createElement('div');
-    contentDiv.innerHTML = html;
-    wrapper.appendChild(contentDiv);
-
-    document.body.appendChild(wrapper);
-    return wrapper;
-  };
-
   const downloadNoticeAsPDF = async () => {
     try {
       if (!inlineNoticeHTML) {
@@ -403,52 +272,12 @@ export default function NoticeGeneratorPage() {
         return;
       }
 
-      const wrapper = createOffscreenExportContainer(inlineNoticeHTML);
-      await new Promise(resolve => setTimeout(resolve, 200));
-
-      const noticeContainer = wrapper.querySelector('.notice-container') as HTMLElement;
-      if (!noticeContainer) {
-        document.body.removeChild(wrapper);
-        alert("नोटीस container सापडले नाही");
-        return;
-      }
-
-      const { default: html2canvas } = await import('html2canvas');
-
-      const canvas = await html2canvas(noticeContainer, {
-        scale: 4,
-        useCORS: true,
-        logging: false,
-        backgroundColor: '#ffffff',
-        imageTimeout: 0,
-        width: 560,
-        height: 794,
-        windowWidth: 560,
-        windowHeight: 794,
-      });
-
-      document.body.removeChild(wrapper);
-
-      const imgData = canvas.toDataURL('image/png');
-
-      const doc = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a5',
-        compress: false
-      });
-
-      const a5Width = 148;
-      const a5Height = 210;
-
-      doc.addImage(imgData, 'PNG', 0, 0, a5Width, a5Height);
-
       const loan = (loans as any[]).find((l: any) => l.id === selectedLoanId);
       const fileName = loan
         ? `नोटीस_${loan.borrowerName}.pdf`
         : `नोटीस.pdf`;
 
-      doc.save(fileName);
+      await downloadNoticePdf(fullNoticeHTML(inlineNoticeHTML), fileName);
     } catch (error) {
       console.error("PDF generation error:", error);
       alert("PDF तयार करण्यात समस्या आली. कृपया पुन्हा प्रयत्न करा.");
@@ -462,51 +291,7 @@ export default function NoticeGeneratorPage() {
         return;
       }
 
-      const wrapper = createOffscreenExportContainer(inlineNoticeHTML);
-      await new Promise(resolve => setTimeout(resolve, 200));
-
-      const noticeContainer = wrapper.querySelector('.notice-container') as HTMLElement;
-      if (!noticeContainer) {
-        document.body.removeChild(wrapper);
-        alert("नोटीस container सापडले नाही");
-        return;
-      }
-
-      const { default: html2canvas } = await import('html2canvas');
-
-      const canvas = await html2canvas(noticeContainer, {
-        scale: 4,
-        useCORS: true,
-        logging: false,
-        backgroundColor: '#ffffff',
-        imageTimeout: 0,
-        width: 560,
-        height: 794,
-        windowWidth: 560,
-        windowHeight: 794,
-      });
-
-      document.body.removeChild(wrapper);
-
-      const a5Width = 874;
-      const a5Height = 1240;
-
-      const resizedCanvas = document.createElement('canvas');
-      resizedCanvas.width = a5Width;
-      resizedCanvas.height = a5Height;
-      const ctx = resizedCanvas.getContext('2d');
-
-      if (ctx) {
-        ctx.imageSmoothingEnabled = true;
-        ctx.imageSmoothingQuality = 'high';
-
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(0, 0, a5Width, a5Height);
-
-        ctx.drawImage(canvas, 0, 0, a5Width, a5Height);
-      }
-
-      const imageUrl = resizedCanvas.toDataURL('image/png');
+      const imageUrl = await noticeImageData(fullNoticeHTML(inlineNoticeHTML));
       const link = document.createElement('a');
       link.href = imageUrl;
 
@@ -668,6 +453,7 @@ export default function NoticeGeneratorPage() {
               <h1 className="text-2xl font-semibold text-foreground heading-professional">कायदेशीर नोटीस</h1>
               <p className="text-muted-foreground">भारतीय करार अधिनियम, १८७२ कलम १७६ अन्वये</p>
             </div>
+            <NoticeMatterEditor defaults={defaults} />
 
             {showInlinePreview && !!inlineNoticeHTML && !isMobileFullPage && (
               <div className="fixed top-0 right-0 bottom-0 left-0 lg:left-64 z-40 bg-gray-100 flex flex-col">
@@ -681,9 +467,7 @@ export default function NoticeGeneratorPage() {
                       onClick={() => {
                         const printWindow = window.open('', '_blank');
                         if (printWindow) {
-                          const fullHTML = noticeType === 'blank'
-                            ? generateFullBlankNoticeHTML()
-                            : selectedLoan ? generateFullNoticeHTML(selectedLoan) : null;
+                          const fullHTML = inlineNoticeHTML ? fullNoticeHTML(inlineNoticeHTML) : null;
                           if (fullHTML) {
                             printWindow.document.write(fullHTML);
                             printWindow.document.close();
@@ -858,12 +642,18 @@ export default function NoticeGeneratorPage() {
                     <Button
                       onClick={() => {
                         try {
+                          if (!defaults.ready || defaults.busy) return;
+                          const parsed = noticeMatterSchema.safeParse(defaults.matter);
+                          if (!parsed.success) {
+                            alert(parsed.error.issues[0]?.message || "नोटीशीचा मजकूर तपासा.");
+                            return;
+                          }
                           let noticeContent: string;
                           if (noticeType === 'blank') {
-                            noticeContent = generateBlankNoticeContent();
+                            noticeContent = renderNoticeContent(null, parsed.data, company as any);
                           } else {
                             if (!selectedLoan) return;
-                            noticeContent = generateNoticeContent(selectedLoan);
+                            noticeContent = renderNoticeContent(selectedLoan, parsed.data, company as any);
                           }
                           setInlineNoticeHTML(noticeContent);
                           setShowInlinePreview(true);
@@ -878,7 +668,7 @@ export default function NoticeGeneratorPage() {
                           alert("नोटीस तयार करण्यात समस्या आली. कृपया पुन्हा प्रयत्न करा.");
                         }
                       }}
-                      disabled={noticeType === 'filled' && !selectedLoanId}
+                      disabled={!defaults.ready || defaults.busy || (noticeType === 'filled' && !selectedLoanId)}
                       className="btn-professional btn-primary"
                     >
                       <FileText className="h-4 w-4 mr-2" />

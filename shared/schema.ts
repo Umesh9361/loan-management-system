@@ -137,6 +137,13 @@ export const pledgeFormDefaults = pgTable("pledge_form_defaults", {
   updatedAt: timestamp("updated_at").notNull().default(sql`now()`),
 });
 
+// Notice wording is independent of the six pledge-form templates.
+export const noticeDefaults = pgTable("notice_defaults", {
+  tenantId: varchar("tenant_id", { length: 20 }).primaryKey().references(() => companies.tenantId, { onDelete: "cascade" }),
+  matter: text("matter").notNull(),
+  updatedAt: timestamp("updated_at").notNull().default(sql`now()`),
+});
+
 // Groups table
 export const groups = pgTable("groups", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
