@@ -2,7 +2,7 @@ import { overduePrintDocument, type OverduePrintOptions, type OverduePrintRow } 
 
 export const sevenLossRows: OverduePrintRow[] = [4.5, 4.5, 4.88, 4.95, 4.5, 16.66, 6.7].map((weight, index) => ({
   loanId: `fixture-${index}`, accountNumber: String(115 + index), borrowerName: `नमुना ग्राहक ${index + 1}`,
-  borrowerPhone: index === 0 ? "0000000000" : "", groupName: "नमुना गट",
+  borrowerPhone: index === 0 ? "+1 202-555-0143" : "", groupName: "नमुना गट",
   loanDate: "2026-04-09", goldItem: index === 0 ? "बोरमाळ 30 मणी" : "सोन्याची अंगठी",
   principalAmount: 45000, interestToDate: index === 0 ? 6304 : 5516,
   totalAmount: index === 0 ? 51304 : 50516, goldWeight: weight, fineGoldWeight: weight * .82,
@@ -21,7 +21,13 @@ export const unsecuredLossRow: OverduePrintRow = {
 };
 export function lossPrintFixture(kind = "seven"): OverduePrintOptions {
   const mixed = [...sevenLossRows, silverLossRow, unsecuredLossRow];
-  const rows = kind === "no-phone" ? [{ ...sevenLossRows[0], borrowerPhone: "   ", goldItem: "अंगठी बांगडी आणि जुनी सोन्याची बोरमाळ ".repeat(5) + "वर्णनसमाप्त" }]
+  const rows = kind === "duration" ? sevenLossRows.map((row, index) => {
+    const daysOverdue = [0, 5, 31, 219, 365, 550, 821][index];
+    const start = new Date(Date.UTC(2026, 10, 14));
+    start.setUTCDate(start.getUTCDate() - daysOverdue);
+    return { ...row, loanDate: start.toISOString().slice(0, 10), daysOverdue };
+  }) : kind === "placeholder-phones" ? sevenLossRows.map(row => ({ ...row, borrowerPhone: "N/A", groupName: "JOTIRLING" }))
+    : kind === "no-phone" ? [{ ...sevenLossRows[0], borrowerPhone: "   ", goldItem: "अंगठी बांगडी आणि जुनी सोन्याची बोरमाळ ".repeat(5) + "वर्णनसमाप्त" }]
     : kind === "empty" ? [] : kind === "unsecured" ? [unsecuredLossRow] : kind === "mixed" ? mixed
     : kind === "long" ? Array.from({ length: 45 }, (_, index) => ({
       ...mixed[index % mixed.length], loanId: `long-${index}`, accountNumber: `${index + 1}`,

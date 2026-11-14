@@ -48,7 +48,7 @@ createServer((req, res) => {
       pending: pending === "pdf" || pending === "print" ? pending : null, onPdf: () => {}, onPrint: () => {},
       className: "max-w-md [&>button]:rounded-lg [&>button]:text-sm [&>button]:font-semibold",
     }));
-    const fine = renderToStaticMarkup(React.createElement(OverdueFineWeight, { weight: 16 }));
+    const fine = renderToStaticMarkup(React.createElement(OverdueFineWeight, { weight: 16, purity: 80 }));
     res.setHeader("Content-Type", "text/html;charset=utf-8");
     res.end(`<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="/fixture.css"></head><body><main class="mx-auto max-w-xl space-y-4 p-4"><h1 class="font-bold text-indigo-800">लॉस रिपोर्ट — नमुना</h1><div class="rounded-xl border bg-white p-4"><div class="grid grid-cols-2 gap-4"><div>वजन<strong class="block">20.00</strong></div><div class="text-blue-700">शुद्ध सोने${fine}</div></div></div><div class="mx-auto flex w-full max-w-xl flex-col items-center justify-center gap-3 rounded-xl border border-indigo-100 bg-white p-2 sm:flex-row">${actions}</div></main></body></html>`); return;
   }

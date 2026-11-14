@@ -1,5 +1,6 @@
 import { overdueMetalWeightTotals } from "../../../shared/overdue-weights";
 import { formatWeight } from "../../../shared/report-weights";
+import { overdueDurationParts } from "./overdue-duration";
 
 export interface OverduePrintRow {
   loanId: string;
@@ -41,9 +42,9 @@ const escapeHtml = (value: unknown): string =>
     "'": "&#39;",
   })[character] as string);
 
-const currency = (value: number): string =>
+const currency = (value: number, maximumFractionDigits = 2): string =>
   `₹${new Intl.NumberFormat("en-IN", {
-    maximumFractionDigits: 2,
+    maximumFractionDigits,
     minimumFractionDigits: 0,
   }).format(Number.isFinite(value) ? value : 0)}`;
 
@@ -59,9 +60,11 @@ function displayDate(value: string): string {
 const isUnsecured = (row: OverduePrintRow) => row.loanType === "विनातारण";
 
 function loanIdentity(row: OverduePrintRow): string {
+  const phone = String(row.borrowerPhone ?? "").trim();
+  const hasPhone = phone !== "" && !/^(?:n\s*[/.]?\s*a\.?|none|null|undefined|not\s+available|[-—–]+|0+)$/i.test(phone);
   const details = [
     `<strong class="borrower-name">${escapeHtml(row.borrowerName)}</strong>`,
-    row.borrowerPhone?.trim() ? `<span>फोन: ${escapeHtml(row.borrowerPhone.trim())}</span>` : "",
+    hasPhone ? `<span>फोन: ${escapeHtml(phone)}</span>` : "",
     row.goldItem?.trim() ? `<span>वस्तू: ${escapeHtml(row.goldItem.trim())}</span>` : "",
   ].filter(Boolean).join("");
   return `<div class="identity">${details}</div>`;
@@ -71,6 +74,9 @@ function securityMarkup(label: string, loss: number): string {
   const riskClass = loss > 0 ? "risk-loss" : label.includes("पूर्ण") ? "risk-safe" : label.includes("मध्यम") ? "risk-medium" : "risk-low";
   return `<div class="risk ${riskClass}"><strong>${escapeHtml(label)}</strong>${loss > 0 ? `<span>${currency(loss)}</span>` : ""}</div>`;
 }
+
+const durationMarkup = (row: OverduePrintRow) =>
+  overdueDurationParts(row).map(part => `<span class="duration-part">${escapeHtml(part)}</span>`).join("");
 
 function securedRow(row: OverduePrintRow): string {
   const weight = formatWeight(row.goldWeight);
@@ -86,10 +92,10 @@ function securedRow(row: OverduePrintRow): string {
     <td class="money">${currency(row.interestToDate)}</td>
     <td class="weight">${escapeHtml(weight)}</td>
     <td class="weight fine-weight">${fineWeight !== null ? `<strong>${escapeHtml(fineWeight)}</strong>` : "—"}</td>
-    <td class="money">${currency(row.currentGoldValue)}</td>
+    <td class="money">${currency(row.currentGoldValue, 0)}</td>
     <td class="money obligation">${currency(row.totalAmount)}</td>
     <td>${securityMarkup(row.securityLabel, row.lossAmount)}</td>
-    <td class="center">${escapeHtml(row.daysOverdue)}</td>
+    <td class="center duration">${durationMarkup(row)}</td>
   </tr>`;
 }
 
@@ -103,7 +109,7 @@ function unsecuredRow(row: OverduePrintRow): string {
     <td class="money">${currency(row.interestToDate)}</td>
     <td class="money obligation">${currency(row.totalAmount)}</td>
     <td>${securityMarkup(row.securityLabel, row.lossAmount)}</td>
-    <td class="center">${escapeHtml(row.daysOverdue)}</td>
+    <td class="center duration">${durationMarkup(row)}</td>
   </tr>`;
 }
 
@@ -124,7 +130,7 @@ function sectionTotals(rows: OverduePrintRow[], secured: boolean): string {
     <span>मुद्दल: ${currency(total.principal)}</span>
     <span>व्याज: ${currency(total.interest)}</span>
     <span>एकूण देय: ${currency(total.obligation)}</span>
-    ${secured ? `<span>तारणाचे बाजारमूल्य: ${currency(total.collateral)}</span>` : ""}
+    ${secured ? `<span>तारणाचे बाजारमूल्य: ${currency(total.collateral, 0)}</span>` : ""}
     <span>एकूण नुकसान: ${currency(total.loss)}</span>
   </div>`;
 }
@@ -146,8 +152,8 @@ function securedSection(rows: OverduePrintRow[]): string {
   return `<section class="loss-section">
     <h2 class="loss-section-title">तारण असलेली कर्जे <span>${rows.length} खाते</span></h2>
     <div class="table-wrap"><table class="loss-print-table secured-table">
-      <colgroup><col style="width:4%"><col style="width:20%"><col style="width:5%"><col style="width:7%"><col style="width:8%"><col style="width:7%"><col style="width:7%"><col style="width:8%"><col style="width:9%"><col style="width:9%"><col style="width:11%"><col style="width:5%"></colgroup>
-      <thead><tr><th>खाते</th><th>कर्जदार / तपशील</th><th>गट</th><th>तारीख</th><th>मुद्दल</th><th>व्याज</th><th>वजन</th><th>शुद्ध वजन</th><th>तारण बाजारमूल्य</th><th>एकूण देय</th><th>नुकसान / सुरक्षा स्थिती</th><th>दिवस</th></tr></thead>
+      <colgroup><col style="width:4%"><col style="width:24%"><col style="width:9%"><col style="width:7%"><col style="width:8%"><col style="width:7%"><col style="width:5%"><col style="width:5%"><col style="width:9%"><col style="width:9%"><col style="width:7%"><col style="width:6%"></colgroup>
+      <thead><tr><th>खाते</th><th>कर्जदार / तपशील</th><th>गट</th><th>तारीख</th><th>मुद्दल</th><th>व्याज</th><th>वजन</th><th>शुद्ध वजन</th><th>तारण बाजारमूल्य</th><th>एकूण देय</th><th>नुकसान / सुरक्षा</th><th>कालावधी</th></tr></thead>
       <tbody>${rows.map(securedRow).join("")}</tbody>
     </table></div>
     ${sectionTotals(rows, true)}
@@ -159,8 +165,8 @@ function unsecuredSection(rows: OverduePrintRow[]): string {
   return `<section class="loss-section">
     <h2 class="loss-section-title">विनातारण कर्जे <span>${rows.length} खाते</span></h2>
     <div class="table-wrap"><table class="loss-print-table unsecured-table">
-      <colgroup><col style="width:7%"><col style="width:25%"><col style="width:9%"><col style="width:9%"><col style="width:10%"><col style="width:10%"><col style="width:12%"><col style="width:13%"><col style="width:5%"></colgroup>
-      <thead><tr><th>खाते</th><th>कर्जदार / तपशील</th><th>गट</th><th>तारीख</th><th>मुद्दल</th><th>व्याज</th><th>एकूण देय</th><th>नुकसान / सुरक्षा स्थिती</th><th>दिवस</th></tr></thead>
+      <colgroup><col style="width:7%"><col style="width:27%"><col style="width:12%"><col style="width:9%"><col style="width:10%"><col style="width:10%"><col style="width:12%"><col style="width:7%"><col style="width:6%"></colgroup>
+      <thead><tr><th>खाते</th><th>कर्जदार / तपशील</th><th>गट</th><th>तारीख</th><th>मुद्दल</th><th>व्याज</th><th>एकूण देय</th><th>नुकसान / सुरक्षा</th><th>कालावधी</th></tr></thead>
       <tbody>${rows.map(unsecuredRow).join("")}</tbody>
     </table></div>
     ${sectionTotals(rows, false)}
@@ -210,7 +216,7 @@ body { width: 287mm; max-width: 287mm; margin: 0 auto; color: #24243a; backgroun
 .loss-print-table { width: 100%; table-layout: fixed; border-collapse: collapse; }
 .loss-print-table thead { display: table-header-group; }
 .loss-print-table tr { break-inside: avoid; page-break-inside: avoid; }
-.loss-print-table th, .loss-print-table td { border: 1px solid #85849a; padding: 1.5mm 1mm; text-align: left; vertical-align: middle; font-size: 9pt; line-height: 1.5; overflow-wrap: anywhere; word-break: normal; }
+.loss-print-table th, .loss-print-table td { border: 1px solid #85849a; padding: 1.1mm 1mm; text-align: left; vertical-align: middle; font-size: 9pt; line-height: 1.5; overflow-wrap: anywhere; word-break: normal; }
 .loss-print-table th { color: #292846; background: #e9e8f3; font-weight: 700; }
 .loss-print-table td.money { text-align: right; white-space: normal; font-variant-numeric: tabular-nums; }
 .loss-print-table td.center { text-align: center; }
@@ -221,6 +227,9 @@ body { width: 287mm; max-width: 287mm; margin: 0 auto; color: #24243a; backgroun
 .borrower-name { font-size: 9.5pt; line-height: 1.55; color: #25233e; }
 .subline { display: block; font-size: 8pt; }
 .weight { text-align: center !important; }
+.duration-part { display: block; white-space: nowrap; }
+.loss-print-table th:last-child { white-space: nowrap; }
+.loss-print-table td.weight { padding-left: .5mm; padding-right: .5mm; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .risk { display: flex; flex-direction: column; line-height: 1.5; }
 .risk strong { font-weight: 700; }
 .risk-loss strong { font-weight: 700; }

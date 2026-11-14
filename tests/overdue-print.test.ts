@@ -9,13 +9,12 @@ import { printPdfLayout } from "../client/src/lib/print-document-pdf";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { OverdueFineWeight } from "../client/src/components/reports/overdue-fine-weight";
-import { OverdueMetalTotals } from "../client/src/components/reports/overdue-weight-summary";
 
-test("20 gross grams at 80% shows only 16 fine grams, without per-row units or percentage", () => {
+test("screen fine-weight display is unchanged, while PDF shows numeric fine grams without units or percentage", () => {
   const fine = 20 * (80 / 100);
-  const cell = renderToStaticMarkup(React.createElement(OverdueFineWeight, { weight: fine }));
-  assert.match(cell, />16\.00<\/span>/);
-  assert.ok(!cell.includes("ग्रॅम") && !cell.includes("%"));
+  const cell = renderToStaticMarkup(React.createElement(OverdueFineWeight, { weight: fine, purity: 80 }));
+  assert.match(cell, />16\.00 ग्रॅम<\/span>/);
+  assert.ok(cell.includes("(80%)"), "existing screen percentage remains untouched");
   const row = { ...sevenLossRows[0], goldWeight: 20, fineGoldWeight: fine, purityUsed: 80 };
   const html = overduePrintDocument({ ...lossPrintFixture(), rows: [row] });
   assert.match(html, /<th>शुद्ध वजन<\/th>/);
@@ -31,13 +30,29 @@ test("standalone landscape loss document includes every visible detail, original
   const options = lossPrintFixture();
   const before = JSON.stringify(options);
   const html = overduePrintDocument(options);
-  for (const value of ["नमुना फायनान्स", "महाराष्ट्र", "लॉस रिपोर्ट", "15/11/2026", "नमुना ग्राहक 1", "0000000000", "बोरमाळ 30 मणी", "नमुना गट", "09-04-2026", "₹45,000", "₹6,304", "₹51,304", "4.50", "3.69", "₹49,915", "₹1,389", "219", "कमी सुरक्षित"]) assert.ok(html.includes(value), value);
+  for (const value of ["नमुना फायनान्स", "महाराष्ट्र", "लॉस रिपोर्ट", "15/11/2026", "नमुना ग्राहक 1", "+1 202-555-0143", "बोरमाळ 30 मणी", "नमुना गट", "09-04-2026", "₹45,000", "₹6,304", "₹51,304", "4.50", "3.69", "₹49,915", "₹1,389", "7 महिने", "5 दिवस", "कमी सुरक्षित"]) assert.ok(html.includes(value), value);
   assert.match(html, /@page\s*{\s*size: A4 landscape/);
   assert.equal((html.match(/class="borrower-name"/g) || []).length, 7);
   assert.ok(!html.includes("fixture-"), "internal identifiers are not printed");
   assert.equal(JSON.stringify(options), before, "export never alters financial data");
   assert.match(html, /font: 9pt\/1\.55/);
   assert.ok(!html.includes("✓"), "risk must remain understandable without colored checkmarks");
+});
+test("collateral market values show whole rupees without altering source figures or exact loss sums", () => {
+  const options = { ...lossPrintFixture(), rows: [{ ...sevenLossRows[0], currentGoldValue: 49914.63, lossAmount: 1389.37 }] };
+  const before = JSON.stringify(options);
+  const html = overduePrintDocument(options);
+  assert.match(html, /<td class="money">₹49,915<\/td>/);
+  assert.match(html, /तारणाचे बाजारमूल्य: ₹49,915/);
+  assert.ok(!html.includes("₹49,914.63") && !html.includes("₹49,915.00"));
+  assert.ok(html.includes("₹1,389.37"), "do not change other exact amounts when formatting collateral");
+  assert.equal(JSON.stringify(options), before, "presentation never changes financial source values");
+  for (const match of Array.from(html.matchAll(/<colgroup>(.*?)<\/colgroup>/g))) {
+    const widths = Array.from(match[1].matchAll(/width:(\d+)%/g), value => Number(value[1]));
+    assert.equal(widths.reduce((a, b) => a + b), 100);
+    assert.ok(widths[1] >= 24 && widths[2] >= 9, "give names and groups more room");
+    if (widths.length === 12) assert.ok(widths[6] === 5 && widths[7] === 5 && widths[10] === 7 && widths[11] === 6);
+  }
 });
 test("gold and silver remain separate, fine weights use the same shared calculation and unsecured has no pretend collateral", () => {
   const options = lossPrintFixture("mixed");
@@ -47,11 +62,10 @@ test("gold and silver remain separate, fine weights use the same shared calculat
     assert.ok(html.includes(`${label} ${formatWeight(amount)}</span>`));
   }
   assert.match(html, /विनातारण कर्जे/);
+  assert.equal((html.match(/<th>कालावधी<\/th>/g) || []).length, 2, "both secured and unsecured tables show calendar periods");
+  assert.ok(!html.includes("<th>दिवस</th>"));
   assert.ok(html.indexOf("एकूण धातू वजन (ग्रॅम)") > html.indexOf("विनातारण कर्जे"));
   assert.equal((html.match(/एकूण धातू वजन \(ग्रॅम\)/g) || []).length, 1);
-  const screen = renderToStaticMarkup(React.createElement(OverdueMetalTotals, { totals: weights }));
-  for (const label of ["सोने वजन", "चांदी वजन", "शुद्ध सोने", "शुद्ध चांदी"]) assert.ok(screen.includes(label));
-  assert.equal((screen.match(/ग्रॅम/g) || []).length, 1, "units occur once in the final summary");
   const unsecured = overduePrintDocument({ ...options, rows: [unsecuredLossRow] });
   assert.ok(!unsecured.includes('<td class="weight">'));
   assert.ok(!unsecured.includes("तारण बाजारमूल्य</th>"));
@@ -59,7 +73,7 @@ test("gold and silver remain separate, fine weights use the same shared calculat
 });
 test("absent or whitespace-only phone adds no empty line, long descriptions remain complete and money has no artificial .00", () => {
   const description = "अंगठी बांगडी आणि जुनी सोन्याची बोरमाळ ".repeat(5);
-  for (const borrowerPhone of [undefined, "", "   "]) {
+  for (const borrowerPhone of [undefined, "", "   ", "N/A", " n/a ", "N.A.", "NA", "-", "—", "null", "undefined", "0", "0000000000"]) {
     const html = overduePrintDocument({ ...lossPrintFixture(), rows: [{ ...sevenLossRows[0], borrowerPhone, goldItem: description }] });
     assert.ok(!html.includes("फोन:"));
     assert.ok(html.includes(description.trim()));
@@ -92,4 +106,6 @@ test("page exports currently filtered sorted rows with one busy action and never
   assert.match(source, /ReportPrintActions pending={pendingPrintAction}/);
   assert.match(source, /undefined, "landscape"/);
   assert.ok(!source.includes("onClick={() => window.print()}"));
+  assert.ok(!source.includes("OverdueMetalTotals"), "no duplicate metal summary is added to the main view");
+  assert.match(source, /purity={item\.purityUsed}/, "existing view details are preserved");
 });

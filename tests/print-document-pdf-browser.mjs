@@ -27,7 +27,7 @@ const evaluate = async expression => {
 };
 await mkdir("generated-artifacts/direct-a4", { recursive: true });
 try {
-  for (const kind of ["compact", "spacious", "single", "summary", "summary-full", "summary-long", "summary-period", "summary-full-long", "summary-position", "summary-position-ten", "summary-position-custom", "loss-seven", "loss-mixed", "loss-unsecured", "loss-future", "loss-no-phone", "loss-long"].filter(kind => !process.argv.includes("--loss-only") || kind.startsWith("loss-"))) {
+  for (const kind of ["compact", "spacious", "single", "summary", "summary-full", "summary-long", "summary-period", "summary-full-long", "summary-position", "summary-position-ten", "summary-position-custom", "loss-seven", "loss-mixed", "loss-unsecured", "loss-future", "loss-no-phone", "loss-placeholder-phones", "loss-duration", "loss-long"].filter(kind => !process.argv.includes("--loss-only") || kind.startsWith("loss-"))) {
     await call("Page.navigate", { url: `http://127.0.0.1:5002/?kind=${kind}` });
     for (let i = 0; i < 100 && !await evaluate("typeof window.runPdf==='function'"); i++) await new Promise(resolve => setTimeout(resolve, 100));
     await evaluate("window.runPdf()");
@@ -83,10 +83,24 @@ try {
       if (kind !== "loss-unsecured") assert.equal(details.columns, 12);
       const weights = await evaluate("Array.from(document.querySelectorAll('td.weight')).map(n=>n.textContent.trim())");
       for (const weight of weights) assert.match(weight, /^[0-9,.]+$/, "row weights contain numbers only, no units, metal labels or percentages");
+      assert.ok(await evaluate("Array.from(document.querySelectorAll('td.weight')).every(n=>n.scrollWidth<=n.clientWidth+1)"), "narrow weight columns still fit complete numeric values");
+      assert.ok(await evaluate("Array.from(document.querySelectorAll('td.duration')).every(n=>n.scrollWidth<=n.clientWidth+1)"), "calendar periods fit without breaking their words or clipping");
+      assert.ok(await evaluate("Array.from(document.querySelectorAll('.loss-print-table th:last-child')).every(n=>n.scrollWidth<=n.clientWidth+1)"), "the period heading fits on one unbroken line");
+      if (kind === "loss-duration") {
+        assert.ok(await evaluate("document.body.textContent.includes('वर्षे')&&document.body.textContent.includes('महिना')&&document.body.textContent.includes('दिवस')"));
+      }
       if (kind === "loss-no-phone") {
         assert.equal(await evaluate("document.body.textContent.includes('फोन:')"), false);
         assert.ok(await evaluate("document.querySelector('tbody tr').getBoundingClientRect().height>100"), "long description expands its row");
         assert.ok(await evaluate("document.querySelector('.identity').textContent.includes('वर्णनसमाप्त')"), "complete description is retained");
+      }
+      if (kind === "loss-placeholder-phones") {
+        assert.equal(await evaluate("document.body.textContent.includes('फोन:')"), false, "N/A is not a real phone number");
+        assert.equal(result.pages, 1, "seven missing-phone rows do not create a needless extra page");
+        assert.equal(await evaluate(`(()=>{
+          const range=document.createRange();range.selectNodeContents(document.querySelector('.secured-table tbody tr td:nth-child(3)'));
+          return range.getClientRects().length;
+        })()`), 1, "JOTIRLING group name fits on one line");
       }
       const native = await call("Page.printToPDF", { preferCSSPageSize: true, printBackground: true, displayHeaderFooter: false });
       const nativeFile = `generated-artifacts/direct-a4/${kind}-native.pdf`;
@@ -96,7 +110,7 @@ try {
       if (kind === "loss-seven") {
         assert.match(nativeInfo, /Pages:\s+1\b/);
         const text = execFileSync("pdftotext", [nativeFile, "-"], { encoding: "utf8" });
-        assert.ok(text.includes("ग्राहक") && text.includes("0000000000") && text.includes("115"), "actual native PDF contains names, phone and account");
+        assert.ok(text.includes("ग्राहक") && text.includes("202-555-0143") && text.includes("115"), "actual native PDF contains names, real-format phone and account");
       }
     }
     console.log(`${kind}: direct A4 PDF, ${result.pages} page(s)`);
@@ -119,7 +133,7 @@ try {
         assert.equal(box.disabled, !!pending);
       }
       assert.ok((await evaluate("document.body.textContent")).includes("16.00"));
-      assert.ok(!(await evaluate("document.body.textContent")).includes("80%"));
+      assert.ok((await evaluate("document.body.textContent")).includes("80%"), "existing main-view details remain unchanged");
     }
     console.log(`${width}px: fine grams and side-by-side PDF/print controls passed, including both busy states`);
   }
