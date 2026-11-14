@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { ArrowLeft, Calculator, TrendingDown, AlertTriangle, Printer, Eye, Camera, FileSpreadsheet, Users, User, Home } from "lucide-react";
+import { ArrowLeft, Calculator, TrendingDown, AlertTriangle, Eye, Camera, FileSpreadsheet, Users, User, Home } from "lucide-react";
 import * as XLSX from 'xlsx';
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
@@ -17,6 +17,11 @@ import { PhotoViewer } from "@/components/ui/photo-viewer";
 import { checkedReportLoans, formatWeight } from "@shared/report-weights";
 import { overdueMetalWeightTotals } from "@shared/overdue-weights";
 import { OverdueWeightSummary } from "@/components/reports/overdue-weight-summary";
+import { OverdueFineWeight } from "@/components/reports/overdue-fine-weight";
+import { overduePrintDocument } from "@/lib/overdue-print";
+import { downloadPrintDocumentPdf } from "@/lib/print-document-pdf";
+import { printAccountSummary } from "@/lib/account-summary-print";
+import { ReportPrintActions, type ReportPrintAction } from "@/components/report-print-actions";
 
 declare global {
   interface Window {
@@ -86,6 +91,8 @@ export default function OverdueReport() {
   const reportSectionRef = useRef<HTMLDivElement>(null);
   const dataTableRef = useRef<HTMLDivElement>(null);
   const [sidebarHidden, setSidebarHidden] = useState(false);
+  const [pendingPrintAction, setPendingPrintAction] = useState<ReportPrintAction>(null);
+  const printActionLock = useRef(false);
 
   useEffect(() => {
     const style = document.createElement('style');
@@ -225,6 +232,7 @@ export default function OverdueReport() {
   const { data: groups = [] } = useQuery({
     queryKey: ['/api/groups'],
   });
+  const companyQuery = useQuery<any>({ queryKey: ["/api/company"] });
 
   const [silverRateManuallyEdited, setSilverRateManuallyEdited] = useState(false);
 
@@ -807,6 +815,51 @@ export default function OverdueReport() {
 
   // Filtered secured entries only; gross/fine totals remain separate by metal.
   const metalWeightTotals = overdueMetalWeightTotals(securedLoans);
+
+  const exportReport = async (asPdf: boolean) => {
+    if (printActionLock.current || !reportGenerated || isGenerating || !sortedOverdueData.length) return;
+    printActionLock.current = true;
+    setPendingPrintAction(asPdf ? "pdf" : "print");
+    try {
+      const profile = companyQuery.data
+        ? { data: companyQuery.data, error: null }
+        : await companyQuery.refetch();
+      if (profile.error) throw new Error("संस्थेची माहिती लोड झाली नाही. पुन्हा प्रयत्न करा.");
+      const viewLabels: Record<string, string> = {
+        default: "नुकसान व कमी सुरक्षित", all: "सर्व", loss: "फक्त नुकसान",
+        low: "कमी सुरक्षित", medium: "मध्यम सुरक्षित", safe: "पूर्ण सुरक्षित",
+      };
+      const futureLabels: Record<string, string> = {
+        "1month": "पुढील 1 महिना", "3months": "पुढील 3 महिने",
+        "6months": "पुढील 6 महिने", "1year": "पुढील 1 वर्ष",
+      };
+      const context: Array<[string, string]> = [
+        ["कालावधी", `${formatDateForInput(filters.dateFrom)} ते ${formatDateForInput(filters.dateTo)}`],
+        ["विश्लेषण", filters.projectionMode === "current" ? "आजपर्यंत" : futureLabels[filters.futureProjectionPeriod]],
+        ["निवड", activeTab === "customer" ? selectedCustomerName : filters.groupId === "all" ? "सर्व गट" : (groups as any[]).find(group => group.id === filters.groupId)?.name || "निवडलेला गट"],
+        ["दाखवलेली खाती", viewLabels[viewMode] || viewMode],
+        ["सोने दर / ग्रॅम", formatCurrency(Number(filters.currentGoldRate))],
+        ["चांदी दर / ग्रॅम", formatCurrency(Number(filters.currentSilverRate))],
+        ["शुद्धता", filters.purityMode === "loan-wise" ? "कर्ज नोंदणीप्रमाणे" : `${filters.finePurityPercentage}% (निवडलेली)`],
+        ["व्याज", filters.interestRateMode === "loan-wise" ? "कर्ज नोंदणीप्रमाणे" : `${filters.monthlyInterestRate}% / महिना`],
+      ];
+      const html = overduePrintDocument({
+        rows: sortedOverdueData.map(item => ({ ...item, securityLabel: getSecurityLevel(item).label })),
+        company: profile.data?.name,
+        companyAddress: profile.data?.address,
+        title: filters.projectionMode === "current" ? "लॉस रिपोर्ट" : "भविष्यातील नुकसान अंदाज रिपोर्ट",
+        reportDate: new Date().toLocaleDateString("en-GB"),
+        context,
+      });
+      if (asPdf) await downloadPrintDocumentPdf(html, "लॉस_रिपोर्ट.pdf", undefined, "landscape");
+      else await printAccountSummary(html);
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "रिपोर्ट तयार झाला नाही. पुन्हा प्रयत्न करा.");
+    } finally {
+      printActionLock.current = false;
+      setPendingPrintAction(null);
+    }
+  };
 
   const levelCounts = {
     loss: sortedOverdueData.filter(i => getSecurityLevel(i).level === 'loss').length,
@@ -1481,8 +1534,8 @@ export default function OverdueReport() {
                               <div className="font-semibold text-amber-700">{formatWeight(item.goldWeight)}g</div>
                             </div>
                             <div>
-                              <span className="text-gray-500">शुद्धता</span>
-                              <div className="font-semibold text-blue-700">{`${item.purityUsed}%`}</div>
+                              <span className="text-gray-500">{item.metalType === "silver" ? "शुद्ध चांदी" : "शुद्ध सोने"}</span>
+                              <div className="text-blue-700"><OverdueFineWeight weight={item.fineGoldWeight} purity={item.purityUsed} /></div>
                             </div>
                             <div>
                               <span className="text-gray-500">तारण मूल्य</span>
@@ -1508,7 +1561,7 @@ export default function OverdueReport() {
                           <th className="border border-gray-300 px-2 py-2 text-right text-sm font-bold text-gray-700 whitespace-nowrap">मुद्दल</th>
                           <th className="border border-gray-300 px-2 py-2 text-right text-sm font-bold text-gray-700 whitespace-nowrap">व्याज</th>
                           <th className="border border-gray-300 px-2 py-2 text-center text-sm font-bold text-gray-700 whitespace-nowrap">वजन</th>
-                          <th className="border border-gray-300 px-2 py-2 text-center text-sm font-bold text-gray-700 whitespace-nowrap">शुद्धता</th>
+                          <th className="border border-gray-300 px-2 py-2 text-center text-sm font-bold text-gray-700 whitespace-nowrap">शुद्ध वजन</th>
                           <th className="border border-gray-300 px-2 py-2 text-right text-sm font-bold text-gray-700 whitespace-nowrap">तारण मूल्य</th>
                           <th className="border border-gray-300 px-2 py-2 text-right text-sm font-bold text-gray-700 whitespace-nowrap">एकूण</th>
                           <th className="border border-gray-300 px-2 py-2 text-right text-sm font-bold text-gray-700 whitespace-nowrap">नुकसान</th>
@@ -1546,7 +1599,7 @@ export default function OverdueReport() {
                               <td className="border border-gray-300 px-2 py-2 text-sm text-right font-semibold text-purple-700 whitespace-nowrap">{formatCurrency(item.principalAmount)}</td>
                               <td className="border border-gray-300 px-2 py-2 text-sm text-right font-semibold text-orange-700 whitespace-nowrap">{formatCurrency(item.interestToDate)}</td>
                               <td className="border border-gray-300 px-2 py-2 text-sm text-center font-semibold text-amber-700 whitespace-nowrap">{formatWeight(item.goldWeight)}</td>
-                              <td className="border border-gray-300 px-2 py-2 text-sm text-center font-semibold text-blue-700 whitespace-nowrap">{`${item.purityUsed}%`}</td>
+                              <td className="border border-gray-300 px-2 py-2 text-sm text-center text-blue-700 whitespace-nowrap"><OverdueFineWeight weight={item.fineGoldWeight} purity={item.purityUsed} /></td>
                               <td className="border border-gray-300 px-2 py-2 text-sm text-right font-semibold text-green-700 whitespace-nowrap">{formatCurrency(item.currentGoldValue)}</td>
                               <td className="border border-gray-300 px-2 py-2 text-sm text-right font-bold text-indigo-700 whitespace-nowrap">{formatCurrency(item.totalAmount)}</td>
                               <td className={`border border-gray-300 px-2 py-2 text-sm text-right font-bold ${security.bgColor}`}>
@@ -1716,7 +1769,7 @@ export default function OverdueReport() {
                     <th style={{border: '1px solid black', padding: '5px', fontWeight: 'bold', textAlign: 'right', width: '8%'}}>मुद्दल</th>
                     <th style={{border: '1px solid black', padding: '5px', fontWeight: 'bold', textAlign: 'right', width: '8%'}}>व्याज</th>
                     <th style={{border: '1px solid black', padding: '5px', fontWeight: 'bold', textAlign: 'center', width: '6%'}}>वजन</th>
-                    <th style={{border: '1px solid black', padding: '5px', fontWeight: 'bold', textAlign: 'center', width: '6%'}}>शुद्धता</th>
+                    <th style={{border: '1px solid black', padding: '5px', fontWeight: 'bold', textAlign: 'center', width: '6%'}}>शुद्ध वजन</th>
                     <th style={{border: '1px solid black', padding: '5px', fontWeight: 'bold', textAlign: 'right', width: '9%'}}>तारण मूल्य</th>
                     <th style={{border: '1px solid black', padding: '5px', fontWeight: 'bold', textAlign: 'right', width: '9%'}}>एकूण</th>
                     <th style={{border: '1px solid black', padding: '5px', fontWeight: 'bold', textAlign: 'right', width: '9%'}}>नुकसान</th>
@@ -1741,7 +1794,7 @@ export default function OverdueReport() {
                       <td style={{border: '1px solid black', padding: '3px', textAlign: 'right'}}>{formatCurrency(item.principalAmount)}</td>
                       <td style={{border: '1px solid black', padding: '3px', textAlign: 'right'}}>{formatCurrency(item.interestToDate)}</td>
                       <td style={{border: '1px solid black', padding: '3px', textAlign: 'center'}}>{formatWeight(item.goldWeight)}</td>
-                      <td style={{border: '1px solid black', padding: '3px', textAlign: 'center'}}>{`${item.purityUsed}%`}</td>
+                      <td style={{border: '1px solid black', padding: '3px', textAlign: 'center'}}><OverdueFineWeight weight={item.fineGoldWeight} purity={item.purityUsed} /></td>
                       <td style={{border: '1px solid black', padding: '3px', textAlign: 'right'}}>{formatCurrency(item.currentGoldValue)}</td>
                       <td style={{border: '1px solid black', padding: '3px', textAlign: 'right', fontWeight: 'bold'}}>{formatCurrency(item.totalAmount)}</td>
                       <td style={{border: '1px solid black', padding: '3px', textAlign: 'right', fontWeight: 'bold', color: item.lossAmount > 0 ? 'red' : 'green'}}>
@@ -1844,14 +1897,11 @@ export default function OverdueReport() {
             </div>
             
             <div className="mt-6 text-center print:hidden space-y-3">
-              <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">
-                <Button 
-                  onClick={() => window.print()}
-                  className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 flex items-center gap-2"
-                >
-                  <Printer className="h-4 w-4" />
-                  Print Report
-                </Button>
+              <div className="mx-auto flex w-full max-w-xl flex-col items-center justify-center gap-3 rounded-xl border border-indigo-100 bg-white p-2 sm:flex-row">
+                <ReportPrintActions pending={pendingPrintAction} onPdf={() => exportReport(true)}
+                  onPrint={() => exportReport(false)}
+                  disabled={isGenerating || !reportGenerated || sortedOverdueData.length === 0}
+                  className="max-w-md [&>button]:rounded-lg [&>button]:text-sm [&>button]:font-semibold" />
                 <Button 
                   onClick={exportToExcel}
                   className="hidden sm:flex w-auto bg-green-600 hover:bg-green-700 text-white px-6 py-2 items-center gap-2"

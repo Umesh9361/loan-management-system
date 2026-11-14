@@ -27,20 +27,20 @@ const evaluate = async expression => {
 };
 await mkdir("generated-artifacts/direct-a4", { recursive: true });
 try {
-  for (const kind of ["compact", "spacious", "single", "summary", "summary-full", "summary-long", "summary-period", "summary-full-long", "summary-position", "summary-position-ten", "summary-position-custom"]) {
+  for (const kind of ["compact", "spacious", "single", "summary", "summary-full", "summary-long", "summary-period", "summary-full-long", "summary-position", "summary-position-ten", "summary-position-custom", "loss-seven", "loss-mixed", "loss-unsecured", "loss-future", "loss-long"].filter(kind => !process.argv.includes("--loss-only") || kind.startsWith("loss-"))) {
     await call("Page.navigate", { url: `http://127.0.0.1:5002/?kind=${kind}` });
     for (let i = 0; i < 100 && !await evaluate("typeof window.runPdf==='function'"); i++) await new Promise(resolve => setTimeout(resolve, 100));
     await evaluate("window.runPdf()");
     assert.equal(await evaluate("window.pdfError||null"), null, `${kind} export error`);
     const result = await evaluate("window.pdfResult");
     assert.ok(result?.data, `${kind} produced a downloadable PDF`);
-    if (kind.includes("position-ten")) assert.ok(result.pages >= 1 && result.pages <= 2, "ten-year print remains readable without shrinking");
+    if (kind.includes("position-ten") || kind === "loss-mixed") assert.ok(result.pages >= 1 && result.pages <= 2, "extra detail remains readable without shrinking");
     else if (!kind.includes("long")) assert.equal(result.pages, kind === "spacious" ? 2 : 1, kind);
     else assert.ok(result.pages >= 3, "long summary spans multiple complete pages");
     const file = `generated-artifacts/direct-a4/${kind}.pdf`;
     await writeFile(file, Buffer.from(result.data.split(",")[1], "base64"));
     const info = execFileSync("pdfinfo", [file], { encoding: "utf8" });
-    assert.match(info, /Page size:\s+595\.\d+ x 841\.\d+ pts \(A4\)/);
+    assert.match(info, kind.startsWith("loss-") ? /Page size:\s+841\.\d+ x 595\.\d+ pts \(A4\)/ : /Page size:\s+595\.\d+ x 841\.\d+ pts \(A4\)/);
     assert.equal(await evaluate("document.querySelectorAll('iframe').length"), 0, "export frame cleaned up");
     if (kind.startsWith("summary")) {
       await call("Page.navigate", { url: `http://127.0.0.1:5002/document?kind=${kind}` });
@@ -69,7 +69,51 @@ try {
       assert.ok(geometry.signaturePadding >= 11, `${kind}: signature descenders have bottom breathing room`);
       assert.ok(geometry.signatureTail >= 7, `${kind}: final PDF crop includes signature clearance`);
     }
+    if (kind.startsWith("loss-")) {
+      await call("Page.navigate", { url: `http://127.0.0.1:5002/document?kind=${kind}` });
+      await evaluate("document.fonts.ready");
+      const details = await evaluate(`({
+        visible:[...document.querySelectorAll('.borrower-name')].every(n=>getComputedStyle(n).visibility==='visible'&&n.getBoundingClientRect().height>0),
+        overflow:document.body.scrollWidth-document.body.clientWidth,
+        font:parseFloat(getComputedStyle(document.querySelector('.loss-print-table td')).fontSize),
+        columns:document.querySelector('.loss-print-table thead tr').children.length
+      })`);
+      assert.ok(details.visible, "nested borrower names are not hidden by app print CSS");
+      assert.ok(details.overflow <= 1 && details.font >= 12, "landscape keeps all details legible without clipping");
+      if (kind !== "loss-unsecured") assert.equal(details.columns, 12);
+      const native = await call("Page.printToPDF", { preferCSSPageSize: true, printBackground: true, displayHeaderFooter: false });
+      const nativeFile = `generated-artifacts/direct-a4/${kind}-native.pdf`;
+      await writeFile(nativeFile, Buffer.from(native.data, "base64"));
+      const nativeInfo = execFileSync("pdfinfo", [nativeFile], { encoding: "utf8" });
+      assert.match(nativeInfo, /Page size:\s+841\.\d+ x 59[45]\.\d+ pts \(A4\)/);
+      if (kind === "loss-seven") {
+        assert.match(nativeInfo, /Pages:\s+1\b/);
+        const text = execFileSync("pdftotext", [nativeFile, "-"], { encoding: "utf8" });
+        assert.ok(text.includes("ग्राहक") && text.includes("0000000000") && text.includes("115"), "actual native PDF contains names, phone and account");
+      }
+    }
     console.log(`${kind}: direct A4 PDF, ${result.pages} page(s)`);
+  }
+  for (const width of [360, 1280]) {
+    await call("Emulation.setDeviceMetricsOverride", { width, height: 800, deviceScaleFactor: 1, mobile: width < 500 });
+    for (const pending of ["", "pdf", "print"]) {
+      await call("Page.navigate", { url: `http://127.0.0.1:5002/loss-controls?pending=${pending}` });
+      for (let i = 0; i < 100 && !await evaluate("!!document.querySelector('[data-report-action=pdf]')"); i++) await new Promise(r => setTimeout(r, 50));
+      await evaluate("document.fonts.ready");
+      const boxes = await evaluate(`Array.from(document.querySelectorAll('[data-report-action]')).map(n=>({
+        top:n.getBoundingClientRect().top,right:n.getBoundingClientRect().right,height:n.getBoundingClientRect().height,
+        color:getComputedStyle(n).color,bg:getComputedStyle(n).backgroundColor,disabled:n.disabled
+      }))`);
+      assert.equal(boxes.length, 2);
+      assert.ok(Math.abs(boxes[0].top - boxes[1].top) < 1, "mobile actions stay side by side");
+      for (const box of boxes) {
+        assert.ok(box.right <= width && box.height >= 48, "touch target fits phone width");
+        assert.notEqual(box.color, box.bg, "progress text remains readable");
+        assert.equal(box.disabled, !!pending);
+      }
+      assert.ok((await evaluate("document.body.textContent")).includes("16.00 ग्रॅम"));
+    }
+    console.log(`${width}px: fine grams and side-by-side PDF/print controls passed, including both busy states`);
   }
 } finally {
   socket.close();

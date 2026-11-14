@@ -9,6 +9,10 @@ import React from "react";
 import { AccountSummaryOverview } from "../client/src/components/reports/account-summary-overview";
 import { accountSummaryTotals } from "../shared/account-summary";
 import sharp from "sharp";
+import { lossDocumentFixture } from "./overdue-print-fixtures";
+import { ReportPrintActions } from "../client/src/components/report-print-actions";
+import { OverdueFineWeight } from "../client/src/components/reports/overdue-fine-weight";
+import { readFileSync, readdirSync } from "node:fs";
 
 const samplePhoto = async (width: number, height: number, fill: string) => "data:image/png;base64," +
   (await sharp(Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><rect width="100%" height="100%" fill="#f8fafc"/><ellipse cx="${width / 2}" cy="${height / 2}" rx="${width / 3}" ry="${height / 3}" fill="${fill}"/></svg>`)).png().toBuffer()).toString("base64");
@@ -25,7 +29,7 @@ const bundle = await build({
     window.runPdf=async()=>{try{
       const kind=new URLSearchParams(location.search).get('kind')||'compact';
       const html=await (await fetch('/document?kind='+kind)).text();
-      await downloadPrintDocumentPdf(html,'test.pdf',kind.startsWith('summary')?undefined:'.pf-page');
+      await downloadPrintDocumentPdf(html,'test.pdf',kind.startsWith('summary')||kind.startsWith('loss-')?undefined:'.pf-page',kind.startsWith('loss-')?'landscape':'portrait');
     }catch(e){window.pdfError=e.message}};
   `, resolveDir: process.cwd(), loader: "ts" },
   bundle: true, write: false, format: "esm",
@@ -34,8 +38,23 @@ const row = { name: "नमुना ग्राहक", totalLoans: 843, activ
 createServer((req, res) => {
   const url = new URL(req.url!, "http://localhost");
   if (url.pathname === "/bundle.js") { res.setHeader("Content-Type", "text/javascript"); res.end(bundle.outputFiles[0].text); return; }
+  if (url.pathname === "/fixture.css") {
+    res.setHeader("Content-Type", "text/css");
+    res.end(readFileSync(`dist/public/assets/${readdirSync("dist/public/assets").find(name => name.endsWith(".css"))}`)); return;
+  }
+  if (url.pathname === "/loss-controls") {
+    const pending = url.searchParams.get("pending");
+    const actions = renderToStaticMarkup(React.createElement(ReportPrintActions, {
+      pending: pending === "pdf" || pending === "print" ? pending : null, onPdf: () => {}, onPrint: () => {},
+      className: "max-w-md [&>button]:rounded-lg [&>button]:text-sm [&>button]:font-semibold",
+    }));
+    const fine = renderToStaticMarkup(React.createElement(OverdueFineWeight, { weight: 16, purity: 80 }));
+    res.setHeader("Content-Type", "text/html;charset=utf-8");
+    res.end(`<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="/fixture.css"></head><body><main class="mx-auto max-w-xl space-y-4 p-4"><h1 class="font-bold text-indigo-800">लॉस रिपोर्ट — नमुना</h1><div class="rounded-xl border bg-white p-4"><div class="grid grid-cols-2 gap-4"><div>वजन<strong class="block">20.00 ग्रॅम</strong></div><div class="text-blue-700">शुद्ध सोने${fine}</div></div></div><div class="mx-auto flex w-full max-w-xl flex-col items-center justify-center gap-3 rounded-xl border border-indigo-100 bg-white p-2 sm:flex-row">${actions}</div></main></body></html>`); return;
+  }
   if (url.pathname === "/document") {
     const kind = url.searchParams.get("kind") || "compact";
+    if (kind.startsWith("loss-")) { res.setHeader("Content-Type", "text/html; charset=utf-8"); res.end(lossDocumentFixture(kind.slice(5))); return; }
     const summaryRows = Array.from({ length: kind.includes("long") ? 100 : 3 }, (_, index) => ({ ...row, name: `नमुना ${index + 1}` }));
     const mode = kind === "summary-period" ? "period" : "cumulative";
     const progressYearCount = kind.includes("ten") ? 10 : kind.includes("custom") ? 3 : 5;

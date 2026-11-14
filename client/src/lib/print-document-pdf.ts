@@ -16,13 +16,20 @@ export function pdfPageEnd(start: number, capacity: number, height: number, bloc
   }
 }
 
+export function printPdfLayout(orientation: "portrait" | "landscape" = "portrait") {
+  const pageWidth = orientation === "landscape" ? 297 : 210;
+  const pageHeight = orientation === "landscape" ? 210 : 297;
+  return { orientation, pageWidth, pageHeight, contentWidth: pageWidth - 10, contentHeight: pageHeight - 10 };
+}
+
 /** Download the actual print document as A4, independent of Android's paper selection. */
-export async function downloadPrintDocumentPdf(html: string, filename: string, pageSelector?: string) {
+export async function downloadPrintDocumentPdf(html: string, filename: string, pageSelector?: string, orientation: "portrait" | "landscape" = "portrait") {
+  const layout = printPdfLayout(orientation);
   const frame = document.createElement("iframe");
   frame.title = "PDF तयार होत आहे";
   frame.setAttribute("aria-hidden", "true");
   frame.sandbox.add("allow-same-origin");
-  frame.style.cssText = "position:absolute;left:-10000px;top:0;width:210mm;height:297mm;border:0";
+  frame.style.cssText = `position:absolute;left:-10000px;top:0;width:${layout.pageWidth}mm;height:${layout.pageHeight}mm;border:0`;
   try {
     const parsed = new DOMParser().parseFromString(html, "text/html");
     parsed.querySelectorAll("script").forEach(node => node.remove());
@@ -49,19 +56,19 @@ export async function downloadPrintDocumentPdf(html: string, filename: string, p
     await waitForPrintImages(doc);
     await new Promise<void>(resolve => win.requestAnimationFrame(() => win.requestAnimationFrame(() => resolve())));
     const [{ default: html2canvas }, { jsPDF }] = await Promise.all([import("html2canvas"), import("jspdf")]);
-    const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait", compress: true });
-    const width = 200 * 96 / 25.4;
-    const capacity = 287 * 96 / 25.4;
+    const pdf = new jsPDF({ unit: "mm", format: "a4", orientation, compress: true });
+    const width = layout.contentWidth * 96 / 25.4;
+    const capacity = layout.contentHeight * 96 / 25.4;
     if (Array.from(doc.querySelectorAll<HTMLElement>(".pf-section")).some(section =>
       section.scrollHeight > section.clientHeight + 2 || section.scrollWidth > section.clientWidth + 2 ||
       (section.lastElementChild?.getBoundingClientRect().bottom ?? 0) > section.getBoundingClientRect().bottom - 3
     )) throw new Error("मजकूर A4 नमुन्याच्या जागेपेक्षा मोठा आहे. 2 पानांची मांडणी / स्वतंत्र फॉर्म निवडा किंवा मजकूर कमी करा.");
     const render = async (element: HTMLElement, y: number, height: number) => html2canvas(element, {
       scale: 3, useCORS: true, logging: false, backgroundColor: "#ffffff",
-      width, height, y, scrollX: 0, scrollY: 0, windowWidth: 210 * 96 / 25.4,
+      width, height, y, scrollX: 0, scrollY: 0, windowWidth: layout.pageWidth * 96 / 25.4,
     });
     let pageCount = 0;
-    const addPage = () => { if (pageCount++) pdf.addPage("a4", "portrait"); };
+    const addPage = () => { if (pageCount++) pdf.addPage("a4", orientation); };
     if (pageSelector) {
       const pages = Array.from(doc.querySelectorAll<HTMLElement>(pageSelector));
       if (!pages.length) throw new Error("PDFसाठी फॉर्म निवडा.");
@@ -72,30 +79,41 @@ export async function downloadPrintDocumentPdf(html: string, filename: string, p
         }
         const canvas = await render(page, rect.top + win.scrollY, Math.min(capacity, Math.ceil(rect.height)));
         addPage();
-        pdf.addImage(canvas.toDataURL("image/png"), "PNG", 5, 5, 200, Math.min(287, canvas.height / canvas.width * 200));
+        pdf.addImage(canvas.toDataURL("image/png"), "PNG", 5, 5, layout.contentWidth, Math.min(layout.contentHeight, canvas.height / canvas.width * layout.contentWidth));
         canvas.width = canvas.height = 0;
       }
     } else {
       const origin = doc.body.getBoundingClientRect().top;
       const height = Math.ceil(doc.body.getBoundingClientRect().height);
-      const blocks = Array.from(doc.querySelectorAll<HTMLElement>("tr, .summary-document-closing, .summary-document-header, .summary-document-notes, .summary-overview-heading, .summary-overview-metrics, .summary-overview-chart, .summary-overview-note, .summary-position-metrics, .summary-position-year, .summary-position-footnote, .aso-header, .aso-key-totals, .aso-chart"))
+      const blocks = Array.from(doc.querySelectorAll<HTMLElement>("tr, .summary-document-closing, .summary-document-header, .summary-document-notes, .summary-overview-heading, .summary-overview-metrics, .summary-overview-chart, .summary-overview-note, .summary-position-metrics, .summary-position-year, .summary-position-footnote, .loss-document-header, .loss-report-context, .loss-document-totals, .loss-document-closing, .loss-section-title, .loss-section .section-totals, .loss-section .weight-totals, .aso-header, .aso-key-totals, .aso-chart"))
         .map(node => { const rect = node.getBoundingClientRect(); return { top: rect.top - origin, bottom: rect.bottom - origin }; });
-      const head = doc.querySelector("thead")?.getBoundingClientRect();
-      const firstRow = doc.querySelector("tbody tr")?.getBoundingClientRect();
-      if (head && firstRow) blocks.push({ top: head.top - origin, bottom: firstRow.bottom - origin });
+      const tables = Array.from(doc.querySelectorAll("table")).map(table => ({
+        rect: table.getBoundingClientRect(),
+        head: table.querySelector("thead")?.getBoundingClientRect(),
+        firstRow: table.querySelector("tbody tr")?.getBoundingClientRect(),
+      }));
+      for (const { head, firstRow } of tables) if (head && firstRow) {
+        blocks.push({ top: head.top - origin, bottom: firstRow.bottom - origin });
+      }
+      for (const section of Array.from(doc.querySelectorAll(".loss-section"))) {
+        const title = section.querySelector(".loss-section-title")?.getBoundingClientRect();
+        const first = section.querySelector("tbody tr")?.getBoundingClientRect();
+        if (title && first) blocks.push({ top: title.top - origin, bottom: first.bottom - origin });
+      }
       let start = 0;
       while (start < height) {
-        const repeat = start > 0 && head && start >= head.bottom - origin ? head : null;
+        const head = tables.find(table => table.head && start >= table.head.bottom - origin && start < table.rect.bottom - origin)?.head;
+        const repeat = start > 0 ? head : null;
         const headerHeight = repeat ? Math.ceil(repeat.height) : 0;
         const end = pdfPageEnd(start, Math.floor(capacity) - headerHeight, height, blocks);
         addPage();
         if (repeat) {
           const canvas = await render(doc.body, repeat.top + win.scrollY, headerHeight);
-          pdf.addImage(canvas.toDataURL("image/png"), "PNG", 5, 5, 200, headerHeight / width * 200);
+          pdf.addImage(canvas.toDataURL("image/png"), "PNG", 5, 5, layout.contentWidth, headerHeight / width * layout.contentWidth);
           canvas.width = canvas.height = 0;
         }
         const canvas = await render(doc.body, origin + start + win.scrollY, end - start);
-        pdf.addImage(canvas.toDataURL("image/png"), "PNG", 5, 5 + headerHeight / width * 200, 200, canvas.height / canvas.width * 200);
+        pdf.addImage(canvas.toDataURL("image/png"), "PNG", 5, 5 + headerHeight / width * layout.contentWidth, layout.contentWidth, canvas.height / canvas.width * layout.contentWidth);
         canvas.width = canvas.height = 0;
         start = end;
       }
