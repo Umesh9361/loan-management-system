@@ -21,7 +21,8 @@ export const unsecuredLossRow: OverduePrintRow = {
 };
 export function lossPrintFixture(kind = "seven"): OverduePrintOptions {
   const mixed = [...sevenLossRows, silverLossRow, unsecuredLossRow];
-  const rows = kind === "empty" ? [] : kind === "unsecured" ? [unsecuredLossRow] : kind === "mixed" ? mixed
+  const rows = kind === "no-phone" ? [{ ...sevenLossRows[0], borrowerPhone: "   ", goldItem: "अंगठी बांगडी आणि जुनी सोन्याची बोरमाळ ".repeat(5) + "वर्णनसमाप्त" }]
+    : kind === "empty" ? [] : kind === "unsecured" ? [unsecuredLossRow] : kind === "mixed" ? mixed
     : kind === "long" ? Array.from({ length: 45 }, (_, index) => ({
       ...mixed[index % mixed.length], loanId: `long-${index}`, accountNumber: `${index + 1}`,
       borrowerName: `नमुना ग्राहक ${index + 1} ${"श्री रामचंद्र विश्वनाथ पाटील".repeat(index % 4 === 0 ? 2 : 1)}`,

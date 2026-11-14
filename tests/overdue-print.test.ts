@@ -9,18 +9,19 @@ import { printPdfLayout } from "../client/src/lib/print-document-pdf";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { OverdueFineWeight } from "../client/src/components/reports/overdue-fine-weight";
+import { OverdueMetalTotals } from "../client/src/components/reports/overdue-weight-summary";
 
-test("20 gross grams at 80% shows 16 fine grams prominently in mobile/table and PDF, with percent only as context", () => {
+test("20 gross grams at 80% shows only 16 fine grams, without per-row units or percentage", () => {
   const fine = 20 * (80 / 100);
-  const cell = renderToStaticMarkup(React.createElement(OverdueFineWeight, { weight: fine, purity: 80 }));
-  assert.match(cell, /16\.00 ग्रॅम/);
-  assert.match(cell, /\(80%\)/);
-  assert.ok(!cell.includes("20.00 ग्रॅम"));
+  const cell = renderToStaticMarkup(React.createElement(OverdueFineWeight, { weight: fine }));
+  assert.match(cell, />16\.00<\/span>/);
+  assert.ok(!cell.includes("ग्रॅम") && !cell.includes("%"));
   const row = { ...sevenLossRows[0], goldWeight: 20, fineGoldWeight: fine, purityUsed: 80 };
   const html = overduePrintDocument({ ...lossPrintFixture(), rows: [row] });
   assert.match(html, /<th>शुद्ध वजन<\/th>/);
-  assert.match(html, /class="weight fine-weight"><strong>16\.00 ग्रॅम<\/strong>/);
-  assert.match(html, /सोने \(80%\)/);
+  assert.match(html, /class="weight fine-weight"><strong>16\.00<\/strong>/);
+  assert.match(html, /<td class="weight">20\.00<\/td>/);
+  assert.ok(!html.includes("80%") && !html.includes("धातू व वजन"));
   assert.equal(overdueMetalWeightTotals([row]).gold.fine, 16);
   const unknown = renderToStaticMarkup(React.createElement(OverdueFineWeight, { weight: NaN }));
   assert.ok(unknown.includes("—") && !unknown.includes("NaN"));
@@ -30,7 +31,7 @@ test("standalone landscape loss document includes every visible detail, original
   const options = lossPrintFixture();
   const before = JSON.stringify(options);
   const html = overduePrintDocument(options);
-  for (const value of ["नमुना फायनान्स", "महाराष्ट्र", "लॉस रिपोर्ट", "15/11/2026", "नमुना ग्राहक 1", "0000000000", "बोरमाळ 30 मणी", "नमुना गट", "09-04-2026", "₹45,000", "₹6,304", "₹51,304", "4.50", "82%", "₹49,915", "₹1,389", "219", "कमी सुरक्षित"]) assert.ok(html.includes(value), value);
+  for (const value of ["नमुना फायनान्स", "महाराष्ट्र", "लॉस रिपोर्ट", "15/11/2026", "नमुना ग्राहक 1", "0000000000", "बोरमाळ 30 मणी", "नमुना गट", "09-04-2026", "₹45,000", "₹6,304", "₹51,304", "4.50", "3.69", "₹49,915", "₹1,389", "219", "कमी सुरक्षित"]) assert.ok(html.includes(value), value);
   assert.match(html, /@page\s*{\s*size: A4 landscape/);
   assert.equal((html.match(/class="borrower-name"/g) || []).length, 7);
   assert.ok(!html.includes("fixture-"), "internal identifiers are not printed");
@@ -43,13 +44,29 @@ test("gold and silver remain separate, fine weights use the same shared calculat
   const html = overduePrintDocument(options);
   const weights = overdueMetalWeightTotals(options.rows);
   for (const [label, amount] of [["सोने वजन:", weights.gold.gross], ["शुद्ध सोने:", weights.gold.fine], ["चांदी वजन:", weights.silver.gross], ["शुद्ध चांदी:", weights.silver.fine]] as const) {
-    assert.ok(html.includes(`${label} ${formatWeight(amount)} ग्रॅम`));
+    assert.ok(html.includes(`${label} ${formatWeight(amount)}</span>`));
   }
   assert.match(html, /विनातारण कर्जे/);
+  assert.ok(html.indexOf("एकूण धातू वजन (ग्रॅम)") > html.indexOf("विनातारण कर्जे"));
+  assert.equal((html.match(/एकूण धातू वजन \(ग्रॅम\)/g) || []).length, 1);
+  const screen = renderToStaticMarkup(React.createElement(OverdueMetalTotals, { totals: weights }));
+  for (const label of ["सोने वजन", "चांदी वजन", "शुद्ध सोने", "शुद्ध चांदी"]) assert.ok(screen.includes(label));
+  assert.equal((screen.match(/ग्रॅम/g) || []).length, 1, "units occur once in the final summary");
   const unsecured = overduePrintDocument({ ...options, rows: [unsecuredLossRow] });
   assert.ok(!unsecured.includes('<td class="weight">'));
   assert.ok(!unsecured.includes("तारण बाजारमूल्य</th>"));
   assert.ok(!unsecured.includes("सोने वजन:"));
+});
+test("absent or whitespace-only phone adds no empty line, long descriptions remain complete and money has no artificial .00", () => {
+  const description = "अंगठी बांगडी आणि जुनी सोन्याची बोरमाळ ".repeat(5);
+  for (const borrowerPhone of [undefined, "", "   "]) {
+    const html = overduePrintDocument({ ...lossPrintFixture(), rows: [{ ...sevenLossRows[0], borrowerPhone, goldItem: description }] });
+    assert.ok(!html.includes("फोन:"));
+    assert.ok(html.includes(description.trim()));
+    assert.ok(html.includes("₹45,000") && !html.includes("₹45,000.00"));
+    assert.match(html, /white-space: pre-line/);
+    assert.match(html, /height: auto/);
+  }
 });
 test("selection contains exactly passed rows and escaped text cannot hide or execute borrower names", () => {
   const subset = overduePrintDocument({ ...lossPrintFixture(), rows: [silverLossRow] });

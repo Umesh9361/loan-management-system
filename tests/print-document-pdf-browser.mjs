@@ -27,7 +27,7 @@ const evaluate = async expression => {
 };
 await mkdir("generated-artifacts/direct-a4", { recursive: true });
 try {
-  for (const kind of ["compact", "spacious", "single", "summary", "summary-full", "summary-long", "summary-period", "summary-full-long", "summary-position", "summary-position-ten", "summary-position-custom", "loss-seven", "loss-mixed", "loss-unsecured", "loss-future", "loss-long"].filter(kind => !process.argv.includes("--loss-only") || kind.startsWith("loss-"))) {
+  for (const kind of ["compact", "spacious", "single", "summary", "summary-full", "summary-long", "summary-period", "summary-full-long", "summary-position", "summary-position-ten", "summary-position-custom", "loss-seven", "loss-mixed", "loss-unsecured", "loss-future", "loss-no-phone", "loss-long"].filter(kind => !process.argv.includes("--loss-only") || kind.startsWith("loss-"))) {
     await call("Page.navigate", { url: `http://127.0.0.1:5002/?kind=${kind}` });
     for (let i = 0; i < 100 && !await evaluate("typeof window.runPdf==='function'"); i++) await new Promise(resolve => setTimeout(resolve, 100));
     await evaluate("window.runPdf()");
@@ -81,6 +81,13 @@ try {
       assert.ok(details.visible, "nested borrower names are not hidden by app print CSS");
       assert.ok(details.overflow <= 1 && details.font >= 12, "landscape keeps all details legible without clipping");
       if (kind !== "loss-unsecured") assert.equal(details.columns, 12);
+      const weights = await evaluate("Array.from(document.querySelectorAll('td.weight')).map(n=>n.textContent.trim())");
+      for (const weight of weights) assert.match(weight, /^[0-9,.]+$/, "row weights contain numbers only, no units, metal labels or percentages");
+      if (kind === "loss-no-phone") {
+        assert.equal(await evaluate("document.body.textContent.includes('फोन:')"), false);
+        assert.ok(await evaluate("document.querySelector('tbody tr').getBoundingClientRect().height>100"), "long description expands its row");
+        assert.ok(await evaluate("document.querySelector('.identity').textContent.includes('वर्णनसमाप्त')"), "complete description is retained");
+      }
       const native = await call("Page.printToPDF", { preferCSSPageSize: true, printBackground: true, displayHeaderFooter: false });
       const nativeFile = `generated-artifacts/direct-a4/${kind}-native.pdf`;
       await writeFile(nativeFile, Buffer.from(native.data, "base64"));
@@ -111,7 +118,8 @@ try {
         assert.notEqual(box.color, box.bg, "progress text remains readable");
         assert.equal(box.disabled, !!pending);
       }
-      assert.ok((await evaluate("document.body.textContent")).includes("16.00 ग्रॅम"));
+      assert.ok((await evaluate("document.body.textContent")).includes("16.00"));
+      assert.ok(!(await evaluate("document.body.textContent")).includes("80%"));
     }
     console.log(`${width}px: fine grams and side-by-side PDF/print controls passed, including both busy states`);
   }

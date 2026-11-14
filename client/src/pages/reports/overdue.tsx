@@ -16,7 +16,7 @@ import { MobileNav } from "@/components/ui/mobile-nav";
 import { PhotoViewer } from "@/components/ui/photo-viewer";
 import { checkedReportLoans, formatWeight } from "@shared/report-weights";
 import { overdueMetalWeightTotals } from "@shared/overdue-weights";
-import { OverdueWeightSummary } from "@/components/reports/overdue-weight-summary";
+import { OverdueMetalTotals, OverdueWeightSummary } from "@/components/reports/overdue-weight-summary";
 import { OverdueFineWeight } from "@/components/reports/overdue-fine-weight";
 import { overduePrintDocument } from "@/lib/overdue-print";
 import { downloadPrintDocumentPdf } from "@/lib/print-document-pdf";
@@ -1503,11 +1503,11 @@ export default function OverdueReport() {
                           )}
                         >
                           <div className="flex justify-between items-start mb-2">
-                            <div>
-                              <div className="font-bold text-gray-900 text-sm">{item.borrowerName}</div>
+                            <div className="min-w-0 flex-1 pr-2">
+                              <div className="break-words font-bold text-gray-900 text-sm">{item.borrowerName}</div>
                               <div className="text-xs text-gray-500">{item.accountNumber ? `${item.accountNumber} | ` : ''}{item.groupName} | {formatDate(item.loanDate)}</div>
                               {item.goldItem && (
-                                <div className="text-xs text-gray-400 mt-0.5">{item.goldItem}</div>
+                                <div className="whitespace-pre-line break-words text-xs text-gray-400 mt-0.5">{item.goldItem}</div>
                               )}
                             </div>
                             <div className={`text-xs font-bold px-2 py-0.5 rounded-full ${security.bgColor} ${security.color}`}>
@@ -1531,11 +1531,11 @@ export default function OverdueReport() {
                           <div className="grid grid-cols-4 gap-2 text-xs mt-1">
                             <div>
                               <span className="text-gray-500">वजन</span>
-                              <div className="font-semibold text-amber-700">{formatWeight(item.goldWeight)}g</div>
+                              <div className="font-semibold text-amber-700">{formatWeight(item.goldWeight)}</div>
                             </div>
                             <div>
                               <span className="text-gray-500">{item.metalType === "silver" ? "शुद्ध चांदी" : "शुद्ध सोने"}</span>
-                              <div className="text-blue-700"><OverdueFineWeight weight={item.fineGoldWeight} purity={item.purityUsed} /></div>
+                              <div className="text-blue-700"><OverdueFineWeight weight={item.fineGoldWeight} /></div>
                             </div>
                             <div>
                               <span className="text-gray-500">तारण मूल्य</span>
@@ -1586,12 +1586,12 @@ export default function OverdueReport() {
                               )}>
                               <td className="border border-gray-300 px-2 py-2 text-sm font-medium text-gray-700 whitespace-nowrap">{item.accountNumber || '—'}</td>
                               <td className="border border-gray-300 px-2 py-2">
-                                <div className="text-sm font-bold text-gray-800 whitespace-nowrap">{item.borrowerName}</div>
-                                {item.borrowerPhone && (
+                                <div className="max-w-xs whitespace-normal break-words text-sm font-bold text-gray-800">{item.borrowerName}</div>
+                                {item.borrowerPhone?.trim() && (
                                   <div className="text-xs text-indigo-600 whitespace-nowrap">{item.borrowerPhone}</div>
                                 )}
                                 {item.goldItem && (
-                                  <div className="text-xs text-gray-400 whitespace-nowrap">{item.goldItem}</div>
+                                  <div className="max-w-xs whitespace-normal break-words text-xs text-gray-400">{item.goldItem}</div>
                                 )}
                               </td>
                               <td className="border border-gray-300 px-2 py-2 text-sm text-gray-600 whitespace-nowrap">{item.groupName}</td>
@@ -1599,7 +1599,7 @@ export default function OverdueReport() {
                               <td className="border border-gray-300 px-2 py-2 text-sm text-right font-semibold text-purple-700 whitespace-nowrap">{formatCurrency(item.principalAmount)}</td>
                               <td className="border border-gray-300 px-2 py-2 text-sm text-right font-semibold text-orange-700 whitespace-nowrap">{formatCurrency(item.interestToDate)}</td>
                               <td className="border border-gray-300 px-2 py-2 text-sm text-center font-semibold text-amber-700 whitespace-nowrap">{formatWeight(item.goldWeight)}</td>
-                              <td className="border border-gray-300 px-2 py-2 text-sm text-center text-blue-700 whitespace-nowrap"><OverdueFineWeight weight={item.fineGoldWeight} purity={item.purityUsed} /></td>
+                              <td className="border border-gray-300 px-2 py-2 text-sm text-center text-blue-700 whitespace-nowrap"><OverdueFineWeight weight={item.fineGoldWeight} /></td>
                               <td className="border border-gray-300 px-2 py-2 text-sm text-right font-semibold text-green-700 whitespace-nowrap">{formatCurrency(item.currentGoldValue)}</td>
                               <td className="border border-gray-300 px-2 py-2 text-sm text-right font-bold text-indigo-700 whitespace-nowrap">{formatCurrency(item.totalAmount)}</td>
                               <td className={`border border-gray-300 px-2 py-2 text-sm text-right font-bold ${security.bgColor}`}>
@@ -1645,11 +1645,11 @@ export default function OverdueReport() {
                           className="p-3 cursor-pointer transition-colors active:bg-amber-50"
                         >
                           <div className="flex justify-between items-start mb-2">
-                            <div>
-                              <div className="font-bold text-gray-900 text-sm">{item.borrowerName}</div>
+                            <div className="min-w-0 flex-1 pr-2">
+                              <div className="break-words font-bold text-gray-900 text-sm">{item.borrowerName}</div>
                               <div className="text-xs text-gray-500">{item.accountNumber ? `${item.accountNumber} | ` : ''}{item.groupName} | {formatDate(item.loanDate)}</div>
                               {item.goldItem && item.goldItem !== 'विनातारण' && (
-                                <div className="text-xs text-gray-400 mt-0.5">{item.goldItem}</div>
+                                <div className="whitespace-pre-line break-words text-xs text-gray-400 mt-0.5">{item.goldItem}</div>
                               )}
                             </div>
                             <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">
@@ -1711,12 +1711,12 @@ export default function OverdueReport() {
                             )}>
                             <td className="border border-gray-300 px-2 py-2 text-sm font-medium text-gray-700 whitespace-nowrap">{item.accountNumber || '—'}</td>
                             <td className="border border-gray-300 px-2 py-2">
-                              <div className="text-sm font-bold text-gray-800 whitespace-nowrap">{item.borrowerName}</div>
-                              {item.borrowerPhone && (
+                              <div className="max-w-xs whitespace-normal break-words text-sm font-bold text-gray-800">{item.borrowerName}</div>
+                              {item.borrowerPhone?.trim() && (
                                 <div className="text-xs text-indigo-600 whitespace-nowrap">{item.borrowerPhone}</div>
                               )}
                               {item.goldItem && item.goldItem !== 'विनातारण' && (
-                                <div className="text-xs text-gray-400 whitespace-nowrap">{item.goldItem}</div>
+                                <div className="max-w-xs whitespace-normal break-words text-xs text-gray-400">{item.goldItem}</div>
                               )}
                             </td>
                             <td className="border border-gray-300 px-2 py-2 text-sm text-gray-600 whitespace-nowrap">{item.groupName}</td>
@@ -1744,6 +1744,8 @@ export default function OverdueReport() {
                 </>
               )}
             </div>
+
+            {securedLoans.length > 0 && <div className="print:hidden"><OverdueMetalTotals totals={metalWeightTotals} /></div>}
 
             <div className="print-only" style={{display: 'none'}}>
               {securedLoans.length > 0 && (
@@ -1782,7 +1784,7 @@ export default function OverdueReport() {
                       <td style={{border: '1px solid black', padding: '3px'}}>{item.accountNumber || '—'}</td>
                       <td style={{border: '1px solid black', padding: '3px'}}>
                         <div style={{fontWeight: 'bold'}}>{item.borrowerName}</div>
-                        {item.borrowerPhone && (
+                        {item.borrowerPhone?.trim() && (
                           <div style={{fontSize: '7pt', color: '#3949ab'}}>{item.borrowerPhone}</div>
                         )}
                         {item.goldItem && (
@@ -1794,7 +1796,7 @@ export default function OverdueReport() {
                       <td style={{border: '1px solid black', padding: '3px', textAlign: 'right'}}>{formatCurrency(item.principalAmount)}</td>
                       <td style={{border: '1px solid black', padding: '3px', textAlign: 'right'}}>{formatCurrency(item.interestToDate)}</td>
                       <td style={{border: '1px solid black', padding: '3px', textAlign: 'center'}}>{formatWeight(item.goldWeight)}</td>
-                      <td style={{border: '1px solid black', padding: '3px', textAlign: 'center'}}><OverdueFineWeight weight={item.fineGoldWeight} purity={item.purityUsed} /></td>
+                      <td style={{border: '1px solid black', padding: '3px', textAlign: 'center'}}><OverdueFineWeight weight={item.fineGoldWeight} /></td>
                       <td style={{border: '1px solid black', padding: '3px', textAlign: 'right'}}>{formatCurrency(item.currentGoldValue)}</td>
                       <td style={{border: '1px solid black', padding: '3px', textAlign: 'right', fontWeight: 'bold'}}>{formatCurrency(item.totalAmount)}</td>
                       <td style={{border: '1px solid black', padding: '3px', textAlign: 'right', fontWeight: 'bold', color: item.lossAmount > 0 ? 'red' : 'green'}}>
@@ -1853,7 +1855,7 @@ export default function OverdueReport() {
                       <td style={{border: '1px solid black', padding: '3px'}}>{item.accountNumber || '—'}</td>
                       <td style={{border: '1px solid black', padding: '3px'}}>
                         <div style={{fontWeight: 'bold'}}>{item.borrowerName}</div>
-                        {item.borrowerPhone && (
+                        {item.borrowerPhone?.trim() && (
                           <div style={{fontSize: '7pt', color: '#3949ab'}}>{item.borrowerPhone}</div>
                         )}
                       </td>

@@ -61,8 +61,8 @@ const isUnsecured = (row: OverduePrintRow) => row.loanType === "विनात�
 function loanIdentity(row: OverduePrintRow): string {
   const details = [
     `<strong class="borrower-name">${escapeHtml(row.borrowerName)}</strong>`,
-    row.borrowerPhone ? `<span>फोन: ${escapeHtml(row.borrowerPhone)}</span>` : "",
-    row.goldItem ? `<span>वस्तू: ${escapeHtml(row.goldItem)}</span>` : "",
+    row.borrowerPhone?.trim() ? `<span>फोन: ${escapeHtml(row.borrowerPhone.trim())}</span>` : "",
+    row.goldItem?.trim() ? `<span>वस्तू: ${escapeHtml(row.goldItem.trim())}</span>` : "",
   ].filter(Boolean).join("");
   return `<div class="identity">${details}</div>`;
 }
@@ -77,7 +77,6 @@ function securedRow(row: OverduePrintRow): string {
   const fineWeight = row.fineGoldWeight !== undefined
     ? formatWeight(row.fineGoldWeight)
     : null;
-  const metal = row.metalType === "silver" ? "चांदी" : "सोने";
   return `<tr>
     <td class="center">${escapeHtml(row.accountNumber)}</td>
     <td class="identity-cell">${loanIdentity(row)}</td>
@@ -85,12 +84,12 @@ function securedRow(row: OverduePrintRow): string {
     <td class="center">${escapeHtml(displayDate(row.loanDate))}</td>
     <td class="money">${currency(row.principalAmount)}</td>
     <td class="money">${currency(row.interestToDate)}</td>
-    <td class="weight">${escapeHtml(metal)} ${escapeHtml(weight)} ग्रॅम</td>
-    <td class="weight fine-weight">${fineWeight !== null ? `<strong>${escapeHtml(fineWeight)} ग्रॅम</strong>` : "—"}<span class="subline">${escapeHtml(metal)}${row.purityUsed !== undefined ? ` (${escapeHtml(row.purityUsed)}%)` : ""}</span></td>
+    <td class="weight">${escapeHtml(weight)}</td>
+    <td class="weight fine-weight">${fineWeight !== null ? `<strong>${escapeHtml(fineWeight)}</strong>` : "—"}</td>
     <td class="money">${currency(row.currentGoldValue)}</td>
     <td class="money obligation">${currency(row.totalAmount)}</td>
     <td>${securityMarkup(row.securityLabel, row.lossAmount)}</td>
-    <td class="center">${escapeHtml(row.daysOverdue)} दिवस</td>
+    <td class="center">${escapeHtml(row.daysOverdue)}</td>
   </tr>`;
 }
 
@@ -104,7 +103,7 @@ function unsecuredRow(row: OverduePrintRow): string {
     <td class="money">${currency(row.interestToDate)}</td>
     <td class="money obligation">${currency(row.totalAmount)}</td>
     <td>${securityMarkup(row.securityLabel, row.lossAmount)}</td>
-    <td class="center">${escapeHtml(row.daysOverdue)} दिवस</td>
+    <td class="center">${escapeHtml(row.daysOverdue)}</td>
   </tr>`;
 }
 
@@ -130,23 +129,27 @@ function sectionTotals(rows: OverduePrintRow[], secured: boolean): string {
   </div>`;
 }
 
-function securedSection(rows: OverduePrintRow[]): string {
+function metalTotals(rows: OverduePrintRow[]): string {
   if (!rows.length) return "";
   const weights = overdueMetalWeightTotals(rows);
-  const hasGold = rows.some(row => row.metalType !== "silver");
-  const hasSilver = rows.some(row => row.metalType === "silver");
-  const weightSummary = [
-    hasGold ? `<span>सोने वजन: ${escapeHtml(formatWeight(weights.gold.gross))} ग्रॅम</span><span>शुद्ध सोने: ${escapeHtml(formatWeight(weights.gold.fine))} ग्रॅम</span>` : "",
-    hasSilver ? `<span>चांदी वजन: ${escapeHtml(formatWeight(weights.silver.gross))} ग्रॅम</span><span>शुद्ध चांदी: ${escapeHtml(formatWeight(weights.silver.fine))} ग्रॅम</span>` : "",
-  ].filter(Boolean).join("");
+  return `<div class="loss-document-totals weight-totals">
+    <strong>एकूण धातू वजन (ग्रॅम)</strong>
+    <span>सोने वजन: ${escapeHtml(formatWeight(weights.gold.gross))}</span>
+    <span>चांदी वजन: ${escapeHtml(formatWeight(weights.silver.gross))}</span>
+    <span>शुद्ध सोने: ${escapeHtml(formatWeight(weights.gold.fine))}</span>
+    <span>शुद्ध चांदी: ${escapeHtml(formatWeight(weights.silver.fine))}</span>
+  </div>`;
+}
+
+function securedSection(rows: OverduePrintRow[]): string {
+  if (!rows.length) return "";
   return `<section class="loss-section">
     <h2 class="loss-section-title">तारण असलेली कर्जे <span>${rows.length} खाते</span></h2>
     <div class="table-wrap"><table class="loss-print-table secured-table">
       <colgroup><col style="width:4%"><col style="width:20%"><col style="width:5%"><col style="width:7%"><col style="width:8%"><col style="width:7%"><col style="width:7%"><col style="width:8%"><col style="width:9%"><col style="width:9%"><col style="width:11%"><col style="width:5%"></colgroup>
-      <thead><tr><th>खाते</th><th>कर्जदार / तपशील</th><th>गट</th><th>तारीख</th><th>मुद्दल</th><th>व्याज</th><th>धातू व वजन</th><th>शुद्ध वजन</th><th>तारण बाजारमूल्य</th><th>एकूण देय</th><th>नुकसान / सुरक्षा स्थिती</th><th>दिवस</th></tr></thead>
+      <thead><tr><th>खाते</th><th>कर्जदार / तपशील</th><th>गट</th><th>तारीख</th><th>मुद्दल</th><th>व्याज</th><th>वजन</th><th>शुद्ध वजन</th><th>तारण बाजारमूल्य</th><th>एकूण देय</th><th>नुकसान / सुरक्षा स्थिती</th><th>दिवस</th></tr></thead>
       <tbody>${rows.map(securedRow).join("")}</tbody>
     </table></div>
-    <div class="weight-totals">${weightSummary}</div>
     ${sectionTotals(rows, true)}
   </section>`;
 }
@@ -213,6 +216,8 @@ body { width: 287mm; max-width: 287mm; margin: 0 auto; color: #24243a; backgroun
 .loss-print-table td.center { text-align: center; }
 .loss-print-table td.obligation { font-weight: 700; color: #3730a3; }
 .identity { display: flex; flex-direction: column; gap: .35mm; }
+.identity-cell { white-space: normal; height: auto; }
+.identity span { white-space: pre-line; overflow-wrap: anywhere; }
 .borrower-name { font-size: 9.5pt; line-height: 1.55; color: #25233e; }
 .subline { display: block; font-size: 8pt; }
 .weight { text-align: center !important; }
@@ -225,6 +230,7 @@ body { width: 287mm; max-width: 287mm; margin: 0 auto; color: #24243a; backgroun
 .risk-low { color: #9a3412; }
 .weight-totals, .section-totals { display: flex; flex-wrap: wrap; gap: 1mm 5mm; padding: 1.3mm 2mm; border: 1px solid #aaa8bd; border-top: 0; font-size: 8.5pt; }
 .weight-totals { background: #f8f7fc; }
+.loss-document-totals.weight-totals { border-top: 1px solid #85839f; }
 .section-totals { border-top: 1px solid #85839f; margin-top: 1mm; background: #eeedf6; }
 .section-totals strong { color: #302d66; }
 .empty-state { padding: 10mm; border: 1px solid #85839f; text-align: center; font-size: 11pt; }
@@ -258,6 +264,7 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 </div>
 ${securedSection(secured)}
 ${unsecuredSection(unsecured)}
+${metalTotals(secured)}
 ${options.rows.length ? "" : emptyState}
 <footer class="loss-document-closing"><div class="signature"></div><div class="signature-label">सावकाराची सही</div></footer>
 </body></html>`;
