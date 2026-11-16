@@ -10,28 +10,6 @@ RUN npm ci
 
 COPY . .
 
-RUN echo 'import { defineConfig } from "vite"; \
-import react from "@vitejs/plugin-react"; \
-import path from "path"; \
-export default defineConfig({ \
-  plugins: [react()], \
-  resolve: { \
-    alias: { \
-      "@": path.resolve(import.meta.dirname, "client", "src"), \
-      "@shared": path.resolve(import.meta.dirname, "shared"), \
-      "@assets": path.resolve(import.meta.dirname, "attached_assets") \
-    } \
-  }, \
-  root: path.resolve(import.meta.dirname, "client"), \
-  build: { \
-    outDir: path.resolve(import.meta.dirname, "dist/public"), \
-    emptyOutDir: true, \
-    rollupOptions: { \
-      external: ["html5-qrcode"] \
-    } \
-  } \
-});' > vite.config.prod.ts
-
 RUN npx vite build --config vite.config.prod.ts && npx esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist --alias:@shared=./shared
 
 ENV NODE_ENV=production

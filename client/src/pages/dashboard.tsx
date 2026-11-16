@@ -134,11 +134,11 @@ export default function Dashboard() {
     return `${sign}${abs}`;
   };
 
-  const periodLabels: Record<string, { title: string; prev: string }> = {
-    '1m': { title: 'या महिन्यात', prev: 'मागील महिना' },
-    '3m': { title: 'पाठीमागील 3 महिन्यांत', prev: 'त्याआधीचे 3 महिने' },
-    '1y': { title: 'पाठीमागील वर्षात', prev: 'त्याआधीचे वर्ष' },
-    '3y': { title: 'पाठीमागील 3 वर्षांत', prev: 'त्याआधीचे 3 वर्षे' },
+  const periodLabels: Record<string, { title: string; previousLabel: string }> = {
+    '1m': { title: 'या महिन्यात', previousLabel: 'मागील महिना' },
+    '3m': { title: 'पाठीमागील 3 महिन्यांत', previousLabel: 'त्याआधीचे 3 महिने' },
+    '1y': { title: 'पाठीमागील वर्षात', previousLabel: 'त्याआधीचे वर्ष' },
+    '3y': { title: 'पाठीमागील 3 वर्षांत', previousLabel: 'त्याआधीचे 3 वर्षे' },
   };
   
   const cur = (periodStats as any)?.current || {};
@@ -152,7 +152,7 @@ export default function Dashboard() {
       amount: `₹${formatCompact(cur.disbursementAmount || 0)}`,
       previousValue: prev.disbursements || 0,
       previousAmount: `₹${formatCompact(prev.disbursementAmount || 0)}`,
-      prevLabel: pLabel.prev,
+      prevLabel: pLabel.previousLabel,
       icon: CreditCard,
       iconColor: "text-indigo-600",
       iconBg: "bg-indigo-100",
@@ -165,7 +165,7 @@ export default function Dashboard() {
       amount: `₹${formatCompact(cur.closureAmount || 0)}`,
       previousValue: prev.closures || 0,
       previousAmount: `₹${formatCompact(prev.closureAmount || 0)}`,
-      prevLabel: pLabel.prev,
+      prevLabel: pLabel.previousLabel,
       icon: Lock,
       iconColor: "text-teal-600",
       iconBg: "bg-teal-100",
@@ -178,7 +178,7 @@ export default function Dashboard() {
       amount: `₹${formatCompact((cur.cashIn || 0) + (cur.cashOut || 0))}`,
       previousValue: prev.transactions || 0,
       previousAmount: `₹${formatCompact((prev.cashIn || 0) + (prev.cashOut || 0))}`,
-      prevLabel: pLabel.prev,
+      prevLabel: pLabel.previousLabel,
       icon: HandCoins,
       iconColor: "text-indigo-600",
       iconBg: "bg-indigo-100",
@@ -189,7 +189,7 @@ export default function Dashboard() {
       title: `${pLabel.title} रोकड नेट`,
       value: `₹${formatCompact((cur.cashIn || 0) - (cur.cashOut || 0))}`,
       previousValue: `₹${formatCompact((prev.cashIn || 0) - (prev.cashOut || 0))}`,
-      prevLabel: pLabel.prev,
+      prevLabel: pLabel.previousLabel,
       icon: TrendingUp,
       iconColor: "text-emerald-600",
       iconBg: "bg-emerald-100",

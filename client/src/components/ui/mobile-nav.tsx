@@ -1,6 +1,6 @@
 import { useLocation, Link } from "wouter";
 import { cn } from "@/lib/utils";
-import { rememberUiLanguage, storedUiLanguage } from "@shared/ui-language";
+import { rememberUiLanguage, storedUiLanguage, uiText } from "@shared/ui-language";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import {
@@ -203,7 +203,7 @@ function MobileNavInner({ hideBottomNav = false }: MobileNavProps = {}) {
                   )}
                 >
                   <Icon className={cn("h-4 w-4", isActive && "text-indigo-600")} />
-                  <span className="text-xs truncate">{item.name}</span>
+                  <span className="text-xs truncate">{uiText(item.name)}</span>
                 </Button>
               </Link>
             );

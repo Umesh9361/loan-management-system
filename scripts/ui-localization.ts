@@ -1,4 +1,20 @@
 import ts from "typescript";
+import type { Plugin } from "vite";
+
+/** Both development and Railway must use this exact source-only transform. */
+export function uiLocalizationPlugin(): Plugin {
+  return {
+    name: "source-authored-ui-language",
+    enforce: "pre",
+    transform(code, id) {
+      const filename = id.replace(/\\/g, "/").split("?")[0];
+      if (filename.includes("node_modules") ||
+          (!filename.includes("/client/src/") && !/\/shared\/account-summary(?:-format)?\.ts$/.test(filename))) return;
+      const transformed = localizeUiSource(code, filename);
+      return transformed === code ? undefined : { code: transformed, map: null };
+    },
+  };
+}
 
 const marathi = /[\u0900-\u097f]/;
 const attributes = new Set(["placeholder", "title", "alt", "aria-label", "description", "label",
@@ -102,6 +118,19 @@ export function localizeUiSource(source: string, filename: string, collect?: (te
     edits.push({ start: node.getStart(tree), end: node.end, text });
   }
   function visit(node: ts.Node, renderedValue = false) {
+    // Navigation names are authored route metadata, not customer names. Keep
+    // their source values canonical and translate only where the menu renders.
+    if (ts.isStringLiteral(node) && marathi.test(node.text)) {
+      const property = node.parent;
+      if (ts.isPropertyAssignment(property) && propertyName(property) === "name") {
+        const object = property.parent;
+        if (ts.isObjectLiteralExpression(object) &&
+            ["href", "icon"].every(key => object.properties.some(candidate => propertyName(candidate) === key))) {
+          collect?.(normalizeUiText(node.text));
+          return;
+        }
+      }
+    }
     if (ts.isJsxExpression(node) && !ts.isJsxAttribute(node.parent) &&
         node.expression && ts.isPropertyAccessExpression(node.expression) &&
         ["loanType", "metalType", "status", "interestRateType", "transactionType"].includes(node.expression.name.text)) {

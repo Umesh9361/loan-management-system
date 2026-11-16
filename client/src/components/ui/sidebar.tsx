@@ -1,4 +1,5 @@
 import { Link, useLocation } from "wouter";
+import { uiText } from "@shared/ui-language";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -376,7 +377,7 @@ function SidebarInner({ className, onPacketLabel, onBluetoothPrintSettings }: Si
                   )}
                 >
                   <Icon className="mr-2 lg:mr-2.5 h-4 w-4 flex-shrink-0" />
-                  <span className="truncate font-noto">{item.name}</span>
+                  <span className="truncate font-noto">{uiText(item.name)}</span>
                 </Button>
               </Link>
             );
@@ -468,7 +469,7 @@ function SidebarInner({ className, onPacketLabel, onBluetoothPrintSettings }: Si
                     }}
                   >
                     <Icon className="mr-3 lg:mr-2.5 h-4 w-4 flex-shrink-0" />
-                    <span className="truncate font-noto">{item.name}</span>
+                    <span className="truncate font-noto">{uiText(item.name)}</span>
                   </Button>
                 </Link>
               </div>
@@ -503,7 +504,7 @@ function SidebarInner({ className, onPacketLabel, onBluetoothPrintSettings }: Si
                       )}
                     >
                       <Icon className="mr-2 lg:mr-2.5 h-4 w-4 flex-shrink-0" />
-                      <span className="truncate font-noto">{item.name}</span>
+                      <span className="truncate font-noto">{uiText(item.name)}</span>
                     </Button>
                   </Link>
                 );
@@ -539,7 +540,7 @@ function SidebarInner({ className, onPacketLabel, onBluetoothPrintSettings }: Si
                       )}
                     >
                       <Icon className="mr-2 lg:mr-2.5 h-4 w-4 flex-shrink-0" />
-                      <span className="truncate font-noto">{item.name}</span>
+                      <span className="truncate font-noto">{uiText(item.name)}</span>
                     </Button>
                   </Link>
                 );
