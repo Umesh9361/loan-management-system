@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { uiText, getUiLanguage, type UiLanguage } from "./ui-language";
 
 export const PLEDGE_FIELD_GROUPS = [
   { title: "खाते व कर्ज तपशील", forms: ["loan", "interim", "final", "receipt", "disposal"], fields: [
@@ -80,6 +81,10 @@ export const DEFAULT_PLEDGE_MATTER = {
   disposalText: "पूर्वसूचना दिनांक {{noticeDate}} व अंतिम नोटीस दिनांक {{finalNoticeDate}} यांनंतर लागू कायद्यानुसार आवश्यक प्रक्रिया पूर्ण करून खालील वस्तूंची विक्री केली. विक्री, मान्य खर्च व शिल्लक / तुटीचा हिशोब खाली दिला आहे.",
 };
 export type PledgeFormMatter = typeof DEFAULT_PLEDGE_MATTER;
+export function defaultPledgeMatter(language: UiLanguage = getUiLanguage()): PledgeFormMatter {
+  return Object.fromEntries(Object.entries(DEFAULT_PLEDGE_MATTER)
+    .map(([key, value]) => [key, uiText(value, language)])) as PledgeFormMatter;
+}
 export const PLEDGE_MATTER_GROUPS = [
   { form: "loan", title: "कर्ज नोंद", keys: [{ key: "loanTitle", label: "शीर्षक" }] },
   { form: "declaration", title: "मालकी घोषणापत्र", keys: [

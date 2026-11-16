@@ -1,4 +1,5 @@
 import { overdueMetalWeightTotals } from "../../../shared/overdue-weights";
+import { uiText } from "@shared/ui-language";
 import { formatWeight } from "../../../shared/report-weights";
 import { overdueDurationParts } from "./overdue-duration";
 
@@ -71,8 +72,8 @@ function loanIdentity(row: OverduePrintRow): string {
 }
 
 function securityMarkup(label: string, loss: number): string {
-  const riskClass = loss > 0 ? "risk-loss" : label.includes("पूर्ण") ? "risk-safe" : label.includes("मध्यम") ? "risk-medium" : "risk-low";
-  return `<div class="risk ${riskClass}"><strong>${escapeHtml(label)}</strong>${loss > 0 ? `<span>${currency(loss)}</span>` : ""}</div>`;
+  const riskClass = loss > 0 ? "risk-loss" : /पूर्ण|fully/i.test(label) ? "risk-safe" : /मध्यम|moderate|medium/i.test(label) ? "risk-medium" : "risk-low";
+  return `<div class="risk ${riskClass}"><strong>${escapeHtml(uiText(label))}</strong>${loss > 0 ? `<span>${currency(loss)}</span>` : ""}</div>`;
 }
 
 const durationMarkup = (row: OverduePrintRow) =>

@@ -1,4 +1,5 @@
 import * as React from "react"
+import { uiText } from "@shared/ui-language"
 
 import type {
   ToastActionElement,
@@ -140,6 +141,8 @@ function dispatch(action: Action) {
 type Toast = Omit<ToasterToast, "id">
 
 function toast({ ...props }: Toast) {
+  if (typeof props.title === "string") props.title = uiText(props.title);
+  if (typeof props.description === "string") props.description = uiText(props.description);
   const id = genId()
 
   const update = (props: ToasterToast) =>

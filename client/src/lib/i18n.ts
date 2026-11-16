@@ -1,5 +1,6 @@
 // Internationalization support for Marathi/English
 import { useState, createContext, useContext } from 'react';
+import { uiText } from "@shared/ui-language";
 
 export type Language = 'mr' | 'en';
 
@@ -141,8 +142,12 @@ const translations = {
 
 export const createTranslator = (language: Language) => {
   return (key: string): string => {
-    return translations[language][key as keyof typeof translations[typeof language]] || key;
+    return translations[language][key as keyof typeof translations[typeof language]] || uiText(key, language);
   };
 };
 
 export { translations };
+// Compatibility exports for older controls; keep only one active context.
+export const useLanguage = useI18n;
+export const LanguageContext = I18nContext;
+export const translate = (key: string, language: Language) => createTranslator(language)(key);

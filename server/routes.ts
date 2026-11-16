@@ -67,6 +67,7 @@ const loginSchema = z.object({
   tenantId: z.string().min(1).max(100),
   username: z.string().min(1).max(100),
   password: z.string().min(1).max(256),
+  language: z.enum(["mr", "en"]).optional(),
 });
 
 declare module "express-session" {
@@ -378,6 +379,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
+      const preferredLanguage = parsed.language || user.preferredLanguage || null;
+      if (parsed.language && parsed.language !== user.preferredLanguage) {
+        await db.update(users).set({ preferredLanguage: parsed.language })
+          .where(and(eq(users.id, user.id), eq(users.tenantId, user.tenantId)));
+      }
       await establishSession(req, user);
 
       // Update login info and log activity
@@ -403,7 +409,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             id: user.id, 
             username: user.username, 
             tenantId: user.tenantId, 
-            role: user.role 
+            role: user.role,
+            preferredLanguage,
           } 
         });
     } catch (error) {
@@ -478,7 +485,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           id: user.id, 
           username: user.username, 
           tenantId: user.tenantId, 
-          role: user.role 
+          role: user.role,
+          preferredLanguage: user.preferredLanguage,
         } 
       });
     } catch (error) {

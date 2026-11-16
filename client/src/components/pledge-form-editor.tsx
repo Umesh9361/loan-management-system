@@ -3,6 +3,7 @@ import { RotateCcw, Save, SlidersHorizontal, Undo2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { uiText } from "@shared/ui-language";
 import {
   PLEDGE_FIELD_GROUPS,
   PLEDGE_MATTER_GROUPS,
@@ -112,14 +113,14 @@ export function PledgeFormEditor({
         {visibleFieldGroups.map((group, groupIndex) => (
           <details key={group.title} open={(editing && !blankMode) || groupIndex === 0} className="group min-w-0 rounded-lg border border-slate-200">
             <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 rounded-lg px-3 py-3 text-sm font-semibold text-slate-800 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 [&::-webkit-details-marker]:hidden">
-              <span className="min-w-0">{group.title}</span>
+              <span className="min-w-0">{uiText(group.title)}</span>
               <span className="shrink-0 text-xs font-medium text-slate-500">{group.fields.length} तपशील</span>
             </summary>
             <div className="grid min-w-0 gap-3 border-t border-slate-100 p-3 sm:grid-cols-2">
               {group.fields.map(field => (
                 <div key={field.key} className="min-w-0">
                   <Label htmlFor={`pledge-field-${field.key}`} className="mb-1.5 block whitespace-normal text-xs leading-5 text-slate-700">
-                    {field.label}
+                    {uiText(field.label)}
                   </Label>
                   <Input
                     id={`pledge-field-${field.key}`}
@@ -167,7 +168,7 @@ export function PledgeFormEditor({
             {visibleMatterGroups.map(group => (
               <details key={group.form} className="group min-w-0 rounded-lg border border-indigo-100 bg-white">
                 <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 px-3 py-2.5 text-sm font-semibold text-slate-800 hover:bg-indigo-50/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 [&::-webkit-details-marker]:hidden">
-                  <span className="min-w-0">{group.title}</span>
+                  <span className="min-w-0">{uiText(group.title)}</span>
                   <span className="shrink-0 text-xs font-medium text-slate-500">{group.keys.length} मजकूर</span>
                 </summary>
                 <div className="grid min-w-0 gap-3 border-t border-slate-100 p-3">
@@ -175,7 +176,7 @@ export function PledgeFormEditor({
                     const multiline = !field.key.endsWith("Title");
                     return (
                       <div key={field.key} className="min-w-0">
-                        <Label htmlFor={`pledge-matter-${field.key}`} className="mb-1.5 block text-xs leading-5 text-slate-700">{field.label}</Label>
+                        <Label htmlFor={`pledge-matter-${field.key}`} className="mb-1.5 block text-xs leading-5 text-slate-700">{uiText(field.label)}</Label>
                         {multiline ? (
                           <textarea
                             id={`pledge-matter-${field.key}`}

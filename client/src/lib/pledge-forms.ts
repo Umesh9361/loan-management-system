@@ -1,4 +1,4 @@
-import { DEFAULT_PLEDGE_MATTER, type PledgeFormData, type PledgeFormMatter, type PledgeItem } from "@shared/pledge-form-editor";
+import { defaultPledgeMatter, type PledgeFormData, type PledgeFormMatter, type PledgeItem } from "@shared/pledge-form-editor";
 import { PLEDGE_FORM_POLISH_STYLES } from "./pledge-form-polish-styles";
 import { waitForPrintImages } from "./print-images";
 export type { PledgeFormData } from "@shared/pledge-form-editor";
@@ -154,6 +154,12 @@ body { font-family:"Noto Sans Devanagari","Mangal",sans-serif; font-size:8pt; li
 .pf-single .pf-notice-body { font-size:10pt; line-height:1.8; }
 .pf-single .pf-line { font-size:9pt; min-height:5mm; }
 .pf-single .pf-signatures { margin-top:7mm; }
+/* Latin text needs different line metrics; retain Devanagari fallback for saved customer data. */
+html[lang="en"] .pf-sheet { font-family:Arial,"Noto Sans Devanagari",sans-serif; }
+html[lang="en"] .pf-section p,
+html[lang="en"] .pf-section .pf-terms { line-height:1.35; }
+html[lang="en"] .pf-spacious .pf-declaration { height:82mm; }
+html[lang="en"] .pf-spacious .pf-interim { height:92mm; }
 @media print {
   html,body,.pf-sheet { width:200mm; }
  .pf-sheet { margin:0; }
@@ -163,7 +169,7 @@ body { font-family:"Noto Sans Devanagari","Mangal",sans-serif; font-size:8pt; li
 `;
 
 /** Same page groups and typography are used for preview, native print and downloaded PDF. */
-export function pledgeFormsDocument(data: PledgeFormData, selection: PledgeFormChoice = "all", matter: PledgeFormMatter = DEFAULT_PLEDGE_MATTER, layout: PledgeFormLayout = "compact"): string {
+export function pledgeFormsDocument(data: PledgeFormData, selection: PledgeFormChoice = "all", matter: PledgeFormMatter = defaultPledgeMatter(), layout: PledgeFormLayout = "compact"): string {
   const keys = getSelectedPledgeForms(selection);
   if (!keys.length) throw new Error("किमान एक फॉर्म निवडा.");
   if (layout !== "compact" && layout !== "spacious") throw new Error("चुकीची पान मांडणी.");

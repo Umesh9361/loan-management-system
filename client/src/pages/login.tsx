@@ -12,6 +12,7 @@ import { queryClient } from "@/lib/queryClient";
 import { Building, User, Lock, HelpCircle, Eye, EyeOff } from "lucide-react";
 import { useLocation } from "wouter";
 import { ForgotPassword } from "@/components/forgot-password";
+import { useI18n } from "@/lib/i18n";
 
 const loginSchema = z.object({
   tenantId: z.string().min(1, "कंपनी ओळखकर्ता आवश्यक आहे"),
@@ -22,6 +23,8 @@ const loginSchema = z.object({
 type LoginFormData = z.infer<typeof loginSchema>;
 
 export default function Login() {
+  const { language, setLanguage } = useI18n();
+  const [languageChosen, setLanguageChosen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -44,6 +47,7 @@ export default function Login() {
         tenantId: data.tenantId,
         username: data.username,
         password: data.password,
+        ...(languageChosen ? { language } : {}),
       };
       
       const loginResult = await AuthService.login(credentials);
@@ -64,7 +68,9 @@ export default function Login() {
       }
       
       // Navigate to home page after successful login and cache setup
-      navigate("/");
+      // Reload after authentication so module-level menu labels and document
+      // templates all initialize with this user's resolved language.
+      window.location.assign("/");
     } catch (error) {
       toast({
         title: "प्रवेश अयशस्वी",
@@ -91,6 +97,17 @@ export default function Login() {
           <img src="/icons/icon-192x192.png" alt="LonoPro" className="mx-auto h-20 w-20 rounded-lg mb-6" />
           <h1 className="text-3xl font-bold text-indigo-600 mb-2">Welcome to LonoPro</h1>
           <p className="text-gray-600">आपल्या खात्यात प्रवेश करा</p>
+          <fieldset className="mt-5 flex items-center justify-center gap-2" aria-label="Application language">
+            <legend className="sr-only">Language / भाषा</legend>
+            {(["mr", "en"] as const).map(choice => (
+              <Button key={choice} type="button" size="sm"
+                variant={language === choice ? "default" : "outline"}
+                aria-pressed={language === choice}
+                onClick={() => { setLanguageChosen(true); setLanguage(choice); }}>
+                {choice === "mr" ? "मराठी" : "English"}
+              </Button>
+            ))}
+          </fieldset>
         </div>
         
         <Card>

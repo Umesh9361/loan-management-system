@@ -3,10 +3,11 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { useToast } from "@/hooks/use-toast";
 import {
-  DEFAULT_NOTICE_MATTER,
+  defaultNoticeMatter,
   noticeMatterSchema,
   type NoticeMatter,
 } from "@shared/notice-matter";
+import { getUiLanguage } from "@shared/ui-language";
 
 type NoticeDefaultsResponse = { matter: NoticeMatter; customized: boolean };
 
@@ -14,7 +15,7 @@ async function requestDefaults(
   method: "GET" | "PUT" | "DELETE",
   matter?: NoticeMatter,
 ): Promise<NoticeDefaultsResponse> {
-  const response = await fetch("/api/notice-settings", {
+  const response = await fetch(`/api/notice-settings?language=${getUiLanguage()}`, {
     method,
     credentials: "include",
     headers: { "Content-Type": "application/json" },
@@ -43,7 +44,7 @@ export function useNoticeDefaults() {
   const { toast } = useToast();
   const client = useQueryClient();
   const tenantId = user?.tenantId;
-  const key = ["/api/notice-settings", tenantId];
+  const key = ["/api/notice-settings", tenantId, getUiLanguage()];
   const query = useQuery({
     queryKey: key,
     queryFn: () => requestDefaults("GET"),
@@ -56,7 +57,7 @@ export function useNoticeDefaults() {
     changes: Partial<NoticeMatter>;
   }>({ changes: {} });
   const changes = draft.tenantId === tenantId ? draft.changes : {};
-  const defaultMatter = query.data?.matter || DEFAULT_NOTICE_MATTER;
+  const defaultMatter = query.data?.matter || defaultNoticeMatter();
   const matter: NoticeMatter = { ...defaultMatter, ...changes };
 
   const mutation = useMutation({
@@ -110,7 +111,7 @@ export function useNoticeDefaults() {
           "या नोटीससाठी मूळ नमुन्याचा मजकूर तात्पुरता वापरायचा? संस्थेचा जतन केलेला मजकूर बदलणार नाही.",
         )
       ) {
-        setDraft({ tenantId, changes: { ...DEFAULT_NOTICE_MATTER } });
+        setDraft({ tenantId, changes: defaultNoticeMatter() });
       }
     },
     onSaveDefault: () => {

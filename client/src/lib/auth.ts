@@ -1,17 +1,20 @@
 import { queryClient } from "./queryClient";
 import { apiConfig } from "./api-config";
+import { rememberUiLanguage, storedUiLanguage, resolveUiPreference, type UiLanguage } from "@shared/ui-language";
 
 export interface User {
   id: string;
   username: string;
   tenantId: string;
   role: string;
+  preferredLanguage?: UiLanguage | null;
 }
 
 export interface LoginCredentials {
   tenantId: string;
   username: string;
   password: string;
+  language?: UiLanguage;
 }
 
 export class AuthService {
@@ -29,6 +32,7 @@ export class AuthService {
     }
 
     const data = await response.json();
+    rememberUiLanguage(resolveUiPreference(data.user.preferredLanguage, credentials.language, storedUiLanguage()));
     return data.user;
   }
 
@@ -51,8 +55,9 @@ export class AuthService {
     
     // Always clear client-side data regardless of API response
     queryClient.clear();
-    localStorage.clear();
-    sessionStorage.clear();
+    const language = storedUiLanguage();
+    try { localStorage.clear(); sessionStorage.clear(); } catch { /* restricted browser storage */ }
+    rememberUiLanguage(language);
   }
 
   static async getCurrentUser(): Promise<User | null> {

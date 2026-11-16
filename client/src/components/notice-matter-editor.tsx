@@ -2,6 +2,7 @@ import { useState } from "react";
 import { RotateCcw, Save, SlidersHorizontal, Undo2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { uiText } from "@shared/ui-language";
 import {
   NOTICE_MATTER_FIELDS,
   NOTICE_TOKENS,
@@ -111,7 +112,7 @@ export function NoticeMatterEditor({ defaults }: Props) {
                       className={`min-w-0 ${field.key === "body" ? "sm:col-span-2" : ""}`}
                     >
                       <Label htmlFor={id} className="mb-1.5 block text-xs font-medium leading-5 text-slate-700">
-                        {field.label}
+                        {uiText(field.label)}
                       </Label>
                       {field.rows > 1 ? (
                         <textarea
@@ -153,7 +154,7 @@ export function NoticeMatterEditor({ defaults }: Props) {
                     <li key={token.key}>
                       <span className="inline-flex max-w-full rounded-md border border-indigo-200 bg-white px-2 py-1 text-xs text-indigo-900">
                         <span className="font-mono break-all">{"{"}{token.key}{"}"}</span>
-                        <span className="ml-1.5 text-slate-500">{token.label}</span>
+                        <span className="ml-1.5 text-slate-500">{uiText(token.label)}</span>
                       </span>
                     </li>
                   ))}

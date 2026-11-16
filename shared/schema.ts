@@ -19,6 +19,7 @@ export const users = pgTable("users", {
   createdBy: uuid("created_by"), // Admin who created this user
   fullName: text("full_name"),
   email: varchar("email", { length: 100 }),
+  preferredLanguage: varchar("preferred_language", { length: 2 }),
   lastLoginAt: timestamp("last_login_at"),
   loginCount: integer("login_count").default(0),
   createdAt: timestamp("created_at").notNull().default(sql`now()`),
@@ -134,6 +135,7 @@ export const companies = pgTable("companies", {
 export const pledgeFormDefaults = pgTable("pledge_form_defaults", {
   tenantId: varchar("tenant_id", { length: 20 }).primaryKey().references(() => companies.tenantId, { onDelete: "cascade" }),
   matter: text("matter").notNull(),
+  matterEn: text("matter_en"),
   updatedAt: timestamp("updated_at").notNull().default(sql`now()`),
 });
 
@@ -141,6 +143,7 @@ export const pledgeFormDefaults = pgTable("pledge_form_defaults", {
 export const noticeDefaults = pgTable("notice_defaults", {
   tenantId: varchar("tenant_id", { length: 20 }).primaryKey().references(() => companies.tenantId, { onDelete: "cascade" }),
   matter: text("matter").notNull(),
+  matterEn: text("matter_en"),
   updatedAt: timestamp("updated_at").notNull().default(sql`now()`),
 });
 

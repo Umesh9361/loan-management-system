@@ -1,5 +1,6 @@
 import { useLocation, Link } from "wouter";
 import { cn } from "@/lib/utils";
+import { rememberUiLanguage, storedUiLanguage } from "@shared/ui-language";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import {
@@ -103,8 +104,9 @@ function MobileNavInner({ hideBottomNav = false }: MobileNavProps = {}) {
       await AuthService.logout();
       window.location.reload();
     } catch (error) {
-      localStorage.clear();
-      sessionStorage.clear();
+      const language = storedUiLanguage();
+      try { localStorage.clear(); sessionStorage.clear(); } catch { /* restricted storage */ }
+      rememberUiLanguage(language);
       safeNavigate('/login');
     }
   };

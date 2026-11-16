@@ -161,7 +161,7 @@ export default function Ledger() {
                       <SelectContent>
                         {loans?.map((loan: any) => (
                           <SelectItem key={loan.id} value={loan.id}>
-                            {loan.loanNumber} - {loan.borrower.name} ({loan.group.name})
+                            {loan.accountNumber || loan.loanNumber} - {loan.borrowerName || loan.borrower?.name} ({loan.groupName || loan.group?.name || "—"})
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -194,19 +194,19 @@ export default function Ledger() {
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                       <div>
                         <Label className="text-sm font-medium text-gray-600">कर्ज क्रमांक</Label>
-                        <p className="font-medium font-inter">{selectedLoan.loanNumber}</p>
+                        <p className="font-medium font-inter">{selectedLoan.accountNumber || selectedLoan.loanNumber}</p>
                       </div>
                       <div>
                         <Label className="text-sm font-medium text-gray-600">कर्जदार</Label>
-                        <p className="font-medium">{selectedLoan.borrower.name}</p>
+                        <p className="font-medium">{selectedLoan.borrowerName || selectedLoan.borrower?.name}</p>
                       </div>
                       <div>
                         <Label className="text-sm font-medium text-gray-600">ग्रुप</Label>
-                        <p className="font-medium">{selectedLoan.group.name}</p>
+                        <p className="font-medium">{selectedLoan.groupName || selectedLoan.group?.name || "—"}</p>
                       </div>
                       <div>
                         <Label className="text-sm font-medium text-gray-600">मोबाईल</Label>
-                        <p className="font-medium font-inter">{selectedLoan.borrower.mobile}</p>
+                        <p className="font-medium font-inter">{selectedLoan.borrowerMobile || selectedLoan.borrower?.mobile || "—"}</p>
                       </div>
                       <div>
                         <Label className="text-sm font-medium text-gray-600">मुद्दल रक्कम</Label>
@@ -238,7 +238,7 @@ export default function Ledger() {
                     <CardTitle className="text-xl">{company?.name || "कंपनी नाव"}</CardTitle>
                     <p className="text-gray-600">खातेवही - व्यक्तिगत विवरण</p>
                     <p className="text-sm text-gray-500">
-                      {selectedLoan.borrower.name} ({selectedLoan.loanNumber})
+                      {selectedLoan.borrowerName || selectedLoan.borrower?.name} ({selectedLoan.accountNumber || selectedLoan.loanNumber})
                     </p>
                   </CardHeader>
                   <CardContent>

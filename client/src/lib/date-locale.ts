@@ -1,10 +1,11 @@
+import { getUiLanguage } from "@shared/ui-language";
 // Force DD/MM/YYYY format for all date inputs across the application
 export function setupDateLocale() {
   // Override the browser's default date format behavior
   if (typeof document !== 'undefined') {
     document.addEventListener('DOMContentLoaded', function() {
       // Set the document language to Hindi-India
-      document.documentElement.lang = 'hi-IN';
+      document.documentElement.lang = getUiLanguage() === "en" ? "en-IN" : "mr-IN";
       
       // Add event listeners to all existing date inputs
       const dateInputs = document.querySelectorAll('input[type="date"]');
@@ -34,7 +35,7 @@ export function setupDateLocale() {
 
 function setupDateInput(input: HTMLInputElement) {
   // Force the input to use Indian locale
-  input.lang = 'hi-IN';
+  input.lang = getUiLanguage() === "en" ? "en-IN" : "mr-IN";
   
   // Add a data attribute to identify our custom date inputs
   input.dataset.customDateFormat = 'dd/mm/yyyy';

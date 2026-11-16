@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { getUiLanguage } from "@shared/ui-language";
 import { useQuery } from "@tanstack/react-query";
 import { Sidebar } from "@/components/ui/sidebar";
 import { MobileNav } from "@/components/ui/mobile-nav";
@@ -62,7 +63,7 @@ export default function PledgeFormsPage() {
   const [photoOptions, setPhotoOptions] = useState({ includeBorrowerPhoto: true, includeCollateralPhotos: true });
   const [openSuggestions, setOpenSuggestions] = useState(false);
   const [selection, setSelection] = useState<PledgeFormChoice>(() => getPledgeFormEntry(window.location.search).selection);
-  const [layout, setLayout] = useState<PledgeFormLayout>("compact");
+  const [layout, setLayout] = useState<PledgeFormLayout>(() => getUiLanguage() === "en" ? "spacious" : "compact");
   const [pendingAction, setPendingAction] = useState<"pdf" | "print" | "blank" | null>(null);
   const working = pendingAction !== null;
   const selectedForms = getSelectedPledgeForms(selection);

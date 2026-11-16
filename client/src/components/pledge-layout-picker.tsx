@@ -13,21 +13,21 @@ type PledgeLayoutPickerProps = {
 const layouts: {
   value: PledgeLayout;
   label: string;
-  description: string;
+  helperText: string;
   pages: number;
   formsPerPage: number;
 }[] = [
   {
     value: "compact",
     label: "1 पान — संक्षिप्त",
-    description: "सहा फॉर्म एका A4 पानावर.",
+    helperText: "सहा फॉर्म एका A4 पानावर.",
     pages: 1,
     formsPerPage: 6,
   },
   {
     value: "spacious",
     label: "2 पाने — मोकळी मांडणी",
-    description: "मोठा मजकूर आणि कापण्यासाठी अधिक जागा; प्रत्येक पानावर 3 फॉर्म.",
+    helperText: "मोठा मजकूर आणि कापण्यासाठी अधिक जागा; प्रत्येक पानावर 3 फॉर्म.",
     pages: 2,
     formsPerPage: 3,
   },
@@ -111,7 +111,7 @@ export function PledgeLayoutPicker({
                   {layout.value === "spacious" && pageCount <= 1 ? "1 पान — मोकळी मांडणी" : layout.label}
                 </span>
                 <span className="mt-1 block text-xs leading-[1.15rem] text-slate-600">
-                  {isFullSheet ? layout.description : layout.value === "compact" ? "निवडलेले फॉर्म एका A4 पानावर." : "मोठी अक्षरे; पूर्ण फॉर्म उपलब्ध जागेनुसार पानावर बसतील."}
+                  {isFullSheet ? layout.helperText : layout.value === "compact" ? "निवडलेले फॉर्म एका A4 पानावर." : "मोठी अक्षरे; पूर्ण फॉर्म उपलब्ध जागेनुसार पानावर बसतील."}
                 </span>
               </span>
             </label>

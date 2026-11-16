@@ -12,6 +12,8 @@ export async function initializeDatabase() {
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       console.log(`Database initialization attempt ${attempt}/${maxRetries}...`);
+      // Additive user preference only: never rewrite customer/financial text.
+      await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS preferred_language VARCHAR(2)`);
       
       // Enhanced database connection test with timeout and better error handling
       const connectionTest = async () => {
@@ -47,6 +49,8 @@ export async function initializeDatabase() {
         updated_at TIMESTAMP NOT NULL DEFAULT NOW()
       )`);
       // 6. AUTO-MIGRATION: Ensure new columns exist in database
+      await db.execute(sql`ALTER TABLE pledge_form_defaults ADD COLUMN IF NOT EXISTS matter_en TEXT`);
+      await db.execute(sql`ALTER TABLE notice_defaults ADD COLUMN IF NOT EXISTS matter_en TEXT`);
       try {
         await db.execute(sql`ALTER TABLE companies ADD COLUMN IF NOT EXISTS bottom_nav_enabled BOOLEAN NOT NULL DEFAULT true`);
         console.log("✅ Schema migration: bottom_nav_enabled column verified");

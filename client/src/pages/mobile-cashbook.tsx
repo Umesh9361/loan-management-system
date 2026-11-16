@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
+import { uiText } from "@shared/ui-language";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -1297,7 +1298,7 @@ function MobileCashbook() {
                         } else if (viewPeriod === 'yearly') {
                           return '(मागील वर्ष)';
                         } else {
-                          return '(मागील दिवस)';
+                          return uiText('(मागील दिवस)');
                         }
                       })()}
                     </div>

@@ -12,7 +12,7 @@ import { useLocation } from "wouter";
 import { useSafeNavigation } from "@/hooks/use-safe-navigation";
 
 export default function BorrowerLedger() {
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
   const { safeNavigate } = useSafeNavigation();
   
   const [filters, setFilters] = useState({

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { getUiLanguage } from "@shared/ui-language";
 import { Input } from "./input";
 import { cn } from "@/lib/utils";
 
@@ -76,7 +77,7 @@ export const DateInput = React.forwardRef<HTMLInputElement, DateInputProps>(
             "[&::-webkit-calendar-picker-indicator]:!opacity-100",
             className
           )}
-          lang="hi-IN" // Set Indian locale for date input
+          lang={getUiLanguage() === "en" ? "en-IN" : "mr-IN"}
           pattern="[0-9]{2}/[0-9]{2}/[0-9]{4}" // DD/MM/YYYY pattern
           style={{
             // Force consistent appearance across all devices

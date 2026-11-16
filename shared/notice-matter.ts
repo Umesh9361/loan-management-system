@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { uiText, getUiLanguage, type UiLanguage } from "./ui-language";
 
 export const NOTICE_TOKENS = [
   { key: "borrowerName", label: "कर्जदाराचे नाव" },
@@ -46,6 +47,14 @@ export const NOTICE_MATTER_FIELDS: Array<{ key: keyof NoticeMatter; label: strin
   { key: "body", label: "संपूर्ण मुख्य मजकूर", rows: 12 },
   { key: "signature", label: "सहीखालील मजकूर", rows: 2 },
 ];
+export function defaultNoticeMatter(language: UiLanguage = getUiLanguage()): NoticeMatter {
+  const matter = Object.fromEntries(Object.entries(DEFAULT_NOTICE_MATTER)
+    .map(([key, value]) => [key, uiText(value, language)])) as NoticeMatter;
+  if (language === "en") {
+    matter.body = "You are hereby notified that you obtained a loan against pledged articles on {loanDate} and the agreed loan period has expired.\n\nUnder Section 176 of the Indian Contract Act, 1872, the pledgee has the right to sell the pledged articles after giving reasonable notice upon default. Accordingly, please pay the entire principal outstanding and the interest due within 15 (fifteen) days of receiving this notice.\n\nIf payment is not made within the period stated above, the pledged articles will be sold / dismantled / disposed of. The borrower shall be responsible for any resulting shortfall, difference in market value and other losses, as stated in this notice.\n\nPlease take due notice of the above.";
+  }
+  return matter;
+}
 
 function escape(value: unknown) {
   return String(value ?? "").replace(/[&<>"']/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]!);
@@ -61,7 +70,7 @@ export function renderNoticeContent(loan: Record<string, any> | null, input: Not
   const values: Record<string, string> = {
     borrowerName: escape(loan ? loan.borrowerName : blank),
     borrowerAddress: escape(loan ? loan.borrowerAddress : blank),
-    borrowerPhone: escape(loan ? (loan.borrowerPhone || loan.phone ? `मो: ${loan.borrowerPhone || loan.phone}` : "") : blank),
+    borrowerPhone: escape(loan ? (loan.borrowerPhone || loan.phone ? `${uiText("मो:")} ${loan.borrowerPhone || loan.phone}` : "") : blank),
     accountNumber: escape(loan ? loan.accountNumber : blank),
     loanDate: escape(loan ? date(loan.loanDate) : blank),
     noticeDate: "____/____/________",
@@ -69,7 +78,7 @@ export function renderNoticeContent(loan: Record<string, any> | null, input: Not
     companyAddress: escape(company?.address || ""),
     principalAmount: escape(loan ? (Number.isFinite(Number(loan.principalAmount)) ? Number(loan.principalAmount).toLocaleString("en-IN", { maximumFractionDigits: 2 }) : "") : blank),
     interestRate: escape(loan ? loan.interestRate : blank),
-    loanPeriod: escape(loan ? (loan.durationInMonths != null ? `${loan.durationInMonths} महिने` : "") : blank),
+    loanPeriod: escape(loan ? (loan.durationInMonths != null ? `${loan.durationInMonths} ${uiText("महिने")}` : "") : blank),
   };
   const fill = (template: string) => escape(template).replace(/\{([^{}]+)\}/g, (_, token: string) => values[token] ?? "");
   const lines = (template: string) => template.split("\n").map(fill).filter(Boolean).join("<br/>");

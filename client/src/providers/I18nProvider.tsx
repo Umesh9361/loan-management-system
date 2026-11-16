@@ -1,20 +1,17 @@
 import { useState, useEffect, ReactNode } from 'react';
 import { I18nContext, Language, createTranslator } from '@/lib/i18n';
+import { rememberUiLanguage, storedUiLanguage, setUiLanguage } from "@shared/ui-language";
 
 interface I18nProviderProps {
   children: ReactNode;
 }
 
 export function I18nProvider({ children }: I18nProviderProps) {
-  const [language, setLanguage] = useState<Language>('mr');
-
+  const [language, setLanguage] = useState<Language>(storedUiLanguage);
+  setUiLanguage(language);
   useEffect(() => {
-    // Load language from localStorage
-    const saved = localStorage.getItem('language') as Language;
-    if (saved && (saved === 'mr' || saved === 'en')) {
-      setLanguage(saved);
-    }
-  }, []);
+    document.documentElement.lang = language === "en" ? "en-IN" : "mr-IN";
+  }, [language]);
 
   const t = createTranslator(language);
 
@@ -22,7 +19,7 @@ export function I18nProvider({ children }: I18nProviderProps) {
     language,
     setLanguage: (lang: Language) => {
       setLanguage(lang);
-      localStorage.setItem('language', lang);
+      rememberUiLanguage(lang);
     },
     t,
   };

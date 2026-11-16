@@ -1,4 +1,5 @@
 import { displayNarration } from "./utils";
+import { uiNarration } from "@shared/ui-language";
 
 type CashbookDetails = {
   narration?: string | null;
@@ -36,7 +37,7 @@ export function cashbookNarration(transaction: CashbookDetails): string {
 // HTML print/PDF routes interpolate descriptions into standalone documents.
 // Keep borrower-entered text literal, including when the date is appended.
 export function cashbookDescriptionHtml(description: string): string {
-  return description.replace(/[&<>"']/g, character => ({
+  return uiNarration(description).replace(/[&<>"']/g, character => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;",
     '"': "&quot;", "'": "&#39;",
   })[character]!);

@@ -2,11 +2,12 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { useToast } from "@/hooks/use-toast";
-import { DEFAULT_PLEDGE_MATTER, pledgeMatterSchema, type PledgeFormMatter } from "@shared/pledge-form-editor";
+import { defaultPledgeMatter, pledgeMatterSchema, type PledgeFormMatter } from "@shared/pledge-form-editor";
+import { getUiLanguage } from "@shared/ui-language";
 
 type Defaults = { matter: PledgeFormMatter; customized: boolean };
 async function requestDefaults(method: "GET" | "PUT" | "DELETE", matter?: PledgeFormMatter): Promise<Defaults> {
-  const response = await fetch("/api/pledge-form-settings", {
+  const response = await fetch(`/api/pledge-form-settings?language=${getUiLanguage()}`, {
     method, credentials: "include", headers: { "Content-Type": "application/json" },
     ...(matter ? { body: JSON.stringify({ matter }) } : {}),
   });
@@ -19,11 +20,11 @@ export function usePledgeFormDefaults() {
   const { toast } = useToast();
   const client = useQueryClient();
   const tenantId = user?.tenantId;
-  const key = ["/api/pledge-form-settings", tenantId];
+  const key = ["/api/pledge-form-settings", tenantId, getUiLanguage()];
   const query = useQuery({ queryKey: key, queryFn: () => requestDefaults("GET"), enabled: !!tenantId, retry: false, staleTime: 0 });
   const [draft, setDraft] = useState<{ tenantId?: string; changes: Partial<PledgeFormMatter> }>({ changes: {} });
   const changes = draft.tenantId === tenantId ? draft.changes : {};
-  const defaultMatter = query.data?.matter || DEFAULT_PLEDGE_MATTER;
+  const defaultMatter = query.data?.matter || defaultPledgeMatter();
   const matter = { ...defaultMatter, ...changes };
   const mutation = useMutation({
     mutationFn: (action: { method: "PUT" | "DELETE"; matter?: PledgeFormMatter }) => requestDefaults(action.method, action.matter),
@@ -44,7 +45,7 @@ export function usePledgeFormDefaults() {
       if (window.confirm("तात्पुरते मजकूर बदल बाजूला ठेवून संस्थेचा जतन केलेला मजकूर वापरायचा? भरलेले तपशील कायम राहतील.")) setDraft({ tenantId, changes: {} });
     },
     onUseOriginal: () => {
-      if (window.confirm("या प्रिंटसाठी मूळ नमुन्याचा मजकूर आणायचा? संस्थेचा जतन केलेला डिफॉल्ट बदलणार नाही.")) setDraft({ tenantId, changes: { ...DEFAULT_PLEDGE_MATTER } });
+      if (window.confirm("या प्रिंटसाठी मूळ नमुन्याचा मजकूर आणायचा? संस्थेचा जतन केलेला डिफॉल्ट बदलणार नाही.")) setDraft({ tenantId, changes: defaultPledgeMatter() });
     },
     onSaveDefault: () => {
       const parsed = pledgeMatterSchema.safeParse(matter);
