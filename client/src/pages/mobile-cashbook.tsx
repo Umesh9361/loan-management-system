@@ -15,6 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { DateUtils } from "@/lib/date-utils";
 import { displayNarration } from "@/lib/utils";
+import { cashbookNarration } from "@/lib/cashbook-narration";
 import { MobileNav } from "@/components/ui/mobile-nav";
 import PartySelector from "@/components/party-selector";
 import { useRealTimeSync } from "@/hooks/use-real-time-sync";
@@ -1351,7 +1352,7 @@ function MobileCashbook() {
                             )}
                           </div>
                           <div className="text-xs text-gray-500 leading-tight break-words">
-                            {displayNarration(transaction.narration)}
+                            {cashbookNarration(transaction)}
                             {transaction.displayCollateral && transaction.displayCollateral !== "तपशील उपलब्ध नाही" && (
                               <div className="mt-1 text-xs text-green-700 bg-green-50 px-2 py-0.5 rounded border border-green-200">
                                 वस्तू: {transaction.displayCollateral}

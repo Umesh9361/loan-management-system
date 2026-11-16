@@ -6,7 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Sidebar } from "@/components/ui/sidebar";
 import { MobileNav } from "@/components/ui/mobile-nav";
 import { DateUtils } from "@/lib/date-utils";
-import { displayNarration } from "@/lib/utils";
+import { cashbookNarration, cashbookDescriptionHtml } from "@/lib/cashbook-narration";
+import { pdfPageEnd } from "@/lib/print-document-pdf";
 import { LoanCalculations } from "@/lib/loan-calculations";
 import { useQuery } from "@tanstack/react-query";
 import { useRealTimeSync } from "@/hooks/use-real-time-sync";
@@ -122,7 +123,7 @@ function CashBookReport() {
         const rowClass = isOpening ? ' class="opening-row"' : '';
         return `<tr${rowClass}>
           <td style="${tdBase}text-align:center;">${DateUtils.isoToIndianDate(row.date).replace(/20(\d{2})/g, '$1')}</td>
-          <td style="${tdBase}text-align:left;">${row.description}</td>
+          <td style="${tdBase}text-align:left;overflow-wrap:anywhere;line-height:1.5;">${cashbookDescriptionHtml(row.description)}</td>
           <td style="${tdBase}text-align:right;">${row.credit ? LoanCalculations.formatAmount(row.credit) : '-'}</td>
           <td style="${tdBase}text-align:right;">${row.debit ? LoanCalculations.formatAmount(row.debit) : '-'}</td>
           <td style="${tdBase}text-align:right;font-weight:700;">${LoanCalculations.formatAmount(row.balance)}</td>
@@ -157,10 +158,10 @@ function CashBookReport() {
 
         tRows += `<tr${rowClass}>
           <td style="${tdBase}text-align:center;font-size:10px;">${cr ? DateUtils.isoToIndianDate(cr.date).replace(/20(\d{2})/g, '$1') : ''}</td>
-          <td style="${tdBase}text-align:left;">${cr?.description || ''}</td>
+          <td style="${tdBase}text-align:left;overflow-wrap:anywhere;line-height:1.5;">${cashbookDescriptionHtml(cr?.description || '')}</td>
           <td style="${tdBase}text-align:right;border-right:2px solid #333;">${cr ? LoanCalculations.formatAmount(cr.amount) : ''}</td>
           <td style="${tdBase}text-align:center;font-size:10px;">${dr ? DateUtils.isoToIndianDate(dr.date).replace(/20(\d{2})/g, '$1') : ''}</td>
-          <td style="${tdBase}text-align:left;">${dr?.description || ''}</td>
+          <td style="${tdBase}text-align:left;overflow-wrap:anywhere;line-height:1.5;">${cashbookDescriptionHtml(dr?.description || '')}</td>
           <td style="${tdBase}text-align:right;">${dr ? LoanCalculations.formatAmount(dr.amount) : ''}</td>
         </tr>`;
       }
@@ -430,7 +431,7 @@ ${tableHTML}
           const bgStyle = row.isOpeningBalance ? 'background:#fef9ef;' : (idx % 2 === 1 ? 'background:#fafafa;' : '');
           return `<tr style="${bgStyle}">
             <td style="${tdBase}text-align:center;">${DateUtils.isoToIndianDate(row.date).replace(/20(\d{2})/g, '$1')}</td>
-            <td style="${tdBase}text-align:left;">${row.description}</td>
+            <td style="${tdBase}text-align:left;overflow-wrap:anywhere;line-height:1.5;">${cashbookDescriptionHtml(row.description)}</td>
             <td style="${tdBase}text-align:right;">${row.credit ? LoanCalculations.formatAmount(row.credit) : '-'}</td>
             <td style="${tdBase}text-align:right;">${row.debit ? LoanCalculations.formatAmount(row.debit) : '-'}</td>
             <td style="${tdBase}text-align:right;font-weight:600;">${LoanCalculations.formatAmount(row.balance)}</td>
@@ -469,18 +470,18 @@ ${tableHTML}
           const balCellBg = isBalRow ? 'background:#eef2ff;' : '';
 
           const crDtStyle = `border:${bdr};padding:3px 2px;font-size:7px;line-height:1.3;color:#666;text-align:center;${balCellBg}${isCrBal ? 'font-weight:bold;color:#333;' : ''}`;
-          const crDescStyle = `border:${bdr};padding:3px 4px;font-size:8.5px;line-height:1.3;text-align:left;${balCellBg}${isCrBal ? 'font-weight:bold;font-size:9px;color:#3730a3;' : ''}`;
+          const crDescStyle = `border:${bdr};padding:4px;font-size:8.5px;line-height:1.5;text-align:left;overflow-wrap:anywhere;${balCellBg}${isCrBal ? 'font-weight:bold;font-size:9px;color:#3730a3;' : ''}`;
           const crAmtStyle = `border:${bdr};padding:3px 3px;font-size:8px;line-height:1.3;text-align:right;border-right:1px solid #999;${balCellBg}${isCrBal ? 'font-weight:bold;font-size:9px;' : ''}`;
           const drDtStyle = `border:${bdr};padding:3px 2px;font-size:7px;line-height:1.3;color:#666;text-align:center;${balCellBg}${isDrBal ? 'font-weight:bold;color:#333;' : ''}`;
-          const drDescStyle = `border:${bdr};padding:3px 4px;font-size:8.5px;line-height:1.3;text-align:left;${balCellBg}${isDrBal ? 'font-weight:bold;font-size:9px;color:#3730a3;' : ''}`;
+          const drDescStyle = `border:${bdr};padding:4px;font-size:8.5px;line-height:1.5;text-align:left;overflow-wrap:anywhere;${balCellBg}${isDrBal ? 'font-weight:bold;font-size:9px;color:#3730a3;' : ''}`;
           const drAmtStyle = `border:${bdr};padding:3px 3px;font-size:8px;line-height:1.3;text-align:right;${balCellBg}${isDrBal ? 'font-weight:bold;font-size:9px;' : ''}`;
 
           tRows += `<tr style="${rowBg}">
             <td style="${crDtStyle}">${cr ? DateUtils.isoToIndianDate(cr.date).replace(/20(\d{2})/g, '$1') : ''}</td>
-            <td style="${crDescStyle}">${cr?.description || ''}</td>
+            <td style="${crDescStyle}">${cashbookDescriptionHtml(cr?.description || '')}</td>
             <td style="${crAmtStyle}">${cr ? LoanCalculations.formatAmount(cr.amount) : ''}</td>
             <td style="${drDtStyle}">${dr ? DateUtils.isoToIndianDate(dr.date).replace(/20(\d{2})/g, '$1') : ''}</td>
-            <td style="${drDescStyle}">${dr?.description || ''}</td>
+            <td style="${drDescStyle}">${cashbookDescriptionHtml(dr?.description || '')}</td>
             <td style="${drAmtStyle}">${dr ? LoanCalculations.formatAmount(dr.amount) : ''}</td>
           </tr>`;
         }
@@ -575,6 +576,11 @@ ${tableHTML}
 
       const targetEl = iframeDoc.body;
       const contentHeight = targetEl.scrollHeight;
+      const bodyTop = targetEl.getBoundingClientRect().top;
+      const rowBounds = Array.from(iframeDoc.querySelectorAll("tr")).map(row => {
+        const rect = row.getBoundingClientRect();
+        return { top: rect.top - bodyTop, bottom: rect.bottom - bodyTop };
+      });
 
       const canvas = await html2canvas(targetEl, {
         scale: 3,
@@ -590,14 +596,17 @@ ${tableHTML}
 
       document.body.removeChild(iframe);
 
-      const imgData = canvas.toDataURL('image/png');
       const pageWidth = 210;
       const pageHeight = 297;
       const marginTop = 8;
       const marginBottom = 8;
       const usableHeight = pageHeight - marginTop - marginBottom;
-      const imgTotalHeight = (canvas.height * pageWidth) / canvas.width;
-      const totalPages = Math.ceil(imgTotalHeight / usableHeight);
+      const pxPerMm = canvas.width / pageWidth;
+      const scale = canvas.height / contentHeight;
+      const blocks = rowBounds.map(row => ({
+        top: Math.round(row.top * scale),
+        bottom: Math.round(row.bottom * scale),
+      }));
 
       const doc = new jsPDF({
         orientation: 'portrait',
@@ -606,10 +615,21 @@ ${tableHTML}
         compress: true,
       });
 
-      for (let page = 0; page < totalPages; page++) {
-        if (page > 0) doc.addPage();
-        const yOffset = marginTop - (page * usableHeight);
-        doc.addImage(imgData, 'PNG', 0, yOffset, pageWidth, imgTotalHeight);
+      // Crop each page at a row boundary. The longer loan details must never
+      // split through a date or a Devanagari line at the bottom of the page.
+      let start = 0;
+      while (start < canvas.height) {
+        const end = pdfPageEnd(start, Math.floor(usableHeight * pxPerMm), canvas.height, blocks);
+        const pageCanvas = document.createElement('canvas');
+        pageCanvas.width = canvas.width;
+        pageCanvas.height = end - start;
+        const context = pageCanvas.getContext('2d');
+        if (!context) throw new Error('PDF canvas unavailable');
+        context.drawImage(canvas, 0, start, canvas.width, end - start, 0, 0, canvas.width, end - start);
+        if (start > 0) doc.addPage();
+        doc.addImage(pageCanvas.toDataURL('image/png'), 'PNG', 0, marginTop, pageWidth, (end - start) / pxPerMm);
+        pageCanvas.width = pageCanvas.height = 0;
+        start = end;
       }
 
       doc.save(`रोकड_वही_नमुना७_${dateFilters.dateFrom}_to_${dateFilters.dateTo}.pdf`);
@@ -670,7 +690,7 @@ ${tableHTML}
       
       acc.push({
         date: transaction.transactionDate,
-        description: `${transaction.transactionType === 'cash_in' ? 'जमा' : 'नावे'}: ${displayNarration(transaction.narration)}`,
+        description: `${transaction.transactionType === 'cash_in' ? 'जमा' : 'नावे'}: ${cashbookNarration(transaction)}`,
         credit: credit || 0,
         debit: debit || 0,
         balance: runningBalance,
@@ -687,7 +707,7 @@ ${tableHTML}
   });
 
   // Add opening balance row if there are transactions or opening balance exists
-  const finalTransactions = [];
+  const finalTransactions: any[] = [];
   if (processedTransactions.length > 0 || openingBalance !== 0) {
     if (openingBalance !== 0) {
       finalTransactions.push({
@@ -935,7 +955,7 @@ ${tableHTML}
                               <TableCell className="text-center text-xs sm:text-sm md:text-base border border-indigo-200 px-1 sm:px-3 md:px-4 py-1.5 sm:py-2 md:py-3">
                                 {DateUtils.isoToIndianDate(row.date).replace(/20(\d{2})/g, '$1')}
                               </TableCell>
-                              <TableCell className="text-left text-xs sm:text-sm md:text-base border border-indigo-200 px-1 sm:px-3 md:px-4 py-1.5 sm:py-2 md:py-3">
+                              <TableCell className="text-left text-xs sm:text-sm md:text-base border border-indigo-200 px-1 sm:px-3 md:px-4 py-1.5 sm:py-2 md:py-3" style={{ overflowWrap: 'anywhere', lineHeight: 1.5 }}>
                                 {row.description}
                               </TableCell>
                               <TableCell className="text-right text-sm sm:text-sm md:text-base font-medium border border-indigo-200 px-1 sm:px-3 md:px-4 py-1.5 sm:py-2 md:py-3">
@@ -1036,7 +1056,7 @@ ${tableHTML}
                                       <td className="w-12 sm:w-16 px-1 py-1 text-center text-[10px] sm:text-xs border-r border-gray-300 align-top" style={{ width: '12%' }}>
                                         {creditRow ? DateUtils.isoToIndianDate(creditRow.date).replace(/20(\d{2})/g, '$1') : ''}
                                       </td>
-                                      <td className={`px-1 sm:px-2 py-1 border-r border-gray-300 align-top ${isCreditBalance ? 'text-xs sm:text-base font-bold bg-indigo-100 border-2 border-indigo-400' : 'text-xs sm:text-sm'}`} style={{ width: '35%' }}>
+                                      <td className={`px-1 sm:px-2 py-1 border-r border-gray-300 align-top ${isCreditBalance ? 'text-xs sm:text-base font-bold bg-indigo-100 border-2 border-indigo-400' : 'text-xs sm:text-sm'}`} style={{ width: '35%', overflowWrap: 'anywhere', lineHeight: 1.5 }}>
                                         {creditRow?.description || ''}
                                       </td>
                                       <td className={`w-16 sm:w-24 px-1 py-1 text-right border-r-2 border-black align-top text-xs sm:text-sm ${isCreditBalance ? 'amount-bold' : ''}`} style={{ width: '15%' }}>
@@ -1047,7 +1067,7 @@ ${tableHTML}
                                       <td className="w-12 sm:w-16 px-1 py-1 text-center text-[10px] sm:text-xs border-r border-gray-300 align-top" style={{ width: '12%' }}>
                                         {debitRow ? DateUtils.isoToIndianDate(debitRow.date).replace(/20(\d{2})/g, '$1') : ''}
                                       </td>
-                                      <td className={`px-1 sm:px-2 py-1 border-r border-gray-300 align-top ${isDebitBalance ? 'text-xs sm:text-base font-bold bg-indigo-100 border-2 border-indigo-400' : 'text-xs sm:text-sm'}`} style={{ width: '35%' }}>
+                                      <td className={`px-1 sm:px-2 py-1 border-r border-gray-300 align-top ${isDebitBalance ? 'text-xs sm:text-base font-bold bg-indigo-100 border-2 border-indigo-400' : 'text-xs sm:text-sm'}`} style={{ width: '35%', overflowWrap: 'anywhere', lineHeight: 1.5 }}>
                                         {debitRow?.description || ''}
                                       </td>
                                       <td className={`w-16 sm:w-24 px-1 py-1 text-right align-top text-xs sm:text-sm ${isDebitBalance ? 'amount-bold' : ''}`} style={{ width: '15%' }}>

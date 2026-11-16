@@ -19,6 +19,7 @@ import {
   estimateCodes, type EstimateCode
 } from "@shared/schema";
 import { db } from "./db";
+import { cashbookLoanLink } from "./cashbook-loan-link";
 import { eq, and, or, desc, asc, gte, lte, sum, count, sql, like, not, inArray } from "drizzle-orm";
 import bcrypt from "bcrypt";
 import { performanceCache, memoizedCalculations, cacheWarming } from "./performance-cache";
@@ -1087,10 +1088,13 @@ export class DatabaseStorage implements IStorage {
       amount: cashTransactions.amount,
       narration: cashTransactions.narration,
       partyName: parties.name,
-      // loanId: cashTransactions.loanId, // Remove this field as it doesn't exist in schema
+      loanId: cashTransactions.loanId,
+      loanDate: loans.loanDate,
+      category: cashTransactions.category,
     })
     .from(cashTransactions)
     .leftJoin(parties, eq(cashTransactions.partyId, parties.id))
+    .leftJoin(loans, cashbookLoanLink)
     .where(and(...conditions))
     .orderBy(asc(cashTransactions.transactionDate));
     
@@ -1297,6 +1301,8 @@ export class DatabaseStorage implements IStorage {
       amount: cashTransactions.amount,
       category: cashTransactions.category,
       narration: cashTransactions.narration,
+      loanId: cashTransactions.loanId,
+      loanDate: loans.loanDate,
       partyId: cashTransactions.partyId,
       fromAccount: cashTransactions.fromAccount,
       toAccount: cashTransactions.toAccount,
@@ -1316,6 +1322,7 @@ export class DatabaseStorage implements IStorage {
     })
     .from(cashTransactions)
     .leftJoin(parties, eq(cashTransactions.partyId, parties.id))
+    .leftJoin(loans, cashbookLoanLink)
     .where(and(...conditions))
     .orderBy(asc(cashTransactions.transactionDate));
 
