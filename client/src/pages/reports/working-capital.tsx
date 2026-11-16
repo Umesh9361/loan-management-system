@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Search, Printer } from "lucide-react";
 import { useSafeNavigation } from "@/hooks/use-safe-navigation";
 import { useQuery } from "@tanstack/react-query";
+import { englishLedgerPrintCss } from "@/lib/english-print-typography";
 import { Sidebar } from "@/components/ui/sidebar";
 import { MobileNav } from "@/components/ui/mobile-nav";
 
@@ -436,6 +437,7 @@ export default function WorkingCapital() {
 
       {/* Print Styles */}
       <style>{`
+        ${englishLedgerPrintCss}
         @media print {
           .print\\:hidden { display: none !important; }
           

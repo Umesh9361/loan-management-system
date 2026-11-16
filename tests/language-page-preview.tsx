@@ -3,8 +3,10 @@ import express from "express";
 import { build } from "esbuild";
 import { readFileSync, readdirSync } from "node:fs";
 import { localizeUiSource } from "../scripts/ui-localization";
+import { defaultPledgeMatter } from "../shared/pledge-form-editor";
+import { defaultNoticeMatter } from "../shared/notice-matter";
 const app = express();
-const names = ["", "reports/"].flatMap(directory => readdirSync(`client/src/pages/${directory}`)
+const names = ["", "reports/", "receipt/"].flatMap(directory => readdirSync(`client/src/pages/${directory}`)
   .filter(file => file.endsWith(".tsx"))
   .map(file => directory + file.replace(/\.tsx$/, ""))
   .filter(name => !["qr-scan", "reports/capital-print"].includes(name))
@@ -19,49 +21,72 @@ const fixtureLoan = {
   id: "fixture-loan", tenantId: "fixture", borrowerName: "राम पाटील",
   borrowerAddress: "नमुना गाव", borrowerMobile: "", accountNumber: "621",
   groupId: "fixture-group", group: { id: "fixture-group", name: "नमुना गट" },
-  loanDate: "2024-06-15", principalAmount: "10000", interestRate: "2",
+  loanDate: "2026-04-15", principalAmount: "10000", interestRate: "2",
   interestRateType: "monthly", weight: "20", purity: "80", metalType: "gold",
   collateralDetails: "ठुशी", goldItem: "ठुशी", loanType: "तारण", status: "active",
 };
-const company = { name: "नमुना फायनान्स", address: "नमुना गाव", tenantId: "fixture", bottomNavEnabled: false };
+const company = { name: "नमुना फायनान्स", address: "नमुना गाव", tenantId: "fixture", proprietorName: "नमुना मालक", bottomNavEnabled: false };
 app.get("/api/company", (_req, res) => res.json(company));
 app.get("/api/loans", (_req, res) => res.json([fixtureLoan]));
 app.get("/api/loans/search", (_req, res) => res.json({ loans: [fixtureLoan], total: 1, hasMore: false }));
+app.get("/api/loans/paginated", (_req, res) => res.json({ loans: [fixtureLoan], total: 1, hasMore: false }));
+app.get("/api/loans/fixture-loan", (_req, res) => res.json(fixtureLoan));
 app.get("/api/groups", (_req, res) => res.json([{ id: "fixture-group", name: "नमुना गट" }]));
+app.get("/api/pledge-form-settings", (req, res) => {
+  const matter = defaultPledgeMatter(req.query.language === "en" ? "en" : "mr");
+  res.json({ ...matter, matter, isCustom: false });
+});
+app.get("/api/notice-settings", (req, res) => {
+  const matter = defaultNoticeMatter(req.query.language === "en" ? "en" : "mr");
+  res.json({ ...matter, matter, isCustom: false });
+});
+app.get("/api/parties", (_req, res) => res.json([{ id: "fixture-party", name: "Sample Party", type: "customer", openingBalance: "1000" }]));
 app.get("/api/cash-transactions", (_req, res) => res.json([{
   id: "cash-1", loanId: "fixture-loan", category: "loan_repayment", transactionType: "cash_in",
   amount: "11200", transactionDate: new Date().toISOString().slice(0, 10), loanDate: "2024-06-15",
   narration: "कर्ज बंद - खाते क्र. 621 राम पाटील (नमुना गट) - मुद्दल: ₹10000 + व्याज: ₹1200",
 }]));
 app.get("/api/cash-balance", (_req, res) => res.json({ openingBalance: 0 }));
-app.get("/api/reports/balance-sheet", (_req, res) => res.json(null));
-app.get("/api/reports/profit-loss", (_req, res) => res.json(null));
+app.get("/api/reports/balance-sheet", (_req, res) => res.json({
+  assets: { loansAndAdvances: { total: 10000, loanCount: 1, principalTotal: 10000 }, cashBalance: 5000, bankAccounts: [], fixedAssets: [], debtors: [], totalAssets: 15000 },
+  liabilities: { capitalAccount: { openingCapital: 15000, capitalAdded: 0, capitalWithdrawn: 0, closingCapital: 15000, netProfit: 0 }, creditors: [], totalLiabilities: 15000 },
+  isTallied: true, difference: 0,
+}));
+app.get("/api/reports/profit-loss", (_req, res) => res.json({
+  income: { interestIncome: 1200, otherIncomeItems: [], totalIncome: 1200 },
+  expenses: { items: [], totalExpenses: 0 }, netProfit: 1200, isProfit: true,
+}));
 app.get("/api/mobile-cashbook/:kind", (_req, res) => res.json({ openingBalance: 0, closingBalance: 11200, currentBalance: 11200, totalCashIn: 11200, totalCashOut: 0 }));
 app.get("/api/*", (_req, res) => res.json([]));
 const bundle = await build({
   stdin: { contents: `
     import React from 'react';import{createRoot}from'react-dom/client';
+    import{Router,Route}from'wouter';
     import{QueryClient,QueryClientProvider}from'@tanstack/react-query';
     import{I18nProvider}from'./client/src/providers/I18nProvider';
     import{pledgeFormsDocument}from'./client/src/lib/pledge-forms';
     import{downloadPrintDocumentPdf}from'./client/src/lib/print-document-pdf';
+    import{downloadNoticePdf}from'./client/src/lib/notice-export';
     import{defaultPledgeMatter}from'./shared/pledge-form-editor';
     import{defaultNoticeMatter,renderNoticeContent}from'./shared/notice-matter';
     import{lossDocumentFixture}from'./tests/overdue-print-fixtures';
     import{setUiLanguage,getUiLanguage}from'./shared/ui-language';
+    import{englishPrintSamples}from'./tests/english-print-samples';
     ${names.map((name, index) => `import Page${index} from './client/src/pages/${name}';`).join("\n")}
     const pages={${names.map((name, index) => `${JSON.stringify(name)}:Page${index}`).join(",")}};
     const client=new QueryClient({defaultOptions:{queries:{retry:false,queryFn:async({queryKey})=>{
       const r=await fetch(queryKey[0]);if(!r.ok)throw Error('fixture');return r.json();
     }}}});
-    window.localeTools={pledgeFormsDocument,defaultPledgeMatter,defaultNoticeMatter,renderNoticeContent,downloadPrintDocumentPdf,lossDocumentFixture};
-    const Page=pages[new URLSearchParams(location.search).get('page')||'login'];
+    window.localeTools={pledgeFormsDocument,defaultPledgeMatter,defaultNoticeMatter,renderNoticeContent,downloadPrintDocumentPdf,downloadNoticePdf,lossDocumentFixture,englishPrintSamples};
+    const pageKey=new URLSearchParams(location.search).get('page')||'login';
+    const Page=pages[pageKey];
+    const route=pageKey==='receipt/closure'?'/receipt/closure/fixture-loan':'/'+pageKey;
     class Boundary extends React.Component {
       state={error:null};
       static getDerivedStateFromError(error){return{error:String(error)}}
       render(){return this.state.error?<div data-fixture-error>{this.state.error}</div>:this.props.children}
     }
-    createRoot(document.getElementById('root')).render(<Boundary><QueryClientProvider client={client}><I18nProvider><Page/></I18nProvider></QueryClientProvider></Boundary>);
+    createRoot(document.getElementById('root')).render(<Boundary><QueryClientProvider client={client}><I18nProvider><Router hook={()=>[route,()=>{}]}><Route path={pageKey==='receipt/closure'?'/receipt/closure/:loanId':'*'}><Page/></Route></Router></I18nProvider></QueryClientProvider></Boundary>);
   `, resolveDir: process.cwd(), loader: "tsx" },
   bundle: true, write: false, format: "esm", jsx: "automatic",
   plugins: [{ name: "source-ui-and-fixture-context", setup(build) {

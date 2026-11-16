@@ -1,3 +1,4 @@
+import { getUiLanguage } from "@shared/ui-language";
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
@@ -1673,7 +1674,7 @@ function InventoryScanInner() {
               <Card className="shadow-lg border-2 border-indigo-300">
                 <CardContent className="pt-5 space-y-4">
                   <h2 className="text-lg font-bold text-indigo-900 text-center">तपासणी अहवाल</h2>
-                  <p className="text-xs text-gray-400 text-center">{new Date().toLocaleString('mr-IN')}</p>
+                  <p className="text-xs text-gray-400 text-center">{new Date().toLocaleString(getUiLanguage() === "en" ? "en-IN" : "mr-IN")}</p>
 
                   <div className="grid grid-cols-3 gap-3 text-center">
                     <div className="bg-blue-50 rounded-lg p-3">

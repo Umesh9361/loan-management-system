@@ -19,7 +19,7 @@ export function uiLocalizationPlugin(): Plugin {
 const marathi = /[\u0900-\u097f]/;
 const attributes = new Set(["placeholder", "title", "alt", "aria-label", "description", "label",
   "subtitle", "emptyText", "helperText", "emptyMessage", "loadingText", "availability",
-  "confirmText", "cancelText", "tooltip", "unitLabel", "buttonText", "errorText"]);
+  "confirmText", "cancelText", "tooltip", "unitLabel", "buttonText", "errorText", "textValue"]);
 const labels = new Set(["label", "title", "subtitle", "header", "head", "headers", "placeholder", "emptyText", "helperText"]);
 const messageKeys = new Set(["title", "description", "message"]);
 const skipCalls = new Set(["includes", "indexOf", "startsWith", "endsWith", "replace", "match", "split", "test"]);
@@ -96,6 +96,11 @@ export function localizeUiSource(source: string, filename: string, collect?: (te
         if (messageKeys.has(key)) {
           const parentText = current.parent.parent?.getText(tree).slice(0, 35) || "";
           if (/toast|Error|safeParse/.test(parentText)) return true;
+          const owner = current.parent.parent;
+          if (key === "message" && ts.isCallExpression(owner)) {
+            const method = ts.isPropertyAccessExpression(owner.expression) ? owner.expression.name.text : "";
+            if (["refine", "superRefine", "addIssue"].includes(method)) return true;
+          }
         }
       }
       if (ts.isJsxExpression(current)) return !ts.isJsxAttribute(current.parent) ||
@@ -142,9 +147,13 @@ export function localizeUiSource(source: string, filename: string, collect?: (te
       replace(node.expression, `__uiMessage(${node.expression.getText(tree)})`);
       return;
     }
-    const cashbookFile = /\/(?:pages\/(?:mobile-cashbook|reports\/(?:cashbook|cashbook-ledger|working-cashbook))|lib\/cashbook-narration)\.tsx?$/.test(filename);
+    if (ts.isPropertyAccessExpression(node) && node.name.text === "message" && context(node, renderedValue)) {
+      replace(node, `__uiMessage(${node.getText(tree)})`);
+      return;
+    }
+    const cashbookFile = /\/(?:pages\/(?:mobile-cashbook|reports\/(?:cashbook|cashbook-ledger|working-cashbook|account-ledger|ledger|working-capital))|lib\/cashbook-narration)\.tsx?$/.test(filename);
     if ((renderedValue || context(node)) &&
-        ((cashbookFile && ts.isPropertyAccessExpression(node) && ["description", "narration", "particulars"].includes(node.name.text)) ||
+        ((cashbookFile && ts.isPropertyAccessExpression(node) && ["description", "narration", "particulars", "creditNarration", "debitNarration"].includes(node.name.text)) ||
          (ts.isCallExpression(node) && ["displayNarration", "cashbookNarration"].includes(node.expression.getText(tree))))) {
       replace(node, `__uiNarration(${node.getText(tree)})`);
       return;

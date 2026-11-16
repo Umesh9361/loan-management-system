@@ -54,4 +54,13 @@ export const accountSummaryPositionPrintStyles = `
 .summary-position-track { height: 2mm; margin-top: 2mm; background: #f0eff5; position: relative; }
 .summary-position-track span { height: 100%; display: block; }
 .summary-position-footnote { font-size: 7pt; line-height: 1.8; margin: 2mm 0 0; color: #55546a; }
+html[lang="en"] .summary-position-metrics > div { min-width: 0; }
+html[lang="en"] .summary-position-metrics span,
+html[lang="en"] .summary-position-year-head,
+html[lang="en"] .summary-position-year small,
+html[lang="en"] .summary-position-footnote { line-height: 1.35; overflow-wrap: anywhere; }
+html[lang="en"] .summary-position-metrics strong,
+html[lang="en"] .summary-position-year strong { line-height: 1.35; overflow-wrap: anywhere; }
+html[lang="en"] .summary-position-year-head,
+html[lang="en"] .summary-position-year { min-width: 0; }
 `;

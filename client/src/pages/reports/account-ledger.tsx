@@ -1,3 +1,4 @@
+import { uiText } from "@shared/ui-language";
 import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -382,7 +383,7 @@ export default function AccountLedger() {
 
   const generateCashStatement = () => {
     try {
-      setSelectedAccount({ name: 'रोकड खाते', type: 'cash' });
+      setSelectedAccount({ name: uiText('रोकड खाते'), type: 'cash' });
 
       // Safe array check and filter transactions by date range
       const safeTransactions = Array.isArray(transactions) ? transactions : [];
@@ -504,7 +505,7 @@ export default function AccountLedger() {
       setStatementData({
         entries: entries.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()),
         account: {
-          name: 'रोकड खाते',
+          name: uiText('रोकड खाते'),
           type: 'cash',
           openingBalance,
           closingBalance: runningBalance
@@ -853,7 +854,7 @@ export default function AccountLedger() {
 
   const generateLoanStatement = () => {
     setSelectedAccount({
-      name: 'सर्व कर्ज खाते (एकत्रित)',
+      name: uiText('सर्व कर्ज खाते (एकत्रित)'),
       type: 'loan'
     });
 
@@ -958,7 +959,7 @@ export default function AccountLedger() {
 
     setStatementData({
       account: {
-        name: 'सर्व कर्ज खाते (एकत्रित)',
+        name: uiText('सर्व कर्ज खाते (एकत्रित)'),
         type: 'loan',
         totalLoanTransactions: loanRelatedTransactions,
         totalDisbursements: totalLoanDisbursements,

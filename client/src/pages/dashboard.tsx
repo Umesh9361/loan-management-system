@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { uiText, uiMonthLabel } from "@shared/ui-language";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { queryClient, apiRequest } from "@/lib/queryClient";
@@ -128,9 +129,9 @@ export default function Dashboard() {
     const n = Number(num) || 0;
     const abs = Math.abs(n);
     const sign = n < 0 ? '-' : '';
-    if (abs >= 10000000) return `${sign}${(abs / 10000000).toFixed(1)} कोटी`;
-    if (abs >= 100000) return `${sign}${(abs / 100000).toFixed(1)} लाख`;
-    if (abs >= 1000) return `${sign}${(abs / 1000).toFixed(1)} हजार`;
+    if (abs >= 10000000) return `${sign}${(abs / 10000000).toFixed(1)} ${uiText("कोटी")}`;
+    if (abs >= 100000) return `${sign}${(abs / 100000).toFixed(1)} ${uiText("लाख")}`;
+    if (abs >= 1000) return `${sign}${(abs / 1000).toFixed(1)} ${uiText("हजार")}`;
     return `${sign}${abs}`;
   };
 
@@ -371,7 +372,7 @@ export default function Dashboard() {
             <div className="bg-white border border-gray-100 rounded-xl shadow-sm p-4 sm:p-6 mb-8">
               <div className="flex flex-col sm:flex-row justify-between items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
                 <h3 className="text-sm sm:text-lg font-bold text-gray-800">
-                  {progressPeriod === '3m' ? 'पाठीमागील 3 महिन्यांची' : progressPeriod === '1y' ? 'पाठीमागील वर्षाची' : 'पाठीमागील 3 वर्षांची'} कर्ज प्रगती
+                  {progressPeriod === '3m' ? 'पाठीमागील 3 महिन्यांची कर्ज प्रगती' : progressPeriod === '1y' ? 'पाठीमागील वर्षाची कर्ज प्रगती' : 'पाठीमागील 3 वर्षांची कर्ज प्रगती'}
                 </h3>
                 <div className="flex bg-gray-100 rounded-lg p-1 gap-1">
                   {[
@@ -429,7 +430,7 @@ export default function Dashboard() {
                         </linearGradient>
                       </defs>
                       <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-                      <XAxis 
+                      <XAxis tickFormatter={uiMonthLabel}
                         dataKey="month" 
                         tick={{ fontSize: progressPeriod === '3y' ? 7 : 8, fill: '#94a3b8' }} 
                         angle={-45}
@@ -440,7 +441,7 @@ export default function Dashboard() {
                         tickLine={false}
                       />
                       <YAxis tick={{ fontSize: 10, fill: '#94a3b8' }} width={35} axisLine={false} tickLine={false} />
-                      <Tooltip 
+                      <Tooltip labelFormatter={uiMonthLabel}
                         formatter={(value: any, name: string) => {
                           if (name === 'एकूण रक्कम') return [`₹${formatCompact(Number(value))}`, name];
                           return [`${value}`, name];
@@ -600,7 +601,7 @@ export default function Dashboard() {
         <DialogContent className="max-w-[95vw] w-full max-h-[95vh] p-4 sm:p-6">
           <div className="flex flex-col sm:flex-row justify-between items-center gap-3 mb-4">
             <h3 className="text-lg font-bold text-gray-800">
-              {progressPeriod === '3m' ? 'पाठीमागील 3 महिन्यांची' : progressPeriod === '1y' ? 'पाठीमागील वर्षाची' : 'पाठीमागील 3 वर्षांची'} कर्ज प्रगती
+              {progressPeriod === '3m' ? 'पाठीमागील 3 महिन्यांची कर्ज प्रगती' : progressPeriod === '1y' ? 'पाठीमागील वर्षाची कर्ज प्रगती' : 'पाठीमागील 3 वर्षांची कर्ज प्रगती'}
             </h3>
             <div className="flex bg-gray-100 rounded-lg p-1 gap-1">
               {[
@@ -644,7 +645,7 @@ export default function Dashboard() {
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-              <XAxis 
+              <XAxis tickFormatter={uiMonthLabel}
                 dataKey="month" 
                 tick={{ fontSize: window.innerWidth < 640 ? 8 : (progressPeriod === '3y' ? 10 : 12), fill: '#94a3b8' }} 
                 angle={-40}
@@ -655,7 +656,7 @@ export default function Dashboard() {
                 tickLine={false}
               />
               <YAxis tick={{ fontSize: window.innerWidth < 640 ? 10 : 12, fill: '#94a3b8' }} width={window.innerWidth < 640 ? 35 : 45} axisLine={false} tickLine={false} />
-              <Tooltip 
+              <Tooltip labelFormatter={uiMonthLabel}
                 formatter={(value: any, name: string) => {
                   if (name === 'एकूण रक्कम') return [`₹${formatCompact(Number(value))}`, name];
                   return [`${value}`, name];

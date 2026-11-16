@@ -40,7 +40,7 @@ try {
       await call("Page.navigate", { url: `http://127.0.0.1:5003/?page=${page}&language=en` });
       await waitFor("document.getElementById('root')?.textContent.length>3", 30).catch(() => {});
       await new Promise(resolve => setTimeout(resolve, 300));
-      const texts = await evaluate(`Array.from(document.querySelectorAll('#root *')).filter(n=>n.childNodes.length===1&&n.firstChild?.nodeType===3).map(n=>n.textContent.trim()).filter(t=>/[\\u0900-\\u097f]/.test(t))`);
+       const texts = await evaluate(`(()=>{const out=[],w=document.createTreeWalker(document.getElementById('root'),NodeFilter.SHOW_TEXT);let n;while(n=w.nextNode()){const p=n.parentElement;if(p&&!p.closest('script,style,noscript')&&p.getClientRects().length&&/[\\u0900-\\u097f]/.test(n.textContent))out.push(n.textContent.trim());}return out;})()`);
       const fixtureError = await evaluate("document.querySelector('[data-fixture-error]')?.textContent||(!document.getElementById('root')?.textContent.trim()?'This utility needs route-specific inputs':null)");
       audit.push({ width, page, fixtureError, remaining: [...new Set(texts)] });
       if (["login", "reports/pledge-forms", "reports/account-summary", "mobile-cashbook"].includes(page)) {
@@ -53,6 +53,11 @@ try {
   await writeFile(`${out}/screen-audit.json`, JSON.stringify(audit, null, 2));
   assert(!audit.some(entry => entry.fixtureError), "A page needs a complete synthetic API fixture; see screen-audit.json");
   assert.equal(errors.length, 0, errors.join("\n"));
+   const originalData = ["नमुना फायनान्स","नमुना गाव","नमुना गट","नमुना मालक","राम पाटील","ठुशी"];
+   const remainingUi = audit.flatMap(entry => entry.remaining
+     .filter(text => /[\u0900-\u097f]/.test(originalData.reduce((value, marker) => value.replaceAll(marker, ""), text)))
+     .map(text => ({page:entry.page,width:entry.width,text})));
+   assert.deepEqual(remainingUi, [], "Untranslated application text remains beyond original customer/company data");
   // The very same customer values must survive document language changes.
   const forms = await evaluate(`window.localeTools.pledgeFormsDocument({
     company:"नमुना फायनान्स",borrowerName:"राम पाटील",borrowerAddress:"नमुना गाव",

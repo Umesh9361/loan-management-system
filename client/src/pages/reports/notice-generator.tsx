@@ -120,12 +120,26 @@ export const NOTICE_STYLES = `
   }
 `;
 
+const ENGLISH_NOTICE_STYLES = `
+html:lang(en) body, html:lang(en) .notice-container {
+  font-family: Arial, "Noto Sans Devanagari", sans-serif;
+}
+html:lang(en) .notice-container {
+  font-size: 10pt; line-height: 1.55; overflow-wrap: anywhere;
+}
+html:lang(en) .notice-title {
+  font-size: 13pt; line-height: 1.35; letter-spacing: .2pt;
+}
+html:lang(en) .notice-body p { line-height: 1.55; }
+html:lang(en) .notice-signature { break-inside: avoid; }
+`;
+
 export function fullNoticeHTML(content: string): string {
   return `<!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8">
-<style>${NOTICE_STYLES}</style>
+<style>${NOTICE_STYLES}${ENGLISH_NOTICE_STYLES}</style>
 </head>
 <body>
 ${content}

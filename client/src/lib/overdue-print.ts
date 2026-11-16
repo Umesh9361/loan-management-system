@@ -193,12 +193,13 @@ export function overduePrintDocument(options: OverduePrintOptions): string {
   return `<!doctype html>
 <html lang="mr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${escapeHtml(options.title)}</title>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;600;700&family=Noto+Sans+Devanagari:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 @page { size: A4 landscape; margin: 5mm; }
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }
 body { width: 287mm; max-width: 287mm; margin: 0 auto; color: #24243a; background: #fff; font: 9pt/1.55 "Noto Sans Devanagari", sans-serif; }
+html[lang="en"] body { font-family: Arial, "Noto Sans Devanagari", sans-serif; }
 .loss-document-header { border-bottom: 2px solid #38346f; padding: 0 0 2mm; margin-bottom: 2mm; text-align: center; }
 .loss-document-header h1 { margin: 0 0 1mm; font-size: 14pt; line-height: 1.4; color: #302d66; overflow-wrap: anywhere; }
 .loss-document-header h2 { margin: 0; font-size: 12pt; line-height: 1.45; color: #24243a; overflow-wrap: anywhere; }
@@ -259,6 +260,20 @@ body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .loss-report-context, .loss-document-totals, .loss-section-title,
   .loss-print-table th, .weight-totals, .section-totals { background: #fff !important; }
 }
+html[lang="en"] .loss-document-header h1 { line-height: 1.25; }
+html[lang="en"] .loss-document-header h2 { line-height: 1.3; }
+html[lang="en"] .company-address,
+html[lang="en"] .context-item,
+html[lang="en"] .loss-document-totals,
+html[lang="en"] .section-totals,
+html[lang="en"] .weight-totals { line-height: 1.3; overflow-wrap: anywhere; }
+html[lang="en"] .context-item { min-width: 0; }
+html[lang="en"] .loss-section-title { flex-wrap: wrap; gap: 1mm 3mm; line-height: 1.3; }
+html[lang="en"] .loss-print-table th,
+html[lang="en"] .loss-print-table td { line-height: 1.3; overflow-wrap: anywhere; word-break: normal; }
+html[lang="en"] .loss-print-table th { vertical-align: bottom; }
+html[lang="en"] .borrower-name { line-height: 1.3; }
+html[lang="en"] .risk { min-width: 0; overflow-wrap: anywhere; }
 </style></head><body>
 <header class="loss-document-header">
   ${options.company ? `<h1>${escapeHtml(options.company)}</h1>` : ""}

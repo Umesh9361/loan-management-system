@@ -7,6 +7,18 @@ try {
 } catch { /* Private-mode storage must not prevent login. */ }
 export function getUiLanguage(): UiLanguage { return currentLanguage; }
 export function setUiLanguage(language: UiLanguage) { currentLanguage = language; }
+/** Only application-generated timeline labels; never customer names or stored dates. */
+export function uiMonthLabel(value: unknown): string {
+  const text = String(value ?? "");
+  if (currentLanguage !== "en") return text;
+  const months: Record<string, string> = {
+    जानेवारी: "Jan", फेब्रुवारी: "Feb", मार्च: "Mar", एप्रिल: "Apr",
+    मे: "May", जून: "Jun", जुलै: "Jul", ऑगस्ट: "Aug",
+    सप्टेंबर: "Sep", ऑक्टोबर: "Oct", नोव्हेंबर: "Nov", डिसेंबर: "Dec",
+  };
+  const match = text.match(/^(\S+)\s+(\d{2}|\d{4})$/);
+  return match && months[match[1]] ? `${months[match[1]]} ${match[2]}` : text;
+}
 export function normalizeUiText(text: string) { return text.replace(/\s+/g, " ").trim(); }
 export function uiText(text: string, language = currentLanguage): string {
   if (language !== "en" || !text) return text;
@@ -72,7 +84,7 @@ export function uiNarration<T>(value: T): T {
     const suffix: Record<string, string> = { कमतरता: "Deficit", अधिक: "Surplus", डेबिट: "Dr.", क्रेडिट: "Cr." };
     return `${base}${balance[2] ? ` (${suffix[balance[2]]})` : ""}` as T;
   }
-  if (["प्रारंभिक शिल्लक", "मागील शिल्लक", "शिल्लक पुढे नेले", "शिल्लक पुढे", "मागील शिल्लक पुढे"].includes(value)) {
+  if (["प्रारंभिक शिल्लक", "मागील शिल्लक", "शिल्लक पुढे नेले", "शिल्लक पुढे", "मागील शिल्लक पुढे", "कर्ज वाटप"].includes(value)) {
     return uiText(value) as T;
   }
   const match = value.match(/^(?:(जमा|नावे):\s*)?(कर्ज बंद|कर्ज वितरण)\s*-\s*खाते\s*क्र[.॰]?\s*(\S+)\s+(.+?)\s*-\s*मुद्दल:\s*₹([\d,]+(?:\.\d+)?)(?:\s*\+\s*व्याज:\s*₹([\d,]+(?:\.\d+)?))?(?:\s*·\s*कर्ज दिनांक:\s*(.*))?$/);

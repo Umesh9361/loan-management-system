@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { englishLedgerPrintCss } from "@/lib/english-print-typography";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -265,7 +266,7 @@ export default function WorkingCashBook() {
     
     try {
       const style = document.createElement('style');
-      style.textContent = `@media print { body { font-family: 'Noto Sans Devanagari', Arial, sans-serif !important; } }`;
+      style.textContent = `${englishLedgerPrintCss} @media print { body { font-family: 'Noto Sans Devanagari', Arial, sans-serif !important; } }`;
       document.head.appendChild(style);
       setTimeout(() => {
         window.print();

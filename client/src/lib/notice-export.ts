@@ -10,7 +10,8 @@ async function withNoticeDocument<T>(html: string, action: (node: HTMLElement, d
     const doc = frame.contentDocument!;
     doc.open(); doc.write(html); doc.close();
     const style = doc.createElement("style");
-    style.textContent = "html,body{width:560px!important;margin:0!important;padding:0!important;background:white!important}.notice-container{width:560px!important;max-width:560px!important;height:auto!important;min-height:794px!important;padding:144px 45px 45px 57px!important;overflow:visible!important;overflow-wrap:anywhere!important;box-shadow:none!important;margin:0!important;font-size:12px!important;line-height:1.8!important}";
+    const english = doc.documentElement.lang.toLowerCase().startsWith("en");
+    style.textContent = `html,body{width:560px!important;margin:0!important;padding:0!important;background:white!important}.notice-container{width:560px!important;max-width:560px!important;height:auto!important;min-height:794px!important;padding:144px 45px 45px 57px!important;overflow:visible!important;overflow-wrap:anywhere!important;box-shadow:none!important;margin:0!important;font-size:${english ? "13.3333px" : "12px"}!important;line-height:${english ? "1.55" : "1.8"}!important}`;
     doc.head.appendChild(style);
     await doc.fonts.ready;
     await new Promise<void>(resolve => frame.contentWindow!.requestAnimationFrame(() => resolve()));

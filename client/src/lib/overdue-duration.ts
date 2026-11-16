@@ -1,4 +1,5 @@
 import { LoanCalculationsAdvanced } from "./loan-calculations";
+import { uiText } from "@shared/ui-language";
 
 /** Display-only calendar period, using the same date breakdown as the closure form. */
 export function overdueDurationParts({ loanDate, daysOverdue }: { loanDate: string; daysOverdue: number }): string[] {
@@ -18,8 +19,8 @@ export function overdueDurationParts({ loanDate, daysOverdue }: { loanDate: stri
   const end = new Date(`${endUtc.toISOString().slice(0, 10)}T12:00:00`);
   const { calendarYears: years, calendarMonths: months, calendarDays: days } =
     LoanCalculationsAdvanced.calculateTimePeriod(start, end);
-  const monthPart = `${months} ${months === 1 ? "महिना" : "महिने"}`;
-  if (years > 0) return [`${years} ${years === 1 ? "वर्ष" : "वर्षे"}`, ...(months > 0 ? [monthPart] : [])];
-  const parts = [...(months > 0 ? [monthPart] : []), ...(days > 0 ? [`${days} दिवस`] : [])];
-  return parts.length ? parts : ["0 दिवस"];
+  const monthPart = `${months} ${uiText(months === 1 ? "महिना" : "महिने")}`;
+  if (years > 0) return [`${years} ${uiText(years === 1 ? "वर्ष" : "वर्षे")}`, ...(months > 0 ? [monthPart] : [])];
+  const parts = [...(months > 0 ? [monthPart] : []), ...(days > 0 ? [`${days} ${uiText("दिवस")}`] : [])];
+  return parts.length ? parts : [uiText("0 दिवस")];
 }

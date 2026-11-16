@@ -2,6 +2,13 @@
 @tailwind components;
 @tailwind utilities;
 
+/* html2canvas measures fonts in the root document using a hidden 1px image.
+   Preflight's block images distort that baseline, shifting PDF text onto rules.
+   Reset only these invisible measurement images, never borrower/item photos. */
+body > div[style*="visibility: hidden"][style*="font-family:"][style*="white-space: nowrap"] > img[width="1"][height="1"] {
+  display: inline !important;
+}
+
 @keyframes bell-ring {
   0%, 100% { transform: rotate(0deg); }
   10% { transform: rotate(8deg); }

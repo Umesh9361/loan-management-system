@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Search, Printer } from "lucide-react";
 import { useSafeNavigation } from "@/hooks/use-safe-navigation";
 import { useQuery } from "@tanstack/react-query";
+import { englishLedgerPrintCss } from "@/lib/english-print-typography";
 import { DateUtils } from "@/lib/date-utils";
 
 export default function WorkingSummary() {
@@ -382,6 +383,7 @@ export default function WorkingSummary() {
 
       {/* Print Styles */}
       <style>{`
+        ${englishLedgerPrintCss}
         @media print {
           .print\\:hidden { display: none !important; }
           

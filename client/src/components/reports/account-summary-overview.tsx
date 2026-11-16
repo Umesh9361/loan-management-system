@@ -1,4 +1,5 @@
 import React, { useId } from "react";
+import { uiText } from "@shared/ui-language";
 import { englishSummaryDigits, formatSummaryCount, formatSummaryCurrency } from "@shared/account-summary-format";
 import type { SummaryYearSelection } from "@shared/account-summary";
 
@@ -177,9 +178,9 @@ function HorizontalBars({
 function compactCurrency(value: number) {
   const amount = Number.isFinite(value) ? value : 0;
   const compact = (number: number) => englishSummaryDigits(number.toLocaleString("en-IN", { maximumFractionDigits: 1 }));
-  if (amount >= 10_000_000) return `₹${compact(amount / 10_000_000)} कोटी`;
-  if (amount >= 100_000) return `₹${compact(amount / 100_000)} लाख`;
-  if (amount >= 1_000) return `₹${compact(amount / 1_000)} ह.`;
+  if (amount >= 10_000_000) return `₹${compact(amount / 10_000_000)} ${uiText("कोटी")}`;
+  if (amount >= 100_000) return `₹${compact(amount / 100_000)} ${uiText("लाख")}`;
+  if (amount >= 1_000) return `₹${compact(amount / 1_000)} ${uiText("ह.")}`;
   return `₹${formatCount(amount)}`;
 }
 

@@ -1,3 +1,4 @@
+import { uiTemplate } from "@shared/ui-language";
 export type PledgeStoredPhoto = { id: string; photoType?: string; createdAt?: string };
 
 const asDataUrl = (blob: Blob) => new Promise<string>((resolve, reject) => {
@@ -34,7 +35,7 @@ export function selectPledgeCollateralPhotos(photos: PledgeStoredPhoto[], ids?: 
 
 export function pledgeCollateralPhotoLabels(photos: PledgeStoredPhoto[], ids?: string[]) {
   const available = photos.filter(photo => !photo.photoType || photo.photoType === "collateral");
-  return selectPledgeCollateralPhotos(photos, ids).map(photo => `वस्तूचा फोटो ${available.findIndex(row => row.id === photo.id) + 1}`);
+  return selectPledgeCollateralPhotos(photos, ids).map(photo => uiTemplate`वस्तूचा फोटो ${available.findIndex(row => row.id === photo.id) + 1}`);
 }
 
 async function readPledgePhoto(loanId: string, photo: PledgeStoredPhoto) {

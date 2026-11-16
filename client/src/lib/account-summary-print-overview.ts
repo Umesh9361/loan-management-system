@@ -1,4 +1,5 @@
 import { escapeSummaryHtml } from "../../../shared/account-summary";
+import { uiText } from "@shared/ui-language";
 import {
   englishSummaryDigits,
   formatSummaryCount,
@@ -41,9 +42,9 @@ function compactCurrency(value: number) {
     );
   const sign = amount < 0 ? "−" : "";
   const absolute = Math.abs(amount);
-  if (absolute >= 10_000_000) return `${sign}₹${formatted(absolute / 10_000_000)} कोटी`;
-  if (absolute >= 100_000) return `${sign}₹${formatted(absolute / 100_000)} लाख`;
-  if (absolute >= 1_000) return `${sign}₹${formatted(absolute / 1_000)} ह.`;
+  if (absolute >= 10_000_000) return `${sign}₹${formatted(absolute / 10_000_000)} ${uiText("कोटी")}`;
+  if (absolute >= 100_000) return `${sign}₹${formatted(absolute / 100_000)} ${uiText("लाख")}`;
+  if (absolute >= 1_000) return `${sign}₹${formatted(absolute / 1_000)} ${uiText("ह.")}`;
   return `${sign}₹${formatted(absolute)}`;
 }
 
@@ -303,4 +304,13 @@ export const accountSummaryPrintOverviewStyles = `
     .summary-overview { margin-bottom: 2.5mm; }
     .summary-overview-metrics, .summary-overview-chart { break-inside: avoid; page-break-inside: avoid; }
   }
+  html[lang="en"] .summary-overview-heading { align-items: flex-start; }
+  html[lang="en"] .summary-overview-mode { max-width: 42%; overflow-wrap: anywhere; line-height: 1.35; }
+  html[lang="en"] .summary-overview-metric { min-width: 0; }
+  html[lang="en"] .summary-overview-metric span,
+  html[lang="en"] .summary-overview-row-label { overflow-wrap: anywhere; line-height: 1.3; }
+  html[lang="en"] .summary-overview-chart h3 { line-height: 1.25; }
+  html[lang="en"] .summary-overview-row-heading { line-height: 1.35; }
+  html[lang="en"] .summary-overview-axis { font-size: 7.5pt; line-height: 1.25; }
+  html[lang="en"] .summary-overview-note { line-height: 1.35; }
 `;

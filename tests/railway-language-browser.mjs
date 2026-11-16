@@ -54,8 +54,12 @@ try {
   await call("Emulation.setDeviceMetricsOverride", { width: 390, height: 844, deviceScaleFactor: 1, mobile: true });
   await call("Page.navigate", { url: "http://127.0.0.1:5003/" });
   await login("en");
+  await waitFor("document.body.innerText.includes('45.0 Lakh')");
+  await waitFor("[...document.querySelectorAll('.recharts-cartesian-axis-tick-value')].some(n=>n.textContent.includes('Sep'))");
   assert(!(await evaluate("document.body.innerText")).includes("झटपट कामे"));
   assert(!/[\u0900-\u097f]/.test(await evaluate("document.body.innerText")), "Dashboard and real mobile navigation must be English");
+  assert(!/[\u0900-\u097f]/.test(await evaluate("[...document.querySelectorAll('.recharts-cartesian-axis-tick-value')].map(n=>n.textContent).join(' ')")), "Server-generated timeline month labels must also be English");
+  assert((await evaluate("document.body.innerText")).includes("Loan Progress — Last 3 Months"));
   await image("production-dashboard-en-mobile");
   for (const [path, title] of [["/loans", "कर्ज नोंदणी"], ["/reports/account-summary", "खाते सारांश अहवाल"]]) {
     await call("Page.navigate", { url: `http://127.0.0.1:5003${path}` });

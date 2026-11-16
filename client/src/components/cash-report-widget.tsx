@@ -1,3 +1,4 @@
+import { uiText } from "@shared/ui-language";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { FileText, TrendingUp, BookOpen, Download } from "lucide-react";
@@ -54,7 +55,7 @@ export default function CashReportWidget() {
                 </CardHeader>
                 <CardContent>
                   <p className="text-xs opacity-90">
-                    {report.description}
+                    {uiText(report.description)}
                   </p>
                 </CardContent>
               </Card>

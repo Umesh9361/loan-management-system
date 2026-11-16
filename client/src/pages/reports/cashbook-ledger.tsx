@@ -9,6 +9,7 @@ import { Separator } from "@/components/ui/separator";
 import { Calendar, Download, Printer, FileText } from "lucide-react";
 import { displayNarration } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
+import { englishLedgerPrintCss } from "@/lib/english-print-typography";
 import { useReactToPrint } from 'react-to-print';
 import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
@@ -76,6 +77,7 @@ export default function CashbookLedger() {
   // Print functionality
   const handlePrint = () => {
     const printStyles = `
+      ${englishLedgerPrintCss}
       @media print {
         @page {
           size: A4;
@@ -119,7 +121,7 @@ export default function CashbookLedger() {
     `;
     
     const styleSheet = document.createElement("style");
-    styleSheet.innerText = printStyles;
+    styleSheet.textContent = printStyles;
     document.head.appendChild(styleSheet);
     
     // Show print content
@@ -253,7 +255,7 @@ export default function CashbookLedger() {
 
       {/* Cashbook Report */}
       <Card className="overflow-hidden">
-        <div ref={printRef} className="bg-white p-8 md:p-10">
+        <div ref={printRef} className="print-content bg-white p-8 md:p-10">
           {/* Header */}
           <div className="text-center mb-6">
             <h2 className="text-xl md:text-2xl font-bold">नमुना क्रमांक ७</h2>

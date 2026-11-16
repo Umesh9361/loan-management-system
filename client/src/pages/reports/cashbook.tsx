@@ -10,6 +10,7 @@ import { cashbookNarration, cashbookDescriptionHtml } from "@/lib/cashbook-narra
 import { pdfPageEnd } from "@/lib/print-document-pdf";
 import { LoanCalculations } from "@/lib/loan-calculations";
 import { useQuery } from "@tanstack/react-query";
+import { englishLedgerDocumentCss } from "@/lib/english-print-typography";
 import { useRealTimeSync } from "@/hooks/use-real-time-sync";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search, Printer, FileDown, FileSpreadsheet } from "lucide-react";
@@ -200,6 +201,7 @@ function CashBookReport() {
     const printHTML = `<!DOCTYPE html><html><head><meta charset="utf-8"/><title>रोकड वही</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
+${englishLedgerDocumentCss}
   @page { size: A4 portrait; margin: 12mm 5mm 12mm 5mm; }
   body { font-family: 'Noto Sans Devanagari', Arial, sans-serif; margin: 0; padding: 3mm 5mm 3mm 20mm; box-sizing: border-box; font-size: 11px; line-height: 1.4; }
   .header { text-align: center; margin-bottom: 12px; font-weight: bold; }
@@ -528,6 +530,7 @@ ${tableHTML}
       const fullHTML = `<!DOCTYPE html><html><head><meta charset="utf-8">
       <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;500;600;700&display=swap" rel="stylesheet">
       <style>
+      ${englishLedgerDocumentCss}
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Noto Sans Devanagari', Arial, sans-serif; background: white; width: ${renderWidthPx}px; padding: 18px 14px 18px 83px; }
         table { width: 100%; border-collapse: collapse; table-layout: fixed; page-break-inside: auto; }

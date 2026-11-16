@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { uiText } from "@shared/ui-language";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -57,7 +58,7 @@ const getAccountTypeLabel = (type: string) => {
     expense: "खर्च",
     bank: "बँक",
   };
-  return labels[type] || type;
+  return labels[type] ? uiText(labels[type]) : type;
 };
 
 export default function PartyManagement() {

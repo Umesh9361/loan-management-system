@@ -29,6 +29,14 @@ app.get("/api/loans", (_req, res) => res.json([{
   interestRate: "2", interestRateType: "monthly", weight: "20", purity: "80",
   metalType: "gold", collateralDetails: "ठुशी", goldItem: "ठुशी", loanType: "तारण", status: "active",
 }]));
+app.get("/api/dashboard/period-stats", (_req, res) => res.json({
+  current: {disbursements:14,disbursementAmount:4500000,closures:24,closureAmount:5090000,transactions:38,cashIn:9590000,cashOut:9010000,cashNet:580000,cashNetAmount:580000},
+  previous: {disbursements:46,disbursementAmount:6000000,closures:53,closureAmount:7000000,transactions:99,cashIn:13000000,cashOut:12600000,cashNet:400000,cashNetAmount:400000},
+}));
+app.get("/api/dashboard/monthly-progress", (_req, res) => res.json({ monthlyData:[
+  {month:"सप्टेंबर 2026",disbursements:46,closures:53,net:-7,disbursementAmount:4500000,closureAmount:5090000},
+  {month:"ऑक्टोबर 2026",disbursements:14,closures:24,net:-10,disbursementAmount:4500000,closureAmount:5090000},
+]}));
 app.get("/api/*", (_req, res) => res.json([]));
 app.post("/api/*", (_req, res) => res.json({ success: true }));
 app.use(express.static("dist/public", { index: false }));

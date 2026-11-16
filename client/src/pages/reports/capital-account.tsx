@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from "react";
+import { uiTemplate } from "@shared/ui-language";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -175,7 +176,7 @@ export default function CapitalAccountReport() {
       
       // Set disbursement page number for this date (same page for all disbursements on same date)
       if (!entry.disbursementPageNo) {
-        entry.disbursementPageNo = `पान-${disbursementPageCounter}`;
+        entry.disbursementPageNo = uiTemplate`पान-${disbursementPageCounter}`;
         disbursementPageCounter++;
       }
     });
@@ -212,7 +213,7 @@ export default function CapitalAccountReport() {
       
       // Set repayment page number for this date (same page for all repayments on same date)
       if (!entry.repaymentPageNo) {
-        entry.repaymentPageNo = `पान-${repaymentPageCounter}`;
+        entry.repaymentPageNo = uiTemplate`पान-${repaymentPageCounter}`;
         repaymentPageCounter++;
       }
     });

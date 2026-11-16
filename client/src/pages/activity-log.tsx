@@ -1,3 +1,4 @@
+import { uiText } from "@shared/ui-language";
 import { useState, useMemo } from "react";
 import { Sidebar } from "@/components/ui/sidebar";
 import { MobileNav } from "@/components/ui/mobile-nav";
@@ -462,7 +463,7 @@ export default function ActivityLogPage() {
                           if (meta.changedFields && typeof meta.changedFields === 'object') {
                             for (const [field, change] of Object.entries(meta.changedFields)) {
                               const c = change as { old: any; new: any };
-                              const label = fieldLabels[field] || field;
+                              const label = fieldLabels[field] ? uiText(fieldLabels[field]) : field;
                               changedFieldsDisplay.push(`${label}: ${c.old} → ${c.new}`);
                             }
                           }

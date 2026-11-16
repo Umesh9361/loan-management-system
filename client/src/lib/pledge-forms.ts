@@ -154,12 +154,49 @@ body { font-family:"Noto Sans Devanagari","Mangal",sans-serif; font-size:8pt; li
 .pf-single .pf-notice-body { font-size:10pt; line-height:1.8; }
 .pf-single .pf-line { font-size:9pt; min-height:5mm; }
 .pf-single .pf-signatures { margin-top:7mm; }
-/* Latin text needs different line metrics; retain Devanagari fallback for saved customer data. */
-html[lang="en"] .pf-sheet { font-family:Arial,"Noto Sans Devanagari",sans-serif; }
+/* Latin text needs a matched print face; retain Devanagari fallback for saved customer data. */
+html[lang="en"] .pf-sheet {
+  font-family:Arial,"Noto Sans Devanagari",sans-serif;
+  font-variant-numeric:lining-nums tabular-nums;
+}
 html[lang="en"] .pf-section p,
 html[lang="en"] .pf-section .pf-terms { line-height:1.35; }
 html[lang="en"] .pf-spacious .pf-declaration { height:82mm; }
 html[lang="en"] .pf-spacious .pf-interim { height:92mm; }
+html[lang="en"] .pf-organization-name,
+html[lang="en"] .pf-organization-details,
+html[lang="en"] .pf-heading h2,
+html[lang="en"] .pf-notice-body,
+html[lang="en"] .pf-release,
+html[lang="en"] .pf-disposal-text { overflow-wrap:anywhere; }
+html[lang="en"] .pf-line > span:first-child {
+  flex:0 1 auto;
+  min-width:0;
+  overflow-wrap:anywhere;
+}
+html[lang="en"] .pf-fill { min-width:0; overflow-wrap:anywhere; }
+html[lang="en"] .pf-table th,
+html[lang="en"] .pf-table td { overflow-wrap:anywhere; word-break:normal; }
+html[lang="en"] .pf-signatures > div { overflow-wrap:anywhere; }
+/* The six-form compact sheet is a fixed 287mm stack. Keep full-size type, but
+   reclaim line-box and signature clearance where mixed English data adds height. */
+html[lang="en"] .pf-all.pf-compact .pf-line { line-height:1.18; min-height:3.5mm; }
+html[lang="en"] .pf-all.pf-compact .pf-notice-body { line-height:1; margin:0; }
+html[lang="en"] .pf-all.pf-compact .pf-notice-body p { margin-bottom:0; }
+html[lang="en"] .pf-all.pf-compact .pf-disposal-text { line-height:1.2; }
+html[lang="en"] .pf-all.pf-compact .pf-table th,
+html[lang="en"] .pf-all.pf-compact .pf-table td { line-height:1.08; }
+html[lang="en"] .pf-all.pf-compact .pf-signatures { margin-top:1.8mm; }
+html[lang="en"] .pf-all.pf-compact .pf-signatures > div { padding-top:.5mm; }
+html[lang="en"] .pf-all.pf-compact .pf-notices .pf-heading h2 { line-height:1.05; }
+html[lang="en"] .pf-all.pf-compact .pf-notices .pf-organization-name { line-height:1; }
+html[lang="en"] .pf-all.pf-compact .pf-notices .pf-signatures { margin-top:.6mm; line-height:1.05; }
+html[lang="en"] .pf-all.pf-compact .pf-notice-to { margin-bottom:0; }
+html[lang="en"] .pf-all.pf-compact .pf-disposal .pf-signatures { margin-top:.8mm; }
+/* Spacious multi-page sheets have real unused space; direct more of it to
+   the two forms whose customer/item data naturally needs extra lines. */
+html[lang="en"] .pf-spacious.pf-all .pf-page > .pf-section.pf-loan,
+html[lang="en"] .pf-spacious.pf-all .pf-page > .pf-section.pf-disposal { flex-grow:10; }
 @media print {
   html,body,.pf-sheet { width:200mm; }
  .pf-sheet { margin:0; }
@@ -228,7 +265,7 @@ export function pledgeFormsDocument(data: PledgeFormData, selection: PledgeFormC
   }).join("");
   return `<!doctype html><html lang="mr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
     <title>तारण फॉर्म व नोटीस नमुने</title>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;600;700&family=Noto+Sans+Devanagari:wght@400;600;700&display=swap" rel="stylesheet">
     <style>${PLEDGE_FORMS_STYLES}\n${PLEDGE_FORM_POLISH_STYLES}</style></head><body><main class="pf-sheet ${keys.length === 1 ? "pf-single" : "pf-all"} pf-${layout}" data-layout="${layout}">${content}</main></body></html>`;
 }
 
@@ -247,7 +284,10 @@ export async function preparePledgeForms(html: string) {
     });
     const win = iframe.contentWindow, doc = iframe.contentDocument;
     if (!win || !doc) throw new Error("प्रिंट उघडता आली नाही.");
-    await Promise.all([400, 600, 700].map(weight => doc.fonts.load(`${weight} 10px "Noto Sans Devanagari"`)));
+    await Promise.all([
+      ...[400, 600, 700].map(weight => doc.fonts.load(`${weight} 10px "Noto Sans Devanagari"`)),
+      ...[400, 500, 600, 700].map(weight => doc.fonts.load(`${weight} 10px "Noto Sans"`)),
+    ]);
     await doc.fonts.ready;
     await waitForPrintImages(doc);
     await new Promise<void>(resolve => win.requestAnimationFrame(() => win.requestAnimationFrame(() => resolve())));

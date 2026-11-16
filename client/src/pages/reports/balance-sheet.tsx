@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Search, Printer, CheckCircle, AlertTriangle, TrendingUp, TrendingDown, Building2, Landmark, Wallet, Users, Package, Scale, FileText } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import { englishFinancialPrintStyle, financialCanvasSlices } from "@/lib/english-print-typography";
 import { Sidebar } from "@/components/ui/sidebar";
 import { MobileNav } from "@/components/ui/mobile-nav";
 import { jsPDF } from "jspdf";
@@ -100,7 +101,8 @@ function buildBalanceSheetHTML(balanceSheet: any, company: any, fyStartDate: str
   const thStyle = `border:${bdr};padding:8px 6px;text-align:left;font-size:11px;background:#f0f0f0;font-weight:700;color:#111;line-height:1.4;-webkit-print-color-adjust:exact;print-color-adjust:exact;`;
 
   return `
-    <div style="font-family:'Noto Sans Devanagari',Arial,sans-serif;color:#000;background:#fff;width:100%;">
+    ${englishFinancialPrintStyle()}
+    <div class="financial-print-document" style="font-family:'Noto Sans Devanagari',Arial,sans-serif;color:#000;background:#fff;width:100%;">
       <div style="text-align:center;margin-bottom:12px;font-weight:bold;">
         <p style="font-size:15px;font-weight:700;margin:0 0 4px 0;">${company?.name || ""}</p>
         <p style="font-size:14px;font-weight:700;margin:0 0 2px 0;">ताळेबंद</p>
@@ -298,6 +300,7 @@ export default function BalanceSheet() {
         windowHeight: contentHeight,
       });
 
+      const slices = financialCanvasSlices(container, canvas.width, canvas.height);
       cleanup();
 
       const imgData = canvas.toDataURL('image/png');
@@ -318,13 +321,10 @@ export default function BalanceSheet() {
       if (imgHeight <= pdfHeight - (margin * 2)) {
         doc.addImage(imgData, 'PNG', margin, margin, contentWidth, imgHeight);
       } else {
-        const pageContentHeight = pdfHeight - (margin * 2);
-        const totalPages = Math.ceil(imgHeight / pageContentHeight);
-        
-        for (let page = 0; page < totalPages; page++) {
+        for (let page = 0; page < slices.length; page++) {
+          const slice = slices[page];
           if (page > 0) doc.addPage();
-          const srcY = (page * pageContentHeight / imgHeight) * canvas.height;
-          const srcH = Math.min((pageContentHeight / imgHeight) * canvas.height, canvas.height - srcY);
+          const { srcY, srcH } = slice;
           
           const pageCanvas = document.createElement('canvas');
           pageCanvas.width = canvas.width;
